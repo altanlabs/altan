@@ -1423,10 +1423,18 @@ function comparePasswords(plainPassword, hashedPassword) {
 }
 
 const AuthContext = require$$0.createContext(null);
+const defaultMapping = {
+    email: 'email',
+    password: 'password',
+    emailVerified: 'email_verified',
+    displayName: 'display_name',
+    photoUrl: 'photo_url'
+};
 function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, authenticationOptions = {
     persistSession: true,
     redirectUrl: "/login",
-}, }) {
+}, fieldMapping = {}, }) {
+    const mapping = Object.assign(Object.assign({}, defaultMapping), fieldMapping);
     const [user, setUser] = require$$0.useState(null);
     const [error, setError] = require$$0.useState(null);
     const [isLoading, setIsLoading] = require$$0.useState(true);
@@ -1454,7 +1462,7 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             setError(null);
             // Find user by email
             yield refresh({
-                filters: [{ field: "email", operator: "eq", value: email }],
+                filters: [{ field: mapping.email, operator: "eq", value: email }],
                 limit: 1,
             });
             const foundUser = users[0];
@@ -1462,17 +1470,17 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
                 throw new Error("User not found");
             }
             // Verify password
-            const isValid = yield comparePasswords(password, foundUser.fields.password);
+            const isValid = yield comparePasswords(password, foundUser.fields[mapping.password]);
             if (!isValid) {
                 throw new Error("Invalid credentials");
             }
             // Create user object without sensitive data
             const authUser = {
                 id: foundUser.id,
-                email: foundUser.fields.email,
-                email_verified: Boolean(foundUser.fields.email_verified),
-                display_name: foundUser.fields.display_name,
-                photo_url: foundUser.fields.photo_url,
+                email: foundUser.fields[mapping.email],
+                emailVerified: Boolean(foundUser.fields[mapping.emailVerified]),
+                displayName: foundUser.fields[mapping.displayName],
+                photoUrl: foundUser.fields[mapping.photoUrl],
             };
             // Store user if persistence is enabled
             if (authenticationOptions.persistSession) {
@@ -1494,7 +1502,7 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             setError(null);
             // Check if user already exists
             yield refresh({
-                filters: [{ field: "email", operator: "eq", value: email }],
+                filters: [{ field: mapping.email, operator: "eq", value: email }],
                 limit: 1,
             });
             if (users.length > 0) {
@@ -1504,10 +1512,10 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             const hashedPassword = yield hashPassword(password);
             // Create new user
             const newUser = yield addRecord({
-                email,
-                password: hashedPassword,
-                display_name: display_name,
-                email_verified: false,
+                [mapping.email]: email,
+                [mapping.password]: hashedPassword,
+                [mapping.displayName]: display_name,
+                [mapping.emailVerified]: false,
             });
             // Log in the new user
             yield login({ email, password });
@@ -1519,7 +1527,7 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
         finally {
             setIsLoading(false);
         }
-    }), [users, refresh, addRecord, login]);
+    }), [users, refresh, addRecord, login, mapping]);
     const logout = require$$0.useCallback(() => __awaiter(this, void 0, void 0, function* () {
         if (authenticationOptions.persistSession) {
             localStorage.removeItem(storageKey);

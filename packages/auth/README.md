@@ -20,9 +20,9 @@ const config = {
 };
 ```
 
-2. Required Users table fields:
+2. Required Users table fields (backend/database fields):
 ```typescript
-interface UserFields {
+interface DatabaseFields {
   email: string;          // User's email address
   password: string;       // Hashed password (handled automatically)
   email_verified: boolean; // Email verification status
@@ -31,12 +31,59 @@ interface UserFields {
 }
 ```
 
-3. Wrap your app:
+3. Frontend interface (what you'll work with):
+```typescript
+interface AuthUser {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  displayName?: string;
+  photoUrl?: string;
+}
+```
+
+4. Wrap your app:
 ```tsx
 function App() {
   return (
     <DatabaseProvider config={config}>
       <AuthProvider>
+        <YourApp />
+      </AuthProvider>
+    </DatabaseProvider>
+  );
+}
+```
+
+### Field Mappings
+
+By default, the library handles the mapping between frontend camelCase and backend snake_case fields automatically. The default mapping is:
+
+```typescript
+const defaultMapping = {
+  email: "email",
+  password: "password",
+  emailVerified: "email_verified",
+  displayName: "display_name",
+  photoUrl: "photo_url"
+};
+```
+
+If your database uses different field names, you can override these mappings:
+
+```tsx
+function App() {
+  return (
+    <DatabaseProvider config={config}>
+      <AuthProvider
+        fieldMapping={{
+          // Example: mapping to different database fields
+          password: "password_hash",
+          emailVerified: "is_verified",
+          displayName: "username",
+          photoUrl: "avatar_url"
+        }}
+      >
         <YourApp />
       </AuthProvider>
     </DatabaseProvider>

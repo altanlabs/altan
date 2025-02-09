@@ -8,13 +8,14 @@ import React, {
 } from "react";
 import { useDatabase } from "@altanlabs/database";
 import { hashPassword, comparePasswords } from "./crypto";
+import { FieldMapping } from "./types";
 
 export interface AuthUser {
   id: string;
   email: string;
-  email_verified: boolean;
-  display_name?: string;
-  photo_url?: string;
+  emailVerified: boolean;
+  displayName?: string;
+  photoUrl?: string;
 }
 
 interface LoginCredentials {
@@ -48,7 +49,16 @@ interface AuthProviderProps {
     persistSession?: boolean;
     redirectUrl?: string;
   };
+  fieldMapping?: FieldMapping;
 }
+
+const defaultMapping: Required<FieldMapping> = {
+  email: 'email',
+  password: 'password',
+  emailVerified: 'email_verified',
+  displayName: 'display_name',
+  photoUrl: 'photo_url'
+};
 
 export function AuthProvider({
   children,
@@ -58,7 +68,10 @@ export function AuthProvider({
     persistSession: true,
     redirectUrl: "/login",
   },
+  fieldMapping = {},
 }: AuthProviderProps) {
+  const mapping = { ...defaultMapping, ...fieldMapping };
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +110,7 @@ export function AuthProvider({
 
         // Find user by email
         await refresh({
-          filters: [{ field: "email", operator: "eq", value: email }],
+          filters: [{ field: mapping.email, operator: "eq", value: email }],
           limit: 1,
         });
 
@@ -109,7 +122,7 @@ export function AuthProvider({
         // Verify password
         const isValid = await comparePasswords(
           password,
-          foundUser.fields.password as string
+          foundUser.fields[mapping.password] as string
         );
         if (!isValid) {
           throw new Error("Invalid credentials");
@@ -118,10 +131,10 @@ export function AuthProvider({
         // Create user object without sensitive data
         const authUser: AuthUser = {
           id: foundUser.id,
-          email: foundUser.fields.email as string,
-          email_verified: Boolean(foundUser.fields.email_verified),
-          display_name: foundUser.fields.display_name as string | undefined,
-          photo_url: foundUser.fields.photo_url as string | undefined,
+          email: foundUser.fields[mapping.email] as string,
+          emailVerified: Boolean(foundUser.fields[mapping.emailVerified]),
+          displayName: foundUser.fields[mapping.displayName] as string | undefined,
+          photoUrl: foundUser.fields[mapping.photoUrl] as string | undefined,
         };
 
         // Store user if persistence is enabled
@@ -148,7 +161,7 @@ export function AuthProvider({
 
         // Check if user already exists
         await refresh({
-          filters: [{ field: "email", operator: "eq", value: email }],
+          filters: [{ field: mapping.email, operator: "eq", value: email }],
           limit: 1,
         });
 
@@ -161,10 +174,10 @@ export function AuthProvider({
 
         // Create new user
         const newUser = await addRecord({
-          email,
-          password: hashedPassword,
-          display_name: display_name,
-          email_verified: false,
+          [mapping.email]: email,
+          [mapping.password]: hashedPassword,
+          [mapping.displayName]: display_name,
+          [mapping.emailVerified]: false,
         });
 
         // Log in the new user
@@ -176,7 +189,7 @@ export function AuthProvider({
         setIsLoading(false);
       }
     },
-    [users, refresh, addRecord, login]
+    [users, refresh, addRecord, login, mapping]
   );
 
   const logout = useCallback(async () => {

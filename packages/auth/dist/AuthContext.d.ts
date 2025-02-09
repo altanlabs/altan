@@ -1,10 +1,11 @@
 import { ReactNode } from "react";
+import { FieldMapping } from "./types";
 export interface AuthUser {
     id: string;
     email: string;
-    email_verified: boolean;
-    display_name?: string;
-    photo_url?: string;
+    emailVerified: boolean;
+    displayName?: string;
+    photoUrl?: string;
 }
 interface LoginCredentials {
     email: string;
@@ -32,8 +33,9 @@ interface AuthProviderProps {
         persistSession?: boolean;
         redirectUrl?: string;
     };
+    fieldMapping?: FieldMapping;
 }
-export declare function AuthProvider({ children, storageKey, onAuthStateChange, authenticationOptions, }: AuthProviderProps): import("react/jsx-runtime").JSX.Element;
+export declare function AuthProvider({ children, storageKey, onAuthStateChange, authenticationOptions, fieldMapping, }: AuthProviderProps): import("react/jsx-runtime").JSX.Element;
 export declare function useAuth(): AuthContextValue;
 export {};
 //# sourceMappingURL=AuthContext.d.ts.map
