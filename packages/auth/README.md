@@ -25,10 +25,9 @@ const config = {
 interface UserFields {
   email: string;          // User's email address
   password: string;       // Hashed password (handled automatically)
-  emailVerified: boolean; // Email verification status
-  displayName?: string;   // Optional display name
-  photoURL?: string;      // Optional profile photo URL
-  createdAt: string;      // Account creation timestamp
+  email_verified: boolean; // Email verification status
+  display_name?: string;  // Optional display name
+  photo_url?: string;     // Optional profile photo URL
 }
 ```
 

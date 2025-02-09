@@ -1470,9 +1470,9 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             const authUser = {
                 id: foundUser.id,
                 email: foundUser.fields.email,
-                emailVerified: Boolean(foundUser.fields.emailVerified),
-                displayName: foundUser.fields.displayName,
-                photoURL: foundUser.fields.photoURL,
+                email_verified: Boolean(foundUser.fields.email_verified),
+                display_name: foundUser.fields.display_name,
+                photo_url: foundUser.fields.photo_url,
             };
             // Store user if persistence is enabled
             if (authenticationOptions.persistSession) {
@@ -1488,7 +1488,7 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             setIsLoading(false);
         }
     }), [users, refresh, storageKey, authenticationOptions.persistSession]);
-    const register = require$$0.useCallback((_a) => __awaiter(this, [_a], void 0, function* ({ email, password, displayName }) {
+    const register = require$$0.useCallback((_a) => __awaiter(this, [_a], void 0, function* ({ email, password, display_name }) {
         try {
             setIsLoading(true);
             setError(null);
@@ -1506,9 +1506,8 @@ function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, a
             const newUser = yield addRecord({
                 email,
                 password: hashedPassword,
-                displayName,
-                emailVerified: false,
-                createdAt: new Date().toISOString(),
+                display_name: display_name,
+                email_verified: false,
             });
             // Log in the new user
             yield login({ email, password });

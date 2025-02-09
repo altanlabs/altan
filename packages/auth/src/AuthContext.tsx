@@ -12,9 +12,9 @@ import { hashPassword, comparePasswords } from "./crypto";
 export interface AuthUser {
   id: string;
   email: string;
-  emailVerified: boolean;
-  displayName?: string;
-  photoURL?: string;
+  email_verified: boolean;
+  display_name?: string;
+  photo_url?: string;
 }
 
 interface LoginCredentials {
@@ -23,7 +23,7 @@ interface LoginCredentials {
 }
 
 interface RegisterCredentials extends LoginCredentials {
-  displayName?: string;
+  display_name?: string;
 }
 
 interface AuthContextValue {
@@ -119,9 +119,9 @@ export function AuthProvider({
         const authUser: AuthUser = {
           id: foundUser.id,
           email: foundUser.fields.email as string,
-          emailVerified: Boolean(foundUser.fields.emailVerified),
-          displayName: foundUser.fields.displayName as string | undefined,
-          photoURL: foundUser.fields.photoURL as string | undefined,
+          email_verified: Boolean(foundUser.fields.email_verified),
+          display_name: foundUser.fields.display_name as string | undefined,
+          photo_url: foundUser.fields.photo_url as string | undefined,
         };
 
         // Store user if persistence is enabled
@@ -141,7 +141,7 @@ export function AuthProvider({
   );
 
   const register = useCallback(
-    async ({ email, password, displayName }: RegisterCredentials) => {
+    async ({ email, password, display_name }: RegisterCredentials) => {
       try {
         setIsLoading(true);
         setError(null);
@@ -163,9 +163,8 @@ export function AuthProvider({
         const newUser = await addRecord({
           email,
           password: hashedPassword,
-          displayName,
-          emailVerified: false,
-          createdAt: new Date().toISOString(),
+          display_name: display_name,
+          email_verified: false,
         });
 
         // Log in the new user

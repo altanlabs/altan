@@ -2,16 +2,16 @@ import { ReactNode } from "react";
 export interface AuthUser {
     id: string;
     email: string;
-    emailVerified: boolean;
-    displayName?: string;
-    photoURL?: string;
+    email_verified: boolean;
+    display_name?: string;
+    photo_url?: string;
 }
 interface LoginCredentials {
     email: string;
     password: string;
 }
 interface RegisterCredentials extends LoginCredentials {
-    displayName?: string;
+    display_name?: string;
 }
 interface AuthContextValue {
     user: AuthUser | null;
