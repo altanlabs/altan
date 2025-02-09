@@ -24,7 +24,7 @@ const config = {
 ```typescript
 interface UserFields {
   email: string;          // User's email address
-  password: string;       // Hashed password
+  password: string;       // Hashed password (handled automatically)
   emailVerified: boolean; // Email verification status
   displayName?: string;   // Optional display name
   photoURL?: string;      // Optional profile photo URL
@@ -47,14 +47,62 @@ function App() {
 
 ## Usage
 
-### Authentication
+### Authentication Context
+
+The `useAuth` hook provides access to the following:
+
+```typescript
+interface AuthContextValue {
+  user: AuthUser | null;         // Current user or null if not authenticated
+  isLoading: boolean;            // Loading state for auth operations
+  error: Error | null;           // Last error that occurred
+  isAuthenticated: boolean;      // Quick check if user is logged in
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
+}
+```
+
+### User Registration
+```tsx
+function RegisterPage() {
+  const { register, error, isLoading } = useAuth();
+
+  const handleRegister = async () => {
+    try {
+      await register({
+        email: "user@example.com",
+        password: "securepassword",
+        displayName: "John Doe" // optional
+      });
+      // User will be automatically logged in after registration
+    } catch (error) {
+      console.error("Registration failed:", error);
+    }
+  };
+
+  return (
+    <button onClick={handleRegister} disabled={isLoading}>
+      Register
+    </button>
+  );
+}
+```
+
+### User Login
 ```tsx
 function LoginPage() {
   const { login, error, isLoading } = useAuth();
 
   const handleLogin = async () => {
     try {
-      await login({ email, password });
+      await login({
+        email: "user@example.com",
+        password: "securepassword"
+      });
+      // Redirect or update UI after successful login
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -80,25 +128,74 @@ function LoginPage() {
 />
 ```
 
-### User Profile
+### User Profile Management
 ```tsx
 function Profile() {
-  const { user } = useAuth();
-  return user ? <div>Welcome, {user.email}!</div> : null;
+  const { user, updateProfile, isLoading } = useAuth();
+
+  const handleUpdateProfile = async () => {
+    try {
+      await updateProfile({
+        displayName: "New Name",
+        photoURL: "https://example.com/photo.jpg"
+      });
+    } catch (error) {
+      console.error("Profile update failed:", error);
+    }
+  };
+
+  return user ? (
+    <div>
+      <h2>Welcome, {user.displayName || user.email}!</h2>
+      <p>Email: {user.email}</p>
+      <p>Verified: {user.emailVerified ? "Yes" : "No"}</p>
+      <button onClick={handleUpdateProfile} disabled={isLoading}>
+        Update Profile
+      </button>
+    </div>
+  ) : null;
+}
+```
+
+### Logout
+```tsx
+function LogoutButton() {
+  const { logout } = useAuth();
+
+  return (
+    <button onClick={logout}>
+      Logout
+    </button>
+  );
+}
+```
+
+## Configuration Options
+
+The `AuthProvider` component accepts the following props:
+
+```typescript
+interface AuthProviderProps {
+  children: ReactNode;
+  storageKey?: string;                    // Key for localStorage (default: "auth_user")
+  onAuthStateChange?: (user: AuthUser | null) => void;  // Callback for auth state changes
+  authenticationOptions?: {
+    persistSession?: boolean;              // Enable session persistence (default: true)
+    redirectUrl?: string;                  // Login page URL (default: "/login")
+  };
 }
 ```
 
 ## Features
 
 - Email/Password authentication
+- User registration with automatic login
 - Protected routes
 - Session persistence
-- User registration
 - Profile management
-
-## API Reference
-
-See our [API Documentation](link-to-detailed-docs) for complete details.
+- Authentication state management
+- Loading and error states
+- TypeScript support
 
 ## License
 
