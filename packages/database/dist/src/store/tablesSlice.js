@@ -124,7 +124,7 @@ exports.createRecord = (0, toolkit_1.createAsyncThunk)("tables/createRecord", fu
                 tableId = getTableId(thunkAPI.getState(), tableName);
                 api = thunkAPI.extra.api;
                 return [4 /*yield*/, api.post("/table/".concat(tableId, "/record"), {
-                        records: [{ fields: record }]
+                        records: [record]
                     })];
             case 1:
                 response = _c.sent();
@@ -143,13 +143,9 @@ exports.updateRecord = (0, toolkit_1.createAsyncThunk)("tables/updateRecord", fu
         switch (_c.label) {
             case 0:
                 state = thunkAPI.getState();
-                tableId = state.tables.tables.byName[tableName];
-                if (!tableId)
-                    throw new Error("Table ".concat(tableName, " not found"));
+                tableId = getTableId(state, tableName);
                 api = thunkAPI.extra.api;
-                return [4 /*yield*/, api.patch("/table/".concat(tableId, "/record/").concat(recordId), {
-                        fields: updates
-                    })];
+                return [4 /*yield*/, api.patch("/table/".concat(tableId, "/record/").concat(recordId), updates)];
             case 1:
                 response = _c.sent();
                 return [2 /*return*/, { tableId: tableId, record: response.data.record }];

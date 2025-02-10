@@ -10,7 +10,11 @@ export interface TableRecord {
 
 export interface TableRecordItem {
   id: string;
-  fields: Record<string, unknown>;
+  [key: string]: unknown; // Allow any fields directly on the record
+  created_time?: string;
+  updated_at?: string;
+  last_modified_time?: string;
+  last_modified_by?: string;
 }
 
 export interface TableRecordData {
@@ -190,9 +194,11 @@ export interface DatabaseHookReturn {
   lastUpdated: string | null
   refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>
   fetchNextPage: (onError?: (error: Error) => void) => Promise<void>
-  addRecord: (record: unknown, onError?: (error: Error) => void) => Promise<void>
-  modifyRecord: (recordId: string, updates: unknown) => Promise<void>
-  removeRecord: (recordId: string) => Promise<void>
+  addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<void>
+  modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<void>
+  removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>
+  addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<void>
+  removeRecords: (recordIds: string[], onError?: (error: Error) => void) => Promise<void>
 }
 
 // Update the TableState interface to use the correct schema type

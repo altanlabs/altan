@@ -26,7 +26,7 @@ export declare const createRecord: import("@reduxjs/toolkit").AsyncThunk<{
     record: TableRecordItem;
 }, {
     tableName: string;
-    record: unknown;
+    record: Record<string, unknown>;
 }, {
     state: RootState;
     extra: {
@@ -45,12 +45,14 @@ export declare const updateRecord: import("@reduxjs/toolkit").AsyncThunk<{
 }, {
     tableName: string;
     recordId: string;
-    updates: unknown;
+    updates: Record<string, unknown>;
 }, {
     state: RootState;
+    extra: {
+        api: AxiosInstance;
+    };
+    rejectValue: string;
     dispatch?: import("redux-thunk").ThunkDispatch<unknown, unknown, import("redux").UnknownAction> | undefined;
-    extra?: unknown;
-    rejectValue?: unknown;
     serializedErrorType?: unknown;
     pendingMeta?: unknown;
     fulfilledMeta?: unknown;

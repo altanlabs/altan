@@ -97,6 +97,34 @@ export function useDatabase(
     [table, dispatch, isLoadingRecords]
   );
 
+  const addRecord = useCallback(
+    async (record: Record<string, unknown>, onError?: (e: Error) => void) => {
+      try {
+        await dispatch(createRecord({ tableName: table, record })).unwrap();
+      } catch (e) {
+        onError?.(e as Error);
+      }
+    },
+    [dispatch, table]
+  );
+
+  const modifyRecord = useCallback(
+    async (
+      recordId: string,
+      updates: Record<string, unknown>,
+      onError?: (e: Error) => void
+    ) => {
+      try {
+        await dispatch(
+          updateRecord({ tableName: table, recordId, updates })
+        ).unwrap();
+      } catch (e) {
+        onError?.(e as Error);
+      }
+    },
+    [dispatch, table]
+  );
+
   return useMemo(
     () => ({
       records,
@@ -112,26 +140,8 @@ export function useDatabase(
           await refresh({ pageToken: nextPageToken, limit: 20 }, onError);
         }
       },
-      addRecord: async (record: unknown, onError?: (e: Error) => void) => {
-        try {
-          await dispatch(createRecord({ tableName: table, record })).unwrap();
-        } catch (e) {
-          onError?.(e as Error);
-        }
-      },
-      modifyRecord: async (
-        recordId: string,
-        updates: unknown,
-        onError?: (e: Error) => void
-      ) => {
-        try {
-          await dispatch(
-            updateRecord({ tableName: table, recordId, updates })
-          ).unwrap();
-        } catch (e) {
-          onError?.(e as Error);
-        }
-      },
+      addRecord,
+      modifyRecord,
       removeRecord: async (recordId: string, onError?: (e: Error) => void) => {
         try {
           await dispatch(deleteRecord({ tableName: table, recordId })).unwrap();
@@ -139,21 +149,16 @@ export function useDatabase(
           onError?.(e as Error);
         }
       },
-      addRecords: async (records: unknown[], onError?: (e: Error) => void) => {
+      addRecords: async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
         try {
           await dispatch(createRecords({ tableName: table, records })).unwrap();
         } catch (e) {
           onError?.(e as Error);
         }
       },
-      removeRecords: async (
-        recordIds: string[],
-        onError?: (e: Error) => void
-      ) => {
+      removeRecords: async (recordIds: string[], onError?: (e: Error) => void) => {
         try {
-          await dispatch(
-            deleteRecords({ tableName: table, recordIds })
-          ).unwrap();
+          await dispatch(deleteRecords({ tableName: table, recordIds })).unwrap();
         } catch (e) {
           onError?.(e as Error);
         }
@@ -170,6 +175,8 @@ export function useDatabase(
       refresh,
       table,
       dispatch,
+      addRecord,
+      modifyRecord,
     ]
   );
 }

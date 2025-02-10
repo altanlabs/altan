@@ -128,6 +128,42 @@ function useDatabase(table, initialQuery) {
             });
         });
     }, [table, dispatch, isLoadingRecords]);
+    var addRecord = (0, react_1.useCallback)(function (record, onError) { return __awaiter(_this, void 0, void 0, function () {
+        var e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, dispatch((0, tablesSlice_1.createRecord)({ tableName: table, record: record })).unwrap()];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 3];
+                case 2:
+                    e_2 = _a.sent();
+                    onError === null || onError === void 0 ? void 0 : onError(e_2);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); }, [dispatch, table]);
+    var modifyRecord = (0, react_1.useCallback)(function (recordId, updates, onError) { return __awaiter(_this, void 0, void 0, function () {
+        var e_3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, dispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId: recordId, updates: updates })).unwrap()];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 3];
+                case 2:
+                    e_3 = _a.sent();
+                    onError === null || onError === void 0 ? void 0 : onError(e_3);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); }, [dispatch, table]);
     return (0, react_1.useMemo)(function () { return ({
         records: records,
         schema: schema,
@@ -150,42 +186,8 @@ function useDatabase(table, initialQuery) {
                 }
             });
         }); },
-        addRecord: function (record, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var e_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.createRecord)({ tableName: table, record: record })).unwrap()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_2 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_2);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); },
-        modifyRecord: function (recordId, updates, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var e_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId: recordId, updates: updates })).unwrap()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_3 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_3);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); },
+        addRecord: addRecord,
+        modifyRecord: modifyRecord,
         removeRecord: function (recordId, onError) { return __awaiter(_this, void 0, void 0, function () {
             var e_4;
             return __generator(this, function (_a) {
@@ -251,5 +253,7 @@ function useDatabase(table, initialQuery) {
         refresh,
         table,
         dispatch,
+        addRecord,
+        modifyRecord,
     ]);
 }

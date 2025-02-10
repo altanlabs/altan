@@ -73,7 +73,7 @@ export const fetchTableRecords = createAsyncThunk<
 
 export const createRecord = createAsyncThunk<
   { tableId: string; record: TableRecordItem },
-  { tableName: string; record: unknown },
+  { tableName: string; record: Record<string, unknown> },
   { state: RootState; extra: { api: AxiosInstance }; rejectValue: string }
 >(
   "tables/createRecord",
@@ -82,7 +82,7 @@ export const createRecord = createAsyncThunk<
       const tableId = getTableId(thunkAPI.getState(), tableName);
       const { api } = thunkAPI.extra;
       const response = await api.post(`/table/${tableId}/record`, {
-        records: [{ fields: record }]
+        records: [record]
       });
       return { tableId, record: response.data.records[0] };
     } catch (error) {
@@ -93,18 +93,15 @@ export const createRecord = createAsyncThunk<
 
 export const updateRecord = createAsyncThunk<
   { tableId: string; record: TableRecordItem },
-  { tableName: string; recordId: string; updates: unknown },
-  { state: RootState }
+  { tableName: string; recordId: string; updates: Record<string, unknown> },
+  { state: RootState; extra: { api: AxiosInstance }; rejectValue: string }
 >(
   "tables/updateRecord",
   async ({ tableName, recordId, updates }, thunkAPI) => {
     const state = thunkAPI.getState();
-    const tableId = state.tables.tables.byName[tableName];
-    if (!tableId) throw new Error(`Table ${tableName} not found`);
+    const tableId = getTableId(state, tableName);
     const { api } = thunkAPI.extra as { api: AxiosInstance };
-    const response = await api.patch(`/table/${tableId}/record/${recordId}`, {
-      fields: updates
-    });
+    const response = await api.patch(`/table/${tableId}/record/${recordId}`, updates);
     return { tableId, record: response.data.record };
   }
 );
