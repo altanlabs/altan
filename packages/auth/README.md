@@ -1,26 +1,27 @@
 # @altanlabs/auth
 
-Simple authentication for React apps using @altanlabs/database.
+Simple authentication for React apps.
 
 ## Installation
 
 ```bash
-npm install @altanlabs/auth @altanlabs/database
+npm install @altanlabs/auth
 ```
 
 ## Setup
 
 1. Configure your Users table UUID:
 ```tsx
-const config = {
-  API_BASE_URL: "https://api.example.com",
-  SAMPLE_TABLES: {
-    users: "0566cb6e-4de5-4004-a5a9-7220fda31600" // Your Users table UUID
-  }
-};
+function App() {
+  return (
+    <AuthProvider tableId="your-users-table-id">
+      <YourApp />
+    </AuthProvider>
+  );
+}
 ```
 
-2. Required Users table fields (backend/database fields):
+2. Backend fields (for reference):
 ```typescript
 interface DatabaseFields {
   email: string;          // User's email address
@@ -42,19 +43,6 @@ interface AuthUser {
 }
 ```
 
-4. Wrap your app:
-```tsx
-function App() {
-  return (
-    <DatabaseProvider config={config}>
-      <AuthProvider>
-        <YourApp />
-      </AuthProvider>
-    </DatabaseProvider>
-  );
-}
-```
-
 ### Field Mappings
 
 By default, the library handles the mapping between frontend camelCase and backend snake_case fields automatically. The default mapping is:
@@ -69,24 +57,23 @@ const defaultMapping = {
 };
 ```
 
-If your database uses different field names, you can override these mappings:
+If your backend uses different field names, you can override these mappings:
 
 ```tsx
 function App() {
   return (
-    <DatabaseProvider config={config}>
-      <AuthProvider
-        fieldMapping={{
-          // Example: mapping to different database fields
-          password: "password_hash",
-          emailVerified: "is_verified",
-          displayName: "username",
-          photoUrl: "avatar_url"
-        }}
-      >
-        <YourApp />
-      </AuthProvider>
-    </DatabaseProvider>
+    <AuthProvider
+      tableId="your-users-table-id"
+      fieldMapping={{
+        // Example: mapping to different backend fields
+        password: "password_hash",
+        emailVerified: "is_verified",
+        displayName: "username",
+        photoUrl: "avatar_url"
+      }}
+    >
+      <YourApp />
+    </AuthProvider>
   );
 }
 ```
@@ -223,17 +210,20 @@ The `AuthProvider` component accepts the following props:
 ```typescript
 interface AuthProviderProps {
   children: ReactNode;
+  tableId: string;                        // Your Users table UUID
   storageKey?: string;                    // Key for localStorage (default: "auth_user")
   onAuthStateChange?: (user: AuthUser | null) => void;  // Callback for auth state changes
   authenticationOptions?: {
     persistSession?: boolean;              // Enable session persistence (default: true)
     redirectUrl?: string;                  // Login page URL (default: "/login")
   };
+  fieldMapping?: FieldMapping;             // Custom field name mappings
 }
 ```
 
 ## Features
 
+- Secure cookie-based authentication
 - Email/Password authentication
 - User registration with automatic login
 - Protected routes

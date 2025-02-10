@@ -27,6 +27,7 @@ interface AuthContextValue {
 }
 interface AuthProviderProps {
     children: ReactNode;
+    tableId: string;
     storageKey?: string;
     onAuthStateChange?: (user: AuthUser | null) => void;
     authenticationOptions?: {
@@ -35,7 +36,9 @@ interface AuthProviderProps {
     };
     fieldMapping?: FieldMapping;
 }
-export declare function AuthProvider({ children, storageKey, onAuthStateChange, authenticationOptions, fieldMapping, }: AuthProviderProps): import("react/jsx-runtime").JSX.Element;
+export declare function AuthProvider({ children, storageKey, onAuthStateChange, authenticationOptions, fieldMapping, tableId, }: AuthProviderProps & {
+    tableId: string;
+}): import("react/jsx-runtime").JSX.Element;
 export declare function useAuth(): AuthContextValue;
 export {};
 //# sourceMappingURL=AuthContext.d.ts.map

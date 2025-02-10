@@ -1,8 +1,6 @@
 import { __awaiter } from "tslib";
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useCallback, useEffect, useState, } from "react";
-import { useDatabase } from "@altanlabs/database";
-import { hashPassword, comparePasswords } from "./crypto";
 const AuthContext = createContext(null);
 const defaultMapping = {
     email: 'email',
@@ -11,18 +9,15 @@ const defaultMapping = {
     displayName: 'display_name',
     photoUrl: 'photo_url'
 };
+const AUTH_BASE_URL = 'https://api.altan.ai/tables';
 export function AuthProvider({ children, storageKey = "auth_user", onAuthStateChange, authenticationOptions = {
     persistSession: true,
     redirectUrl: "/login",
-}, fieldMapping = {}, }) {
+}, fieldMapping = {}, tableId, }) {
     const mapping = Object.assign(Object.assign({}, defaultMapping), fieldMapping);
     const [user, setUser] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    // Use the database hook to interact with the users table
-    const { records: users, addRecord, modifyRecord, refresh, } = useDatabase("users", {
-        limit: 1, // We typically only need to fetch one user at a time
-    });
     // Initialize auth state from storage
     useEffect(() => {
         if (authenticationOptions.persistSession) {
@@ -41,29 +36,29 @@ export function AuthProvider({ children, storageKey = "auth_user", onAuthStateCh
         try {
             setIsLoading(true);
             setError(null);
-            // Find user by email
-            yield refresh({
-                filters: [{ field: mapping.email, operator: "eq", value: email }],
-                limit: 1,
+            // Use the auth endpoint directly
+            const formData = new URLSearchParams();
+            formData.append('username', email); // OAuth2 expects 'username'
+            formData.append('password', password);
+            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
+                method: 'POST',
+                credentials: 'include', // Important for cookies
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData,
             });
-            const foundUser = users[0];
-            if (!foundUser) {
-                throw new Error("User not found");
+            if (!response.ok) {
+                throw new Error('Invalid credentials');
             }
-            // Verify password
-            const isValid = yield comparePasswords(password, foundUser.fields[mapping.password]);
-            if (!isValid) {
-                throw new Error("Invalid credentials");
+            // Get user info
+            const userResponse = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
+                credentials: 'include',
+            });
+            if (!userResponse.ok) {
+                throw new Error('Failed to get user info');
             }
-            // Create user object without sensitive data
-            const authUser = {
-                id: foundUser.id,
-                email: foundUser.fields[mapping.email],
-                emailVerified: Boolean(foundUser.fields[mapping.emailVerified]),
-                displayName: foundUser.fields[mapping.displayName],
-                photoUrl: foundUser.fields[mapping.photoUrl],
-            };
-            // Store user if persistence is enabled
+            const authUser = yield userResponse.json();
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
             }
@@ -76,29 +71,28 @@ export function AuthProvider({ children, storageKey = "auth_user", onAuthStateCh
         finally {
             setIsLoading(false);
         }
-    }), [users, refresh, storageKey, authenticationOptions.persistSession]);
+    }), [tableId, storageKey, authenticationOptions.persistSession]);
     const register = useCallback((_a) => __awaiter(this, [_a], void 0, function* ({ email, password, display_name }) {
         try {
             setIsLoading(true);
             setError(null);
-            // Check if user already exists
-            yield refresh({
-                filters: [{ field: mapping.email, operator: "eq", value: email }],
-                limit: 1,
+            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/register`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    display_name,
+                }),
             });
-            if (users.length > 0) {
-                throw new Error("User already exists");
+            if (!response.ok) {
+                const error = yield response.json();
+                throw new Error(error.detail || 'Registration failed');
             }
-            // Hash password
-            const hashedPassword = yield hashPassword(password);
-            // Create new user
-            const newUser = yield addRecord({
-                [mapping.email]: email,
-                [mapping.password]: hashedPassword,
-                [mapping.displayName]: display_name,
-                [mapping.emailVerified]: false,
-            });
-            // Log in the new user
+            // Login after successful registration
             yield login({ email, password });
         }
         catch (err) {
@@ -108,13 +102,50 @@ export function AuthProvider({ children, storageKey = "auth_user", onAuthStateCh
         finally {
             setIsLoading(false);
         }
-    }), [users, refresh, addRecord, login, mapping]);
+    }), [tableId, login]);
     const logout = useCallback(() => __awaiter(this, void 0, void 0, function* () {
-        if (authenticationOptions.persistSession) {
-            localStorage.removeItem(storageKey);
+        try {
+            yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
         }
-        setUser(null);
-    }), [storageKey, authenticationOptions.persistSession]);
+        finally {
+            if (authenticationOptions.persistSession) {
+                localStorage.removeItem(storageKey);
+            }
+            setUser(null);
+        }
+    }), [tableId, storageKey, authenticationOptions.persistSession]);
+    // Check auth status on mount
+    useEffect(() => {
+        const checkAuth = () => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
+                    credentials: 'include',
+                });
+                if (response.ok) {
+                    const authUser = yield response.json();
+                    setUser(authUser);
+                    if (authenticationOptions.persistSession) {
+                        localStorage.setItem(storageKey, JSON.stringify(authUser));
+                    }
+                }
+                else {
+                    setUser(null);
+                    localStorage.removeItem(storageKey);
+                }
+            }
+            catch (error) {
+                setUser(null);
+                localStorage.removeItem(storageKey);
+            }
+            finally {
+                setIsLoading(false);
+            }
+        });
+        checkAuth();
+    }, [tableId, storageKey, authenticationOptions.persistSession]);
     const resetPassword = useCallback((email) => __awaiter(this, void 0, void 0, function* () {
         // Implement password reset logic here
         throw new Error("Not implemented");
@@ -126,15 +157,34 @@ export function AuthProvider({ children, storageKey = "auth_user", onAuthStateCh
         try {
             setIsLoading(true);
             setError(null);
-            yield modifyRecord(user.id, updates);
-            // Update local user state
-            setUser((prev) => (prev ? Object.assign(Object.assign({}, prev), updates) : null));
-            // Update stored user if persistence is enabled
+            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/update`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    display_name: updates.displayName,
+                    photo_url: updates.photoUrl,
+                    email: updates.email,
+                }),
+            });
+            if (!response.ok) {
+                const error = yield response.json();
+                throw new Error(error.detail || 'Profile update failed');
+            }
+            const updatedUser = yield response.json();
+            // Convert snake_case to camelCase for frontend
+            const authUser = {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                emailVerified: updatedUser.email_verified,
+                displayName: updatedUser.display_name,
+                photoUrl: updatedUser.photo_url,
+            };
+            setUser(authUser);
             if (authenticationOptions.persistSession) {
-                const storedUser = localStorage.getItem(storageKey);
-                if (storedUser) {
-                    localStorage.setItem(storageKey, JSON.stringify(Object.assign(Object.assign({}, JSON.parse(storedUser)), updates)));
-                }
+                localStorage.setItem(storageKey, JSON.stringify(authUser));
             }
         }
         catch (err) {
@@ -144,7 +194,7 @@ export function AuthProvider({ children, storageKey = "auth_user", onAuthStateCh
         finally {
             setIsLoading(false);
         }
-    }), [user, modifyRecord, storageKey, authenticationOptions.persistSession]);
+    }), [user, tableId, storageKey, authenticationOptions.persistSession]);
     const value = {
         user,
         isLoading,

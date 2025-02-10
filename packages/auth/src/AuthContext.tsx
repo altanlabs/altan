@@ -6,8 +6,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { useDatabase } from "@altanlabs/database";
-import { hashPassword, comparePasswords } from "./crypto";
 import { FieldMapping } from "./types";
 
 export interface AuthUser {
@@ -43,6 +41,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;
+  tableId: string;
   storageKey?: string;
   onAuthStateChange?: (user: AuthUser | null) => void;
   authenticationOptions?: {
@@ -60,6 +59,8 @@ const defaultMapping: Required<FieldMapping> = {
   photoUrl: 'photo_url'
 };
 
+const AUTH_BASE_URL = 'https://api.altan.ai/tables';
+
 export function AuthProvider({
   children,
   storageKey = "auth_user",
@@ -69,22 +70,13 @@ export function AuthProvider({
     redirectUrl: "/login",
   },
   fieldMapping = {},
-}: AuthProviderProps) {
+  tableId,
+}: AuthProviderProps & { tableId: string }) {
   const mapping = { ...defaultMapping, ...fieldMapping };
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Use the database hook to interact with the users table
-  const {
-    records: users,
-    addRecord,
-    modifyRecord,
-    refresh,
-  } = useDatabase("users", {
-    limit: 1, // We typically only need to fetch one user at a time
-  });
 
   // Initialize auth state from storage
   useEffect(() => {
@@ -108,36 +100,35 @@ export function AuthProvider({
         setIsLoading(true);
         setError(null);
 
-        // Find user by email
-        await refresh({
-          filters: [{ field: mapping.email, operator: "eq", value: email }],
-          limit: 1,
+        // Use the auth endpoint directly
+        const formData = new URLSearchParams();
+        formData.append('username', email); // OAuth2 expects 'username'
+        formData.append('password', password);
+
+        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
+          method: 'POST',
+          credentials: 'include', // Important for cookies
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData,
         });
 
-        const foundUser = users[0];
-        if (!foundUser) {
-          throw new Error("User not found");
+        if (!response.ok) {
+          throw new Error('Invalid credentials');
         }
 
-        // Verify password
-        const isValid = await comparePasswords(
-          password,
-          foundUser.fields[mapping.password] as string
-        );
-        if (!isValid) {
-          throw new Error("Invalid credentials");
+        // Get user info
+        const userResponse = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
+          credentials: 'include',
+        });
+
+        if (!userResponse.ok) {
+          throw new Error('Failed to get user info');
         }
 
-        // Create user object without sensitive data
-        const authUser: AuthUser = {
-          id: foundUser.id,
-          email: foundUser.fields[mapping.email] as string,
-          emailVerified: Boolean(foundUser.fields[mapping.emailVerified]),
-          displayName: foundUser.fields[mapping.displayName] as string | undefined,
-          photoUrl: foundUser.fields[mapping.photoUrl] as string | undefined,
-        };
-
-        // Store user if persistence is enabled
+        const authUser = await userResponse.json();
+        
         if (authenticationOptions.persistSession) {
           localStorage.setItem(storageKey, JSON.stringify(authUser));
         }
@@ -150,7 +141,7 @@ export function AuthProvider({
         setIsLoading(false);
       }
     },
-    [users, refresh, storageKey, authenticationOptions.persistSession]
+    [tableId, storageKey, authenticationOptions.persistSession]
   );
 
   const register = useCallback(
@@ -159,28 +150,25 @@ export function AuthProvider({
         setIsLoading(true);
         setError(null);
 
-        // Check if user already exists
-        await refresh({
-          filters: [{ field: mapping.email, operator: "eq", value: email }],
-          limit: 1,
+        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/register`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            display_name,
+          }),
         });
 
-        if (users.length > 0) {
-          throw new Error("User already exists");
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Registration failed');
         }
 
-        // Hash password
-        const hashedPassword = await hashPassword(password);
-
-        // Create new user
-        const newUser = await addRecord({
-          [mapping.email]: email,
-          [mapping.password]: hashedPassword,
-          [mapping.displayName]: display_name,
-          [mapping.emailVerified]: false,
-        });
-
-        // Log in the new user
+        // Login after successful registration
         await login({ email, password });
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Registration failed"));
@@ -189,15 +177,51 @@ export function AuthProvider({
         setIsLoading(false);
       }
     },
-    [users, refresh, addRecord, login, mapping]
+    [tableId, login]
   );
 
   const logout = useCallback(async () => {
-    if (authenticationOptions.persistSession) {
-      localStorage.removeItem(storageKey);
+    try {
+      await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      if (authenticationOptions.persistSession) {
+        localStorage.removeItem(storageKey);
+      }
+      setUser(null);
     }
-    setUser(null);
-  }, [storageKey, authenticationOptions.persistSession]);
+  }, [tableId, storageKey, authenticationOptions.persistSession]);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const authUser = await response.json();
+          setUser(authUser);
+          if (authenticationOptions.persistSession) {
+            localStorage.setItem(storageKey, JSON.stringify(authUser));
+          }
+        } else {
+          setUser(null);
+          localStorage.removeItem(storageKey);
+        }
+      } catch (error) {
+        setUser(null);
+        localStorage.removeItem(storageKey);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [tableId, storageKey, authenticationOptions.persistSession]);
 
   const resetPassword = useCallback(async (email: string) => {
     // Implement password reset logic here
@@ -214,31 +238,48 @@ export function AuthProvider({
         setIsLoading(true);
         setError(null);
 
-        await modifyRecord(user.id, updates);
+        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/update`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            display_name: updates.displayName,
+            photo_url: updates.photoUrl,
+            email: updates.email,
+          }),
+        });
 
-        // Update local user state
-        setUser((prev) => (prev ? { ...prev, ...updates } : null));
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Profile update failed');
+        }
 
-        // Update stored user if persistence is enabled
+        const updatedUser = await response.json();
+
+        // Convert snake_case to camelCase for frontend
+        const authUser: AuthUser = {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          emailVerified: updatedUser.email_verified,
+          displayName: updatedUser.display_name,
+          photoUrl: updatedUser.photo_url,
+        };
+
+        setUser(authUser);
+
         if (authenticationOptions.persistSession) {
-          const storedUser = localStorage.getItem(storageKey);
-          if (storedUser) {
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify({ ...JSON.parse(storedUser), ...updates })
-            );
-          }
+          localStorage.setItem(storageKey, JSON.stringify(authUser));
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Profile update failed")
-        );
+        setError(err instanceof Error ? err : new Error("Profile update failed"));
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [user, modifyRecord, storageKey, authenticationOptions.persistSession]
+    [user, tableId, storageKey, authenticationOptions.persistSession]
   );
 
   const value: AuthContextValue = {
