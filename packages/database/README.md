@@ -39,18 +39,11 @@ function TodoList() {
     records,          // Array of records from the table
     isLoading,        // Loading state
     error,           // Error state
-    addRecord,       // Create new record
-    modifyRecord,    // Update record
-    removeRecord,    // Delete record
-    refresh         // Refresh data with new query
-  } = useDatabase("todos", {
-    // Optional initial query
-    filters: [
-      { field: "completed", operator: "eq", value: false }
-    ],
-    sort: [{ field: "created_time", direction: "desc" }],
-    limit: 20
-  });
+    addRecord,       // Create new record (auto-updates Redux)
+    modifyRecord,    // Update record (auto-updates Redux)
+    removeRecord,    // Delete record (auto-updates Redux)
+    refresh         // Manual refresh (rarely needed)
+  } = useDatabase("todos");
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -83,6 +76,33 @@ function TodoList() {
   );
 }
 ```
+
+## Important Notes
+
+### State Management
+
+- The library automatically manages the Redux state. When you perform operations like `addRecord`, `modifyRecord`, or `removeRecord`, the Redux store is automatically updated without requiring a manual refresh.
+- Only use `refresh()` when you explicitly need to re-fetch data from the server (e.g., when you want to sync with other users' changes).
+
+### Record IDs and Relationships
+
+When working with records and relationships:
+
+- Record IDs are integers
+- Single relationships should be named with `_id` suffix:
+  ```typescript
+  addRecord({ 
+    title: "Task",
+    user_id: 3  // Single relationship
+  })
+  ```
+- Multiple relationships should use the plural table name:
+  ```typescript
+  addRecord({
+    title: "Project",
+    users: [1, 2, 3]  // Multiple relationships
+  })
+  ```
 
 ## Features
 
