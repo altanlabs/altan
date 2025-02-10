@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useContext,
   ReactNode,
@@ -6,36 +6,12 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { FieldMapping } from "./types";
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  emailVerified: boolean;
-  displayName?: string;
-  photoUrl?: string;
-}
-
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterCredentials extends LoginCredentials {
-  display_name?: string;
-}
-
-interface AuthContextValue {
-  user: AuthUser | null;
-  isLoading: boolean;
-  error: Error | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
-  isAuthenticated: boolean;
-}
+import type {
+  AuthUser,
+  LoginCredentials,
+  RegisterCredentials,
+  AuthContextValue,
+} from "./types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -48,35 +24,70 @@ interface AuthProviderProps {
     persistSession?: boolean;
     redirectUrl?: string;
   };
-  fieldMapping?: FieldMapping;
 }
-
-const defaultMapping: Required<FieldMapping> = {
-  email: 'email',
-  password: 'password',
-  emailVerified: 'email_verified',
-  displayName: 'display_name',
-  photoUrl: 'photo_url'
-};
 
 const AUTH_BASE_URL = 'https://api.altan.ai/tables';
 
+// Add refresh token interval constant
+const REFRESH_TOKEN_INTERVAL = 25 * 60 * 1000; // 25 minutes (before 30 min expiry)
+
 export function AuthProvider({
   children,
+  tableId,
   storageKey = "auth_user",
   onAuthStateChange,
   authenticationOptions = {
     persistSession: true,
     redirectUrl: "/login",
   },
-  fieldMapping = {},
-  tableId,
-}: AuthProviderProps & { tableId: string }) {
-  const mapping = { ...defaultMapping, ...fieldMapping };
-
+}: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Define logout first since other functions depend on it
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      if (authenticationOptions.persistSession) {
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}_token`);
+      }
+      setUser(null);
+    }
+  }, [tableId, storageKey, authenticationOptions.persistSession]);
+
+  // Now we can use logout in refreshToken
+  const refreshToken = useCallback(async () => {
+    try {
+      const token = localStorage.getItem(`${storageKey}_token`);
+      if (!token) return;
+
+      const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const { access_token } = await response.json();
+        if (authenticationOptions.persistSession) {
+          localStorage.setItem(`${storageKey}_token`, access_token);
+        }
+      } else {
+        await logout();
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      await logout();
+    }
+  }, [tableId, storageKey, authenticationOptions.persistSession, logout]);
 
   // Initialize auth state from storage
   useEffect(() => {
@@ -94,43 +105,69 @@ export function AuthProvider({
     onAuthStateChange?.(user);
   }, [user, onAuthStateChange]);
 
+  // Add refresh token interval
+  useEffect(() => {
+    if (!user) return;
+
+    // Initial refresh after 25 minutes
+    const refreshInterval = setInterval(refreshToken, REFRESH_TOKEN_INTERVAL);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [user, refreshToken]);
+
+  // Update login to start refresh cycle
   const login = useCallback(
     async ({ email, password }: LoginCredentials) => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Use the auth endpoint directly
         const formData = new URLSearchParams();
-        formData.append('username', email); // OAuth2 expects 'username'
+        formData.append('username', email);
         formData.append('password', password);
 
-        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
+        const loginResponse = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
           method: 'POST',
-          credentials: 'include', // Important for cookies
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: formData,
         });
 
-        if (!response.ok) {
+        if (!loginResponse.ok) {
           throw new Error('Invalid credentials');
         }
 
-        // Get user info
+        const { access_token, token_type } = await loginResponse.json();
+
+        // Get user info with token
         const userResponse = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
           credentials: 'include',
+          headers: {
+            'Authorization': `${token_type} ${access_token}`
+          }
         });
 
         if (!userResponse.ok) {
           throw new Error('Failed to get user info');
         }
 
-        const authUser = await userResponse.json();
+        const userData = await userResponse.json();
         
+        const authUser: AuthUser = {
+          id: userData.id,
+          email: userData.email,
+          emailVerified: Boolean(userData.email_verified),
+          displayName: userData.display_name,
+          photoUrl: userData.photo_url,
+        };
+
         if (authenticationOptions.persistSession) {
           localStorage.setItem(storageKey, JSON.stringify(authUser));
+          localStorage.setItem(`${storageKey}_token`, access_token);
         }
 
         setUser(authUser);
@@ -145,7 +182,7 @@ export function AuthProvider({
   );
 
   const register = useCallback(
-    async ({ email, password, display_name }: RegisterCredentials) => {
+    async ({ email, password, displayName }: RegisterCredentials) => {
       try {
         setIsLoading(true);
         setError(null);
@@ -159,7 +196,7 @@ export function AuthProvider({
           body: JSON.stringify({
             email,
             password,
-            display_name,
+            display_name: displayName,
           }),
         });
 
@@ -180,30 +217,32 @@ export function AuthProvider({
     [tableId, login]
   );
 
-  const logout = useCallback(async () => {
-    try {
-      await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } finally {
-      if (authenticationOptions.persistSession) {
-        localStorage.removeItem(storageKey);
-      }
-      setUser(null);
-    }
-  }, [tableId, storageKey, authenticationOptions.persistSession]);
-
-  // Check auth status on mount
+  // Update checkAuth to use token
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const token = localStorage.getItem(`${storageKey}_token`);
+        if (!token) {
+          setUser(null);
+          return;
+        }
+
         const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
           credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
 
         if (response.ok) {
-          const authUser = await response.json();
+          const userData = await response.json();
+          const authUser: AuthUser = {
+            id: userData.id,
+            email: userData.email,
+            emailVerified: Boolean(userData.emailverified),
+            displayName: userData.displayname,
+            photoUrl: userData.photourl,
+          };
           setUser(authUser);
           if (authenticationOptions.persistSession) {
             localStorage.setItem(storageKey, JSON.stringify(authUser));
@@ -211,10 +250,12 @@ export function AuthProvider({
         } else {
           setUser(null);
           localStorage.removeItem(storageKey);
+          localStorage.removeItem(`${storageKey}_token`);
         }
       } catch (error) {
         setUser(null);
         localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}_token`);
       } finally {
         setIsLoading(false);
       }
@@ -262,9 +303,9 @@ export function AuthProvider({
         const authUser: AuthUser = {
           id: updatedUser.id,
           email: updatedUser.email,
-          emailVerified: updatedUser.email_verified,
-          displayName: updatedUser.display_name,
-          photoUrl: updatedUser.photo_url,
+          emailVerified: Boolean(updatedUser.emailverified),
+          displayName: updatedUser.displayname,
+          photoUrl: updatedUser.photourl,
         };
 
         setUser(authUser);

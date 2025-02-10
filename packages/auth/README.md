@@ -21,19 +21,12 @@ function App() {
 }
 ```
 
-2. Backend fields (for reference):
-```typescript
-interface DatabaseFields {
-  email: string;          // User's email address
-  password: string;       // Hashed password (handled automatically)
-  email_verified: boolean; // Email verification status
-  display_name?: string;  // Optional display name
-  photo_url?: string;     // Optional profile photo URL
-}
-```
+## Available Types
 
-3. Frontend interface (what you'll work with):
+The library exports the following TypeScript types:
+
 ```typescript
+// Main user type
 interface AuthUser {
   id: string;
   email: string;
@@ -41,50 +34,19 @@ interface AuthUser {
   displayName?: string;
   photoUrl?: string;
 }
-```
 
-### Field Mappings
-
-By default, the library handles the mapping between frontend camelCase and backend snake_case fields automatically. The default mapping is:
-
-```typescript
-const defaultMapping = {
-  email: "email",
-  password: "password",
-  emailVerified: "email_verified",
-  displayName: "display_name",
-  photoUrl: "photo_url"
-};
-```
-
-If your backend uses different field names, you can override these mappings:
-
-```tsx
-function App() {
-  return (
-    <AuthProvider
-      tableId="your-users-table-id"
-      fieldMapping={{
-        // Example: mapping to different backend fields
-        password: "password_hash",
-        emailVerified: "is_verified",
-        displayName: "username",
-        photoUrl: "avatar_url"
-      }}
-    >
-      <YourApp />
-    </AuthProvider>
-  );
+// Login credentials
+interface LoginCredentials {
+  email: string;
+  password: string;
 }
-```
 
-## Usage
+// Registration credentials
+interface RegisterCredentials extends LoginCredentials {
+  displayName?: string;
+}
 
-### Authentication Context
-
-The `useAuth` hook provides access to the following:
-
-```typescript
+// Auth context value (returned by useAuth hook)
 interface AuthContextValue {
   user: AuthUser | null;         // Current user or null if not authenticated
   isLoading: boolean;            // Loading state for auth operations
@@ -98,8 +60,31 @@ interface AuthContextValue {
 }
 ```
 
+## Usage
+
+### Authentication Context
+
+The `useAuth` hook provides access to the authentication context:
+
+```typescript
+import { useAuth, type AuthUser } from '@altanlabs/auth';
+
+function Profile() {
+  const { user, updateProfile } = useAuth();
+
+  const handleUpdateProfile = async () => {
+    await updateProfile({
+      displayName: "New Name",
+      photoUrl: "https://example.com/photo.jpg"
+    });
+  };
+}
+```
+
 ### User Registration
 ```tsx
+import { useAuth, type RegisterCredentials } from '@altanlabs/auth';
+
 function RegisterPage() {
   const { register, error, isLoading } = useAuth();
 
@@ -115,12 +100,6 @@ function RegisterPage() {
       console.error("Registration failed:", error);
     }
   };
-
-  return (
-    <button onClick={handleRegister} disabled={isLoading}>
-      Register
-    </button>
-  );
 }
 ```
 
@@ -170,7 +149,7 @@ function Profile() {
     try {
       await updateProfile({
         displayName: "New Name",
-        photoURL: "https://example.com/photo.jpg"
+        photoUrl: "https://example.com/photo.jpg"
       });
     } catch (error) {
       console.error("Profile update failed:", error);
@@ -217,13 +196,12 @@ interface AuthProviderProps {
     persistSession?: boolean;              // Enable session persistence (default: true)
     redirectUrl?: string;                  // Login page URL (default: "/login")
   };
-  fieldMapping?: FieldMapping;             // Custom field name mappings
 }
 ```
 
 ## Features
 
-- Secure cookie-based authentication
+- Secure token-based authentication
 - Email/Password authentication
 - User registration with automatic login
 - Protected routes
