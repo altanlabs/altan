@@ -82,7 +82,7 @@ export const createRecord = createAsyncThunk<
       const tableId = getTableId(thunkAPI.getState(), tableName);
       const { api } = thunkAPI.extra;
       const response = await api.post(`/table/${tableId}/record`, {
-        records: [record]
+        records: [{ fields: record }]
       });
       return { tableId, record: response.data.records[0] };
     } catch (error) {
@@ -101,7 +101,9 @@ export const updateRecord = createAsyncThunk<
     const state = thunkAPI.getState();
     const tableId = getTableId(state, tableName);
     const { api } = thunkAPI.extra as { api: AxiosInstance };
-    const response = await api.patch(`/table/${tableId}/record/${recordId}`, updates);
+    const response = await api.patch(`/table/${tableId}/record/${recordId}`, {
+      fields: updates
+    });
     return { tableId, record: response.data.record };
   }
 );

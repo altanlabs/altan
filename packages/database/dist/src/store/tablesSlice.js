@@ -124,7 +124,7 @@ exports.createRecord = (0, toolkit_1.createAsyncThunk)("tables/createRecord", fu
                 tableId = getTableId(thunkAPI.getState(), tableName);
                 api = thunkAPI.extra.api;
                 return [4 /*yield*/, api.post("/table/".concat(tableId, "/record"), {
-                        records: [record]
+                        records: [{ fields: record }]
                     })];
             case 1:
                 response = _c.sent();
@@ -145,7 +145,9 @@ exports.updateRecord = (0, toolkit_1.createAsyncThunk)("tables/updateRecord", fu
                 state = thunkAPI.getState();
                 tableId = getTableId(state, tableName);
                 api = thunkAPI.extra.api;
-                return [4 /*yield*/, api.patch("/table/".concat(tableId, "/record/").concat(recordId), updates)];
+                return [4 /*yield*/, api.patch("/table/".concat(tableId, "/record/").concat(recordId), {
+                        fields: updates
+                    })];
             case 1:
                 response = _c.sent();
                 return [2 /*return*/, { tableId: tableId, record: response.data.record }];
