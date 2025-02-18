@@ -31,6 +31,7 @@ const AUTH_BASE_URL = 'https://api.altan.ai/tables';
 // Add refresh token interval constant
 const REFRESH_TOKEN_INTERVAL = 25 * 60 * 1000; // 25 minutes (before 30 min expiry)
 
+
 export function AuthProvider({
   children,
   tableId,
@@ -163,6 +164,7 @@ export function AuthProvider({
           emailVerified: Boolean(userData.email_verified),
           displayName: userData.display_name,
           photoUrl: userData.photo_url,
+          ...userData, // Spread all additional fields from the response
         };
 
         if (authenticationOptions.persistSession) {
@@ -182,7 +184,7 @@ export function AuthProvider({
   );
 
   const register = useCallback(
-    async ({ email, password, displayName }: RegisterCredentials) => {
+    async ({ email, password, displayName, ...additionalFields }: RegisterCredentials) => {
       try {
         setIsLoading(true);
         setError(null);
@@ -197,6 +199,7 @@ export function AuthProvider({
             email,
             password,
             display_name: displayName,
+            ...additionalFields, // Include any additional registration fields
           }),
         });
 
@@ -242,6 +245,7 @@ export function AuthProvider({
             emailVerified: Boolean(userData.emailverified),
             displayName: userData.displayname,
             photoUrl: userData.photourl,
+            ...userData, // Spread all additional fields from the response
           };
           setUser(authUser);
           if (authenticationOptions.persistSession) {
@@ -289,6 +293,7 @@ export function AuthProvider({
             display_name: updates.displayName,
             photo_url: updates.photoUrl,
             email: updates.email,
+            ...updates, // Include any additional fields in the update
           }),
         });
 
@@ -306,6 +311,7 @@ export function AuthProvider({
           emailVerified: Boolean(updatedUser.emailverified),
           displayName: updatedUser.displayname,
           photoUrl: updatedUser.photourl,
+          ...updatedUser, // Spread all additional fields from the response
         };
 
         setUser(authUser);

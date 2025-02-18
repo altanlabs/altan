@@ -1,4 +1,4 @@
-import { __awaiter } from "tslib";
+import { __awaiter, __rest } from "tslib";
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useCallback, useEffect, useState, } from "react";
 const AuthContext = createContext(null);
@@ -111,13 +111,7 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
                 throw new Error('Failed to get user info');
             }
             const userData = yield userResponse.json();
-            const authUser = {
-                id: userData.id,
-                email: userData.email,
-                emailVerified: Boolean(userData.email_verified),
-                displayName: userData.display_name,
-                photoUrl: userData.photo_url,
-            };
+            const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photoUrl: userData.photo_url }, userData);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
                 localStorage.setItem(`${storageKey}_token`, access_token);
@@ -132,7 +126,8 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
             setIsLoading(false);
         }
     }), [tableId, storageKey, authenticationOptions.persistSession]);
-    const register = useCallback((_a) => __awaiter(this, [_a], void 0, function* ({ email, password, displayName }) {
+    const register = useCallback((_a) => __awaiter(this, void 0, void 0, function* () {
+        var { email, password, displayName } = _a, additionalFields = __rest(_a, ["email", "password", "displayName"]);
         try {
             setIsLoading(true);
             setError(null);
@@ -142,11 +137,8 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    display_name: displayName,
-                }),
+                body: JSON.stringify(Object.assign({ email,
+                    password, display_name: displayName }, additionalFields)),
             });
             if (!response.ok) {
                 const error = yield response.json();
@@ -180,13 +172,7 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
                 });
                 if (response.ok) {
                     const userData = yield response.json();
-                    const authUser = {
-                        id: userData.id,
-                        email: userData.email,
-                        emailVerified: Boolean(userData.emailverified),
-                        displayName: userData.displayname,
-                        photoUrl: userData.photourl,
-                    };
+                    const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.emailverified), displayName: userData.displayname, photoUrl: userData.photourl }, userData);
                     setUser(authUser);
                     if (authenticationOptions.persistSession) {
                         localStorage.setItem(storageKey, JSON.stringify(authUser));
@@ -226,11 +212,7 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    display_name: updates.displayName,
-                    photo_url: updates.photoUrl,
-                    email: updates.email,
-                }),
+                body: JSON.stringify(Object.assign({ display_name: updates.displayName, photo_url: updates.photoUrl, email: updates.email }, updates)),
             });
             if (!response.ok) {
                 const error = yield response.json();
@@ -238,13 +220,7 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
             }
             const updatedUser = yield response.json();
             // Convert snake_case to camelCase for frontend
-            const authUser = {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                emailVerified: Boolean(updatedUser.emailverified),
-                displayName: updatedUser.displayname,
-                photoUrl: updatedUser.photourl,
-            };
+            const authUser = Object.assign({ id: updatedUser.id, email: updatedUser.email, emailVerified: Boolean(updatedUser.emailverified), displayName: updatedUser.displayname, photoUrl: updatedUser.photourl }, updatedUser);
             setUser(authUser);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));

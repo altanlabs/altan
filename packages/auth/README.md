@@ -33,6 +33,7 @@ interface AuthUser {
   emailVerified: boolean;
   displayName?: string;
   photoUrl?: string;
+  [key: string]: any; // Allow any additional user fields
 }
 
 // Login credentials
@@ -44,6 +45,7 @@ interface LoginCredentials {
 // Registration credentials
 interface RegisterCredentials extends LoginCredentials {
   displayName?: string;
+  [key: string]: any; // Allow any additional registration fields
 }
 
 // Auth context value (returned by useAuth hook)
@@ -75,7 +77,8 @@ function Profile() {
   const handleUpdateProfile = async () => {
     await updateProfile({
       displayName: "New Name",
-      photoUrl: "https://example.com/photo.jpg"
+      photoUrl: "https://example.com/photo.jpg",
+      // Add any additional fields here
     });
   };
 }
@@ -93,7 +96,8 @@ function RegisterPage() {
       await register({
         email: "user@example.com",
         password: "securepassword",
-        displayName: "John Doe" // optional
+        displayName: "John Doe", // optional
+        // Add any additional fields here
       });
       // User will be automatically logged in after registration
     } catch (error) {
@@ -149,7 +153,8 @@ function Profile() {
     try {
       await updateProfile({
         displayName: "New Name",
-        photoUrl: "https://example.com/photo.jpg"
+        photoUrl: "https://example.com/photo.jpg",
+        // Add any additional fields here
       });
     } catch (error) {
       console.error("Profile update failed:", error);

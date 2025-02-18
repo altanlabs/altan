@@ -2,8 +2,9 @@ export interface AuthUser {
   id: string;
   email: string;
   emailVerified: boolean;
-  displayName?: string;
-  photoUrl?: string;
+  displayName: string;
+  photoUrl: string;
+  [key: string]: any; 
 }
 
 export interface LoginCredentials {
@@ -11,8 +12,11 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface RegisterCredentials extends LoginCredentials {
-  displayName?: string;  // Changed from display_name to match frontend convention
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  displayName: string;
+  [key: string]: any; // Allow any additional registration fields
 }
 
 export interface FieldMapping {

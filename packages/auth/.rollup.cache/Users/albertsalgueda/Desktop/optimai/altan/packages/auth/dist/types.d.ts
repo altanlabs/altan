@@ -2,15 +2,19 @@ export interface AuthUser {
     id: string;
     email: string;
     emailVerified: boolean;
-    displayName?: string;
-    photoUrl?: string;
+    displayName: string;
+    photoUrl: string;
+    [key: string]: any;
 }
 export interface LoginCredentials {
     email: string;
     password: string;
 }
-export interface RegisterCredentials extends LoginCredentials {
-    displayName?: string;
+export interface RegisterCredentials {
+    email: string;
+    password: string;
+    displayName: string;
+    [key: string]: any;
 }
 export interface FieldMapping {
     email?: string;
