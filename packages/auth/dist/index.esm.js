@@ -1514,6 +1514,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
     }, [user, refreshToken]);
     // Update login to start refresh cycle
     const login = useCallback((_a) => __awaiter(this, [_a], void 0, function* ({ email, password }) {
+        var _b, _c;
         try {
             setIsLoading(true);
             setError(null);
@@ -1535,7 +1536,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
                     'Authorization': `Bearer ${access_token}`
                 }
             });
-            const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photoUrl: userData.photo_url }, userData);
+            const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photo: userData.photo || [], photoUrl: (_c = (_b = userData.photo) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.url }, userData);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
             }
@@ -1570,6 +1571,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
     // Update checkAuth to use token
     useEffect(() => {
         const checkAuth = () => __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             try {
                 const token = localStorage.getItem(`${storageKey}_token`);
                 if (!token) {
@@ -1577,7 +1579,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
                     return;
                 }
                 const { data: userData } = yield api.get('/auth/me');
-                const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photoUrl: userData.photo_url }, userData);
+                const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photo: userData.photo || [], photoUrl: (_b = (_a = userData.photo) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url }, userData);
                 setUser(authUser);
                 if (authenticationOptions.persistSession) {
                     localStorage.setItem(storageKey, JSON.stringify(authUser));
@@ -1599,6 +1601,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         throw new Error("Not implemented");
     }), []);
     const updateProfile = useCallback((updates) => __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
         if (!user) {
             throw new Error("No user logged in");
         }
@@ -1606,10 +1609,10 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             setIsLoading(true);
             setError(null);
             // Transform only default fields to snake_case
-            const apiUpdates = Object.assign(Object.assign({}, updates), { display_name: updates.displayName, photo_url: updates.photoUrl });
+            const apiUpdates = Object.assign(Object.assign({}, updates), { display_name: updates.displayName, photo: updates.photo });
             const response = yield api.patch('/auth/update', apiUpdates);
             const updatedUser = response.data;
-            const authUser = Object.assign(Object.assign({}, updatedUser), { emailVerified: Boolean(updatedUser.email_verified), displayName: updatedUser.display_name, photoUrl: updatedUser.photo_url });
+            const authUser = Object.assign(Object.assign({}, updatedUser), { emailVerified: Boolean(updatedUser.email_verified), displayName: updatedUser.display_name, photo: updatedUser.photo || [], photoUrl: (_b = (_a = updatedUser.photo) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url });
             setUser(authUser);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));

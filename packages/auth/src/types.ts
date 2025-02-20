@@ -3,8 +3,15 @@ export interface AuthUser {
   email: string;
   emailVerified: boolean;
   displayName: string;
-  photoUrl: string;
-  [key: string]: any; 
+  photo?: Array<{
+    id?: string;
+    file_name: string;
+    mime_type: string;
+    file_content?: string;
+    url?: string;
+  }>;
+  photoUrl?: string; // Computed from first photo attachment URL
+  [key: string]: any;
 }
 
 export interface LoginCredentials {

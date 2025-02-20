@@ -144,17 +144,33 @@ function LoginPage() {
 />
 ```
 
-### User Profile Management
-```tsx
+### User Profile with Photo Upload
+
+```typescript
 function Profile() {
   const { user, updateProfile, isLoading } = useAuth();
 
   const handleUpdateProfile = async () => {
     try {
+      // Upload new photo
       await updateProfile({
         displayName: "New Name",
-        photoUrl: "https://example.com/photo.jpg",
-        // Add any additional fields here
+        photo: [{
+          file_name: "profile.jpg",
+          mime_type: "image/jpeg",
+          file_content: "base64_encoded_content..."
+        }]
+      });
+
+      // Keep existing photo and update other fields
+      await updateProfile({
+        displayName: "New Name",
+        photo: [{ id: user?.photo?.[0]?.id }]
+      });
+
+      // Remove photo
+      await updateProfile({
+        photo: []
       });
     } catch (error) {
       console.error("Profile update failed:", error);
@@ -164,15 +180,23 @@ function Profile() {
   return user ? (
     <div>
       <h2>Welcome, {user.displayName || user.email}!</h2>
-      <p>Email: {user.email}</p>
-      <p>Verified: {user.emailVerified ? "Yes" : "No"}</p>
-      <button onClick={handleUpdateProfile} disabled={isLoading}>
-        Update Profile
-      </button>
+      <img 
+        src={user.photoUrl}
+        alt={user.displayName} 
+      />
     </div>
   ) : null;
 }
 ```
+
+### Important Notes
+
+- The `photo` field is an attachment type field, compatible with the database library
+- `photoUrl` is available as a convenience getter that returns the URL of the profile photo
+- When updating the profile photo:
+  - Include `id` to keep existing photo
+  - Include `file_content` to upload new photo
+  - Send empty array `[]` to remove the photo
 
 ### Logout
 ```tsx

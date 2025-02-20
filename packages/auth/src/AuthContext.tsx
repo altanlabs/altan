@@ -139,7 +139,8 @@ export function AuthProvider({
         email: userData.email,
         emailVerified: Boolean(userData.email_verified),
         displayName: userData.display_name,
-        photoUrl: userData.photo_url,
+        photo: userData.photo || [],
+        photoUrl: userData.photo?.[0]?.url,
         ...userData,
       };
 
@@ -194,7 +195,8 @@ export function AuthProvider({
           email: userData.email,
           emailVerified: Boolean(userData.email_verified),
           displayName: userData.display_name,
-          photoUrl: userData.photo_url,
+          photo: userData.photo || [],
+          photoUrl: userData.photo?.[0]?.url,
           ...userData,
         };
         
@@ -233,7 +235,7 @@ export function AuthProvider({
         const apiUpdates = {
           ...updates,
           display_name: updates.displayName,
-          photo_url: updates.photoUrl,
+          photo: updates.photo,
         };
 
         const response = await api.patch('/auth/update', apiUpdates);
@@ -243,7 +245,8 @@ export function AuthProvider({
           ...updatedUser,
           emailVerified: Boolean(updatedUser.email_verified),
           displayName: updatedUser.display_name,
-          photoUrl: updatedUser.photo_url,
+          photo: updatedUser.photo || [],
+          photoUrl: updatedUser.photo?.[0]?.url,
         };
 
         setUser(authUser);
