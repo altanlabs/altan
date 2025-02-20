@@ -16,7 +16,7 @@ npm install @altanlabs/database
 import { DatabaseProvider } from "@altanlabs/database";
 
 const config = {
-  API_BASE_URL: "https://api.example.com",
+  API_BASE_URL: "https://api.altan.ai/galaxia/hook/a9lcf",
   SAMPLE_TABLES: {
     todos: "550e8400-e29b-41d4-a716-446655440000" // Must be UUID
   }
@@ -34,16 +34,9 @@ function App() {
 ### 2. Use the Hook
 
 ```tsx
+// Basic usage
 function TodoList() {
-  const { 
-    records,          // Array of records from the table
-    isLoading,        // Loading state
-    error,           // Error state
-    addRecord,       // Create new record (auto-updates Redux)
-    modifyRecord,    // Update record (auto-updates Redux)
-    removeRecord,    // Delete record (auto-updates Redux)
-    refresh         // Manual refresh (rarely needed)
-  } = useDatabase("todos");
+  const { records, isLoading, error } = useDatabase("todos");
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -75,6 +68,59 @@ function TodoList() {
     </div>
   );
 }
+
+// Advanced usage with initial query
+function CompletedTodoList() {
+  const { records, isLoading, error } = useDatabase("todos", {
+    // Filter for completed todos
+    filters: [
+      { field: "completed", operator: "eq", value: true }
+    ],
+    // Sort by creation date
+    sort: [
+      { field: "created_at", direction: "desc" }
+    ],
+    // Limit to 10 records per page
+    limit: 10,
+    // Select specific fields
+    fields: ["id", "text", "completed", "created_at"],
+    // Get all records (alternative: "first" or "one")
+    amount: "all"
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      {records.map(todo => (
+        <div key={todo.id}>
+          <span>{todo.text}</span>
+          <span>Created: {todo.created_at}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Using multiple filters and complex queries
+function FilteredProjectList() {
+  const { records } = useDatabase("projects", {
+    filters: [
+      { field: "status", operator: "in", value: ["active", "pending"] },
+      { field: "priority", operator: "gte", value: 2 },
+      { field: "due_date", operator: "lte", value: new Date().toISOString() }
+    ],
+    sort: [
+      { field: "priority", direction: "desc" },
+      { field: "due_date", direction: "asc" }
+    ],
+    limit: 20,
+    fields: ["id", "title", "status", "priority", "due_date"]
+  });
+
+  // ... rest of the component
+}
 ```
 
 ## Important Notes
@@ -103,6 +149,53 @@ When working with records and relationships:
     users: [1, 2, 3]  // Multiple relationships
   })
   ```
+
+### Attachments
+
+For fields of type `attachment`, you can directly upload multiple media files. The field accepts an array of media objects:
+
+```typescript
+// Upload new files
+await addRecord({
+  title: "Document",
+  attachments: [{
+    file_name: "document.pdf",
+    mime_type: "application/pdf",
+    file_content: "base64_encoded_content..."
+  }]
+});
+
+// Update attachments - keep existing and add new
+await modifyRecord(recordId, {
+  attachments: [
+    { id: "existing_media_1", ... },  // Keep existing media
+    { id: "existing_media_2", ... },  // Keep existing media
+    {                           // Add new media
+      file_name: "new.pdf",
+      mime_type: "application/pdf",
+      file_content: "base64_encoded_content..."
+    }
+  ]
+});
+
+// Remove all attachments
+await modifyRecord(recordId, {
+  attachments: []  // Empty array removes all media
+});
+```
+
+**Behavior:**
+- Media objects with an `id` field are treated as references to existing media
+- Media objects without an `id` field are treated as new media to be created
+- Any existing media not included in the update will be deleted
+- Sending an empty array (`[]`) or `null` will remove all media
+
+**Error Handling:**
+The API will return a 400 Bad Request if:
+- The media object format is invalid
+- Required fields are missing
+- The file content is not properly base64 encoded
+- Referenced media IDs don't exist
 
 ## Features
 

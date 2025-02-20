@@ -1,6 +1,7 @@
 'use strict';
 
 var require$$0 = require('react');
+var axios = require('axios');
 var reactRouterDom = require('react-router-dom');
 
 /******************************************************************************
@@ -1420,10 +1421,37 @@ if (process.env.NODE_ENV === 'production') {
 
 var jsxRuntimeExports = jsxRuntime.exports;
 
-const AuthContext = require$$0.createContext(null);
-const AUTH_BASE_URL = 'https://api.altan.ai/tables';
-// Add refresh token interval constant
+const AUTH_BASE_URL = "https://api.altan.ai/tables";
 const REFRESH_TOKEN_INTERVAL = 25 * 60 * 1000; // 25 minutes (before 30 min expiry)
+
+const createAuthenticatedApi = (tableId, storageKey = 'auth_user') => {
+    const api = axios.create({
+        baseURL: `${AUTH_BASE_URL}/table/${tableId}`,
+        withCredentials: true,
+    });
+    // Add request interceptor to inject the auth token
+    api.interceptors.request.use((config) => {
+        // Always try localStorage first
+        const token = localStorage.getItem(`${storageKey}_token`);
+        if (token) {
+            config.headers.set('Authorization', `Bearer ${token}`);
+        }
+        return config;
+    });
+    // Add response interceptor to handle errors
+    api.interceptors.response.use((response) => response, (error) => {
+        var _a;
+        if (((_a = error.response) === null || _a === void 0 ? void 0 : _a.status) === 401) {
+            localStorage.removeItem(storageKey);
+            localStorage.removeItem(`${storageKey}_token`);
+        }
+        return Promise.reject(error);
+    });
+    return api;
+};
+
+const AuthContext = require$$0.createContext(null);
+// Add refresh token interval constant
 function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthStateChange, authenticationOptions = {
     persistSession: true,
     redirectUrl: "/login",
@@ -1431,13 +1459,12 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
     const [user, setUser] = require$$0.useState(null);
     const [error, setError] = require$$0.useState(null);
     const [isLoading, setIsLoading] = require$$0.useState(true);
+    // Create the API instance first
+    const api = require$$0.useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
     // Define logout first since other functions depend on it
     const logout = require$$0.useCallback(() => __awaiter(this, void 0, void 0, function* () {
         try {
-            yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-            });
+            yield api.post('/auth/logout');
         }
         finally {
             if (authenticationOptions.persistSession) {
@@ -1446,35 +1473,23 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             }
             setUser(null);
         }
-    }), [tableId, storageKey, authenticationOptions.persistSession]);
+    }), [api, storageKey, authenticationOptions.persistSession]);
     // Now we can use logout in refreshToken
     const refreshToken = require$$0.useCallback(() => __awaiter(this, void 0, void 0, function* () {
         try {
             const token = localStorage.getItem(`${storageKey}_token`);
             if (!token)
                 return;
-            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-            if (response.ok) {
-                const { access_token } = yield response.json();
-                if (authenticationOptions.persistSession) {
-                    localStorage.setItem(`${storageKey}_token`, access_token);
-                }
-            }
-            else {
-                yield logout();
+            const { data: { access_token } } = yield api.post('/auth/refresh');
+            if (authenticationOptions.persistSession) {
+                localStorage.setItem(`${storageKey}_token`, access_token);
             }
         }
         catch (error) {
             console.error('Token refresh failed:', error);
             yield logout();
         }
-    }), [tableId, storageKey, authenticationOptions.persistSession, logout]);
+    }), [api, storageKey, authenticationOptions.persistSession, logout]);
     // Initialize auth state from storage
     require$$0.useEffect(() => {
         if (authenticationOptions.persistSession) {
@@ -1507,33 +1522,24 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             const formData = new URLSearchParams();
             formData.append('username', email);
             formData.append('password', password);
-            const loginResponse = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
-                method: 'POST',
-                credentials: 'include',
+            const { data: { access_token } } = yield api.post('/auth/login', formData, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: formData,
             });
-            if (!loginResponse.ok) {
-                throw new Error('Invalid credentials');
+            // Store token immediately after login
+            if (authenticationOptions.persistSession && access_token) {
+                localStorage.setItem(`${storageKey}_token`, access_token);
             }
-            const { access_token, token_type } = yield loginResponse.json();
-            // Get user info with token
-            const userResponse = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
-                credentials: 'include',
+            // Now get user data with the new token
+            const { data: userData } = yield api.get('/auth/me', {
                 headers: {
-                    'Authorization': `${token_type} ${access_token}`
+                    'Authorization': `Bearer ${access_token}`
                 }
             });
-            if (!userResponse.ok) {
-                throw new Error('Failed to get user info');
-            }
-            const userData = yield userResponse.json();
             const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photoUrl: userData.photo_url }, userData);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
-                localStorage.setItem(`${storageKey}_token`, access_token);
             }
             setUser(authUser);
         }
@@ -1544,25 +1550,14 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         finally {
             setIsLoading(false);
         }
-    }), [tableId, storageKey, authenticationOptions.persistSession]);
+    }), [api, storageKey, authenticationOptions.persistSession]);
     const register = require$$0.useCallback((_a) => __awaiter(this, void 0, void 0, function* () {
         var { email, password, displayName } = _a, additionalFields = __rest(_a, ["email", "password", "displayName"]);
         try {
             setIsLoading(true);
             setError(null);
-            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/register`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(Object.assign({ email,
-                    password, display_name: displayName }, additionalFields)),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.detail || 'Registration failed');
-            }
+            yield api.post("/auth/register", Object.assign(Object.assign({}, additionalFields), { email,
+                password, display_name: displayName }));
             // Login after successful registration
             yield login({ email, password });
         }
@@ -1573,7 +1568,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         finally {
             setIsLoading(false);
         }
-    }), [tableId, login]);
+    }), [api, login]);
     // Update checkAuth to use token
     require$$0.useEffect(() => {
         const checkAuth = () => __awaiter(this, void 0, void 0, function* () {
@@ -1583,24 +1578,11 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
                     setUser(null);
                     return;
                 }
-                const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
-                    credentials: 'include',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (response.ok) {
-                    const userData = yield response.json();
-                    const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.emailverified), displayName: userData.displayname, photoUrl: userData.photourl }, userData);
-                    setUser(authUser);
-                    if (authenticationOptions.persistSession) {
-                        localStorage.setItem(storageKey, JSON.stringify(authUser));
-                    }
-                }
-                else {
-                    setUser(null);
-                    localStorage.removeItem(storageKey);
-                    localStorage.removeItem(`${storageKey}_token`);
+                const { data: userData } = yield api.get('/auth/me');
+                const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photoUrl: userData.photo_url }, userData);
+                setUser(authUser);
+                if (authenticationOptions.persistSession) {
+                    localStorage.setItem(storageKey, JSON.stringify(authUser));
                 }
             }
             catch (error) {
@@ -1613,7 +1595,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             }
         });
         checkAuth();
-    }, [tableId, storageKey, authenticationOptions.persistSession]);
+    }, [api, storageKey, authenticationOptions.persistSession]);
     const resetPassword = require$$0.useCallback((email) => __awaiter(this, void 0, void 0, function* () {
         // Implement password reset logic here
         throw new Error("Not implemented");
@@ -1625,21 +1607,11 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         try {
             setIsLoading(true);
             setError(null);
-            const response = yield fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/update`, {
-                method: 'PATCH',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(Object.assign({ display_name: updates.displayName, photo_url: updates.photoUrl, email: updates.email }, updates)),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.detail || 'Profile update failed');
-            }
-            const updatedUser = yield response.json();
-            // Convert snake_case to camelCase for frontend
-            const authUser = Object.assign({ id: updatedUser.id, email: updatedUser.email, emailVerified: Boolean(updatedUser.emailverified), displayName: updatedUser.displayname, photoUrl: updatedUser.photourl }, updatedUser);
+            // Transform only default fields to snake_case
+            const apiUpdates = Object.assign(Object.assign({}, updates), { display_name: updates.displayName, photo_url: updates.photoUrl });
+            const response = yield api.patch('/auth/update', apiUpdates);
+            const updatedUser = response.data;
+            const authUser = Object.assign(Object.assign({}, updatedUser), { emailVerified: Boolean(updatedUser.email_verified), displayName: updatedUser.display_name, photoUrl: updatedUser.photo_url });
             setUser(authUser);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
@@ -1652,18 +1624,19 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         finally {
             setIsLoading(false);
         }
-    }), [user, tableId, storageKey, authenticationOptions.persistSession]);
-    const value = {
+    }), [user, api, storageKey, authenticationOptions.persistSession]);
+    const value = require$$0.useMemo(() => ({
         user,
         isLoading,
         error,
+        isAuthenticated: !!user,
         login,
         logout,
         register,
         resetPassword,
         updateProfile,
-        isAuthenticated: !!user,
-    };
+        api, // Expose the api instance
+    }), [user, isLoading, error, login, logout, register, resetPassword, updateProfile, api]);
     return jsxRuntimeExports.jsx(AuthContext.Provider, { value: value, children: children });
 }
 function useAuth() {

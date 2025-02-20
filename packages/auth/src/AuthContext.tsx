@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useMemo,
 } from "react";
 import type {
   AuthUser,
@@ -12,6 +13,9 @@ import type {
   RegisterCredentials,
   AuthContextValue,
 } from "./types";
+import { createAuthenticatedApi } from './api';
+import { REFRESH_TOKEN_INTERVAL } from "./constants";
+
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -26,12 +30,8 @@ interface AuthProviderProps {
   };
 }
 
-const AUTH_BASE_URL = 'https://api.altan.ai/tables';
 
 // Add refresh token interval constant
-const REFRESH_TOKEN_INTERVAL = 25 * 60 * 1000; // 25 minutes (before 30 min expiry)
-
-
 export function AuthProvider({
   children,
   tableId,
@@ -46,13 +46,13 @@ export function AuthProvider({
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Create the API instance first
+  const api = useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
+
   // Define logout first since other functions depend on it
   const logout = useCallback(async () => {
     try {
-      await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await api.post('/auth/logout');
     } finally {
       if (authenticationOptions.persistSession) {
         localStorage.removeItem(storageKey);
@@ -60,7 +60,7 @@ export function AuthProvider({
       }
       setUser(null);
     }
-  }, [tableId, storageKey, authenticationOptions.persistSession]);
+  }, [api, storageKey, authenticationOptions.persistSession]);
 
   // Now we can use logout in refreshToken
   const refreshToken = useCallback(async () => {
@@ -68,27 +68,15 @@ export function AuthProvider({
       const token = localStorage.getItem(`${storageKey}_token`);
       if (!token) return;
 
-      const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const { access_token } = await response.json();
-        if (authenticationOptions.persistSession) {
-          localStorage.setItem(`${storageKey}_token`, access_token);
-        }
-      } else {
-        await logout();
+      const { data: { access_token } } = await api.post('/auth/refresh');
+      if (authenticationOptions.persistSession) {
+        localStorage.setItem(`${storageKey}_token`, access_token);
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
       await logout();
     }
-  }, [tableId, storageKey, authenticationOptions.persistSession, logout]);
+  }, [api, storageKey, authenticationOptions.persistSession, logout]);
 
   // Initialize auth state from storage
   useEffect(() => {
@@ -119,106 +107,76 @@ export function AuthProvider({
   }, [user, refreshToken]);
 
   // Update login to start refresh cycle
-  const login = useCallback(
-    async ({ email, password }: LoginCredentials) => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const login = useCallback(async ({ email, password }: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const formData = new URLSearchParams();
-        formData.append('username', email);
-        formData.append('password', password);
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
 
-        const loginResponse = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/login`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData,
-        });
+      const { data: { access_token } } = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
 
-        if (!loginResponse.ok) {
-          throw new Error('Invalid credentials');
-        }
-
-        const { access_token, token_type } = await loginResponse.json();
-
-        // Get user info with token
-        const userResponse = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
-          credentials: 'include',
-          headers: {
-            'Authorization': `${token_type} ${access_token}`
-          }
-        });
-
-        if (!userResponse.ok) {
-          throw new Error('Failed to get user info');
-        }
-
-        const userData = await userResponse.json();
-        
-        const authUser: AuthUser = {
-          id: userData.id,
-          email: userData.email,
-          emailVerified: Boolean(userData.email_verified),
-          displayName: userData.display_name,
-          photoUrl: userData.photo_url,
-          ...userData, // Spread all additional fields from the response
-        };
-
-        if (authenticationOptions.persistSession) {
-          localStorage.setItem(storageKey, JSON.stringify(authUser));
-          localStorage.setItem(`${storageKey}_token`, access_token);
-        }
-
-        setUser(authUser);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Login failed"));
-        throw err;
-      } finally {
-        setIsLoading(false);
+      // Store token immediately after login
+      if (authenticationOptions.persistSession && access_token) {
+        localStorage.setItem(`${storageKey}_token`, access_token);
       }
-    },
-    [tableId, storageKey, authenticationOptions.persistSession]
-  );
 
-  const register = useCallback(
-    async ({ email, password, displayName, ...additionalFields }: RegisterCredentials) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/register`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            display_name: displayName,
-            ...additionalFields, // Include any additional registration fields
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.detail || 'Registration failed');
+      // Now get user data with the new token
+      const { data: userData } = await api.get('/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
         }
+      });
+      
+      const authUser: AuthUser = {
+        id: userData.id,
+        email: userData.email,
+        emailVerified: Boolean(userData.email_verified),
+        displayName: userData.display_name,
+        photoUrl: userData.photo_url,
+        ...userData,
+      };
 
-        // Login after successful registration
-        await login({ email, password });
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Registration failed"));
-        throw err;
-      } finally {
-        setIsLoading(false);
+      if (authenticationOptions.persistSession) {
+        localStorage.setItem(storageKey, JSON.stringify(authUser));
       }
-    },
-    [tableId, login]
-  );
+
+      setUser(authUser);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Login failed"));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [api, storageKey, authenticationOptions.persistSession]);
+
+  const register = useCallback(async ({ email, password, displayName, ...additionalFields }: RegisterCredentials) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await api.post("/auth/register", {
+        ...additionalFields,
+        email,
+        password,
+        display_name: displayName,
+      });
+
+      // Login after successful registration
+      await login({ email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Registration failed"));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [api, login]);
 
   // Update checkAuth to use token
   useEffect(() => {
@@ -230,31 +188,19 @@ export function AuthProvider({
           return;
         }
 
-        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/me`, {
-          credentials: 'include',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          const authUser: AuthUser = {
-            id: userData.id,
-            email: userData.email,
-            emailVerified: Boolean(userData.emailverified),
-            displayName: userData.displayname,
-            photoUrl: userData.photourl,
-            ...userData, // Spread all additional fields from the response
-          };
-          setUser(authUser);
-          if (authenticationOptions.persistSession) {
-            localStorage.setItem(storageKey, JSON.stringify(authUser));
-          }
-        } else {
-          setUser(null);
-          localStorage.removeItem(storageKey);
-          localStorage.removeItem(`${storageKey}_token`);
+        const { data: userData } = await api.get('/auth/me');
+        const authUser: AuthUser = {
+          id: userData.id,
+          email: userData.email,
+          emailVerified: Boolean(userData.email_verified),
+          displayName: userData.display_name,
+          photoUrl: userData.photo_url,
+          ...userData,
+        };
+        
+        setUser(authUser);
+        if (authenticationOptions.persistSession) {
+          localStorage.setItem(storageKey, JSON.stringify(authUser));
         }
       } catch (error) {
         setUser(null);
@@ -266,7 +212,7 @@ export function AuthProvider({
     };
 
     checkAuth();
-  }, [tableId, storageKey, authenticationOptions.persistSession]);
+  }, [api, storageKey, authenticationOptions.persistSession]);
 
   const resetPassword = useCallback(async (email: string) => {
     // Implement password reset logic here
@@ -283,35 +229,21 @@ export function AuthProvider({
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(`${AUTH_BASE_URL}/table/${tableId}/auth/update`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            display_name: updates.displayName,
-            photo_url: updates.photoUrl,
-            email: updates.email,
-            ...updates, // Include any additional fields in the update
-          }),
-        });
+        // Transform only default fields to snake_case
+        const apiUpdates = {
+          ...updates,
+          display_name: updates.displayName,
+          photo_url: updates.photoUrl,
+        };
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.detail || 'Profile update failed');
-        }
+        const response = await api.patch('/auth/update', apiUpdates);
 
-        const updatedUser = await response.json();
-
-        // Convert snake_case to camelCase for frontend
+        const updatedUser = response.data;
         const authUser: AuthUser = {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          emailVerified: Boolean(updatedUser.emailverified),
-          displayName: updatedUser.displayname,
-          photoUrl: updatedUser.photourl,
-          ...updatedUser, // Spread all additional fields from the response
+          ...updatedUser,
+          emailVerified: Boolean(updatedUser.email_verified),
+          displayName: updatedUser.display_name,
+          photoUrl: updatedUser.photo_url,
         };
 
         setUser(authUser);
@@ -326,21 +258,24 @@ export function AuthProvider({
         setIsLoading(false);
       }
     },
-    [user, tableId, storageKey, authenticationOptions.persistSession]
+    [user, api, storageKey, authenticationOptions.persistSession]
   );
 
-  const value: AuthContextValue = {
-    user,
-    isLoading,
-    error,
-    login,
-    logout,
-    register,
-    resetPassword,
-    updateProfile,
-    isAuthenticated: !!user,
-  };
-
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      error,
+      isAuthenticated: !!user,
+      login,
+      logout,
+      register,
+      resetPassword,
+      updateProfile,
+      api, // Expose the api instance
+    }),
+    [user, isLoading, error, login, logout, register, resetPassword, updateProfile, api]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

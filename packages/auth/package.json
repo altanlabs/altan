@@ -1,6 +1,6 @@
 {
   "name": "@altanlabs/auth",
-  "version": "0.1.8",
+  "version": "0.2.11",
   "description": "React authentication library built on top of @altanlabs/database",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -22,6 +22,7 @@
     "react-router-dom": "^6.0.0"
   },
   "dependencies": {
+    "axios": "^1.7.9",
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
