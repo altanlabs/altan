@@ -10,7 +10,12 @@ npm install @altanlabs/auth
 
 ## Setup
 
-1. Configure your Users table UUID:
+1. Import the required styles in your app's entry point (e.g., App.tsx or index.tsx):
+```tsx
+import "@altanlabs/auth/dist/styles.css";
+```
+
+2. Configure your Users table UUID:
 ```tsx
 function App() {
   return (
