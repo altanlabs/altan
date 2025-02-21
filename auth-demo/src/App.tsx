@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { SignIn, SignUp, UserProfile, useAuth } from "@altanlabs/auth";
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  console.log("user", user)
+  console.log("isAuthenticated", isAuthenticated);
+
   const [showSignIn, setShowSignIn] = useState(true);
 
   if (isAuthenticated) {

@@ -14,7 +14,7 @@ import type {
   AuthContextValue,
 } from "./types";
 import { createAuthenticatedApi } from './api';
-import { REFRESH_TOKEN_INTERVAL } from "./constants";
+import { AUTH_BASE_URL, REFRESH_TOKEN_INTERVAL } from "./constants";
 
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -275,51 +275,76 @@ export function AuthProvider({
       setIsLoading(true);
       setError(null);
 
-      // Open popup window and handle authentication
       const authWindow = window.open(
-        `${api.defaults.baseURL}/auth/google/?table_id=${tableId}&redirect_url=${encodeURIComponent(window.location.origin)}`,
-        'Google Auth',
-        'width=600,height=600'
+        `https://api.altan.ai/tables/auth/google/authorize?table_id=${tableId}&redirect_url=${encodeURIComponent(
+          window.location.origin
+        )}`,
+        "Auth",
+        "width=600,height=600,scrollbars=yes"
       );
 
       const userData = await new Promise((resolve, reject) => {
-        window.addEventListener('message', function handleAuth(event) {
-          // Cleanup
-          if (authWindow) {
-            authWindow.close();
-          }
-          window.removeEventListener('message', handleAuth);
+        let authTimeout: NodeJS.Timeout;
+
+        function handleAuth(event: MessageEvent) {
+          // Verify origin
+          if (event.origin !== "https://api.altan.ai") return;
+
+          // Clear timeout first
+          if (authTimeout) clearTimeout(authTimeout);
+
+          // Remove listener
+          window.removeEventListener("message", handleAuth);
 
           const response = event.data;
           if (response.error) {
             reject(new Error(response.error));
-          } else {
+          } else if (response.success) {
             resolve(response);
+          } else {
+            reject(new Error("Invalid response format"));
           }
-        });
+        }
+
+        window.addEventListener("message", handleAuth);
+
+        authTimeout = setTimeout(() => {
+          window.removeEventListener("message", handleAuth);
+          reject(new Error("Authentication timed out"));
+        }, 120000);
       });
 
       // Handle successful authentication
       const { access_token, user: googleUser } = userData as any;
-      
+
       if (authenticationOptions.persistSession && access_token) {
         localStorage.setItem(`${storageKey}_token`, access_token);
+
+        // Set the token in the API instance
+        api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
       }
 
-      const authUser = mapUserData(googleUser);
+      // Verify the token works by making a /me call
+      const { data: verifiedUser } = await api.get(
+        `/auth/me?table_id=${tableId}`
+      );
+      const authUser = mapUserData(verifiedUser);
 
       if (authenticationOptions.persistSession) {
         localStorage.setItem(storageKey, JSON.stringify(authUser));
       }
 
       setUser(authUser);
+      return authUser;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Google authentication failed"));
+      const errorMessage =
+        err instanceof Error ? err.message : "Authentication failed";
+      setError(new Error(errorMessage));
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [api, storageKey, authenticationOptions.persistSession, tableId]);
+  }, [api, tableId, storageKey, authenticationOptions.persistSession]);
 
   const value = useMemo(
     () => ({
@@ -332,7 +357,9 @@ export function AuthProvider({
       register,
       resetPassword,
       updateProfile,
-      continueWithGoogle,
+      continueWithGoogle: async () => {
+        await continueWithGoogle();
+      },
       api,
     }),
     [user, isLoading, error, login, logout, register, resetPassword, updateProfile, continueWithGoogle, api]
