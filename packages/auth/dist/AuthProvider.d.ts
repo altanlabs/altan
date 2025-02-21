@@ -13,4 +13,4 @@ interface AuthProviderProps {
 export declare function AuthProvider({ children, tableId, storageKey, onAuthStateChange, authenticationOptions, }: AuthProviderProps): import("react/jsx-runtime").JSX.Element;
 export declare function useAuth(): AuthContextValue;
 export {};
-//# sourceMappingURL=AuthContext.d.ts.map
+//# sourceMappingURL=AuthProvider.d.ts.map

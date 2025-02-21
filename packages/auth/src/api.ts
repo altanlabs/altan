@@ -3,7 +3,7 @@ import { AUTH_BASE_URL } from './constants';
 
 export const createAuthenticatedApi = (tableId: string, storageKey: string = 'auth_user'): AxiosInstance => {
   const api = axios.create({
-    baseURL: `${AUTH_BASE_URL}/table/${tableId}`,
+    baseURL: AUTH_BASE_URL,
     withCredentials: true,
   });
 

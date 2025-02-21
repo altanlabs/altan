@@ -49,10 +49,24 @@ export function AuthProvider({
   // Create the API instance first
   const api = useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
 
+  const mapUserData = (userData: any): AuthUser => ({
+    id: String(userData.id || ""),
+    email: userData.email || "",
+    name: userData.name,
+    surname: userData.surname,
+    avatar: Array.isArray(userData.avatar) ? userData.avatar : [],
+    verified: Boolean(userData.verified),
+    ...Object.fromEntries(
+      Object.entries(userData).filter(([key]) => 
+        !["id", "email", "name", "surname", "avatar", "verified"].includes(key)
+      )
+    )
+  });
+
   // Define logout first since other functions depend on it
   const logout = useCallback(async () => {
     try {
-      await api.post('/auth/logout');
+      await api.post(`/auth/logout?table_id=${tableId}`);
     } finally {
       if (authenticationOptions.persistSession) {
         localStorage.removeItem(storageKey);
@@ -60,7 +74,7 @@ export function AuthProvider({
       }
       setUser(null);
     }
-  }, [api, storageKey, authenticationOptions.persistSession]);
+  }, [api, storageKey, authenticationOptions.persistSession, tableId]);
 
   // Now we can use logout in refreshToken
   const refreshToken = useCallback(async () => {
@@ -68,7 +82,7 @@ export function AuthProvider({
       const token = localStorage.getItem(`${storageKey}_token`);
       if (!token) return;
 
-      const { data: { access_token } } = await api.post('/auth/refresh');
+      const { data: { access_token } } = await api.post(`/auth/refresh?table_id=${tableId}`);
       if (authenticationOptions.persistSession) {
         localStorage.setItem(`${storageKey}_token`, access_token);
       }
@@ -76,7 +90,7 @@ export function AuthProvider({
       console.error('Token refresh failed:', error);
       await logout();
     }
-  }, [api, storageKey, authenticationOptions.persistSession, logout]);
+  }, [api, storageKey, authenticationOptions.persistSession, logout, tableId]);
 
   // Initialize auth state from storage
   useEffect(() => {
@@ -116,68 +130,63 @@ export function AuthProvider({
       formData.append('username', email);
       formData.append('password', password);
 
-      const { data: { access_token } } = await api.post('/auth/login', formData, {
+      const { data: { access_token } } = await api.post(`/auth/login?table_id=${tableId}`, formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
 
-      // Store token immediately after login
       if (authenticationOptions.persistSession && access_token) {
         localStorage.setItem(`${storageKey}_token`, access_token);
       }
 
-      // Now get user data with the new token
-      const { data: userData } = await api.get('/auth/me', {
+      // Add tableId to /me request
+      const { data: userData } = await api.get(`/auth/me?table_id=${tableId}`, {
         headers: {
           'Authorization': `Bearer ${access_token}`
         }
       });
       
-      const authUser: AuthUser = {
-        id: userData.id,
-        email: userData.email,
-        emailVerified: Boolean(userData.email_verified),
-        displayName: userData.display_name,
-        photo: userData.photo || [],
-        photoUrl: userData.photo?.[0]?.url,
-        ...userData,
-      };
+      const authUser = mapUserData(userData);
 
       if (authenticationOptions.persistSession) {
         localStorage.setItem(storageKey, JSON.stringify(authUser));
       }
 
       setUser(authUser);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Login failed"));
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || "Invalid email or password";
+      setError(new Error(errorMessage));
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [api, storageKey, authenticationOptions.persistSession]);
+  }, [api, storageKey, authenticationOptions.persistSession, tableId]);
 
-  const register = useCallback(async ({ email, password, displayName, ...additionalFields }: RegisterCredentials) => {
+  const register = useCallback(async ({ email, password, name, surname, ...additionalFields }: RegisterCredentials) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      await api.post("/auth/register", {
-        ...additionalFields,
+      const response = await api.post(`/auth/register?table_id=${tableId}`, {
         email,
         password,
-        display_name: displayName,
+        name,
+        surname,
+        ...additionalFields,
       });
 
-      // Login after successful registration
-      await login({ email, password });
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Registration failed"));
+      if (response.status === 200) {
+        await login({ email, password });
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || "Registration failed";
+      setError(new Error(errorMessage));
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [api, login]);
+  }, [api, login, tableId]);
 
   // Update checkAuth to use token
   useEffect(() => {
@@ -189,16 +198,8 @@ export function AuthProvider({
           return;
         }
 
-        const { data: userData } = await api.get('/auth/me');
-        const authUser: AuthUser = {
-          id: userData.id,
-          email: userData.email,
-          emailVerified: Boolean(userData.email_verified),
-          displayName: userData.display_name,
-          photo: userData.photo || [],
-          photoUrl: userData.photo?.[0]?.url,
-          ...userData,
-        };
+        const { data: userData } = await api.get(`/auth/me?table_id=${tableId}`);
+        const authUser = mapUserData(userData);
         
         setUser(authUser);
         if (authenticationOptions.persistSession) {
@@ -214,7 +215,7 @@ export function AuthProvider({
     };
 
     checkAuth();
-  }, [api, storageKey, authenticationOptions.persistSession]);
+  }, [api, storageKey, authenticationOptions.persistSession, tableId]);
 
   const resetPassword = useCallback(async (email: string) => {
     // Implement password reset logic here
@@ -231,28 +232,33 @@ export function AuthProvider({
         setIsLoading(true);
         setError(null);
 
-        // Transform only default fields to snake_case
-        const apiUpdates = {
-          ...updates,
-          display_name: updates.displayName,
-          photo: updates.photo,
-        };
+        const apiUpdates: Record<string, any> = { ...updates };
 
-        const response = await api.patch('/auth/update', apiUpdates);
+        // Special handling for avatar field
+        if ('avatar' in updates) {
+          if (updates.avatar === null) {
+            // If explicitly set to null, remove the avatar
+            apiUpdates.avatar = [];
+          } else if (typeof updates.avatar === 'string') {
+            // If it's a base64 string (from file upload), create new media object
+            apiUpdates.avatar = [{
+              file_name: 'avatar.jpg',
+              mime_type: 'image/jpeg',
+              file_content: updates.avatar
+            }];
+          } else {
+            // If it's already an array of media objects, use as is
+            apiUpdates.avatar = updates.avatar;
+          }
+        }
 
-        const updatedUser = response.data;
-        const authUser: AuthUser = {
-          ...updatedUser,
-          emailVerified: Boolean(updatedUser.email_verified),
-          displayName: updatedUser.display_name,
-          photo: updatedUser.photo || [],
-          photoUrl: updatedUser.photo?.[0]?.url,
-        };
+        const response = await api.patch(`/auth/update?table_id=${tableId}`, apiUpdates);
+        const updatedUser = mapUserData(response.data.user);
 
-        setUser(authUser);
+        setUser(updatedUser);
 
         if (authenticationOptions.persistSession) {
-          localStorage.setItem(storageKey, JSON.stringify(authUser));
+          localStorage.setItem(storageKey, JSON.stringify(updatedUser));
         }
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Profile update failed"));
@@ -261,8 +267,59 @@ export function AuthProvider({
         setIsLoading(false);
       }
     },
-    [user, api, storageKey, authenticationOptions.persistSession]
+    [user, api, storageKey, authenticationOptions.persistSession, tableId]
   );
+
+  const continueWithGoogle = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Open popup window and handle authentication
+      const authWindow = window.open(
+        `${api.defaults.baseURL}/auth/google/?table_id=${tableId}&redirect_url=${encodeURIComponent(window.location.origin)}`,
+        'Google Auth',
+        'width=600,height=600'
+      );
+
+      const userData = await new Promise((resolve, reject) => {
+        window.addEventListener('message', function handleAuth(event) {
+          // Cleanup
+          if (authWindow) {
+            authWindow.close();
+          }
+          window.removeEventListener('message', handleAuth);
+
+          const response = event.data;
+          if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      // Handle successful authentication
+      const { access_token, user: googleUser } = userData as any;
+      
+      if (authenticationOptions.persistSession && access_token) {
+        localStorage.setItem(`${storageKey}_token`, access_token);
+      }
+
+      const authUser = mapUserData(googleUser);
+
+      if (authenticationOptions.persistSession) {
+        localStorage.setItem(storageKey, JSON.stringify(authUser));
+      }
+
+      setUser(authUser);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Google authentication failed"));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [api, storageKey, authenticationOptions.persistSession, tableId]);
 
   const value = useMemo(
     () => ({
@@ -275,9 +332,10 @@ export function AuthProvider({
       register,
       resetPassword,
       updateProfile,
-      api, // Expose the api instance
+      continueWithGoogle,
+      api,
     }),
-    [user, isLoading, error, login, logout, register, resetPassword, updateProfile, api]
+    [user, isLoading, error, login, logout, register, resetPassword, updateProfile, continueWithGoogle, api]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

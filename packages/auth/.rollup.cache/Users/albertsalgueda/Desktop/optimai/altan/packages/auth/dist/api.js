@@ -2,7 +2,7 @@ import axios from 'axios';
 import { AUTH_BASE_URL } from './constants';
 export const createAuthenticatedApi = (tableId, storageKey = 'auth_user') => {
     const api = axios.create({
-        baseURL: `${AUTH_BASE_URL}/table/${tableId}`,
+        baseURL: AUTH_BASE_URL,
         withCredentials: true,
     });
     // Add request interceptor to inject the auth token

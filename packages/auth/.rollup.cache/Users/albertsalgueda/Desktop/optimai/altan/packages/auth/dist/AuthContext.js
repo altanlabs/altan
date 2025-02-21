@@ -181,6 +181,39 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
             setIsLoading(false);
         }
     }), [user, api, storageKey, authenticationOptions.persistSession]);
+    const continueWithGoogle = useCallback(() => __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d;
+        try {
+            setIsLoading(true);
+            setError(null);
+            // Start OAuth flow by redirecting to the Google auth endpoint
+            const response = yield api.get('/auth/google');
+            // If we get a redirect URL, navigate to it
+            if ((_a = response.data) === null || _a === void 0 ? void 0 : _a.redirect_url) {
+                window.location.href = response.data.redirect_url;
+                return;
+            }
+            // If we get user data (on callback), process it
+            if ((_b = response.data) === null || _b === void 0 ? void 0 : _b.access_token) {
+                const { access_token, user: userData } = response.data;
+                if (authenticationOptions.persistSession && access_token) {
+                    localStorage.setItem(`${storageKey}_token`, access_token);
+                }
+                const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photo: userData.photo || [], photoUrl: (_d = (_c = userData.photo) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.url }, userData);
+                if (authenticationOptions.persistSession) {
+                    localStorage.setItem(storageKey, JSON.stringify(authUser));
+                }
+                setUser(authUser);
+            }
+        }
+        catch (err) {
+            setError(err instanceof Error ? err : new Error("Google authentication failed"));
+            throw err;
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }), [api, storageKey, authenticationOptions.persistSession]);
     const value = useMemo(() => ({
         user,
         isLoading,
@@ -191,8 +224,9 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
         register,
         resetPassword,
         updateProfile,
-        api, // Expose the api instance
-    }), [user, isLoading, error, login, logout, register, resetPassword, updateProfile, api]);
+        continueWithGoogle,
+        api,
+    }), [user, isLoading, error, login, logout, register, resetPassword, updateProfile, continueWithGoogle, api]);
     return _jsx(AuthContext.Provider, { value: value, children: children });
 }
 export function useAuth() {

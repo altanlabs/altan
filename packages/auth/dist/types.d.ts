@@ -1,26 +1,27 @@
+export interface MediaObject {
+    id?: string;
+    file_name: string;
+    mime_type: string;
+    size?: number;
+    url?: string;
+    file_content?: string;
+}
 export interface AuthUser {
     id: string;
     email: string;
-    emailVerified: boolean;
-    displayName: string;
-    photo?: Array<{
-        id?: string;
-        file_name: string;
-        mime_type: string;
-        file_content?: string;
-        url?: string;
-    }>;
-    photoUrl?: string;
+    name?: string;
+    surname?: string;
+    avatar?: MediaObject[];
+    verified: boolean;
     [key: string]: any;
 }
 export interface LoginCredentials {
     email: string;
     password: string;
 }
-export interface RegisterCredentials {
-    email: string;
-    password: string;
-    displayName: string;
+export interface RegisterCredentials extends LoginCredentials {
+    name?: string;
+    surname?: string;
     [key: string]: any;
 }
 export interface FieldMapping {
@@ -40,5 +41,13 @@ export interface AuthContextValue {
     resetPassword: (email: string) => Promise<void>;
     updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
     isAuthenticated: boolean;
+    continueWithGoogle: () => Promise<void>;
+}
+export interface SignInInitialValues {
+    emailAddress?: string;
+    password?: string;
+}
+export interface AuthAppearance {
+    theme?: 'light' | 'dark';
 }
 //# sourceMappingURL=types.d.ts.map

@@ -1,6 +1,6 @@
 import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./AuthProvider";
 export function ProtectedRoute({ children, redirectTo = "/login", }) {
     const { isAuthenticated, isLoading } = useAuth();
     if (isLoading) {

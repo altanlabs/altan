@@ -1,4 +1,4 @@
-import require$$0, { createContext, useState, useMemo, useCallback, useEffect, useContext } from 'react';
+import require$$0, { createContext, useState, useMemo, useCallback, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
 
@@ -1424,7 +1424,7 @@ const REFRESH_TOKEN_INTERVAL = 25 * 60 * 1000; // 25 minutes (before 30 min expi
 
 const createAuthenticatedApi = (tableId, storageKey = 'auth_user') => {
     const api = axios.create({
-        baseURL: `${AUTH_BASE_URL}/table/${tableId}`,
+        baseURL: AUTH_BASE_URL,
         withCredentials: true,
     });
     // Add request interceptor to inject the auth token
@@ -1459,10 +1459,11 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
     const [isLoading, setIsLoading] = useState(true);
     // Create the API instance first
     const api = useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
+    const mapUserData = (userData) => (Object.assign({ id: String(userData.id || ""), email: userData.email || "", name: userData.name, surname: userData.surname, avatar: Array.isArray(userData.avatar) ? userData.avatar : [], verified: Boolean(userData.verified) }, Object.fromEntries(Object.entries(userData).filter(([key]) => !["id", "email", "name", "surname", "avatar", "verified"].includes(key)))));
     // Define logout first since other functions depend on it
     const logout = useCallback(() => __awaiter(this, void 0, void 0, function* () {
         try {
-            yield api.post('/auth/logout');
+            yield api.post(`/auth/logout?table_id=${tableId}`);
         }
         finally {
             if (authenticationOptions.persistSession) {
@@ -1471,14 +1472,14 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             }
             setUser(null);
         }
-    }), [api, storageKey, authenticationOptions.persistSession]);
+    }), [api, storageKey, authenticationOptions.persistSession, tableId]);
     // Now we can use logout in refreshToken
     const refreshToken = useCallback(() => __awaiter(this, void 0, void 0, function* () {
         try {
             const token = localStorage.getItem(`${storageKey}_token`);
             if (!token)
                 return;
-            const { data: { access_token } } = yield api.post('/auth/refresh');
+            const { data: { access_token } } = yield api.post(`/auth/refresh?table_id=${tableId}`);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(`${storageKey}_token`, access_token);
             }
@@ -1487,7 +1488,7 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             console.error('Token refresh failed:', error);
             yield logout();
         }
-    }), [api, storageKey, authenticationOptions.persistSession, logout]);
+    }), [api, storageKey, authenticationOptions.persistSession, logout, tableId]);
     // Initialize auth state from storage
     useEffect(() => {
         if (authenticationOptions.persistSession) {
@@ -1521,65 +1522,69 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             const formData = new URLSearchParams();
             formData.append('username', email);
             formData.append('password', password);
-            const { data: { access_token } } = yield api.post('/auth/login', formData, {
+            const { data: { access_token } } = yield api.post(`/auth/login?table_id=${tableId}`, formData, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
             });
-            // Store token immediately after login
             if (authenticationOptions.persistSession && access_token) {
                 localStorage.setItem(`${storageKey}_token`, access_token);
             }
-            // Now get user data with the new token
-            const { data: userData } = yield api.get('/auth/me', {
+            // Add tableId to /me request
+            const { data: userData } = yield api.get(`/auth/me?table_id=${tableId}`, {
                 headers: {
                     'Authorization': `Bearer ${access_token}`
                 }
             });
-            const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photo: userData.photo || [], photoUrl: (_c = (_b = userData.photo) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.url }, userData);
+            const authUser = mapUserData(userData);
             if (authenticationOptions.persistSession) {
                 localStorage.setItem(storageKey, JSON.stringify(authUser));
             }
             setUser(authUser);
         }
         catch (err) {
-            setError(err instanceof Error ? err : new Error("Login failed"));
+            const errorMessage = ((_c = (_b = err.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.detail) || "Invalid email or password";
+            setError(new Error(errorMessage));
             throw err;
         }
         finally {
             setIsLoading(false);
         }
-    }), [api, storageKey, authenticationOptions.persistSession]);
+    }), [api, storageKey, authenticationOptions.persistSession, tableId]);
     const register = useCallback((_a) => __awaiter(this, void 0, void 0, function* () {
-        var { email, password, displayName } = _a, additionalFields = __rest(_a, ["email", "password", "displayName"]);
+        var _b, _c;
+        var { email, password, name, surname } = _a, additionalFields = __rest(_a, ["email", "password", "name", "surname"]);
         try {
             setIsLoading(true);
             setError(null);
-            yield api.post("/auth/register", Object.assign(Object.assign({}, additionalFields), { email,
-                password, display_name: displayName }));
-            // Login after successful registration
-            yield login({ email, password });
+            const response = yield api.post(`/auth/register?table_id=${tableId}`, Object.assign({ email,
+                password,
+                name,
+                surname }, additionalFields));
+            if (response.status === 200) {
+                yield login({ email, password });
+            }
         }
         catch (err) {
-            setError(err instanceof Error ? err : new Error("Registration failed"));
+            const errorMessage = ((_c = (_b = err.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.detail) || "Registration failed";
+            setError(new Error(errorMessage));
             throw err;
         }
         finally {
             setIsLoading(false);
         }
-    }), [api, login]);
+    }), [api, login, tableId]);
     // Update checkAuth to use token
     useEffect(() => {
         const checkAuth = () => __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
             try {
                 const token = localStorage.getItem(`${storageKey}_token`);
                 if (!token) {
                     setUser(null);
                     return;
                 }
-                const { data: userData } = yield api.get('/auth/me');
-                const authUser = Object.assign({ id: userData.id, email: userData.email, emailVerified: Boolean(userData.email_verified), displayName: userData.display_name, photo: userData.photo || [], photoUrl: (_b = (_a = userData.photo) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url }, userData);
+                const { data: userData } = yield api.get(`/auth/me?table_id=${tableId}`);
+                const authUser = mapUserData(userData);
                 setUser(authUser);
                 if (authenticationOptions.persistSession) {
                     localStorage.setItem(storageKey, JSON.stringify(authUser));
@@ -1595,27 +1600,43 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
             }
         });
         checkAuth();
-    }, [api, storageKey, authenticationOptions.persistSession]);
+    }, [api, storageKey, authenticationOptions.persistSession, tableId]);
     const resetPassword = useCallback((email) => __awaiter(this, void 0, void 0, function* () {
         // Implement password reset logic here
         throw new Error("Not implemented");
     }), []);
     const updateProfile = useCallback((updates) => __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
         if (!user) {
             throw new Error("No user logged in");
         }
         try {
             setIsLoading(true);
             setError(null);
-            // Transform only default fields to snake_case
-            const apiUpdates = Object.assign(Object.assign({}, updates), { display_name: updates.displayName, photo: updates.photo });
-            const response = yield api.patch('/auth/update', apiUpdates);
-            const updatedUser = response.data;
-            const authUser = Object.assign(Object.assign({}, updatedUser), { emailVerified: Boolean(updatedUser.email_verified), displayName: updatedUser.display_name, photo: updatedUser.photo || [], photoUrl: (_b = (_a = updatedUser.photo) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.url });
-            setUser(authUser);
+            const apiUpdates = Object.assign({}, updates);
+            // Special handling for avatar field
+            if ('avatar' in updates) {
+                if (updates.avatar === null) {
+                    // If explicitly set to null, remove the avatar
+                    apiUpdates.avatar = [];
+                }
+                else if (typeof updates.avatar === 'string') {
+                    // If it's a base64 string (from file upload), create new media object
+                    apiUpdates.avatar = [{
+                            file_name: 'avatar.jpg',
+                            mime_type: 'image/jpeg',
+                            file_content: updates.avatar
+                        }];
+                }
+                else {
+                    // If it's already an array of media objects, use as is
+                    apiUpdates.avatar = updates.avatar;
+                }
+            }
+            const response = yield api.patch(`/auth/update?table_id=${tableId}`, apiUpdates);
+            const updatedUser = mapUserData(response.data.user);
+            setUser(updatedUser);
             if (authenticationOptions.persistSession) {
-                localStorage.setItem(storageKey, JSON.stringify(authUser));
+                localStorage.setItem(storageKey, JSON.stringify(updatedUser));
             }
         }
         catch (err) {
@@ -1625,7 +1646,48 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         finally {
             setIsLoading(false);
         }
-    }), [user, api, storageKey, authenticationOptions.persistSession]);
+    }), [user, api, storageKey, authenticationOptions.persistSession, tableId]);
+    const continueWithGoogle = useCallback(() => __awaiter(this, void 0, void 0, function* () {
+        try {
+            setIsLoading(true);
+            setError(null);
+            // Open popup window and handle authentication
+            const authWindow = window.open(`${api.defaults.baseURL}/auth/google/?table_id=${tableId}&redirect_url=${encodeURIComponent(window.location.origin)}`, 'Google Auth', 'width=600,height=600');
+            const userData = yield new Promise((resolve, reject) => {
+                window.addEventListener('message', function handleAuth(event) {
+                    // Cleanup
+                    if (authWindow) {
+                        authWindow.close();
+                    }
+                    window.removeEventListener('message', handleAuth);
+                    const response = event.data;
+                    if (response.error) {
+                        reject(new Error(response.error));
+                    }
+                    else {
+                        resolve(response);
+                    }
+                });
+            });
+            // Handle successful authentication
+            const { access_token, user: googleUser } = userData;
+            if (authenticationOptions.persistSession && access_token) {
+                localStorage.setItem(`${storageKey}_token`, access_token);
+            }
+            const authUser = mapUserData(googleUser);
+            if (authenticationOptions.persistSession) {
+                localStorage.setItem(storageKey, JSON.stringify(authUser));
+            }
+            setUser(authUser);
+        }
+        catch (err) {
+            setError(err instanceof Error ? err : new Error("Google authentication failed"));
+            throw err;
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }), [api, storageKey, authenticationOptions.persistSession, tableId]);
     const value = useMemo(() => ({
         user,
         isLoading,
@@ -1636,8 +1698,9 @@ function AuthProvider({ children, tableId, storageKey = "auth_user", onAuthState
         register,
         resetPassword,
         updateProfile,
-        api, // Expose the api instance
-    }), [user, isLoading, error, login, logout, register, resetPassword, updateProfile, api]);
+        continueWithGoogle,
+        api,
+    }), [user, isLoading, error, login, logout, register, resetPassword, updateProfile, continueWithGoogle, api]);
     return jsxRuntimeExports.jsx(AuthContext.Provider, { value: value, children: children });
 }
 function useAuth() {
@@ -1659,5 +1722,254 @@ function ProtectedRoute({ children, redirectTo = "/login", }) {
     return jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: children });
 }
 
-export { AuthProvider, ProtectedRoute, useAuth };
+function GoogleIcon() {
+    return (jsxRuntimeExports.jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", xmlnsXlink: "http://www.w3.org/1999/xlink", viewBox: "0 0 32 32", width: "20", height: "20", children: [jsxRuntimeExports.jsx("defs", { children: jsxRuntimeExports.jsx("path", { id: "A", d: "M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z" }) }), jsxRuntimeExports.jsx("clipPath", { id: "B", children: jsxRuntimeExports.jsx("use", { xlinkHref: "#A" }) }), jsxRuntimeExports.jsxs("g", { transform: "matrix(.727273 0 0 .727273 -.954545 -1.45455)", children: [jsxRuntimeExports.jsx("path", { d: "M0 37V11l17 13z", clipPath: "url(#B)", fill: "#fbbc05" }), jsxRuntimeExports.jsx("path", { d: "M0 11l17 13 7-6.1L48 14V0H0z", clipPath: "url(#B)", fill: "#ea4335" }), jsxRuntimeExports.jsx("path", { d: "M0 37l30-23 7.9 1L48 0v48H0z", clipPath: "url(#B)", fill: "#34a853" }), jsxRuntimeExports.jsx("path", { d: "M48 48L17 24l-4-3 35-10z", clipPath: "url(#B)", fill: "#4285f4" })] })] }));
+}
+
+function SignIn(_a) {
+    var _b, _c;
+    var { appearance = { theme: 'light' }, companyName, signUpUrl = '/sign-up', routing = 'path', withSignUp = true } = _a, props = __rest(_a, ["appearance", "companyName", "signUpUrl", "routing", "withSignUp"]);
+    const { continueWithGoogle, login, isLoading, isAuthenticated, error } = useAuth();
+    const [email, setEmail] = useState(((_b = props.initialValues) === null || _b === void 0 ? void 0 : _b.emailAddress) || "");
+    const [password, setPassword] = useState(((_c = props.initialValues) === null || _c === void 0 ? void 0 : _c.password) || "");
+    // Theme styles object
+    const theme = {
+        light: {
+            background: "bg-gray-50",
+            card: "bg-white",
+            text: "text-gray-900",
+            textMuted: "text-gray-600",
+            input: "bg-white text-gray-900 border-gray-300",
+            button: "bg-black hover:bg-gray-900 text-white",
+            googleButton: "bg-white hover:bg-gray-50 text-gray-700 border-gray-300",
+            error: {
+                background: "bg-red-50",
+                text: "text-red-800",
+                icon: "text-red-400"
+            }
+        },
+        dark: {
+            background: "bg-gray-900",
+            card: "bg-gray-800",
+            text: "text-gray-100",
+            textMuted: "text-gray-400",
+            input: "bg-gray-700 text-gray-100 border-gray-600",
+            button: "bg-white hover:bg-gray-200 text-black",
+            googleButton: "bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600",
+            error: {
+                background: "bg-red-900/20",
+                text: "text-red-200",
+                icon: "text-red-400"
+            }
+        }
+    }[appearance.theme || 'light'];
+    const handleSubmit = (e) => __awaiter(this, void 0, void 0, function* () {
+        e.preventDefault();
+        yield login({ email, password });
+    });
+    if (isAuthenticated)
+        return null;
+    const handleSignUpClick = (e) => {
+        e.preventDefault();
+        if (routing === 'hash') {
+            window.location.hash = signUpUrl;
+        }
+        else {
+            window.location.href = signUpUrl;
+        }
+    };
+    return (jsxRuntimeExports.jsx("div", { className: `min-h-screen flex items-center justify-center ${theme.background}`, children: jsxRuntimeExports.jsxs("div", { className: `max-w-md w-full space-y-8 ${theme.card} p-10 rounded-xl shadow-lg`, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: `text-center text-3xl font-bold ${theme.text}`, children: companyName ? `Sign in to ${companyName}` : "Sign in" }), jsxRuntimeExports.jsx("p", { className: `mt-2 text-center text-sm ${theme.textMuted}`, children: "Welcome back! Please sign in to continue" })] }), jsxRuntimeExports.jsx("button", { onClick: () => continueWithGoogle(), className: `w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${theme.googleButton}`, children: jsxRuntimeExports.jsxs("span", { className: "flex items-center", children: [jsxRuntimeExports.jsx(GoogleIcon, {}), jsxRuntimeExports.jsx("span", { className: "ml-2", children: "Continue with Google" })] }) }), jsxRuntimeExports.jsxs("div", { className: "relative", children: [jsxRuntimeExports.jsx("div", { className: "absolute inset-0 flex items-center", children: jsxRuntimeExports.jsx("div", { className: `w-full border-t ${appearance.theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}` }) }), jsxRuntimeExports.jsx("div", { className: "relative flex justify-center text-sm", children: jsxRuntimeExports.jsx("span", { className: `px-2 ${theme.card} ${theme.textMuted}`, children: "or" }) })] }), jsxRuntimeExports.jsxs("form", { className: "mt-8 space-y-6", onSubmit: handleSubmit, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("label", { htmlFor: "email", className: `block text-sm font-medium ${theme.text}`, children: "Email address" }), jsxRuntimeExports.jsx("input", { id: "email", type: "email", required: true, className: `mt-1 block w-full border rounded-md shadow-sm py-2 px-3 ${theme.input}`, value: email, onChange: (e) => setEmail(e.target.value) })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("label", { htmlFor: "password", className: `block text-sm font-medium ${theme.text}`, children: "Password" }), jsxRuntimeExports.jsx("input", { id: "password", type: "password", required: true, className: `mt-1 block w-full border rounded-md shadow-sm py-2 px-3 ${theme.input}`, value: password, onChange: (e) => setPassword(e.target.value) })] }), error && (jsxRuntimeExports.jsx("div", { className: `rounded-md ${theme.error.background} p-4`, children: jsxRuntimeExports.jsxs("div", { className: "flex", children: [jsxRuntimeExports.jsx("div", { className: "flex-shrink-0", children: jsxRuntimeExports.jsx("svg", { className: `h-5 w-5 ${theme.error.icon}`, viewBox: "0 0 20 20", fill: "currentColor", children: jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule: "evenodd" }) }) }), jsxRuntimeExports.jsx("div", { className: "ml-3", children: jsxRuntimeExports.jsx("p", { className: `text-sm font-medium ${theme.error.text}`, children: error.message }) })] }) })), jsxRuntimeExports.jsx("button", { type: "submit", className: `w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium ${theme.button}`, disabled: isLoading, children: isLoading ? "Signing in..." : "Continue" })] }), jsxRuntimeExports.jsxs("div", { className: `mt-8 border-t ${appearance.theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} pt-6`, children: [withSignUp && (jsxRuntimeExports.jsxs("div", { className: "text-center mb-4", children: [jsxRuntimeExports.jsx("span", { className: theme.textMuted, children: "Don't have an account? " }), jsxRuntimeExports.jsx("a", { href: signUpUrl, onClick: handleSignUpClick, className: "text-blue-600 hover:text-blue-400", children: "Sign up" })] })), jsxRuntimeExports.jsxs("div", { className: `flex items-center justify-center space-x-2 text-xs ${theme.textMuted}`, children: [jsxRuntimeExports.jsx("span", { children: "Secured by" }), jsxRuntimeExports.jsx("img", { src: appearance.theme === "dark"
+                                        ? "https://altan.ai/logos/horizontalWhite.png"
+                                        : "https://altan.ai/logos/horizontalBlack.png", alt: "Altan", className: "h-3" })] })] })] }) }));
+}
+
+function SignUp(_a) {
+    var _b, _c;
+    var { appearance = { theme: 'light' }, companyName, signInUrl = '/sign-in', routing = 'path', withSignIn = true } = _a, props = __rest(_a, ["appearance", "companyName", "signInUrl", "routing", "withSignIn"]);
+    const { continueWithGoogle, register, isLoading, isAuthenticated, error } = useAuth();
+    const [email, setEmail] = useState(((_b = props.initialValues) === null || _b === void 0 ? void 0 : _b.emailAddress) || "");
+    const [password, setPassword] = useState(((_c = props.initialValues) === null || _c === void 0 ? void 0 : _c.password) || "");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [validationError, setValidationError] = useState(null);
+    // Theme styles object
+    const theme = {
+        light: {
+            background: "bg-gray-50",
+            card: "bg-white",
+            text: "text-gray-900",
+            textMuted: "text-gray-600",
+            input: "bg-white text-gray-900 border-gray-300",
+            button: "bg-black hover:bg-gray-900 text-white",
+            googleButton: "bg-white hover:bg-gray-50 text-gray-700 border-gray-300",
+            error: {
+                background: "bg-red-50",
+                text: "text-red-800",
+                icon: "text-red-400"
+            }
+        },
+        dark: {
+            background: "bg-gray-900",
+            card: "bg-gray-800",
+            text: "text-gray-100",
+            textMuted: "text-gray-400",
+            input: "bg-gray-700 text-gray-100 border-gray-600",
+            button: "bg-white hover:bg-gray-200 text-black",
+            googleButton: "bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600",
+            error: {
+                background: "bg-red-900/20",
+                text: "text-red-200",
+                icon: "text-red-400"
+            }
+        }
+    }[appearance.theme || 'light'];
+    const handleSubmit = (e) => __awaiter(this, void 0, void 0, function* () {
+        e.preventDefault();
+        setValidationError(null);
+        if (password !== confirmPassword) {
+            setValidationError("Passwords don't match");
+            return;
+        }
+        try {
+            yield register({
+                email,
+                password,
+                displayName: ""
+            });
+        }
+        catch (err) {
+            // Error is already handled by AuthProvider
+            // No need to do anything here as the error will be displayed through the error state
+        }
+    });
+    if (isAuthenticated)
+        return null;
+    const handleSignInClick = (e) => {
+        e.preventDefault();
+        if (routing === 'hash') {
+            window.location.hash = signInUrl;
+        }
+        else {
+            window.location.href = signInUrl;
+        }
+    };
+    return (jsxRuntimeExports.jsx("div", { className: `min-h-screen flex items-center justify-center ${theme.background}`, children: jsxRuntimeExports.jsxs("div", { className: `max-w-md w-full space-y-8 ${theme.card} p-10 rounded-xl shadow-lg`, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: `text-center text-3xl font-bold ${theme.text}`, children: companyName ? `Create your ${companyName} account` : "Create account" }), jsxRuntimeExports.jsx("p", { className: `mt-2 text-center text-sm ${theme.textMuted}`, children: "Get started by creating your account" })] }), jsxRuntimeExports.jsx("button", { onClick: () => continueWithGoogle(), className: `w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${theme.googleButton}`, children: jsxRuntimeExports.jsxs("span", { className: "flex items-center", children: [jsxRuntimeExports.jsx(GoogleIcon, {}), jsxRuntimeExports.jsx("span", { className: "ml-2", children: "Continue with Google" })] }) }), jsxRuntimeExports.jsxs("div", { className: "relative", children: [jsxRuntimeExports.jsx("div", { className: "absolute inset-0 flex items-center", children: jsxRuntimeExports.jsx("div", { className: `w-full border-t ${appearance.theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}` }) }), jsxRuntimeExports.jsx("div", { className: "relative flex justify-center text-sm", children: jsxRuntimeExports.jsx("span", { className: `px-2 ${theme.card} ${theme.textMuted}`, children: "or" }) })] }), jsxRuntimeExports.jsxs("form", { className: "mt-8 space-y-6", onSubmit: handleSubmit, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("label", { htmlFor: "email", className: `block text-sm font-medium ${theme.text}`, children: "Email address" }), jsxRuntimeExports.jsx("input", { id: "email", type: "email", required: true, className: `mt-1 block w-full border rounded-md shadow-sm py-2 px-3 ${theme.input}`, value: email, onChange: (e) => setEmail(e.target.value) })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("label", { htmlFor: "password", className: `block text-sm font-medium ${theme.text}`, children: "Password" }), jsxRuntimeExports.jsx("input", { id: "password", type: "password", required: true, className: `mt-1 block w-full border rounded-md shadow-sm py-2 px-3 ${theme.input}`, value: password, onChange: (e) => setPassword(e.target.value) })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("label", { htmlFor: "confirmPassword", className: `block text-sm font-medium ${theme.text}`, children: "Confirm Password" }), jsxRuntimeExports.jsx("input", { id: "confirmPassword", type: "password", required: true, className: `mt-1 block w-full border rounded-md shadow-sm py-2 px-3 ${theme.input}`, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value) })] }), (error || validationError) && (jsxRuntimeExports.jsx("div", { className: `rounded-md ${theme.error.background} p-4`, children: jsxRuntimeExports.jsxs("div", { className: "flex", children: [jsxRuntimeExports.jsx("div", { className: "flex-shrink-0", children: jsxRuntimeExports.jsx("svg", { className: `h-5 w-5 ${theme.error.icon}`, viewBox: "0 0 20 20", fill: "currentColor", children: jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule: "evenodd" }) }) }), jsxRuntimeExports.jsx("div", { className: "ml-3", children: jsxRuntimeExports.jsx("p", { className: `text-sm font-medium ${theme.error.text}`, children: validationError || (error === null || error === void 0 ? void 0 : error.message) }) })] }) })), jsxRuntimeExports.jsx("button", { type: "submit", className: `w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium ${theme.button}`, disabled: isLoading, children: isLoading ? "Creating account..." : "Create account" })] }), jsxRuntimeExports.jsxs("div", { className: `mt-8 border-t ${appearance.theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} pt-6`, children: [withSignIn && (jsxRuntimeExports.jsxs("div", { className: "text-center mb-4", children: [jsxRuntimeExports.jsx("span", { className: theme.textMuted, children: "Already have an account? " }), jsxRuntimeExports.jsx("a", { href: signInUrl, onClick: handleSignInClick, className: "text-blue-600 hover:text-blue-400", children: "Sign in" })] })), jsxRuntimeExports.jsxs("div", { className: `flex items-center justify-center space-x-2 text-xs ${theme.textMuted}`, children: [jsxRuntimeExports.jsx("span", { children: "Secured by" }), jsxRuntimeExports.jsx("img", { src: appearance.theme === "dark"
+                                        ? "https://altan.ai/logos/horizontalWhite.png"
+                                        : "https://altan.ai/logos/horizontalBlack.png", alt: "Altan", className: "h-3" })] })] })] }) }));
+}
+
+function Logout({ appearance = { theme: 'light' }, onLogout, className = '', }) {
+    const { logout } = useAuth();
+    const theme = {
+        light: {
+            button: 'text-red-600 hover:text-red-800',
+        },
+        dark: {
+            button: 'text-red-400 hover:text-red-200',
+        }
+    }[appearance.theme || 'light'];
+    const handleLogout = () => __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield logout();
+            onLogout === null || onLogout === void 0 ? void 0 : onLogout();
+        }
+        catch (error) {
+            console.error('Logout failed:', error);
+        }
+    });
+    return (jsxRuntimeExports.jsxs("button", { onClick: handleLogout, className: `flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 ${theme.button} ${className}`, children: [jsxRuntimeExports.jsx("svg", { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" }) }), jsxRuntimeExports.jsx("span", { children: "Logout" })] }));
+}
+
+const ALWAYS_HIDDEN_FIELDS = [
+    'id', 'verified', 'created_time', 'last_modified_time', 'last_modified_by', 'password'
+];
+const DEFAULT_EDITABLE_FIELDS = [
+    'name',
+    'surname',
+    'email',
+];
+function UserProfile({ appearance = { theme: "light" }, routing = "path", path = "/user-profile", showCustomFields = true, editableFields = DEFAULT_EDITABLE_FIELDS, hiddenFields = [], customPages = [], fallback, }) {
+    var _a;
+    const { user, updateProfile, isLoading, error } = useAuth();
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
+    const fileInputRef = useRef(null);
+    if (!user)
+        return fallback || null;
+    const themeClasses = {
+        light: {
+            background: "bg-gray-50",
+            card: "bg-white",
+            text: "text-gray-900",
+            textSecondary: "text-gray-700",
+            textMuted: "text-gray-500",
+            border: "border-gray-300",
+            primary: "bg-primary-600 hover:bg-primary-700",
+            buttonText: "text-white",
+        },
+        dark: {
+            background: "bg-gray-900",
+            card: "bg-gray-800",
+            text: "text-white",
+            textSecondary: "text-gray-300",
+            textMuted: "text-gray-400",
+            border: "border-gray-700",
+            primary: "bg-primary-500 hover:bg-primary-600",
+            buttonText: "text-white",
+        },
+    };
+    const theme = themeClasses[appearance.theme || "light"];
+    const allHiddenFields = [...ALWAYS_HIDDEN_FIELDS, ...hiddenFields];
+    const getDisplayFields = () => {
+        return Object.entries(user).filter(([key]) => {
+            if (allHiddenFields.includes(key))
+                return false;
+            if (!showCustomFields && !DEFAULT_EDITABLE_FIELDS.includes(key))
+                return false;
+            return true;
+        });
+    };
+    const handleAvatarChange = (e) => __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0];
+        if (!file)
+            return;
+        try {
+            const reader = new FileReader();
+            reader.onloadend = () => __awaiter(this, void 0, void 0, function* () {
+                const base64Content = reader.result;
+                yield updateProfile({
+                    avatar: [{
+                            file_name: 'avatar.jpg',
+                            mime_type: file.type || 'image/jpeg',
+                            file_content: base64Content.split(',')[1]
+                        }]
+                });
+            });
+            reader.readAsDataURL(file);
+        }
+        catch (err) {
+            console.error('Failed to update avatar:', err);
+        }
+    });
+    const handleEdit = () => {
+        setFormData(user);
+        setIsEditing(true);
+    };
+    const handleCancel = () => {
+        setFormData({});
+        setIsEditing(false);
+    };
+    const handleSave = () => __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield updateProfile(formData);
+            setIsEditing(false);
+        }
+        catch (err) {
+            // Error handling is managed by AuthProvider
+        }
+    });
+    return (jsxRuntimeExports.jsx("div", { className: `max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 ${theme.background}`, children: jsxRuntimeExports.jsxs("div", { className: "space-y-8", children: [jsxRuntimeExports.jsxs("div", { className: `${theme.card} shadow rounded-lg p-6`, children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-start mb-6", children: [jsxRuntimeExports.jsx("h1", { className: `text-2xl font-bold ${theme.text}`, children: "Profile Settings" }), jsxRuntimeExports.jsx(Logout, { appearance: appearance })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-6", children: [jsxRuntimeExports.jsxs("div", { className: "relative", children: [jsxRuntimeExports.jsx("div", { className: "w-24 h-24 rounded-full overflow-hidden bg-gray-200", children: Array.isArray(user.avatar) && ((_a = user.avatar[0]) === null || _a === void 0 ? void 0 : _a.url) ? (jsxRuntimeExports.jsx("img", { src: user.avatar[0].url, alt: "Profile", className: "w-full h-full object-cover" })) : (jsxRuntimeExports.jsx("div", { className: `w-full h-full flex items-center justify-center ${theme.textMuted}`, children: jsxRuntimeExports.jsx("svg", { className: "w-12 h-12", fill: "currentColor", viewBox: "0 0 24 24", children: jsxRuntimeExports.jsx("path", { d: "M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8c0 2.208-1.79 4-3.998 4-2.208 0-3.998-1.792-3.998-4s1.79-4 3.998-4c2.208 0 3.998 1.792 3.998 4z" }) }) })) }), jsxRuntimeExports.jsx("input", { type: "file", ref: fileInputRef, onChange: handleAvatarChange, accept: "image/*", className: "hidden" }), jsxRuntimeExports.jsx("button", { onClick: () => { var _a; return (_a = fileInputRef.current) === null || _a === void 0 ? void 0 : _a.click(); }, className: `absolute bottom-0 right-0 p-1.5 rounded-full ${theme.primary} ${theme.buttonText}`, children: jsxRuntimeExports.jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" }) }) })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: `text-2xl font-bold ${theme.text}`, children: user.name || user.email }), Array.isArray(user.avatar) && user.avatar.length > 0 && (jsxRuntimeExports.jsx("button", { onClick: () => updateProfile({ avatar: [] }), className: `text-sm ${theme.textMuted} hover:${theme.text}`, children: "Remove avatar" }))] })] })] }), jsxRuntimeExports.jsx("div", { className: `${theme.card} shadow rounded-lg`, children: jsxRuntimeExports.jsxs("div", { className: "px-4 py-5 sm:p-6", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-6", children: [jsxRuntimeExports.jsx("h3", { className: `text-lg font-medium ${theme.text}`, children: "Profile Information" }), !isEditing ? (jsxRuntimeExports.jsx("button", { onClick: handleEdit, className: `px-4 py-2 rounded-md ${theme.primary} ${theme.buttonText}`, children: "Edit Profile" })) : (jsxRuntimeExports.jsxs("div", { className: "space-x-4", children: [jsxRuntimeExports.jsx("button", { onClick: handleCancel, className: `px-4 py-2 border ${theme.border} rounded-md ${theme.textSecondary}`, children: "Cancel" }), jsxRuntimeExports.jsx("button", { onClick: handleSave, disabled: isLoading, className: `px-4 py-2 rounded-md ${theme.primary} ${theme.buttonText} disabled:opacity-50`, children: isLoading ? "Saving..." : "Save Changes" })] }))] }), jsxRuntimeExports.jsx("div", { className: "space-y-6", children: getDisplayFields().map(([key, value]) => (jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsx("label", { className: `block text-sm font-medium ${theme.textMuted}`, children: key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) }), isEditing && editableFields.includes(key) ? (jsxRuntimeExports.jsx("input", { type: "text", value: formData[key] || "", onChange: (e) => setFormData(prev => (Object.assign(Object.assign({}, prev), { [key]: e.target.value }))), className: `block w-full rounded-md ${theme.border} shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${theme.card} ${theme.text}` })) : (jsxRuntimeExports.jsx("div", { className: `text-sm ${theme.text}`, children: value || "Not set" }))] }, key))) })] }) }), error && (jsxRuntimeExports.jsx("div", { className: "rounded-md bg-red-50 dark:bg-red-900 p-4", children: jsxRuntimeExports.jsxs("div", { className: "flex", children: [jsxRuntimeExports.jsx("div", { className: "flex-shrink-0", children: jsxRuntimeExports.jsx("svg", { className: "h-5 w-5 text-red-400", viewBox: "0 0 20 20", fill: "currentColor", children: jsxRuntimeExports.jsx("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule: "evenodd" }) }) }), jsxRuntimeExports.jsx("div", { className: "ml-3", children: jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-red-800 dark:text-red-200", children: error.message }) })] }) }))] }) }));
+}
+
+export { AuthProvider, Logout, ProtectedRoute, SignIn, SignUp, UserProfile, useAuth };
 //# sourceMappingURL=index.esm.js.map
