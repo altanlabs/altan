@@ -11,7 +11,13 @@ import {
   deleteRecords,
 } from "../store/tablesSlice";
 import { useAppDispatch } from "./useAppDispatch";
-import { FetchOptions, DatabaseHookReturn, RootState } from "../store/types";
+import { 
+  TableRecordData,
+  TableRecordItem,
+  FetchOptions,
+  DatabaseHookReturn,
+  RootState 
+} from "../store/types";
 
 export function useDatabase(
   table: string,
@@ -40,31 +46,63 @@ export function useDatabase(
     [tableData]
   );
 
+  // Add mounted ref to prevent state updates after unmount
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Memoize initialQuery to prevent unnecessary effect re-runs
+  const memoizedInitialQuery = useMemo(
+    () => initialQuery || { limit: 100 },
+    [initialQuery]
+  );
+
+  // Helper to safely dispatch actions with error handling and cancellation check
+  const safeDispatch = useCallback(
+    async <T,>(
+      action: any,
+      onError?: (e: Error) => void
+    ): Promise<T | undefined> => {
+      try {
+        const result = await dispatch(action).unwrap();
+        if (isMounted.current) return result;
+      } catch (e) {
+        onError?.(e as Error);
+      }
+      return undefined;
+    },
+    [dispatch]
+  );
+
+  // Update effect to use safeDispatch
   useEffect(() => {
     if (!table || error) return;
-    if (
-      !schema &&
-      !isLoadingSchema &&
-      !requestInProgress.current[`schema_${table}`]
-    ) {
-      requestInProgress.current[`schema_${table}`] = true;
-      dispatch(fetchTableSchema({ tableName: table })).finally(() => {
-        requestInProgress.current[`schema_${table}`] = false;
+
+    const schemaKey = `schema_${table}`;
+    const recordsKey = `records_${table}`;
+
+    if (!schema && !isLoadingSchema && !requestInProgress.current[schemaKey]) {
+      requestInProgress.current[schemaKey] = true;
+      safeDispatch(
+        fetchTableSchema({ tableName: table })
+      ).finally(() => {
+        if (isMounted.current) {
+          requestInProgress.current[schemaKey] = false;
+        }
       });
     }
-    if (
-      !initialized &&
-      !isLoadingRecords &&
-      !requestInProgress.current[`records_${table}`]
-    ) {
-      requestInProgress.current[`records_${table}`] = true;
-      dispatch(
-        fetchTableRecords({
-          tableName: table,
-          queryParams: initialQuery || { limit: 100 },
-        })
+
+    if (!initialized && !isLoadingRecords && !requestInProgress.current[recordsKey]) {
+      requestInProgress.current[recordsKey] = true;
+      safeDispatch(
+        fetchTableRecords({ tableName: table, queryParams: memoizedInitialQuery })
       ).finally(() => {
-        requestInProgress.current[`records_${table}`] = false;
+        if (isMounted.current) {
+          requestInProgress.current[recordsKey] = false;
+        }
       });
     }
   }, [
@@ -73,39 +111,35 @@ export function useDatabase(
     initialized,
     isLoadingRecords,
     isLoadingSchema,
-    dispatch,
     error,
-    initialQuery,
+    memoizedInitialQuery,
+    safeDispatch,
   ]);
 
+  // Update refresh to use safeDispatch and check mounted state
   const refresh = useCallback(
-    async (
-      options: FetchOptions = { limit: 20 },
-      onError?: (e: Error) => void
-    ) => {
+    async (options: FetchOptions = { limit: 20 }, onError?: (e: Error) => void) => {
       if (!isLoadingRecords) {
-        try {
-          const result = await dispatch(
-            fetchTableRecords({ tableName: table, queryParams: options })
-          ).unwrap();
-          setNextPageToken(result.nextPageToken);
-        } catch (e) {
-          onError?.(e as Error);
+        const result = await safeDispatch<TableRecordData>(
+          fetchTableRecords({ tableName: table, queryParams: options }),
+          onError
+        );
+        if (result && isMounted.current) {
+          setNextPageToken(result.nextPageToken ?? null);
         }
       }
     },
-    [table, dispatch, isLoadingRecords]
+    [table, safeDispatch, isLoadingRecords]
   );
 
   const addRecord = useCallback(
     async (record: Record<string, unknown>, onError?: (e: Error) => void) => {
-      try {
-        await dispatch(createRecord({ tableName: table, record })).unwrap();
-      } catch (e) {
-        onError?.(e as Error);
-      }
+      await safeDispatch<TableRecordItem>(
+        createRecord({ tableName: table, record }),
+        onError
+      );
     },
-    [dispatch, table]
+    [table, safeDispatch]
   );
 
   const modifyRecord = useCallback(
@@ -114,15 +148,42 @@ export function useDatabase(
       updates: Record<string, unknown>,
       onError?: (e: Error) => void
     ) => {
-      try {
-        await dispatch(
-          updateRecord({ tableName: table, recordId, updates })
-        ).unwrap();
-      } catch (e) {
-        onError?.(e as Error);
-      }
+      await safeDispatch<TableRecordItem>(
+        updateRecord({ tableName: table, recordId, updates }),
+        onError
+      );
     },
-    [dispatch, table]
+    [table, safeDispatch]
+  );
+
+  const removeRecord = useCallback(
+    async (recordId: string, onError?: (e: Error) => void) => {
+      await safeDispatch(
+        deleteRecord({ tableName: table, recordId }),
+        onError
+      );
+    },
+    [table, safeDispatch]
+  );
+
+  const addRecords = useCallback(
+    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
+      await safeDispatch(
+        createRecords({ tableName: table, records }),
+        onError
+      );
+    },
+    [table, safeDispatch]
+  );
+
+  const removeRecords = useCallback(
+    async (recordIds: string[], onError?: (e: Error) => void) => {
+      await safeDispatch(
+        deleteRecords({ tableName: table, recordIds }),
+        onError
+      );
+    },
+    [table, safeDispatch]
   );
 
   return useMemo(
@@ -142,27 +203,9 @@ export function useDatabase(
       },
       addRecord,
       modifyRecord,
-      removeRecord: async (recordId: string, onError?: (e: Error) => void) => {
-        try {
-          await dispatch(deleteRecord({ tableName: table, recordId })).unwrap();
-        } catch (e) {
-          onError?.(e as Error);
-        }
-      },
-      addRecords: async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
-        try {
-          await dispatch(createRecords({ tableName: table, records })).unwrap();
-        } catch (e) {
-          onError?.(e as Error);
-        }
-      },
-      removeRecords: async (recordIds: string[], onError?: (e: Error) => void) => {
-        try {
-          await dispatch(deleteRecords({ tableName: table, recordIds })).unwrap();
-        } catch (e) {
-          onError?.(e as Error);
-        }
-      },
+      removeRecord,
+      addRecords,
+      removeRecords,
     }),
     [
       records,
@@ -177,6 +220,9 @@ export function useDatabase(
       dispatch,
       addRecord,
       modifyRecord,
+      removeRecord,
+      addRecords,
+      removeRecords,
     ]
   );
 }

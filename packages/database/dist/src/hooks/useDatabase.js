@@ -67,26 +67,56 @@ function useDatabase(table, initialQuery) {
         initialized: (tableData === null || tableData === void 0 ? void 0 : tableData.initialized) || false,
         lastUpdated: (tableData === null || tableData === void 0 ? void 0 : tableData.lastUpdated) || null,
     }); }, [tableData]), records = _b.records, schema = _b.schema, initialized = _b.initialized, lastUpdated = _b.lastUpdated;
+    // Add mounted ref to prevent state updates after unmount
+    var isMounted = (0, react_1.useRef)(true);
+    (0, react_1.useEffect)(function () {
+        return function () {
+            isMounted.current = false;
+        };
+    }, []);
+    // Memoize initialQuery to prevent unnecessary effect re-runs
+    var memoizedInitialQuery = (0, react_1.useMemo)(function () { return initialQuery || { limit: 100 }; }, [initialQuery]);
+    // Helper to safely dispatch actions with error handling and cancellation check
+    var safeDispatch = (0, react_1.useCallback)(function (action, onError) { return __awaiter(_this, void 0, void 0, function () {
+        var result, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, dispatch(action).unwrap()];
+                case 1:
+                    result = _a.sent();
+                    if (isMounted.current)
+                        return [2 /*return*/, result];
+                    return [3 /*break*/, 3];
+                case 2:
+                    e_1 = _a.sent();
+                    onError === null || onError === void 0 ? void 0 : onError(e_1);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/, undefined];
+            }
+        });
+    }); }, [dispatch]);
+    // Update effect to use safeDispatch
     (0, react_1.useEffect)(function () {
         if (!table || error)
             return;
-        if (!schema &&
-            !isLoadingSchema &&
-            !requestInProgress.current["schema_".concat(table)]) {
-            requestInProgress.current["schema_".concat(table)] = true;
-            dispatch((0, tablesSlice_1.fetchTableSchema)({ tableName: table })).finally(function () {
-                requestInProgress.current["schema_".concat(table)] = false;
+        var schemaKey = "schema_".concat(table);
+        var recordsKey = "records_".concat(table);
+        if (!schema && !isLoadingSchema && !requestInProgress.current[schemaKey]) {
+            requestInProgress.current[schemaKey] = true;
+            safeDispatch((0, tablesSlice_1.fetchTableSchema)({ tableName: table })).finally(function () {
+                if (isMounted.current) {
+                    requestInProgress.current[schemaKey] = false;
+                }
             });
         }
-        if (!initialized &&
-            !isLoadingRecords &&
-            !requestInProgress.current["records_".concat(table)]) {
-            requestInProgress.current["records_".concat(table)] = true;
-            dispatch((0, tablesSlice_1.fetchTableRecords)({
-                tableName: table,
-                queryParams: initialQuery || { limit: 100 },
-            })).finally(function () {
-                requestInProgress.current["records_".concat(table)] = false;
+        if (!initialized && !isLoadingRecords && !requestInProgress.current[recordsKey]) {
+            requestInProgress.current[recordsKey] = true;
+            safeDispatch((0, tablesSlice_1.fetchTableRecords)({ tableName: table, queryParams: memoizedInitialQuery })).finally(function () {
+                if (isMounted.current) {
+                    requestInProgress.current[recordsKey] = false;
+                }
             });
         }
     }, [
@@ -95,75 +125,86 @@ function useDatabase(table, initialQuery) {
         initialized,
         isLoadingRecords,
         isLoadingSchema,
-        dispatch,
         error,
-        initialQuery,
+        memoizedInitialQuery,
+        safeDispatch,
     ]);
+    // Update refresh to use safeDispatch and check mounted state
     var refresh = (0, react_1.useCallback)(function () {
         var args_1 = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args_1[_i] = arguments[_i];
         }
         return __awaiter(_this, __spreadArray([], args_1, true), void 0, function (options, onError) {
-            var result, e_1;
+            var result;
+            var _a;
             if (options === void 0) { options = { limit: 20 }; }
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        if (!!isLoadingRecords) return [3 /*break*/, 4];
-                        _a.label = 1;
+                        if (!!isLoadingRecords) return [3 /*break*/, 2];
+                        return [4 /*yield*/, safeDispatch((0, tablesSlice_1.fetchTableRecords)({ tableName: table, queryParams: options }), onError)];
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.fetchTableRecords)({ tableName: table, queryParams: options })).unwrap()];
-                    case 2:
-                        result = _a.sent();
-                        setNextPageToken(result.nextPageToken);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_1 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_1);
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                        result = _b.sent();
+                        if (result && isMounted.current) {
+                            setNextPageToken((_a = result.nextPageToken) !== null && _a !== void 0 ? _a : null);
+                        }
+                        _b.label = 2;
+                    case 2: return [2 /*return*/];
                 }
             });
         });
-    }, [table, dispatch, isLoadingRecords]);
+    }, [table, safeDispatch, isLoadingRecords]);
     var addRecord = (0, react_1.useCallback)(function (record, onError) { return __awaiter(_this, void 0, void 0, function () {
-        var e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, dispatch((0, tablesSlice_1.createRecord)({ tableName: table, record: record })).unwrap()];
+                case 0: return [4 /*yield*/, safeDispatch((0, tablesSlice_1.createRecord)({ tableName: table, record: record }), onError)];
                 case 1:
                     _a.sent();
-                    return [3 /*break*/, 3];
-                case 2:
-                    e_2 = _a.sent();
-                    onError === null || onError === void 0 ? void 0 : onError(e_2);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
-    }); }, [dispatch, table]);
+    }); }, [table, safeDispatch]);
     var modifyRecord = (0, react_1.useCallback)(function (recordId, updates, onError) { return __awaiter(_this, void 0, void 0, function () {
-        var e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, dispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId: recordId, updates: updates })).unwrap()];
+                case 0: return [4 /*yield*/, safeDispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId: recordId, updates: updates }), onError)];
                 case 1:
                     _a.sent();
-                    return [3 /*break*/, 3];
-                case 2:
-                    e_3 = _a.sent();
-                    onError === null || onError === void 0 ? void 0 : onError(e_3);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
-    }); }, [dispatch, table]);
+    }); }, [table, safeDispatch]);
+    var removeRecord = (0, react_1.useCallback)(function (recordId, onError) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, safeDispatch((0, tablesSlice_1.deleteRecord)({ tableName: table, recordId: recordId }), onError)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); }, [table, safeDispatch]);
+    var addRecords = (0, react_1.useCallback)(function (records, onError) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, safeDispatch((0, tablesSlice_1.createRecords)({ tableName: table, records: records }), onError)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); }, [table, safeDispatch]);
+    var removeRecords = (0, react_1.useCallback)(function (recordIds, onError) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, safeDispatch((0, tablesSlice_1.deleteRecords)({ tableName: table, recordIds: recordIds }), onError)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); }, [table, safeDispatch]);
     return (0, react_1.useMemo)(function () { return ({
         records: records,
         schema: schema,
@@ -188,60 +229,9 @@ function useDatabase(table, initialQuery) {
         }); },
         addRecord: addRecord,
         modifyRecord: modifyRecord,
-        removeRecord: function (recordId, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var e_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.deleteRecord)({ tableName: table, recordId: recordId })).unwrap()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_4 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_4);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); },
-        addRecords: function (records, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var e_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.createRecords)({ tableName: table, records: records })).unwrap()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_5 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_5);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); },
-        removeRecords: function (recordIds, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var e_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dispatch((0, tablesSlice_1.deleteRecords)({ tableName: table, recordIds: recordIds })).unwrap()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        e_6 = _a.sent();
-                        onError === null || onError === void 0 ? void 0 : onError(e_6);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); },
+        removeRecord: removeRecord,
+        addRecords: addRecords,
+        removeRecords: removeRecords,
     }); }, [
         records,
         schema,
@@ -255,5 +245,8 @@ function useDatabase(table, initialQuery) {
         dispatch,
         addRecord,
         modifyRecord,
+        removeRecord,
+        addRecords,
+        removeRecords,
     ]);
 }

@@ -10,35 +10,39 @@ function App() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <UserProfile
-          appearance={{
-            theme: "dark",
-          }}
-        />
+      <div className="min-h-screen bg-gray-900">
+        <div className="max-w-md mx-auto pt-8 px-4">
+          <UserProfile
+            appearance={{
+              theme: "dark",
+            }}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {showSignIn ? (
-        <SignIn
-          appearance={{
-            theme: "dark",
-          }}
-          signUpUrl="#sign-up"
-          onSignUpClick={() => setShowSignIn(false)}
-        />
-      ) : (
-        <SignUp
-          appearance={{
-            theme: "dark",
-          }}
-          signInUrl="#sign-in"
-          onSignInClick={() => setShowSignIn(true)}
-        />
-      )}
+    <div className="min-h-screen bg-gray-900">
+      <div className="pt-8 px-4">
+        {showSignIn ? (
+          <SignIn
+            appearance={{
+              theme: "dark",
+            }}
+            signUpUrl="#sign-up"
+            onSignUpClick={() => setShowSignIn(false)}
+          />
+        ) : (
+          <SignUp
+            appearance={{
+              theme: "dark",
+            }}
+            signInUrl="#sign-in"
+            onSignInClick={() => setShowSignIn(true)}
+          />
+        )}
+      </div>
     </div>
   );
 }
