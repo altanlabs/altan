@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@altanlabs/auth": "file:../packages/auth",
-    "@altanlabs/database": "^1.1.9",
+    "@altanlabs/database": "file:../packages/database",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

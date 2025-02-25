@@ -1,5 +1,6 @@
-export { DatabaseProvider } from './src/store/DatabaseProvider';
-export { useDatabase } from './src/hooks/useDatabase';
-export type { TableRecord, TableRecordItem, TableRecordData, TableSchema, TableField, TableView, QueryFilter, QuerySort, QueryParams, FetchOptions, DatabaseHookReturn, TableFieldOptions, } from './src/store/types';
-export { FieldType } from './src/store/types';
-export { fieldHelpers } from './src/helpers/fields';
+export { DatabaseProvider } from './store/DatabaseProvider';
+export { useDatabase } from './hooks/useDatabase';
+export type { TableRecord, TableRecordItem, TableRecordData, TableSchema, TableField, TableView, QueryFilter, QuerySort, QueryParams, FetchOptions, DatabaseHookReturn, TableFieldOptions, } from './store/types';
+export { FieldType } from './store/types';
+export { fieldHelpers } from './helpers/fields';
+//# sourceMappingURL=index.d.ts.map
