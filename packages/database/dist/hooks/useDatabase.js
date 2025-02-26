@@ -65,10 +65,6 @@ function useDatabase(table, initialQuery) {
     }, [
         table,
         schema,
-        initialized,
-        isLoadingRecords,
-        isLoadingSchema,
-        error,
         memoizedInitialQuery,
         safeDispatch,
     ]);
