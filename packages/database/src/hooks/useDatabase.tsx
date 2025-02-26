@@ -108,10 +108,6 @@ export function useDatabase(
   }, [
     table,
     schema,
-    initialized,
-    isLoadingRecords,
-    isLoadingSchema,
-    error,
     memoizedInitialQuery,
     safeDispatch,
   ]);

@@ -307,3 +307,118 @@ try {
 ## License
 
 MIT
+
+## ⚠️ Important Performance Considerations
+
+### Avoiding Infinite Query Loops
+
+The `useDatabase` hook can potentially trigger infinite query loops if not used carefully. Here are some common pitfalls and how to avoid them:
+
+❌ **DON'T: Create multiple database hooks for the same data**
+```tsx
+// BAD: Each PlayerCard makes its own connection query
+function PlayerCard({ userId, playerId }) {
+  const { records } = useDatabase("connections", {
+    filters: [
+      { field: "user_id", operator: "eq", value: userId },
+      { field: "player_id", operator: "eq", value: playerId }
+    ]
+  });
+  // This creates N queries for N cards!
+}
+```
+
+✅ **DO: Lift database queries to the parent component**
+```tsx
+// GOOD: Parent component manages all connections
+function PlayerList() {
+  const { records: connections } = useDatabase("connections", {
+    filters: [
+      { field: "user_id", operator: "eq", value: userId }
+    ],
+    enabled: !!userId  // Prevent queries when userId is not available
+  });
+
+  return players.map(player => (
+    <PlayerCard 
+      key={player.id}
+      player={player}
+      isConnected={connections.some(c => c.player_id === player.id)}
+      onConnect={handleConnect}
+    />
+  ));
+}
+```
+
+### Best Practices
+
+1. **Single Source of Truth**: 
+   - Keep database queries at the highest necessary level in your component tree
+   - Pass down data and handlers to child components as props
+   - Avoid querying the same table in multiple components
+
+2. **Control Query Execution**:
+   ```tsx
+   // Use the enabled option to prevent unnecessary queries
+   const { records } = useDatabase("table", {
+     filters: [...],
+     enabled: !!dependentData  // Query only runs when dependentData exists
+   });
+   ```
+
+3. **Batch Operations**:
+   - Use `addRecords` instead of multiple `addRecord` calls
+   - Use `removeRecords` for bulk deletions
+   ```tsx
+   // GOOD: Single batch operation
+   await addRecords(newItems);
+   
+   // BAD: Multiple individual operations
+   for (const item of newItems) {
+     await addRecord(item);  // Don't do this!
+   }
+   ```
+
+4. **Optimize Queries**:
+   - Only request fields you need using the `fields` option
+   - Use appropriate `limit` values
+   - Consider pagination for large datasets
+
+### Common Anti-Patterns to Avoid
+
+1. **Nested Database Hooks**:
+   ```tsx
+   // BAD: Nested queries can cause exponential number of requests
+   function ParentComponent() {
+     const { records: users } = useDatabase("users");
+     return users.map(user => <ChildWithDatabase userId={user.id} />);
+   }
+   ```
+
+2. **Unnecessary Refreshes**:
+   ```tsx
+   // BAD: Don't refresh on every render or in short intervals
+   useEffect(() => {
+     refresh();  // This will cause continuous refreshes!
+   });
+   ```
+
+3. **Missing Error Handling**:
+   ```tsx
+   // BAD: No error handling
+   const handleClick = () => {
+     addRecord(data);  // Errors are silently ignored
+   };
+
+   // GOOD: Proper error handling
+   const handleClick = async () => {
+     try {
+       await addRecord(data, (error) => {
+         console.error('Failed to add record:', error);
+         notifyUser(error.message);
+       });
+     } catch (error) {
+       handleError(error);
+     }
+   };
+   ```
