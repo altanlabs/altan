@@ -227,7 +227,7 @@ export const DatabaseProvider = ({
   config,
   children,
   customMiddleware = [],
-}: DatabaseProviderProps): JSX.Element => {
+}: DatabaseProviderProps): JSX.Element | null => {
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(true);
   const configRef = useRef(config);
@@ -335,7 +335,7 @@ export const DatabaseProvider = ({
   };
 
   if (isValidating) {
-    return <div>Validating database configuration...</div>;
+    return null;
   }
 
   if (error) {

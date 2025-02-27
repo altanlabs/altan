@@ -6,6 +6,6 @@ interface DatabaseProviderProps {
     enableDevTools?: boolean;
     customMiddleware?: Array<any>;
 }
-export declare const DatabaseProvider: ({ config, children, customMiddleware, }: DatabaseProviderProps) => JSX.Element;
+export declare const DatabaseProvider: ({ config, children, customMiddleware, }: DatabaseProviderProps) => JSX.Element | null;
 export {};
 //# sourceMappingURL=DatabaseProvider.d.ts.map

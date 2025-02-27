@@ -305,7 +305,7 @@ const DatabaseProvider = ({ config, children, customMiddleware = [], }) => {
         setError(null);
     };
     if (isValidating) {
-        return react_1.default.createElement("div", null, "Validating database configuration...");
+        return null;
     }
     if (error) {
         return (react_1.default.createElement(react_1.default.Fragment, null,
