@@ -50,7 +50,7 @@ export function AuthProvider({
   const api = useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
 
   const mapUserData = (userData: any): AuthUser => ({
-    id: String(userData.id || ""),
+    id: Number(userData.id || 0),
     email: userData.email || "",
     name: userData.name,
     surname: userData.surname,

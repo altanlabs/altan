@@ -7,7 +7,7 @@ export interface MediaObject {
     file_content?: string;
 }
 export interface AuthUser {
-    id: string;
+    id: number;
     email: string;
     name?: string;
     surname?: string;

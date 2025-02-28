@@ -9,7 +9,7 @@ export interface MediaObject {
 }
 
 export interface AuthUser {
-  id: string;
+  id: number;
   email: string;
   name?: string;
   surname?: string;

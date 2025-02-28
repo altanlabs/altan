@@ -14,7 +14,7 @@ export function AuthProvider({ children, tableId, storageKey = "auth_user", onAu
     const [isLoading, setIsLoading] = useState(true);
     // Create the API instance first
     const api = useMemo(() => createAuthenticatedApi(tableId, storageKey), [tableId, storageKey]);
-    const mapUserData = (userData) => (Object.assign({ id: String(userData.id || ""), email: userData.email || "", name: userData.name, surname: userData.surname, avatar: Array.isArray(userData.avatar) ? userData.avatar : [], verified: Boolean(userData.verified) }, Object.fromEntries(Object.entries(userData).filter(([key]) => !["id", "email", "name", "surname", "avatar", "verified"].includes(key)))));
+    const mapUserData = (userData) => (Object.assign({ id: Number(userData.id || 0), email: userData.email || "", name: userData.name, surname: userData.surname, avatar: Array.isArray(userData.avatar) ? userData.avatar : [], verified: Boolean(userData.verified) }, Object.fromEntries(Object.entries(userData).filter(([key]) => !["id", "email", "name", "surname", "avatar", "verified"].includes(key)))));
     // Define logout first since other functions depend on it
     const logout = useCallback(() => __awaiter(this, void 0, void 0, function* () {
         try {
