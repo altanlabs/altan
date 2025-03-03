@@ -46,7 +46,7 @@ function SignInPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  return <SignIn appearance={{ theme: 'light' }} />;
+  return <SignIn appearance={{ theme: 'dark' }} />;
 }
 ```
 
@@ -116,7 +116,7 @@ import { SignIn } from '@altanlabs/auth';
 function LoginPage() {
   return (
     <SignIn
-      appearance={{ theme: 'light' }}
+      appearance={{ theme: 'dark' }}
       companyName="Your Company"
       signUpUrl="/sign-up"
       withSignUp={true}
@@ -134,7 +134,7 @@ import { SignUp } from '@altanlabs/auth';
 function SignUpPage() {
   return (
     <SignUp
-      appearance={{ theme: 'light' }}
+      appearance={{ theme: 'dark' }}
       companyName="Your Company"
       signInUrl="/sign-in"
       withSignIn={true}
@@ -152,7 +152,7 @@ import { UserProfile } from '@altanlabs/auth';
 function ProfilePage() {
   return (
     <UserProfile
-      appearance={{ theme: 'light' }}
+      appearance={{ theme: 'dark' }}
       showCustomFields={true}
       editableFields={["name", "surname", "email"]}
       hiddenFields={["password"]}
@@ -170,7 +170,7 @@ import { Logout } from '@altanlabs/auth';
 function NavBar() {
   return (
     <Logout
-      appearance={{ theme: 'light' }}
+      appearance={{ theme: 'dark' }}
       onLogout={() => console.log('User logged out')}
       className="my-custom-class"
     />
