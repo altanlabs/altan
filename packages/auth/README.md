@@ -26,6 +26,30 @@ function App() {
 }
 ```
 
+## Redirecting Authenticated Users
+
+To ensure a smooth user experience, implement redirections in your authentication pages. If a user is already authenticated, redirect them to the desired location, such as a dashboard.
+
+Example:
+```tsx
+import { useAuth } from '@altanlabs/auth';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+function SignInPage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  return <SignIn appearance={{ theme: 'light' }} />;
+}
+```
+
 ## Available Types
 
 The library exports the following TypeScript types:
@@ -130,8 +154,8 @@ function ProfilePage() {
     <UserProfile
       appearance={{ theme: 'light' }}
       showCustomFields={true}
-      editableFields={['name', 'surname', 'email']}
-      hiddenFields={['password']}
+      editableFields={["name", "surname", "email"]}
+      hiddenFields={["password"]}
       fallback={<div>Please log in</div>}
     />
   );
@@ -145,7 +169,7 @@ import { Logout } from '@altanlabs/auth';
 
 function NavBar() {
   return (
-    <Logout 
+    <Logout
       appearance={{ theme: 'light' }}
       onLogout={() => console.log('User logged out')}
       className="my-custom-class"
@@ -220,4 +244,22 @@ interface LogoutProps {
 
 ## Using the Auth Hook
 
+```tsx
+import { useAuth } from '@altanlabs/auth';
+
+function ProfileButton() {
+  const { user, logout } = useAuth();
+
+  if (!user) {
+    return <button onClick={() => window.location.href = '/login'}>Sign In</button>;
+  }
+
+  return (
+    <div>
+      <span>Welcome, {user.name}!</span>
+      <button onClick={logout}>Logout</button>
+    </div>
+  );
+}
 ```
+
