@@ -293,14 +293,61 @@ try {
   nextPageToken: string | null   // Pagination token
   lastUpdated: string | null     // Last update timestamp
   
-  // Methods
+  // Methods - All methods accept an optional onError callback
   refresh: (options?: FetchOptions) => Promise<void>
   fetchNextPage: () => Promise<void>
-  addRecord: (record: Record<string, unknown>) => Promise<void>
-  modifyRecord: (id: string, updates: Record<string, unknown>) => Promise<void>
-  removeRecord: (id: string) => Promise<void>
-  addRecords: (records: Record<string, unknown>[]) => Promise<void>
-  removeRecords: (ids: string[]) => Promise<void>
+  
+  // Record manipulation methods with return values
+  addRecord: (record: Record<string, unknown>) => Promise<TableRecordItem | undefined>
+  // Returns the newly created record or undefined if failed
+  
+  modifyRecord: (id: string, updates: Record<string, unknown>) => Promise<TableRecordItem | undefined>
+  // Returns the updated record or undefined if failed
+  
+  removeRecord: (id: string) => Promise<{ tableId: string; recordId: string } | undefined>
+  // Returns deletion confirmation or undefined if failed
+  
+  addRecords: (records: Record<string, unknown>[]) => Promise<TableRecordItem[] | undefined>
+  // Returns array of newly created records or undefined if failed
+  
+  removeRecords: (ids: string[]) => Promise<{ tableId: string; recordIds: string[] } | undefined>
+  // Returns deletion confirmation or undefined if failed
+}
+```
+
+### Working with Record Manipulation Returns
+
+```typescript
+// Creating a record and using the return value
+const newTodo = await addRecord({ 
+  text: "New Todo",
+  completed: false 
+});
+if (newTodo) {
+  console.log('Created todo with ID:', newTodo.id);
+}
+
+// Creating multiple records
+const newRecords = await addRecords([
+  { text: "Todo 1", completed: false },
+  { text: "Todo 2", completed: false }
+]);
+if (newRecords) {
+  console.log('Created todos with IDs:', newRecords.map(r => r.id));
+}
+
+// Updating a record
+const updatedTodo = await modifyRecord(todoId, { 
+  completed: true 
+});
+if (updatedTodo) {
+  console.log('Todo updated:', updatedTodo);
+}
+
+// Deleting records with confirmation
+const deleteResult = await removeRecords([id1, id2]);
+if (deleteResult) {
+  console.log('Successfully deleted records:', deleteResult.recordIds);
 }
 ```
 
