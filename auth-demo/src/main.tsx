@@ -7,12 +7,12 @@ import { AuthProvider } from "@altanlabs/auth";
 import "./index.css";
 
 // Choose which component to render
-const COMPONENT_TO_RENDER = "database"; // "app", "database", or "direct"
+const COMPONENT_TO_RENDER = "app"; // "app", "database", or "direct"
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     {COMPONENT_TO_RENDER === "app" && (
-      <AuthProvider tableId="888c63b7-cd81-4091-8699-44120347d68f">
+      <AuthProvider tableId="4fb9c1e4-ee47-4d41-a52c-c6926bd679d2">
         <App />
       </AuthProvider>
     )}

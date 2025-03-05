@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@altanlabs/auth": "file:../packages/auth",
-    "@altanlabs/database": "file:../packages/database",
+    "@altanlabs/auth": "^1.0.24",
+    "@altanlabs/database": "^1.2.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
