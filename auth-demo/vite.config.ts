@@ -8,10 +8,7 @@ export default defineConfig({
     port: 3000
   },
   resolve: {
-    preserveSymlinks: true,
-    alias: {
-      '@altanlabs/database': path.resolve(__dirname, '../packages/database/dist')
-    }
+    preserveSymlinks: true
   },
   optimizeDeps: {
     include: ['@altanlabs/database']

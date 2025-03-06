@@ -1,1 +1,1 @@
-{"version":3,"file":"axios.d.ts","sourceRoot":"","sources":["../../src/api/axios.ts"],"names":[],"mappings":"AAGA,eAAO,MAAM,aAAa,eAAgB,MAAM,kCAI/C,CAAC"}
+{"version":3,"file":"axios.d.ts","sourceRoot":"","sources":["../../src/api/axios.ts"],"names":[],"mappings":"AAGA,eAAO,MAAM,aAAa,GAAI,YAAY,MAAM,kCAI/C,CAAC"}

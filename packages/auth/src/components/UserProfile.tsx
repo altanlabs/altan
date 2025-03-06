@@ -24,13 +24,12 @@ export interface UserProfileProps {
 }
 
 const ALWAYS_HIDDEN_FIELDS = [
-  'id', 'verified', 'created_time', 'last_modified_time', 'last_modified_by', 'password'
+  'id', 'verified', 'created_time', 'last_modified_time', 'last_modified_by', 'password', 'avatar'
 ];
 
 const DEFAULT_EDITABLE_FIELDS = [
   'name',
   'surname',
-  'email',
 ];
 
 export default function UserProfile({
@@ -80,8 +79,20 @@ export default function UserProfile({
   const getDisplayFields = () => {
     return Object.entries(user).filter(([key]) => {
       if (allHiddenFields.includes(key)) return false;
+      if (key === 'avatar') return false;
       if (!showCustomFields && !DEFAULT_EDITABLE_FIELDS.includes(key)) return false;
       return true;
+    }).map(([key, value]) => {
+      // Format the value based on its type
+      let displayValue = value;
+      if (Array.isArray(value)) {
+        displayValue = value.join(', ');
+      } else if (value === null || value === undefined) {
+        displayValue = '';
+      } else if (typeof value === 'object') {
+        displayValue = JSON.stringify(value);
+      }
+      return [key, displayValue];
     });
   };
 
@@ -189,46 +200,29 @@ export default function UserProfile({
           <div className="px-4 py-5 sm:p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className={`text-lg font-medium ${theme.text}`}>Profile Information</h3>
-              {!isEditing ? (
-                <button
-                  onClick={handleEdit}
-                  className={`px-4 py-2 rounded-md ${theme.primary} ${theme.buttonText}`}
-                >
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="space-x-4">
-                  <button
-                    onClick={handleCancel}
-                    className={`px-4 py-2 border ${theme.border} rounded-md ${theme.textSecondary}`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className={`px-4 py-2 rounded-md ${theme.primary} ${theme.buttonText} disabled:opacity-50`}
-                  >
-                    {isLoading ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={isEditing ? handleSave : handleEdit}
+                disabled={isEditing && isLoading}
+                className={`px-4 py-2 rounded-md ${theme.primary} ${theme.buttonText} disabled:opacity-50`}
+              >
+                {isEditing ? (isLoading ? "Saving..." : "Save Changes") : "Edit Profile"}
+              </button>
             </div>
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {getDisplayFields().map(([key, value]) => (
                 <div key={key} className="space-y-1">
                   <label className={`block text-sm font-medium ${theme.textMuted}`}>
-                    {key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {key.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                   </label>
                   {isEditing && editableFields.includes(key) ? (
                     <input
                       type="text"
                       value={formData[key] || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, [key]: e.target.value }))}
-                      className={`block w-full rounded-md ${theme.border} shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${theme.card} ${theme.text}`}
+                      className={`block w-full rounded-md ${theme.border} shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${theme.card} ${theme.text} p-2`}
                     />
                   ) : (
-                    <div className={`text-sm ${theme.text}`}>
+                    <div className={`text-sm ${theme.text} p-2 rounded-md ${theme.card === 'bg-white' ? 'bg-gray-50' : 'bg-gray-700'}`}>
                       {value || "Not set"}
                     </div>
                   )}
