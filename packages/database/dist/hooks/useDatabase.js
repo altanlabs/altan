@@ -6,6 +6,8 @@ const react_redux_1 = require("react-redux");
 const tablesSlice_1 = require("../store/tablesSlice");
 const useAppDispatch_1 = require("./useAppDispatch");
 function useDatabase(table, initialQuery) {
+    // Add mounted ref to prevent state updates after unmount
+    const isMounted = (0, react_1.useRef)(true);
     const dispatch = (0, useAppDispatch_1.useAppDispatch)();
     const [nextPageToken, setNextPageToken] = (0, react_1.useState)(null);
     const requestInProgress = (0, react_1.useRef)({});
@@ -19,8 +21,6 @@ function useDatabase(table, initialQuery) {
         initialized: (tableData === null || tableData === void 0 ? void 0 : tableData.initialized) || false,
         lastUpdated: (tableData === null || tableData === void 0 ? void 0 : tableData.lastUpdated) || null,
     }), [tableData]);
-    // Add mounted ref to prevent state updates after unmount
-    const isMounted = (0, react_1.useRef)(true);
     (0, react_1.useEffect)(() => {
         return () => {
             isMounted.current = false;
@@ -78,18 +78,12 @@ function useDatabase(table, initialQuery) {
             }
         }
     }, [table, safeDispatch, isLoadingRecords]);
-    const addRecord = (0, react_1.useCallback)(async (record, onError) => {
-        await safeDispatch((0, tablesSlice_1.createRecord)({ tableName: table, record }), onError);
-    }, [table, safeDispatch]);
-    const modifyRecord = (0, react_1.useCallback)(async (recordId, updates, onError) => {
-        await safeDispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId, updates }), onError);
-    }, [table, safeDispatch]);
+    const addRecord = (0, react_1.useCallback)(async (record, onError) => await safeDispatch((0, tablesSlice_1.createRecord)({ tableName: table, record }), onError), [table, safeDispatch]);
+    const modifyRecord = (0, react_1.useCallback)(async (recordId, updates, onError) => await safeDispatch((0, tablesSlice_1.updateRecord)({ tableName: table, recordId, updates }), onError), [table, safeDispatch]);
     const removeRecord = (0, react_1.useCallback)(async (recordId, onError) => {
         await safeDispatch((0, tablesSlice_1.deleteRecord)({ tableName: table, recordId }), onError);
     }, [table, safeDispatch]);
-    const addRecords = (0, react_1.useCallback)(async (records, onError) => {
-        await safeDispatch((0, tablesSlice_1.createRecords)({ tableName: table, records }), onError);
-    }, [table, safeDispatch]);
+    const addRecords = (0, react_1.useCallback)(async (records, onError) => await safeDispatch((0, tablesSlice_1.createRecords)({ tableName: table, records }), onError), [table, safeDispatch]);
     const removeRecords = (0, react_1.useCallback)(async (recordIds, onError) => {
         await safeDispatch((0, tablesSlice_1.deleteRecords)({ tableName: table, recordIds }), onError);
     }, [table, safeDispatch]);

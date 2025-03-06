@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import type { DatabaseConfig } from "../config";
 interface DatabaseProviderProps {
     config: DatabaseConfig;
@@ -6,6 +6,6 @@ interface DatabaseProviderProps {
     enableDevTools?: boolean;
     customMiddleware?: Array<any>;
 }
-export declare const DatabaseProvider: ({ config, children, customMiddleware, }: DatabaseProviderProps) => JSX.Element | null;
-export {};
+declare const DatabaseProvider: React.MemoExoticComponent<({ config, children, customMiddleware, }: DatabaseProviderProps) => JSX.Element | null>;
+export { DatabaseProvider };
 //# sourceMappingURL=DatabaseProvider.d.ts.map

@@ -13,10 +13,11 @@ import {
 import { useAppDispatch } from "./useAppDispatch";
 import { 
   TableRecordData,
-  TableRecordItem,
   FetchOptions,
   DatabaseHookReturn,
-  RootState 
+  RootState, 
+  TableRecordAPIResponse,
+  TableRecordsAPIResponse
 } from "../store/types";
 
 export function useDatabase(
@@ -129,7 +130,7 @@ export function useDatabase(
   );
 
   const addRecord = useCallback(
-    async (record: Record<string, unknown>, onError?: (e: Error) => void) => await safeDispatch<TableRecordItem>(
+    async (record: Record<string, unknown>, onError?: (e: Error) => void) => await safeDispatch<TableRecordAPIResponse>(
       createRecord({ tableName: table, record }),
       onError
     ),
@@ -141,7 +142,7 @@ export function useDatabase(
       recordId: string,
       updates: Record<string, unknown>,
       onError?: (e: Error) => void
-    ) => await safeDispatch<TableRecordItem>(
+    ) => await safeDispatch<TableRecordAPIResponse>(
       updateRecord({ tableName: table, recordId, updates }),
       onError
     ),
@@ -159,7 +160,7 @@ export function useDatabase(
   );
 
   const addRecords = useCallback(
-    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => await safeDispatch(
+    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => await safeDispatch<TableRecordsAPIResponse>(
       createRecords({ tableName: table, records }),
       onError
     ),

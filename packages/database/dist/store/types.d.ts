@@ -11,6 +11,14 @@ export interface TableRecordItem {
     last_modified_time?: string;
     last_modified_by?: string;
 }
+export interface TableRecordAPIResponse {
+    tableId: string;
+    record: TableRecordItem;
+}
+export interface TableRecordsAPIResponse {
+    tableId: string;
+    records: TableRecordItem[];
+}
 export interface TableRecordData {
     items: TableRecordItem[];
     total: number;
@@ -157,10 +165,10 @@ export interface DatabaseHookReturn {
     lastUpdated: string | null;
     refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>;
     fetchNextPage: (onError?: (error: Error) => void) => Promise<void>;
-    addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<void>;
-    modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<void>;
+    addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>;
+    modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>;
     removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>;
-    addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<void>;
+    addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<TableRecordsAPIResponse | undefined>;
     removeRecords: (recordIds: string[], onError?: (error: Error) => void) => Promise<void>;
 }
 export interface TableState {

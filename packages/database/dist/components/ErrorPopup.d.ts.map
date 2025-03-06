@@ -1,0 +1,1 @@
+{"version":3,"file":"ErrorPopup.d.ts","sourceRoot":"","sources":["../../src/components/ErrorPopup.tsx"],"names":[],"mappings":"AACA,OAAO,KAAmB,MAAM,OAAO,CAAC;AACxC,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,WAAW,CAAC;AAGhD,UAAU,eAAe;IACvB,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,MAAM,EAAE,cAAc,CAAA;CACvB;AAGD,QAAA,MAAM,UAAU,GAAI,8BAA8B,eAAe,sBAkIhE,CAAC;AAEF,eAAe,UAAU,CAAC"}
