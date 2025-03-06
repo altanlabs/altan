@@ -23,6 +23,8 @@ export function useDatabase(
   table: string,
   initialQuery?: FetchOptions
 ): DatabaseHookReturn {
+  // Add mounted ref to prevent state updates after unmount
+  const isMounted = useRef(true);
   const dispatch = useAppDispatch();
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const requestInProgress = useRef<Record<string, boolean>>({});
@@ -46,8 +48,6 @@ export function useDatabase(
     [tableData]
   );
 
-  // Add mounted ref to prevent state updates after unmount
-  const isMounted = useRef(true);
   useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -129,12 +129,10 @@ export function useDatabase(
   );
 
   const addRecord = useCallback(
-    async (record: Record<string, unknown>, onError?: (e: Error) => void) => {
-      await safeDispatch<TableRecordItem>(
-        createRecord({ tableName: table, record }),
-        onError
-      );
-    },
+    async (record: Record<string, unknown>, onError?: (e: Error) => void) => await safeDispatch<TableRecordItem>(
+      createRecord({ tableName: table, record }),
+      onError
+    ),
     [table, safeDispatch]
   );
 
@@ -143,12 +141,10 @@ export function useDatabase(
       recordId: string,
       updates: Record<string, unknown>,
       onError?: (e: Error) => void
-    ) => {
-      await safeDispatch<TableRecordItem>(
-        updateRecord({ tableName: table, recordId, updates }),
-        onError
-      );
-    },
+    ) => await safeDispatch<TableRecordItem>(
+      updateRecord({ tableName: table, recordId, updates }),
+      onError
+    ),
     [table, safeDispatch]
   );
 
@@ -163,12 +159,10 @@ export function useDatabase(
   );
 
   const addRecords = useCallback(
-    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
-      await safeDispatch(
-        createRecords({ tableName: table, records }),
-        onError
-      );
-    },
+    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => await safeDispatch(
+      createRecords({ tableName: table, records }),
+      onError
+    ),
     [table, safeDispatch]
   );
 
