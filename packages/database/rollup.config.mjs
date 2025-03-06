@@ -2,10 +2,6 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
-import postcss from 'rollup-plugin-postcss';
-import autoprefixer from 'autoprefixer';
-import tailwindcss from 'tailwindcss';
-// import pkg from './package.json' assert { type: 'json' };
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const pkg = require('./package.json');
@@ -28,25 +24,17 @@ export default {
     'react',
     'react-dom',
     'react-router-dom',
-    '@altanlabs/database',
+    '@altanlabs/auth',
     ...Object.keys(pkg.dependencies || {})
   ],
   plugins: [
-    postcss({
-      config: {
-        path: './postcss.config.js',
-      },
-      extensions: ['.css'],
-      minimize: true,
-      extract: 'styles.css',
-    }),
     resolve(),
     commonjs(),
     typescript({
       tsconfig: './tsconfig.json',
       declaration: true,
       declarationDir: 'dist',
-      sourceMap: true
+      sourceMap: false
     }),
     terser()
   ]

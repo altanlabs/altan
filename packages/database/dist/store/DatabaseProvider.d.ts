@@ -6,6 +6,6 @@ interface DatabaseProviderProps {
     enableDevTools?: boolean;
     customMiddleware?: Array<any>;
 }
-declare const DatabaseProvider: React.MemoExoticComponent<({ config, children, customMiddleware, }: DatabaseProviderProps) => JSX.Element | null>;
+declare const DatabaseProvider: React.NamedExoticComponent<DatabaseProviderProps>;
 export { DatabaseProvider };
 //# sourceMappingURL=DatabaseProvider.d.ts.map

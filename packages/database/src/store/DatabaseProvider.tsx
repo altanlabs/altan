@@ -2,6 +2,7 @@
 import React, { ReactNode, useMemo, useState, useEffect, useRef, memo } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { useAuthAPI } from '@altanlabs/auth';
 import tablesReducer from "./tablesSlice";
 import type { DatabaseConfig } from "../config";
 import { validateDatabaseConfig } from "../config";
@@ -9,6 +10,7 @@ import { initializeTables } from "./tablesSlice";
 import { createAltanDB } from "../api/axios";
 import axios from "axios";
 import ErrorPopup from "../components/ErrorPopup";
+import { Middleware } from "redux";
 
 interface DatabaseProviderProps {
   config: DatabaseConfig;
@@ -91,15 +93,16 @@ const validateTablesGlobally = async (tableIds: string[]): Promise<{ valid: bool
   }
 };
 
-const DatabaseProvider = memo(({
+const DatabaseProviderComponent: React.FC<DatabaseProviderProps> = ({
   config,
   children,
   customMiddleware = [],
-}: DatabaseProviderProps): JSX.Element | null => {
+}) => {
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(true);
   const configRef = useRef(config);
   const [validationComplete, setValidationComplete] = useState(false);
+  const authenticatedAPI = useAuthAPI(false);
 
   // Memoize the base URL validation result
   const isBaseUrlValid = useMemo(() => {
@@ -173,13 +176,13 @@ const DatabaseProvider = memo(({
     
     try {
       validateDatabaseConfig(config);
-      const api = createAltanDB(config.API_BASE_URL);
+      const api = authenticatedAPI ?? createAltanDB(config.API_BASE_URL);
       
       const s = configureStore({
         reducer: {
           tables: tablesReducer,
         },
-        middleware: (getDefaultMiddleware) =>
+        middleware: (getDefaultMiddleware: (options?: any) => Middleware[]) =>
           getDefaultMiddleware({
             thunk: {
               // Create the axios instance once using the API_BASE_URL from the provider config.
@@ -196,7 +199,7 @@ const DatabaseProvider = memo(({
       setError(`Configuration error: ${err instanceof Error ? err.message : String(err)}`);
       return null;
     }
-  }, [config, customMiddleware, error, isValidating]);
+  }, [config, customMiddleware, error, authenticatedAPI, isValidating]);
 
   // Handle closing the error popup
   const handleCloseError = () => {
@@ -220,10 +223,17 @@ const DatabaseProvider = memo(({
     return <div>Failed to initialize database store.</div>;
   }
 
-  return <Provider store={store}>{children}</Provider>;
-});
+  return (
+    <Provider 
+      store={store}
+    >
+      {children}
+    </Provider>
+  );
+};
 
-DatabaseProvider.displayName = 'DatabaseProvider';
+const DatabaseProvider = memo(DatabaseProviderComponent);
+DatabaseProvider.displayName = "DatabaseProvider";
 
 export {
   DatabaseProvider

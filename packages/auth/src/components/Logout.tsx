@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../AuthProvider';
+import { useAuthActions } from '../AuthProvider';
 
 export interface LogoutProps {
   appearance?: {
@@ -14,7 +14,7 @@ export default function Logout({
   onLogout,
   className = '',
 }: LogoutProps) {
-  const { logout } = useAuth();
+  const { logout } = useAuthActions();
 
   const theme = {
     light: {

@@ -69,6 +69,7 @@ export function useDatabase(
     ): Promise<T | undefined> => {
       try {
         const result = await dispatch(action).unwrap();
+        console.log("@safeDispatch: result", isMounted.current, result);
         if (isMounted.current) return result;
       } catch (e) {
         onError?.(e as Error);

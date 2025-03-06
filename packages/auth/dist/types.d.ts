@@ -1,3 +1,4 @@
+import { AxiosInstance } from "axios";
 export interface MediaObject {
     id?: string;
     file_name: string;
@@ -42,6 +43,7 @@ export interface AuthContextValue {
     updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
     isAuthenticated: boolean;
     continueWithGoogle: () => Promise<void>;
+    api: AxiosInstance;
 }
 export interface SignInInitialValues {
     emailAddress?: string;

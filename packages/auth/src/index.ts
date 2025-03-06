@@ -1,6 +1,6 @@
 import './styles.css';
 
-export { AuthProvider, useAuth } from './AuthProvider';
+export { AuthProvider, useAuth, useAuthAPI, useAuthActions, useAuthError, useAuthLoading, useAuthUser } from './AuthProvider';
 export { ProtectedRoute } from './ProtectedRoute';
 export type {
   AuthUser,

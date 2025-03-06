@@ -1,5 +1,5 @@
 import './styles.css';
-export { AuthProvider, useAuth } from './AuthProvider';
+export { AuthProvider, useAuth, useAuthAPI, useAuthActions, useAuthError, useAuthLoading, useAuthUser } from './AuthProvider';
 export { ProtectedRoute } from './ProtectedRoute';
 export type { AuthUser, LoginCredentials, RegisterCredentials, FieldMapping, AuthContextValue, } from './types';
 export { default as SignIn } from './components/SignIn';

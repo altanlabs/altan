@@ -1,6 +1,6 @@
 {
   "name": "@altanlabs/auth",
-  "version": "1.0.24",
+  "version": "1.1.0",
   "description": "React authentication library built on top of @altanlabs/database",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.1.0",
     "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.0.0",
     "@tailwindcss/forms": "^0.5.7",
     "@types/bcryptjs": "^2.4.6",

@@ -1,2 +1,5 @@
 node_modules
 .rollup.cache
+dist
+packages/database/dist
+packages/auth/dist

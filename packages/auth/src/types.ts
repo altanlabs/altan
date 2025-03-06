@@ -1,3 +1,5 @@
+import { AxiosInstance } from "axios";
+
 // Media object interface for attachments
 export interface MediaObject {
   id?: string;
@@ -48,6 +50,7 @@ export interface AuthContextValue {
   updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
   isAuthenticated: boolean;
   continueWithGoogle: () => Promise<void>;
+  api: AxiosInstance;
 }
 
 export interface SignInInitialValues {
