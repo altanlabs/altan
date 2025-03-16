@@ -1,400 +1,392 @@
-# altanlabs Monorepo
+# @altanlabs – Combined Documentation
 
-Welcome to the altanlabs Open Source Project! This monorepo contains a suite of packages that empower developers to build modern, scalable, and interactive applications. Each package focuses on a distinct aspect of application development, from database integration and authentication to UI components and layout blocks.
+## 1. Installation
 
-## Packages in This Monorepo
-
-- **@altanlabsdatabase**  
-  A robust TypeScript-based database integration package. It provides utilities for configuring and managing database connections, interacting with backend APIs via axios, and integrating Redux for state management.
-
-- **@altanlabs/auth**  
-  A user authentication and authorization module. It simplifies the process of integrating various auth strategies (such as JWT, OAuth) into your application.
-
-- **@altanlabs/components**  
-  A library of reusable UI components designed for rapid development. These components are styled, responsive, and extensible, promoting a consistent look-and-feel across your projects.
-
-- **@altanlabs/blocks**  
-  Pre-designed layout blocks that allow you to quickly assemble complex UIs. Combine these blocks to create custom dashboards, landing pages, or admin panels with ease.
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (preferably the latest LTS version)
-- npm or Yarn
-
-### Local Development
-
-1. **Clone the Repository:**
-
-   ```bash
-   git clone https://github.com/your-org/altanlabs-monorepo.git
-   cd altanlabs-monorepo
-   ```
-
-2. **Install Dependencies:**
-
-   If you're using Yarn Workspaces or npm workspaces, run:
-
-   ```bash
-   npm install
-   ```
-
-   or
-
-   ```bash
-   yarn install
-   ```
-
-3. **Build All Packages:**
-
-   Use the provided workspace scripts to build every package:
-
-   ```bash
-   npm run build
-   ```
-
-   This command compiles TypeScript files and generates the distributable code (e.g., in each package's `dist` folder).
-
-4. **Run in Development Mode:**
-
-   For faster iteration, you can run individual packages in watch mode. Refer to each package's README for specific instructions.
-
-## Usage
-
-Each package is published separately and can be installed as needed in your projects. For example:
-
-- **Database Module:**
-  
-  ```bash
-  npm install @altanlabs/database
-  ```
-
-  Then, in your React application:
-
-  ```typescript
-  import { setDatabaseConfig, DatabaseProvider, createAltanDB, fetchTableRecords } from "@altanlabs/database";
-
-  // Configure the database
-  setDatabaseConfig({
-    API_BASE_URL: "https://api.example.com",
-    SAMPLE_TABLES: {
-      users: "your-users-table-id",
-      posts: "your-posts-table-id"
-    }
-  });
-
-  // Wrap your app with DatabaseProvider
-  const App = () => (
-    <DatabaseProvider>
-      {/* Your app components */}
-    </DatabaseProvider>
-  );
-
-  // Example usage: fetching records
-  // dispatch(fetchTableRecords({ tableName: "users", queryParams: { limit: 20 } }));
-  ```
-
-- **Authentication Module:**  
-  Refer to the `@altanlabs/auth` package for installation and usage instructions to handle user login, registration, and secure sessions.
-
-- **Components and Blocks:**  
-  Install these packages similarly and import specific UI elements to rapidly develop elegant user interfaces.
-
-## Example: Dashboard Layout
-
-One of the goals of these packages is to enable developers to quickly create sophisticated dashboards. A typical dashboard may include:
-
-- **Multiple Chart Types Using Recharts:** Leverage data visualization components.
-- **Card-Based Layouts:** Organize information into easily digestible segments.
-- **Activity Feeds and Quick Action Buttons:** Enhance user engagement and interactivity.
-
-## Contributing
-
-Contributions are welcome! To get started:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Commit your changes and open a Pull Request.
-
-Please see our [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
-
-
-# @altanlabs/database
-
-A robust TypeScript-based database integration package for the Altan ecosystem. This package provides flexible and powerful utilities for configuring and managing database connections, interacting with backend APIs via axios, and integrating Redux state management in React applications. The library relies on explicit, prop-based configuration and a single axios instance that's injected into your Redux async thunks.
-
----
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-  - [DatabaseProvider](#databaseprovider)
-  - [Axios Instance Creation](#axios-instance-creation)
-  - [Redux Tables Slice](#redux-tables-slice)
-  - [Querying Records](#querying-records)
-- [Advanced Topics](#advanced-topics)
-  - [Dashboard Example](#dashboard-example)
-  - [Redux Store Structure](#redux-store-structure)
-  - [Available Tables](#available-tables)
-- [API Endpoints](#api-endpoints)
-- [License](#license)
-
----
-
-## Installation
-
-Install the package via npm:
-
+Install both libraries:
 ```bash
-npm install @altanlabs/database
+npm install @altanlabs/database @altanlabs/auth
 ```
 
-Or using yarn:
+## 2. Setup
 
-```bash
-yarn add @altanlabs/database
-```
+### 2.1 Provider Setup
 
----
+Wrap your app with both providers:
 
-## Configuration
+```jsx
+import "@altanlabs/auth/dist/styles.css";  // Important: Import auth styles
+import { AuthProvider } from "@altanlabs/auth";
+import { DatabaseProvider } from "@altanlabs/database";
 
-The configuration is now passed directly to the `DatabaseProvider` component. Define your configuration object in your application entry point. For example:
-
-```typescript
-// src/config.ts
-export const databaseConfig = {
-  API_BASE_URL: "https://api.example.com",
+const databaseConfig = {
+  API_BASE_URL: "https://api.altan.ai/galaxia/hook/a9lcf",
   SAMPLE_TABLES: {
-    // Pre-configured tables
-    users: "1b52a5c4-ce93-4790-aa2a-d186daa2068d",
-    posts: "d8812981-b246-4de4-8ef9-40fa8a7dbbda"
+    todos: "550e8400-e29b-41d4-a716-446655440000"
   }
 };
-```
 
----
-
-## Usage
-
-### DatabaseProvider
-
-Wrap your application in the `DatabaseProvider` and pass your configuration via the `config` prop. This provider creates a single axios instance and injects it into all async thunk actions.
-
-```tsx
-// src/App.tsx
-import React from "react";
-import { DatabaseProvider } from "@altanlabs/database";
-import { databaseConfig } from "./config";
-import YourApplication from "./YourApplication";
-
-const App = () => (
-  <DatabaseProvider config={databaseConfig}>
-    <YourApplication />
-  </DatabaseProvider>
-);
-
-export default App;
-```
-
-### Axios Instance Creation
-
-The library exports a `createAltanDB` function that creates an axios instance using the provided API base URL. However, you do not need to call this function directly. The `DatabaseProvider` calls it once using the configuration supplied to create the axios instance that is injected via Redux Thunk's extra argument.
-
-### Redux Tables Slice
-
-The package exposes several Redux actions and thunks (such as `fetchTableRecords`, `createRecord`, etc.) to interact with table records. These thunks automatically use the injected axios instance.
-
-#### Example: Fetching Table Records
-
-```typescript
-import { useDispatch } from "react-redux";
-import { fetchTableRecords } from "@altanlabs/database";
-
-const dispatch = useDispatch();
-
-// Fetch records from the "users" table with a limit of 20 records
-dispatch(fetchTableRecords({
-  tableName: "users",
-  queryParams: { limit: 20 }
-}));
-```
-
-#### Example: Creating a Record
-
-```typescript
-import { createRecord } from "@altanlabs/database";
-
-dispatch(createRecord({
-  tableName: "users",
-  record: {
-    username: "john_doe",
-    email: "john@example.com"
-  }
-}));
-```
-
----
-
-### Querying Records
-
-The database supports advanced querying capabilities with filtering, sorting, and pagination. When querying records, you can specify various options using the `queryParams` field. These options include:
-
-- **Filters**  
-  Apply one or more criteria to narrow down the records.  
-  **Operators available:**
-  - `eq` - Equals
-  - `neq` - Not equals (includes NULL values)
-  - `gt` - Greater than
-  - `gte` - Greater than or equal
-  - `lt` - Less than
-  - `lte` - Less than or equal
-  - `contains` - Case-insensitive text search
-  - `startswith` - Case-insensitive prefix search
-  - `endswith` - Case-insensitive suffix search
-
-- **Sorting**  
-  Sort by multiple fields using the `sort` parameter. Each sort item requires a `field` and a `direction` ("asc" or "desc").  
-  If no sorting is provided, the default is sorting by `id` in ascending order.
-
-- **Pagination**  
-  Cursor-based pagination is used to efficiently load large data sets.
-  - Use `limit` to control the number of records per page.  
-  - A `pageToken` (returned as `nextPageToken`) will be provided if more records exist.  
-  - Pass the `pageToken` in subsequent requests to retrieve the next set of records.
-
-- **Fields & Amount**  
-  Specify a subset of fields to retrieve using `fields`.  
-  The `amount` parameter determines how many records to return. It defaults to `"all"` if not provided and can be explicitly set to `"all"`, `"first"`, or `"one"`.
-
-#### Examples
-
-```typescript
-// Basic query
-dispatch(fetchTableRecords({
-  tableName: "users",
-  queryParams: { 
-    limit: 20 
-  }
-}));
-
-// Advanced query with filters and sorting
-dispatch(fetchTableRecords({
-  tableName: "users",
-  queryParams: {
-    filters: [
-      { field: "username", operator: "contains", value: "john" },
-      { field: "signup_date", operator: "gte", value: "2024-01-01" }
-    ],
-    sort: [
-      { field: "created_time", direction: "desc" }
-    ],
-    limit: 20,
-    fields: ["id", "username", "email"],
-    amount: "all" // Defaults to "all" if not specified
-  }
-}));
-
-// Pagination example:
-// First page fetch:
-const firstPage = await dispatch(fetchTableRecords({
-  tableName: "users",
-  queryParams: { limit: 20 }
-}));
-// Fetch the next page:
-if (firstPage.nextPageToken) {
-  dispatch(fetchTableRecords({
-    tableName: "users",
-    queryParams: {
-      limit: 20,
-      pageToken: firstPage.nextPageToken
-    }
-  }));
+function Root() {
+  return (
+    <AuthProvider tableId="your-users-table-id">
+      <DatabaseProvider config={databaseConfig}>
+        <App />
+      </DatabaseProvider>
+    </AuthProvider>
+  );
 }
 ```
 
----
+## 3. Database Features
 
-## Advanced Topics
+### 3.1 Basic Hook Usage
 
-### Dashboard Example
+```jsx
+function TodoList() {
+  const { records, isLoading, error, addRecord, modifyRecord, removeRecord } = useDatabase("todos");
 
-Integrate the database operations into a larger dashboard application that might feature:
-- Multiple chart components using Recharts
-- Card-based layouts
-- Activity feeds and quick action buttons
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
-### Redux Store Structure
-
-The integrated Redux store uses the following structure:
-
-```javascript
-const initialState = {
-  tables: {
-    byId: {},
-    byName: {},
-    allIds: [],
-  },
-  schemas: {
-    byTableId: {},
-  },
-  records: {
-    byTableId: {},
-  },
-  loading: {
-    tables: "idle",
-    records: "idle",
-    schemas: "idle",
-  },
-  error: null,
-  initialized: {} // Tracks whether a table's data has been fetched.
-};
+  return (
+    <div>
+      <button onClick={() => addRecord({ text: "New Todo", completed: false })}>
+        Add Todo
+      </button>
+      {records.map(todo => (
+        <div key={todo.id}>
+          <span>{todo.text}</span>
+          <button onClick={() => modifyRecord(todo.id, { completed: !todo.completed })}>
+            Toggle
+          </button>
+          <button onClick={() => removeRecord(todo.id)}>Delete</button>
+        </div>
+      ))}
+    </div>
+  );
+}
 ```
 
-### Available Tables
+### 3.2 Advanced Query Usage
 
-Pre-configured tables are defined via the `SAMPLE_TABLES` configuration object:
+```jsx
+function CompletedTodoList() {
+  const { records } = useDatabase("todos", {
+    filters: [
+      { field: "completed", operator: "eq", value: true }
+    ],
+    sort: [
+      { field: "created_at", direction: "desc" }
+    ],
+    limit: 10,
+    fields: ["id", "text", "completed", "created_at"],
+    amount: "all"
+  });
 
-```javascript
-const SAMPLE_TABLES = {
-  users: "1b52a5c4-ce93-4790-aa2a-d186daa2068d",
-  posts: "d8812981-b246-4de4-8ef9-40fa8a7dbbda",
-};
+  return (
+    <div>
+      {records.map(todo => (
+        <div key={todo.id}>
+          <span>{todo.text}</span>
+          <span>{todo.created_at}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 ```
 
----
+### 3.3 Bulk Operations
 
-## API Endpoints
+```jsx
+const { addRecords, removeRecords } = useDatabase("todos");
 
-The database components interact with the following API endpoints:
+// Create multiple records
+await addRecords([
+  { text: "Todo 1", completed: false },
+  { text: "Todo 2", completed: false }
+]);
 
-- `GET /table/{table_id}`  
-  Retrieve the table schema.
+// Delete multiple records
+await removeRecords([1, 2, 3]);  // Note: IDs are numbers
+```
 
-- `POST /table/{table_id}/record/query`  
-  Query table records using filters, sorting, and pagination.
+### 3.4 Attachments
 
-- `POST /table/{table_id}/record`  
-  Create a new record in the specified table.
+```jsx
+// Upload new attachments
+await addRecord({
+  title: "Document",
+  attachments: [{
+    file_name: "document.pdf",
+    mime_type: "application/pdf",
+    file_content: "base64_encoded_content..."
+  }]
+});
 
-- `PATCH /table/{table_id}/record/{record_id}`  
-  Update an existing record.
+// Update attachments - keep existing and add new
+await modifyRecord(recordId, {
+  attachments: [
+    { id: "existing_media_1" },  // Keep existing
+    {                           // Add new
+      file_name: "new.pdf",
+      mime_type: "application/pdf",
+      file_content: "base64_encoded_content..."
+    }
+  ]
+});
 
-- `DELETE /table/{table_id}/record/{record_id}`  
-  Delete a record from the table.
+// Remove all attachments
+await modifyRecord(recordId, { attachments: [] });
+```
 
-Ensure your backend API conforms to these endpoints and data structures for seamless integration.
+### 3.5 Pagination
 
----
+```jsx
+function PaginatedList() {
+  const { records, nextPageToken, fetchNextPage } = useDatabase("todos");
 
+  return (
+    <div>
+      {records.map(todo => (
+        <div key={todo.id}>{todo.text}</div>
+      ))}
+      {nextPageToken && (
+        <button onClick={fetchNextPage}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
 
-## License
+## 4. Authentication Features
 
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+### 4.1 Sign In Component
 
----
+```jsx
+import { SignIn } from "@altanlabs/auth";
 
-Happy Coding and Thank You for Contributing to altanlabs!
+function SignInPage() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#1a1a1a'  // Dark background
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        padding: '20px',
+        borderRadius: '8px',
+        backgroundColor: '#2d2d2d',  // Darker card background
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'  // More pronounced shadow for dark theme
+      }}>
+        <SignIn
+          appearance={{ theme: "dark" }}
+          companyName="Your Company"
+          signUpUrl="/sign-up"
+          withSignUp
+          routing="path"
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### 4.2 Sign Up Component
+
+```jsx
+import { SignUp } from "@altanlabs/auth";
+
+function SignUpPage() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#1a1a1a'  // Dark background
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        padding: '20px',
+        borderRadius: '8px',
+        backgroundColor: '#2d2d2d',  // Darker card background
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'  // More pronounced shadow for dark theme
+      }}>
+        <SignUp
+          appearance={{ theme: "dark" }}
+          companyName="Your Company"
+          signInUrl="/sign-in"
+          withSignIn
+          routing="path"
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### 4.3 User Profile
+
+```jsx
+import { UserProfile } from "@altanlabs/auth";
+
+function ProfilePage() {
+  return (
+    <UserProfile
+      appearance={{ theme: "dark" }}
+      showCustomFields
+      editableFields={["name", "surname", "email"]}
+      hiddenFields={["password"]}
+      fallback={<div>Please log in</div>}
+    />
+  );
+}
+```
+
+### 4.4 Authentication Hook
+
+```jsx
+import { useAuth } from "@altanlabs/auth";
+
+function ProfileButton() {
+  const { user, logout } = useAuth();
+
+  if (!user) {
+    return <button onClick={() => (window.location.href = "/login")}>Sign In</button>;
+  }
+
+  return (
+    <div>
+      <span>Welcome, {user.name}!</span>
+      <button onClick={logout}>Logout</button>
+    </div>
+  );
+}
+```
+
+## 5. Best Practices
+
+### 5.1 Database Best Practices
+
+1. **Lift Queries Up**
+   - Keep database queries at the highest necessary level
+   - Pass data down to child components as props
+   - Avoid querying the same table in multiple components
+
+2. **Optimize Performance**
+   ```jsx
+   const { records } = useDatabase("table", {
+     filters: [...],
+     enabled: !!dependentData,  // Only query when needed
+     fields: ["id", "name"],    // Only request needed fields
+     limit: 20                  // Use pagination
+   });
+   ```
+
+3. **Use Batch Operations**
+   ```jsx
+   const { addRecords } = useDatabase("todos");
+
+   // ✅ GOOD: Use batch operations
+   await addRecords([
+     { text: "Task 1", completed: false },
+     { text: "Task 2", completed: false },
+     { text: "Task 3", completed: false }
+   ]);
+
+   // ❌ BAD: Don't loop through items
+   // for (const item of newItems) {
+   //   await addRecord(item);  // This creates multiple API calls!
+   // }
+   ```
+
+### 5.2 Auth Best Practices
+
+1. **Protected Routes**
+   ```jsx
+   function PrivateRoute({ children }) {
+     const { user, isLoading } = useAuth();
+     
+     if (isLoading) return <div>Loading...</div>;
+     if (!user) return <Navigate to="/login" />;
+     
+     return children;
+   }
+   ```
+
+2. **Error Handling**
+   ```jsx
+   try {
+     await addRecord(data, (error) => {
+       console.error('Failed:', error);
+       notifyUser(error.message);
+     });
+   } catch (error) {
+     handleError(error);
+   }
+   ```
+
+## 6. Important Notes
+
+1. **Record IDs**
+   - All record IDs are numbers (not strings)
+   - Use negative IDs for temporary records in optimistic updates
+   - Server will assign permanent positive IDs
+
+2. **Authentication State**
+   - Auth state is automatically persisted
+   - Use `useAuth` hook to access current user
+   - Always handle loading states
+
+3. **Styling**
+   - Don't forget to import auth styles: `import "@altanlabs/auth/dist/styles.css"`
+   - Auth components accept theme customization via `appearance` prop
+
+## 7. Type Information
+
+```typescript
+// Database Types
+interface TableRecordItem {
+  id: number;
+  [key: string]: unknown;
+  created_time?: string;
+  updated_at?: string;
+  last_modified_time?: string;
+  last_modified_by?: string;
+}
+
+interface QueryParams {
+  filters?: Array<{
+    field: string;
+    operator: "eq" | "neq" | "gt" | "lt" | "contains" | "startsWith";
+    value: unknown;
+  }>;
+  sort?: Array<{
+    field: string;
+    direction: "asc" | "desc";
+  }>;
+  limit?: number;
+  pageToken?: string;
+  fields?: string[];
+  amount?: "all" | "first" | "one";
+}
+
+// Auth Types
+interface User {
+  id: string;
+  name?: string;
+  email: string;
+  [key: string]: unknown;
+}
+
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  error: Error | null;
+}
+```
