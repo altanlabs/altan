@@ -43,9 +43,11 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mustAuth, setMustAuth] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
-  const api = useMemo(() => createAuthenticatedApi(tableId), [tableId]);
+  const api = useMemo(() => createAuthenticatedApi(), [tableId]);
 
   const mapUserData = (userData: any): AuthUser => ({
     id: Number(userData.id || 0),
@@ -94,10 +96,7 @@ export function AuthProvider({
 
       // Add tableId to /me request
       setSession(api, access_token)
-      const { data: userData } = await api.get('/auth/me');
-      
-      const authUser = mapUserData(userData);
-      setUser(authUser);
+      setMustAuth(prev => prev + 1);
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || "Invalid email or password";
       setError(new Error(errorMessage));
@@ -131,23 +130,6 @@ export function AuthProvider({
       setIsLoading(false);
     }
   }, [api, login, tableId]);
-
-  // Update checkAuth to use token
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: userData } = await api.get('/auth/me');
-        const authUser = mapUserData(userData);        
-        setUser(authUser);
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [api, tableId]);
 
   const resetPassword = useCallback(async (email: string) => {
     // Implement password reset logic here
@@ -247,12 +229,7 @@ export function AuthProvider({
       if (authenticationOptions.persistSession && access_token) {
         setSession(api, access_token)
       }
-
-      // Verify the token works by making a /me call
-      const { data: verifiedUser } = await api.get('/auth/me');
-      const authUser = mapUserData(verifiedUser);
-      setUser(authUser);
-      return authUser;
+      setMustAuth(prev => prev + 1);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Authentication failed";
@@ -263,10 +240,33 @@ export function AuthProvider({
     }
   }, [api, tableId, authenticationOptions.persistSession]);
 
+  // Update checkAuth to use token
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!tableId || isLoading) {
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const { data: userData } = await api.get('/auth/me');
+        const authUser = mapUserData(userData);        
+        setUser(authUser);
+        setInitialized(true);
+      } catch (error) {
+        console.debug("@checkAuth: error", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [api, mustAuth]);
+
   const value = useMemo(
     () => ({
       user,
-      isLoading,
+      isLoading: isLoading || !initialized,
       error,
       isAuthenticated: !!user,
       login,
@@ -274,12 +274,22 @@ export function AuthProvider({
       register,
       resetPassword,
       updateProfile,
-      continueWithGoogle: async () => {
-        await continueWithGoogle();
-      },
+      continueWithGoogle,
       api,
     }),
-    [user, isLoading, error, login, logout, register, resetPassword, updateProfile, continueWithGoogle, api]
+    [
+      user, 
+      initialized,
+      isLoading, 
+      error, 
+      login, 
+      logout, 
+      register, 
+      resetPassword, 
+      updateProfile, 
+      continueWithGoogle, 
+      api
+    ]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

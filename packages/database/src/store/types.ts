@@ -174,6 +174,7 @@ export interface QueryParams {
   pageToken?: string;
   fields?: string[];
   amount?: "all" | "first" | "one";
+  enabled?: boolean;
 }
 
 // Hook Types
@@ -204,12 +205,42 @@ export interface DatabaseHookReturn {
   lastUpdated: string | null
   refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>
   fetchNextPage: (onError?: (error: Error) => void) => Promise<void>
+  addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordItem | undefined>
+  modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
+  removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>
+  addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<TableRecordItem[] | undefined>
+  removeRecords: (recordIds: string[], onError?: (error: Error) => void) => Promise<void>
+}
+
+export interface RecordsHookReturn { 
+  records: TableRecordItem[]
+  schema: TableSchema | null
+  loading: boolean
+  error: string | null
+  nextPageToken: string | null
+  lastUpdated: string | null
+  refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>
+  fetchNextPage: (onError?: (error: Error) => void) => Promise<void>
   addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
   modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
   removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>
-  addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<TableRecordsAPIResponse | undefined>
-  removeRecords: (recordIds: string[], onError?: (error: Error) => void) => Promise<void>
 }
+
+export interface RecordHookReturn<TRecord> {
+  record: TRecord | null;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  modify: (updates: Record<string, unknown>) => Promise<TRecord | null>;
+  remove: () => Promise<void>;
+}
+  
+export interface TableHookAPI {
+  useRecords: (options?: FetchOptions) => RecordsHookReturn;
+  useRecord: (recordId: string) => RecordHookReturn<TableRecordItem>;
+}
+
+export type TablesHookReturn = Record<string, TableHookAPI>;
 
 // Update the TableState interface to use the correct schema type
 export interface TableState {

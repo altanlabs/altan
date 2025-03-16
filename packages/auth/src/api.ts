@@ -46,42 +46,56 @@ export const setSession = (axiosInstance: AxiosInstance, accessToken: string | n
 }
 
 // Create a dedicated instance for refresh calls with credentials.
+let isRefreshing = false;
+let refreshPromise: Promise<string> | null = null;
+
 export const authAxios = axios.create({
   baseURL: AUTH_BASE_URL,
   withCredentials: true,
 });
 
-let requestController: AbortController | null = null;
 const cancellationManager = new RequestCancellationManager();
 
-const createAuthenticatedApi = (tableId: string): AxiosInstance => {
+const refreshToken = async (): Promise<string> => {
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshPromise = authAxios.post(`/auth/refresh`)
+      .then((response) => {
+        const token = response.data.access_token;
+        isRefreshing = false;
+        refreshPromise = null;
+        return token;
+      })
+      .catch((error) => {
+        isRefreshing = false;
+        refreshPromise = null;
+        return Promise.reject(error);
+      });
+  }
+  return refreshPromise!;
+};
+
+const createAuthenticatedApi = (baseURL: string = AUTH_BASE_URL): AxiosInstance => {
   // Create the main instance for API calls.
-  const apiAxios = axios.create({
-    baseURL: AUTH_BASE_URL,
-  });
+  const apiAxios = axios.create({ baseURL });
+  console.debug("[@altanlabs/auth] created new API with base url", apiAxios.defaults.baseURL);
 
   // Request interceptor for apiAxios.
   apiAxios.interceptors.request.use(
     async (config) => {
       cancellationManager.add(config);
-      // Attach an AbortController for cancellation if one isn't provided.
-      if (!config.signal && typeof AbortController !== 'undefined') {
-        requestController = new AbortController();
-        config.signal = requestController.signal;
-      }
 
-      // If there's an Authorization header, check if the token is valid.
+      // Get token from the api instance default headers or a central storage.
       const authHeader = apiAxios.defaults.headers.common.Authorization;
-      if (authHeader && typeof authHeader === "string" && authHeader.startsWith('Bearer ')) {
-        let token = authHeader.substring(7);
-        if (!isValidToken(token)) {
-          // Refresh the token using authAxios.
-          const { data } = await authAxios.post(`/auth/refresh?table_id=${tableId}`);
-          token = data.access_token;
-          setSession(apiAxios, token);
-        }
-        // Ensure the outgoing request has the valid token.
-        config.headers.Authorization = `Bearer ${token}`;
+      const token = authHeader && typeof authHeader === "string" && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+      if (token && isValidToken(token)) {
+        console.debug(`[@altanlabs/auth] [axios api ${baseURL}] request interceptor. valid token`);
+      } else {
+        // Wait for a refresh if already in progress, otherwise start one.
+        const newToken = await refreshToken();
+        setSession(apiAxios, newToken);
+        config.headers.Authorization = `Bearer ${newToken}`;
       }
       return config;
     },
@@ -100,7 +114,7 @@ const createAuthenticatedApi = (tableId: string): AxiosInstance => {
 
       cancellationManager.remove(originalRequest);
 
-      // Set or increment the retry counter.
+      // Increment retry counter.
       originalRequest._retryCount = originalRequest._retryCount || 0;
       if (
         error.response?.status === HTTP_STATUS_UNAUTHORIZED &&
@@ -108,12 +122,9 @@ const createAuthenticatedApi = (tableId: string): AxiosInstance => {
       ) {
         originalRequest._retryCount++;
 
-        // Refresh the token using authAxios.
-        const { data } = await authAxios.post(`/auth/refresh`);
-        const newToken = data.access_token;
+        // Use our refreshToken function to get a new token.
+        const newToken = await refreshToken();
         setSession(apiAxios, newToken);
-
-        // Update the Authorization header and retry the request.
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiAxios(originalRequest);
       }
@@ -121,14 +132,14 @@ const createAuthenticatedApi = (tableId: string): AxiosInstance => {
       // Handle server errors.
       if (error.response?.status >= HTTP_STATUS_INTERNAL_SERVER_ERROR) {
         return Promise.reject(
-          new Error('A server error occurred. Please try again later.'),
+          new Error('[@altanlabs/auth] A server error occurred. Please try again later.'),
         );
       }
       return Promise.reject(error);
     },
   );
   return apiAxios;
-}
+};
 
 // Export a cancelAll method to cancel all active requests if needed.
 const cancelAllRequests = (message?: string) => {

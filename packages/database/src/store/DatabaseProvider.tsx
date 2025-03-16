@@ -2,13 +2,13 @@
 import React, { ReactNode, useMemo, useState, useEffect, useRef, memo } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { useAuthAPI } from '@altanlabs/auth';
+import { useAuthAPI, createAuthenticatedApi } from '@altanlabs/auth';
 import tablesReducer from "./tablesSlice";
 import type { DatabaseConfig } from "../config";
 import { validateDatabaseConfig } from "../config";
 import { initializeTables } from "./tablesSlice";
 import { createAltanDB } from "../api/axios";
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import ErrorPopup from "../components/ErrorPopup";
 import { Middleware } from "redux";
 
@@ -176,8 +176,7 @@ const DatabaseProviderComponent: React.FC<DatabaseProviderProps> = ({
     
     try {
       validateDatabaseConfig(config);
-      const api = authenticatedAPI ?? createAltanDB(config.API_BASE_URL);
-      
+      const api = authenticatedAPI ? createAuthenticatedApi(config.API_BASE_URL) : createAltanDB(config.API_BASE_URL);
       const s = configureStore({
         reducer: {
           tables: tablesReducer,

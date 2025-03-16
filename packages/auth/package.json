@@ -1,6 +1,6 @@
 {
   "name": "@altanlabs/auth",
-  "version": "1.1.0",
+  "version": "1.1.10",
   "description": "React authentication library built on top of @altanlabs/database",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

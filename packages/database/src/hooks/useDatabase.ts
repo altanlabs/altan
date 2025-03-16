@@ -39,22 +39,11 @@ export function useDatabase(
     (state: RootState) => state.tables.loading.schemas === "loading"
   );
   const error = useSelector((state: RootState) => state.tables.error);
-  const { records, schema, initialized, lastUpdated } = useMemo(
-    () => ({
-      records: tableData?.records || [],
-      schema: tableData?.schema || null,
-      initialized: tableData?.initialized || false,
-      lastUpdated: tableData?.lastUpdated || null,
-    }),
-    [tableData]
-  );
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
+  const records = tableData?.records || [];
+  const schema = tableData?.schema || null;
+  const initialized = tableData?.initialized || false;
+  const lastUpdated = tableData?.lastUpdated || null;
+  
   // Memoize initialQuery to prevent unnecessary effect re-runs
   const memoizedInitialQuery = useMemo(
     () => initialQuery || { limit: 100 },
@@ -68,9 +57,7 @@ export function useDatabase(
       onError?: (e: Error) => void
     ): Promise<T | undefined> => {
       try {
-        const result = await dispatch(action).unwrap();
-        console.log("@safeDispatch: result", isMounted.current, result);
-        if (isMounted.current) return result;
+        return await dispatch(action).unwrap();
       } catch (e) {
         onError?.(e as Error);
       }
@@ -81,7 +68,7 @@ export function useDatabase(
 
   // Update effect to use safeDispatch
   useEffect(() => {
-    if (!table || error) return;
+    if (!table || error || memoizedInitialQuery.enabled === false) return;
 
     const schemaKey = `schema_${table}`;
     const recordsKey = `records_${table}`;
@@ -131,10 +118,13 @@ export function useDatabase(
   );
 
   const addRecord = useCallback(
-    async (record: Record<string, unknown>, onError?: (e: Error) => void) => await safeDispatch<TableRecordAPIResponse>(
-      createRecord({ tableName: table, record }),
-      onError
-    ),
+    async (record: Record<string, unknown>, onError?: (e: Error) => void) => {
+      const response = await safeDispatch<TableRecordAPIResponse>(
+        createRecord({ tableName: table, record }),
+        onError
+      );
+      return response?.record;
+    },
     [table, safeDispatch]
   );
 
@@ -161,10 +151,13 @@ export function useDatabase(
   );
 
   const addRecords = useCallback(
-    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => await safeDispatch<TableRecordsAPIResponse>(
-      createRecords({ tableName: table, records }),
-      onError
-    ),
+    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
+      const response = await safeDispatch<TableRecordsAPIResponse>(
+        createRecords({ tableName: table, records }),
+        onError
+      );
+      return response?.records;
+    },
     [table, safeDispatch]
   );
 
@@ -178,6 +171,18 @@ export function useDatabase(
     [table, safeDispatch]
   );
 
+  const fetchNextPage = useCallback(async (onError?: (e: Error) => void) => {
+    if (nextPageToken && !isLoadingRecords) {
+      await refresh({ pageToken: nextPageToken, limit: 20 }, onError);
+    }
+  }, [nextPageToken, isLoadingRecords]);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   return useMemo(
     () => ({
       records,
@@ -188,11 +193,7 @@ export function useDatabase(
       nextPageToken,
       lastUpdated,
       refresh,
-      fetchNextPage: async (onError?: (e: Error) => void) => {
-        if (nextPageToken && !isLoadingRecords) {
-          await refresh({ pageToken: nextPageToken, limit: 20 }, onError);
-        }
-      },
+      fetchNextPage,
       addRecord,
       modifyRecord,
       removeRecord,
@@ -215,6 +216,7 @@ export function useDatabase(
       removeRecord,
       addRecords,
       removeRecords,
+      fetchNextPage,
     ]
   );
 }

@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@alloc/quick-lru/-/quick-lru-5.2.0.tgz#7bf68b20c0a350f936915fcae06f58e32007ce30"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
-"@altanlabs/auth@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@altanlabs/auth/-/auth-1.1.0.tgz#ef476d4e1fc0e05b0afaedb6668726ec4fe551e2"
-  integrity sha512-xWRFMH2nR1MvyZkUOeBNXIP8Xi+3FYefUEYkbhQOreMyHiYfyDJ4gvtEC3TuxtoERfhtY8Ut7KmHb/QnFATVpw==
+"@altanlabs/auth@^1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@altanlabs/auth/-/auth-1.1.8.tgz#787c6f01e685fecdff28d38fca72cd81ebefc9b9"
+  integrity sha512-RWwXL9Yh0lV6cAuL0pMf1E/gSyHBa2hwMRn5QiphfpzRX9t9URxvIE2ls0ke1hnRDt4BpcEpPB8U3N00e2ReMg==
   dependencies:
     "@eslint/config-array" "^0.19.2"
     "@eslint/object-schema" "^2.1.6"
