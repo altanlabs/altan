@@ -2,12 +2,15 @@ import { createSlice, createAsyncThunk, ActionReducerMapBuilder, PayloadAction }
 import type { AxiosInstance } from "axios";
 import {
   TableState,
-  TableRecord,
   TableRecordItem,
   TableRecordData,
   QueryParams,
   RootState,
-  TableSchema
+  TableSchema,
+  OptimisticUpdatePayload,
+  OptimisticDeletePayload,
+  RollbackUpdatePayload,
+  RollbackAddPayload
 } from "./types";
 import type { DatabaseConfig } from "../config";
 
@@ -93,7 +96,7 @@ export const createRecord = createAsyncThunk<
 
 export const updateRecord = createAsyncThunk<
   { tableId: string; record: TableRecordItem },
-  { tableName: string; recordId: string; updates: Record<string, unknown> },
+  { tableName: string; recordId: number; updates: Record<string, unknown> },
   { state: RootState; extra: { api: AxiosInstance }; rejectValue: string }
 >(
   "tables/updateRecord",
@@ -109,8 +112,8 @@ export const updateRecord = createAsyncThunk<
 );
 
 export const deleteRecord = createAsyncThunk<
-  { tableId: string; recordId: string },
-  { tableName: string; recordId: string },
+  { tableId: string; recordId: number },
+  { tableName: string; recordId: number },
   { state: RootState }
 >(
   "tables/deleteRecord",
@@ -161,8 +164,8 @@ export const createRecords = createAsyncThunk<
 );
 
 export const deleteRecords = createAsyncThunk<
-  { tableId: string; recordIds: string[] },
-  { tableName: string; recordIds: string[] },
+  { tableId: string; recordIds: number[] },
+  { tableName: string; recordIds: number[] },
   { state: RootState }
 >(
   "tables/deleteRecords",
@@ -185,7 +188,7 @@ const tablesSlice = createSlice({
     initializeTables: (state, action: PayloadAction<DatabaseConfig>) => {
       const { SAMPLE_TABLES } = action.payload;
       Object.entries(SAMPLE_TABLES).forEach(([name, id]) => {
-        state.tables.byId[id] = { id, name };
+        state.tables.byId[id] = { id: parseInt(id), name };
         state.tables.byName[name] = id;
         if (!state.tables.allIds.includes(id)) state.tables.allIds.push(id);
         state.initialized[id] = false;
@@ -196,6 +199,64 @@ const tablesSlice = createSlice({
       if (tableId) {
         delete state.records.byTableId[tableId];
         state.initialized[tableId] = false;
+      }
+    },
+    optimisticAddRecord: (state, action: PayloadAction<{ tableId: string; record: TableRecordItem }>) => {
+      const { tableId, record } = action.payload;
+      if (state.records.byTableId[tableId]?.items) {
+        state.records.byTableId[tableId].items.push(record);
+      }
+    },
+    optimisticUpdateRecord: (state, action: PayloadAction<OptimisticUpdatePayload>) => {
+      const { tableId, recordId, updates } = action.payload;
+      const items = state.records.byTableId[tableId]?.items;
+      if (items) {
+        const index = items.findIndex((r) => r.id === recordId);
+        if (index !== -1) {
+          items[index] = {
+            ...items[index],
+            ...updates
+          };
+        }
+      }
+    },
+    optimisticDeleteRecord: (state, action: PayloadAction<OptimisticDeletePayload>) => {
+      const { tableId, recordId } = action.payload;
+      const items = state.records.byTableId[tableId]?.items;
+      if (items) {
+        state.records.byTableId[tableId].items = items.filter((r) => r.id !== recordId);
+      }
+    },
+    optimisticAddRecords: (state, action: PayloadAction<{ tableId: string; records: TableRecordItem[] }>) => {
+      const { tableId, records } = action.payload;
+      if (state.records.byTableId[tableId]?.items) {
+        state.records.byTableId[tableId].items.push(...records);
+      }
+    },
+    optimisticDeleteRecords: (state, action: PayloadAction<{ tableId: string; recordIds: number[] }>) => {
+      const { tableId, recordIds } = action.payload;
+      const items = state.records.byTableId[tableId]?.items;
+      if (items) {
+        state.records.byTableId[tableId].items = items.filter(
+          (r) => !recordIds.includes(r.id)
+        );
+      }
+    },
+    rollbackAddRecord: (state, action: PayloadAction<RollbackAddPayload>) => {
+      const { tableId, tempId } = action.payload;
+      const items = state.records.byTableId[tableId]?.items;
+      if (items) {
+        state.records.byTableId[tableId].items = items.filter((r) => r.id !== tempId);
+      }
+    },
+    rollbackUpdateRecord: (state, action: PayloadAction<RollbackUpdatePayload>) => {
+      const { tableId, recordId, originalRecord } = action.payload;
+      const items = state.records.byTableId[tableId]?.items;
+      if (items) {
+        const index = items.findIndex((r) => r.id === recordId);
+        if (index !== -1) {
+          items[index] = originalRecord;
+        }
       }
     }
   },
@@ -232,7 +293,9 @@ const tablesSlice = createSlice({
         const items = state.records.byTableId[tableId]?.items;
         if (items) {
           const index = items.findIndex((r) => r.id === record.id);
-          if (index !== -1) items[index] = record;
+          if (index !== -1) {
+            items[index] = record;
+          }
         }
       })
       .addCase(deleteRecord.fulfilled, (state, action) => {
@@ -288,7 +351,18 @@ export const selectTableData = (state: RootState, tableName: string) => {
   };
 };
 
-export const { initializeTables, clearTableData } = tablesSlice.actions;
+export const { 
+  initializeTables, 
+  clearTableData,
+  optimisticAddRecord,
+  optimisticUpdateRecord,
+  optimisticDeleteRecord,
+  optimisticAddRecords,
+  optimisticDeleteRecords,
+  rollbackAddRecord,
+  rollbackUpdateRecord 
+} = tablesSlice.actions;
+
 export const selectTablesState = (state: RootState) => state.tables;
 export const selectTableId = (state: RootState, tableName: string) => state.tables.tables.byName[tableName];
 export const selectTableRecords = (state: RootState, tableName: string) => {

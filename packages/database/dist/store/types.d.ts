@@ -1,10 +1,6 @@
 import type { AxiosInstance } from "axios";
-export interface TableRecord {
-    id: string;
-    name: string;
-}
 export interface TableRecordItem {
-    id: string;
+    id: number;
     [key: string]: unknown;
     created_time?: string;
     updated_at?: string;
@@ -22,8 +18,8 @@ export interface TableRecordsAPIResponse {
 export interface TableRecordData {
     items: TableRecordItem[];
     total: number;
-    lastUpdated: string;
     nextPageToken?: string;
+    lastUpdated?: string;
 }
 export type LoadingStatus = "idle" | "loading" | "error";
 export interface LoadingState {
@@ -165,15 +161,15 @@ export interface DatabaseHookReturn {
     lastUpdated: string | null;
     refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>;
     fetchNextPage: (onError?: (error: Error) => void) => Promise<void>;
-    addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>;
-    modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>;
-    removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>;
-    addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<TableRecordsAPIResponse | undefined>;
-    removeRecords: (recordIds: string[], onError?: (error: Error) => void) => Promise<void>;
+    addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | null | undefined>;
+    modifyRecord: (recordId: number, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | null | undefined>;
+    removeRecord: (recordId: number, onError?: (error: Error) => void) => Promise<void>;
+    addRecords: (records: Record<string, unknown>[], onError?: (error: Error) => void) => Promise<TableRecordsAPIResponse | null | undefined>;
+    removeRecords: (recordIds: number[], onError?: (error: Error) => void) => Promise<void>;
 }
 export interface TableState {
     tables: {
-        byId: Record<string, TableRecord>;
+        byId: Record<string, TableRecordItem>;
         byName: Record<string, string>;
         allIds: string[];
     };
@@ -243,6 +239,24 @@ export interface TableFieldOptions {
     user_options?: UserOptions;
     default?: unknown;
     validation?: Record<string, unknown>;
+}
+export interface OptimisticUpdatePayload {
+    tableId: string;
+    recordId: number;
+    updates: Record<string, unknown>;
+}
+export interface OptimisticDeletePayload {
+    tableId: string;
+    recordId: number;
+}
+export interface RollbackUpdatePayload {
+    tableId: string;
+    recordId: number;
+    originalRecord: TableRecordItem;
+}
+export interface RollbackAddPayload {
+    tableId: string;
+    tempId: number;
 }
 export {};
 //# sourceMappingURL=types.d.ts.map

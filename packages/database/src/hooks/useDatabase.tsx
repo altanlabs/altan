@@ -7,8 +7,16 @@ import {
   updateRecord,
   deleteRecord,
   selectTableData,
+  selectTableId,
   createRecords,
   deleteRecords,
+  optimisticAddRecord,
+  optimisticUpdateRecord,
+  optimisticDeleteRecord,
+  optimisticAddRecords,
+  optimisticDeleteRecords,
+  rollbackAddRecord,
+  rollbackUpdateRecord
 } from "../store/tablesSlice";
 import { useAppDispatch } from "./useAppDispatch";
 import { 
@@ -29,9 +37,10 @@ export function useDatabase(
   const dispatch = useAppDispatch();
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const requestInProgress = useRef<Record<string, boolean>>({});
-  const tableData = useSelector((state: RootState) =>
-    selectTableData(state, table)
-  );
+  
+  // Use useSelector for all Redux state access
+  const tableId = useSelector((state: RootState) => selectTableId(state, table));
+  const tableData = useSelector((state: RootState) => selectTableData(state, table));
   const isLoadingRecords = useSelector(
     (state: RootState) => state.tables.loading.records === "loading"
   );
@@ -39,6 +48,7 @@ export function useDatabase(
     (state: RootState) => state.tables.loading.schemas === "loading"
   );
   const error = useSelector((state: RootState) => state.tables.error);
+  
   const { records, schema, initialized, lastUpdated } = useMemo(
     () => ({
       records: tableData?.records || [],
@@ -65,16 +75,16 @@ export function useDatabase(
   const safeDispatch = useCallback(
     async <T,>(
       action: any,
-      onError?: (e: Error) => void
-    ): Promise<T | undefined> => {
+      onError?: (error: Error) => void
+    ): Promise<T | undefined | null> => {
       try {
         const result = await dispatch(action).unwrap();
-        console.log("@safeDispatch: result", isMounted.current, result);
-        if (isMounted.current) return result;
+        if (!isMounted.current) return undefined;
+        return result;
       } catch (e) {
         onError?.(e as Error);
+        return null;
       }
-      return undefined;
     },
     [dispatch]
   );
@@ -131,51 +141,164 @@ export function useDatabase(
   );
 
   const addRecord = useCallback(
-    async (record: Record<string, unknown>, onError?: (e: Error) => void) => await safeDispatch<TableRecordAPIResponse>(
-      createRecord({ tableName: table, record }),
-      onError
-    ),
-    [table, safeDispatch]
+    async (record: Record<string, unknown>, onError?: (e: Error) => void) => {
+      if (!tableId) throw new Error(`Table ${table} not found`);
+
+      // Generate a temporary negative ID for optimistic update
+      const tempId = -Date.now();  // Use negative numbers to avoid conflicts with server IDs
+      const tempRecord = { id: tempId, ...record };
+
+      // Optimistically add the record
+      dispatch(optimisticAddRecord({ tableId, record: tempRecord }));
+
+      try {
+        const result = await safeDispatch<TableRecordAPIResponse>(
+          createRecord({ tableName: table, record }),
+          onError
+        );
+
+        // If the request failed, rollback the optimistic update
+        if (!result) {
+          dispatch(rollbackAddRecord({ tableId, tempId }));
+        }
+
+        return result;
+      } catch (error) {
+        // Rollback on error
+        dispatch(rollbackAddRecord({ tableId, tempId }));
+        throw error;
+      }
+    },
+    [table, tableId, safeDispatch, dispatch]
   );
 
   const modifyRecord = useCallback(
     async (
-      recordId: string,
+      recordId: number,
       updates: Record<string, unknown>,
       onError?: (e: Error) => void
-    ) => await safeDispatch<TableRecordAPIResponse>(
-      updateRecord({ tableName: table, recordId, updates }),
-      onError
-    ),
-    [table, safeDispatch]
+    ) => {
+      if (!tableId) throw new Error(`Table ${table} not found`);
+
+      // Get the original record for potential rollback
+      const originalRecord = records.find(r => r.id === recordId);
+      if (!originalRecord) throw new Error(`Record ${recordId} not found`);
+
+      // Optimistically update the record
+      dispatch(optimisticUpdateRecord({ tableId, recordId, updates }));
+
+      try {
+        const result = await safeDispatch<TableRecordAPIResponse>(
+          updateRecord({ tableName: table, recordId, updates }),
+          onError
+        );
+
+        // Only rollback if there was an actual error response
+        if (result === null) {  // null means error, undefined means unmounted
+          dispatch(rollbackUpdateRecord({ tableId, recordId, originalRecord }));
+        }
+
+        return result;
+      } catch (error) {
+        // Rollback on error
+        dispatch(rollbackUpdateRecord({ tableId, recordId, originalRecord }));
+        throw error;
+      }
+    },
+    [table, tableId, safeDispatch, dispatch, records]
   );
 
   const removeRecord = useCallback(
-    async (recordId: string, onError?: (e: Error) => void) => {
-      await safeDispatch(
-        deleteRecord({ tableName: table, recordId }),
-        onError
-      );
+    async (recordId: number, onError?: (e: Error) => void) => {
+      if (!tableId) throw new Error(`Table ${table} not found`);
+
+      // Get the original record for potential rollback
+      const originalRecord = records.find(r => r.id === recordId);
+      if (!originalRecord) throw new Error(`Record ${recordId} not found`);
+
+      // Optimistically delete the record
+      dispatch(optimisticDeleteRecord({ tableId, recordId }));
+
+      try {
+        await safeDispatch(
+          deleteRecord({ tableName: table, recordId }),
+          onError
+        );
+      } catch (error) {
+        // Rollback on error by re-adding the original record
+        dispatch(optimisticAddRecord({ tableId, record: originalRecord }));
+        throw error;
+      }
     },
-    [table, safeDispatch]
+    [table, tableId, safeDispatch, dispatch, records]
   );
 
   const addRecords = useCallback(
-    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => await safeDispatch<TableRecordsAPIResponse>(
-      createRecords({ tableName: table, records }),
-      onError
-    ),
-    [table, safeDispatch]
+    async (records: Record<string, unknown>[], onError?: (e: Error) => void) => {
+      if (!tableId) throw new Error(`Table ${table} not found`);
+
+      // Generate temporary negative IDs for optimistic updates
+      const baseId = -Date.now();
+      const tempRecords = records.map((record, index) => ({
+        id: baseId - index,  // Use negative numbers to avoid conflicts with server IDs
+        ...record
+      }));
+
+      // Optimistically add the records
+      dispatch(optimisticAddRecords({ tableId, records: tempRecords }));
+
+      try {
+        const result = await safeDispatch<TableRecordsAPIResponse>(
+          createRecords({ tableName: table, records }),
+          onError
+        );
+
+        // If the request failed, rollback the optimistic updates
+        if (!result) {
+          dispatch(optimisticDeleteRecords({ 
+            tableId, 
+            recordIds: tempRecords.map(r => r.id)
+          }));
+        }
+
+        return result;
+      } catch (error) {
+        // Rollback on error
+        dispatch(optimisticDeleteRecords({ 
+          tableId, 
+          recordIds: tempRecords.map(r => r.id)
+        }));
+        throw error;
+      }
+    },
+    [table, tableId, safeDispatch, dispatch]
   );
 
   const removeRecords = useCallback(
-    async (recordIds: string[], onError?: (e: Error) => void) => {
-      await safeDispatch(
-        deleteRecords({ tableName: table, recordIds }),
-        onError
-      );
+    async (recordIds: number[], onError?: (e: Error) => void) => {
+      if (!tableId) throw new Error(`Table ${table} not found`);
+
+      // Get the original records for potential rollback
+      const originalRecords = records.filter(r => recordIds.includes(r.id));
+      if (originalRecords.length !== recordIds.length) {
+        throw new Error(`Some records not found`);
+      }
+
+      // Optimistically delete the records
+      dispatch(optimisticDeleteRecords({ tableId, recordIds }));
+
+      try {
+        await safeDispatch(
+          deleteRecords({ tableName: table, recordIds }),
+          onError
+        );
+      } catch (error) {
+        // Rollback on error by re-adding the original records
+        dispatch(optimisticAddRecords({ tableId, records: originalRecords }));
+        throw error;
+      }
     },
-    [table, safeDispatch]
+    [table, tableId, safeDispatch, dispatch, records]
   );
 
   return useMemo(

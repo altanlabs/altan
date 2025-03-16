@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { TableState, TableRecordItem, QueryParams, RootState, TableSchema } from "./types";
+import { TableState, TableRecordItem, QueryParams, RootState, TableSchema, OptimisticUpdatePayload, OptimisticDeletePayload, RollbackUpdatePayload, RollbackAddPayload } from "./types";
 import type { DatabaseConfig } from "../config";
 export declare const fetchTableRecords: import("@reduxjs/toolkit").AsyncThunk<{
     tableId: string;
@@ -44,7 +44,7 @@ export declare const updateRecord: import("@reduxjs/toolkit").AsyncThunk<{
     record: TableRecordItem;
 }, {
     tableName: string;
-    recordId: string;
+    recordId: number;
     updates: Record<string, unknown>;
 }, {
     state: RootState;
@@ -60,10 +60,10 @@ export declare const updateRecord: import("@reduxjs/toolkit").AsyncThunk<{
 }>;
 export declare const deleteRecord: import("@reduxjs/toolkit").AsyncThunk<{
     tableId: string;
-    recordId: string;
+    recordId: number;
 }, {
     tableName: string;
-    recordId: string;
+    recordId: number;
 }, {
     state: RootState;
     dispatch?: import("redux").Dispatch | undefined;
@@ -111,10 +111,10 @@ export declare const createRecords: import("@reduxjs/toolkit").AsyncThunk<{
 }>;
 export declare const deleteRecords: import("@reduxjs/toolkit").AsyncThunk<{
     tableId: string;
-    recordIds: string[];
+    recordIds: number[];
 }, {
     tableName: string;
-    recordIds: string[];
+    recordIds: number[];
 }, {
     state: RootState;
     dispatch?: import("redux").Dispatch | undefined;
@@ -131,9 +131,18 @@ export declare const selectTableData: (state: RootState, tableName: string) => {
     schema: TableSchema;
     initialized: boolean;
     nextPageToken: string | undefined;
-    lastUpdated: string;
+    lastUpdated: string | undefined;
 } | null;
-export declare const initializeTables: import("@reduxjs/toolkit").ActionCreatorWithPayload<DatabaseConfig, "tables/initializeTables">, clearTableData: import("@reduxjs/toolkit").ActionCreatorWithPayload<string, "tables/clearTableData">;
+export declare const initializeTables: import("@reduxjs/toolkit").ActionCreatorWithPayload<DatabaseConfig, "tables/initializeTables">, clearTableData: import("@reduxjs/toolkit").ActionCreatorWithPayload<string, "tables/clearTableData">, optimisticAddRecord: import("@reduxjs/toolkit").ActionCreatorWithPayload<{
+    tableId: string;
+    record: TableRecordItem;
+}, "tables/optimisticAddRecord">, optimisticUpdateRecord: import("@reduxjs/toolkit").ActionCreatorWithPayload<OptimisticUpdatePayload, "tables/optimisticUpdateRecord">, optimisticDeleteRecord: import("@reduxjs/toolkit").ActionCreatorWithPayload<OptimisticDeletePayload, "tables/optimisticDeleteRecord">, optimisticAddRecords: import("@reduxjs/toolkit").ActionCreatorWithPayload<{
+    tableId: string;
+    records: TableRecordItem[];
+}, "tables/optimisticAddRecords">, optimisticDeleteRecords: import("@reduxjs/toolkit").ActionCreatorWithPayload<{
+    tableId: string;
+    recordIds: number[];
+}, "tables/optimisticDeleteRecords">, rollbackAddRecord: import("@reduxjs/toolkit").ActionCreatorWithPayload<RollbackAddPayload, "tables/rollbackAddRecord">, rollbackUpdateRecord: import("@reduxjs/toolkit").ActionCreatorWithPayload<RollbackUpdatePayload, "tables/rollbackUpdateRecord">;
 export declare const selectTablesState: (state: RootState) => TableState;
 export declare const selectTableId: (state: RootState, tableName: string) => string;
 export declare const selectTableRecords: (state: RootState, tableName: string) => TableRecordItem[];
