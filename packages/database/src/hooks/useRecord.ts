@@ -5,7 +5,7 @@ import { RecordHookReturn, TableRecordItem } from "../store/types";
 
 export function useRecord<TRecord extends TableRecordItem = TableRecordItem>(
   tableName: string,
-  recordId: string
+  recordId: number
 ): RecordHookReturn<TRecord> {
   // Get all records from the table
   const { records, refresh, modifyRecord, removeRecord } = useRecords<TRecord>(tableName);

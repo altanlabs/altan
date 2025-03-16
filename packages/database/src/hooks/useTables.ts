@@ -37,6 +37,6 @@ export function useTables(): TablesHookReturn {
 function createTableApi(tableName: string): TableHookAPI {
   return {
     useRecords: (options?: FetchOptions) => useRecords(tableName, options),
-    useRecord: (recordId: string) => useRecord(tableName, recordId)
+    useRecord: (recordId: number) => useRecord(tableName, recordId)
   };
 }

@@ -218,8 +218,8 @@ export interface RecordsHookReturn {
   refresh: (options?: FetchOptions, onError?: (error: Error) => void) => Promise<void>
   fetchNextPage: (onError?: (error: Error) => void) => Promise<void>
   addRecord: (record: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
-  modifyRecord: (recordId: string, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
-  removeRecord: (recordId: string, onError?: (error: Error) => void) => Promise<void>
+  modifyRecord: (recordId: number, updates: Record<string, unknown>, onError?: (error: Error) => void) => Promise<TableRecordAPIResponse | undefined>
+  removeRecord: (recordId: number, onError?: (error: Error) => void) => Promise<void>
 }
 
 export interface RecordHookReturn<TRecord> {
@@ -233,7 +233,7 @@ export interface RecordHookReturn<TRecord> {
   
 export interface TableHookAPI {
   useRecords: (options?: FetchOptions) => RecordsHookReturn;
-  useRecord: (recordId: string) => RecordHookReturn<TableRecordItem>;
+  useRecord: (recordId: number) => RecordHookReturn<TableRecordItem>;
 }
 
 export type TablesHookReturn = Record<string, TableHookAPI>;

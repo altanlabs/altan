@@ -51,11 +51,11 @@ export function useRecords<TRecord = TableRecordData>(
     return await safeDispatch<TableRecordAPIResponse>(createRecord({ tableName, record }));
   }, [safeDispatch, tableName]);
 
-  const modifyRecord = useCallback(async (recordId: string, updates: Record<string, unknown>) => {
+  const modifyRecord = useCallback(async (recordId: number, updates: Record<string, unknown>) => {
     return await safeDispatch<TableRecordAPIResponse>(updateRecord({ tableName, recordId, updates }));
   }, [safeDispatch, tableName]);
 
-  const removeRecord = useCallback(async (recordId: string) => {
+  const removeRecord = useCallback(async (recordId: number) => {
     await safeDispatch(deleteRecord({ tableName, recordId }));
   }, [safeDispatch, tableName]);
 

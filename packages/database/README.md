@@ -304,13 +304,13 @@ try {
   modifyRecord: (id: string, updates: Record<string, unknown>) => Promise<TableRecordItem | undefined>
   // Returns the updated record or undefined if failed
   
-  removeRecord: (id: string) => Promise<{ tableId: string; recordId: string } | undefined>
+  removeRecord: (id: string) => Promise<{ tableId: string; recordId: number } | undefined>
   // Returns deletion confirmation or undefined if failed
   
   addRecords: (records: Record<string, unknown>[]) => Promise<TableRecordItem[] | undefined>
   // Returns array of newly created records or undefined if failed
   
-  removeRecords: (ids: string[]) => Promise<{ tableId: string; recordIds: string[] } | undefined>
+  removeRecords: (ids: string[]) => Promise<{ tableId: string; recordIds: number[] } | undefined>
   // Returns deletion confirmation or undefined if failed
 }
 ```
