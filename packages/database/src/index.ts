@@ -1,7 +1,6 @@
 export { DatabaseProvider } from './store/DatabaseProvider';
 export { useDatabase } from './hooks/useDatabase';
 export type {
-  TableRecord,
   TableRecordItem,
   TableRecordData,
   TableSchema,
