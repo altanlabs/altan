@@ -7,9 +7,9 @@
   resolved "https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.2.0.tgz"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
-"@altanlabs/auth@^1.1.0":
+"@altanlabs/auth@^1.1.10":
   version "1.1.10"
-  resolved "https://registry.npmjs.org/@altanlabs/auth/-/auth-1.1.10.tgz"
+  resolved "https://registry.yarnpkg.com/@altanlabs/auth/-/auth-1.1.10.tgz#dc07303dcb06090717b26258a779a00e5eb8919b"
   integrity sha512-mzcrMJLEpYpNbM7qbBaTrc+L6vVMK+irHF+1XyxoauO5NRvh9Kan84Qumek6g4RHW0HUYmJ/A3gXDTsEtrxBQg==
   dependencies:
     "@eslint/config-array" "^0.19.2"

@@ -13,7 +13,7 @@
     "watch": "tsc -w"
   },
   "dependencies": {
-    "@altanlabs/auth": "^1.1.8",
+    "@altanlabs/auth": "^1.1.10",
     "@reduxjs/toolkit": "^1.9.5",
     "axios": "^1.4.0",
     "react": "^18.2.0",

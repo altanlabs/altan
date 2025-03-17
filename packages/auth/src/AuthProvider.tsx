@@ -251,11 +251,11 @@ export function AuthProvider({
         const { data: userData } = await api.get('/auth/me');
         const authUser = mapUserData(userData);        
         setUser(authUser);
-        setInitialized(true);
       } catch (error) {
         console.debug("@checkAuth: error", error);
         setUser(null);
       } finally {
+        setInitialized(true);
         setIsLoading(false);
       }
     };
