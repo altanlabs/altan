@@ -1,4 +1,4 @@
-**# @altanlabs/auth
+** @altanlabs/auth
 
 ### Setup
 
