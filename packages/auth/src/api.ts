@@ -97,7 +97,7 @@ const cancellationManager = new RequestCancellationManager();
 const refreshToken = async (): Promise<string> => {
   if (!isRefreshing) {
     isRefreshing = true;
-    refreshPromise = authAxios.post(`/auth/refresh`)
+    refreshPromise = authAxios.post(`/refresh`)
       .then((response) => {
         const token = response.data.access_token;
         isRefreshing = false;

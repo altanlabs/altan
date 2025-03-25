@@ -66,7 +66,7 @@ export function AuthProvider({
   // Define logout first since other functions depend on it
   const logout = useCallback(async () => {
     try {
-      await authAxios.post('/auth/logout');
+      await authAxios.post('/logout');
     } finally {
       setSession(api, null);
       setUser(null);
@@ -88,7 +88,7 @@ export function AuthProvider({
       formData.append('username', email);
       formData.append('password', password);
 
-      const { data: { access_token } } = await api.post(`/auth/login?table_id=${tableId}`, formData, {
+      const { data: { access_token } } = await api.post(`/login?table_id=${tableId}`, formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -111,7 +111,7 @@ export function AuthProvider({
       setIsLoading(true);
       setError(null);
 
-      const response = await authAxios.post(`/auth/register?table_id=${tableId}`, {
+      const response = await authAxios.post(`/register?table_id=${tableId}`, {
         email,
         password,
         name,
@@ -166,7 +166,7 @@ export function AuthProvider({
           }
         }
 
-        const response = await api.patch('/auth/update', apiUpdates);
+        const response = await api.patch('/update', apiUpdates);
         const updatedUser = mapUserData(response.data.user);
         setUser(updatedUser);
       } catch (err) {
@@ -248,7 +248,7 @@ export function AuthProvider({
       }
       setIsLoading(true);
       try {
-        const { data: userData } = await api.get('/auth/me');
+        const { data: userData } = await api.get('/me');
         const authUser = mapUserData(userData);        
         setUser(authUser);
       } catch (error) {
