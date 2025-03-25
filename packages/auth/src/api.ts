@@ -28,12 +28,6 @@ function getSubdomain(hostname: string) {
 
 function getBaseUrl() {
   const hostname = window.location.hostname;
-  // Example logic: if "gostoso.com" is your main domain,
-  // then the auth domain is "auth.gostoso.com".
-  // Or do a more advanced lookup in a big JS object or
-  // fetch from a "tenant discovery" endpoint.
-
-  // Trivial example:
   if (hostname.endsWith('.preview.altan.ai')) {
     return AUTH_BASE_URL;
   }
@@ -41,7 +35,6 @@ function getBaseUrl() {
     const subdomain = getSubdomain(hostname);
     return `https://${subdomain ? `${subdomain}.` : ''}auth.altanlabs.com`;
   }
-  // Fallback or other logic for your multiple tenants:
   return `auth.${hostname}`;
 }
 
