@@ -8,6 +8,44 @@ const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
 const MAX_RETRY_COUNT = 1;
 
 
+function getSubdomain(hostname: string) {
+  const parts = hostname.split('.');
+
+  // Remove www if it's the first part
+  if (parts[0] === 'www') {
+    parts.shift();
+  }
+
+  // Example: sub.example.com → ['sub', 'example', 'com']
+  // Only return subdomain if there are at least 3 parts (sub + domain + TLD)
+  if (parts.length > 2) {
+    return parts.slice(0, parts.length - 2).join('.');
+  }
+
+  return null; // No subdomain
+}
+
+
+function getBaseUrl() {
+  const hostname = window.location.hostname;
+  // Example logic: if "gostoso.com" is your main domain,
+  // then the auth domain is "auth.gostoso.com".
+  // Or do a more advanced lookup in a big JS object or
+  // fetch from a "tenant discovery" endpoint.
+
+  // Trivial example:
+  if (hostname.endsWith('.preview.altan.ai')) {
+    return AUTH_BASE_URL;
+  }
+  if (hostname.endsWith('.altanlabs.com')) {
+    const subdomain = getSubdomain(hostname);
+    return `https://${subdomain ? `${subdomain}.` : ''}auth.altanlabs.com`;
+  }
+  // Fallback or other logic for your multiple tenants:
+  return `auth.${hostname}`;
+}
+
+
 const jwtDecode = (token: string) => {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -50,7 +88,7 @@ let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
 
 export const authAxios = axios.create({
-  baseURL: AUTH_BASE_URL,
+  baseURL: getBaseUrl(),
   withCredentials: true,
 });
 
@@ -75,7 +113,7 @@ const refreshToken = async (): Promise<string> => {
   return refreshPromise!;
 };
 
-const createAuthenticatedApi = (baseURL: string = AUTH_BASE_URL): AxiosInstance => {
+const createAuthenticatedApi = (baseURL: string = getBaseUrl()): AxiosInstance => {
   // Create the main instance for API calls.
   const apiAxios = axios.create({ baseURL });
   console.debug("[@altanlabs/auth] created new API with base url", apiAxios.defaults.baseURL);
