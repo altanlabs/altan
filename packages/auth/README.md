@@ -1,12 +1,7 @@
-## **@altanlabs/auth**
-
-A simple drop-in auth provider for your apps built with `react-router-dom`. Handles user sign in, sign up, profile, and logout – all connected to your Altan users table.
-
----
-
 ### ✅ Setup
 
 Wrap your app with `AuthProvider` and pass your **Users Table ID**:
+IMPORTANT TO IMPORT THE STYLES!!!
 
 ```jsx
 import "@altanlabs/auth/dist/styles.css";
@@ -23,9 +18,31 @@ function App() {
 
 ---
 
-### 🔐 Sign In Page (with redirect logic)
+### 🛡️ Auth Guard (Best Practice)
 
-You **must manually redirect authenticated users** if they try to access the Sign In page:
+To protect private routes, use an Auth Guard component:
+
+```jsx
+import { useAuth } from '@altanlabs/auth';
+import { Navigate, useLocation } from 'react-router-dom';
+
+export function AuthGuard({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+}
+```
+
+---
+
+### 🔐 Sign In Page
+
+The Sign In page should redirect authenticated users away automatically:
 
 ```jsx
 import { SignIn, useAuth } from "@altanlabs/auth";
@@ -52,9 +69,9 @@ export default function SignInPage() {
 
 ---
 
-### 🆕 Sign Up Page (with redirect logic)
+### 🆕 Sign Up Page
 
-Also redirect authenticated users away from the Sign Up page:
+The Sign Up page should also redirect authenticated users automatically:
 
 ```jsx
 import { SignUp, useAuth } from "@altanlabs/auth";
@@ -83,20 +100,23 @@ export default function SignUpPage() {
 
 ### 👤 User Profile
 
-A user-only page to manage their account. Automatically redirects if user is not logged in (using `fallback`):
+Protect your user profile page with the Auth Guard:
 
 ```jsx
 import { UserProfile } from "@altanlabs/auth";
+import { AuthGuard } from "./AuthGuard";
 
-function ProfilePage() {
+export default function ProfilePage() {
   return (
-    <UserProfile
-      appearance={{ theme: "dark" }}
-      showCustomFields
-      editableFields={["name", "surname", "email"]}
-      hiddenFields={["password"]}
-      fallback={<div>Please log in</div>}
-    />
+    <AuthGuard>
+      <UserProfile
+        appearance={{ theme: "dark" }}
+        showCustomFields
+        editableFields={["name", "surname", "email"]}
+        hiddenFields={["password"]}
+        fallback={<div>Please log in</div>}
+      />
+    </AuthGuard>
   );
 }
 ```
@@ -124,7 +144,7 @@ function NavBar() {
 
 ### 🪝 Auth Hook
 
-Access the current user and perform actions like logout:
+Access the current user and manage auth state:
 
 ```jsx
 import { useAuth } from "@altanlabs/auth";
@@ -149,5 +169,6 @@ function ProfileButton() {
 
 ### 📌 Notes
 
-- You **must manually handle redirects** using `Navigate` from `react-router-dom` in your sign in/sign up pages.
-- `AuthProvider` automatically keeps your user state in sync and provides `user`, `logout`, and other helpers via `useAuth`.
+- Always protect private routes with `AuthGuard` for consistent and secure user experiences.
+- `AuthProvider` automatically syncs auth state, providing easy access to `user`, `logout`, and more via `useAuth`.
+
