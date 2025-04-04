@@ -185,7 +185,7 @@ export function AuthProvider({
       setError(null);
 
       const authWindow = window.open(
-        `https://auth.altan.ai/google/authorize?table_id=${tableId}&redirect_url=${encodeURIComponent(
+        `https://api.altan.ai/google/authorize?table_id=${tableId}&redirect_url=${encodeURIComponent(
           window.location.origin
         )}`,
         "Auth",
