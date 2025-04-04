@@ -197,8 +197,8 @@ export function AuthProvider({
 
         function handleAuth(event: MessageEvent) {
           // Verify origin
-          console.log("@altanlabs/auth: signin with google: event.origin:", event.origin);
-          if (event.origin !== "https://auth.altan.ai") return;
+          console.debug("@altanlabs/auth: signin with google: event.origin:", event.origin);
+          if (event.origin !== "https://api.altan.ai") return;
 
           // Clear timeout first
           if (authTimeout) clearTimeout(authTimeout);
@@ -207,6 +207,7 @@ export function AuthProvider({
           window.removeEventListener("message", handleAuth);
 
           const response = event.data;
+          console.debug("@altanlabs/auth: signin with google: response:", response);
           if (response.error) {
             reject(new Error(response.error));
           } else if (response.success) {
@@ -226,6 +227,7 @@ export function AuthProvider({
 
       // Handle successful authentication
       const { access_token, user: googleUser } = userData as any;
+      console.debug("@altanlabs/auth: signin with google: googleUser:", googleUser);
 
       if (authenticationOptions.persistSession && access_token) {
         setSession(api, access_token)
@@ -244,13 +246,15 @@ export function AuthProvider({
   // Update checkAuth to use token
   useEffect(() => {
     const checkAuth = async () => {
+      console.debug("@altanlabs/auth: @checkAuth: before:", tableId, isLoading);
       if (!tableId || isLoading) {
         return;
       }
       setIsLoading(true);
       try {
         const { data: userData } = await api.get('/me');
-        const authUser = mapUserData(userData);        
+        const authUser = mapUserData(userData);
+        console.debug("@altanlabs/auth: @checkAuth: setting user:", authUser);
         setUser(authUser);
       } catch (error) {
         console.debug("@checkAuth: error", error);
@@ -292,6 +296,9 @@ export function AuthProvider({
       api
     ]
   );
+  console.debug("@altanlabs/auth: user:", user);
+  console.debug("@altanlabs/auth: initialized:", initialized);
+  console.debug("@altanlabs/auth: isLoading:", isLoading);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
