@@ -185,7 +185,7 @@ export function AuthProvider({
       setError(null);
 
       const authWindow = window.open(
-        `https://api.altan.ai/tables/auth/google/authorize?table_id=${tableId}&redirect_url=${encodeURIComponent(
+        `https://auth.altan.ai/google/authorize?table_id=${tableId}&redirect_url=${encodeURIComponent(
           window.location.origin
         )}`,
         "Auth",
@@ -197,7 +197,8 @@ export function AuthProvider({
 
         function handleAuth(event: MessageEvent) {
           // Verify origin
-          if (event.origin !== "https://api.altan.ai") return;
+          console.log("@altanlabs/auth: signin with google: event.origin:", event.origin);
+          if (event.origin !== "https://auth.altan.ai") return;
 
           // Clear timeout first
           if (authTimeout) clearTimeout(authTimeout);
