@@ -1,10 +1,12 @@
+import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 
 // utils
 import { AUTH_API } from './utils';
-import { optimai, unauthorizeUser } from '../utils/axios';
+import { storeRefreshToken, clearStoredRefreshToken } from '../utils/auth';
+import { optimai, unauthorizeUser, authorizeUser } from '../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -163,7 +165,7 @@ const getUserProfile = async () => {
   } catch {
     throw new Error('Failed to get user profile');
   }
-};
+  };
 
 const verifyEmail = async (code) => {
   try {
@@ -256,21 +258,67 @@ export function AuthProvider({ children }) {
       },
     );
 
-    if (!response || !response.data || !response.data.redirect) {
+    if (!response || !response.data) {
       throw new Error('Invalid login response');
     }
 
-    const redirectUrl = new URL(response.data.redirect);
+    // Check if running on mobile platform
+    const isMobile = Capacitor.isNativePlatform();
 
-    // Append parameters if they exist
-    if (idea) {
-      redirectUrl.searchParams.append('idea', idea);
-    }
-    if (invitation_id) {
-      redirectUrl.searchParams.append('iid', invitation_id);
-    }
+    if (isMobile) {
+      if (response.data.refresh_token) {
+        storeRefreshToken(response.data.refresh_token);
+      }
 
-    window.location.href = redirectUrl.toString();
+      // Set up access token directly if provided
+      if (response.data.access_token) {
+        // Import setSession to set the token directly
+        const { setSession } = await import('../utils/auth');
+        setSession(response.data.access_token, optimai);
+      } else {
+        console.warn('No access token in mobile login response');
+      }
+
+      // Get user profile and update state
+      try {
+        const userProfile = await getUserProfile();
+        dispatch({
+          type: 'LOGIN',
+          payload: userProfile,
+        });
+      } catch (error) {
+        console.error('Failed to get user profile after mobile login:', error);
+        // Try to authorize user as fallback
+        try {
+          await authorizeUser();
+          const userProfile = await getUserProfile();
+          dispatch({
+            type: 'LOGIN',
+            payload: userProfile,
+          });
+        } catch (fallbackError) {
+          console.error('Mobile login fallback also failed:', fallbackError);
+          throw new Error('Failed to complete mobile authentication');
+        }
+      }
+    } else {
+      // Web authentication flow (existing behavior)
+      if (!response.data.redirect) {
+        throw new Error('Invalid login response - no redirect URL');
+      }
+
+      const redirectUrl = new URL(response.data.redirect);
+
+      // Append parameters if they exist
+      if (idea) {
+        redirectUrl.searchParams.append('idea', idea);
+      }
+      if (invitation_id) {
+        redirectUrl.searchParams.append('iid', invitation_id);
+      }
+
+      window.location.href = redirectUrl.toString();
+    }
   }, []);
 
   const patchUser = useCallback(async (details) => {
@@ -305,19 +353,65 @@ export function AuthProvider({ children }) {
       { withCredentials: true },
     );
 
-    // Convert the redirect string to URL object
-    const redirectUrl = new URL(response.data.redirect);
+    // Check if running on mobile platform
+    const isMobile = Capacitor.isNativePlatform();
 
-    // Safely append the idea parameter if it exists
-    if (idea) {
-      redirectUrl.searchParams.append('idea', idea);
+    if (isMobile) {
+      // Mobile authentication flow
+
+      // Store refresh token if provided
+      if (response.data.refresh_token) {
+        storeRefreshToken(response.data.refresh_token);
+      }
+
+      // Set up access token directly if provided
+      if (response.data.access_token) {
+        // Import setSession to set the token directly
+        const { setSession } = await import('../utils/auth');
+        setSession(response.data.access_token, optimai);
+      } else {
+        console.warn('No access token in mobile register response');
+      }
+
+      // Get user profile and update state
+      try {
+        const userProfile = await getUserProfile();
+        dispatch({
+          type: 'REGISTER',
+          payload: userProfile,
+        });
+      } catch (error) {
+        console.error('Failed to get user profile after mobile registration:', error);
+        // Try to authorize user as fallback
+        try {
+          await authorizeUser();
+          const userProfile = await getUserProfile();
+          dispatch({
+            type: 'REGISTER',
+            payload: userProfile,
+          });
+        } catch (fallbackError) {
+          console.error('Mobile registration fallback also failed:', fallbackError);
+          throw new Error('Failed to complete mobile registration');
+        }
+      }
+    } else {
+      // Web authentication flow (existing behavior)
+      // Convert the redirect string to URL object
+      const redirectUrl = new URL(response.data.redirect);
+
+      // Safely append the idea parameter if it exists
+      if (idea) {
+        redirectUrl.searchParams.append('idea', idea);
+      }
+      window.location.href = redirectUrl.toString();
     }
-    window.location.href = redirectUrl.toString();
   }, []);
 
   // LOGOUT
   const logout = useCallback(async () => {
     await axios.post(`${AUTH_API}/logout/user`, null, { withCredentials: true }).finally(() => {
+      clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
       dispatch({
         type: 'LOGOUT',
@@ -339,6 +433,9 @@ export function AuthProvider({ children }) {
       patchUser,
       verifyEmail,
       resendVerification,
+
+      // Mobile token management
+      storeRefreshToken,
 
       // Room context for CircleAuthGuard
       initialized: state.initialized,

@@ -74,13 +74,13 @@ const selectAccountInitialized = (state) => state.general.generalInitialized.acc
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
-  
+
   // Parse search params manually for React Router v5
   const searchParams = new URLSearchParams(location.search);
   const setSearchParams = (newParams) => {
     history.replace({
       pathname: location.pathname,
-      search: newParams.toString()
+      search: newParams.toString(),
     });
   };
   const [clonedTemplateId, setTemplateId] = useState('');
@@ -179,7 +179,9 @@ const DashboardLayout = ({ children }) => {
       {isDesktop && <FloatingNavigation />}
       {user && <FloatingVoiceWidget />}
 
-      {!!clonedTemplateId && !!user && Loadable(CloneTemplate)({ clonedTemplateId, onClose: handleClose })}
+      {!!clonedTemplateId &&
+        !!user &&
+        Loadable(CloneTemplate)({ clonedTemplateId, onClose: handleClose })}
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
       <Box
         sx={{
@@ -191,9 +193,7 @@ const DashboardLayout = ({ children }) => {
           openNav={open}
           onCloseNav={handleCloseNav}
         />
-        <Main>
-          {children}
-        </Main>
+        <Main>{children}</Main>
       </Box>
     </VoiceConversationProvider>
   );

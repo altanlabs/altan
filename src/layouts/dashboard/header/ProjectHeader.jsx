@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 // @mui
 import { Stack, AppBar, Toolbar, Typography, Tooltip, Button } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -41,6 +42,17 @@ import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
 
+// Utility function to check if we're on iOS Capacitor platform
+const isIOSCapacitor = () => {
+  try {
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    return isNative && platform === 'ios';
+  } catch {
+    return false;
+  }
+};
+
 function ProjectHeader() {
   const theme = useTheme();
   const history = useHistory();
@@ -51,6 +63,8 @@ function ProjectHeader() {
   const displayMode = useSelector(selectDisplayMode);
   const isMobile = useResponsive('down', 'sm');
   const dispatch = useDispatch();
+  const isIOS = isIOSCapacitor();
+  
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
@@ -138,21 +152,35 @@ function ProjectHeader() {
       });
   }, [dispatch, selectedComponentId]);
 
+  // Calculate safe area aware styles for iOS
+  const getHeaderStyles = () => {
+    const baseStyles = {
+      boxShadow: 'none',
+      height: HEADER.H_MOBILE,
+      zIndex: 3,
+      ...bgBlur({
+        color: theme.palette.background.default,
+      }),
+      transition: theme.transitions.create(['height'], {
+        duration: theme.transitions.duration.shorter,
+      }),
+    };
+
+    if (isIOS) {
+      // Add safe area inset to top padding for iOS
+      return {
+        ...baseStyles,
+        paddingTop: 'env(safe-area-inset-top)',
+        height: `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))`,
+      };
+    }
+
+    return baseStyles;
+  };
+
   return (
     <>
-      <AppBar
-        sx={{
-          boxShadow: 'none',
-          height: HEADER.H_MOBILE,
-          zIndex: 3,
-          ...bgBlur({
-            color: theme.palette.background.default,
-          }),
-          transition: theme.transitions.create(['height'], {
-            duration: theme.transitions.duration.shorter,
-          }),
-        }}
-      >
+      <AppBar sx={getHeaderStyles()}>
         <Toolbar
           variant="dense"
           disableGutters

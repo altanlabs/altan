@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
 
@@ -12,6 +13,17 @@ import useResponsive from '../../hooks/useResponsive';
 
 const SPACING = 8;
 
+// Utility function to check if we're on iOS Capacitor platform
+const isIOSCapacitor = () => {
+  try {
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    return isNative && platform === 'ios';
+  } catch {
+    return false;
+  }
+};
+
 Main.propTypes = {
   sx: PropTypes.object,
   children: PropTypes.node,
@@ -19,24 +31,30 @@ Main.propTypes = {
 
 export default function Main({ children, sx, ...other }) {
   const { themeLayout } = useSettingsContext();
-
   const isNavHorizontal = themeLayout === 'horizontal';
-
   const isNavMini = themeLayout === 'mini';
-
   const isDesktop = useResponsive('up', 'lg');
+  const isIOS = isIOSCapacitor();
+
+  // Calculate header height with iOS safe area
+  const getHeaderHeight = (baseHeight) => {
+    if (isIOS) {
+      return `calc(${baseHeight}px + env(safe-area-inset-top))`;
+    }
+    return `${baseHeight}px`;
+  };
 
   if (isNavHorizontal) {
     return (
       <Box
         component="main"
         sx={{
-          pt: `${HEADER.H_MOBILE + SPACING}px`,
-          pb: `${HEADER.H_MOBILE + SPACING}px`,
+          pt: `calc(${getHeaderHeight(HEADER.H_MOBILE)} + ${SPACING}px)`,
+          pb: `calc(${getHeaderHeight(HEADER.H_MOBILE)} + ${SPACING}px)`,
           ...(isDesktop && {
             px: 2,
-            pt: `${HEADER.H_DASHBOARD_DESKTOP + 80}px`,
-            pb: `${HEADER.H_DASHBOARD_DESKTOP + SPACING}px`,
+            pt: `calc(${getHeaderHeight(HEADER.H_DASHBOARD_DESKTOP)} + 80px)`,
+            pb: `calc(${getHeaderHeight(HEADER.H_DASHBOARD_DESKTOP)} + ${SPACING}px)`,
           }),
         }}
       >
@@ -51,10 +69,10 @@ export default function Main({ children, sx, ...other }) {
       sx={{
         flexGrow: 1,
         overflowY: 'auto',
-        py: `${HEADER.H_MOBILE + SPACING}px`,
+        py: `calc(${getHeaderHeight(HEADER.H_MOBILE)} + ${SPACING}px)`,
         ...(isDesktop && {
           px: 2,
-          py: `${HEADER.H_DASHBOARD_DESKTOP + SPACING}px`,
+          py: `calc(${getHeaderHeight(HEADER.H_DASHBOARD_DESKTOP)} + ${SPACING}px)`,
           left: NAV.W_DASHBOARD,
           width: `calc(100% - ${NAV.W_DASHBOARD}px)`,
           ...(isNavMini && {

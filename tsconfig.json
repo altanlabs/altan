@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
     /* General Options */
-    "target": "ES2021",                                  /* Set the JavaScript language version. */
+    "target": "ES2019",                                  /* Set the JavaScript language version for better iOS compatibility. */
     "module": "ESNext",                                  /* Use modern ES module syntax. */
-    "lib": ["DOM", "ES2021"],                            /* Include libraries for DOM and modern JavaScript. */
+    "lib": ["DOM", "ES2019"],                            /* Include libraries for DOM and ES2019 JavaScript. */
     "jsx": "react-jsx",                                  /* Use the React JSX runtime for React 17+. */
     "strict": true,                                      /* Enable all strict type-checking options. */
     "esModuleInterop": true,                             /* Ensure compatibility with CommonJS modules. */
     "forceConsistentCasingInFileNames": true,            /* Enforce consistent casing in file names. */
     "skipLibCheck": true,                                /* Skip type-checking of library declaration files. */
     "resolveJsonModule": true,                           /* Enable importing JSON files. */
-    "allowImportingTsExtensions": true,
 
     /* Module Resolution */
     "moduleResolution": "bundler",                          /* Use Node.js-style module resolution. */

@@ -6,7 +6,7 @@ import TextAreaWithButtons from './create/TextAreaWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
 
 function CreateAnything({ handleVoice }) {
-  const history = useHistory();;
+  const history = useHistory();
   const { isAuthenticated } = useAuthContext();
   const [inputValue, setInputValue] = useState('');
   const [resourceName, setResourceName] = useState('');

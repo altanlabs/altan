@@ -16,3 +16,8 @@ Altan mobile
 - npm run cypress:run
 
 
+MOBILE
+
+npm run build:mobile
+npx cap sync ios
+npx cap open ios

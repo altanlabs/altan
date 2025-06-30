@@ -1,11 +1,20 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
-  appId: 'com.altan.app',
+  appId: 'ai.altan.mobile',
   appName: 'altan',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    iosScheme: 'https',
+    cleartext: true,
+    allowNavigation: [
+      'https://api.altan.ai',
+      'https://api.dev.altan.ai',
+      'https://altan.ai',
+      'https://dashboard.altan.ai'
+    ]
   },
   plugins: {
     SplashScreen: {
@@ -22,6 +31,11 @@ const config: CapacitorConfig = {
       splashImmersive: true,
       layoutName: "launch_screen",
       useDialog: true,
+    },
+    Keyboard: {
+      resize: KeyboardResize.Native,
+      style: KeyboardStyle.Dark,
+      resizeOnFullScreen: true,
     },
   },
 };

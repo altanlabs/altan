@@ -47,19 +47,20 @@ export default defineConfig(({ mode }) => {
 
   return {
     build: {
-      target: 'esnext', // Use modern JS
+      target: isMobile ? 'es2019' : 'esnext', // Use more compatible target for mobile
       cssCodeSplit: !isMobile, // For mobile, keep CSS together
       emptyOutDir: true,                 // wipe old chunks → avoids 404s
-      minify: isDev ? false : 'esbuild', // Faster dev builds, minified production
-      sourcemap: isDev, // Generate sourcemaps only in dev
+      minify: isDev ? false : (isMobile ? false : 'esbuild'), // Disable minify for mobile debugging
+      sourcemap: isDev || isMobile, // Generate sourcemaps for dev and mobile debugging
       outDir: 'dist', // Build output directory
-      assetsInlineLimit: 0, // Extract small assets instead of inlining
+      assetsInlineLimit: isMobile ? 4096 : 0, // Inline small assets for mobile
       reportCompressedSize: false, // Disable compressed size reporting for speed
       chunkSizeWarningLimit: 1000, // Raise default chunk size warning limit
       rollupOptions: {
         output: {
-          manualChunks: (id) => {
-            // Always use chunking for better memory management
+          // Simplified chunking strategy for mobile to avoid initialization issues
+          manualChunks: isMobile ? undefined : (id) => {
+            // Only use chunking for web builds
             if (id.includes('node_modules')) {
               // Group vendor chunks more efficiently
               if (id.includes('@mui')) return 'mui';
@@ -73,13 +74,18 @@ export default defineConfig(({ mode }) => {
             }
           },
           minifyInternalExports: true,
+          // Ensure proper format for mobile
+          format: isMobile ? 'es' : 'es',
         },
         // Increase memory for Rollup
         maxParallelFileOps: 2, // Reduce parallel operations to save memory
       },
     },
     plugins: [
-      react(),
+      react({
+        // Add JSX runtime configuration for better compatibility
+        jsxRuntime: 'automatic',
+      }),
       reactVirtualized(),
       wasm(),
       ...(isDev ? [mkcert()] : []), // Only use mkcert in dev
@@ -103,6 +109,12 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['react', 'react-dom', '@ionic/react', '@ionic/core'],
       exclude: ['fsevents'],
+      // Force optimization for mobile builds
+      ...(isMobile && {
+        esbuildOptions: {
+          target: 'es2019',
+        },
+      }),
     },
     resolve: {
       alias: {
@@ -140,5 +152,14 @@ export default defineConfig(({ mode }) => {
       https: isDev,
       host: isDev ? 'dev-local.altan.ai' : undefined,
     },
+    // Additional configuration for mobile compatibility
+    ...(isMobile && {
+      esbuild: {
+        target: 'es2019',
+        supported: {
+          'top-level-await': false, // Disable top-level await for iOS compatibility
+        },
+      },
+    }),
   };
 });

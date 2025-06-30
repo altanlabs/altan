@@ -5,7 +5,6 @@ import { addResponseInterceptor } from './interceptors';
 
 const OPTIMAI_BASE_URL = 'https://api.altan.ai';
 
-const DEV_API_URL = 'https://api.dev.altan.ai';
 
 const optimai_tables = axios.create({
   name: 'optimai_tables',

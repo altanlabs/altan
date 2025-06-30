@@ -95,16 +95,6 @@ function NavAccount({ mini = false, isDashboard = false }) {
     searchTerm: user?.xsup && showAllAccounts && hasAnySearchTerm ? '' : searchTerm, // Don't double-filter if using search results
     showAllAccounts,
   });
-
-  console.log('🎯 Debug info:', {
-    hasAnySearchTerm,
-    searchResultsCount: searchResults.length,
-    filteredAccountsCount: filteredAccounts.length,
-    isSupadmin: user?.xsup,
-    showAllAccounts,
-    searchResults: searchResults.slice(0, 2), // Log first 2 results for inspection
-  });
-
   const name = useMemo(() => account?.name || user?.first_name, [account?.name, user?.first_name]);
 
   const handleClick = useCallback(() => setOpen(true), []);
@@ -135,15 +125,11 @@ function NavAccount({ mini = false, isDashboard = false }) {
       return;
     }
 
-    console.log('🔍 Searching with params:', searchParams);
     setIsSearching(true);
     try {
       const results = await dispatch(searchAccounts(searchParams));
-      console.log('📥 Raw search results:', results);
       setSearchResults(results || []);
-      console.log('✅ Search results set:', results?.length || 0, 'accounts');
     } catch (error) {
-      console.error('❌ Search failed:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

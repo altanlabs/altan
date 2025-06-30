@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 // @mui
 import { Stack, AppBar, Toolbar } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -12,6 +13,17 @@ import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
 import { useSelector } from '../../../redux/store';
 
+// Utility function to check if we're on iOS Capacitor platform
+const isIOSCapacitor = () => {
+  try {
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    return isNative && platform === 'ios';
+  } catch {
+    return false;
+  }
+};
+
 // ----------------------------------------------------------------------
 
 function Header() {
@@ -20,23 +32,38 @@ function Header() {
   const isDesktop = useResponsive('up', 'md');
   const history = useHistory();
   const headerVisible = useSelector(selectHeaderVisible);
+  const isIOS = isIOSCapacitor();
 
   if (!headerVisible) {
     return null;
   }
 
+  // Calculate safe area aware styles for iOS
+  const getHeaderStyles = () => {
+    const baseStyles = {
+      backgroundColor: 'transparent',
+      boxShadow: 'none',
+      height: HEADER.H_MOBILE,
+      zIndex: 3,
+      transition: theme.transitions.create(['height'], {
+        duration: theme.transitions.duration.shorter,
+      }),
+    };
+
+    if (isIOS) {
+      // Add safe area inset to top padding for iOS
+      return {
+        ...baseStyles,
+        paddingTop: 'env(safe-area-inset-top)',
+        height: `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))`,
+      };
+    }
+
+    return baseStyles;
+  };
+
   return (
-    <AppBar
-      sx={{
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        height: HEADER.H_MOBILE,
-        zIndex: 3,
-        transition: theme.transitions.create(['height'], {
-          duration: theme.transitions.duration.shorter,
-        }),
-      }}
-    >
+    <AppBar sx={getHeaderStyles()}>
       <Toolbar
         variant="dense"
         sx={{

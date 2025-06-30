@@ -1,14 +1,21 @@
 import { LazyMotion, domMax } from 'framer-motion';
+import PropTypes from 'prop-types';
 import { memo } from 'react';
 
 import { DidYouKnow } from '../../../../components/aceternity/DidYouKnow.tsx';
 import { SparklesCore } from '../../../../components/aceternity/Sparkles.tsx';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer.tsx';
 
-function LoadingFrame() {
+function LoadingFrame({ viewMode }) {
   return (
     <LazyMotion features={domMax}>
-      <div className="min-h-screen w-full bg-white dark:bg-[#09090b] flex flex-col">
+      <div
+        className="min-h-screen bg-white dark:bg-[#09090b] flex flex-col"
+        style={{
+          width: viewMode === 'mobile' ? '375px' : '100%',
+          margin: viewMode === 'mobile' ? '0 auto' : undefined,
+        }}
+      >
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="w-[40rem] h-40 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 z-30">
@@ -47,5 +54,9 @@ function LoadingFrame() {
     </LazyMotion>
   );
 }
+
+LoadingFrame.propTypes = {
+  viewMode: PropTypes.string,
+};
 
 export default memo(LoadingFrame);

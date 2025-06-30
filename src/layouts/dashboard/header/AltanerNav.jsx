@@ -17,7 +17,7 @@ const TabButton = memo(function TabButton({
   altanerId,
   onTabChange,
   onContextMenu,
-  history.push,
+  historyPush,
   handleTabClick,
 }) {
   // Handlers are wrapped via useCallback in parent, so no inline function recreations here:
@@ -88,7 +88,7 @@ TabButton.propTypes = {
   altanerId: PropTypes.string.isRequired,
   onTabChange: PropTypes.func.isRequired,
   onContextMenu: PropTypes.func.isRequired,
-  history.push: PropTypes.func.isRequired,
+  historyPush: PropTypes.func.isRequired,
   handleTabClick: PropTypes.func.isRequired,
 };
 
@@ -100,7 +100,7 @@ const AltanerNav = ({
   onContextMenu,
   onAddClick,
 }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const dispatch = useDispatch();
   const accountId = useSelector(selectAccountId);
 
@@ -127,7 +127,7 @@ const AltanerNav = ({
         history.push(`/altaners/${altanerId}/c/${componentId}`);
       }
     },
-    [altanerId, history.push, onTabChange],
+    [altanerId, history, onTabChange],
   );
 
   // useMemo to prevent re-computing the entries on every render.
@@ -147,7 +147,7 @@ const AltanerNav = ({
             altanerId={altanerId}
             onTabChange={onTabChange}
             onContextMenu={onContextMenu}
-            history.push={history.push}
+            historyPush={history.push}
             handleTabClick={handleTabClick}
           />
         ))}
