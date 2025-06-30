@@ -1,0 +1,371 @@
+import { Box, Stack, Typography, useTheme } from '@mui/material';
+import DialogContent from '@mui/material/DialogContent';
+import { m } from 'framer-motion';
+import { capitalize } from 'lodash';
+import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
+import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+import { useNavigate } from 'react-router';
+
+import { cn } from '@lib/utils';
+
+import ConnectionsSetupStep from './steps/ConnectionsSetupStep.jsx';
+import VarsStep from './steps/VarsStep.jsx';
+import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
+import { selectConnections } from '../../redux/slices/connections';
+import { cloneTemplate, selectAccount } from '../../redux/slices/general';
+import { useSelector } from '../../redux/store';
+import { optimai_shop, optimai_integration } from '../../utils/axios';
+import { TextShimmer } from '../aceternity/text/text-shimmer.tsx';
+import Timeline from '../aceternity/timeline.jsx';
+import WavyBackground from '../aceternity/wavy-background.jsx';
+import CloseButtonX from '../buttons/CloseButtonX.jsx';
+import CustomDialog from '../dialogs/CustomDialog.jsx';
+import Iconify from '../iconify';
+
+export const fetchClonedTemplate = async (clonedTemplateId) => {
+  try {
+    const response = await optimai_shop.get(`/v2/clones/${clonedTemplateId}`);
+    const { cloned_template } = response.data;
+    return cloned_template;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+const FinishNextButton = memo(({ allConnectionsSetUp, onClick, isLoading, disabled = false }) => {
+  const { watch } = useFormContext();
+  const values = watch();
+
+  const submitDisabled = useMemo(() => {
+    if (disabled) {
+      return true;
+    }
+    return (
+      !allConnectionsSetUp ||
+      !Object.values(values).every((v) => !['', null, undefined].includes(v))
+    );
+  }, [allConnectionsSetUp, disabled, values]);
+
+  return (
+    <m.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={!isLoading && !submitDisabled ? onClick : undefined}
+      className={cn(
+        'group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-xl p-1 transition-all duration-300 gap-3',
+        // Outer border with a modern conic gradient
+        submitDisabled ? 'opacity-20' : 'opacity-80 hover:opacity-100',
+        (submitDisabled || isLoading) && 'cursor-not-allowed',
+      )}
+    >
+      {/* Inner content container for a glassmorphism effect */}
+      {isLoading ? (
+        <>
+          <Iconify
+            width={15}
+            icon="svg-spinners:blocks-shuffle-3"
+          />
+          <TextShimmer>Installing...</TextShimmer>
+        </>
+      ) : (
+        <>
+          {!submitDisabled && <Iconify icon="mdi:check" />}
+          Confirm Installation
+        </>
+      )}
+    </m.button>
+  );
+});
+
+FinishNextButton.displayName = 'FinishNextButton';
+
+const MAP_REDIRECT = {
+  workflow: 'flows',
+  altaner: 'altaners',
+  agent: 'agents',
+  form: 'forms',
+};
+
+// Utility function to truncate text with ellipsis
+const truncateText = (text, maxLength = 120) => {
+  if (!text || text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
+};
+
+function CloneTemplate({ clonedTemplateId, onClose }) {
+  const navigate = useNavigate();
+  const theme = useTheme()?.palette?.mode ?? 'dark';
+  const [isCreatingNewConnection, setIsCreatingNewConnection] = useState(false);
+  const [connectionsSetup, setConnectionsSetup] = useState({});
+  const [mode, setMode] = useState(null);
+  const [dispatchWithFeedback] = useFeedbackDispatch();
+  const [clonedTemplate, setClonedTemplate] = useState(null);
+  const [isFetched, setIsFetched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [types, setTypes] = useState([]);
+  const [typesInitialized, setTypesInitialized] = useState(false);
+
+  const connections = useSelector(selectConnections);
+  const account = useSelector(selectAccount);
+
+  const vars = useMemo(() => clonedTemplate?.version?.vars || {}, [clonedTemplate?.version?.vars]);
+
+  const defaultValues = useMemo(
+    () =>
+      Object.entries(vars).reduce((acc, [key, fieldSchema]) => {
+        acc[key] = fieldSchema.default;
+        return acc;
+      }, {}),
+    [vars],
+  );
+
+  const methods = useForm({ defaultValues });
+
+  const steps = useMemo(
+    () => [
+      {
+        title: 'Connections',
+        description: 'Set up the required connections for your template.',
+        content: (props) => (
+          <ConnectionsSetupStep
+            {...props}
+            isCreatingNewConnection={isCreatingNewConnection}
+            setIsCreatingNewConnection={setIsCreatingNewConnection}
+            connectionsSetup={connectionsSetup}
+            setConnectionsSetup={setConnectionsSetup}
+            types={types}
+            typesInitialized={typesInitialized}
+            connections={connections}
+            account={account}
+          />
+        ),
+      },
+      {
+        title: 'Variables',
+        description: 'Set up the variables required for your template.',
+        content: (props) => <VarsStep {...props} />,
+        condition: (version) => !!Object.keys(version?.vars ?? {}).length,
+      },
+    ],
+    [account, connections, connectionsSetup, isCreatingNewConnection, types, typesInitialized],
+  );
+
+  useEffect(() => {
+    if (clonedTemplateId && !isFetched && account?.id) {
+      fetchClonedTemplate(clonedTemplateId)
+        .then(async (ct) => {
+          setClonedTemplate(ct);
+          setMode(ct.version.entity_type);
+          setIsFetched(true);
+          const connsMap = ct.version.public_details?.assets?.connections;
+          if (connsMap) {
+            setConnectionsSetup(
+              Object.keys(connsMap).reduce((acc, c) => {
+                acc[c] = null;
+                return acc;
+              }, {}),
+            );
+            const response = await optimai_integration.get('/connection-type/all', {
+              params: {
+                is_compact: true,
+                filter_ids: Object.keys(connsMap).map((c) => c.replace('_', '-')),
+              },
+            });
+            const { items } = response.data;
+            setTypes(items);
+            setTypesInitialized(true);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch product', error);
+          setIsFetched(true);
+        });
+    }
+  }, [clonedTemplateId, account?.id, isFetched]);
+
+  const handleInstall = useCallback(() => {
+    if (clonedTemplate?.id) {
+      const version = clonedTemplate.version.version;
+      const name = clonedTemplate.version.name;
+      const vName = name.includes(version) ? name : `${name}:${version}`;
+      setIsLoading(true);
+      dispatchWithFeedback(
+        cloneTemplate(
+          clonedTemplate.id,
+          {
+            connections: connectionsSetup,
+            vars: methods.getValues(),
+          },
+          ['altaner', 'workflow'].includes(mode) ? 3 : 0,
+        ),
+        {
+          successMessage: `${vName} ${['altaner', 'workflow'].includes(mode) ? 'cloning process started' : 'was cloned'} successfully`,
+          errorMessage: `${vName} ${['altaner', 'workflow'].includes(mode) ? 'cloning process could not be started' : 'could not be cloned'}`,
+          useSnackbar: true,
+        },
+      )
+        .then((clone) => {
+          onClose();
+          navigate(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=true`);
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setIsLoading(false));
+    }
+  }, [
+    clonedTemplate?.id,
+    clonedTemplate?.version?.version,
+    clonedTemplate?.version?.name,
+    dispatchWithFeedback,
+    connectionsSetup,
+    methods,
+    onClose,
+    navigate,
+    mode,
+  ]);
+
+
+  const assets = useMemo(
+    () => clonedTemplate?.version?.public_details?.assets || {},
+    [clonedTemplate?.version?.public_details?.assets],
+  );
+
+  const totalSetUpConnections = useMemo(
+    () => Object.values(connectionsSetup).filter((c) => !!c).length,
+    [connectionsSetup],
+  );
+  const allConnectionsSetUp = useMemo(
+    () => totalSetUpConnections === Object.keys(connectionsSetup).length,
+    [connectionsSetup, totalSetUpConnections],
+  );
+
+  const waveColors = useMemo(
+    () =>
+      !isFetched
+        ? [
+            '#E5E7EB', // Light Silver Grey
+            '#D1D5DB', // Silver Grey
+            '#9CA3AF', // Medium Silver Grey
+            '#6B7280', // Dark Silver Grey
+            '#4B5563', // Deep Silver Grey
+          ]
+        : !clonedTemplate?.version
+          ? [
+              '#E5E7EB', // Light Silver Grey
+              '#BE123C', // Deep Silvered Red
+              '#D1D5DB', // Silver Grey
+              '#F43F5E', // Vivid Silvered Red
+              '#9CA3AF', // Medium Silver Grey
+            ]
+          : [
+              '#E5E7EB', // Light Silver Grey
+              '#38BDF8', // Bright Sky Blue
+              '#D1D5DB', // Silver Grey
+              '#818CF8', // Soft Indigo
+              '#9CA3AF', // Medium Silver Grey
+            ],
+    [clonedTemplate?.version, isFetched],
+  );
+
+  const filteredSteps = useMemo(
+    () =>
+      steps
+        .filter((s) => !s.condition || s.condition(clonedTemplate?.version))
+        .map((s) => ({
+          ...s,
+          description: truncateText(s.description, 80),
+          content: s.content({ clonedTemplate, assets, vars }),
+        })),
+    [assets, clonedTemplate, steps, vars],
+  );
+
+  if (!clonedTemplateId) return null;
+
+  return (
+    <CustomDialog
+      dialogOpen={!!clonedTemplateId}
+      onClose={onClose}
+      alwaysFullScreen={true}
+      height="100vh"
+    >
+      <FormProvider {...methods}>
+        <DialogContent className="relative h-full p-0 overflow-hidden">
+          {isFetched && !clonedTemplate?.version ? null : (
+            <Stack
+              justifyContent="center"
+              alignItems="center"
+              className="absolute top-[20] left-[20] z-index-[99999]"
+            >
+              <CloseButtonX
+                enableBorderAnimation={false}
+                onClick={onClose}
+              />
+            </Stack>
+          )}
+          <WavyBackground
+            waveOpacity={isFetched && !clonedTemplate?.version ? 0.1 : 0.3}
+            waveWidth={isFetched && !clonedTemplate?.version ? 75 : 50}
+            colors={waveColors}
+          >
+            {isFetched ? (
+              !clonedTemplate?.version ? (
+                <Stack
+                  justifyContent="center"
+                  alignItems="center"
+                  width="100%"
+                  height="100%"
+                  spacing={1}
+                >
+                  <Typography>Invalid or non-existing {capitalize(mode)} Template.</Typography>
+                  <CloseButtonX
+                    theme={theme}
+                    onClick={onClose}
+                  />
+                </Stack>
+              ) : (
+                <Timeline
+                  header={
+                    <>
+                      <h1 className="text-lg md:text-4xl mb-4 text-neutral-900 dark:text-white max-w-4xl">
+                        {clonedTemplate?.version?.public_details?.name}
+                      </h1>
+                      <p className="text-neutral-700 dark:text-neutral-200 text-sm md:text-base max-w-sm">
+                        {truncateText(clonedTemplate?.version?.public_details?.description)}
+                      </p>
+                    </>
+                  }
+                  footer={
+                    <div className="flex w-full items-center justify-center">
+                      <FinishNextButton
+                        allConnectionsSetUp={allConnectionsSetUp}
+                        onClick={handleInstall}
+                        isLoading={isLoading}
+                      />
+                    </div>
+                  }
+                  data={filteredSteps}
+                />
+              )
+            ) : (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                width="100%"
+                height="100%"
+              >
+                <TextShimmer
+                  className="text-3xl w-fit"
+                  duration={2}
+                >
+                  Loading template...
+                </TextShimmer>
+              </Box>
+            )}
+          </WavyBackground>
+        </DialogContent>
+      </FormProvider>
+    </CustomDialog>
+  );
+}
+
+export default memo(CloneTemplate);

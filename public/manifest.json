@@ -1,0 +1,8 @@
+{
+  "name": "Altan",
+  "short_name": "Altan",
+  "display": "standalone",
+  "start_url": "/",
+  "theme_color": "#6989E9",
+  "background_color": "#ffffff"
+}

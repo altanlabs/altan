@@ -1,0 +1,102 @@
+/* Light Theme */
+body.light-theme {
+    --color: #212B36;
+    --primary: #7289da;
+    --primary-light: rgba(0, 167, 111, 0.1);
+    --foreground: #212B36;
+    --primary-foreground: #FFFFFF;
+    --secondary: #8E33FF;
+    --background: #FFFFFF;
+    --background-dim: #F9FAFB;
+    --background-dim-light: #F4F6F8;
+}
+
+body.light-theme #creatorElement {
+    --primary-color: #7289da;
+    --secondary-color: #8E33FF;
+    --primary-text-color: #212B36;
+    --secondary-text-color: #637381;
+    --inverted-text-color: #FFFFFF;
+    --primary-hover-color: #5BE49B;
+    --selection-border-color: #8E33FF;
+    --primary-icon-color: #454F5B;
+    --primary-bg-color: #FFFFFF;
+    --secondary-bg-color: #F9FAFB;
+    --primary-border-color: #DFE3E8;
+    --secondary-border-color: #C4CDD5;
+    --error-color: #FF5630;
+}
+
+/* Dark Theme */
+body.dark-theme {
+    --color: #FFFFFF;
+    --primary: #7289da;
+    --primary-light: rgba(114, 137, 218, 0.1);
+    --foreground: #ededed;
+    --primary-foreground: #FFFFFF;
+    --secondary: #3366FF;
+    --background: #212B36;
+    --background-dim: #161C24;
+    --background-dim-light: #212B36;
+}
+
+body.dark-theme #creatorElement {
+    --primary-color: #7289da;
+    --secondary-color: #3366FF;
+    --primary-text-color: #FFFFFF;
+    --secondary-text-color: #919EAB;
+    --inverted-text-color: #000000;
+    --primary-hover-color: #5BE584;
+    --selection-border-color: #3366FF;
+    --primary-icon-color: #C4CDD5;
+    --primary-bg-color: #212B36;
+    --secondary-bg-color: #161C24;
+    --primary-border-color: #454F5B;
+    --secondary-border-color: #637381;
+    --error-color: #B71D18;
+}
+
+/* Additional SurveyJS Creator Styles */
+.sd-root-modern {
+    --background: var(--background) !important;
+    --body-container-background: var(--background) !important;
+}
+
+.sd-root-modern .sd-container-modern {
+    background-color: var(--background) !important;
+}
+
+.sd-root-modern .sd-body {
+    background-color: var(--background) !important;
+}
+
+/* Override any default styles that might interfere */
+#creatorElement {
+    background: var(--background);
+    color: var(--color);
+}
+
+.svc-creator {
+    background: var(--background) !important;
+}
+
+.svc-creator__content-holder {
+    background: var(--background) !important;
+}
+
+.svc-tab-designer {
+    background: var(--background) !important;
+}
+
+/* Additional overrides for specific SurveyJS components */
+.svc-question__content {
+    background-color: var(--background-dim) !important;
+}
+
+.sd-question {
+    background-color: var(--background-dim) !important;
+}
+
+.svc-question__content-actions {
+    background-color: var(--background-dim) !important;
+}

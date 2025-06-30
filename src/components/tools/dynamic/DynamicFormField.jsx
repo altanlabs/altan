@@ -1,0 +1,477 @@
+// BUENO
+import {
+  // CardHeader,
+  Stack,
+} from '@mui/material';
+import Ajv from 'ajv';
+import { truncate } from 'lodash';
+import { useSnackbar } from 'notistack';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useWatch } from 'react-hook-form';
+
+import './styles.css';
+import DynamicFormFieldComponent from './DynamicFormFieldComponent.jsx';
+import DynamicFormFieldHeader from './DynamicFormFieldHeader.jsx';
+import DynamicFormFieldHeaderActions from './DynamicFormFieldHeaderActions.jsx';
+import { checkHasProperties, checkNestedOfProperties } from './utils.js';
+
+// const Loadable = (Component) => (props) => (
+//   <Suspense
+//     fallback={
+//       <Skeleton
+//         variant="rectangular"
+//         width="100%"
+//         height={40}
+//         style={{ borderRadius: 5 }}
+//       />
+//     }
+//   >
+//     <Component {...props} />
+//   </Suspense>
+// );
+
+// ----------------------------------------------------------------------
+
+// TESTING
+// const CustomDialog = Loadable(lazy(() => import('../../dialogs/CustomDialog.jsx')));
+
+const removeRequiredFields = (schema) => {
+  const newSchema = { ...schema };
+  delete newSchema.required;
+  return newSchema;
+};
+
+const checkConstFields = (schema, value) => {
+  const properties = schema.properties || {};
+  for (const key in properties) {
+    if (properties[key].const && value[key] !== undefined && properties[key].const !== value[key]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const validateValueAgainstSchemas = (value, schemas) => {
+  if (!value) {
+    return schemas?.[0] ?? null;
+  }
+  const ajv = new Ajv({
+    allErrors: true,
+    strict: false,
+    keywords: [
+      'x-component',
+      'x-ignore-ui',
+      'x-conditional-render',
+      'x-map',
+      'x-disable-header',
+      'x-nested-in',
+      'x-disable-free-text',
+      'x-default-enabled',
+    ],
+  });
+  return schemas.find((schema) => {
+    // Check if the schema title matches the value's name
+    if (schema.title && value.name && schema.title.toLowerCase() === value.name.toLowerCase()) {
+      return schema;
+    }
+
+    // If title doesn't match, proceed with const fields check and full validation
+    const constsMatch = checkConstFields(schema, value);
+    // console.log("schemas vs value: checkConstFields", constsMatch, value, schema);
+    if (constsMatch) {
+      const schemaWithoutRequired = removeRequiredFields(schema);
+      try {
+        const validate = ajv.compile(schemaWithoutRequired);
+        const isValid = validate(value);
+        // console.log("schemas vs value: isValid", schemaWithoutRequired, value, isValid);
+        if (isValid) {
+          return true;
+        }
+      } catch (error) {
+        console.error('Error compiling schema:', error);
+      }
+    }
+    return false;
+  });
+};
+
+const hasOf = (schema) => !!(schema.oneOf || schema.allOf || schema.anyOf);
+
+const DynamicFormField = ({
+  fieldKey,
+  schema,
+  onChange,
+  // value,
+  enableLexical = false,
+  isInMappings,
+  relationship,
+  sortKey = null,
+  defaultEnabled = false,
+  ...headerProps
+}) => {
+  const { enqueueSnackbar } = useSnackbar();
+  const value = useWatch({ name: fieldKey });
+  const optionValue = useWatch({ name: `${fieldKey}_option` });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  // const [expanded, setExpanded] = useState(false);
+  const [ofOption, setOfOption] = useState(null);
+  const [isFreeText, setIsFreeText] = useState(false);
+  const fieldValue = useMemo(() => value ?? null, [value]);
+
+  const requiredValid = useMemo(() => {
+    if (optionValue === 'ai') {
+      return true;
+    }
+    if (['array', 'string'].includes(schema.type)) {
+      return fieldValue?.length > 0;
+    }
+    if (schema.type === 'object') {
+      if (!fieldValue) {
+        return false;
+      }
+      let maybeDict = fieldValue;
+      if (maybeDict instanceof String) {
+        try {
+          maybeDict = JSON.parse(maybeDict);
+        } catch {
+          return false;
+        }
+      }
+      return Object.values(fieldValue).length > 0;
+    }
+    return fieldValue !== null && fieldValue !== undefined;
+  }, [schema.type, fieldValue, optionValue]);
+
+  const toggleCollapse = useCallback(() => setIsCollapsed((prev) => !prev), [setIsCollapsed]);
+
+  const fieldType = useMemo(() => {
+    const ft = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+    if (!!ft) {
+      return ft;
+    }
+    if (!!ofOption?.type) {
+      return ofOption?.type;
+    }
+    // const ofOrAny = schema.oneOf || schema.anyOf;
+    // if (ofOrAny && Array.isArray(ofOrAny)) {
+    //   let oneOfFt = "string";
+    //   for (let i in ofOrAny) {
+    //     const obj = ofOrAny[i]
+    //     if (obj.type) {
+    //       oneOfFt = obj.type;
+    //     }
+    //     if (['object', 'array'].includes(oneOfFt)) {
+    //       break;
+    //     }
+    //   }
+    //   return oneOfFt;
+    // }
+  }, [schema, ofOption]);
+  const title = schema.title || fieldKey.split('.').slice(-1)[0];
+
+  const hasAceWrapper = useMemo(() => !!['array', 'object'].includes(fieldType), [fieldType]);
+  const isNumeric = useMemo(
+    () => !!['integer', 'number', 'float', 'decimal'].includes(fieldType),
+    [fieldType],
+  );
+
+  const hasOfProperties = useMemo(() => {
+    if (!!ofOption) {
+      return true;
+    }
+    if (hasOf(schema)) {
+      return true;
+    }
+    if (!(hasAceWrapper || fieldType === 'string') && fieldType) return false;
+
+    if (['object', 'string'].includes(fieldType) || !fieldType) {
+      return checkNestedOfProperties(schema);
+    }
+
+    // if (fieldType === 'array' && schema.items) {
+    //   return checkNestedOfProperties(schema.items);
+    // }
+
+    return false;
+  }, [fieldType, hasAceWrapper, ofOption, schema]);
+
+  const hasProperties = useMemo(() => {
+    if (!(hasAceWrapper || fieldType === 'string')) return false;
+
+    if (hasOfProperties) return true;
+
+    if (fieldType === 'object') {
+      return checkHasProperties(schema) || checkNestedOfProperties(schema);
+    }
+
+    if (fieldType === 'array' && schema.items) {
+      return checkHasProperties(schema.items) || checkNestedOfProperties(schema.items);
+    }
+
+    if (fieldType === 'string') {
+      return checkNestedOfProperties(schema);
+    }
+
+    return false;
+  }, [fieldType, hasAceWrapper, schema, hasOfProperties]);
+
+  const ofValue = useMemo(
+    () => (!!hasOfProperties ? schema.oneOf || schema.allOf || schema.anyOf : null),
+    [schema, hasOfProperties],
+  );
+
+  useEffect(() => {
+    if (Array.isArray(ofValue) && ofValue.length > 0 && !ofOption) {
+      if (![undefined, null, ''].includes(value)) {
+        const matchingSchema = validateValueAgainstSchemas(value, ofValue);
+        setOfOption(matchingSchema);
+      } else {
+        setOfOption(ofValue[0]);
+      }
+    }
+  }, [ofValue, value]);
+
+  // useEffect(() => {
+  //   if (schema.type === "string" && !!schema.const) {
+  //     onChange(schema.const);
+  //   }
+  // }, [onChange, schema.const, schema.type]);
+
+  // useEffect(() => {
+  //   if ((value === undefined || value === null) && schema) {
+  //     if (schema.default !== undefined) {
+  //       // If schema has a default value, set it
+  //       onChange(schema.default);
+  //     } else if (schema.enum?.length) {
+  //       // If schema has enums, set the first enum as the default value
+  //       onChange(schema.enum[0]);
+  //     } else if (schema.const !== undefined) {
+  //       // If schema has a const value, set it
+  //       onChange(schema.const);
+  //     }
+  //   }
+  // }, [value, schema, onChange]);
+
+  useEffect(() => {
+    if (
+      ['', null, undefined].includes(value) &&
+      schema &&
+      (!!defaultEnabled || !!schema['x-default-enabled'])
+    ) {
+      if (schema.default !== undefined) {
+        // If schema has a default value, set it
+        if (schema.default !== value) {
+          onChange(schema.default);
+        }
+      } else if (schema.enum?.length) {
+        // If schema has enums, set the first enum as the default value
+        if (schema.enum[0] !== value) {
+          onChange(schema.enum[0]);
+        }
+      } else if (schema.const !== undefined) {
+        // If schema has a const value, set it
+        if (schema.const !== value) {
+          onChange(schema.const);
+        }
+      }
+    }
+  }, [value, schema, onChange]);
+
+  useEffect(() => {
+    const mustBeFreeText =
+      !!fieldValue &&
+      typeof fieldValue === 'string' &&
+      fieldType === 'string' &&
+      fieldValue.length &&
+      fieldValue.includes('{{');
+    if (mustBeFreeText) {
+      setIsFreeText(true);
+    }
+  }, []);
+
+  // TODO: fix array showing 0 fields after freetext
+
+  useEffect(() => {
+    const isValidString = !!fieldValue && typeof fieldValue === 'string';
+    const isVar = isValidString && fieldValue.startsWith('{{') && fieldValue.endsWith('}}');
+    const mustValidateJSON = hasAceWrapper && !isFreeText && isValidString && !isVar;
+    // console.log("@0: isValidString", isValidString);
+    // console.log("@0: hasAceWrapper", hasAceWrapper);
+    // console.log("@0: isFreeText", isFreeText);
+    // console.log("@0: isVar", isVar);
+    // console.log("@0: mustValidateJSON", mustValidateJSON);
+    if (mustValidateJSON) {
+      try {
+        onChange(JSON.parse(fieldValue));
+      } catch {
+        enqueueSnackbar(`Ensure the ${fieldType} is correctly formatted!`, { variant: 'error' });
+        console.error(`Bad ${fieldType}: ${fieldValue}`);
+        setIsFreeText(true);
+      }
+    } else if (isVar) {
+      setIsFreeText(true);
+    }
+  }, [isFreeText]);
+
+  // useEffect(() => {
+  //   const isValidString = !!fieldValue && typeof fieldValue === "string";
+  //   // console.log("@1: isValidString", isValidString);
+  //   // console.log("@1: hasAceWrapper", hasAceWrapper);
+  //   // console.log("@1: isFreeText", isFreeText);
+  //   if (hasAceWrapper && !!isFreeText && isValidString) {
+  //     const isVar = fieldValue.startsWith("{{") && fieldValue.endsWith("}}");
+  //     // console.log("@1: isVar", isVar);
+  //     try {
+  //       if (isVar) {
+  //         onChange(fieldValue)
+  //       } else {
+  //         onChange(JSON.parse(fieldValue));
+  //       }
+  //     } catch (e) {
+  //     }
+  //   }
+  // }, [isFreeText]);
+
+  const canBeCollapsed = useMemo(
+    () => hasProperties && fieldType === 'object' && !isFreeText && !schema['x-disable-collapse'],
+    [fieldType, hasProperties, isFreeText],
+  );
+
+  useEffect(() => {
+    if (
+      canBeCollapsed &&
+      (schema['x-default-collapsed'] || Object.keys(schema.properties ?? {}).length > 2) &&
+      !hasOfProperties
+    ) {
+      setIsCollapsed(true);
+    }
+  }, [canBeCollapsed]);
+
+  const showFreeTextOption = useMemo(
+    () =>
+      !schema['x-disable-free-text'] &&
+      ((hasAceWrapper && enableLexical) ||
+        isInMappings ||
+        schema.enum ||
+        hasProperties ||
+        schema['x-component'] ||
+        isNumeric),
+    [enableLexical, hasAceWrapper, hasProperties, isInMappings, isNumeric, schema],
+  );
+
+  if (schema.const) {
+    return null;
+  }
+
+  return (
+    <div
+      key={fieldKey}
+      className="w-full py-1 flex flex-col gap-2"
+    >
+      {!!schema['x-disable-header'] ? null : (
+        <Stack
+          direction="row"
+          width="100%"
+          alignItems="center"
+          // title={
+          //   (schema['x-component'] && !schema['x-show-header'])
+          //   ? null
+          //   : (
+          //     <DynamicFormFieldHeader
+          //       fieldKey={fieldKey}
+          //       schema={schema}
+          //       sneakPeek={canBeCollapsed && isCollapsed && truncate(JSON.stringify(fieldValue), { length: 60 })}
+          //       openCollapsed={toggleCollapse}
+          //       { ...headerProps }
+          //     />
+          //   )
+          // }
+        >
+          <DynamicFormFieldHeader
+            fieldKey={fieldKey}
+            schema={schema}
+            requiredValid={requiredValid}
+            sneakPeek={isCollapsed && truncate(JSON.stringify(fieldValue), { length: 60 })}
+            canBeCollapsed={!!canBeCollapsed}
+            toggleCollapse={toggleCollapse}
+            isCollapsed={!!canBeCollapsed && isCollapsed}
+            // expanded={expanded}
+            // sneakPeek={isCollapsed && !expanded && truncate(JSON.stringify(fieldValue), { length: 60 })}
+            // canBeCollapsed={!!canBeCollapsed}
+            // toggleCollapse={!expanded ? toggleCollapse : null}
+            // isCollapsed={!!canBeCollapsed && isCollapsed && !expanded}
+            {...headerProps}
+          />
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+          >
+            <DynamicFormFieldHeaderActions
+              hasOfProperties={hasOfProperties}
+              ofValue={ofValue}
+              ofOption={ofOption}
+              setOfOption={setOfOption}
+              isFreeText={isFreeText}
+              showFreeTextOption={showFreeTextOption}
+              setIsFreeText={setIsFreeText}
+              // expanded={expanded}
+              // setExpanded={setExpanded}
+              hasAceWrapper={hasAceWrapper}
+              disableFullScreen={schema['x-disable-full-screen']}
+            />
+          </Stack>
+        </Stack>
+      )}
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={0.5}
+        width="100%"
+      >
+        {
+          // (!!canBeCollapsed && isCollapsed && !expanded) ? null : (
+          (!!canBeCollapsed && isCollapsed) ||
+          schema['x-hide-body'] ||
+          ofOption?.['x-hide-body'] ? null : (
+              <DynamicFormFieldComponent
+                fieldKey={fieldKey}
+                schema={ofOption ?? schema}
+                fieldType={fieldType}
+                title={title}
+                onChange={onChange}
+                isFreeText={isFreeText}
+                ofValue={ofValue}
+                hasProperties={hasProperties}
+                hasOfProperties={hasOfProperties}
+                ofOption={ofOption}
+                enableLexical={enableLexical}
+                // expanded={expanded}
+                isInMappings={isInMappings}
+                relationship={relationship}
+                sortKey={sortKey}
+              />
+            )
+        }
+      </Stack>
+    </div>
+  );
+
+  // return (
+  //   <>
+  //     {
+  //       !!hasAceWrapper && (
+  //         <CustomDialog
+  //           dialogOpen={expanded}
+  //           onClose={() => setExpanded(false)}
+  //         >
+  //           { renderCard }
+  //         </CustomDialog>
+  //       )
+  //     }
+  //     { !expanded && renderCard }
+  //   </>
+  // );
+};
+
+export default memo(DynamicFormField);

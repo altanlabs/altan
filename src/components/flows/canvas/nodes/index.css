@@ -1,0 +1,95 @@
+.react-flow__node-elk {
+  border-radius: 4px;
+  transition: transform .1s linear;
+}
+
+.react-flow__handle {
+  position: relative;
+  top: auto;
+  transform: none;
+}
+
+.label {
+  padding: 15px;
+  font-size: 10px;
+  flex-grow: 1;
+}
+
+/* .handles {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 10px;
+  height: 100%;
+  position: absolute;
+  z-index: -1;
+  border-color: aquamarine;
+  border-width: 2px;
+}
+.handles.sources {
+  right: -2px;
+  top: 0;
+  transition: all 300ms ease;
+}
+
+.handles.targets {
+  left: -12px;
+  top: 0;
+}
+
+.handles.excepts {
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+} */
+
+.handles {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 300ms ease;
+}
+
+.handles.targets {
+  /* left‑centered */
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+}
+
+.handles.sources {
+  /* right‑centered */
+  top: 50%;
+  right: 0;
+  transform: translate(100%, -50%);
+  flex-direction: column;
+}
+
+.handles.excepts {
+  /* top‑middle */
+  top: 0;
+  left: 50%;
+  transform: translate(-100%, -100%);
+  /* force a row so handles line up side‑by‑side */
+  flex-direction: row;
+}
+
+
+@keyframes beat {
+  0%, 100% {
+    transform: scale(1.1);
+  }
+  15% {
+    transform: scale(1.7);
+  }
+  25% {
+    transform: scale(1.5);
+  }
+  40% {
+    transform: scale(2.0);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+}

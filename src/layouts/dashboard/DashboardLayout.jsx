@@ -1,0 +1,191 @@
+import { Box } from '@mui/material';
+import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
+import { Outlet, useSearchParams } from 'react-router-dom';
+
+import Header from './header';
+import FloatingNavigation from './header/FloatingNavigation';
+import Main from './Main.jsx';
+import NavVertical from './nav/NavVertical.jsx';
+import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
+import AltanLogo from '../../components/loaders/AltanLogo.jsx';
+import useResponsive from '../../hooks/useResponsive.js';
+import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
+import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
+import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
+import { getFlows } from '../../redux/slices/flows';
+import {
+  getAccount,
+  getAccountAttribute,
+  getAccountMembers,
+  getRoles,
+} from '../../redux/slices/general';
+import { fetchNotifications } from '../../redux/slices/notifications';
+import { dispatch, useSelector } from '../../redux/store';
+import { optimai } from '../../utils/axios.js';
+
+const AltanLogoFixed = (
+  <AltanLogo
+    wrapped
+    fixed
+  />
+);
+
+// eslint-disable-next-line react/display-name
+const Loadable = (Component) => (props) => (
+  <Suspense fallback={AltanLogoFixed}>
+    <Component {...props} />
+  </Suspense>
+);
+
+const CloneTemplate = lazy(() => import('../../components/clone/CloneTemplate.jsx'));
+const AltanerFromIdea = lazy(() => import('../../components/clone/AltanerFromIdea.jsx'));
+
+const ACCOUNT_ENTITIES = [
+  'actionexecution',
+  'taskexecution',
+  'altaner',
+  'subscription',
+  'template',
+  'general',
+  'space',
+  'thread',
+  'message',
+  'media',
+  'connection',
+  'tool',
+  'resource',
+  'agent',
+  'user',
+  'workflow',
+  'flowexecution',
+  'webhook',
+  'webhooksubscription',
+  'form',
+  'deployment',
+  'interface',
+  'base',
+];
+
+const selectAccountId = (state) => state.general.account?.id;
+const selectAccountLoading = (state) => state.general.generalLoading.account;
+const selectAccountInitialized = (state) => state.general.generalInitialized.account;
+
+const DashboardLayout = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [clonedTemplateId, setTemplateId] = useState('');
+  const isDesktop = useResponsive('up', 'md');
+
+  const [idea, setIdea] = useState('');
+  const [open, setOpen] = useState(false);
+  const ws = useWebSocket();
+
+  const hideHeader = searchParams.get('hideHeader') === 'true';
+  const accountInitialized = useSelector(selectAccountInitialized);
+  const accountLoading = useSelector(selectAccountLoading);
+  const accountId = useSelector(selectAccountId);
+  const user = useSelector((state) => state.general.user);
+
+  const handleToggleNav = useCallback(() => setOpen((prev) => !prev), []);
+
+  const handleCloseNav = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!!ws?.isOpen && !!accountId && !!user) {
+      ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
+    }
+  }, [ws?.isOpen, accountId, user]);
+
+  useEffect(() => {
+    if ((!accountId || !user) && ws?.isOpen) {
+      ws.disconnect();
+    }
+  }, [accountId, user, ws?.isOpen]);
+
+  useEffect(() => {
+    if (user) {
+      dispatch(getRoles());
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && user.email_verified === false && window.location.pathname !== '/auth/verify') {
+      window.location.href = '/auth/verify';
+      return;
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      dispatch(getConnectionTypes());
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!!accountId && !accountInitialized && !accountLoading && !!user) {
+      dispatch(getAccount()).then(() => {
+        dispatch(getConnections(accountId));
+        dispatch(getAccountMembers(accountId));
+        [
+          ['altaners'],
+          ['bases', 'rooms', 'interfaces', 'workflows'],
+          ['subscriptions', 'forms', 'webhooks', 'apikeys', 'agents', 'developer_apps', 'apps'],
+        ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
+        dispatch(getFlows(accountId));
+        dispatch(fetchNotifications());
+      });
+    }
+  }, [accountId, accountInitialized, accountLoading, user]);
+
+  useEffect(() => {
+    if (!clonedTemplateId) {
+      const id = searchParams.get('cloned_template');
+      if (!!id?.length) {
+        setTemplateId(id);
+        searchParams.delete('cloned_template');
+        setSearchParams(searchParams);
+      }
+    }
+
+    const ideaParam = searchParams.get('idea');
+    if (ideaParam) {
+      setIdea(ideaParam);
+      searchParams.delete('idea');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams, clonedTemplateId]);
+
+  const handleClose = useCallback(() => setTemplateId(''), []);
+
+  useEffect(() => {
+    if (accountId && user) {
+      optimai.get(`/agent/update-cloned-agents?account_id=${accountId}`).catch(() => {});
+    }
+  }, [accountId, user]);
+
+  return (
+    <VoiceConversationProvider>
+      {!hideHeader && <Header onOpenNav={handleToggleNav} />}
+      {isDesktop && <FloatingNavigation />}
+      {user && <FloatingVoiceWidget />}
+
+      {!!clonedTemplateId && !!user && Loadable(CloneTemplate)({ clonedTemplateId, onClose: handleClose })}
+      {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
+      <Box
+        sx={{
+          display: { lg: 'flex' },
+          minHeight: { lg: 1 },
+        }}
+      >
+        <NavVertical
+          openNav={open}
+          onCloseNav={handleCloseNav}
+        />
+        <Main>
+          <Outlet />
+        </Main>
+      </Box>
+    </VoiceConversationProvider>
+  );
+};
+
+export default memo(DashboardLayout);

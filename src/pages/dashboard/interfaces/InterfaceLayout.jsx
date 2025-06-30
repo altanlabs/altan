@@ -1,0 +1,67 @@
+// ResponsiveInterfaceLayout.tsx
+import { Box } from '@mui/material';
+import React, { memo, useState } from 'react';
+import { useSelector } from 'react-redux';
+
+import Codebase from './components/code/Codebase.jsx';
+import Preview from './components/Preview';
+import { selectViewType } from '../../../redux/slices/altaners';
+import IframeControls from './components/IframeControls.jsx';
+
+/**
+ * ResponsiveInterfaceLayout Component
+ *
+ * Desktop: Uses resizable panels for a split view.
+ * Mobile: Uses tabs to toggle between the chat drawer and interface preview.
+ */
+function InterfaceLayout({
+  id,
+  chatIframeRef,
+  isLoading,
+  viewMode,
+  status,
+  iframeUrl,
+  handleIframeLoad,
+  iframeRef,
+}) {
+  const [fatalError, setFatalError] = useState(null);
+  const viewType = useSelector(selectViewType);
+
+  // Main content: Toolbar and then either Preview or Codebase.
+  const mainContent = (
+    <Box className="w-full h-full relative overflow-hidden pb-2 px-2">
+      <Box className="flex flex-col h-full border border-divider rounded-xl overflow-hidden">
+        {viewType === 'preview' ? (
+          <>
+            <IframeControls
+              interfaceId={id}
+              previewIframeRef={iframeRef}
+              chatIframeRef={chatIframeRef}
+              fatalError={fatalError}
+              setFatalError={setFatalError}
+            />
+            <Preview
+              interfaceId={id}
+              status={status}
+              iframeUrl={iframeUrl}
+              viewMode={viewMode}
+              handleIframeLoad={handleIframeLoad}
+              iframeRef={iframeRef}
+              chatIframeRef={chatIframeRef}
+              isLoading={isLoading}
+              fatalError={fatalError}
+            />
+          </>
+        ) : (
+          <Codebase
+            interfaceId={id}
+            chatIframeRef={chatIframeRef}
+          />
+        )}
+      </Box>
+    </Box>
+  );
+  return mainContent;
+}
+
+export default memo(InterfaceLayout);

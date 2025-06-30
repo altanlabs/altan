@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">altan</string>
+    <string name="title_activity_main">altan</string>
+    <string name="package_name">com.altan.app</string>
+    <string name="custom_url_scheme">com.altan.app</string>
+</resources>

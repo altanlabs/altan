@@ -1,0 +1,298 @@
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
+import { useParams, useNavigate } from 'react-router';
+
+import BaseLayout from './BaseLayout.jsx';
+import LoadingFallback from '../../../components/LoadingFallback.jsx';
+import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import {
+  deleteTableById,
+  getBaseById,
+  selectBaseById,
+  updateTableById,
+  loadAllTableRecords,
+} from '../../../redux/slices/bases';
+import { dispatch, useSelector } from '../../../redux/store';
+import CreateBaseDialog from '../base/CreateBaseDialog.jsx';
+import NoEntityPlaceholder from '../placeholders/NoEntityPlaceholder.jsx';
+import CreateTableDialog from '../table/CreateTableDialog.jsx';
+
+// const selectBasesError = (state) => state.bases.error;
+
+// Create a more specific loading selector
+const selectBaseLoading = (state, baseId) => state.bases.loadingStates?.[baseId] || false;
+// Create a specific table loading selector
+const selectTableLoading = (state, tableId) => state.bases.tableLoadingStates?.[tableId] || false;
+
+function Base({
+  ids = [],
+  onNavigate,
+  baseId: explicitBaseId,
+  hideChat = true,
+  //  ...props
+}) {
+  const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
+  const navigate = useNavigate();
+  const ws = useWebSocket();
+
+  const baseId = explicitBaseId || routeBaseId || ids[0];
+
+  const baseSelector = useMemo(
+    () => (state) => (baseId ? selectBaseById(state, baseId) : null),
+    [baseId],
+  );
+
+  const base = useSelector(baseSelector);
+  const isBaseLoading = useSelector((state) => selectBaseLoading(state, baseId));
+  const isTableLoading = useSelector((state) => selectTableLoading(state, tableId));
+
+  const [state, setState] = useState({
+    activeTab: tableId,
+    createTableOpen: false,
+    createBaseOpen: false,
+    isTableSwitching: false,
+  });
+
+  // Initialize base and handle navigation
+  useEffect(() => {
+    if (ids?.length > 0 && (!baseId || baseId === 'null')) {
+      if (altanerId) {
+        onNavigate?.(altanerComponentId, { baseId: ids[0] });
+      }
+    }
+  }, [ids, baseId, altanerId, altanerComponentId, onNavigate]);
+
+  const navigateToPath = useCallback(
+    (newTableId, newViewId) => {
+      // Set table switching state to true when navigation starts
+      setState((prev) => ({
+        ...prev,
+        isTableSwitching: true,
+        activeTab: newTableId,
+      }));
+
+      if (altanerId) {
+        onNavigate?.(altanerComponentId, {
+          baseId,
+          tableId: newTableId,
+          viewId: newViewId,
+        });
+      } else if (onNavigate) {
+        onNavigate(null, {
+          baseId,
+          tableId: newTableId,
+          viewId: newViewId,
+        });
+      } else {
+        const currentSearch = window.location.search;
+        navigate(`/bases/${baseId}/tables/${newTableId}/views/${newViewId}${currentSearch}`);
+      }
+
+      // Pre-fetch the table records to improve loading performance
+      if (newTableId) {
+        dispatch(loadAllTableRecords(newTableId));
+      }
+    },
+    [altanerId, altanerComponentId, baseId, onNavigate, navigate],
+  );
+
+  // Load base data and handle initial navigation
+  useEffect(() => {
+    if (baseId) {
+      dispatch(getBaseById(baseId)).then((response) => {
+        const tables = response?.base?.tables?.items || [];
+        if (tables.length > 0) {
+          const firstTable = tables[0];
+          const firstView = firstTable.views?.items?.[0]?.id;
+
+          if (!tableId) {
+            navigateToPath(firstTable.id, firstView);
+          } else if (!viewId) {
+            const currentTable = tables.find((table) => table.id === tableId);
+            const defaultView = currentTable?.views?.items?.[0]?.id;
+            navigateToPath(tableId, defaultView);
+          }
+        }
+      });
+    }
+  }, [baseId, tableId, viewId, navigateToPath]);
+
+  // Clear table switching state when table or loading state changes
+  useEffect(() => {
+    if (state.isTableSwitching && !isTableLoading && tableId) {
+      setState((prev) => ({ ...prev, isTableSwitching: false }));
+    }
+  }, [tableId, isTableLoading, state.isTableSwitching]);
+
+  const handleDeleteTable = useCallback(
+    (tableId) => {
+      if (!tableId) return;
+
+      dispatch(deleteTableById(baseId, tableId))
+        .then(() => {
+          if (tableId === state.activeTab) {
+            const remainingTables = base?.tables?.items?.filter((t) => t.id !== tableId);
+            if (remainingTables?.length > 0) {
+              const nextTable = remainingTables[0];
+              const nextView = nextTable.views?.items?.[0]?.id;
+              navigateToPath(nextTable.id, nextView);
+            } else {
+              if (altanerId) {
+                onNavigate?.(altanerComponentId, { baseId });
+              } else {
+                navigate(`/bases/${baseId}`);
+              }
+            }
+          }
+        })
+        .catch((error) => console.error('Error deleting table:', error));
+    },
+    [
+      baseId,
+      state.activeTab,
+      base?.tables?.items,
+      navigateToPath,
+      altanerId,
+      onNavigate,
+      altanerComponentId,
+      navigate,
+    ],
+  );
+
+  useEffect(() => {
+    if (tableId !== state.activeTab && !state.isTableSwitching) {
+      setState((prev) => ({ ...prev, activeTab: tableId }));
+    }
+  }, [state.activeTab, tableId, state.isTableSwitching]);
+
+  const handleTabChange = useCallback(
+    (newTableId) => {
+      if (newTableId === tableId) return; // Don't navigate if already on this tab
+
+      const targetTable = base?.tables?.items?.find((table) => table.id === newTableId);
+      const defaultView = targetTable?.views?.items?.[0]?.id || viewId;
+
+      setState((prev) => ({
+        ...prev,
+        isTableSwitching: true,
+      }));
+
+      dispatch(loadAllTableRecords(newTableId));
+
+      navigateToPath(newTableId, defaultView);
+    },
+    [base?.tables?.items, viewId, navigateToPath, tableId],
+  );
+
+  const handleOpenCreateTable = useCallback(
+    () => setState((prev) => ({ ...prev, createTableOpen: true })),
+    [],
+  );
+
+  const handleCloseCreateTable = useCallback(
+    () => setState((prev) => ({ ...prev, createTableOpen: false })),
+    [],
+  );
+
+  const handleRenameTable = useCallback(
+    (tableId, newName) => {
+      if (!tableId) return;
+      try {
+        dispatch(updateTableById(baseId, tableId, { name: newName }));
+      } catch (error) {
+        console.error('Error renaming table:', error);
+      }
+    },
+    [baseId],
+  );
+
+  const handleOpenCreateBase = useCallback(
+    () => setState((prev) => ({ ...prev, createBaseOpen: true })),
+    [],
+  );
+
+  const handleCloseCreateBase = useCallback(
+    () => setState((prev) => ({ ...prev, createBaseOpen: false })),
+    [],
+  );
+
+  const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
+
+  useEffect(() => {
+    if (!!baseId && ws?.isOpen) {
+      ws.subscribe(`bases:${baseId}`);
+    }
+  }, [ws?.isOpen, baseId]);
+
+  useEffect(() => {
+    return () => {
+      setState({
+        activeTab: null,
+        createTableOpen: false,
+        createBaseOpen: false,
+        isTableSwitching: false,
+      });
+      if (!!ws) {
+        ws.unsubscribe(`bases:${baseId}`);
+      }
+    };
+  }, []);
+
+  if (isBaseLoading) {
+    return <LoadingFallback />;
+  }
+  if (!baseId) {
+    return (
+      <>
+        <CreateBaseDialog
+          open={state.createBaseOpen}
+          onClose={handleCloseCreateBase}
+          altanerId={altanerId}
+          altanerComponentId={altanerComponentId}
+        />
+        <NoEntityPlaceholder
+          title="No bases available"
+          description="Create your first base to get started"
+          buttonMessage="Create base"
+          onButtonClick={handleOpenCreateBase}
+          videoUrl="https://www.youtube.com/watch?v=lHtdZgR3SYw"
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {shouldShowPlaceholder ? (
+        <NoEntityPlaceholder
+          title="No tables found in this base"
+          description="Create your first table to get started"
+          buttonMessage="Create Table"
+          onButtonClick={handleOpenCreateTable}
+        />
+      ) : (
+        <BaseLayout
+          baseId={baseId}
+          base={base}
+          hideChat={hideChat}
+          tableId={tableId}
+          handleTabChange={handleTabChange}
+          handleOpenCreateTable={handleOpenCreateTable}
+          handleDeleteTable={handleDeleteTable}
+          handleRenameTable={handleRenameTable}
+          state={state}
+          isTableLoading={isTableLoading}
+          viewId={viewId}
+        />
+      )}
+      <CreateTableDialog
+        baseId={baseId}
+        open={state.createTableOpen}
+        onClose={handleCloseCreateTable}
+      />
+    </>
+  );
+}
+
+export default memo(Base, (prevProps, nextProps) => {
+  return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
+});

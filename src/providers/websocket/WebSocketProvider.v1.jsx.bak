@@ -1,0 +1,231 @@
+import React, {
+  createContext,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
+import WebSocketWorker from './websocketWorker.js?worker';
+import { handleWebSocketEvent as handleEventInMainThread } from './ws';
+import { useAuthContext } from '../../auth/useAuthContext';
+import { selectAccountId } from '../../redux/slices/general';
+import { useSelector } from '../../redux/store';
+import { authorizeUser } from '../../utils/axios';
+
+// Redux actions
+
+// Worker import (Vite/CRA style)
+// For Next.js, consult docs. Or use dynamic import with "new Worker(...)"
+
+const WebSocketContext = createContext(null);
+
+export const useWebSocket = () => useContext(WebSocketContext);
+
+const WebSocketProvider = ({ children }) => {
+  const accountId = useSelector(selectAccountId);
+  const { isAuthenticated, logout, user } = useAuthContext();
+
+  const [isOpen, setIsOpen] = useState(false);
+  const workerRef = useRef(null);
+
+  const [activeSubscriptions, setActiveSubscriptions] = useState([]);
+  const [canUseWorker, setCanUseWorker] = useState(true);
+
+  // Example: If user object has an ID
+  const user_id = user?.id;
+
+  // ----------------------------------------------------------------------------
+  // 1. Initialize Worker (if supported)
+  // ----------------------------------------------------------------------------
+  useEffect(() => {
+    if (typeof Worker === 'undefined') {
+      console.warn('Web Workers are not supported in this environment. Falling back to main thread logic.');
+      setCanUseWorker(false);
+    }
+  }, []);
+
+  // ----------------------------------------------------------------------------
+  // 2. Connect / Disconnect Logic
+  // ----------------------------------------------------------------------------
+  const initWorkerConnection = useCallback(
+    async () => {
+      if (!canUseWorker || !isAuthenticated || !accountId) return;
+
+      // If there's already a worker, disconnect it first
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+
+      // Create new worker
+      workerRef.current = new WebSocketWorker();
+
+      // Worker message handling
+      workerRef.current.onmessage = (e) => {
+        const { type, message, error, payload } = e.data;
+        switch (type) {
+          case 'INFO':
+            // e.g., "WebSocket connection established" / "secured"
+            console.log('[WS Worker INFO]', message);
+            if (message.includes('secured')) {
+              setIsOpen(true);
+            }
+            break;
+
+          case 'ERROR':
+            console.error('[WS Worker ERROR]', error);
+            // Optional: If it’s an auth error, log out
+            if (error?.includes('No token')) {
+              logout();
+            }
+            break;
+
+          case 'RECONNECT':
+            // Worker is requesting a reconnect
+            console.log('[WS Worker]', 'Reconnecting...');
+            initWorkerConnection();
+            break;
+
+          case 'WS_EVENT':
+            // Process events and pass them to handleWebSocketEvent
+            // or directly dispatch if needed
+            handleEventInMainThread(payload, user_id);
+            break;
+
+          default:
+            break;
+        }
+      };
+
+      // Once authorized, fetch token
+      try {
+        const { accessToken } = await authorizeUser();
+        // Initialize the socket connection inside the worker
+        workerRef.current.postMessage({
+          action: 'INIT',
+          payload: { token: accessToken, accountId },
+        });
+      } catch (err) {
+        console.error('Error fetching token in main thread:', err);
+        logout();
+      }
+    },
+    // [canUseWorker, isAuthenticated, accountId, logout, user_id],
+    [accountId],
+  );
+
+  // Disconnect
+  const disconnect = useCallback(() => {
+    setIsOpen(false);
+    setActiveSubscriptions([]);
+    if (workerRef.current) {
+      workerRef.current.postMessage({ action: 'DISCONNECT' });
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+  }, []);
+
+  // ----------------------------------------------------------------------------
+  // 3. On mount, if authenticated & accountId changes, init or reconnect
+  // ----------------------------------------------------------------------------
+  useEffect(() => {
+    if (!isAuthenticated || !accountId) {
+      // Not logged in, ensure we are disconnected
+      disconnect();
+      return;
+    }
+    initWorkerConnection();
+
+    return () => {
+      disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId, isAuthenticated]);
+
+  // ----------------------------------------------------------------------------
+  // 4. Subscriptions
+  // ----------------------------------------------------------------------------
+  const subscribe = useCallback(
+    (channels, callback = null, subType = 'l') => {
+      const uniqueChannels = Array.isArray(channels) ? channels : [channels];
+      if (!workerRef.current) return;
+
+      uniqueChannels.forEach((channel) => {
+        workerRef.current.postMessage({
+          action: 'SUBSCRIBE',
+          payload: {
+            channel,
+            subType,
+            mode: 's',
+          },
+        });
+      });
+
+      setActiveSubscriptions((prev) => [...new Set([...prev, ...uniqueChannels])]);
+      if (callback) callback();
+    },
+    [],
+  );
+
+  const unsubscribe = useCallback(
+    (channels, callback = null, subType = 'l') => {
+      const uniqueChannels = Array.isArray(channels) ? channels : [channels];
+      if (!workerRef.current) return;
+
+      uniqueChannels.forEach((channel) => {
+        workerRef.current.postMessage({
+          action: 'UNSUBSCRIBE',
+          payload: {
+            channel,
+            subType,
+            mode: 'u',
+          },
+        });
+      });
+
+      setActiveSubscriptions((prev) => prev.filter((c) => !uniqueChannels.includes(c)));
+      if (callback) callback();
+    },
+    [],
+  );
+
+  // ----------------------------------------------------------------------------
+  // 5. Send Commands
+  // ----------------------------------------------------------------------------
+  const sendCommand = useCallback((command, payload) => {
+    if (workerRef.current && isOpen) {
+      workerRef.current.postMessage({
+        action: 'COMMAND',
+        payload: { command, data: payload },
+      });
+    }
+  }, [isOpen]);
+
+  // ----------------------------------------------------------------------------
+  // 6. Memoized Context Value
+  // ----------------------------------------------------------------------------
+  const memoizedValue = useMemo(
+    () => ({
+      isOpen,
+      activeSubscriptions,
+      disconnect,
+      subscribe,
+      unsubscribe,
+      sendCommand,
+      // You can also return the raw workerRef if needed for debugging
+    }),
+    [isOpen, activeSubscriptions, disconnect, subscribe, unsubscribe, sendCommand],
+  );
+
+  return (
+    <WebSocketContext.Provider value={memoizedValue}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+};
+
+export default memo(WebSocketProvider);

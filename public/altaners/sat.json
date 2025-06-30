@@ -1,0 +1,41 @@
+{
+    "id": "lasjdqhw812najsdas",
+    "altanerId": "sat",
+    "name": "SAT",
+    "description": "Servicio de atención al cliente para SAT",
+    "home": "gate_001",
+    "components": [
+        {
+            "id": "gate_001",
+            "type": "gate",
+            "name": "Home",
+            "order": 1,
+            "icon": "fluent:home-20-filled",
+            "params": {
+                "gateId": "0f7fa03f-d04a-4fe1-84c8-0e9eb65f32d6"
+            }
+        },
+        {
+            "id": "workflows",
+            "type": "workflows",
+            "name": "Workflows",
+            "icon": "fluent:flash-flow-24-filled",
+            "order": 2,
+            "params": {
+                "filterIds": [
+                    "b5448115-0058-4f76-a13c-c0bdfba9e13e"
+                ]
+            }
+        },
+        {
+            "id": "form",
+            "type": "form",
+            "name": "SAT Form",
+            "icon": "mdi:form",
+            "order": 3,
+            "params": {
+                "formId": "69e44443-7151-4459-a3f5-42646a84de52"
+            }
+        }
+    ]
+}

@@ -1,0 +1,61 @@
+{
+    "id": "lasjdqhw812najsdas",
+    "altanerId": "conversell",
+    "name": "ConverseSell",
+    "description": "AI-powered conversational sales assistant via WhatsApp",
+    "components": [
+        {
+            "id": "gate_001",
+            "type": "gate",
+            "name": "Home",
+            "order": 1,
+            "icon": "fluent:home-20-filled",
+            "params": {
+                "gateId": "gate_001"
+            }
+        },
+        {
+            "id": "products",
+            "type": "products",
+            "name": "Products",
+            "description": "Products are shared across all the account, not this specific Altaner",
+            "order": 2,
+            "icon": "heroicons:shopping-bag-20-solid"
+        },
+        {
+            "id": "orders",
+            "type": "orders",
+            "name": "Orders",
+            "description": "Orders are shared across all the account, not this specific Altaner.",
+            "order": 3,
+            "icon": "material-symbols-light:order-approve-sharp"
+        },
+        {
+            "id": "workflows",
+            "type": "workflows",
+            "name": "Workflows",
+            "icon": "fluent:flash-flow-24-filled",
+            "order": 4,
+            "params": {
+                "filterIds": ["08ce9e7e-3ae8-4e43-9155-16aa3a1d0c3e", "8fdb1801-ca45-4bb1-8e95-7174be383698"]
+            }
+        },
+        {
+            "id": "agent",
+            "type": "agent",
+            "name": "AI Agent",
+            "icon": "fluent:bot-sparkle-20-filled",
+            "order": 5,
+            "params": {
+                "agentId": "ac39d885-4eb4-4191-a60c-ccc92153ee80"
+            }
+        },
+        {
+            "id": "notionbase",
+            "type": "externalLink",
+            "name": "Tutoriales de notion",
+            "order": 6,        
+            "externalLink": "https://campusfounders1.notion.site/Session-Bookings-c5d05fe636ca4927bc0ec7d52636a097"
+        }
+    ]
+}

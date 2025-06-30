@@ -1,0 +1,182 @@
+import { createSelector } from '@reduxjs/toolkit';
+import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import ThreadMessages from './ThreadMessages.jsx';
+import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { checkObjectsEqual } from '../../../redux/helpers/memoize';
+import { selectGate } from '../../../redux/slices/gate';
+import {
+  fetchThread,
+  makeSelectThread,
+  readThread,
+  selectRoom,
+  selectThreadDrawerDetails,
+  makeSelectSortedThreadMessageIds,
+} from '../../../redux/slices/room';
+import { dispatch, useSelector } from '../../../redux/store.js';
+import FloatingTextArea from '../../FloatingTextArea.jsx';
+
+const makeSelectThreadById = () =>
+  createSelector(
+    [makeSelectThread()],
+    (thread) => {
+      if (!thread) {
+        return thread;
+      }
+      return {
+        is_main: thread.is_main,
+        name: thread.name,
+        id: thread.id,
+      };
+    },
+    {
+      memoizeOptions: {
+        resultEqualityCheck: checkObjectsEqual,
+      },
+    },
+  );
+
+const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
+  const { gateId } = useParams();
+  const navigate = useNavigate();
+  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const [lastThreadId, setLastThreadId] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const room = useSelector(selectRoom);
+  const drawer = useSelector(selectThreadDrawerDetails);
+
+  const threadSelector = useMemo(makeSelectThreadById, []);
+  const thread = useSelector((state) =>
+    threadSelector(state, mode === 'drawer' ? drawer.current : tId),
+  );
+  const threadId = thread?.id;
+  const gate = useSelector(selectGate);
+  const isCreation = mode === 'drawer' && drawer.isCreation;
+  const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
+
+  const manageSubscription = useCallback(
+    (threadId) => {
+      if (threadId) {
+        subscribe(`thread:${threadId}`); // , () => dispatch(readThread({ threadId })));
+      }
+    },
+    [subscribe],
+  );
+
+  // INITIALIZATION LOGIC
+  useEffect(() => {
+    if (!!threadId && threadId !== lastThreadId && !isCreation && !!isOpen) {
+      setLastThreadId(threadId);
+
+      dispatch(fetchThread({ threadId }))
+        .then((response) => {
+          if (!response) {
+            navigate('/404', { replace: true });
+          } else {
+            manageSubscription(threadId);
+            setTimeout(() => setHasLoaded(true), 1500);
+          }
+        })
+        .catch((error) => {
+          console.error('error: fetching thread:', error);
+          navigate('/404', { replace: true });
+        });
+    } else if (!threadId || isCreation) {
+      // If no threadId or in creation mode, mark as loaded immediately
+      // so empty state can show
+      setHasLoaded(true);
+    }
+  }, [threadId, isCreation, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && threadId) {
+      manageSubscription(threadId);
+      return () => {
+        unsubscribe(`thread:${threadId}`, () => dispatch(readThread({ threadId })));
+      };
+    }
+  }, [isOpen, threadId]);
+
+  const helmetName = thread?.is_main
+    ? room?.name || 'Room'
+    : `${thread?.name || 'Thread'} | ${room?.name || 'Room'}`;
+
+  // Get message IDs to check if the thread has messages
+  const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
+  const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const hasMessages = messageIds && messageIds.length > 0;
+  return (
+    <>
+      <Helmet>
+        <title>
+          {helmetName} |{' '}
+          {gateId && !!gate?.account?.company?.name ? gate?.account?.company?.name : 'Altan'}
+        </title>
+      </Helmet>
+      {/* Main container with flex layout for proper centering in empty state */}
+      <div
+        className="h-full"
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          ...(!hasMessages && mode !== 'drawer'
+            ? {
+                justifyContent: 'center',
+                alignItems: 'center',
+              }
+            : {}),
+        }}
+      >
+        {/* Thread messages container - always show unless explicitly no messages in main mode */}
+        <div
+          style={{
+            height: mode === 'drawer' ? 'calc(100% - 100px)' : '100%',
+            overflowY: 'auto',
+            position: 'relative',
+            width: '100%',
+            // Only hide if we're certain there are no messages AND not in drawer mode
+            ...(!hasMessages && mode !== 'drawer' ? { display: 'none' } : {}),
+          }}
+          className="no-scrollbar"
+        >
+          <ThreadMessages
+            mode={mode}
+            tId={tId}
+            hasLoaded={hasLoaded}
+            setHasLoaded={setHasLoaded}
+          />
+        </div>
+
+        {/* Input container - positioned at bottom or centered in empty state */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            ...(mode === 'drawer' ? { marginTop: 'auto' } : {}),
+          }}
+        >
+          <div className="absolute bottom-0 left-0 right-0 flex items-center flex-col overflow-hidden z-0 transition-all duration-300 px-2 py-2">
+            {!hasMessages && mode !== 'drawer' && (
+              <div className="text-center mb-8 flex-shrink-0">
+                <h1 className="text-3xl font-normal text-gray-800 dark:text-gray-200">
+                  {room?.meta_data?.title || 'How can I help?'}
+                </h1>
+              </div>
+            )}
+            <FloatingTextArea
+              threadId={threadId}
+              messageId={isCreation ? messageId || 'orphan_thread' : null}
+              containerRef={containerRef}
+              roomId={room?.id}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default memo(Thread);

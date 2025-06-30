@@ -1,0 +1,68 @@
+{
+  "compilerOptions": {
+    /* General Options */
+    "target": "ES2021",                                  /* Set the JavaScript language version. */
+    "module": "ESNext",                                  /* Use modern ES module syntax. */
+    "lib": ["DOM", "ES2021"],                            /* Include libraries for DOM and modern JavaScript. */
+    "jsx": "react-jsx",                                  /* Use the React JSX runtime for React 17+. */
+    "strict": true,                                      /* Enable all strict type-checking options. */
+    "esModuleInterop": true,                             /* Ensure compatibility with CommonJS modules. */
+    "forceConsistentCasingInFileNames": true,            /* Enforce consistent casing in file names. */
+    "skipLibCheck": true,                                /* Skip type-checking of library declaration files. */
+    "resolveJsonModule": true,                           /* Enable importing JSON files. */
+    "allowImportingTsExtensions": true,
+
+    /* Module Resolution */
+    "moduleResolution": "bundler",                          /* Use Node.js-style module resolution. */
+    "baseUrl": "./",                                     /* Set the base directory for resolving paths. */
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@assets/*": ["src/assets/*"],
+      "@pages/*": ["src/pages/*"],
+      "@layout/*": ["src/layout/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@widgets/*": ["src/widgets/*"],
+      "@modules/*": ["src/modules/*"],
+      "@editor/*": ["src/editor/*"],
+      "@redux/*": ["src/redux/*"],
+      "@lib/*": ["src/lib/*"]
+    },
+
+    /* Emit Options */
+    "outDir": "./dist",                                  /* Specify the output directory for compiled files. */
+    "removeComments": true,                              /* Remove comments in output files. */
+    "sourceMap": true,                                   /* Generate source map files for debugging. */
+
+    /* Type Checking */
+    "noImplicitAny": true,                               /* Disallow the `any` type unless explicitly specified. */
+    "strictNullChecks": true,                            /* Ensure null and undefined are handled explicitly. */
+    "strictFunctionTypes": true,                         /* Ensure function types are strictly compatible. */
+    "noImplicitThis": true,                              /* Raise errors for `this` with an implicit `any` type. */
+    "alwaysStrict": true,                                /* Always emit "use strict" directive in output files. */
+    "noUnusedLocals": true,                              /* Report errors for unused local variables. */
+    "noUnusedParameters": true,                          /* Report errors for unused parameters. */
+    "exactOptionalPropertyTypes": true,                  /* Enforce exact typing for optional properties. */
+
+    /* Experimental Decorators (Optional) */
+    "experimentalDecorators": true,                      /* Enable support for decorators. */
+    "emitDecoratorMetadata": true,                       /* Emit metadata for decorators. */
+
+    /* Interop Constraints */
+    "allowSyntheticDefaultImports": true,                /* Allow default imports from modules without default exports. */
+
+    /* Advanced Options */
+    "useDefineForClassFields": true,                     /* Emit ECMAScript-compliant class fields. */
+    "noFallthroughCasesInSwitch": true,                  /* Disallow fallthrough cases in switch statements. */
+    "noImplicitReturns": true,                           /* Report errors for code paths without explicit returns. */
+
+    /* Output */
+    "declaration": true,                                 /* Generate .d.ts files for type definitions. */
+    "declarationDir": "./types",                         /* Output directory for declaration files. */
+    "inlineSources": true,                               /* Include original source code in sourcemaps. */
+    "preserveConstEnums": true,                          /* Preserve `const enum` declarations in output. */
+    "downlevelIteration": true                           /* Emit more compatible JavaScript for iteration. */
+  },
+  "include": ["src/**/*", "src/components/integration"],                               /* Include all TypeScript and JSX/TSX files in src folder. */
+  "exclude": ["node_modules", "dist"]                    /* Exclude node_modules and output directory. */
+}

@@ -1,0 +1,549 @@
+// form
+import { yupResolver } from '@hookform/resolvers/yup';
+// @mui
+import { LoadingButton } from '@mui/lab';
+
+// utils
+// assets
+// components
+import Masonry from '@mui/lab/Masonry';
+import { Box, Card, Stack, Typography, InputAdornment, IconButton, TextField } from '@mui/material';
+import LinearProgress from '@mui/material/LinearProgress';
+import React, { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { useDispatch, useSelector } from 'react-redux';
+import * as Yup from 'yup';
+
+import { countries } from '../../../../assets/data';
+import { DynamicIsland } from '../../../../components/dynamic-island/DynamicIsland';
+import FormProvider, {
+  RHFSelect,
+  RHFTextField,
+  RHFUploadAvatar,
+} from '../../../../components/hook-form';
+import Iconify from '../../../../components/iconify';
+import { useSnackbar } from '../../../../components/snackbar';
+import useFeedbackDispatch from '../../../../hooks/useFeedbackDispatch';
+import { selectAccount, updateAccountCompany } from '../../../../redux/slices/general';
+import { uploadMedia } from '../../../../utils/media';
+
+// ----------------------------------------------------------------------
+function LinearProgressWithLabel({ value }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ width: '100%', mr: 1 }}>
+        <LinearProgress
+          variant="determinate"
+          value={value}
+        />
+      </Box>
+      <Box sx={{ minWidth: 35 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+        >
+          {`${Math.round(value)}%`}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function getBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+// ----------------------------------------------------------------------
+
+const SOCIAL_LINKS = [
+  {
+    value: 'facebook',
+    icon: (
+      <Iconify
+        icon="eva:facebook-fill"
+        width={24}
+      />
+    ),
+  },
+  {
+    value: 'instagram',
+    icon: (
+      <Iconify
+        icon="ant-design:instagram-filled"
+        width={24}
+      />
+    ),
+  },
+  {
+    value: 'linkedin',
+    icon: (
+      <Iconify
+        icon="eva:linkedin-fill"
+        width={24}
+      />
+    ),
+  },
+  {
+    value: 'x',
+    icon: (
+      <Iconify
+        icon="simple-icons:x"
+        width={20}
+      />
+    ),
+  },
+  {
+    value: 'discord',
+    icon: (
+      <Iconify
+        icon="ic:baseline-discord"
+        width={24}
+      />
+    ),
+  },
+  {
+    value: 'tiktok',
+    icon: (
+      <Iconify
+        icon="ic:baseline-tiktok"
+        width={24}
+      />
+    ),
+  },
+  {
+    value: 'youtube',
+    icon: (
+      <Iconify
+        icon="ph:youtube-logo-fill"
+        width={24}
+      />
+    ),
+  },
+  // {
+  //   value: 'whatsapp',
+  //   icon: <Iconify icon="ic:baseline-whatsapp" width={24} />,
+  // },
+];
+
+// ----------------------------------------------------------------------
+
+function GeneralInformation() {
+  return (
+    <Card sx={{ p: 3 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ mb: 2 }}
+      >
+        General information
+      </Typography>
+      <InformationGrid />
+    </Card>
+  );
+}
+
+function InformationGrid() {
+  return (
+    <Stack spacing={1}>
+      <Box
+        rowGap={1}
+        columnGap={1}
+        display="grid"
+        gridTemplateColumns={{
+          xs: 'repeat(1, 1fr)',
+          sm: 'repeat(2, 1fr)',
+        }}
+      >
+        <RHFTextField
+          size="small"
+          name="name"
+          label="Workspace Name"
+        />
+        <RHFTextField
+          size="small"
+          name="website"
+          label="Website"
+        />
+        <RHFTextField
+          size="small"
+          name="email"
+          label="Contact Email"
+        />
+        <RHFTextField
+          size="small"
+          name="phone"
+          label="Contact Phone"
+        />
+        <RHFTextField
+          size="small"
+          name="fiscalId"
+          label="Fiscal ID"
+        />
+      </Box>
+      <RHFTextField
+        size="small"
+        name="about"
+        multiline
+        rows={3}
+        label="About"
+      />
+    </Stack>
+  );
+}
+
+function BankDetails() {
+  return (
+    <Card sx={{ p: 3 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ mb: 2 }}
+      >
+        Bank Details
+      </Typography>
+      <Stack spacing={1}>
+        <RHFTextField
+          size="small"
+          name="bank_name"
+          label="Bank Name"
+        />
+        <RHFTextField
+          size="small"
+          name="iban"
+          label="IBAN"
+          placeholder="ES91 2100 0418 4502 0005 1332"
+        />
+        <RHFTextField
+          size="small"
+          name="swift_code"
+          label="SWIFT/BIC Code"
+        />
+      </Stack>
+    </Card>
+  );
+}
+
+function SocialMedia() {
+  return (
+    <Card sx={{ p: 3 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ mb: 2 }}
+      >
+        Social media
+      </Typography>
+      <SocialGrid />
+    </Card>
+  );
+}
+
+function SocialGrid() {
+  return (
+    <Box
+      rowGap={1}
+      columnGap={1}
+      display="grid"
+      gridTemplateColumns={{
+        xs: 'repeat(1, 1fr)',
+        sm: 'repeat(2, 1fr)',
+      }}
+    >
+      {SOCIAL_LINKS.map((link) => (
+        <RHFTextField
+          size="small"
+          key={link.value}
+          name={`${link.value}`}
+          label={`${link.value.charAt(0).toUpperCase() + link.value.slice(1)} Link`} // Capitalize the label
+          placeholder={`Enter ${link.value} link`}
+          InputProps={{
+            startAdornment: <InputAdornment position="start">{link.icon}</InputAdornment>,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+const initializeSocials = (socials) => {
+  const socialDefaults = {};
+  socials.items.forEach((social) => {
+    socialDefaults[social.platform_name] = social.link;
+  });
+  return socialDefaults;
+};
+
+function AccountGeneral() {
+  const account = useSelector(selectAccount);
+  const company = account?.company;
+  const [avatarSrc, setAvatarSrc] = useState(account?.logo_url || null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
+
+  const schema = Yup.object().shape({
+    name: Yup.string().required('Name is required'),
+    about: Yup.string().optional().nullable(),
+    website: Yup.string().url().optional().nullable(),
+    logo_url: Yup.mixed().nullable(),
+    email: Yup.string().optional().nullable(),
+    phone: Yup.string().optional().nullable(),
+    fiscalId: Yup.string().optional().nullable(),
+    bank_name: Yup.string().optional().nullable(),
+    iban: Yup.string().optional().nullable(),
+    swift_code: Yup.string().optional().nullable(),
+    instagram: Yup.string().url().optional().nullable(),
+    facebook: Yup.string().url().optional().nullable(),
+    tiktok: Yup.string().url().optional().nullable(),
+    discord: Yup.string().url().optional().nullable(),
+    youtube: Yup.string().url().optional().nullable(),
+    x: Yup.string().url().optional().nullable(),
+    linkedin: Yup.string().url().optional().nullable(),
+  });
+
+  const defaultValues = useMemo(
+    () => ({
+      name: account?.name || 'The Boring Company',
+      about: account?.about || '',
+      website: account?.website || '',
+      logo_url: account?.logo_url || null,
+      email: account?.emails?.items[0]?.email || '',
+      phone: account?.phones?.items[0]?.phone || '',
+      fiscalId: company?.fiscalId || '',
+      bank_name: company?.bank_details?.bank_name || '',
+      iban: company?.bank_details?.iban || '',
+      swift_code: company?.bank_details?.swift_code || '',
+      instagram: '',
+      facebook: '',
+      tiktok: '',
+      discord: '',
+      youtube: '',
+      x: '',
+      linkedin: '',
+      ...initializeSocials(company?.socials || { items: [] }),
+    }),
+    [
+      account?.about,
+      account?.bank_details?.bank_name,
+      account?.bank_details?.iban,
+      account?.bank_details?.swift_code,
+      account?.emails?.items,
+      account?.fiscalId,
+      account?.logo_url,
+      account?.name,
+      account?.phones?.items,
+      account?.socials,
+      account?.website,
+    ],
+  );
+
+  const methods = useForm({
+    resolver: yupResolver(schema),
+    defaultValues,
+  });
+
+  const { handleSubmit, setValue } = methods;
+
+  const onSubmit = async (data) => {
+    const completeData = {
+      name: data.name,
+      about: data.about,
+      website: data.website,
+      email: {
+        email: data.email,
+        verifed: null,
+      },
+      phone: {
+        phone: data.phone,
+        verifed: null,
+        wid: null,
+      },
+      fiscalId: data.fiscalId,
+      bank_details: {
+        bank_name: data.bank_name,
+        iban: data.iban,
+        swift_code: data.swift_code,
+      },
+      socials: {
+        instagram: data.instagram,
+        facebook: data.facebook,
+        tiktok: data.tiktok,
+        discord: data.discord,
+        youtube: data.youtube,
+        x: data.x,
+        linkedin: data.linkedin,
+      },
+    };
+
+    if (!!avatarFile) {
+      await uploadMedia(avatarFile).then((mediaId) => {
+        completeData.logo_url = mediaId;
+      });
+    }
+
+    dispatchWithFeedback(updateAccountCompany(completeData), {
+      successMessage: 'Company data updated successfully',
+      errorMessage: 'There was a problem updating...',
+      useSnackbar: true,
+    });
+  };
+
+  const handleDropSingleFile = useCallback(
+    (acceptedFiles, value) => {
+      const file = acceptedFiles[0];
+      const newFile = Object.assign(file, {
+        preview: URL.createObjectURL(file),
+      });
+      if (newFile) {
+        setValue(value, newFile, { shouldValidate: true });
+        setAvatarFile(file);
+        setAvatarSrc(file.preview);
+      }
+    },
+    [setValue],
+  );
+
+  const calculateCompletionPercentage = useCallback(() => {
+    const allFields = Object.keys(defaultValues);
+    const filledFields = allFields.filter(
+      (field) => defaultValues[field] !== null && defaultValues[field] !== '',
+    );
+    return Math.floor((filledFields.length / allFields.length) * 100);
+  }, [defaultValues]);
+
+  const completionPercentage = calculateCompletionPercentage();
+  const onError = (errors) => {
+    console.error('Form submission errors:', errors);
+  };
+
+  return (
+    <Box sx={{ pb: 35 }}>
+      <form onSubmit={handleSubmit(onSubmit, onError)}>
+        <FormProvider methods={methods}>
+          <Stack
+            width="100%"
+            height="100%"
+            spacing={2}
+          >
+            {/* <Masonry spacing={2} columns={1}> */}
+            <Card sx={{ p: 3, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <Box sx={{ flex: '1 1 auto' }}>
+                <Typography variant="subtitle1">Logo</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ opacity: 0.5, mb: 2 }}
+                >
+                  It may take some time for the updated logo to appear.
+                </Typography>
+                <Typography variant="subtitle1">Workspace Id</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <TextField
+                    name="account_id"
+                    size="small"
+                    readOnly
+                    variant="outlined"
+                    value={account.id}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => navigator.clipboard.writeText(account.id)}
+                            edge="end"
+                          >
+                            <Iconify icon="mdi:content-copy" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                </Box>
+              </Box>
+              <Box sx={{ flex: '0 0 auto', ml: 2 }}>
+                <RHFUploadAvatar
+                  name="logo_url"
+                  file={avatarSrc || null}
+                  maxSize={3145728}
+                  onDrop={(accepted) => handleDropSingleFile(accepted, 'logo_url')}
+                  onDelete={() => setValue('logo_url', null)}
+                />
+              </Box>
+            </Card>
+
+            <GeneralInformation />
+            <BankDetails />
+            <SocialMedia />
+            {/* </Masonry> */}
+          </Stack>
+
+          <DynamicIsland>
+            <Stack>
+              <LinearProgressWithLabel value={completionPercentage} />
+              <LoadingButton
+                type="submit"
+                sx={{ mt: 0.5 }}
+                fullWidth
+                size="large"
+                startIcon={
+                  <Iconify
+                    icon="line-md:confirm-circle"
+                    width={24}
+                  />
+                }
+                variant="contained"
+                color="secondary"
+                loading={isSubmitting}
+              >
+                Save
+              </LoadingButton>
+            </Stack>
+          </DynamicIsland>
+        </FormProvider>
+      </form>
+    </Box>
+  );
+}
+
+export default memo(AccountGeneral);
+
+// function AccountLanguages({ methods }) {
+//   return (
+//     <Card sx={{ p: 3, m: 2 }}>
+//       <Typography variant="subtitle1" sx={{ mb: 2 }}>Account Languages</Typography>
+//       <Stack spacing={2}>
+//         <Typography variant="body2" sx={{ opacity: 0.5 }}>
+//           Altan will autotranslate your chatbot to the additional languages you select.
+//         </Typography>
+//         <LanguageController name="original_language" methods={methods} multiple={false} />
+//         <LanguageController name="additional_languages" methods={methods} multiple={true} />
+//       </Stack>
+//     </Card>
+//   );
+// }
+
+// function LanguageController({ name, methods, multiple }) {
+//   return (
+//     <Controller
+//       name={name}
+//       control={methods.control}
+//       render={({ field }) => (
+//         <Autocomplete
+//           {...field}
+//           multiple={multiple}
+//           fullWidth
+//           autoHighlight
+//           options={languages}
+//           getOptionLabel={(option) => option.label}
+//           isOptionEqualToValue={(option, value) => option.code === value.code}
+//           onChange={(_, newValue) => field.onChange(newValue)}
+//           renderInput={(params) => (
+//             <TextField {...params} label={multiple ? "Add Languages" : "Select Main Language"} />
+//           )}
+//         />
+//       )}
+//     />
+//   );
+// }

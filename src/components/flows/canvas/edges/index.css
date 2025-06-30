@@ -1,0 +1,12 @@
+.edge-circle { 
+  opacity: 0.3; 
+  transition: opacity var(--animation-delay, 0ms) ease-in-out; /* Use CSS variable for delay */
+}
+
+.react-flow__edge {
+  stroke-width: 20;
+}
+
+.react-flow__edge-circles:hover .edge-circle { 
+  opacity: 1;
+}

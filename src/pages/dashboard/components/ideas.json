@@ -1,0 +1,206 @@
+{
+  "App": [
+    {
+      "name": "Personal Finance Dashboard",
+      "prompt": "Create a dashboard that helps me track my monthly expenses, investments, and savings goals with charts and notifications for bill payments"
+    },
+    {
+      "name": "Recipe Manager",
+      "prompt": "Build a recipe management app where I can save recipes, plan meals for the week, and generate shopping lists automatically"
+    },
+    {
+      "name": "Habit Tracker",
+      "prompt": "Design an app to track daily habits with streaks, mood tracking, and progress insights over time"
+    },
+    {
+      "name": "Project Management Tool",
+      "prompt": "Create a simple project management tool with kanban boards, task assignments, and deadline tracking"
+    },
+    {
+      "name": "Social Media Scheduler",
+      "prompt": "Build an app to schedule and preview social media posts across different platforms with analytics dashboard"
+    },
+    {
+      "name": "Workout Planner",
+      "prompt": "Create a fitness app that generates personalized workout plans and tracks progress with exercise demonstrations"
+    },
+    {
+      "name": "Time Tracker",
+      "prompt": "Build a time tracking app for freelancers with project categorization, invoicing, and productivity insights"
+    },
+    {
+      "name": "Learning Platform",
+      "prompt": "Design an educational app with course creation, progress tracking, and interactive quizzes"
+    }
+  ],
+  "Flow": [
+    {
+      "name": "Email AI Response",
+      "prompt": "When I receive an email, analyze the content and draft a response using AI"
+    },
+    {
+      "name": "Invoice Processing",
+      "prompt": "When a new invoice arrives in my email, extract the details, categorize it, and create a payment reminder"
+    },
+    {
+      "name": "Lead Qualification",
+      "prompt": "When a new lead fills out my contact form, score them based on their responses and assign to the right sales person"
+    },
+    {
+      "name": "Content Distribution",
+      "prompt": "When I publish a blog post, automatically share it across my social media channels with customized messages for each platform"
+    },
+    {
+      "name": "Document Approval",
+      "prompt": "When a team member uploads a document, route it through the appropriate approval chain and notify stakeholders"
+    },
+    {
+      "name": "Customer Onboarding",
+      "prompt": "When a new customer signs up, send welcome emails, schedule an intro call, and create their account workspace"
+    },
+    {
+      "name": "Support Ticket Triage",
+      "prompt": "When a support ticket comes in, analyze urgency, categorize the issue, and route to the right department"
+    },
+    {
+      "name": "Meeting Scheduler",
+      "prompt": "When someone requests a meeting, check calendar availability, suggest time slots, and send calendar invites"
+    }
+  ],
+  "AI Agent": [
+    {
+      "name": "Meeting Summarizer",
+      "prompt": "Create an AI agent that joins my meetings, takes notes, and sends a summary with action items to all participants"
+    },
+    {
+      "name": "Research Assistant",
+      "prompt": "Build an AI agent that can research a topic, compile key findings, and create a structured report with citations"
+    },
+    {
+      "name": "Social Media Manager",
+      "prompt": "Design an AI agent that generates engaging social media content and responds to comments while maintaining brand voice"
+    },
+    {
+      "name": "Email Classifier",
+      "prompt": "Create an AI agent that reads my emails, categorizes them by priority, and suggests quick responses"
+    },
+    {
+      "name": "Code Reviewer",
+      "prompt": "Build an AI agent that reviews pull requests, suggests improvements, and checks for security vulnerabilities"
+    },
+    {
+      "name": "Customer Support Bot",
+      "prompt": "Create an AI agent that handles common customer inquiries and knows when to escalate to human support"
+    },
+    {
+      "name": "Content Editor",
+      "prompt": "Design an AI agent that proofreads content, suggests improvements, and ensures consistent brand tone"
+    },
+    {
+      "name": "Sales Assistant",
+      "prompt": "Build an AI agent that qualifies leads, schedules demos, and sends personalized follow-ups"
+    }
+  ],
+  "Database": [
+    {
+      "name": "Content Library",
+      "prompt": "Design a database for my digital content with tags, categories, usage rights, and version history"
+    },
+    {
+      "name": "Customer Relations",
+      "prompt": "Create a database to track customer interactions, purchase history, support tickets, and communication preferences"
+    },
+    {
+      "name": "Project Archive",
+      "prompt": "Build a database to store project details, team members, timelines, and deliverables with easy search functionality"
+    },
+    {
+      "name": "Resource Booking",
+      "prompt": "Design a database for managing meeting rooms, equipment, and resource bookings with conflict prevention"
+    },
+    {
+      "name": "Inventory System",
+      "prompt": "Create a database to track product inventory, suppliers, purchase orders, and stock levels across locations"
+    },
+    {
+      "name": "Learning Management",
+      "prompt": "Design a database for storing course content, student progress, assignments, and certification tracking"
+    },
+    {
+      "name": "Asset Management",
+      "prompt": "Build a database to track company assets, maintenance schedules, warranties, and assignment history"
+    },
+    {
+      "name": "Event Planning",
+      "prompt": "Create a database for managing events, attendees, vendors, schedules, and budget tracking"
+    }
+  ],
+  "Interface": [
+    {
+      "name": "Quick Actions Panel",
+      "prompt": "Design a floating command palette interface that lets users quickly search and execute common actions"
+    },
+    {
+      "name": "Data Import Wizard",
+      "prompt": "Create a step-by-step interface for users to upload, validate, and import data with error handling"
+    },
+    {
+      "name": "Profile Editor",
+      "prompt": "Design an intuitive interface for users to manage their profile, privacy settings, and notification preferences"
+    },
+    {
+      "name": "Report Builder",
+      "prompt": "Create a drag-and-drop interface for users to build custom reports by selecting data fields and visualizations"
+    },
+    {
+      "name": "Dashboard Creator",
+      "prompt": "Design an interface where users can create custom dashboards by arranging and configuring widgets"
+    },
+    {
+      "name": "File Manager",
+      "prompt": "Build a modern file management interface with drag-and-drop, preview capabilities, and sharing options"
+    },
+    {
+      "name": "Settings Console",
+      "prompt": "Create an organized settings interface with search, categories, and visual toggles for complex configurations"
+    },
+    {
+      "name": "Kanban Board",
+      "prompt": "Design a drag-and-drop kanban interface with customizable columns, card details, and filtering options"
+    }
+  ],
+  "Form": [
+    {
+      "name": "Event Registration",
+      "prompt": "Create a form for event registration with dynamic pricing, ticket selection, and dietary preferences"
+    },
+    {
+      "name": "Client Onboarding",
+      "prompt": "Design a multi-step form to collect new client information, project requirements, and brand assets"
+    },
+    {
+      "name": "Feedback Collection",
+      "prompt": "Build a form to gather user feedback with rating scales, open-ended questions, and file upload capability"
+    },
+    {
+      "name": "Service Quote",
+      "prompt": "Create a dynamic form that calculates service quotes based on selected options and requirements"
+    },
+    {
+      "name": "Job Application",
+      "prompt": "Design a comprehensive job application form with resume upload, work history, and skill assessment"
+    },
+    {
+      "name": "Support Request",
+      "prompt": "Create a smart support form that guides users through issue reporting with conditional fields"
+    },
+    {
+      "name": "Product Configurator",
+      "prompt": "Build a form that lets customers customize products with real-time preview and pricing updates"
+    },
+    {
+      "name": "Survey Builder",
+      "prompt": "Design a form builder interface for creating surveys with various question types and logic jumps"
+    }
+  ]
+}
