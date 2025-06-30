@@ -122,7 +122,7 @@ const UsageOverview = ({
   billingCycle,
   containerStyle,
   subscriptionData,
-  history.push,
+  history,
 }) => {
   const totalCredits = stats.totalCredits || 0; // Usage-based credits from API
   const monthlyBudget = subscriptionData.totalCredits || 10000; // Get budget from subscription
@@ -325,7 +325,7 @@ const UsageOverview = ({
 
 const UsagePage = () => {
   const accountId = useSelector(selectAccountId);
-  const history = useHistory();;
+  const history = useHistory();
   const theme = useTheme();
   const activeSubscriptions = useReduxSelector(selectAccountSubscriptions);
   const [rawUsageData, setRawUsageData] = useState([]);
@@ -675,7 +675,7 @@ const UsagePage = () => {
           billingCycle={billingCycle}
           containerStyle={getContainerStyles()}
           subscriptionData={subscriptionData}
-          history.push={history.push}
+          history={history}
         />
 
         {/* Header with title and controls */}

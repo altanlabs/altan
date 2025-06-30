@@ -113,7 +113,7 @@ const LastBreadcrumbMenu = ({ id, anchorEl, setAnchorEl, space }) => {
   );
 };
 
-const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb, history.push }) => {
+const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb, historyPush }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const isRoot = space.id === 'root';
   const isLast = i === breadcrumbsLength - 1;
@@ -131,7 +131,7 @@ const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb
               rotate={2}
             />
           }
-          onClick={() => history.push(PATH_DASHBOARD.spaces.view(space.parent_id))}
+          onClick={() => historyPush(PATH_DASHBOARD.spaces.view(space.parent_id))}
           disabled={!space.parent_id}
         />
       )}
@@ -162,7 +162,7 @@ const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb
           color="inherit"
           size={size}
           variant="text"
-          onClick={() => history.push(PATH_DASHBOARD.spaces.view(space.id))}
+          onClick={() => historyPush(PATH_DASHBOARD.spaces.view(space.id))}
           sx={{ textTransform: 'none' }}
         >
           {space.id === 'root' && (
@@ -221,7 +221,7 @@ function SpaceToolbar({
   changesLayout,
   onEditLayout,
 }) {
-  const history = useHistory();;
+  const history = useHistory();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -310,7 +310,7 @@ function SpaceToolbar({
               space={spaces[spaceId]}
               previousBreadcrumb={!!i && breadcrumbs[i - 1]}
               breadcrumbsLength={breadcrumbsLength}
-              history.push={history.push}
+              historyPush={history.push}
               size={size}
             />
           ))}
