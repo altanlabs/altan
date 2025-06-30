@@ -54,23 +54,28 @@ export default defineConfig(({ mode }) => {
       sourcemap: isDev, // Generate sourcemaps only in dev
       outDir: 'dist', // Build output directory
       assetsInlineLimit: 0, // Extract small assets instead of inlining
-      brotliSize: false, // Disable brotli-size calculation for speed
+      reportCompressedSize: false, // Disable compressed size reporting for speed
       chunkSizeWarningLimit: 1000, // Raise default chunk size warning limit
       rollupOptions: {
         output: {
-          manualChunks: isMobile ? undefined : (id) => {
-            // For mobile, avoid too many chunks
+          manualChunks: (id) => {
+            // Always use chunking for better memory management
             if (id.includes('node_modules')) {
               // Group vendor chunks more efficiently
               if (id.includes('@mui')) return 'mui';
-              if (id.includes('react')) return 'react-vendor';
+              if (id.includes('react') && !id.includes('react-router')) return 'react-vendor';
               if (id.includes('redux')) return 'redux';
               if (id.includes('@ionic')) return 'ionic';
+              if (id.includes('recharts') || id.includes('chart')) return 'charts';
+              if (id.includes('@ag-grid')) return 'ag-grid';
+              if (id.includes('lexical') || id.includes('@lexical')) return 'lexical';
               return 'vendor';
             }
           },
           minifyInternalExports: true,
         },
+        // Increase memory for Rollup
+        maxParallelFileOps: 2, // Reduce parallel operations to save memory
       },
     },
     plugins: [
