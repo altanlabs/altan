@@ -1,7 +1,7 @@
 import { m } from 'framer-motion';
 import { memo, useCallback, type ReactElement } from 'react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { optimai } from '@utils/axios';
 import { fToNow } from '@utils/formatTime';
@@ -39,7 +39,7 @@ function PublicAppCard({
 }: PublicAppCardProps): ReactElement {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   // eslint-disable-next-line no-undef
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
@@ -70,8 +70,8 @@ function PublicAppCard({
   }, [interfaceComponent?.params?.id]);
 
   const onClickApp = useCallback((): void => {
-    navigate(`/remix/${id}`);
-  }, [id, navigate]);
+    history.push(`/remix/${id}`);
+  }, [id, history]);
 
   const finalImageUrl = previewUrl || icon_url || '/placeholder-image.png';
 

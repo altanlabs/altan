@@ -11,7 +11,7 @@ import {
   Link,
 } from '@mui/material';
 import { memo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import AddCollaboratorDialog from './AddCollaboratorDialog.jsx';
 import AddDomainDialog from './AddDomainDialog.jsx';
@@ -25,7 +25,7 @@ import { optimai, optimai_room } from '../../../../utils/axios';
 function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
-  const navigate = useNavigate();
+  const history = useHistory();
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDomainDialogOpen, setIsDomainDialogOpen] = useState(false);
@@ -405,7 +405,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       onClick={async () => {
                         if (isAccountFree) {
                           // Redirect to pricing for free accounts
-                          navigate('/pricing');
+                          history.push('/pricing');
                           return;
                         }
 

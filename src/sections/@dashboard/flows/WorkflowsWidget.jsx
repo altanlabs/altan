@@ -23,7 +23,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import PropTypes from 'prop-types';
 import React, { memo, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { WorkflowCarousel } from '../../../components/carousel';
@@ -223,7 +223,7 @@ const WorkflowRowSkeleton = memo(() => (
 WorkflowRowSkeleton.displayName = 'WorkflowRowSkeleton';
 
 const WorkflowsWidget = ({ initialSearchQuery = '' }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [sortOption, setSortOption] = useState('last_edited_newest');
   const [filterActive, setFilterActive] = useState('all'); // 'all', 'active', 'inactive'
@@ -319,7 +319,7 @@ const WorkflowsWidget = ({ initialSearchQuery = '' }) => {
   };
 
   const handleClickWorkflow = (workflowId) => {
-    navigate(`/flow/${workflowId}?goBack=true`);
+    history.push(`/flow/${workflowId}?goBack=true`);
   };
 
   const visibleWorkflows = showAll

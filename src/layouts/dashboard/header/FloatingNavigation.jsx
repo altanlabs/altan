@@ -1,14 +1,14 @@
 import { useTheme } from '@mui/material/styles';
 import { AnimatePresence, m } from 'framer-motion';
 import { memo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import Iconify from '../../../components/iconify';
 
 const FloatingNavigation = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();
   const location = useLocation();
   const { isAuthenticated } = useAuthContext();
 
@@ -147,7 +147,7 @@ const FloatingNavigation = () => {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate(item.path);
+                  history.push(item.path);
                 }}
                 className={getButtonStyles(item.path, index)}
               >

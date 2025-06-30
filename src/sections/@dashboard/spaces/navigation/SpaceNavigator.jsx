@@ -33,7 +33,7 @@ const SpaceNavigator = ({ linkUserSpaces, setSpace }) => {
   const isMobile = useResponsive('down', 'sm');
 
   useEffect(() => {
-    if (!!navigation.active && !('root' in spaces)) dispatch(getRootSpaces('navigate'));
+    if (!!navigation.active && !('root' in spaces)) dispatch(getRootSpaces('history.push'));
   }, [navigation.active]);
 
   const checkSelectedChildren = useCallback(
@@ -88,7 +88,7 @@ const SpaceNavigator = ({ linkUserSpaces, setSpace }) => {
 
   const handleSelectSpace = useCallback(
     (id) =>
-      dispatchWithFeedback(id === 'root' ? getRootSpaces('navigate') : getSpace(id, 'navigate'), {
+      dispatchWithFeedback(id === 'root' ? getRootSpaces('history.push') : getSpace(id, 'history.push'), {
         errorMessage: 'Error while fetching space: ',
         useSnackbar: {
           error: true,

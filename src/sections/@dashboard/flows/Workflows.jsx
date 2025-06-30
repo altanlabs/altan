@@ -1,7 +1,7 @@
 import { Stack, Box, IconButton, Tooltip } from '@mui/material';
 import Fuse from 'fuse.js';
 import React, { useCallback, useState, useMemo, useEffect, memo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useHistory, useParams } from 'react-router';
 
 import Workflow from './Workflow.jsx';
 import NoEntityPlaceholder from '../../../components/databases/placeholders/NoEntityPlaceholder.jsx';
@@ -38,7 +38,7 @@ const Workflows = ({ filterIds = null, onNavigate, altanerComponentId, ...altane
   const isFirstRender = useRef(true);
   const handleOpenCreate = () => setOpenCreate(true);
   const handleCloseCreate = () => setOpenCreate(false);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { flowId: urlFlowId } = useParams();
   const flows = useSelector(selectFlows);
   // const types = useSelector(selectConnectionTypes);
@@ -107,11 +107,11 @@ const Workflows = ({ filterIds = null, onNavigate, altanerComponentId, ...altane
       // Auto-select first workflow only if no URL parameter exists
       const firstFlowId = filteredFlows[0].id;
       if (altanerProps?.altanerId) {
-        navigate(`w/${firstFlowId}`, { replace: true });
+        history.push(`w/${firstFlowId}`, { replace: true });
       }
       setSelectedFlowId(firstFlowId);
     }
-  }, [flows, selectedFlowId, altanerProps?.altanerId, navigate, urlFlowId, filteredFlows]);
+  }, [flows, selectedFlowId, altanerProps?.altanerId, history.push, urlFlowId, filteredFlows]);
 
   const openDeleteDialog = useCallback((flowId) => setSelectedFlowToDelete(flowId), []);
   const closeDeleteDialog = useCallback(() => setSelectedFlowToDelete(null), []);
@@ -231,10 +231,10 @@ const Workflows = ({ filterIds = null, onNavigate, altanerComponentId, ...altane
       if (altanerProps?.altanerId) {
         onNavigate(altanerComponentId, { flowId: flow.id });
       } else {
-        navigate(`/flows/${flow.id}`);
+        history.push(`/flows/${flow.id}`);
       }
     },
-    [altanerProps?.altanerId, altanerComponentId, onNavigate, navigate],
+    [altanerProps?.altanerId, altanerComponentId, onNavigate, history.push],
   );
 
   const handleOpenEditAltanerComponent = useCallback(() => {

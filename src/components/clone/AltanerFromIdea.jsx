@@ -3,7 +3,7 @@ import { styled, useTheme } from '@mui/material/styles';
 import { m, AnimatePresence } from 'framer-motion';
 import React, { useEffect, useState, memo } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { createAltaner } from '../../redux/slices/altaners.js';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
@@ -110,7 +110,7 @@ function AltanerFromIdea({ idea, onClose }) {
   const [isCreating, setIsCreating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [progressValue, setProgressValue] = useState(0);
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   useEffect(() => {
     if (!idea || isCreating) return;

@@ -12,7 +12,7 @@ import {
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
@@ -27,7 +27,7 @@ const animationUrls = {
 };
 
 export default function PricingPlanCard({ card, isYearly, index, isEnterprise, sx, ...other }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { user } = useAuthContext();
   const { account } = useSelector((state) => state.general);
   // console.log(account);
@@ -43,9 +43,9 @@ export default function PricingPlanCard({ card, isYearly, index, isEnterprise, s
 
   const onButtonClick = useCallback(() => {
     if (subscription === 'free' || !user) {
-      navigate('/auth/register', { replace: true });
+      history.push('/auth/register');
     } else if (!account) {
-      navigate('/platform/account/settings?tab=billing', { replace: true });
+              history.push('/platform/account/settings?tab=billing');
     } else {
       handleSubscription(user.email, subscription, account.id);
     }

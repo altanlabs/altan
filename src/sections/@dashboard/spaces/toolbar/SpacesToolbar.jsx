@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import InfoModal from '../../../../components/helpers/InfoModal';
 import Iconify from '../../../../components/iconify/Iconify';
@@ -113,7 +113,7 @@ const LastBreadcrumbMenu = ({ id, anchorEl, setAnchorEl, space }) => {
   );
 };
 
-const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb, navigate }) => {
+const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb, history.push }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const isRoot = space.id === 'root';
   const isLast = i === breadcrumbsLength - 1;
@@ -131,7 +131,7 @@ const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb
               rotate={2}
             />
           }
-          onClick={() => navigate(PATH_DASHBOARD.spaces.view(space.parent_id))}
+          onClick={() => history.push(PATH_DASHBOARD.spaces.view(space.parent_id))}
           disabled={!space.parent_id}
         />
       )}
@@ -162,7 +162,7 @@ const SpaceBreadcrumb = ({ space, size, i, breadcrumbsLength, previousBreadcrumb
           color="inherit"
           size={size}
           variant="text"
-          onClick={() => navigate(PATH_DASHBOARD.spaces.view(space.id))}
+          onClick={() => history.push(PATH_DASHBOARD.spaces.view(space.id))}
           sx={{ textTransform: 'none' }}
         >
           {space.id === 'root' && (
@@ -221,7 +221,7 @@ function SpaceToolbar({
   changesLayout,
   onEditLayout,
 }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -270,7 +270,7 @@ function SpaceToolbar({
             color="inherit"
             size={size}
             variant="text"
-            onClick={() => navigate(path)}
+            onClick={() => history.push(path)}
             startIcon={icon}
           >
             {name}
@@ -310,7 +310,7 @@ function SpaceToolbar({
               space={spaces[spaceId]}
               previousBreadcrumb={!!i && breadcrumbs[i - 1]}
               breadcrumbsLength={breadcrumbsLength}
-              navigate={navigate}
+              history.push={history.push}
               size={size}
             />
           ))}
@@ -370,7 +370,7 @@ function SpaceToolbar({
             )}
             <InfoModal
               videoUrl="https://youtu.be/XwsMtk3zts4"
-              description="Dive into categories with the breadcrumb trail and easily navigate back. Within each space, you can shape your bot's conversations using widgets and branch out with child spaces. Check your design come to life with the real-time preview on the right. Need adjustments? Use 'Reorder' and 'Hide' for that perfect flow. By modularizing information here, you ensure your bot delivers precise and relevant responses every time. Craft a seamless experience, one space at a time."
+              description="Dive into categories with the breadcrumb trail and easily history.push back. Within each space, you can shape your bot's conversations using widgets and branch out with child spaces. Check your design come to life with the real-time preview on the right. Need adjustments? Use 'Reorder' and 'Hide' for that perfect flow. By modularizing information here, you ensure your bot delivers precise and relevant responses every time. Craft a seamless experience, one space at a time."
             />
           </Stack>
         )}

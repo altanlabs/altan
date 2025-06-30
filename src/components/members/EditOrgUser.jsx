@@ -2,7 +2,7 @@ import { Stack, Button, Grid, Avatar, Typography, Container } from '@mui/materia
 import { memo, useState } from 'react';
 
 // @mui
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog';
@@ -60,7 +60,7 @@ const UserProfileCard = ({ profileData }) => {
 const selectOrgId = (state) => state.general.account?.organisation_id;
 
 function EditOrgUser({ user }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const organisationId = useSelector(selectOrgId);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
@@ -70,7 +70,7 @@ function EditOrgUser({ user }) {
       errorMessage: 'Unexpected error: ',
       useSnackbar: false,
       useConsole: true,
-    }).then(navigate('/platform/members'));
+    }).then(() => history.push('/platform/members'));
   };
   console.log(user);
   return (

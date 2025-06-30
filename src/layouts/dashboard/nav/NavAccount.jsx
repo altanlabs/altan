@@ -20,7 +20,7 @@ import {
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import React, { useCallback, useState, memo, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 
 import AccountDetailRow from './AccountDetailRow.tsx';
@@ -68,7 +68,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
   const theme = useTheme();
   const location = useLocation();
   const { user } = useAuthContext();
-  const navigate = useNavigate();
+  const history = useHistory();
   const account = useSelector(selectAccountDetails);
   const accounts = useSelector(selectAccounts);
   const allAccounts = useSelector(selectAllAccounts);
@@ -196,9 +196,9 @@ function NavAccount({ mini = false, isDashboard = false }) {
         console.log('⚠️ Account already selected or not found');
       }
       handleClose();
-      navigate('/', { replace: true });
+      history.replace('/');
     },
-    [accounts, allAccounts, searchResults, account, location, handleClose, navigate, showAllAccounts, hasAnySearchTerm],
+    [accounts, allAccounts, searchResults, account, location, handleClose, history, showAllAccounts, hasAnySearchTerm],
   );
 
   const handleSwitchChange = useCallback((event) => setShowAllAccounts(event.target.checked), []);

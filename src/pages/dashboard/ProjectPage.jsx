@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useEffect, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
@@ -38,7 +38,7 @@ const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
   const chatIframeRef = React.useRef(null);
-  const navigate = useNavigate();
+  const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
@@ -71,9 +71,9 @@ export default function ProjectPage() {
       const firstComponentId = Object.keys(sortedComponents)[0];
 
       // Navigate to the URL with the component ID in the path
-      navigate(`/project/${altanerId}/c/${firstComponentId}`);
+      history.push(`/project/${altanerId}/c/${firstComponentId}`);
     }
-  }, [sortedComponents, activeComponentId, altanerId, navigate]);
+  }, [sortedComponents, activeComponentId, altanerId, history]);
 
   // Set display mode based on component type
   useEffect(() => {
@@ -144,7 +144,7 @@ export default function ProjectPage() {
           }
         }
 
-        navigate(path);
+        history.push(path);
       };
 
       return (

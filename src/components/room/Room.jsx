@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useCallback, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { isMobile } from './utils';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
@@ -38,7 +38,7 @@ const selectInitializedRoom = selectRoomStateInitialized('room');
 const selectLoadingRoom = selectRoomStateLoading('room');
 
 const Room = ({ roomId, header = true }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { guest, user } = useAuthContext();
 
   const initialized = useSelector(selectInitializedRoom);
@@ -52,23 +52,23 @@ const Room = ({ roomId, header = true }) => {
 
   const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))
-      .then((response) => !response && navigate('/404', { replace: true }))
+              .then((response) => !response && history.replace('/404'))
       .catch((error) => {
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
           case 401:
             break;
           case 404:
-            navigate('/404');
+            history.replace('/404');
             break;
           case 403:
-            navigate(`/room/${roomId}/access`);
+            history.push(`/room/${roomId}/access`);
             break;
           default:
             console.error('Error fetching gate room:', error);
         }
       });
-  }, [guest, navigate, roomId, user]);
+  }, [guest, history, roomId, user]);
 
   useEffect(() => {
     if (!!roomId && !initialized && !!(user || guest)) {

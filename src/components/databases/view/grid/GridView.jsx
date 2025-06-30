@@ -17,7 +17,7 @@ import { useTheme } from '@mui/material';
 import { debounce, maxBy } from 'lodash';
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { createColumnDefs } from './columns/index.js';
 import AttachmentEditor from './editors/AttachmentEditor';
@@ -67,7 +67,7 @@ export const GridView = memo(
   ({ table, fields, records, onAddRecord, onUpdateRecord, onDeleteRecords, onDuplicateRecord }) => {
     const theme = useTheme();
     const gridRef = useRef();
-    const navigate = useNavigate();
+    const history = useHistory();;
     const location = useLocation();
     const members = useSelector((state) => selectAccount(state)?.members || []);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
@@ -212,9 +212,9 @@ export const GridView = memo(
     const handleExpandRecord = useCallback(
       (recordId) => {
         setEditRecordId(recordId);
-        navigate(`${location.pathname}/records/${recordId}`);
+        history.push(`${location.pathname}/records/${recordId}`);
       },
-      [navigate, location.pathname],
+      [history.push, location.pathname],
     );
 
     const getContextMenuItems = useCallback(
@@ -693,7 +693,7 @@ export const GridView = memo(
             open={true}
             onClose={() => {
               setEditRecordId(null);
-              navigate(location.pathname.split('/records/')[0]);
+              history.push(location.pathname.split('/records/')[0]);
             }}
           />
         )}

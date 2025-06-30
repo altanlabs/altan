@@ -1,13 +1,13 @@
 import { useConversation } from '@elevenlabs/react';
 import React, { createContext, useContext, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const VoiceConversationContext = createContext(null);
 
 export const VoiceConversationProvider = ({ children }) => {
   const [toolCalls, setToolCalls] = useState([]);
   const [navigationPath, setNavigationPath] = useState('');
-  const navigate = useNavigate();
+  const history = useHistory();
 
   // Tool handler functions
   const handleRedirect = useCallback(
@@ -30,7 +30,7 @@ export const VoiceConversationProvider = ({ children }) => {
         if (targetPath.startsWith('http')) {
           window.location.href = targetPath;
         } else {
-          navigate(targetPath);
+          history.push(targetPath);
         }
       }, delay);
 
@@ -40,7 +40,7 @@ export const VoiceConversationProvider = ({ children }) => {
         path: targetPath,
       };
     },
-    [navigate],
+    [history],
   );
 
   // Handle client tool calls from the agent
@@ -103,7 +103,7 @@ export const VoiceConversationProvider = ({ children }) => {
         }
         console.log(`Navigating to: ${path}`);
         setNavigationPath(path);
-        navigate(path);
+        history.push(path);
         return { success: true, message: `Navigated to ${path}`, path: path };
       },
     },

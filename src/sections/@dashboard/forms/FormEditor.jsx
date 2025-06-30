@@ -2,7 +2,7 @@ import { LoadingButton } from '@mui/lab';
 import { Stack, useTheme, IconButton, Tooltip } from '@mui/material';
 import React, { useCallback, memo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { setLicenseKey } from 'survey-core';
 import { SurveyCreatorComponent, SurveyCreator } from 'survey-creator-react';
 
@@ -28,7 +28,7 @@ const selectForms = (state) => state.general.account?.forms || [];
 function FormEditor({ formId }) {
   const theme = useTheme();
   const themeMode = theme.palette.mode;
-  const navigate = useNavigate();
+  const history = useHistory();;
   const location = useLocation();
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -41,8 +41,8 @@ function FormEditor({ formId }) {
   const templateSelector = useCallback((state) => currentForm?.template, [currentForm?.template]);
   const onCloseTemplateDialog = useCallback(() => setTemplateDialogOpen(false), []);
   const onClickResponses = useCallback(
-    () => navigate(`/forms/${formId}/responses`),
-    [formId, navigate],
+    () => history.push(`/forms/${formId}/responses`),
+    [formId, history.push],
   );
   const onTogglePreview = useCallback(() => {
     const themeParam = themeMode === 'dark' ? 'dark' : 'light';

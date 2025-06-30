@@ -2,7 +2,7 @@ import Clarity from '@microsoft/clarity';
 import PropTypes from 'prop-types';
 import { useState, useEffect, memo, useMemo, createContext, useContext } from 'react';
 import { batch } from 'react-redux';
-import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Redirect, useLocation, useHistory } from 'react-router-dom';
 
 // components
 import { useAuthContext } from './useAuthContext';
@@ -40,10 +40,20 @@ AuthGuard.propTypes = {
 };
 
 function AuthGuard({ children, requireAuth = false }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const history = useHistory();
   const { isAuthenticated, isInitialized, user, logout } = useAuthContext();
 
-  const { pathname } = useLocation();
+  const { pathname } = location;
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString()
+    });
+  };
 
   const [requestedLocation, setRequestedLocation] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -150,7 +160,7 @@ function AuthGuard({ children, requireAuth = false }) {
 
     if (requestedLocation && pathname !== requestedLocation) {
       setRequestedLocation(null);
-      return <Navigate to={requestedLocation} />;
+      return <Redirect to={requestedLocation} />;
     }
   }
 

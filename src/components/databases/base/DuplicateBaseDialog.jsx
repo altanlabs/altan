@@ -1,7 +1,7 @@
 import { Stack, DialogActions, Switch, FormControlLabel } from '@mui/material';
 import { useCallback, memo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 import { duplicateBase } from '../../../redux/slices/bases';
@@ -24,7 +24,7 @@ const getDuplicateBaseSchema = () => ({
 });
 
 const DuplicateBaseDialog = ({ open, onClose, baseToClone = null, redirect = true }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [copyRecords, setCopyRecords] = useState(false);
 
   const methods = useForm({
@@ -63,7 +63,7 @@ const DuplicateBaseDialog = ({ open, onClose, baseToClone = null, redirect = tru
       }).then((base) => {
         onClose();
         if (redirect && base?.id) {
-          navigate(`/bases/${base.id}`);
+          history.push(`/bases/${base.id}`);
         }
       });
     }),
@@ -71,7 +71,7 @@ const DuplicateBaseDialog = ({ open, onClose, baseToClone = null, redirect = tru
       baseToClone,
       copyRecords,
       dispatchWithFeedback,
-      navigate,
+      history,
       onClose,
       redirect,
       schema.properties,

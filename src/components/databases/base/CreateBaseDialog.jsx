@@ -2,7 +2,7 @@
 import { Stack, DialogActions } from '@mui/material';
 import { useCallback, memo, useMemo } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 import { updateAltanerComponentById } from '../../../redux/slices/altaners';
@@ -49,7 +49,7 @@ const CreateBaseDialog = ({
   altanerComponentId = null,
   redirect = true,
 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const methods = useForm({
     defaultValues: baseToEdit
       ? {
@@ -87,7 +87,7 @@ const CreateBaseDialog = ({
           if (!altanerComponentId) {
             onClose(base.id);
             if (!!redirect) {
-              navigate(`/bases/${base.id}`);
+              history.push(`/bases/${base.id}`);
             }
           } else {
             dispatchWithFeedback(
@@ -104,9 +104,7 @@ const CreateBaseDialog = ({
                 },
               },
             ).then(() =>
-              navigate(`/altaners/${altanerId}/c/${altanerComponentId}/b/${base.id}`, {
-                replace: true,
-              }),
+              history.push(`/altaners/${altanerId}/c/${altanerComponentId}/b/${base.id}`),
             );
           }
         });
@@ -114,7 +112,7 @@ const CreateBaseDialog = ({
     }),
     [
       onClose,
-      navigate,
+      history,
       baseToEdit,
       altanerComponentId,
       redirect,

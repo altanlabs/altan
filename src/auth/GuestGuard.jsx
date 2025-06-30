@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Navigate } from 'react-router-dom';
+import { Redirect } from 'react-router-dom';
 
 // routes
 import { useAuthContext } from './useAuthContext';
@@ -18,7 +18,7 @@ export default function GuestGuard({ children }) {
   const { isAuthenticated, isInitialized } = useAuthContext();
 
   if (isAuthenticated) {
-    return <Navigate to={PATH_DASHBOARD.general.dashboard} />;
+    return <Redirect to={PATH_DASHBOARD.general.dashboard} />;
   }
 
   if (!isInitialized) {

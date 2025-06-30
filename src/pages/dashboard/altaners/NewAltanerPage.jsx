@@ -4,8 +4,8 @@ import { m } from 'framer-motion';
 import { debounce } from 'lodash';
 import React, { useState, useMemo, useCallback, memo, useEffect } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { useNavigate } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
+import { useHistory } from 'react-router';
+import { useLocation } from 'react-router-dom';
 
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient';
 import { TextShimmer } from '../../../components/aceternity/text/text-shimmer';
@@ -70,7 +70,7 @@ const useDisabled = ({ required }) => {
 };
 
 const CreateAltanerButton = memo(() => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { handleSubmit } = useFormContext();
   const disabled = useDisabled({ required: AltanerSchema.required });
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
@@ -84,10 +84,10 @@ const CreateAltanerButton = memo(() => {
         successMessage: 'Altaner created successfully',
         errorMessage: 'Could not create altaner',
       }).then((newAltaner) => {
-        navigate(`/altaners/${newAltaner.id}`, { replace: true });
+        history.push(`/altaners/${newAltaner.id}`, { replace: true });
       });
     }),
-    [dispatchWithFeedback, navigate],
+    [dispatchWithFeedback, history.push],
   );
 
   return (
@@ -409,7 +409,10 @@ const OnboardingView = ({ onComplete }) => {
 };
 
 const NewAltanerPage = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
   const [showOnboarding, setShowOnboarding] = useState(searchParams.get('isNewUser') === 'true');
   const theme = useTheme();
   const methods = useForm({ defaultValues: {} });

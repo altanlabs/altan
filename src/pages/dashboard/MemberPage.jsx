@@ -20,7 +20,7 @@ import { useSelector } from '../../redux/store';
 // ----------------------------------------------------------------------
 
 // const MemberActions = ({ memberType, member }) => {
-//   const navigate = useNavigate();
+//   const history = useHistory();;
 //   const [open, setOpen] = useState(false);
 
 //   const handleSendDm = () => {
@@ -51,7 +51,7 @@ import { useSelector } from '../../redux/store';
 //       <ButtonGroup variant='soft'>
 //         <Button onClick={handleSendDm} startIcon={<Iconify icon="streamline:mail-send-email-message-solid" />}>Direct Message</Button>
 //         {memberType === 'agent' &&
-//           <Button startIcon={<Iconify icon="icon-park-twotone:gate" />} color="secondary" onClick={() => navigate(`/conversations/gates?agent=${member.id}`)}>
+//           <Button startIcon={<Iconify icon="icon-park-twotone:gate" />} color="secondary" onClick={() => history.push(`/conversations/gates?agent=${member.id}`)}>
 //         Create Gate
 //         </Button>}
 //         {memberType === 'agent' &&

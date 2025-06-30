@@ -1,7 +1,7 @@
 import { Icon } from '@iconify/react';
 import { m } from 'framer-motion';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import GitHubRepoDialog from './GitHubRepoDialog';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
@@ -21,7 +21,7 @@ const getFileIcon = (type) => {
 
 function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading, handleVoice }) {
   const isAccountFree = useSelector(selectIsAccountFree);
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   // Add new state and refs for file attachments
   const [attachments, setAttachments] = useState([]);
@@ -328,7 +328,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                         onClick={() => {
                           if (isAccountFree) {
                             // Redirect to pricing for free accounts
-                            navigate('/pricing');
+                            history.push('/pricing');
                             setVisibilityMenuOpen(false);
                             return;
                           }

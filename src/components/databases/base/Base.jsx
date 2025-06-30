@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useHistory } from 'react-router';
 
 import BaseLayout from './BaseLayout.jsx';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
@@ -31,7 +31,7 @@ function Base({
   //  ...props
 }) {
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const ws = useWebSocket();
 
   const baseId = explicitBaseId || routeBaseId || ids[0];
@@ -84,7 +84,7 @@ function Base({
         });
       } else {
         const currentSearch = window.location.search;
-        navigate(`/bases/${baseId}/tables/${newTableId}/views/${newViewId}${currentSearch}`);
+        history.push(`/bases/${baseId}/tables/${newTableId}/views/${newViewId}${currentSearch}`);
       }
 
       // Pre-fetch the table records to improve loading performance
@@ -92,7 +92,7 @@ function Base({
         dispatch(loadAllTableRecords(newTableId));
       }
     },
-    [altanerId, altanerComponentId, baseId, onNavigate, navigate],
+    [altanerId, altanerComponentId, baseId, onNavigate, history],
   );
 
   // Load base data and handle initial navigation
@@ -139,7 +139,7 @@ function Base({
               if (altanerId) {
                 onNavigate?.(altanerComponentId, { baseId });
               } else {
-                navigate(`/bases/${baseId}`);
+                history.push(`/bases/${baseId}`);
               }
             }
           }
@@ -154,7 +154,7 @@ function Base({
       altanerId,
       onNavigate,
       altanerComponentId,
-      navigate,
+      history,
     ],
   );
 
@@ -166,7 +166,7 @@ function Base({
 
   const handleTabChange = useCallback(
     (newTableId) => {
-      if (newTableId === tableId) return; // Don't navigate if already on this tab
+      if (newTableId === tableId) return; // Don't history.push if already on this tab
 
       const targetTable = base?.tables?.items?.find((table) => table.id === newTableId);
       const defaultView = targetTable?.views?.items?.[0]?.id || viewId;

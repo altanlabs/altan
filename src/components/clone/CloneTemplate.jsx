@@ -2,7 +2,7 @@ import { IconButton } from '@mui/material';
 import { capitalize } from 'lodash';
 import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { cn } from '@lib/utils';
 
@@ -104,7 +104,7 @@ const MAP_REDIRECT = {
 };
 
 function CloneTemplate({ clonedTemplateId, onClose }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [activeStep, setActiveStep] = useState(0);
   const [isCreatingNewConnection, setIsCreatingNewConnection] = useState(false);
   const [connectionsSetup, setConnectionsSetup] = useState({});
@@ -275,7 +275,7 @@ function CloneTemplate({ clonedTemplateId, onClose }) {
         )
           .then((clone) => {
             onClose();
-            navigate(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=true`);
+            history.push(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=true`);
           })
           .catch((err) => console.error(err))
           .finally(() => setIsLoading(false));
@@ -288,7 +288,7 @@ function CloneTemplate({ clonedTemplateId, onClose }) {
       methods,
       defaultValues,
       onClose,
-      navigate,
+      history.push,
       mode,
     ],
   );

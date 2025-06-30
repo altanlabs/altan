@@ -2,7 +2,7 @@
 import { Stack, DialogActions } from '@mui/material';
 import { useCallback, memo, useMemo } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { updateAltanerComponentById } from '@redux/slices/altaners';
 
@@ -55,7 +55,7 @@ const CreateInterfaceDialog = ({
   altanerComponentId = null,
   redirect = true,
 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const methods = useForm({
     defaultValues: interfaceToEdit
       ? {
@@ -92,7 +92,7 @@ const CreateInterfaceDialog = ({
         }).then((ui) => {
           if (!altanerComponentId) {
             onClose();
-            navigate(`/interfaces/${ui.interface.id}`);
+            history.push(`/interfaces/${ui.interface.id}`);
           } else {
             dispatchWithFeedback(
               updateAltanerComponentById(altanerComponentId, {
@@ -108,7 +108,7 @@ const CreateInterfaceDialog = ({
                 },
               },
             ).then(() =>
-              navigate(`/altaners/${altanerId}/c/${altanerComponentId}/i/${ui.id}`, {
+              history.push(`/altaners/${altanerId}/c/${altanerComponentId}/i/${ui.id}`, {
                 replace: true,
               }),
             );
@@ -118,7 +118,7 @@ const CreateInterfaceDialog = ({
     }),
     [
       onClose,
-      navigate,
+      history.push,
       interfaceToEdit,
       altanerComponentId,
       redirect,

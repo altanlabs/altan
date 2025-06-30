@@ -1,6 +1,6 @@
 import { Box, Stack, Typography, useTheme } from '@mui/material';
 import React, { memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import RoomMember from '../members/RoomMember';
@@ -25,7 +25,7 @@ export function getRoomMembers(room, me) {
 const DMRow = ({ room, showAccount = false }) => {
   console.log('#####3 rendering dm row');
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const {
     user,
     guest,
@@ -39,7 +39,7 @@ const DMRow = ({ room, showAccount = false }) => {
   // const membersWithoutMe = useMemo(() => membersArray.filter(rm => rm.member_id !== me?.id), [membersArray, me]);
 
   const handleJoinRoom = () => {
-    navigate(`/room/${room?.id}`);
+    history.push(`/room/${room?.id}`);
   };
 
   const dmWith = getRoomMembers(room, me);

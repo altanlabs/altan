@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import { Box } from '@mui/material';
 import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
-import { Outlet, useParams, useSearchParams } from 'react-router-dom';
+import { Outlet, useParams, useLocation } from 'react-router-dom';
 
 import AltanerHeader from './header/AltanerHeader.jsx';
 import Main from './Main.jsx';
@@ -70,7 +70,7 @@ const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
 
 const AltanerLayout = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useLocation();
   const [templateId, setTemplateId] = useState('');
   const ws = useWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);

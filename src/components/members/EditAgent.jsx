@@ -4,7 +4,7 @@ import { LoadingButton } from '@mui/lab';
 import { Stack, Typography, IconButton, Tooltip, Paper, Box, Button } from '@mui/material';
 import { useState, useEffect, memo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import ShareAgentDialog from './ShareAgentDialog.jsx';
 import Iconify from '../../components/iconify';
@@ -19,7 +19,7 @@ import TemplateDialog from '../templates/TemplateDialog.jsx';
 const versionsSelector = (template) => template?.versions?.items;
 
 const EditAgentContent = memo(({ agent, variant = 'default' }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -59,7 +59,7 @@ const EditAgentContent = memo(({ agent, variant = 'default' }) => {
       successMessage: 'Agent deleted successfully',
       errorMessage: 'Unexpected error: ',
       useSnackbar: true,
-    }).then(() => navigate('/agents'));
+    }).then(() => history.push('/agents'));
   };
 
   const handleTemplate = useCallback(() => {

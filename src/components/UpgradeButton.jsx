@@ -1,7 +1,7 @@
 import { Box, Stack, Tooltip, Typography, LinearProgress, Button, Chip } from '@mui/material';
 import { PieChart } from '@mui/x-charts';
 import { memo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
 import { selectAccountSubscriptions } from '../redux/slices/general';
@@ -17,7 +17,7 @@ function formatCredits(credits) {
 }
 
 const UpgradeButton = ({ large = false, prominent = false }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
   const getCreditsInfo = useCallback(() => {
     if (!activeSubscriptions?.[0]) {
@@ -128,7 +128,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
                 size="small"
                 variant="contained"
                 startIcon={<Iconify icon="material-symbols:crown" />}
-                onClick={() => navigate('/pricing')}
+                onClick={() => history.push('/pricing')}
                 sx={{
                   minWidth: 70,
                   height: 32,
@@ -156,7 +156,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
               <Typography
                 variant="caption"
                 color="text.secondary"
-                onClick={() => navigate('/usage')}
+                onClick={() => history.push('/usage')}
                 sx={{ fontSize: '0.75rem', cursor: 'pointer' }}
               >
                 {usagePercentage.toFixed(0)}% used. <span className="underline">View usage</span>
@@ -215,7 +215,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
             }
             variant="upgrade"
             isLowCredits={creditInfo.isLowCredits}
-            onClick={() => navigate('/pricing')}
+            onClick={() => history.push('/pricing')}
             sx={{ width: '100%', justifyContent: 'flex-start', '& .MuiChip-label': { flex: 1 } }}
           />
         </Box>
@@ -235,7 +235,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
           label="Upgrade"
           variant="upgrade"
           isLowCredits={creditInfo.isLowCredits}
-          onClick={() => navigate('/pricing')}
+          onClick={() => history.push('/pricing')}
         />
       </Box>
     </Tooltip>

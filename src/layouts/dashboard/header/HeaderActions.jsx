@@ -1,6 +1,6 @@
 import { Stack, IconButton, Tooltip, Menu, MenuItem, Button } from '@mui/material';
 import { memo, useCallback, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useHistory } from 'react-router-dom';
 
 import AccountPopover from './AccountPopover.jsx';
 import NotificationsPopover from './NotificationsPopover.jsx';
@@ -17,7 +17,7 @@ const HeaderActions = ({ user, isDesktop }) => {
   const [masterRoomOpen, setMasterRoomOpen] = useState(false);
   const drawerBoolean = useBoolean();
   const [openHireExpert, setOpenHireExpert] = useState(false);
-  const navigate = useNavigate();
+  const history = useHistory();
   const { themeMode, onChangeMode } = useSettingsContext();
 
   const handleMenuOpen = useCallback((event) => setAnchorEl(event.currentTarget), []);
@@ -76,7 +76,7 @@ const HeaderActions = ({ user, isDesktop }) => {
           color="primary"
           variant="contained"
           startIcon={<Iconify icon="material-symbols:crown" />}
-          onClick={() => navigate('/pricing')}
+          onClick={() => history.push('/pricing')}
         >
           Upgrade
         </Button>
@@ -114,13 +114,13 @@ const HeaderActions = ({ user, isDesktop }) => {
         spacing={isDesktop ? { xs: 0.5, sm: 1 } : 0}
       >
         <button
-          onClick={() => navigate('/auth/login')}
+          onClick={() => history.push('/auth/login')}
           className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-ring disabled:pointer-events-auto disabled:opacity-50 group backdrop-blur-md bg-white/80 dark:bg-[#1c1c1c] text-gray-900 dark:text-white py-2 px-4 h-auto border border-gray-200/50 dark:border-gray-700/50 shadow-lg rounded-full hover:bg-white/70 dark:hover:bg-gray-900/70 active:bg-white/70 dark:active:bg-gray-900/70 transition-all duration-300"
         >
           Login
         </button>
         <button
-          onClick={() => navigate('/auth/register')}
+          onClick={() => history.push('/auth/register')}
           className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-ring disabled:pointer-events-auto disabled:opacity-50 group backdrop-blur-md bg-blue-600 dark:bg-blue-600 text-white py-2 px-4 h-auto border border-blue-600 dark:border-blue-600 shadow-lg rounded-full hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-700 dark:active:bg-blue-700 transition-all duration-300"
         >
           Register

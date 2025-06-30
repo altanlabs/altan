@@ -11,7 +11,7 @@ import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 // import Paper from '@mui/material/Paper';
 // import Grid from '@mui/material/Grid';
 // import ButtonGroup from '@mui/material/ButtonGroup';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import { RHFSelect, RHFTextField, RHFUploadAvatar, RHFSlider } from '@components/hook-form';
 
@@ -355,7 +355,7 @@ const useAgentAttributes = ({
   onClose = null,
   altanerComponentId = null,
 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [avatarSrc, setAvatarSrc] = useState(agent?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState(null);
@@ -478,7 +478,7 @@ const useAgentAttributes = ({
           );
         }
         if (mode === 'create' && savedAgent && !altanerComponentId) {
-          navigate(`/agent/${savedAgent.id}`);
+          history.push(`/agent/${savedAgent.id}`);
         }
         if (onClose) onClose();
       } catch {}
@@ -563,7 +563,7 @@ const useAgentAttributes = ({
             {!!space && (
               <div className="mt-4">
                 <Space
-                  navigate={navigate}
+                  navigate={history.push}
                   spaceId={space?.id}
                   isPreview={true}
                 />

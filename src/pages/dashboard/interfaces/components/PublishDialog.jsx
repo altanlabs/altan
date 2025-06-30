@@ -1,14 +1,14 @@
 import LoadingButton from '@mui/lab/LoadingButton';
 import { TextField, Button, InputAdornment } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import CustomDialog from '../../../../components/dialogs/CustomDialog';
 import { optimai } from '../../../../utils/axios';
 // import { selectAccountSubscriptions } from '../../../../redux/slices/general';
 
 function PublishDialog({ open, onClose, interfaceId, name, deploymentUrl }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   // const activeSubscriptions = useSelector(selectAccountSubscriptions);
 
   // Check if user has any active paid subscription
@@ -147,7 +147,7 @@ function PublishDialog({ open, onClose, interfaceId, name, deploymentUrl }) {
                   <Button
                     onClick={() => {
                       onClose();
-                      navigate('/pricing');
+                      history.push('/pricing');
                     }}
                     variant="contained"
                     className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"

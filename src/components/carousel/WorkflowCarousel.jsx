@@ -1,12 +1,12 @@
 import { Box, Typography, Button, Card, Stack, useTheme } from '@mui/material';
 import PropTypes from 'prop-types';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import Slider, { CarouselArrows } from './index';
 
 const WorkflowCarousel = ({ cards = [], autoplay = true, speed = 5000 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const theme = useTheme();
 
   const carouselSettings = {
@@ -32,7 +32,7 @@ const WorkflowCarousel = ({ cards = [], autoplay = true, speed = 5000 }) => {
 
   const handleButtonClick = (navigateTo) => {
     if (navigateTo) {
-      navigate(navigateTo);
+      history.push(navigateTo);
     }
   };
 

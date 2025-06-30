@@ -2,7 +2,7 @@
 import { Typography, Stack, Button } from '@mui/material';
 import PropTypes from 'prop-types';
 //
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import Image from '../image';
 
@@ -16,7 +16,7 @@ EmptyContent.propTypes = {
 };
 
 export default function EmptyContent({ title, description, img, onCreate, sx, ...other }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   return (
     <Stack
       spacing={2}

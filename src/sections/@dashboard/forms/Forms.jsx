@@ -2,7 +2,7 @@
 // import { MoreVert as MoreVertIcon, Description as DescriptionIcon, Share as ShareIcon, Visibility as VisibilityIcon, OpenInNew as OpenInNewIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { Box, useTheme, Typography } from '@mui/material';
 import React, { useCallback, useState, useMemo, memo, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import FormEditor from './FormEditor.jsx';
 import NoEntityPlaceholder from '../../../components/databases/placeholders/NoEntityPlaceholder.jsx';
@@ -22,7 +22,7 @@ import { dispatch, useSelector } from '../../../redux/store';
 const selectForms = (state) => state.general.account?.forms;
 
 function Forms({ filterIds = [], altanerComponentId = null, ...props }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const theme = useTheme();
   const accountId = useSelector(selectAccountId);
   const forms = useSelector(selectForms);
@@ -79,12 +79,12 @@ function Forms({ filterIds = [], altanerComponentId = null, ...props }) {
       setSelectedFormId(form.id);
       if (altanerComponentId) {
         const baseUrl = window.location.pathname.split('/f/')[0];
-        navigate(`${baseUrl}/f/${form.id}`, { replace: true });
+        history.push(`${baseUrl}/f/${form.id}`, { replace: true });
       } else {
-        navigate(`/forms/${form.id}`);
+        history.push(`/forms/${form.id}`);
       }
     },
-    [navigate, altanerComponentId],
+    [history.push, altanerComponentId],
   );
 
   const handleShare = useCallback(
@@ -92,8 +92,8 @@ function Forms({ filterIds = [], altanerComponentId = null, ...props }) {
     [theme.palette.mode],
   );
   const handleViewResponses = useCallback(
-    (form) => navigate(`/forms/${form.id}/responses`),
-    [navigate],
+    (form) => history.push(`/forms/${form.id}/responses`),
+    [history.push],
   );
 
   const toggleDrawer = useCallback(() => {
@@ -135,7 +135,7 @@ function Forms({ filterIds = [], altanerComponentId = null, ...props }) {
       const firstFormId = filteredForms[0].id;
       if (altanerComponentId) {
         const baseUrl = window.location.pathname.split('/f/')[0];
-        navigate(`${baseUrl}/f/${firstFormId}`, { replace: true });
+        history.push(`${baseUrl}/f/${firstFormId}`, { replace: true });
       }
       setSelectedFormId(firstFormId);
     }

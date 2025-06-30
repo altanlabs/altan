@@ -1,12 +1,12 @@
 import { Avatar } from '@mui/material';
 import PropTypes from 'prop-types';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../../components/iconify';
 
 const AgentTemplateCard = ({ template }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const name = template.name || template.public_name || 'Unnamed Agent';
   const avatarUrl = template.parent?.avatar_url || '/assets/default-avatar.png';
   const llmInfo = template.parent?.llm_config?.provider
@@ -15,7 +15,7 @@ const AgentTemplateCard = ({ template }) => {
   const remixCount = template.remix_count || Math.floor(Math.random() * 5000) + 100;
 
   const handleClick = () => {
-    navigate(`/template/${template.id}`);
+    history.push(`/template/${template.id}`);
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import FeaturedSection from './components/FeaturedSection';
 import FilterSection from './components/FilterSection';
@@ -13,8 +13,17 @@ import TemplateCard from '../components/card/TemplateCard';
 const ITEMS_PER_PAGE = 25;
 
 const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const history = useHistory();
+  const location = useLocation();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString()
+    });
+  };
   const loadMoreRef = useRef(null);
 
   // Separate state for featured and community templates
@@ -194,7 +203,7 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
     if (urlType && urlType !== templateType) {
       setTemplateType(urlType);
     }
-  }, [searchParams, templateType]);
+  }, [location.search, templateType]);
 
   useEffect(() => {
     // When template type changes, fetch both featured and community templates
@@ -288,7 +297,7 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
   };
 
   const handleViewTemplateDetails = (templateId) => {
-    navigate(`${PATH_DASHBOARD.marketplace.templates}/${templateId}`);
+    history.push(`${PATH_DASHBOARD.marketplace.templates}/${templateId}`);
   };
 
   // Apply filters to both featured and community templates

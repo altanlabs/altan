@@ -1,6 +1,6 @@
 import { BoltOutlined, TableChart, Apps, SmartToy } from '@mui/icons-material';
 import { Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const StartFromScratchCard = ({ icon, title, description, onClick }) => (
   <div
@@ -23,7 +23,7 @@ const StartFromScratchCard = ({ icon, title, description, onClick }) => (
 );
 
 const ShortcutsWidget = () => {
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   const scratchOptions = [
     {
@@ -65,7 +65,7 @@ const ShortcutsWidget = () => {
           <StartFromScratchCard
             key={option.title}
             {...option}
-            onClick={() => navigate(option.path)}
+            onClick={() => history.push(option.path)}
           />
         ))}
       </div>

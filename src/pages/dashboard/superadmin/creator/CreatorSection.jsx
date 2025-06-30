@@ -390,7 +390,7 @@ const CreatorSection = () => {
                 disabled={actions.length <= 1}
                 startIcon={
                   <Iconify
-                    icon="material-symbols-light:navigate-next"
+                    icon="material-symbols-light:history.push-next"
                     rotate={2}
                   />
                 }
@@ -400,7 +400,7 @@ const CreatorSection = () => {
               <Button
                 onClick={handleNext}
                 disabled={actions.length <= 1}
-                endIcon={<Iconify icon="material-symbols-light:navigate-next" />}
+                endIcon={<Iconify icon="material-symbols-light:history.push-next" />}
               >
                 Next
               </Button>
@@ -441,7 +441,7 @@ const CreatorSection = () => {
                 disabled={resources.length <= 1}
                 startIcon={
                   <Iconify
-                    icon="material-symbols-light:navigate-next"
+                    icon="material-symbols-light:history.push-next"
                     rotate={2}
                   />
                 }
@@ -451,7 +451,7 @@ const CreatorSection = () => {
               <Button
                 onClick={handleNextR}
                 disabled={resources.length <= 1}
-                endIcon={<Iconify icon="material-symbols-light:navigate-next" />}
+                endIcon={<Iconify icon="material-symbols-light:history.push-next" />}
               >
                 Next
               </Button>

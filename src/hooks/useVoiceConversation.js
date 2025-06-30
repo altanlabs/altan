@@ -1,6 +1,6 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 /**
  * Custom hook for managing voice conversations with ElevenLabs
@@ -41,7 +41,7 @@ export const useVoiceConversation = (options = {}) => {
 
   const [toolCalls, setToolCalls] = useState([]);
   const [navigationPath, setNavigationPath] = useState('');
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   // Tool handler functions
   const handleRedirect = useCallback(
@@ -68,8 +68,8 @@ export const useVoiceConversation = (options = {}) => {
           // External URL - use window.location
           window.location.href = targetPath;
         } else {
-          // Internal path - use React Router's navigate
-          navigate(targetPath);
+          // Internal path - use React Router's history.push
+          history.push(targetPath);
         }
       }, delay);
 
@@ -79,7 +79,7 @@ export const useVoiceConversation = (options = {}) => {
         path: targetPath,
       };
     },
-    [navigate],
+    [history],
   );
 
   // Handle client tool calls from the agent
@@ -151,7 +151,7 @@ export const useVoiceConversation = (options = {}) => {
 
       console.log(`Navigating to: ${path}`);
       setNavigationPath(path);
-      navigate(path);
+      history.push(path);
 
       return {
         success: true,

@@ -2,7 +2,7 @@
 import { Stack, AppBar, Toolbar } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import HeaderActions from './HeaderActions';
 import { useAuthContext } from '../../../auth/useAuthContext';
@@ -18,7 +18,7 @@ function Header() {
   const theme = useTheme();
   const { user } = useAuthContext();
   const isDesktop = useResponsive('up', 'md');
-  const navigate = useNavigate();
+  const history = useHistory();
   const headerVisible = useSelector(selectHeaderVisible);
 
   if (!headerVisible) {
@@ -49,7 +49,7 @@ function Header() {
         <Stack maxWidth={100}>
           <img
             alt="Altan Logo Header"
-            onClick={() => navigate('/', { replace: true })}
+            onClick={() => history.replace('/')}
             style={{ cursor: 'pointer' }}
             src={
               theme.palette.mode === 'dark'

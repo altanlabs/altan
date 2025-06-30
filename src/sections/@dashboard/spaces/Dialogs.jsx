@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../components/iconify';
 import {
@@ -176,7 +176,7 @@ export function TranslationsDialog({ isOpen, onClose, space }) {
 }
 
 export function DeleteDialog() {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { current, dialogs, spaces } = useSelector((state) => state.spaces);
   const { delete: deleteDialog } = dialogs;
   const onClose = () => dispatch(setDialogHidden('delete'));
@@ -185,7 +185,7 @@ export function DeleteDialog() {
     dispatch(deleteSpace(deleteDialog.current.id)).then(() => {
       onClose();
       if (deleteDialog.current.id === current.id)
-        navigate(PATH_DASHBOARD.spaces.view(current.parent_id || 'root'));
+        history.push(PATH_DASHBOARD.spaces.view(current.parent_id || 'root'));
       dispatch(setDialogHidden('settings'));
     });
   };

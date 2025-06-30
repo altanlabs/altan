@@ -3,7 +3,7 @@ import { alpha, styled } from '@mui/material/styles';
 import { Command } from 'cmdk';
 import { useState, memo, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 // @mui
 
 // components
@@ -71,7 +71,7 @@ const StyledSearchbar = styled(Command)(({ theme }) => ({
 }));
 
 function Searchbar() {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const account = useSelector(selectAccount);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -104,11 +104,11 @@ function Searchbar() {
       if (path.includes('http')) {
         window.open(path);
       } else {
-        navigate(path);
+        history.push(path);
       }
       handleClose();
     },
-    [navigate],
+    [history],
   );
 
   const getNavigationItems = useCallback((searchQuery) => {

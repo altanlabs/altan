@@ -1,7 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 
 import ThreadMessages from './ThreadMessages.jsx';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
@@ -40,7 +40,7 @@ const makeSelectThreadById = () =>
 
 const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
   const { gateId } = useParams();
-  const navigate = useNavigate();
+  const history = useHistory();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -73,7 +73,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
       dispatch(fetchThread({ threadId }))
         .then((response) => {
           if (!response) {
-            navigate('/404', { replace: true });
+            history.replace('/404');
           } else {
             manageSubscription(threadId);
             setTimeout(() => setHasLoaded(true), 1500);
@@ -81,7 +81,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
         })
         .catch((error) => {
           console.error('error: fetching thread:', error);
-          navigate('/404', { replace: true });
+          history.replace('/404');
         });
     } else if (!threadId || isCreation) {
       // If no threadId or in creation mode, mark as loaded immediately

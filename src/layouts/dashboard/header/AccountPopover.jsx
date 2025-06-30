@@ -11,7 +11,7 @@ import {
   Menu,
 } from '@mui/material';
 import { useCallback, useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 // @mui
 // auth
@@ -32,7 +32,7 @@ import NavAccount from '../nav/NavAccount.jsx';
 // ----------------------------------------------------------------------
 
 export default function AccountPopover() {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { themeMode, onChangeMode } = useSettingsContext();
   const ws = useWebSocket();
   const { user, logout } = useAuthContext();
@@ -54,30 +54,30 @@ export default function AccountPopover() {
   const handleLogout = useCallback(async () => {
     try {
       logout();
-      navigate('/', { replace: true });
+      history.replace('/');
       handleClosePopover();
     } catch (error) {
       console.error(error);
       enqueueSnackbar('Unable to logout!', { variant: 'error' });
     }
-  }, [enqueueSnackbar, handleClosePopover, logout, navigate]);
+  }, [enqueueSnackbar, handleClosePopover, logout, history]);
 
   const handleCloseProfileDialog = () => {
     setOpenProfileDialog(false);
   };
 
   const handleProfile = () => {
-    navigate('/me');
+    history.push('/me');
     handleClosePopover();
   };
 
   const handleSettings = () => {
-    navigate('/account/settings');
+    history.push('/account/settings');
     handleClosePopover();
   };
 
   const handleIntegration = () => {
-    navigate('/integration');
+    history.push('/integration');
     handleClosePopover();
   };
 

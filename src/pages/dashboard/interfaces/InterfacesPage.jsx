@@ -1,6 +1,6 @@
 import { Card, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
 import React, { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import CreateInterfaceDialog from './components/CreateInterfaceDialog.jsx';
 import NoEntityPlaceholder from '../../../components/databases/placeholders/NoEntityPlaceholder';
@@ -25,13 +25,13 @@ function InterfacesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   const handleCardClick = useCallback(
     (id) => {
-      navigate(`/interfaces/${id}`);
+      history.push(`/interfaces/${id}`);
     },
-    [navigate],
+    [history.push],
   );
 
   const handleContextMenu = useCallback((event, ui) => {

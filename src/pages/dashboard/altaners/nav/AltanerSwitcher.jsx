@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import React, { useState, useCallback, memo, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import FormDialog from '../../../../components/FormDialog';
 import HeaderIconButton from '../../../../components/HeaderIconButton';
@@ -170,7 +170,7 @@ ChevronButton.displayName = 'ChevronButton';
 
 // Main component
 const AltanerSwitcher = () => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const dispatch = useDispatch();
 
   // Redux state
@@ -239,9 +239,9 @@ const AltanerSwitcher = () => {
   const handleBackToDashboard = useCallback(
     (event) => {
       event.stopPropagation();
-      navigate('/');
+      history.push('/');
     },
-    [navigate],
+    [history],
   );
 
   const handleEditClick = useCallback((event) => {

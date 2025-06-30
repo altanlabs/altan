@@ -1,6 +1,6 @@
 import { Card, CardContent, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import CreateBaseDialog from '../../../components/databases/base/CreateBaseDialog';
 import DuplicateBaseDialog from '../../../components/databases/base/DuplicateBaseDialog';
@@ -29,14 +29,14 @@ function BasesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   const handleCardClick = useCallback(
     (id) => {
       console.log('navigating BASES PAGE');
-      navigate(`/bases/${id}`);
+      history.push(`/bases/${id}`);
     },
-    [navigate],
+    [history.push],
   );
 
   const handleContextMenu = useCallback((event, base) => {

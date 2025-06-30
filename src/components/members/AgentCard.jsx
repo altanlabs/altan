@@ -4,7 +4,7 @@ import { Typography, MenuItem, Tooltip } from '@mui/material';
 
 // React and routing imports
 import { memo, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 // Internal components and hooks
 import MenuPopover from '@components/menu-popover';
@@ -18,7 +18,7 @@ import { optimai } from '../../utils/axios';
 import {CustomAvatar} from '../custom-avatar';
 
 const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [openPopover, setOpenPopover] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -36,24 +36,24 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
         // We're in the altaners view, maintain the structure
         const altanerId = pathSegments[pathSegments.indexOf('altaners') + 1];
         const componentId = pathSegments[pathSegments.indexOf('c') + 1];
-        navigate(`/altaners/${altanerId}/c/${componentId}/a/${agent.id}`);
+        history.push(`/altaners/${altanerId}/c/${componentId}/a/${agent.id}`);
       } else {
         // Default to the regular agent view
-        navigate(`/agent/${agent.id}`);
+        history.push(`/agent/${agent.id}`);
       }
     }
     handleClosePopover();
-  }, [agent.id, handleClosePopover, navigate, onClick]);
+  }, [agent.id, handleClosePopover, history, onClick]);
 
   const handleDelete = useCallback(() => {
     dispatchWithFeedback(deleteAccountAgent(agent.id), {
       successMessage: 'Agent deleted successfully',
       errorMessage: 'Unexpected error: ',
       useSnackbar: true,
-    }).then(() => navigate('/agents'));
+    }).then(() => history.push('/agents'));
     setDeleteDialog(false);
     handleClosePopover();
-  }, [agent.id, dispatchWithFeedback, handleClosePopover, navigate]);
+  }, [agent.id, dispatchWithFeedback, handleClosePopover, history]);
 
   const handleChat = useCallback(async () => {
     try {

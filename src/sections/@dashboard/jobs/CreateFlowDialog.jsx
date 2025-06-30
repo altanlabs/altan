@@ -1,7 +1,7 @@
 import { Stack, Typography } from '@mui/material';
 import { memo, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import { RHFSlidingPlaceholderTextField } from '@components/hook-form';
 
@@ -97,7 +97,7 @@ const CreateWithAIField = ({ name, ...other }) => {
 };
 
 function CreateFlowDialog({ open, handleClose, redirect = true, altanerComponentId }) {
-  const navigate = useNavigate();
+  const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
 
   const methods = useForm({

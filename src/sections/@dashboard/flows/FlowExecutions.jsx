@@ -19,7 +19,7 @@
 // import '@ag-grid-community/styles/ag-grid.css';
 // import '@ag-grid-community/styles/ag-theme-quartz.css';
 // import Iconify from '../../../components/iconify/Iconify';
-// import { useNavigate } from 'react-router';
+// import { useHistory } from 'react-router';
 // import SetExecutionRenderer from './executions/SetExecutionRenderer';
 // import { formatDistanceToNow, parseISO } from 'date-fns';
 
@@ -106,7 +106,7 @@
 // };
 
 // const FlowExecutions = () => {
-//   const navigate = useNavigate();
+//   const history = useHistory();;
 //   const theme = useTheme();
 //   const flowId = useSelector(selectFlowId);
 //   const flowExecutions = useSelector(selectFlowExecutions);
@@ -117,9 +117,9 @@
 //   console.log("flowExecutions",flowExecutions);
 //   useEffect(() => {
 //     if (flowId && !initialized && !isLoading) {
-//       dispatch(getFlowExecutions(flowId)).catch(() => navigate('/flows'));
+//       dispatch(getFlowExecutions(flowId)).catch(() => history.push('/flows'));
 //     }
-//   }, [flowId, initialized, isLoading, navigate]);
+//   }, [flowId, initialized, isLoading, history.push]);
 
 //   const dateRenderer = (params) => (
 //     <Typography variant='caption'> {fToNow(params.data.date_creation)}</Typography>

@@ -2,7 +2,7 @@ import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Tooltip, T
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 // hooks
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
@@ -53,7 +53,7 @@ function Agent({ agentId, id, onGoBack }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const location = useLocation();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, currentAgentDmRoomId, isLoading } = useSelector((state) => state.agents);
   console.log('currentAgent', currentAgent);
@@ -94,7 +94,7 @@ function Agent({ agentId, id, onGoBack }) {
 
       const newSearch = newSearchParams.toString();
       const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
-      navigate(newPath, { replace: true });
+      history.push(newPath, { replace: true });
 
       // Set communication mode based on tab
       if (tabId === 'voice') {
@@ -105,7 +105,7 @@ function Agent({ agentId, id, onGoBack }) {
         setCommunicationMode('chat');
       }
     },
-    [location.pathname, location.search, navigate],
+    [location.pathname, location.search, history.push],
   );
 
   useEffect(() => {

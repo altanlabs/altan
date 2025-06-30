@@ -1,6 +1,6 @@
 import { Card, Typography } from '@mui/material';
 import React, { memo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { format } from 'timeago.js';
 
 interface Interface {
@@ -17,13 +17,13 @@ interface InterfaceCardProps {
 }
 
 const InterfaceCard = ({ ui }: InterfaceCardProps): JSX.Element => {
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   const interfaceId = ui.id;
 
   const handleCardClick = useCallback((): void => {
-    navigate(`/remix/${interfaceId}`);
-  }, [interfaceId, navigate]);
+    history.push(`/remix/${interfaceId}`);
+  }, [interfaceId, history.push]);
 
   return (
     <Card

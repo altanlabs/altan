@@ -2,7 +2,7 @@ import { Box, Stack, Card, CardContent, Typography } from '@mui/material';
 import queryString from 'query-string';
 import React, { useState, useEffect, memo, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import StaticDrawerNav from './altaners/nav/StaticDrawerNav';
 import APIKeys from './APIKeys';
@@ -72,14 +72,14 @@ function UserAccountPage() {
   const account = useSelector(selectAccount);
   const isLoading = useSelector(selectAccountLoading);
   const location = useLocation();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { tab } = queryString.parse(location.search);
   const [currentTab, setCurrentTab] = useState(tab || 'general');
 
   useEffect(() => {
     // Update URL when currentTab changes
-    navigate(`?tab=${currentTab}`, { replace: true });
-  }, [currentTab, navigate]);
+    history.push(`?tab=${currentTab}`, { replace: true });
+  }, [currentTab, history.push]);
 
   const TABS = useMemo(
     () => ({

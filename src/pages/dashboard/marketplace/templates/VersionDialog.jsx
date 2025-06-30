@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 import React, { memo, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { cn } from '@lib/utils';
 
@@ -57,7 +57,7 @@ const VersionDot = styled(Box)(({ theme }) => ({
 }));
 
 const VersionDialog = ({ open, onClose, template }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   // console.log("versions", versions);
 
   // Sort versions by date_creation, most recent first
@@ -149,7 +149,7 @@ const VersionDialog = ({ open, onClose, template }) => {
                 sx={{ mr: 1 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/dashboard?template=${version.id}`);
+                  history.push(`/dashboard?template=${version.id}`);
                 }}
               >
                 Clone

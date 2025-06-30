@@ -1,20 +1,20 @@
 import { LoadingButton } from '@mui/lab';
 import { Stack, Typography, Box, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../components/iconify/Iconify';
 import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes';
 
 function AgentNew({ altanerComponentId }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { triggerSubmit, isSubmitting, AgentAttributes } = useAgentAttributes({
     mode: 'create',
-    onClose: () => navigate(-1), // Go back on close
+    onClose: () => history.goBack(), // Go back on close
     altanerComponentId,
   });
 
   const handleMarketplaceClick = () => {
-    navigate('/marketplace?mode=agent');
+    history.push('/marketplace?mode=agent');
   };
 
   return (
@@ -48,7 +48,7 @@ function AgentNew({ altanerComponentId }) {
           <Button
             variant="outlined"
             color="inherit"
-            onClick={() => navigate(-1)}
+            onClick={() => history.goBack()}
           >
             Cancel
           </Button>

@@ -5,7 +5,7 @@ import { memo } from 'react';
 
 // utils
 // hooks
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useHistory } from 'react-router-dom';
 
 import Iconify from '../../../components/iconify';
 import Logo from '../../../components/logo';
@@ -46,7 +46,7 @@ const SECTIONS = [
 
 const Header = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();
   const isSmallScreen = useResponsive('down', 'sm');
 
   const renderSections = SECTIONS.map((section) =>
@@ -65,7 +65,7 @@ const Header = () => {
       <IconButton
         color="primary"
         key={section.id}
-        onClick={() => navigate(section.link)}
+                      onClick={() => history.push(section.link)}
       >
         <Iconify
           width={25}
@@ -94,7 +94,7 @@ const Header = () => {
         <>
           <IconButton
             color="primary"
-            onClick={() => navigate(PATH_DASHBOARD.super.root)}
+                          onClick={() => history.push(PATH_DASHBOARD.super.root)}
           >
             <Iconify
               width={25}
@@ -125,7 +125,7 @@ const Header = () => {
         ) : (
           <IconButton
             color="primary"
-            onClick={() => navigate('/', { replace: true })}
+            onClick={() => history.replace('/')}
           >
             <Iconify
               width={25}

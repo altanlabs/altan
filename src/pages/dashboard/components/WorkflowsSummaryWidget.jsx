@@ -13,7 +13,7 @@ import {
   ToggleButtonGroup,
 } from '@mui/material';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { fToNow } from '@utils/formatTime.js';
 
@@ -66,7 +66,7 @@ const WorkflowsSummaryWidget = () => {
   const [openCreate, setOpenCreate] = useState(false);
   const workflows = useSelector(selectWorkflows) || [];
   const isLoading = useSelector((state) => state.general.accountAssetsLoading.workflows);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Prepare summary data only if workflows are available
@@ -274,12 +274,12 @@ const WorkflowsSummaryWidget = () => {
     [getCreditColor, theme.palette],
   );
 
-  // Handle row double-click to navigate to the workflow
+  // Handle row double-click to history.push to the workflow
   const onRowDoubleClicked = useCallback(
     (params) => {
-      navigate(`/flows/${params.data.id}`);
+      history.push(`/flows/${params.data.id}`);
     },
-    [navigate],
+    [history.push],
   );
 
   // Add a safe date formatting function
@@ -466,9 +466,9 @@ const WorkflowsSummaryWidget = () => {
   // Update the handler to include execution ID in the URL
   const onRecentExecutionDoubleClicked = useCallback(
     (params) => {
-      navigate(`/flows/${params.data.workflowId}?execution=${params.data.id}`);
+      history.push(`/flows/${params.data.workflowId}?execution=${params.data.id}`);
     },
-    [navigate],
+    [history.push],
   );
 
   // Add status filter handler

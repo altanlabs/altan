@@ -1,12 +1,12 @@
 // ProjectTemplateCard.jsx
 import PropTypes from 'prop-types';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../../components/iconify';
 
 const ProjectTemplateCard = ({ template }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const name = template.name || template.public_name || 'Unnamed Template';
   const iconUrl =
     template.account?.logo_url || template.parent?.icon_url || '/assets/placeholder.svg';
@@ -31,7 +31,7 @@ const ProjectTemplateCard = ({ template }) => {
   }
 
   const handleClick = () => {
-    navigate(`/template/${template.id}`);
+    history.push(`/template/${template.id}`);
   };
 
   return (

@@ -1,7 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import PropTypes from 'prop-types';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../../components/iconify';
 import IconRenderer from '../../../../../components/icons/IconRenderer';
@@ -15,7 +15,7 @@ const selectAllConnectionTypes = createSelector(
 );
 
 const WorkflowTemplateCard = ({ template }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const allConnectionTypes = useSelector(selectAllConnectionTypes);
 
   const name = template.name || template.public_name || 'Unnamed Template';
@@ -23,7 +23,7 @@ const WorkflowTemplateCard = ({ template }) => {
   const remixCount = template.remix_count || 0;
 
   const handleClick = () => {
-    navigate(`/template/${template.id}`);
+    history.push(`/template/${template.id}`);
   };
 
   // Get connection types

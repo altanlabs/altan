@@ -129,7 +129,7 @@ const AgentsConsumption = () => {
   const [aggregation, setAggregation] = useState('day');
   const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const [error, setError] = useState(null);
-  // const [searchParams, setSearchParams] = useSearchParams();
+  // const [searchParams, setSearchParams] = useLocation();
 
   // Fetch usage data only if we don't have it yet
   useEffect(() => {

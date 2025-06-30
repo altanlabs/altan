@@ -2,7 +2,7 @@
 import { Box, Menu, MenuItem, alpha } from '@mui/material';
 import React, { memo, useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import DeleteDialog from './dialogs/DeleteDialog';
 import DuplicateAltanerDialog from './dialogs/DuplicateAltanerDialog';
@@ -17,7 +17,7 @@ const selectInterface = (id) => (state) =>
 
 const AltanerCard = memo(
   ({ id, name, iconUrl, description, components = [], last_modified, isPinned }) => {
-    const navigate = useNavigate();
+    const history = useHistory();
     const dispatch = useDispatch();
     const [contextMenu, setContextMenu] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -34,8 +34,8 @@ const AltanerCard = memo(
     const coverUrl = interfaceData?.cover_url;
 
     const handleClick = useCallback(() => {
-      navigate(`/project/${id}`);
-    }, [id, navigate]);
+          history.push(`/project/${id}`);
+  }, [id, history]);
 
     const handleContextMenu = useCallback(
       (event) => {

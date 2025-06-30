@@ -5,7 +5,7 @@ import { useTheme } from '@mui/material/styles';
 // react
 import { memo, useCallback, useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 
 // local components
 import AccountPopover from './AccountPopover.jsx';
@@ -43,7 +43,7 @@ import { bgBlur } from '../../../utils/cssStyles';
 
 function AltanerHeader() {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { altanerId, altanerComponentId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
@@ -172,7 +172,7 @@ function AltanerHeader() {
                 containerClassName="group rounded-full bg-white dark:bg-black border-transparent"
                 as="button"
                 className="transition-all duration-200 w-[50px] h-[36px] group-hover:md:w-[170px] text-sm bg-slate-500 group-hover:bg-slate-700 dark:group-hover:bg-slate-300 text-black dark:text-white flex items-center space-x-1"
-                onClick={() => navigate('/')}
+                onClick={() => history.push('/')}
                 disableAnimation
               >
                 <Iconify

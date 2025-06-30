@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -409,7 +409,7 @@ const formatNumber = (number) => {
 };
 
 const ExecutionsWidget = () => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const workflows = useSelector(selectWorkflows);
   const accountId = useSelector(selectAccountId);
   const [isLoadingExecutions, setIsLoadingExecutions] = React.useState(true);
@@ -627,7 +627,7 @@ const ExecutionsWidget = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/usage')}
+            onClick={() => history.push('/usage')}
             className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-gray-200"
           >
             <Iconify

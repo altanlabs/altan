@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import { archiveNotification, readNotification } from '@redux/slices/notifications';
 
@@ -25,7 +25,7 @@ import { fToNow } from '../../../utils/formatTime';
 // ----------------------------------------------------------------------
 
 const NotificationItem = ({ notificationItem }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { notification, status } = notificationItem;
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -70,7 +70,7 @@ const NotificationItem = ({ notificationItem }) => {
 
     switch (category) {
       case 'Mentioned':
-        navigate(
+        history.push(
           `/room/${notification.meta_data.data.thread.room_id}?thread=${notification.meta_data.data.thread.id}`,
         );
         break;

@@ -1,6 +1,6 @@
 import { Typography, Stack, Box } from '@mui/material';
 import React, { useCallback, useState, memo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import CreateCustomApp from '../../components/CreateCustomApp.jsx';
 import DeleteDialog from '../../components/dialogs/DeleteDialog.jsx';
@@ -28,7 +28,7 @@ function CustomApps() {
   const closeDeleteDialog = useCallback(() => setSelectedAppToDelete(null), []);
 
   const query = useQuery();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const connectionTypeId = query.get('connectionTypeId');
 
   const handleDelete = useCallback(() => {
@@ -51,9 +51,9 @@ function CustomApps() {
     (id) => {
       const currentParams = new URLSearchParams(window.location.search);
       currentParams.set('connectionTypeId', id);
-      navigate(`${window.location.pathname}?${currentParams.toString()}`);
+      history.push(`${window.location.pathname}?${currentParams.toString()}`);
     },
-    [navigate],
+    [history.push],
   );
 
   const handleOpenDelete = useCallback(

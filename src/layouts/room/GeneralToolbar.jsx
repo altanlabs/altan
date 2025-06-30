@@ -1,7 +1,7 @@
 import { IconButton, Stack, Tooltip } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import { memo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import { cn } from '@lib/utils';
 
@@ -82,7 +82,10 @@ const handleRefreshConversation = (threadId) => dispatch(archiveMainThread({ thr
 const onOpenDrawer = () => dispatch(setDrawerOpen(true));
 
 const GeneralToolbar = ({ className, children, header = false }) => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
   const headerParam = searchParams.get('header');
   const headerShown = headerParam || header;
   const { drawerOpen } = useSelector(roomSelector);

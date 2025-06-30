@@ -3,13 +3,13 @@ import { Button, Dialog, Stack, DialogActions, Typography } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip';
 import PropTypes from 'prop-types';
 import { useCallback, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import useAgentAttributes from './useAgentAttributes';
 import Iconify from '../../../components/iconify/Iconify';
 
 function CreateAgentDialog({ open, onClose, altanerComponentId = null }) {
-  const navigate = useNavigate();
+  const history = useHistory();
 
   // Use the passed props for open/close state instead of internal state
   const handleClose = useCallback((agentId) => {
@@ -23,7 +23,7 @@ function CreateAgentDialog({ open, onClose, altanerComponentId = null }) {
   });
 
   const handleMarketplaceClick = () => {
-    navigate('/marketplace?mode=agent');
+    history.push('/marketplace?mode=agent');
   };
 
   return (

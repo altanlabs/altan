@@ -2,7 +2,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import PropTypes from 'prop-types';
 import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 // components
 import Iconify from '../../../components/iconify';
@@ -17,7 +17,7 @@ const TabButton = memo(function TabButton({
   altanerId,
   onTabChange,
   onContextMenu,
-  navigate,
+  history.push,
   handleTabClick,
 }) {
   // Handlers are wrapped via useCallback in parent, so no inline function recreations here:
@@ -88,7 +88,7 @@ TabButton.propTypes = {
   altanerId: PropTypes.string.isRequired,
   onTabChange: PropTypes.func.isRequired,
   onContextMenu: PropTypes.func.isRequired,
-  navigate: PropTypes.func.isRequired,
+  history.push: PropTypes.func.isRequired,
   handleTabClick: PropTypes.func.isRequired,
 };
 
@@ -100,7 +100,7 @@ const AltanerNav = ({
   onContextMenu,
   onAddClick,
 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const dispatch = useDispatch();
   const accountId = useSelector(selectAccountId);
 
@@ -122,12 +122,12 @@ const AltanerNav = ({
       if (component?.type === 'external_link') {
         window.open(component.params.url, '_blank');
       } else if (component?.type === 'base' && component?.params?.ids?.[0]) {
-        navigate(`/altaners/${altanerId}/c/${componentId}/b/${component.params.ids[0]}`);
+        history.push(`/altaners/${altanerId}/c/${componentId}/b/${component.params.ids[0]}`);
       } else {
-        navigate(`/altaners/${altanerId}/c/${componentId}`);
+        history.push(`/altaners/${altanerId}/c/${componentId}`);
       }
     },
-    [altanerId, navigate, onTabChange],
+    [altanerId, history.push, onTabChange],
   );
 
   // useMemo to prevent re-computing the entries on every render.
@@ -147,7 +147,7 @@ const AltanerNav = ({
             altanerId={altanerId}
             onTabChange={onTabChange}
             onContextMenu={onContextMenu}
-            navigate={navigate}
+            history.push={history.push}
             handleTabClick={handleTabClick}
           />
         ))}

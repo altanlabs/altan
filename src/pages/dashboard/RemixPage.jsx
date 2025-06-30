@@ -1,7 +1,7 @@
 import { Box, IconButton, Stack, Typography, useTheme, Chip } from '@mui/material';
 import { useState, useEffect, memo, useCallback, useRef, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 
 import ReadmeDialog from './components/ReadmeDialog';
 import RevenueMetrics from './components/RevenueMetrics';
@@ -23,7 +23,7 @@ const RemixPage = () => {
   const [loading, setLoading] = useState(true);
   const [uiInterface, setUiInterface] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState('interface');
-  const navigate = useNavigate();
+  const history = useHistory();;
   const iframeRef = useRef(null);
   const [iframeUrl, setIframeUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +117,7 @@ const RemixPage = () => {
   }, [status, handleReload, interfaceComponent]);
 
   const handleRemixClick = () => {
-    navigate(`/?template=${app.template.selected_version_id}`, { replace: true });
+    history.push(`/?template=${app.template.selected_version_id}`, { replace: true });
   };
 
   const handleComponentClick = (type) => {
@@ -165,7 +165,7 @@ const RemixPage = () => {
               alignItems="center"
             >
               <IconButton
-                onClick={() => navigate('/xsup/activity')}
+                onClick={() => history.push('/xsup/activity')}
                 aria-label="Go back"
               >
                 <Iconify icon="mdi:arrow-left" />

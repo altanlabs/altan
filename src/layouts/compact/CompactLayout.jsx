@@ -1,5 +1,5 @@
 import { Stack, Container } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 // @mui
 // hooks
@@ -11,7 +11,7 @@ import useOffSetTop from '../../hooks/useOffSetTop';
 
 // ----------------------------------------------------------------------
 
-export default function CompactLayoutLegacy() {
+export default function CompactLayout({ children }) {
   const isOffset = useOffSetTop(HEADER.H_MAIN_DESKTOP);
 
   return (
@@ -29,9 +29,13 @@ export default function CompactLayoutLegacy() {
             justifyContent: 'center',
           }}
         >
-          <Outlet />
+          {children}
         </Stack>
       </Container>
     </>
   );
 }
+
+CompactLayout.propTypes = {
+  children: PropTypes.node,
+};

@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
 import React, { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 
 // components
 import ComponentSwitcher from './components/ComponentSwitcher';
@@ -19,7 +19,7 @@ const DEFAULT_ICONS = {
 };
 
 const ProjectNav = ({ components, altanerId, onAddClick }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { componentId, itemId } = useParams();
 
   // Convert components to array and sort by position
@@ -54,12 +54,12 @@ const ProjectNav = ({ components, altanerId, onAddClick }) => {
   // Handle component selection
   const handleComponentSelect = (compId) => {
     // Navigate to the new URL with the component ID in the path
-    navigate(`/project/${altanerId}/c/${compId}`);
+    history.push(`/project/${altanerId}/c/${compId}`);
   };
 
-  // When an item is selected, navigate to the new URL
+  // When an item is selected, history.push to the new URL
   const handleItemSelected = (selectedItemId) => {
-    navigate(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
+    history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
   };
 
   if (sortedComponents.length === 0) return null;

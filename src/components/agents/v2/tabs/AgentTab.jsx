@@ -278,7 +278,7 @@ function AgentTab({ agentData, onFieldChange }) {
           </Box>
 
           <Space
-            navigate={() => console.log('navigated')}
+            history.push={() => console.log('navigated')}
             spaceId={agentData?.space_id}
             isPreview={true}
           />

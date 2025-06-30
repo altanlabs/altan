@@ -1,8 +1,9 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { m } from 'framer-motion';
+import PropTypes from 'prop-types';
 import React, { memo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useRouteError, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
 import { MotionContainer, varBounce, varFade } from '../../components/animate';
@@ -22,8 +23,7 @@ function logErrorToAPI(errorDetails) {
 
 const DYN_FETCH_MODULE_ERROR = 'TypeError: Failed to fetch dynamically imported module';
 
-const RootBoundary = () => {
-  const error = useRouteError();
+const RootBoundary = ({ error = null }) => {
   const { user } = useAuthContext();
   const accountId = useSelector((state) => state.general.account.id);
 
@@ -155,6 +155,10 @@ const RootBoundary = () => {
       </Box>
     </MotionContainer>
   );
+};
+
+RootBoundary.propTypes = {
+  error: PropTypes.object,
 };
 
 export default memo(RootBoundary);

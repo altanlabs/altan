@@ -1,12 +1,12 @@
 import { useState, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { chipCategories } from './create/chipData';
 import TextAreaWithButtons from './create/TextAreaWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
 
 function CreateAnything({ handleVoice }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { isAuthenticated } = useAuthContext();
   const [inputValue, setInputValue] = useState('');
   const [resourceName, setResourceName] = useState('');
@@ -99,7 +99,7 @@ function CreateAnything({ handleVoice }) {
 
         const data = await response.json();
         // Redirect to signup with the idea ID
-        navigate(`/auth/register?idea=${data.id}`);
+        history.push(`/auth/register?idea=${data.id}`);
       } catch (error) {
         console.error('Error creating idea:', error);
       } finally {
@@ -147,7 +147,7 @@ function CreateAnything({ handleVoice }) {
       }
 
       const data = await response.json();
-      navigate(`/?idea=${data.id}`);
+      history.push(`/?idea=${data.id}`);
     } catch (error) {
       console.error('Error creating idea:', error);
     } finally {

@@ -1,8 +1,8 @@
 import { memo, useEffect, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSelector } from 'react-redux';
-import { useParams, useNavigate } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router';
+import { useLocation } from 'react-router-dom';
 
 import Base from '../../../components/databases/base/Base';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider';
@@ -10,8 +10,8 @@ import { selectBaseById } from '../../../redux/slices/bases';
 
 function StandaloneBasePage() {
   const { baseId } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const history = useHistory();;
+  const [searchParams] = useLocation();
   const hideChat = searchParams.get('hideChat') === 'true';
   const ws = useWebSocket();
 
@@ -58,10 +58,10 @@ function StandaloneBasePage() {
   const handleNavigate = useCallback(
     (_, { baseId, tableId, viewId }) => {
       if (tableId && viewId) {
-        navigate(`/database/${baseId}/tables/${tableId}/views/${viewId}`);
+        history.push(`/database/${baseId}/tables/${tableId}/views/${viewId}`);
       }
     },
-    [navigate],
+    [history.push],
   );
 
   return (

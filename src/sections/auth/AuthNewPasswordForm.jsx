@@ -3,7 +3,7 @@ import { LoadingButton } from '@mui/lab';
 import { Stack, IconButton, InputAdornment, FormHelperText } from '@mui/material';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import * as Yup from 'yup';
 // form
 // @mui
@@ -19,10 +19,13 @@ import { optimai } from '../../utils/axios';
 // ----------------------------------------------------------------------
 
 export default function AuthNewPasswordForm() {
-  const navigate = useNavigate();
+  const history = useHistory();
+  const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
   const [showPassword, setShowPassword] = useState(false);
-  const [searchParams] = useSearchParams();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
 
   // Get email and code from URL params
   const emailFromUrl = searchParams.get('email');
@@ -79,7 +82,7 @@ export default function AuthNewPasswordForm() {
 
       sessionStorage.removeItem('email-recovery');
       enqueueSnackbar('Password changed successfully!');
-      navigate(PATH_AUTH.login);
+              history.push(PATH_AUTH.login);
     } catch (error) {
       console.error(error);
       enqueueSnackbar(error.response?.data?.detail || 'Failed to reset password', {

@@ -12,7 +12,7 @@ import Stepper from '@mui/material/Stepper';
 import { capitalize } from 'lodash';
 import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import AssetsCard from './assets/AssetsCard';
 import CoolCard from './assets/CoolCard';
@@ -150,7 +150,7 @@ const MAP_REDIRECT = {
 
 function CloneTemplate({ templateId, onClose }) {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const [activeStep, setActiveStep] = useState(0);
   const [verticalStep, setVerticalStep] = useState(0);
   const [isCreatingNewConnection, setIsCreatingNewConnection] = useState(false);
@@ -282,7 +282,7 @@ function CloneTemplate({ templateId, onClose }) {
         )
           .then((clone) => {
             onClose();
-            navigate(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=${true}`);
+            history.push(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=${true}`);
           })
           .catch((err) => console.error(err));
       }
@@ -299,7 +299,7 @@ function CloneTemplate({ templateId, onClose }) {
     connectionsSetup,
     methods,
     onClose,
-    navigate,
+    history.push,
     mode,
   ]);
 

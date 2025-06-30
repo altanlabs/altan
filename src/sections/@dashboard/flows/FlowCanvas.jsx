@@ -2,7 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { throttle } from 'lodash';
 import React, { memo, useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { batch } from 'react-redux';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import ReactFlow, {
   useReactFlow,
   // MiniMap,
@@ -133,7 +133,7 @@ const FlowCanvas = (
 ) => {
   const ws = useWebSocket();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useLocation();
   const [fromTemplate, setFromTemplate] = useState(false);
   // const [selectionOnDrag, setSelectionOnDrag] = useState(false);
   const selectionOnDrag = useKeyPress(['Meta', 'Ctrl']);

@@ -1,6 +1,6 @@
 import { Stack, Box } from '@mui/material';
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useHistory } from 'react-router';
 
 import { AltanerComponent, CAGIRoomsView } from './components';
 // import AltanerDrawer from './room/AltanerDrawer.jsx';
@@ -48,7 +48,7 @@ const AltanerPage = () => {
   const [isCAGIMode, setCAGIMode] = useState(false);
 
   const { altanerId, altanerComponentId } = useParams();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const accountId = useSelector(selectAccountId);
   const isLoading = useSelector(selectAltanersIsLoading);
   const initialized = useSelector(selectAltanersInitialized);
@@ -57,9 +57,9 @@ const AltanerPage = () => {
   // Base navigation function
   const navigateToUrl = useCallback(
     (url, replace = true) => {
-      navigate(url, { replace });
+      history.push(url, { replace });
     },
-    [navigate],
+    [history.push],
   );
 
   // Component navigation logic

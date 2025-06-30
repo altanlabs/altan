@@ -1,7 +1,7 @@
 import { Discount, Close } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Alert } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 
@@ -19,7 +19,7 @@ export default function DiscountChip() {
   const [openDialog, setOpenDialog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
@@ -118,7 +118,7 @@ export default function DiscountChip() {
               className="transition-all duration-200 w-[160px] h-[45px] text-sm bg-white/80 dark:bg-black/20 text-black dark:text-gray-200 flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-white/5 rounded-full"
               onClick={() => {
                 setOpenDialog(false);
-                navigate('/pricing');
+                history.push('/pricing');
               }}
             >
               Claim Offer Now

@@ -15,7 +15,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { memo, useCallback, useMemo, useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 // components
 import CreateAgent from './CreateAgent.jsx';
@@ -79,7 +79,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
   const isDesktop = useResponsive('up', 'md');
   const agents = useSelector(getAgents);
   const initialized = useSelector(getAgentsInitialized);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const location = useLocation();
   const { isAuthenticated } = useAuthContext();
 
@@ -99,11 +99,11 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     if (altanerComponentId) {
       const currentPath = location.pathname;
       const baseUrl = currentPath.split('/a/')[0];
-      navigate(baseUrl);
+      history.push(baseUrl);
     } else {
-      navigate('/agents');
+      history.push('/agents');
     }
-  }, [navigate, altanerComponentId, location.pathname]);
+  }, [history.push, altanerComponentId, location.pathname]);
 
   const onCloseEditAltanerComponent = useCallback(() => setEditAltanerComponentOpen(false), []);
   const onEditAltanerComponent = useCallback(() => setEditAltanerComponentOpen(true), []);
@@ -173,12 +173,12 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
       setSelectedAgentId(agentId);
       if (altanerComponentId) {
         // Update URL without triggering navigation
-        navigate(`/altaners/${altanerId}/c/${altanerComponentId}/a/${agentId}`);
+        history.push(`/altaners/${altanerId}/c/${altanerComponentId}/a/${agentId}`);
       } else {
-        navigate(`/agent/${agentId}`);
+        history.push(`/agent/${agentId}`);
       }
     },
-    [navigate, altanerComponentId, altanerId],
+    [history.push, altanerComponentId, altanerId],
   );
 
   // If we have a selected agent in altaners view, render the Agent component

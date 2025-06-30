@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import EmptyContent from '../../../../../components/empty-content';
 import Iconify from '../../../../../components/iconify';
@@ -19,7 +19,7 @@ const formatPrice = (priceInCents) => {
 };
 
 const TemplateDetails = ({ templateId = null }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const account = useSelector(selectAccount);
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,13 +83,13 @@ const TemplateDetails = ({ templateId = null }) => {
   }, [account, template, checkTemplateClonability]);
 
   const handleBackClick = () => {
-    navigate(`/${template?.entity_type}`);
+    history.push(`/${template?.entity_type}`);
   };
 
   const handleTemplateAction = async () => {
     // Check if user is authenticated
     if (!account?.id) {
-      navigate('/auth/register');
+      history.push('/auth/register');
       return;
     }
 
@@ -97,7 +97,7 @@ const TemplateDetails = ({ templateId = null }) => {
       setLoading(true);
 
       if (canClone) {
-        navigate(`/?template=${template.selected_version_id}`, { replace: true });
+        history.push(`/?template=${template.selected_version_id}`, { replace: true });
       } else {
         const response = await optimai_shop.post(
           `/v2/stripe/checkout/template?template_id=${templateId}&account_id=${account.id}`,
@@ -230,7 +230,7 @@ const TemplateDetails = ({ templateId = null }) => {
             <span>
               @{' '}
               <button
-                onClick={() => navigate(`/accounts/${template?.account?.id}`)}
+                onClick={() => history.push(`/accounts/${template?.account?.id}`)}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
               >
                 {template?.account?.name || 'Unknown'}
@@ -350,7 +350,7 @@ const TemplateDetails = ({ templateId = null }) => {
                   <span className="text-gray-400 px-2">•</span>
                   <button
                     onClick={() => {
-                      navigate(`/wp/${template?.account?.id}`);
+                      history.push(`/wp/${template?.account?.id}`);
                       setShowDetails(false);
                     }}
                     className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors text-sm"

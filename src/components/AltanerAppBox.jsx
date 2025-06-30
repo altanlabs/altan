@@ -2,7 +2,7 @@
 import { Typography, Box, alpha, Menu, MenuItem } from '@mui/material';
 import React, { memo, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import DeleteDialog from './dialogs/DeleteDialog';
 import FormDialog from './FormDialog';
@@ -11,7 +11,7 @@ import IconRenderer from './icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../redux/slices/altaners';
 
 const AltanerAppBox = memo(({ id, name, iconUrl, description }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const dispatch = useDispatch();
   const [contextMenu, setContextMenu] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -19,8 +19,8 @@ const AltanerAppBox = memo(({ id, name, iconUrl, description }) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const handleClick = useCallback(() => {
-    navigate(`/altaners/${id}`);
-  }, [id, navigate]);
+    history.push(`/altaners/${id}`);
+  }, [id, history]);
 
   const handleContextMenu = useCallback(
     (event) => {

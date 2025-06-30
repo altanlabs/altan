@@ -1,25 +1,30 @@
 import { memo } from 'react';
-import { Navigate, Outlet } from 'react-router';
+import PropTypes from 'prop-types';
+import { Redirect } from 'react-router-dom';
 
 import Header from './header/Header';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { NavigationPromptProvider } from '../../pages/dashboard/superadmin/providers/NavigationConfirmProvider';
 
-const SuperAdminLayout = () => {
+const SuperAdminLayout = ({ children }) => {
   const { user } = useAuthContext();
 
   if (!user.xsup) {
-    return <Navigate to="/" />;
+    return <Redirect to="/" />;
   }
 
   return (
     <>
       <Header />
       <NavigationPromptProvider>
-        <Outlet />
+        {children}
       </NavigationPromptProvider>
     </>
   );
+};
+
+SuperAdminLayout.propTypes = {
+  children: PropTypes.node,
 };
 
 export default memo(SuperAdminLayout);

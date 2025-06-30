@@ -1,7 +1,8 @@
 /* eslint-disable react/display-name */
 import { Box } from '@mui/material';
+import PropTypes from 'prop-types';
 import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
-import { Outlet, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
 
 import ProjectHeader from './header/ProjectHeader.jsx';
 import Main from './Main.jsx';
@@ -69,8 +70,18 @@ const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
 
-const ProjectLayout = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+const ProjectLayout = ({ children }) => {
+  const location = useLocation();
+  const history = useHistory();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString()
+    });
+  };
   const [templateId, setTemplateId] = useState('');
   const ws = useWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
@@ -130,7 +141,7 @@ const ProjectLayout = () => {
         setSearchParams(searchParams);
       }
     }
-  }, [searchParams, setSearchParams, templateId]);
+  }, [location.search, history, templateId]);
 
   useEffect(() => {
     dispatch(getRoles());
@@ -154,11 +165,15 @@ const ProjectLayout = () => {
         }}
       >
         <Main>
-          <Outlet />
+          {children}
         </Main>
       </Box>
     </>
   );
+};
+
+ProjectLayout.propTypes = {
+  children: PropTypes.node,
 };
 
 export default memo(ProjectLayout);

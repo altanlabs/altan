@@ -1,8 +1,8 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const UsageToggle = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useLocation();
   const mode = searchParams.get('mode') || 'ai';
 
   return (

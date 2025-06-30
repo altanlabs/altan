@@ -13,7 +13,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import Iconify from '../../components/iconify';
 import { selectAccountId } from '../../redux/slices/general';
@@ -26,7 +26,7 @@ const SpecialOffersWidget = () => {
   const [copied, setCopied] = useState(false);
   const [promoCodeCopied, setPromoCodeCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   function calculateTimeLeft() {
     const difference = new Date('2025-03-01') - new Date();
@@ -151,7 +151,7 @@ const SpecialOffersWidget = () => {
         </div>
 
         <div
-          onClick={() => navigate('/referrals')}
+          onClick={() => history.push('/referrals')}
           className="dark:bg-[#1C1C1C] dark:hover:bg-[#252525] bg-white hover:bg-gray-50 transition-all duration-200 rounded-xl p-6 cursor-pointer shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-800"
         >
           <div className="flex items-start gap-4">
@@ -352,7 +352,7 @@ const SpecialOffersWidget = () => {
               className="transition-all duration-200 w-[160px] h-[45px] text-sm bg-white/80 dark:bg-black/20 text-black dark:text-gray-200 flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-white/5 rounded-full"
               onClick={() => {
                 setOpenLifetimeDialog(false);
-                navigate('/pricing');
+                history.push('/pricing');
               }}
             >
               Claim Offer Now

@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useSelector } from 'react-redux';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import ConnectionTypesAutocomplete from '../../components/ConnectionTypesAutocomplete.jsx';
 import { CustomAvatar } from '../../components/custom-avatar';
@@ -163,7 +163,7 @@ const ResourcePanel = ({ data }) => {
 
 function ConnectionsPage() {
   const theme = useTheme();
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useLocation();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [selectedConnection, setSelectedConnection] = useState(null);
   const openDeleteDialog = (id) => setSelectedConnection(id);

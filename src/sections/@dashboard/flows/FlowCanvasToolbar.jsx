@@ -13,7 +13,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useSnackbar } from 'notistack';
 import { memo, useCallback, useMemo, useState, useEffect, useRef } from 'react';
 // import { createTemplate } from "../../../redux/slices/general";
-// import { useNavigate } from 'react-router-dom';
+// import { useHistory } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
 import { cn } from '@lib/utils';
@@ -183,7 +183,7 @@ const FlowCanvasToolbar = ({
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { animations } = useSettingsContext();
-  // const navigate = useNavigate();
+  // const history = useHistory();;
   const flowSchema = useSelector(selectFlowSchema);
   const flowArgsMethods = useForm({ defaultValues: {} });
 

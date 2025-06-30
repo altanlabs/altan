@@ -1,7 +1,7 @@
 import { Typography } from '@mui/material';
 import React, { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { cn } from '@lib/utils';
 
@@ -23,7 +23,7 @@ const selectAccountApps = (state) => selectAccount(state).apps;
 
 function CustomAppEditor({ connectionTypeId }) {
   const [selectedTab, setSelectedTab] = useState(0);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const appsLoading = useSelector(selectAccountAssetsLoading('apps'));
   const appsInitialized = useSelector(selectAccountAssetsInitialized('apps'));
 
@@ -38,7 +38,7 @@ function CustomAppEditor({ connectionTypeId }) {
   };
 
   const handleBack = () => {
-    navigate('/integration?tab=custom_apps'); // Adjust the path as needed
+    history.push('/integration?tab=custom_apps'); // Adjust the path as needed
   };
 
   if (!appsInitialized || appsLoading) {

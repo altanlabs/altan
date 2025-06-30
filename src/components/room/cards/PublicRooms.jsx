@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Pagination, Navigation, Mousewheel } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
@@ -25,7 +25,7 @@ const selectPublicRoomsInit = selectRoomStateInitialized('publicRooms');
 const PublicRooms = () => {
   const publicRooms = useSelector(selectPublicRooms);
   const initialized = useSelector(selectPublicRoomsInit);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const theme = useTheme();
   useEffect(() => {
     if (!initialized) {
@@ -33,7 +33,7 @@ const PublicRooms = () => {
     }
   }, [initialized]);
 
-  const handleJoinRoom = useCallback(() => navigate(`/room/${room?.id}`), []);
+  const handleJoinRoom = useCallback((roomId) => history.push(`/room/${roomId}`), [history]);
 
   return (
     <Card sx={{ height: '225px', px: 2, overflow: 'hidden' }}>
@@ -88,7 +88,7 @@ const PublicRooms = () => {
         {publicRooms.map((room) => (
           <SwiperSlide key={room.id}>
             <Card
-              onClick={() => navigate(`/room/${room.id}`)}
+              onClick={() => history.push(`/room/${room.id}`)}
               sx={{
                 textAlign: 'center',
                 background: 'black',
@@ -126,7 +126,7 @@ const PublicRooms = () => {
                     <RoomDetailsCard
                       room={room.id}
                       account={room.account}
-                      onClick={handleJoinRoom}
+                      onClick={() => handleJoinRoom(room.id)}
                     />
                   )}
                   arrow

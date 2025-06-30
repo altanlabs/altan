@@ -1,6 +1,6 @@
 import Stack from '@mui/material/Stack';
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useHistory, useParams } from 'react-router';
 import { ReactFlowProvider } from 'reactflow';
 
 import { dispatch, useSelector } from '@redux/store';
@@ -49,7 +49,7 @@ const Workflow = ({
   altanerComponentId = null,
   ...altanerProps
 }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const { id: routeId } = useParams();
   const ws = useWebSocket();
   const { isCompact, toolbarRef } = useCompactMode(600);
@@ -66,7 +66,7 @@ const Workflow = ({
 
   useEffect(() => {
     if (id) {
-      dispatch(getFlow(id)).catch(() => navigate('/flows'));
+      dispatch(getFlow(id)).catch(() => history.push('/flows'));
     }
   }, [id]);
 
@@ -106,7 +106,7 @@ const Workflow = ({
   let effectiveOnGoBack = onGoBack; // 'onGoBack' is the destructured prop from Workflow's arguments
 
   if (goBackQuery === 'true') {
-    effectiveOnGoBack = () => navigate('/flows');
+    effectiveOnGoBack = () => history.push('/flows');
   }
 
   const toggleChat = useCallback(() => setIsChatOpen((prev) => !prev), []);

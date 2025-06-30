@@ -457,7 +457,7 @@ const ConnectionTypeCreator = () => {
                   disabled={actions.length <= 1 || isUploadingAction}
                   startIcon={
                     <Iconify
-                      icon="material-symbols-light:navigate-next"
+                      icon="material-symbols-light:history.push-next"
                       rotate={2}
                     />
                   }
@@ -467,7 +467,7 @@ const ConnectionTypeCreator = () => {
                 <Button
                   onClick={handleNext}
                   disabled={actions.length <= 1 || isUploadingAction}
-                  endIcon={<Iconify icon="material-symbols-light:navigate-next" />}
+                  endIcon={<Iconify icon="material-symbols-light:history.push-next" />}
                 >
                   Next
                 </Button>
@@ -523,7 +523,7 @@ const ConnectionTypeCreator = () => {
                   disabled={resources.length <= 1 || isUploadingResource}
                   startIcon={
                     <Iconify
-                      icon="material-symbols-light:navigate-next"
+                      icon="material-symbols-light:history.push-next"
                       rotate={2}
                     />
                   }
@@ -533,7 +533,7 @@ const ConnectionTypeCreator = () => {
                 <Button
                   onClick={handleNextR}
                   disabled={resources.length <= 1 || isUploadingResource}
-                  endIcon={<Iconify icon="material-symbols-light:navigate-next" />}
+                  endIcon={<Iconify icon="material-symbols-light:history.push-next" />}
                 >
                   Next
                 </Button>

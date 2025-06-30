@@ -1,5 +1,5 @@
 import { memo, useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { CustomAvatar } from '../../components/custom-avatar';
 import { CompactLayout } from '../../layouts/dashboard';
@@ -22,7 +22,7 @@ function AgentsPage() {
   const [ideaText, setIdeaText] = useState('');
   const [selectedIdeaAgentId, setSelectedIdeaAgentId] = useState(null);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   // Refs for click outside detection
   const textareaRef = useRef(null);
@@ -96,7 +96,7 @@ function AgentsPage() {
   };
 
   const handleEditAgent = (agentId) => {
-    navigate(`/agent/${agentId}`);
+    history.push(`/agent/${agentId}`);
   };
 
   const handleCreateAgent = () => {

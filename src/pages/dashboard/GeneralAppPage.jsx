@@ -11,7 +11,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import React, { memo, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import { useAuthContext } from '../../auth/useAuthContext';
 import CreatorDialog from '../../components/CreatorDialog';
@@ -34,12 +34,12 @@ import { AccountSubscriptions } from '../../sections/@dashboard/user/account';
 // import ActionExecutionsChart from '../../sections/@dashboard/general/app/ActionExecutions';
 
 const AppBox = memo(({ id, name, iconUrl }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const theme = useTheme();
 
   const handleClick = useCallback(() => {
-    navigate(`/altaners/${id}`);
-  }, [id, navigate]);
+    history.push(`/altaners/${id}`);
+  }, [id, history.push]);
 
   const icon = iconUrl || '@lottie:da-vinci';
   return (
@@ -400,7 +400,7 @@ export default memo(GeneralAppPage);
 
 /* <Grid item xs={12} md={6}>
       <Card sx={{ height: '100%' }}>
-        <CardHeader title="Human-AI Team" action={<Button variant="soft" onClick={() => navigate('/members')}>View</Button>} />
+        <CardHeader title="Human-AI Team" action={<Button variant="soft" onClick={() => history.push('/members')}>View</Button>} />
         <CardContent>
           <AvatarGroup max={20}>
             <CustomAvatar name={account?.owner?.person?.first_name} src={account.owner?.person?.avatar_url} />

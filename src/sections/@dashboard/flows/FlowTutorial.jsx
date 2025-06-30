@@ -20,12 +20,12 @@ import {
   Box,
 } from '@mui/material';
 import React, { memo } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 import CustomDialog from '../../../components/dialogs/CustomDialog.jsx';
 
 const FlowTutorial = ({ open, setOpen }) => {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const handleClose = () => {
     setOpen(false);
   };
@@ -35,7 +35,7 @@ const FlowTutorial = ({ open, setOpen }) => {
   };
 
   const handleTemplate = () => {
-    navigate('/marketplace?mode=workflow');
+    history.push('/marketplace?mode=workflow');
   };
 
   const isMac = navigator.platform.toLowerCase().includes('mac');

@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
+import PropTypes from 'prop-types';
 import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
-import { Outlet, useSearchParams } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
@@ -70,8 +71,18 @@ const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
 
-const DashboardLayout = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+const DashboardLayout = ({ children }) => {
+  const location = useLocation();
+  const history = useHistory();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString()
+    });
+  };
   const [clonedTemplateId, setTemplateId] = useState('');
   const isDesktop = useResponsive('up', 'md');
 
@@ -152,7 +163,7 @@ const DashboardLayout = () => {
       searchParams.delete('idea');
       setSearchParams(searchParams);
     }
-  }, [searchParams, setSearchParams, clonedTemplateId]);
+  }, [location.search, history, clonedTemplateId]);
 
   const handleClose = useCallback(() => setTemplateId(''), []);
 
@@ -181,11 +192,15 @@ const DashboardLayout = () => {
           onCloseNav={handleCloseNav}
         />
         <Main>
-          <Outlet />
+          {children}
         </Main>
       </Box>
     </VoiceConversationProvider>
   );
+};
+
+DashboardLayout.propTypes = {
+  children: PropTypes.node,
 };
 
 export default memo(DashboardLayout);

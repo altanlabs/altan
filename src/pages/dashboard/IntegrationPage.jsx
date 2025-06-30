@@ -1,6 +1,6 @@
 import { Box, Stack } from '@mui/material';
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import ConnectionsPage from './ConnectionsPage.jsx';
 import useResponsive from '../../hooks/useResponsive';
@@ -40,7 +40,7 @@ const TABS = {
 function IntegrationPage() {
   // const account = useSelector(selectAccount);
   const isSmallScreen = useResponsive('down', 'sm');
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useLocation();
   const [currentTab, setCurrentTab] = useState('connections');
 
   // const accountId = useMemo(() => account?.id, [account?.id]);

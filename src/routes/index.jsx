@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
 
 // LAYOUTS
 import {
@@ -68,365 +68,224 @@ const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|Bla
 // ----------------------------------------------------------------------
 
 const Router = () => {
-  const router = createBrowserRouter([
-    // Auth
-    {
-      path: 'auth',
-      children: [
-        {
-          path: 'login',
-          element: (
-            <GuestGuard>
-              <LoginPage />
-            </GuestGuard>
-          ),
-        },
-        {
-          path: 'register',
-          element: (
-            <GuestGuard>
-              <RegisterPage />
-            </GuestGuard>
-          ),
-        },
-        {
-          element: <CompactLayout />,
-          children: [
-            { path: 'reset-password', element: <ResetPasswordPage /> },
-            { path: 'new-password', element: <NewPasswordPage /> },
-            { path: 'verify', element: <VerifyCodePage /> },
-          ],
-        },
-      ],
-    },
-    {
-      path: 'room/:roomId',
-      element: (
-        <AuthGuard requireAuth={true}>
-          <RoomPage />
-        </AuthGuard>
-      ),
-      ErrorBoundary: RootBoundary,
-    },
-    // Public Agent Share Page
-    {
-      path: 'agents/:agentId/share',
-      element: <AgentSharePage />,
-      ErrorBoundary: RootBoundary,
-    },
-    // Public Agent Card Page
-    {
-      path: 'agent/:agentId/card',
-      element: <AgentCardPage />,
-      ErrorBoundary: RootBoundary,
-    },
-    {
-      path: 'xsup',
-      element: (
-        <AuthGuard requireAuth={true}>
-          <SuperAdminLayout />
-        </AuthGuard>
-      ),
-      children: [
-        { element: <SuperAdminMain />, index: true },
-        { path: 'internal', element: <InternalUtils /> },
-        { path: 'external', element: <ExternalUtils /> },
-        { path: 'creator', element: <IntegrationCreator /> },
-        { path: 'activity', element: <OverallActivityPage /> },
-      ],
-    },
-    // App
-    {
-      path: 'project',
-      ErrorBoundary: RootBoundary,
-      element: (
-        <AuthGuard requireAuth={true}>
-          <ProjectLayout />
-        </AuthGuard>
-      ),
-      children: [
-        {
-          path: ':altanerId',
-          element: <ProjectPage />,
-        },
-        { path: ':altanerId/c/:componentId', element: <ProjectPage /> },
-        { path: ':altanerId/c/:componentId/i/:itemId', element: <ProjectPage /> },
-        {
-          path: ':altanerId/c/:componentId/b/:baseId/tables/:tableId',
-          element: <ProjectPage />,
-        },
-        {
-          path: ':altanerId/c/:componentId/b/:baseId/tables/:tableId/views/:viewId',
-          element: <ProjectPage />,
-        },
-        {
-          path: ':altanerId/c/:componentId/b/:baseId/tables/:tableId/views/:viewId/records/:recordId',
-          element: <ProjectPage />,
-        },
-      ],
-    },
-    {
-      path: 'remix',
-      ErrorBoundary: RootBoundary,
-      children: [
-        {
-          path: ':altanerId',
-          element: (
-            <AuthGuard requireAuth={true}>
-              <RemixPage />
-            </AuthGuard>
-          ),
-        },
-      ],
-    },
-    {
-      path: 'database',
-      ErrorBoundary: RootBoundary,
-      children: [
-        {
-          element: (
-            <AuthGuard requireAuth={true}>
-              <StandaloneBasePage />
-            </AuthGuard>
-          ),
-          index: true,
-        },
-        {
-          path: ':baseId',
-          element: (
-            <AuthGuard requireAuth={true}>
-              <StandaloneBasePage />
-            </AuthGuard>
-          ),
-        },
-        {
-          path: ':baseId/tables/:tableId/views/:viewId',
-          element: (
-            <AuthGuard requireAuth={true}>
-              <StandaloneBasePage />
-            </AuthGuard>
-          ),
-        },
-        {
-          path: ':baseId/tables/:tableId/views/:viewId/records/:recordId',
-          element: (
-            <AuthGuard requireAuth={true}>
-              <StandaloneBasePage />
-            </AuthGuard>
-          ),
-        },
-      ],
-    },
-    {
-      path: 'workflow',
-      ErrorBoundary: RootBoundary,
-      children: [
-        {
-          path: ':id',
-          element: (
-            <AuthGuard requireAuth={false}>
-              <StandaloneWorkflowPage />
-            </AuthGuard>
-          ),
-        },
-      ],
-    },
+  return (
+    <BrowserRouter>
+      <Switch>
+        {/* Auth Routes */}
+        <Route path="/auth/login" exact>
+          <GuestGuard>
+            <LoginPage />
+          </GuestGuard>
+        </Route>
+        
+        <Route path="/auth/register" exact>
+          <GuestGuard>
+            <RegisterPage />
+          </GuestGuard>
+        </Route>
+        
+        <Route path="/auth/reset-password" exact>
+          <CompactLayout>
+            <ResetPasswordPage />
+          </CompactLayout>
+        </Route>
+        
+        <Route path="/auth/new-password" exact>
+          <CompactLayout>
+            <NewPasswordPage />
+          </CompactLayout>
+        </Route>
+        
+        <Route path="/auth/verify" exact>
+          <CompactLayout>
+            <VerifyCodePage />
+          </CompactLayout>
+        </Route>
 
-    {
-      path: 'accounts',
-      element: (
-        <AuthGuard requireAuth={false}>
-          <DashboardLayout />
-        </AuthGuard>
-      ),
-      children: [
-        {
-          index: true,
-          element: <AccountsPage />,
-        },
-        {
-          path: ':accountId',
-          element: <AccountPage />,
-        },
-      ],
-    },
-    // Main Routes
-    {
-      element: (
-        <AuthGuard requireAuth={false}>
-          <DashboardLayout />
-        </AuthGuard>
-      ),
-      ErrorBoundary: RootBoundary,
-      children: [
-        {
-          index: true,
-          element: <DashboardPage />,
-        },
-        {
-          path: ':mode',
-          element: <DashboardPage />,
-        },
-        { path: 'me', element: <UserProfilePage /> },
-        { path: 'referrals', element: <ReferralsPage /> },
-        { path: 'permission-denied', element: <PermissionDeniedPage /> },
-        { path: 'admin', element: <AdminPage /> },
-        { path: 'integration', element: <IntegrationPage /> },
-        { path: 'media', element: <MediaPage /> },
-        { path: 'terms', element: <Terms /> },
-        { path: 'privacy', element: <Privacy /> },
-        {
-          path: 'pricing',
-          element: <PricingPage />,
-        },
-        {
-          path: 'flow',
-          children: [{ path: ':id', element: <StandaloneWorkflowPage /> }],
-        },
-        {
-          path: 'template/:templateId',
-          element: <TemplatePage />,
-        },
-        {
-          path: 'marketplace',
-          children: [{ element: <MarketplacePage />, index: true }],
-        },
-        {
-          path: 'usage',
-          children: [
-            { element: <UsagePage />, index: true },
-            { path: 'tasks', element: <ExecutionsPage /> },
-          ],
-        },
-        {
-          path: 'bases',
-          children: [
-            { element: <BasesPage />, index: true },
-            { path: ':baseId', element: <BasePage /> },
-            { path: ':baseId/tables/:tableId/views/:viewId', element: <BasePage /> },
-            {
-              path: ':baseId/tables/:tableId/views/:viewId/records/:recordId',
-              element: <BasePage />,
-            },
-          ],
-        },
-        {
-          path: 'members',
-          children: [
-            { element: <AccountMembers />, index: true },
-            { path: ':memberId', element: <MemberPage /> },
-          ],
-        },
-        {
-          path: 'agent',
-          children: [
-            { element: <AgentsPage />, index: true },
-            { path: ':agentId', element: <AgentPage /> },
-          ],
-        },
-        {
-          path: 'interfaces',
-          children: [
-            { element: <InterfacesPage />, index: true },
-            { path: ':interfaceId', element: <InterfacePage /> },
-          ],
-        },
-        {
-          path: 'account',
-          children: [
-            {
-              element: (
-                <Navigate
-                  to="/platform/account/settings"
-                  replace
-                />
-              ),
-              index: true,
-            },
-            { path: 'settings', element: <UserAccountPage /> },
-            { path: 'api', element: <APIKeys /> },
-          ],
-        },
-      ],
-    },
-    {
-      element: <CompactLayout />,
-      children: [
-        { path: 'coming-soon', element: <ComingSoonPage /> },
-        { path: 'maintenance', element: <MaintenancePage /> },
-        { path: '500', element: <Page500 /> },
-        { path: '404', element: <Page404 /> },
-        { path: '403', element: <Page403 /> },
-      ],
-    },
-    {
-      path: 'es/*',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: 'en',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: 'us',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: 'pt',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: 'de',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: 'fr',
-      element: (
-        <Navigate
-          to="/"
-          replace
-        />
-      ),
-    },
-    {
-      path: '*',
-      element: (
-        <Navigate
-          to="/404"
-          replace
-        />
-      ),
-    },
-  ]);
+        {/* Room Route */}
+        <Route path="/room/:roomId" exact>
+          <AuthGuard requireAuth={true}>
+            <RoomPage />
+          </AuthGuard>
+        </Route>
 
-  // For mobile, we'll use the standard React Router for now
-  // In a full mobile optimization, you might want to implement IonReactRouter
-  return <RouterProvider router={router} />;
+        {/* Public Agent Routes */}
+        <Route path="/agents/:agentId/share" exact>
+          <AgentSharePage />
+        </Route>
+        
+        <Route path="/agent/:agentId/card" exact>
+          <AgentCardPage />
+        </Route>
+
+        {/* SuperAdmin Routes */}
+        <Route path="/xsup" exact>
+          <AuthGuard requireAuth={true}>
+            <SuperAdminLayout>
+              <SuperAdminMain />
+            </SuperAdminLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/xsup/internal" exact>
+          <AuthGuard requireAuth={true}>
+            <SuperAdminLayout>
+              <InternalUtils />
+            </SuperAdminLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/xsup/external" exact>
+          <AuthGuard requireAuth={true}>
+            <SuperAdminLayout>
+              <ExternalUtils />
+            </SuperAdminLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/xsup/creator" exact>
+          <AuthGuard requireAuth={true}>
+            <SuperAdminLayout>
+              <IntegrationCreator />
+            </SuperAdminLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/xsup/activity" exact>
+          <AuthGuard requireAuth={true}>
+            <SuperAdminLayout>
+              <OverallActivityPage />
+            </SuperAdminLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Project Routes */}
+        <Route path="/project/:altanerId" exact>
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/project/:altanerId/c/:componentId" exact>
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/project/:altanerId/c/:componentId/i/:itemId" exact>
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Database Routes */}
+        <Route path="/database" exact>
+          <AuthGuard requireAuth={true}>
+            <StandaloneBasePage />
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/database/:baseId" exact>
+          <AuthGuard requireAuth={true}>
+            <StandaloneBasePage />
+          </AuthGuard>
+        </Route>
+
+        {/* Workflow Route */}
+        <Route path="/workflow/:id" exact>
+          <AuthGuard requireAuth={false}>
+            <StandaloneWorkflowPage />
+          </AuthGuard>
+        </Route>
+
+        {/* Accounts Routes */}
+        <Route path="/accounts" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <AccountsPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/accounts/:accountId" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <AccountPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Main Dashboard Routes */}
+        <Route path="/" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <DashboardPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/:mode" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <DashboardPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/me" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <UserProfilePage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+        
+        <Route path="/pricing" exact>
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <PricingPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Error Pages */}
+        <Route path="/coming-soon" exact>
+          <CompactLayout>
+            <ComingSoonPage />
+          </CompactLayout>
+        </Route>
+        
+        <Route path="/500" exact>
+          <CompactLayout>
+            <Page500 />
+          </CompactLayout>
+        </Route>
+        
+        <Route path="/404" exact>
+          <CompactLayout>
+            <Page404 />
+          </CompactLayout>
+        </Route>
+
+        {/* Redirects */}
+        <Route path="/es" render={() => <Redirect to="/" />} />
+        <Route path="/en" render={() => <Redirect to="/" />} />
+        <Route path="/us" render={() => <Redirect to="/" />} />
+        <Route path="/pt" render={() => <Redirect to="/" />} />
+        <Route path="/de" render={() => <Redirect to="/" />} />
+        <Route path="/fr" render={() => <Redirect to="/" />} />
+        
+        {/* Catch all - redirect to 404 */}
+        <Route render={() => <Redirect to="/404" />} />
+      </Switch>
+    </BrowserRouter>
+  );
 };
 
 export default memo(Router);

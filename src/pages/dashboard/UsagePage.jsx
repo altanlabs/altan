@@ -14,7 +14,7 @@ import {
 } from 'date-fns';
 import React, { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import {
   AreaChart,
   Area,
@@ -122,7 +122,7 @@ const UsageOverview = ({
   billingCycle,
   containerStyle,
   subscriptionData,
-  navigate,
+  history.push,
 }) => {
   const totalCredits = stats.totalCredits || 0; // Usage-based credits from API
   const monthlyBudget = subscriptionData.totalCredits || 10000; // Get budget from subscription
@@ -306,7 +306,7 @@ const UsageOverview = ({
         {/* Manage Subscription Button */}
         <div className="mt-6 flex w-full justify-end">
           <button
-            onClick={() => navigate('/pricing')}
+            onClick={() => history.push('/pricing')}
             className={`flex h-10 items-center gap-2 rounded-full px-5 text-sm font-medium leading-none text-white transition-colors ${
               isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
             }`}
@@ -325,7 +325,7 @@ const UsageOverview = ({
 
 const UsagePage = () => {
   const accountId = useSelector(selectAccountId);
-  const navigate = useNavigate();
+  const history = useHistory();;
   const theme = useTheme();
   const activeSubscriptions = useReduxSelector(selectAccountSubscriptions);
   const [rawUsageData, setRawUsageData] = useState([]);
@@ -675,7 +675,7 @@ const UsagePage = () => {
           billingCycle={billingCycle}
           containerStyle={getContainerStyles()}
           subscriptionData={subscriptionData}
-          navigate={navigate}
+          history.push={history.push}
         />
 
         {/* Header with title and controls */}
@@ -686,7 +686,7 @@ const UsagePage = () => {
               Detailed Usage Analytics
             </h2>
             <button
-              onClick={() => navigate('/usage/tasks')}
+              onClick={() => history.push('/usage/tasks')}
               className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md flex items-center gap-2 shadow-sm self-start sm:self-auto"
             >
               <span>View Task Usage</span>

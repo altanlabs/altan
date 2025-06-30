@@ -3,7 +3,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { LoadingButton } from '@mui/lab';
 import { useForm } from 'react-hook-form';
 // @mui
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import * as Yup from 'yup';
 
 import FormProvider, { RHFTextField } from '../../components/hook-form';
@@ -17,7 +17,7 @@ import { optimai } from '../../utils/axios';
 // ----------------------------------------------------------------------
 
 export default function AuthResetPasswordForm() {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { enqueueSnackbar } = useSnackbar();
 
   const ResetPasswordSchema = Yup.object().shape({
@@ -39,7 +39,7 @@ export default function AuthResetPasswordForm() {
       await optimai.get(`/user/forgot-password?email=${encodeURIComponent(data.email)}`);
       sessionStorage.setItem('email-recovery', data.email);
       enqueueSnackbar('Reset instructions sent to your email!');
-      navigate(`${PATH_AUTH.newPassword}?email=${encodeURIComponent(data.email)}`);
+              history.push(`${PATH_AUTH.newPassword}?email=${encodeURIComponent(data.email)}`);
     } catch (error) {
       console.error(error);
       enqueueSnackbar(error.response?.data?.detail || 'Something went wrong', { variant: 'error' });

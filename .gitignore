@@ -52,7 +52,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-package-lock.json
+# package-lock.json
 
 src/sections/@dashboard/apps/chat
 src/sections/@dashboard/apps/ChatManager.jsx

@@ -4,7 +4,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import React, { memo, useState, useMemo, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 
 import { bgBlur } from '@utils/styleUtils';
 
@@ -99,7 +99,7 @@ const RoomCard = ({ room }) => {
   const contextGateId = useGateId();
   const gateId = contextGateId || paramsGateId;
   const theme = useTheme();
-  const navigate = useNavigate();
+  const history = useHistory();;
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const MAX_VISIBLE_MEMBERS = isMobile ? 4 : 6;
   const [showAllMembers, setShowAllMembers] = useState(false);
@@ -120,9 +120,9 @@ const RoomCard = ({ room }) => {
       return;
     }
     if (gateId) {
-      navigate(contextGateId ? `/r/${room._byName}` : `/gate/${gateId}/r/${room._byName}`, { replace: false });
+      history.push(contextGateId ? `/r/${room._byName}` : `/gate/${gateId}/r/${room._byName}`, { replace: false });
     } else {
-      navigate(`/room/${room.id}`);
+      history.push(`/room/${room.id}`);
     }
   }, [gateId, contextGateId, room]);
 

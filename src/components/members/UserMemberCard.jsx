@@ -1,14 +1,14 @@
 import { Card, Avatar, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo } from 'react';
-import { useNavigate } from 'react-router';
+import { useHistory } from 'react-router';
 
 UserMemberCard.propTypes = {
   member: PropTypes.object,
 };
 
 function UserMemberCard({ member }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
   const name = `${member?.person?.first_name} ${member.person?.last_name}`;
   const role = member?.role?.name || member?.role || 'Member';
   const userId = member?.id;
@@ -29,7 +29,7 @@ function UserMemberCard({ member }) {
   // };
 
   const navigateToMember = () => {
-    navigate(`/members/${member.id}`, { state: { type: 'human' } });
+    history.push(`/members/${member.id}`, { state: { type: 'human' } });
   };
 
   return (

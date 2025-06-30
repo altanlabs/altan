@@ -330,20 +330,7 @@ const Space = ({ navigate, spaceId, isPreview }) => {
               spacing={1}
               sx={{ position: 'relative', height: '100%', width: '100%', overflowY: 'auto' }}
             >
-              {/* {!!current && current?.id !== 'root' &&
-                (<Paper sx={{
-                  background: 'none', p: 1,
-                  border: (theme) => `dashed 1px ${theme.palette.divider}`,
-                }}>
-                  <InfoModal title="Space Widgets" description="Interaction Starters: These are the conversation starters for your users. Add or modify widgets to shape how the chat initiates and flows. Widgets can be custom messages, forms, media... and will be sent in sequential order." />
-                  <Widgets
-                    theme={theme}
-                    widgets={current.widgets.items}
-                    isEditLayout={isEditLayout}
-                  />
-                </Paper>
-                )
-              } */}
+ 
               {current.id === 'root' && (
                 <Paper
                   sx={{

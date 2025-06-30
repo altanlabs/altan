@@ -15,7 +15,7 @@ import { debounce } from 'lodash';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { CardTitle } from '../../../../components/aceternity/cards/card-hover-effect.tsx';
 import CustomDialog from '../../../../components/dialogs/CustomDialog.jsx';
@@ -73,7 +73,7 @@ const useDisabled = ({ required }) => {
 };
 
 const CreateAltanerButton = memo(() => {
-  const navigate = useNavigate();
+  const history = useHistory();
   // const { enqueueSnackbar } = useSnackbar();
   const { handleSubmit } = useFormContext();
   const disabled = useDisabled({ required: AltanerSchema.required });
@@ -89,11 +89,11 @@ const CreateAltanerButton = memo(() => {
         successMessage: 'Altaner created successfully',
         errorMessage: 'Could not create altaner',
       }).then((newAltaner) => {
-        navigate(`/altaners/${newAltaner.id}`, { replace: true });
+        history.replace(`/altaners/${newAltaner.id}`);
         dispatch(closeCreateAltaner());
       });
     }),
-    [dispatchWithFeedback, navigate],
+    [dispatchWithFeedback, history],
   );
 
   return (

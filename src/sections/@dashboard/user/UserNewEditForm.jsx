@@ -6,7 +6,7 @@ import { Box, Card, Grid, Stack, Switch, Typography, FormControlLabel } from '@m
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import * as Yup from 'yup';
 
 // utils
@@ -33,7 +33,7 @@ UserNewEditForm.propTypes = {
 };
 
 export default function UserNewEditForm({ isEdit = false, currentUser }) {
-  const navigate = useNavigate();
+  const history = useHistory();;
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -93,7 +93,7 @@ export default function UserNewEditForm({ isEdit = false, currentUser }) {
       await new Promise((resolve) => setTimeout(resolve, 500));
       reset();
       enqueueSnackbar(!isEdit ? 'Create success!' : 'Update success!');
-      navigate(PATH_DASHBOARD.user.list);
+      history.push(PATH_DASHBOARD.user.list);
     } catch (error) {
       console.error(error);
     }
