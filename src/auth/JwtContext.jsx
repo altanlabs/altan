@@ -1,4 +1,6 @@
 import { Capacitor } from '@capacitor/core';
+// Native Google Auth
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
@@ -165,7 +167,7 @@ const getUserProfile = async () => {
   } catch {
     throw new Error('Failed to get user profile');
   }
-  };
+};
 
 const verifyEmail = async (code) => {
   try {
@@ -191,6 +193,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Initialize GoogleAuth plugin on native platforms
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await GoogleAuth.initialize();
+          } catch (error) {
+            console.warn('GoogleAuth initialization failed:', error);
+          }
+        }
+
         const userProfile = await getUserProfile();
         dispatch({
           type: 'INITIAL',
@@ -210,39 +221,89 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginWithGoogle = useCallback(async (invitation_id, idea_id) => {
-    const params = {
-      origin: getBaseUrl(),
-      origin_redirect: window.location.pathname,
-    };
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost') {
-      params.dev = '345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi';
-    }
-    if (invitation_id) {
-      params.iid = invitation_id;
-    }
-    const url = constructBaseUrl(AUTH_API, '/login/google', params);
+    const isMobile = Capacitor.isNativePlatform();
 
-    const width = 600;
-    const height = 600;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-    const windowFeatures = `toolbar=no, menubar=no, width=${width}, height=${height}, top=${top}, left=${left}`;
-    const popup = window.open(url, 'GoogleLogin', windowFeatures);
+    if (isMobile) {
+      // Native mobile authentication
+      try {
+        const result = await GoogleAuth.signIn();
 
-    const checkPopup = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkPopup);
-        const redirectUrl = new URL('https://www.altan.ai');
-        if (invitation_id) {
-          redirectUrl.searchParams.append('iid', invitation_id);
+        // Send the Google token to your backend for verification
+        const response = await axios.post(
+          `${AUTH_API}/oauth/google/mobile`,
+          {
+            idToken: result.authentication.idToken,
+            accessToken: result.authentication.accessToken,
+            invitation_id: invitation_id || null,
+            idea_id: idea_id || null,
+          },
+          { withCredentials: true },
+        );
+
+        if (response.data.access_token) {
+          // Store tokens for mobile
+          if (response.data.refresh_token) {
+            storeRefreshToken(response.data.refresh_token);
+          }
+
+          // Set up access token
+          const { setSession } = await import('../utils/auth');
+          setSession(response.data.access_token, optimai);
+
+          // Get user profile and update state
+          try {
+            const userProfile = await getUserProfile();
+            dispatch({
+              type: 'LOGIN',
+              payload: userProfile,
+            });
+          } catch (error) {
+            console.error('Failed to get user profile after mobile Google login:', error);
+            throw new Error('Failed to complete mobile Google authentication');
+          }
+        } else {
+          throw new Error('No access token received from mobile Google login');
         }
-        if (idea_id) {
-          redirectUrl.searchParams.append('idea', idea_id);
-        }
-        window.location.href = redirectUrl.toString();
+      } catch (error) {
+        console.error('Native Google Auth failed:', error);
+        throw error;
       }
-    }, 1000);
+    } else {
+      // Web authentication (existing popup behavior)
+      const params = {
+        origin: getBaseUrl(),
+        origin_redirect: window.location.pathname,
+      };
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost') {
+        params.dev = '345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi';
+      }
+      if (invitation_id) {
+        params.iid = invitation_id;
+      }
+      const url = constructBaseUrl(AUTH_API, '/login/google', params);
+
+      const width = 600;
+      const height = 600;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      const windowFeatures = `toolbar=no, menubar=no, width=${width}, height=${height}, top=${top}, left=${left}`;
+      const popup = window.open(url, 'GoogleLogin', windowFeatures);
+
+      const checkPopup = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkPopup);
+          const redirectUrl = new URL('https://www.altan.ai');
+          if (invitation_id) {
+            redirectUrl.searchParams.append('iid', invitation_id);
+          }
+          if (idea_id) {
+            redirectUrl.searchParams.append('idea', idea_id);
+          }
+          window.location.href = redirectUrl.toString();
+        }
+      }, 1000);
+    }
   }, []);
 
   // LOGIN
@@ -410,6 +471,17 @@ export function AuthProvider({ children }) {
 
   // LOGOUT
   const logout = useCallback(async () => {
+    const isMobile = Capacitor.isNativePlatform();
+
+    if (isMobile) {
+      // Sign out from Google Auth on mobile
+      try {
+        await GoogleAuth.signOut();
+      } catch (error) {
+        console.warn('Failed to sign out from GoogleAuth:', error);
+      }
+    }
+
     await axios.post(`${AUTH_API}/logout/user`, null, { withCredentials: true }).finally(() => {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();

@@ -8,13 +8,13 @@ import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 
-export default function AuthWithSocial({ invitation }) {
+export default function AuthWithSocial({ invitation, idea }) {
   const { loginWithGoogle } = useAuthContext();
 
   const handleGoogleLogin = async () => {
     try {
       if (loginWithGoogle) {
-        loginWithGoogle(invitation?.id);
+        loginWithGoogle(invitation, idea);
       }
     } catch (error) {
       console.error(error);
@@ -79,41 +79,3 @@ export default function AuthWithSocial({ invitation }) {
     </Stack>
   );
 }
-
-// const handleGithubLogin = async () => {
-//   try {
-//     if (loginWithGithub) {
-//       loginWithGithub();
-//     }
-//     console.log('GITHUB LOGIN');
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
-
-// const handleTwitterLogin = async () => {
-//   try {
-//     if (loginWithTwitter) {
-//       loginWithTwitter();
-//     }
-//     console.log('TWITTER LOGIN');
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
-
-// const handleFBLogin = () => {
-//   FB.login(function (response) {
-//     if (response.authResponse) {
-//       // User has successfully authenticated
-//       // Send token to your server for verification
-//       const token = response.authResponse.accessToken;
-
-//       // TODO: send `token` to your server for verification and user registration
-
-//       console.log('You are logged in.', response);
-//     } else {
-//       console.log('User cancelled login or did not fully authorize.');
-//     }
-//   });
-// };
