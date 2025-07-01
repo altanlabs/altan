@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">altan</string>
     <string name="title_activity_main">altan</string>
-    <string name="package_name">com.altan.app</string>
-    <string name="custom_url_scheme">com.altan.app</string>
+    <string name="package_name">test.altan.ai</string>
+    <string name="custom_url_scheme">test.altan.ai</string>
 </resources>

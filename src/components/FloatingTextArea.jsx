@@ -45,6 +45,12 @@ const makeSelectReplyTo = () =>
     },
   );
 
+// iOS detection utility
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
 const FloatingTextArea = ({
   threadId,
   // messages = null,
@@ -69,6 +75,28 @@ const FloatingTextArea = ({
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [attachments, setAttachments] = useState([]);
   const editorRef = useRef({});
+
+  // iOS-specific handlers
+  const handleTouchStart = useCallback((e) => {
+    if (isIOS() && mode === 'mobile') {
+      // Prevent the container from scrolling when touching the text area
+      e.stopPropagation();
+    }
+  }, [mode]);
+
+  const handleFocus = useCallback((e) => {
+    if (isIOS() && mode === 'mobile') {
+      // Ensure the element stays visible on iOS
+      const element = e.target;
+      setTimeout(() => {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        });
+      }, 300); // Wait for keyboard animation
+    }
+  }, [mode]);
 
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => !me || (!!me && ['viewer', 'listener'].includes(me.role)), [me]);
@@ -126,7 +154,7 @@ const FloatingTextArea = ({
   return (
     <>
       {!!(replyTo || selectedMessage) && !isViewer && (
-        <div className="relative w-full max-w-[800px] mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-4 rounded-t-xl border border-gray-300/50 dark:border-gray-700/50 border-b-0 p-2 backdrop-blur-lg flex flex-col bg-white/80 dark:bg-gray-900/80">
+        <div className="relative w-full max-w-[800px] mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-4 rounded-t-xl p-2 backdrop-blur-lg flex flex-col bg-white/80 dark:bg-gray-900/80">
           <Typography
             variant="caption"
             noWrap
@@ -206,12 +234,19 @@ const FloatingTextArea = ({
             }}
           /> */}
           <div
-            className={`relative flex w-full flex-col gap-2 backdrop-blur-lg border transition-colors duration-200 ${
+            className={`relative flex w-full flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
-                ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 border-t border-gray-200 dark:border-gray-700 p-3 rounded-t-2xl'
-                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] border-gray-300/20 dark:border-white/10 hover:bg-white/95 dark:hover:bg-[#1c1c1c] hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] focus-within:border-gray-400/30 dark:focus-within:border-white/15'
+                ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
+                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg'
             }`}
-            style={mode === 'mobile' ? { paddingBottom: 'max(12px, env(safe-area-inset-bottom))' } : undefined}
+            style={mode === 'mobile' ? {
+              padding: '12px 12px 0 12px',
+              paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+              transform: 'translate3d(0, 0, 0)',
+              WebkitTransform: 'translate3d(0, 0, 0)',
+              willChange: 'transform',
+              WebkitBackdropFilter: 'blur(20px)',
+            } : undefined}
           >
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3">
@@ -331,16 +366,21 @@ const FloatingTextArea = ({
               </div>
             )}
             <div className="flex flex-col w-full relative py-1">
-              <Editor
-                key={`${threadId}_${messageId}`}
-                threadId={threadId}
-                disabled={isViewer}
-                editorRef={editorRef}
-                placeholder="Ask anything..."
-                setEditorEmpty={setEditorEmpty}
-                setAttachments={setAttachments}
-                autoFocus={autoFocus}
-              />
+              <div
+                onTouchStart={handleTouchStart}
+                onFocus={handleFocus}
+              >
+                <Editor
+                  key={`${threadId}_${messageId}`}
+                  threadId={threadId}
+                  disabled={isViewer}
+                  editorRef={editorRef}
+                  placeholder="Ask anything..."
+                  setEditorEmpty={setEditorEmpty}
+                  setAttachments={setAttachments}
+                  autoFocus={autoFocus}
+                />
+              </div>
             </div>
             {!isViewer && (mode === 'standard' || mode === 'mobile') && (
               <AttachmentHandler

@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-// Native Google Auth
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+// Generic OAuth2 Auth
+import { GenericOAuth2 } from '@capacitor-community/generic-oauth2';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
@@ -193,14 +193,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Initialize GoogleAuth plugin on native platforms
-        if (Capacitor.isNativePlatform()) {
-          try {
-            await GoogleAuth.initialize();
-          } catch (error) {
-            console.warn('GoogleAuth initialization failed:', error);
-          }
-        }
+        // No need to initialize GoogleAuth plugin for the new library
+        // GenericOAuth2 doesn't require initialization
 
         const userProfile = await getUserProfile();
         dispatch({
@@ -224,31 +218,68 @@ export function AuthProvider({ children }) {
     const isMobile = Capacitor.isNativePlatform();
 
     if (isMobile) {
-      // Native mobile authentication
+      // Native mobile authentication using GenericOAuth2
       try {
-        const result = await GoogleAuth.signIn();
+        console.log('🔍 Starting OAuth2 authentication with scopes:', 'openid email profile');
+
+        const result = await GenericOAuth2.authenticate({
+          authorizationBaseUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+          accessTokenEndpoint: 'https://oauth2.googleapis.com/token',
+          scope: 'openid email profile',
+          responseType: 'code',
+          pkceEnabled: true,
+          appId: '389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p.apps.googleusercontent.com',
+          resourceUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+          additionalParameters: {
+            access_type: 'offline',
+          },
+          web: {
+            redirectUrl: window.location.origin,
+            responseType: 'code',
+          },
+          ios: {
+            redirectUrl: 'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
+            responseType: 'code',
+          },
+          android: {
+            redirectUrl: 'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
+            responseType: 'code',
+          },
+        });
+
+        // Debug: Check what GenericOAuth2 is actually returning
+        console.log('✅ Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
+
+        // Extract tokens
+        const idToken = result.access_token_response?.id_token || result.id_token || result.idToken || result.authentication?.id_token || result.response?.id_token || null;
+        const accessToken = result.access_token_response?.access_token || result.access_token || result.accessToken || result.authentication?.access_token;
+        console.log('🔑 Extracted tokens:');
+        console.log('- ID Token:', idToken ? 'Found ✅' : 'Missing ❌');
+        console.log('- Access Token:', accessToken ? 'Found ✅' : 'Missing ❌');
 
         // Send the Google token to your backend for verification
         const response = await axios.post(
           `${AUTH_API}/oauth/google/mobile`,
           {
-            idToken: result.authentication.idToken,
-            accessToken: result.authentication.accessToken,
+            idToken,
+            accessToken,
             invitation_id: invitation_id || null,
             idea_id: idea_id || null,
           },
           { withCredentials: true },
         );
 
-        if (response.data.access_token) {
+        if (response.data.status === 'success' || response.data.access_token) {
           // Store tokens for mobile
           if (response.data.refresh_token) {
             storeRefreshToken(response.data.refresh_token);
           }
 
-          // Set up access token
-          const { setSession } = await import('../utils/auth');
-          setSession(response.data.access_token, optimai);
+          // Set up session - if we have an access_token use it, otherwise rely on refresh token flow
+          if (response.data.access_token) {
+            const { setSession } = await import('../utils/auth');
+            setSession(response.data.access_token, optimai);
+          }
 
           // Get user profile and update state
           try {
@@ -257,15 +288,13 @@ export function AuthProvider({ children }) {
               type: 'LOGIN',
               payload: userProfile,
             });
-          } catch (error) {
-            console.error('Failed to get user profile after mobile Google login:', error);
+          } catch {
             throw new Error('Failed to complete mobile Google authentication');
           }
         } else {
-          throw new Error('No access token received from mobile Google login');
+          throw new Error('Authentication failed - no success status or access token received');
         }
       } catch (error) {
-        console.error('Native Google Auth failed:', error);
         throw error;
       }
     } else {
@@ -474,11 +503,13 @@ export function AuthProvider({ children }) {
     const isMobile = Capacitor.isNativePlatform();
 
     if (isMobile) {
-      // Sign out from Google Auth on mobile
+      // Sign out from Generic OAuth2 on mobile
       try {
-        await GoogleAuth.signOut();
+        await GenericOAuth2.logout({
+          appId: '389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p.apps.googleusercontent.com',
+        });
       } catch (error) {
-        console.warn('Failed to sign out from GoogleAuth:', error);
+        console.warn('Failed to sign out from GenericOAuth2:', error);
       }
     }
 

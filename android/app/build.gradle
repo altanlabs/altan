@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.altan.app"
+    namespace "test.altan.ai"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.altan.app"
+        applicationId "test.altan.ai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

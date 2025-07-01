@@ -1,4 +1,4 @@
-package com.altan.app;
+package test.altan.ai;
 
 import com.getcapacitor.BridgeActivity;
 

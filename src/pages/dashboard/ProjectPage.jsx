@@ -207,7 +207,10 @@ export default function ProjectPage() {
         title={altaner?.name || 'Project'}
         noPadding
       >
-        <div className="relative h-full" ref={mobileContainerRef}>
+        <div
+          className="relative h-full"
+          ref={mobileContainerRef}
+        >
           <Room
             key={altaner?.room_id}
             roomId={altaner?.room_id}
@@ -217,23 +220,21 @@ export default function ProjectPage() {
             mobileActiveView={mobileActiveView}
           />
           <div
-            className="fixed bottom-0 left-0 right-0"
-            style={{ zIndex: 1100 }}
+            className="absolute bottom-0 left-0 right-0"
+            style={{
+              zIndex: 1000,
+              transform: 'translate3d(0, 0, 0)', // Hardware acceleration
+              WebkitTransform: 'translate3d(0, 0, 0)',
+            }}
           >
-            {mainThreadId ? (
-              <FloatingTextArea
-                threadId={mainThreadId}
-                roomId={altaner.room_id}
-                mode="mobile"
-                containerRef={mobileContainerRef}
-                mobileActiveView={mobileActiveView}
-                onMobileToggle={handleMobileToggle}
-              />
-            ) : (
-              <div className="p-4 text-center text-gray-500 bg-white/90 dark:bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-300/20 dark:border-white/10">
-                Loading chat...
-              </div>
-            )}
+            <FloatingTextArea
+              threadId={mainThreadId}
+              roomId={altaner.room_id}
+              mode="mobile"
+              containerRef={mobileContainerRef}
+              mobileActiveView={mobileActiveView}
+              onMobileToggle={handleMobileToggle}
+            />
           </div>
         </div>
       </CompactLayout>

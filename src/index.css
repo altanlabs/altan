@@ -12,6 +12,37 @@
   }
 }
 
+/* iOS Keyboard and Input Fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS-specific styles */
+  .ios-keyboard-fix {
+    position: relative !important;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+  }
+  
+  /* Improve iOS text input behavior */
+  .mobile-text-input {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
 
 @layer utilities {
   /*

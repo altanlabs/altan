@@ -55,7 +55,7 @@ const DesktopRoom = ({
   // Mobile layout with toggle
   if (isMobile && previewComponent) {
     return (
-      <div className="flex flex-col h-full relative">
+      <div className="flex flex-col h-full relative overflow-hidden">
         {/* Show toolbar in preview mode, hide in chat mode */}
         {mobileActiveView !== 'preview' && (
           <GeneralToolbar
@@ -64,17 +64,19 @@ const DesktopRoom = ({
           />
         )}
 
-        {/* Main content area - conditional padding based on view */}
-        <div
-          className="flex-1 relative"
-          style={{
-            paddingBottom: mobileActiveView === 'chat' ? '0px' : '90px',
-          }}
-        >
+        {/* Main content area - remove padding, let absolutely positioned FloatingTextArea handle spacing */}
+        <div className="flex-1 relative overflow-hidden">
           {mobileActiveView === 'chat' ? (
             <Threads hideInput />
           ) : (
-            <div className="h-full w-full">{previewComponent}</div>
+            <div
+              className="h-full w-full overflow-auto"
+              style={{
+                paddingBottom: '112px', // Add padding to prevent content being hidden behind floating text area
+              }}
+            >
+              {previewComponent}
+            </div>
           )}
         </div>
       </div>

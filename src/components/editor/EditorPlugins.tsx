@@ -129,13 +129,20 @@ const EditorPlugins = (props: PluginProps): JSX.Element => {
     const contentEditable = (
       <ContentEditable
         disabled={props.disabled}
-        className="outline-none border-none max-h-[300px] overflow-y-auto min-h-[25px]"
+        className="outline-none border-none max-h-[300px] overflow-y-auto min-h-[25px] mobile-text-input"
         style={{
           fontFamily: 'Lato, sans-serif',
           backgroundColor: 'transparent',
           position: 'relative',
           zIndex: 5,
-          opacity: 1
+          opacity: 1,
+          fontSize: '16px', // Prevent iOS zoom
+          transform: 'translate3d(0, 0, 0)', // Hardware acceleration
+          WebkitTransform: 'translate3d(0, 0, 0)',
+          WebkitUserSelect: 'text',
+          userSelect: 'text',
+          WebkitTouchCallout: 'default',
+          WebkitTapHighlightColor: 'transparent',
         }}
       />
     );

@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useHistory, useParams } from 'react-router-dom';
 
 import ThreadMessages from './ThreadMessages.jsx';
+import useResponsive from '../../../hooks/useResponsive';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import { selectGate } from '../../../redux/slices/gate';
@@ -46,6 +47,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   const [hasLoaded, setHasLoaded] = useState(false);
   const room = useSelector(selectRoom);
   const drawer = useSelector(selectThreadDrawerDetails);
+  const isMobile = useResponsive('down', 'md');
 
   const threadSelector = useMemo(makeSelectThreadById, []);
   const thread = useSelector((state) =>
@@ -137,6 +139,8 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
             overflowY: 'auto',
             position: 'relative',
             width: '100%',
+            // Add bottom padding for mobile to account for floating text area
+            paddingBottom: isMobile && hideInput ? '120px' : '0px',
             // Only hide if we're certain there are no messages AND not in drawer mode
             ...(!hasMessages && mode !== 'drawer' ? { display: 'none' } : {}),
           }}
