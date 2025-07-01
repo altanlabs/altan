@@ -233,7 +233,7 @@ export function AuthProvider({ children }) {
     const checkPopup = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkPopup);
-        const redirectUrl = new URL('https://dashboard.altan.ai');
+        const redirectUrl = new URL('https://www.altan.ai');
         if (invitation_id) {
           redirectUrl.searchParams.append('iid', invitation_id);
         }

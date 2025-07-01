@@ -294,7 +294,7 @@ export default function NewPricing() {
   };
 
   const handleEnterpriseClick = () => {
-    window.open('https://calendar.app.google/4cfZ3M59ejVqBzip8', '_blank');
+    window.open('https://calendly.com/david-altan/15-min-onboarding-agency-clone', '_blank');
   };
 
   const currentGrowthPlan = growthPlans[selectedGrowthTier];

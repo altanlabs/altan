@@ -38,7 +38,7 @@ const makeSelectThreadById = () =>
     },
   );
 
-const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
+const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = false }) => {
   const { gateId } = useParams();
   const history = useHistory();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
@@ -166,12 +166,15 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null }) => {
                 </h1>
               </div>
             )}
-            <FloatingTextArea
-              threadId={threadId}
-              messageId={isCreation ? messageId || 'orphan_thread' : null}
-              containerRef={containerRef}
-              roomId={room?.id}
-            />
+            {!hideInput && (
+              <FloatingTextArea
+                threadId={threadId}
+                messageId={isCreation ? messageId || 'orphan_thread' : null}
+                containerRef={containerRef}
+                roomId={room?.id}
+                mode="standard"
+              />
+            )}
           </div>
         </div>
       </div>

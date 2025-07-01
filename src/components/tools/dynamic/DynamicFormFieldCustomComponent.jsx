@@ -34,7 +34,6 @@ const componentMapping = {
   TableAutocomplete: 'TableAutocomplete',
   AddressAutocompleteReal: 'AddressAutocompleteReal',
   FileToUrl: 'FileToUrl',
-  SystemFields: 'SystemFields',
   AgentAutocomplete: 'AgentAutocomplete',
   AgentAutocompleteMultiple: 'AgentAutocomplete', // same component
   RoomAutocomplete: 'RoomAutocomplete',
@@ -85,7 +84,6 @@ const getComponentProps = ({ title, schema, fieldKey }) => ({
   ThreadSelector: {},
   AddressAutocompleteReal: { name: title || fieldKey },
   FileToUrl: { name: title || fieldKey },
-  SystemFields: {},
   AgentAutocomplete: {},
   AgentAutocompleteMultiple: { multiple: true },
   FlowAutocomplete: {},

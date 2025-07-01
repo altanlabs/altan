@@ -73,7 +73,7 @@ const NoCredits = () => {
             Talk to an expert
           </button>
           <a
-            href="https://dashboard.altan.ai/pricing"
+            href="https://www.altan.ai/pricing"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm ring-1 ring-blue-500/50 hover:ring-blue-600/50 inline-flex items-center gap-2"
@@ -148,50 +148,3 @@ const NoCredits = () => {
 };
 
 export default memo(NoCredits);
-
-{ /* <Dialog
-  open={isOpen}
-  onClose={() => setIsOpen(false)}
-  fullWidth
-  maxWidth="sm"
-  className="fixed z-50"
->
-  <div className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 border-y border-blue-100 dark:border-blue-800">
-    <a
-      href="https://dashboard.altan.ai/pricing"
-      target="_blank"
-      rel="nofollow"
-      className="flex items-center justify-between text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-    >
-      <span>💡 Save up to 70% with a subscription</span>
-      <span className="font-medium">Subscribe →</span>
-    </a>
-  </div>
-  <DialogContent className="!pt-4 !pb-6">
-    <div className="space-y-4">
-      {CREDIT_PACKAGES.map((pkg) => (
-        <button
-          key={pkg.priceId}
-          onClick={() => handleBuyCredits(pkg.priceId)}
-          className={`w-full p-4 text-left border rounded-xl transition-all duration-200 ${
-            pkg.popular
-              ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-              : 'border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400'
-          }`}
-        >
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">{pkg.price}</span>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{pkg.credits} credits</p>
-            </div>
-            {pkg.popular && (
-              <span className="px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded-full">
-                Best Value
-              </span>
-            )}
-          </div>
-        </button>
-      ))}
-    </div>
-  </DialogContent>
-</Dialog>; */ }

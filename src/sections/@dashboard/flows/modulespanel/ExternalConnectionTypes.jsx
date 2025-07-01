@@ -140,7 +140,7 @@ const ExternalConnectionTypes = ({
         </Typography>
         <Button
           variant="contained"
-          href="https://dashboard.altan.ai/integration?tab=custom_apps"
+          href="https://www.altan.ai/integration?tab=custom_apps"
           target="_blank"
           startIcon={<Iconify icon="material-symbols:add" />}
         >

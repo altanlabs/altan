@@ -1,40 +1,41 @@
-# Allow all web crawlers access to all content
+# robots.txt for https://altan.ai
+# Crawl instructions for search engines and LLMs
+
 User-agent: *
 Allow: /
 
-# Explicitly allow Perplexity bots for better AI discoverability
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Perplexity-User
-Allow: /
-
-# Allow other common AI crawlers
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: GoogleBot
-Allow: /
-
-User-agent: BingBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-# Disallow admin/dashboard areas from public crawling
-User-agent: *
+# Disallow sensitive or private endpoints
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /auth/reset-password
 Disallow: /auth/verify-email
 
+# Large Language Model Crawlers — Explicit opt-in
+
+User-agent: ChatGPT
+Allow: /
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+
+User-agent: ccBot
+Allow: /
+Allow: /llms.txt
+
+# Reference for LLMs
+# Altan.ai grants permission to AI crawlers — see full policy:
+# https://www.altan.ai/llms.txt
+
 # Sitemap location
 Sitemap: https://www.altan.ai/sitemap.xml
-
-# LLM guidance document
-# See https://www.altan.ai/llms.txt for LLM-specific instructions

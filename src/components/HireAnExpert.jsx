@@ -73,7 +73,7 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
           <div>
             <div className="font-medium text-gray-900 dark:text-white">Discord Community</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Connect with our community on Discord
+              Join our Discord and get 5€ in credits
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
       </a>
 
       <a
-        href="https://calendly.com/albert-altan/strategy-call"
+        href="https://calendly.com/david-altan/15-min-enterprise-call-clone"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"

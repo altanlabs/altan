@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import FeaturedSection from './components/FeaturedSection';
@@ -10,21 +10,20 @@ import { PATH_DASHBOARD } from '../../../../routes/paths';
 import { optimai_shop } from '../../../../utils/axios';
 import TemplateCard from '../components/card/TemplateCard';
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE = 24;
 
 const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
   const history = useHistory();
   const location = useLocation();
-  
+
   // Parse search params manually for React Router v5
   const searchParams = new URLSearchParams(location.search);
   const setSearchParams = (newParams) => {
     history.replace({
       pathname: location.pathname,
-      search: newParams.toString()
+      search: newParams.toString(),
     });
   };
-  const loadMoreRef = useRef(null);
 
   // Separate state for featured and community templates
   const [featuredTemplates, setFeaturedTemplates] = useState([]);
@@ -161,33 +160,6 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
       fetchCommunityTemplates(templateType, newOffset, false, true);
     }
   }, [fetchCommunityTemplates, templateType, offset, loadingMore, loadingCommunity, hasMore]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const target = entries[0];
-        if (target.isIntersecting) {
-          loadMoreTemplates();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '100px', // Start loading 100px before the element comes into view
-      },
-    );
-
-    const currentLoadMoreRef = loadMoreRef.current;
-    if (currentLoadMoreRef) {
-      observer.observe(currentLoadMoreRef);
-    }
-
-    return () => {
-      if (currentLoadMoreRef) {
-        observer.unobserve(currentLoadMoreRef);
-      }
-    };
-  }, [loadMoreTemplates]);
 
   // Update URL when template type changes
   const updateTemplateType = (newType) => {
@@ -437,16 +409,16 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
           !loadingCommunity &&
           !loadingMore &&
           !switchingType ? (
-        // Show EmptyContent only if no community templates found and not loading
-              <EmptyContent
-                title="No templates found"
-                description="Try adjusting your search or filters"
-                img="/assets/illustrations/illustration_empty_content.svg"
-              />
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                  {sortedCommunityTemplates.map((template) => (
+          // Show EmptyContent only if no community templates found and not loading
+          <EmptyContent
+            title="No templates found"
+            description="Try adjusting your search or filters"
+            img="/assets/illustrations/illustration_empty_content.svg"
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {sortedCommunityTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={template}
@@ -454,32 +426,39 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
                   templateType={templateType}
                 />
               ))}
-                </div>
+            </div>
 
-                {/* Load More Trigger */}
-                {hasMore && (
-                  <div
-                    ref={loadMoreRef}
-                    className="flex justify-center py-8"
-                  >
-                    {loadingMore && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                      <SkeletonCard key={`loading-skeleton-${index}`} />
-                    ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* End of results message */}
-                {!hasMore && !hasActiveFilters && communityTemplates.length > 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-secondary">You&apos;ve reached the end of the templates</p>
-                  </div>
-                )}
-              </>
+            {/* Load More Button */}
+            {hasMore && !loadingMore && (
+              <div className="flex justify-center py-8">
+                <button
+                  onClick={loadMoreTemplates}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-darker transition-colors text-sm"
+                >
+                  Load More
+                </button>
+              </div>
             )}
+
+            {/* Loading More Skeleton */}
+            {loadingMore && (
+              <div className="py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <SkeletonCard key={`loading-skeleton-${index}`} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* End of results message */}
+            {!hasMore && !hasActiveFilters && communityTemplates.length > 0 && (
+              <div className="text-center py-8">
+                <p className="text-secondary">You&apos;ve reached the end of the templates</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

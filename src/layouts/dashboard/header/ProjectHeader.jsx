@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 // @mui
-import { Stack, AppBar, Toolbar, Typography, Tooltip, Button } from '@mui/material';
+import { Stack, AppBar, Toolbar, Typography, Tooltip, Button, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 // react
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
@@ -53,6 +53,75 @@ const isIOSCapacitor = () => {
   }
 };
 
+// Mobile Actions Menu Component
+const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (action) => {
+    handleClose();
+    action();
+  };
+
+  return (
+    <>
+      <Tooltip title="More actions">
+        <HeaderIconButton onClick={handleClick}>
+          <Iconify icon="mdi:dots-vertical" className="w-5 h-5" />
+        </HeaderIconButton>
+      </Tooltip>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleMenuItemClick(onDistribution)}>
+          <ListItemIcon>
+            <Iconify icon="mdi:broadcast" className="w-5 h-5" />
+          </ListItemIcon>
+          <ListItemText>Distribution</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick(onHistory)}>
+          <ListItemIcon>
+            <Iconify icon="mdi:history" className="w-5 h-5" />
+          </ListItemIcon>
+          <ListItemText>History</ListItemText>
+        </MenuItem>
+        {onSettings && (
+          <MenuItem onClick={() => handleMenuItemClick(onSettings)}>
+            <ListItemIcon>
+              <Iconify icon="mdi:cog" className="w-5 h-5" />
+            </ListItemIcon>
+            <ListItemText>Settings</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem onClick={() => handleMenuItemClick(onUpgrade)}>
+          <ListItemIcon>
+            <Iconify icon="material-symbols:crown" className="w-5 h-5" />
+          </ListItemIcon>
+          <ListItemText>Upgrade</ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
+  );
+};
+
 function ProjectHeader() {
   const theme = useTheme();
   const history = useHistory();
@@ -64,7 +133,7 @@ function ProjectHeader() {
   const isMobile = useResponsive('down', 'sm');
   const dispatch = useDispatch();
   const isIOS = isIOSCapacitor();
-  
+
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
@@ -84,8 +153,8 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   useEffect(() => {
-    if (isMobile && displayMode === 'both') {
-      dispatch(setDisplayMode('preview'));
+    if (isMobile && displayMode === 'chat') {
+      dispatch(setDisplayMode('both'));
     }
   }, [isMobile, displayMode, dispatch]);
 
@@ -167,7 +236,6 @@ function ProjectHeader() {
     };
 
     if (isIOS) {
-      // Add safe area inset to top padding for iOS
       return {
         ...baseStyles,
         paddingTop: 'env(safe-area-inset-top)',
@@ -207,46 +275,19 @@ function ProjectHeader() {
                     onAddClick={() => setOpenComponentDialog(true)}
                   />
                 )}
-                {altaner?.room_id && (
+                {altaner?.room_id && !isMobile && (
                   <Tooltip
-                    title={
-                      isMobile
-                        ? displayMode === 'preview'
-                          ? 'Switch to Chat'
-                          : 'Switch to Preview'
-                        : displayMode === 'both'
-                          ? 'Switch to Preview Only'
-                          : displayMode === 'preview'
-                            ? 'Switch to Chat Only'
-                            : 'Switch to Both'
-                    }
+                    title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
                   >
                     <HeaderIconButton
                       onClick={() => {
-                        let nextMode;
-                        if (isMobile) {
-                          // Mobile: Only toggle between preview and chat
-                          nextMode = displayMode === 'preview' ? 'chat' : 'preview';
-                        } else {
-                          // Desktop: Cycle through all three modes
-                          nextMode =
-                            displayMode === 'both'
-                              ? 'preview'
-                              : displayMode === 'preview'
-                                ? 'chat'
-                                : 'both';
-                        }
+                        // Toggle between preview and both modes only
+                        const nextMode = displayMode === 'preview' ? 'both' : 'preview';
                         dispatch(setDisplayMode(nextMode));
                       }}
                     >
                       <Iconify
-                        icon={
-                          displayMode === 'chat'
-                            ? 'eva:message-square-fill'
-                            : displayMode === 'preview'
-                              ? 'eva:eye-outline'
-                              : 'mdi:view-split-horizontal'
-                        }
+                        icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
                         className="w-5 h-5"
                       />
                     </HeaderIconButton>
@@ -266,7 +307,7 @@ function ProjectHeader() {
                       {/* Sliding indicator with icon */}
                       <div
                         className={`absolute w-6 h-6 rounded-sm shadow-lg transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex items-center justify-center will-change-transform ${
-                          viewType === 'preview' ? 'left-1 scale-100' : 'right-1 scale-105'
+                          viewType === 'code' ? 'left-1 scale-100' : 'right-1 scale-105'
                         }`}
                         style={{
                           backgroundColor:
@@ -338,7 +379,37 @@ function ProjectHeader() {
           >
             {altaner?.id &&
               (isMobile ? (
-                <></>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                >
+                  <MobileActionsMenu
+                    onDistribution={() => setOpenSettings(true)}
+                    onHistory={() => setOpenVersionHistory(true)}
+                    onSettings={
+                      isInterfaceComponent && interfaceId ? () => setOpenSettingsDrawer(true) : null
+                    }
+                    onUpgrade={() => history.push('/pricing')}
+                  />
+                  <Tooltip title="Publish">
+                    <HeaderIconButton
+                      onClick={() => setOpenPublishDialog(true)}
+                      sx={{
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                      }}
+                    >
+                      <Iconify
+                        icon="mdi:rocket-launch-outline"
+                        className="w-5 h-5"
+                      />
+                    </HeaderIconButton>
+                  </Tooltip>
+                </Stack>
               ) : (
                 <Stack
                   direction="row"

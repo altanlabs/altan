@@ -11,10 +11,8 @@ const formatMembers = (members = []) => {
 
         return {
           id: user.id,
-          name: user.person
-            ? `${user.person.first_name || ''} ${user.person.last_name || ''}`.trim()
-            : user.email || 'Unknown User',
-          avatar: user.person?.avatar_url || '',
+          name: user.first_name || user.last_name || user.email || 'Unknown User',
+          avatar: user.avatar_url || '',
           email: user.email || '',
           member_id: user.member_id,
         };

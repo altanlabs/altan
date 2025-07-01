@@ -378,6 +378,12 @@ const FlowCanvasToolbar = ({
 
   const toggleRunningExecutions = useCallback(() => setShowRunningExecutions((prev) => !prev), []);
 
+  // Memoize the flow settings schema to prevent infinite re-renders
+  const memoizedFlowSettingsSchema = useMemo(() => {
+    if (!flow) return null;
+    return flowSettingsSchema(flow);
+  }, [flow?.id, flow?.name, flow?.description, flow?.is_active, flow?.member_id]);
+
   useEffect(() => {
     if (!runningExecutions?.length) {
       setShowRunningExecutions(false);
@@ -398,7 +404,7 @@ const FlowCanvasToolbar = ({
         <FormDialog
           open={flowSettingOpen}
           onClose={() => setFlowSettingOpen(false)}
-          schema={flowSettingsSchema(flow)}
+          schema={memoizedFlowSettingsSchema}
           title="Edit Flow Settings"
           description={`FlowId: ${flow?.id}`}
           onConfirm={onConfirmEditDialog}

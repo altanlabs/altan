@@ -153,7 +153,7 @@ const Editor = ({
   };
 
   useMessageListener(
-    ['https://*.preview.altan.ai', 'https://dashboard.altan.ai', 'https://dev-local.altan.ai:5173'],
+    ['https://*.preview.altan.ai', 'https://www.altan.ai', 'https://dev-local.altan.ai:5173'],
     (event) => {
       const data = event.data;
       // console.debug('Received message (roomui):', data);

@@ -33,11 +33,16 @@ import DesktopRoom from './DesktopRoom.jsx';
 // const MobileRoom = Loadable(lazy(() => import('./MobileRoom.jsx')));
 // const DesktopRoom = Loadable(lazy(() => import('./DesktopRoom.jsx')));
 
-
 const selectInitializedRoom = selectRoomStateInitialized('room');
 const selectLoadingRoom = selectRoomStateLoading('room');
 
-const Room = ({ roomId, header = true }) => {
+const Room = ({
+  roomId,
+  header = true,
+  previewComponent = null,
+  isMobile = false,
+  mobileActiveView = 'chat',
+}) => {
   const history = useHistory();
   const { guest, user } = useAuthContext();
 
@@ -52,7 +57,7 @@ const Room = ({ roomId, header = true }) => {
 
   const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))
-              .then((response) => !response && history.replace('/404'))
+      .then((response) => !response && history.replace('/404'))
       .catch((error) => {
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
@@ -82,7 +87,12 @@ const Room = ({ roomId, header = true }) => {
 
   return (
     <RoomAuthGuard>
-      <DesktopRoom header={header} />
+      <DesktopRoom
+        header={header}
+        previewComponent={previewComponent}
+        isMobile={isMobile}
+        mobileActiveView={mobileActiveView}
+      />
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}
     </RoomAuthGuard>
   );

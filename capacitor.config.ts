@@ -13,7 +13,6 @@ const config: CapacitorConfig = {
       'https://api.altan.ai',
       'https://api.dev.altan.ai',
       'https://altan.ai',
-      'https://dashboard.altan.ai'
     ]
   },
   plugins: {

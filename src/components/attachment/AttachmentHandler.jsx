@@ -113,6 +113,9 @@ const AttachmentHandler = ({
   containerRef = null,
   isSendEnabled = false,
   editorRef,
+  mode = 'standard',
+  mobileActiveView = 'chat',
+  onMobileToggle = null,
 }) => {
   // For drag-and-drop
   const [dragOver, setDragOver] = useState(false);
@@ -337,7 +340,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
    ***************************************************************************/
   useEffect(() => {
     // Not inside a Panel => handle global drag events
-    if (!containerRef.current) {
+    if (!containerRef || !containerRef.current) {
       return;
     }
     const handleWindowDragOver = (event) => {
@@ -379,7 +382,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
   }, [threadId]); // Note: Original code had threadId here, keeping it for now
 
   // The container into which we'll portal the overlay
-  const overlayContainer = containerRef.current;
+  const overlayContainer = containerRef?.current;
 
   return (
     <div className="relative flex flex-col w-full">
@@ -395,8 +398,8 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
 
       {/* BOTTOM ROW: Buttons */}
       <div className="flex items-center justify-between w-full">
+        {/* LEFT: Attach button with menu */}
         <div className="flex items-center gap-2">
-          {/* LEFT: Attach button with menu */}
           <button
             onClick={handleMenuOpen}
             className="flex items-center justify-center p-1 rounded-full
@@ -430,6 +433,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
           >
             {displayMenuItems.map((item) => (
               <MenuItem
+                key={item.type}
                 onClick={() => handleFileInputClick(item.type)}
                 className="flex flex-col items-start py-1 px-2 bg-white/30 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/60 backdrop-blur-lg rounded-lg"
               >
@@ -443,6 +447,32 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
             ))}
           </Menu>
         </div>
+
+        {/* CENTER: Mobile toggle buttons */}
+        {mode === 'mobile' && onMobileToggle && (
+          <div className="flex items-center gap-1 p-1 rounded-full bg-gray-200/50 dark:bg-gray-800/50">
+            <button
+              onClick={() => onMobileToggle('chat')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                mobileActiveView === 'chat'
+                  ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => onMobileToggle('preview')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                mobileActiveView === 'preview'
+                  ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              Preview
+            </button>
+          </div>
+        )}
 
         {/* RIGHT: Speech Recognition and Send buttons */}
         <div className="flex items-center gap-2">

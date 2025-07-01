@@ -53,7 +53,10 @@ const FloatingTextArea = ({
   containerRef = null,
   roomId = null,
   autoFocus = true,
+  mobileActiveView = 'chat',
+  onMobileToggle = null,
 }) => {
+  console.log('FloatingTextArea', { threadId, messageId, mode, containerRef, roomId, autoFocus });
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
@@ -102,7 +105,7 @@ const FloatingTextArea = ({
     try {
       const response = await optimai_room.get(`/${roomId}/join`);
       if (response.status === 200 || response.status === 201) {
-        //TODO: fix this to not reload the page
+        // TODO: fix this to not reload the page
         window.location.reload();
       } else {
         throw new Error('You must be part of the workspace!');
@@ -157,7 +160,7 @@ const FloatingTextArea = ({
           </Stack>
         </div>
       )}
-      {!isViewer && mode === 'standard' && <FileUpload threadId={threadId} />}
+      {!isViewer && (mode === 'standard' || mode === 'mobile') && <FileUpload threadId={threadId} />}
       {isViewer ? (
         <div className="flex flex-col items-center space-y-3 mb-4 text-center">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -202,7 +205,14 @@ const FloatingTextArea = ({
               deletions: 61,
             }}
           /> */}
-          <div className="relative flex w-full max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-[#1c1c1c] hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] focus-within:border-gray-400/30 dark:focus-within:border-white/15">
+          <div
+            className={`relative flex w-full flex-col gap-2 backdrop-blur-lg border transition-colors duration-200 ${
+              mode === 'mobile'
+                ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 border-t border-gray-200 dark:border-gray-700 p-3 rounded-t-2xl'
+                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] border-gray-300/20 dark:border-white/10 hover:bg-white/95 dark:hover:bg-[#1c1c1c] hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] focus-within:border-gray-400/30 dark:focus-within:border-white/15'
+            }`}
+            style={mode === 'mobile' ? { paddingBottom: 'max(12px, env(safe-area-inset-bottom))' } : undefined}
+          >
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3">
                 {attachments.map((attachment, index) => {
@@ -332,7 +342,7 @@ const FloatingTextArea = ({
                 autoFocus={autoFocus}
               />
             </div>
-            {!isViewer && mode === 'standard' && (
+            {!isViewer && (mode === 'standard' || mode === 'mobile') && (
               <AttachmentHandler
                 isSendEnabled={isSendEnabled}
                 onSendMessage={editorRef.current.sendMessage}
@@ -341,6 +351,9 @@ const FloatingTextArea = ({
                 setAttachments={setAttachments}
                 containerRef={containerRef}
                 editorRef={editorRef}
+                mode={mode}
+                mobileActiveView={mobileActiveView}
+                onMobileToggle={onMobileToggle}
               />
             )}
           </div>

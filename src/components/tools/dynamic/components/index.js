@@ -179,7 +179,6 @@ const IteratorAutocomplete = DynamicLoadable(
   lazy(() => import('../../../IteratorAutocomplete.jsx')),
 );
 const Webhook = DynamicLoadable(lazy(() => import('../../../webhook/Webhook.jsx')));
-const SystemFields = DynamicLoadable(lazy(() => import('../../../SystemFields.jsx')));
 const FilterSpec = DynamicLoadable(
   lazy(() => import('../../../graphqueryspec/filterspec/FilterSpec.jsx')),
 );
@@ -246,7 +245,6 @@ export const COMPONENTS = {
   AgentAutocomplete,
   AppsAutocomplete,
   Webhook,
-  SystemFields,
   FilterSpec,
   FileToUrl,
   AddressAutocompleteReal,

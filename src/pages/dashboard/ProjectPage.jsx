@@ -4,7 +4,10 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
+import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
+import Room from '../../components/room/Room.jsx';
+import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import {
   selectCurrentAltaner,
@@ -14,6 +17,7 @@ import {
   clearCurrentAltaner,
   setDisplayMode,
 } from '../../redux/slices/altaners';
+import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 
@@ -38,12 +42,20 @@ const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
   const chatIframeRef = React.useRef(null);
+  const mobileContainerRef = React.useRef(null);
   const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
+  const mainThreadId = useSelector(selectMainThread);
+  const isMobile = useResponsive('down', 'md');
+  const [mobileActiveView, setMobileActiveView] = React.useState('chat');
+
+  const handleMobileToggle = React.useCallback((view) => {
+    setMobileActiveView(view);
+  }, []);
   // Get active component from URL path param
   const activeComponentId = componentId || null;
   // Fetch the altaner on component mount
@@ -171,7 +183,7 @@ export default function ProjectPage() {
         altanerComponentType={acType}
         altanerComponentId={currentComponent?.id || acType}
         // Pass the item ID directly to the component if it needs an item ID and we have one
-        {... (needsItemId && itemId ? { id: itemId } : {})}
+        {...(needsItemId && itemId ? { id: itemId } : {})}
         altanerProps={{
           altanerId: altanerId,
           altanerComponentId: currentComponent?.id,
@@ -184,6 +196,48 @@ export default function ProjectPage() {
 
   if (isLoading) {
     return <LoadingFallback />;
+  }
+
+  // Mobile layout
+  if (isMobile && altaner?.room_id) {
+    const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
+
+    return (
+      <CompactLayout
+        title={altaner?.name || 'Project'}
+        noPadding
+      >
+        <div className="relative h-full" ref={mobileContainerRef}>
+          <Room
+            key={altaner?.room_id}
+            roomId={altaner?.room_id}
+            header={false}
+            previewComponent={previewComponent}
+            isMobile={true}
+            mobileActiveView={mobileActiveView}
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0"
+            style={{ zIndex: 1100 }}
+          >
+            {mainThreadId ? (
+              <FloatingTextArea
+                threadId={mainThreadId}
+                roomId={altaner.room_id}
+                mode="mobile"
+                containerRef={mobileContainerRef}
+                mobileActiveView={mobileActiveView}
+                onMobileToggle={handleMobileToggle}
+              />
+            ) : (
+              <div className="p-4 text-center text-gray-500 bg-white/90 dark:bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-300/20 dark:border-white/10">
+                Loading chat...
+              </div>
+            )}
+          </div>
+        </div>
+      </CompactLayout>
+    );
   }
 
   return (
@@ -219,14 +273,10 @@ export default function ProjectPage() {
                       overflow: 'hidden',
                     }}
                   >
-                    {/* <Room
+                    <Room
                       key={altaner?.room_id}
                       roomId={altaner?.room_id}
                       header={false}
-                    /> */}
-                    <iframe
-                      src={`/room/${altaner?.room_id}?header=false`}
-                      style={{ width: '100%', height: '100%', border: 'none' }}
                     />
                   </Box>
                 )}
@@ -250,14 +300,10 @@ export default function ProjectPage() {
             // Chat only mode: Full screen Room
             altaner?.room_id && (
               <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                {/* <Room
+                <Room
                   key={altaner?.room_id}
                   roomId={altaner?.room_id}
                   header={false}
-                /> */}
-                <iframe
-                  src={`/room/${altaner?.room_id}?header=false`}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
                 />
               </Box>
             )

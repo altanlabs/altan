@@ -1,6 +1,6 @@
 import { Box, Stack } from '@mui/material';
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import ConnectionsPage from './ConnectionsPage.jsx';
 import useResponsive from '../../hooks/useResponsive';
@@ -40,8 +40,18 @@ const TABS = {
 function IntegrationPage() {
   // const account = useSelector(selectAccount);
   const isSmallScreen = useResponsive('down', 'sm');
-  const [searchParams, setSearchParams] = useLocation();
+  const location = useLocation();
+  const history = useHistory();
   const [currentTab, setCurrentTab] = useState('connections');
+
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString(),
+    });
+  };
 
   // const accountId = useMemo(() => account?.id, [account?.id]);
 
@@ -50,10 +60,11 @@ function IntegrationPage() {
     if (tabParam && tabParam in TABS) {
       setCurrentTab(tabParam);
     } else {
-      searchParams.set('tab', 'connections');
-      setSearchParams(searchParams);
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.set('tab', 'connections');
+      setSearchParams(newSearchParams);
     }
-  }, [searchParams]);
+  }, [location.search]);
 
   // useEffect(() => {
   //   if (accountId) {
@@ -63,10 +74,11 @@ function IntegrationPage() {
 
   const handleTabChange = useCallback(
     (newTab) => {
-      searchParams.set('tab', newTab);
-      setSearchParams(searchParams);
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.set('tab', newTab);
+      setSearchParams(newSearchParams);
     },
-    [searchParams, setSearchParams],
+    [location.search],
   );
 
   return (

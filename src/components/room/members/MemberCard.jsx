@@ -167,7 +167,7 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
         {/* Agent Link */}
         {type === 'agent' && !!member?.member?.agent && (
           <a
-            href={`https://dashboard.altan.ai/agent/${member.member.agent.id}?acc=${member.member.agent.account_id}`}
+            href={`https://www.altan.ai/agent/${member.member.agent.id}?acc=${member.member.agent.account_id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1 mt-1 rounded-lg

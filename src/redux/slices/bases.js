@@ -761,8 +761,8 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
 };
 
 export const loadAllTableRecords = (tableId, forceReload = false) => async (dispatch, getState) => {
-  const BATCH_SIZE = 5000;
-  const DELAY_BETWEEN_BATCHES = 200;
+  const BATCH_SIZE = 3000;
+  const DELAY_BETWEEN_BATCHES = 500;
 
   const state = getState();
   const recordsState = state.bases.recordsState[tableId];

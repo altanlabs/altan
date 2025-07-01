@@ -19,12 +19,12 @@ const ConnectionCard = ({ connection }) => {
           <div className="flex flex-row items-center">
             <CustomAvatar
               sx={{ width: 24, height: 24, mr: 1 }}
-              name={created_by?.user?.person?.first_name}
-              src={created_by?.user?.person?.avatar_url}
+              name={created_by?.user?.first_name}
+              src={created_by?.user?.avatar_url}
             />
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Created by {created_by?.user?.person?.first_name}{' '}
-              {created_by?.user?.person?.last_name}
+              Created by {created_by?.user?.first_name}{' '}
+              {created_by?.user?.last_name}
             </p>
           </div>
         )}

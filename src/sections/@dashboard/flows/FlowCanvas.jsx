@@ -1,8 +1,9 @@
+import { Capacitor } from '@capacitor/core';
 import { AnimatePresence } from 'framer-motion';
 import { throttle } from 'lodash';
 import React, { memo, useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { batch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 import ReactFlow, {
   useReactFlow,
   // MiniMap,
@@ -44,6 +45,15 @@ import {
   selectInitializedNodes,
 } from '../../../redux/slices/flows';
 import { dispatch } from '../../../redux/store';
+
+// Better mobile detection using Capacitor
+const isCapacitorMobile = () => {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+};
 
 const getMenuCoordinates = (event, pane) => ({
   top: event.clientY < pane.height - 250 ? event.clientY : null,
@@ -133,8 +143,18 @@ const FlowCanvas = (
 ) => {
   const ws = useWebSocket();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const [searchParams, setSearchParams] = useLocation();
+  const location = useLocation();
+  const history = useHistory();
   const [fromTemplate, setFromTemplate] = useState(false);
+
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString(),
+    });
+  };
   // const [selectionOnDrag, setSelectionOnDrag] = useState(false);
   const selectionOnDrag = useKeyPress(['Meta', 'Ctrl']);
   const [isHelpOpen, setHelpOpen] = useState(false);
@@ -178,17 +198,41 @@ const FlowCanvas = (
     if (!fromTemplate) {
       const id = searchParams.get('fromtemplate');
       setFromTemplate(id);
-      searchParams.delete('fromtemplate');
-      setSearchParams(searchParams);
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.delete('fromtemplate');
+      setSearchParams(newSearchParams);
     }
-  }, [searchParams]);
+  }, [location.search]);
 
   // const onInit = useCallback(() => setInitializedFlow(true), []);
   const isMobile = useMemo(() => {
-    const userAgent = typeof navigator === 'undefined' ? 'SSR' : navigator.userAgent;
+    if (isCapacitorMobile()) {
+      return true;
+    }
 
+    // Fallback to user agent detection
+    const userAgent = typeof navigator === 'undefined' ? 'SSR' : navigator.userAgent;
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   }, []);
+
+  // Mobile-specific optimizations
+  const mobileOptimizations = useMemo(() => {
+    if (!isMobile) return {};
+
+    return {
+      // Reduce update frequency on mobile for better performance
+      nodesDraggable: true,
+      nodesConnectable: true,
+      elementsSelectable: true,
+      // Increase touch target size
+      nodeExtent: undefined,
+      // Optimize for touch interactions
+      fitViewOptions: {
+        padding: 0.1,
+        includeHiddenNodes: false,
+      },
+    };
+  }, [isMobile]);
 
   const deleteConfirmationMessage = useMemo(
     () =>
@@ -669,6 +713,7 @@ const FlowCanvas = (
           onEdgesDelete={onEdgesDelete}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
+          {...mobileOptimizations}
         >
           {/* <MiniMap style={minimapStyle} zoomable pannable /> */}
           <FlowLayoutedNodes

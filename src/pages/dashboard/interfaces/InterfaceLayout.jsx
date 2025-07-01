@@ -4,9 +4,10 @@ import React, { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import Codebase from './components/code/Codebase.jsx';
-import Preview from './components/Preview';
-import { selectViewType } from '../../../redux/slices/altaners';
 import IframeControls from './components/IframeControls.jsx';
+import Preview from './components/Preview';
+import useResponsive from '../../../hooks/useResponsive.js';
+import { selectViewType } from '../../../redux/slices/altaners';
 
 /**
  * ResponsiveInterfaceLayout Component
@@ -26,10 +27,11 @@ function InterfaceLayout({
 }) {
   const [fatalError, setFatalError] = useState(null);
   const viewType = useSelector(selectViewType);
+  const isMobile = useResponsive('down', 'md');
 
   // Main content: Toolbar and then either Preview or Codebase.
   const mainContent = (
-    <Box className="w-full h-full relative overflow-hidden pb-2 px-2">
+    <Box className={`w-full h-full relative overflow-hidden ${isMobile ? '' : 'pb-2 px-2'}`}>
       <Box className="flex flex-col h-full border border-divider rounded-xl overflow-hidden">
         {viewType === 'preview' ? (
           <>

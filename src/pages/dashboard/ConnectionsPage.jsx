@@ -163,7 +163,7 @@ const ResourcePanel = ({ data }) => {
 
 function ConnectionsPage() {
   const theme = useTheme();
-  const [searchParams] = useLocation();
+  const location = useLocation();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [selectedConnection, setSelectedConnection] = useState(null);
   const openDeleteDialog = (id) => setSelectedConnection(id);
@@ -203,13 +203,14 @@ function ConnectionsPage() {
   };
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('conn');
     if (!!id) {
       setSelectedType(id);
       setDialog(true);
       setIsTemplate(true);
     }
-  }, [searchParams]);
+  }, [location.search]);
 
   useEffect(() => {
     dispatch(getConnections(account?.id));
@@ -285,12 +286,12 @@ function ConnectionsPage() {
                 sx={{ mt: 1 }}
               >
                 <CustomAvatar
-                  name={user?.person?.first_name}
-                  src={user?.person?.avatar_url}
+                  name={user?.first_name}
+                  src={user?.avatar_url}
                   sx={{ width: 24, height: 24 }}
                 />
                 <Typography variant="caption">
-                  {user?.person?.first_name} {user?.person?.last_name}
+                  {user?.first_name} {user?.last_name}
                 </Typography>
               </Stack>
             </Box>

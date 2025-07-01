@@ -66,7 +66,7 @@ export default function SubscriptionGroup({ subscriptionIds, onClose, currentPla
 
     try {
       setIsLoading(true);
-      const client = await findClient(accountId, user.person.id);
+      const client = await findClient(accountId, user.id);
       const orderData = prepareOrderData(selectedPlans, selectedCurrency.code, yearly);
       orderData.client_id = client.id;
       orderData.meta_data = {

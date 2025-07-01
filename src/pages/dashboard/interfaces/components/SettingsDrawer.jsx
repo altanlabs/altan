@@ -412,7 +412,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                         try {
                           // Remove both Altan script tags
                           const scriptTags = [
-                            '<script src="https://dashboard.altan.ai/snippet.js"></script>',
+                            '<script src="https://www.altan.ai/snippet.js"></script>',
                             '<script src="https://www.altan.ai/snippet.js"></script>',
                           ];
 

@@ -60,7 +60,7 @@ const WidgetPreview = memo(({ agentData, onConfigureWidget }) => {
     </head>
     <body>
       <!-- Real Widget Script -->
-      <script src="https://dashboard.altan.ai/altan-voice-widget.js" altan-agent-id="${agentData.id}"></script>
+      <script src="https://www.altan.ai/altan-voice-widget.js" altan-agent-id="${agentData.id}"></script>
     </body>
     </html>
   `;

@@ -80,7 +80,7 @@ const RemixPage = () => {
     }
 
     if (selectedComponent === 'base' && component.params?.ids?.[0]) {
-      return `https://dashboard.altan.ai/database/${component.params.ids[0]}`;
+      return `https://www.altan.ai/database/${component.params.ids[0]}`;
     }
 
     return '';

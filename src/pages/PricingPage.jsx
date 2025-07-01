@@ -27,8 +27,8 @@ export default function PricingPage() {
             variant="h5"
             sx={{ color: 'text.secondary', fontWeight: 400 }}
           >
-            Every subscription includes <strong>20% extra platform credits</strong>.
-            You can buy more credits at any time.
+            Every subscription includes 20% extra platform credits. You can buy more credits at any
+            time.
           </Typography>
         </Stack>
 

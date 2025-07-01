@@ -54,7 +54,7 @@ const TemplateItem = memo(({ version, mode }) => {
   }, [version.id]);
 
   const handleShareTemplate = useCallback(() => {
-    const shareLink = `https://dashboard.altan.ai/flows?template=${version.id}`;
+    const shareLink = `https://www.altan.ai/flows?template=${version.id}`;
     navigator.clipboard.writeText(shareLink);
     setShared(true);
     setTimeout(() => setShared(false), 2000);
@@ -426,7 +426,7 @@ const TemplateManager = ({
   );
 
   console.log('template', template);
-  
+
   if (!template) {
     return (
       <Box

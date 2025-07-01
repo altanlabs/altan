@@ -58,7 +58,7 @@ const FormDialog = ({
 
   const defaults = useMemo(
     () =>
-      Object.entries(schema.properties).reduce((obj, [key, value]) => {
+      Object.entries(schema.properties ?? {}).reduce((obj, [key, value]) => {
         obj[key] = value.default ?? DEFAULTS_BY_TYPE[value.type];
         return obj;
       }, {}),
@@ -66,8 +66,10 @@ const FormDialog = ({
   );
 
   useEffect(() => {
-    reset(defaults);
-  }, [defaults, reset]);
+    if (open) {
+      reset(defaults);
+    }
+  }, [defaults, reset, open]);
 
   return (
     <CustomDialog

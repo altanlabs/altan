@@ -76,10 +76,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   buyButton.addEventListener('click', function() {
     if (templateId) {
-      window.open(`https://dashboard.altan.ai/template/${templateId}`, '_blank');
+      window.open(`https://www.altan.ai/template/${templateId}`, '_blank');
     } else {
       console.error('Template ID not found');
-      window.open('https://dashboard.altan.ai', '_blank');
+      window.open('https://www.altan.ai', '_blank');
     }
   });
   

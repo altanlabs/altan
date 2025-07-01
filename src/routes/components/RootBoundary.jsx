@@ -141,7 +141,7 @@ const RootBoundary = ({ error = null }) => {
               <Button
                 fullWidth
                 component={RouterLink}
-                to="https://dashboard.altan.ai/"
+                to="https://www.altan.ai/"
                 size="large"
                 variant="soft"
                 color="inherit"

@@ -29,7 +29,12 @@ const roomSelector = createSelector(
   },
 );
 
-const DesktopRoom = ({ header = true }) => {
+const DesktopRoom = ({
+  header = true,
+  previewComponent = null,
+  isMobile = false,
+  mobileActiveView = 'chat',
+}) => {
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
@@ -47,6 +52,36 @@ const DesktopRoom = ({ header = true }) => {
 
   const renderRoomContent = <RoomContent className="w-full" />;
 
+  // Mobile layout with toggle
+  if (isMobile && previewComponent) {
+    return (
+      <div className="flex flex-col h-full relative">
+        {/* Show toolbar in preview mode, hide in chat mode */}
+        {mobileActiveView !== 'preview' && (
+          <GeneralToolbar
+            isLoading={isLoading || !initialized.room}
+            header={header}
+          />
+        )}
+
+        {/* Main content area - conditional padding based on view */}
+        <div
+          className="flex-1 relative"
+          style={{
+            paddingBottom: mobileActiveView === 'chat' ? '0px' : '90px',
+          }}
+        >
+          {mobileActiveView === 'chat' ? (
+            <Threads hideInput />
+          ) : (
+            <div className="h-full w-full">{previewComponent}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Original desktop layout
   return (
     <PanelGroup direction="horizontal">
       {isSmallScreen ? (
@@ -90,7 +125,10 @@ const DesktopRoom = ({ header = true }) => {
         order={2}
       >
         <div className="flex flex-col w-full h-full relative">
-          <GeneralToolbar isLoading={isLoading || !initialized.room} header={header} />
+          <GeneralToolbar
+            isLoading={isLoading || !initialized.room}
+            header={header}
+          />
           <Threads />
         </div>
       </Panel>

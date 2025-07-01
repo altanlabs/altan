@@ -14,7 +14,7 @@ const selectAllThreadsInitialized = selectRoomStateInitialized('allThreads');
 const selectParentThreadLoading = selectRoomStateLoading('mainThread');
 const selectAllThreadsLoading = selectRoomStateLoading('allThreads');
 
-const Threads = () => {
+const Threads = ({ hideInput = false }) => {
   const parentThreadInitialized = useSelector(selectMainThreadInitialized);
   const allThreadsInitialized = useSelector(selectAllThreadsInitialized);
   const parentThreadLoading = useSelector(selectParentThreadLoading);
@@ -32,7 +32,7 @@ const Threads = () => {
     }
   }, [allThreadsInitialized, allThreadsLoading]);
 
-  return <ThreadsHistory />;
+  return <ThreadsHistory hideInput={hideInput} />;
 };
 
 export default memo(Threads);

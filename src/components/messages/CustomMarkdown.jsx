@@ -153,7 +153,7 @@ const CustomLink = ({ href, children }) => {
           };
 
           const resourceType = urlMap[resource.resourceName.toLowerCase()];
-          const baseUrl = `https://dashboard.altan.ai/${resourceType}`;
+          const baseUrl = `https://www.altan.ai/${resourceType}`;
 
           return (
             <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
