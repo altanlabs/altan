@@ -137,10 +137,7 @@ const InvitationMenuPopover = ({ isDashboard = false, redirect_url = null }) => 
         >
           {/* Header */}
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Invite
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Collaborators will use credits from the project owner&apos;s workspace ({user?.displayName || user?.email}&apos;s Workspace)
+            Invite Collaborators
           </Typography>
 
           {/* Role Selection */}

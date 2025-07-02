@@ -20,7 +20,7 @@ const getPicture = (member) => {
   }
   switch (member.member_type) {
     case 'agent':
-      return member.agent?.avatar_url ?? 'https://storage.googleapis.com/logos-chatbot-optimai/Subtract.png';
+      return member.agent?.avatar_url || null;
     case 'user':
       return member.user?.avatar_url || null;
     case 'guest':

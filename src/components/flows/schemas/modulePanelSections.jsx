@@ -162,6 +162,7 @@ export const modulesPanelSchema = {
         },
         Octopus: {
           icon: 'streamline:octopus',
+          name: 'Merger',
           description: 'Enables multiple path convergence into one path.',
           module: 'internal',
           args: {

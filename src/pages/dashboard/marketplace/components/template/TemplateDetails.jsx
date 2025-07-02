@@ -19,7 +19,7 @@ const formatPrice = (priceInCents) => {
 };
 
 const TemplateDetails = ({ templateId = null }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const account = useSelector(selectAccount);
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +83,21 @@ const TemplateDetails = ({ templateId = null }) => {
   }, [account, template, checkTemplateClonability]);
 
   const handleBackClick = () => {
-    history.push(`/${template?.entity_type}`);
+    let routeName;
+    switch (template?.entity_type) {
+      case 'workflow':
+        routeName = 'flows';
+        break;
+      case 'agent':
+        routeName = 'agents';
+        break;
+      case 'altaner':
+        routeName = '';
+        break;
+      default:
+        routeName = template?.entity_type;
+    }
+    history.push(`/${routeName}`);
   };
 
   const handleTemplateAction = async () => {

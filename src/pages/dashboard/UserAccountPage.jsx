@@ -128,7 +128,7 @@ function UserAccountPage() {
   }
 
   return (
-    <CompactLayout title="Workspace Settings · Altan">
+    <CompactLayout title="Workspace Settings · Altan" noPadding>
       <Stack
         height="100%"
         width="100%"

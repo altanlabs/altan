@@ -310,12 +310,6 @@ const ModuleNode = ({
           </div>
         </Tooltip>
       )}
-      {/* {
-        module.type === "trigger" && (
-          <FlowActiveStatus />
-        )
-      } */}
-
       <ModuleExecutionsOverview
         id="ModuleExecutionsOverview"
         status={data.status}

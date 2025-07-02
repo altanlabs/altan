@@ -15,7 +15,7 @@ const selectAllConnectionTypes = createSelector(
 );
 
 const WorkflowTemplateCard = ({ template }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const allConnectionTypes = useSelector(selectAllConnectionTypes);
 
   const name = template.name || template.public_name || 'Unnamed Template';

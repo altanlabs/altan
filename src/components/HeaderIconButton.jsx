@@ -1,4 +1,5 @@
 import { IconButton } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { forwardRef } from 'react';
 
@@ -18,25 +19,12 @@ const HeaderIconButton = forwardRef(({ children, sx, ...other }, ref) => (
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: '8px',
-      backgroundColor: (theme) =>
-        theme.palette.mode === 'dark'
-          ? '#1f2937' // gray-800
-          : '#f3f4f6', // gray-100
-      color: (theme) =>
-        theme.palette.mode === 'dark'
-          ? 'rgba(255, 255, 255, 0.8)'
-          : 'rgba(0, 0, 0, 0.7)',
+      color: (theme) => theme.palette.text.primary,
+      backgroundColor: (theme) => alpha(theme.palette.grey[500], 0.08),
       backdropFilter: 'blur(8px)',
       transition: 'colors 150ms cubic-bezier(.33,0,.2,1), background-color 150ms cubic-bezier(.33,0,.2,1)',
       '&:hover': {
-        backgroundColor: (theme) =>
-          theme.palette.mode === 'dark'
-            ? '#374151' // gray-700
-            : '#e5e7eb', // gray-200
-        color: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 1)'
-            : 'rgba(0, 0, 0, 1)',
+        backgroundColor: (theme) => alpha(theme.palette.grey[500], 0.24),
       },
       ...sx,
     }}

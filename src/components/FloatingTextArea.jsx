@@ -58,11 +58,9 @@ const FloatingTextArea = ({
   mode = 'standard',
   containerRef = null,
   roomId = null,
-  autoFocus = true,
   mobileActiveView = 'chat',
   onMobileToggle = null,
 }) => {
-  console.log('FloatingTextArea', { threadId, messageId, mode, containerRef, roomId, autoFocus });
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
@@ -75,28 +73,6 @@ const FloatingTextArea = ({
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [attachments, setAttachments] = useState([]);
   const editorRef = useRef({});
-
-  // iOS-specific handlers
-  const handleTouchStart = useCallback((e) => {
-    if (isIOS() && mode === 'mobile') {
-      // Prevent the container from scrolling when touching the text area
-      e.stopPropagation();
-    }
-  }, [mode]);
-
-  const handleFocus = useCallback((e) => {
-    if (isIOS() && mode === 'mobile') {
-      // Ensure the element stays visible on iOS
-      const element = e.target;
-      setTimeout(() => {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'nearest',
-        });
-      }, 300); // Wait for keyboard animation
-    }
-  }, [mode]);
 
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => !me || (!!me && ['viewer', 'listener'].includes(me.role)), [me]);
@@ -237,11 +213,11 @@ const FloatingTextArea = ({
             className={`relative flex w-full flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
                 ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
-                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg'
+                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
             }`}
             style={mode === 'mobile' ? {
               padding: '12px 12px 0 12px',
-              paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+              paddingBottom: isIOS() ? '0' : 'max(10px, env(safe-area-inset-bottom))',
               transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
               willChange: 'transform',
@@ -366,10 +342,7 @@ const FloatingTextArea = ({
               </div>
             )}
             <div className="flex flex-col w-full relative py-1">
-              <div
-                onTouchStart={handleTouchStart}
-                onFocus={handleFocus}
-              >
+              <div>
                 <Editor
                   key={`${threadId}_${messageId}`}
                   threadId={threadId}
@@ -378,7 +351,7 @@ const FloatingTextArea = ({
                   placeholder="Ask anything..."
                   setEditorEmpty={setEditorEmpty}
                   setAttachments={setAttachments}
-                  autoFocus={autoFocus}
+                  autoFocus={false}
                 />
               </div>
             </div>

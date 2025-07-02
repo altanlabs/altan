@@ -109,14 +109,14 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto py-8">
         {/* Main Card */}
-        <div className="rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
           {/* Avatar Section */}
-          <div className="relative bg-gradient-to-r from-primary to-secondary px-8 py-12">
+          <div className="relative bg-background px-8 py-12 border-b border-border">
             <div className="flex flex-col items-center">
               <div className="relative group">
-                <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-background shadow-xl">
+                <div className="w-32 h-32 rounded-full overflow-hidden ring-2 ring-border shadow-sm">
                   {avatarSrc ? (
                     <img
                       src={avatarSrc}
@@ -129,8 +129,8 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
-                <label className="absolute inset-0 flex items-center justify-center bg-accent bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
-                  <Upload className="w-8 h-8 text-background" />
+                <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
+                  <Upload className="w-8 h-8 text-white" />
                   <input
                     type="file"
                     accept="image/*"
@@ -139,64 +139,64 @@ const Profile = () => {
                   />
                 </label>
               </div>
-              <h2 className="mt-4 text-2xl font-bold text-background">
+              <h2 className="mt-4 text-2xl font-semibold text-foreground">
                 {profileData.first_name && profileData.last_name
                   ? `${profileData.first_name} ${profileData.last_name}`
                   : 'Your Name'}
               </h2>
-              <p className="text-background/90">{profileData.email}</p>
+              <p className="text-muted-foreground">{profileData.email}</p>
             </div>
           </div>
 
           {/* Form Section */}
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-8 bg-background">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Basic Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2 text-primary" />
+                  <User className="w-5 h-5 mr-2 text-muted-foreground" />
                   Basic Information
                 </h3>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">First Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
                   <input
                     type="text"
                     value={profileData.first_name || ''}
                     onChange={(e) => handleChangeUser('first_name', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                     placeholder="Enter your first name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Last Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
                   <input
                     type="text"
                     value={profileData.last_name || ''}
                     onChange={(e) => handleChangeUser('last_name', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                     placeholder="Enter your last name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Username</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Username</label>
                   <input
                     type="text"
                     value={profileData.user_name || ''}
                     onChange={(e) => handleChangeUser('user_name', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                     placeholder="Enter your username"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Gender</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Gender</label>
                   <select
                     value={profileData.gender || ''}
                     onChange={(e) => handleChangeUser('gender', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -209,12 +209,12 @@ const Profile = () => {
               {/* Contact Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                  <Mail className="w-5 h-5 mr-2 text-primary" />
+                  <Mail className="w-5 h-5 mr-2 text-muted-foreground" />
                   Contact Information
                 </h3>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Email Address
                   </label>
                   <input
@@ -222,44 +222,31 @@ const Profile = () => {
                     disabled
                     value={profileData.email || ''}
                     onChange={(e) => handleChangeUser('email', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-muted text-muted-foreground rounded-md cursor-not-allowed"
                     placeholder="Enter your email"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Phone Number
                   </label>
                   <input
                     type="tel"
                     value={profileData.phone || ''}
                     onChange={(e) => handleChangeUser('phone', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                     placeholder="Enter your phone number"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Birthday</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Birthday</label>
                   <input
                     type="date"
                     value={profileData.birthday || ''}
                     onChange={(e) => handleChangeUser('birthday', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Identification
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.identification || ''}
-                    onChange={(e) => handleChangeUser('identification', e.target.value)}
-                    className="w-full px-4 py-3 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    placeholder="Enter your ID number"
+                    className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
                   />
                 </div>
               </div>
@@ -270,7 +257,7 @@ const Profile = () => {
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground px-8 py-4 rounded-lg font-semibold shadow-lg hover:opacity-90 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-md font-medium hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
               >
                 {isLoading ? (
                   <>

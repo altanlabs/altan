@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { m } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { memo } from 'react';
@@ -32,7 +33,14 @@ const ComponentSwitcher = memo(
             width={16}
           />
         )}
-        {activeComponent?.name || 'Components'}
+        <Box
+          component="span"
+          sx={{
+            display: { xs: 'none', sm: 'inline' },
+          }}
+        >
+          {activeComponent?.name || 'Components'}
+        </Box>
         <m.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}

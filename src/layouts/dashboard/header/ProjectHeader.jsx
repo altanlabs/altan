@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 // @mui
 import { Stack, AppBar, Toolbar, Typography, Tooltip, Button, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 // react
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
@@ -301,7 +301,19 @@ function ProjectHeader() {
                       onClick={() => {
                         dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
                       }}
-                      className="relative flex items-center bg-gray-100 dark:bg-gray-800 rounded-md  h-[30px] w-12 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-98"
+                      style={{
+                        backgroundColor: alpha(theme.palette.grey[500], 0.08),
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.grey[500], 0.24),
+                        },
+                      }}
+                      className="relative flex items-center rounded-md h-[30px] w-12 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-opacity-80 active:scale-98"
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.24);
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
+                      }}
                       aria-label={`${viewType === 'code' ? 'Turn off' : 'Turn on'} Code Editor`}
                     >
                       {/* Sliding indicator with icon */}
@@ -312,22 +324,21 @@ function ProjectHeader() {
                         style={{
                           backgroundColor:
                             viewType === 'code'
-                              ? '#1E52F1'
-                              : theme.palette.mode === 'dark'
-                                ? '#000'
-                                : '#fff',
+                              ? theme.palette.primary.main
+                              : theme.palette.background.paper,
+                          color: viewType === 'code' ? theme.palette.primary.contrastText : theme.palette.text.secondary,
                           boxShadow:
                             viewType === 'code'
-                              ? '0 4px 14px 0 rgba(30, 82, 241, 0.25), 0 0 0 1px rgba(30, 82, 241, 0.1)'
-                              : '0 2px 8px 0 rgba(0, 0, 0, 0.1)',
+                              ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.25)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
+                              : theme.shadows[2],
                         }}
                       >
                         <Iconify
                           icon="mdi:code-tags"
                           className={`w-4 h-3 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
                             viewType === 'code'
-                              ? 'text-white scale-105'
-                              : 'text-gray-600 dark:text-gray-300 scale-100'
+                              ? 'scale-105'
+                              : 'scale-100'
                           }`}
                         />
                       </div>
@@ -337,8 +348,7 @@ function ProjectHeader() {
                         <div
                           className="absolute inset-0 rounded-full opacity-20 transition-all duration-600 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
                           style={{
-                            background:
-                              'radial-gradient(circle, rgba(30, 82, 241, 0.3) 0%, transparent 70%)',
+                            background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.3)} 0%, transparent 70%)`,
                             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                           }}
                         />
@@ -374,7 +384,6 @@ function ProjectHeader() {
             direction="row"
             alignContent="center"
             alignItems="center"
-            spacing={1}
             sx={{ height: HEADER.H_MOBILE }}
           >
             {altaner?.id &&

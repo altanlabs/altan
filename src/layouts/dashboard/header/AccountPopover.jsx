@@ -108,80 +108,73 @@ export default function AccountPopover() {
           },
         }}
       >
-        <StatusBadge
-          status={ws?.isOpen ? 'online' : 'offline'}
-          overlap="circular"
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          variant="dot"
-        >
-          <CustomAvatar
-            className="user-avatar-picture"
-            src={personProfile.avatar.url}
-            alt={personProfile.avatar.alt}
-            name={personProfile.name}
-            variant="rounded"
-            sx={{
-              transition: 'transform 300ms ease',
-              height: 30,
-              width: 30,
-            }}
-          />
-          {!!(user?.xsup && ws?.activeSubscriptions?.length) && (
-            <Tooltip
-              arrow
-              placement="bottom-start"
-              slotProps={{
-                tooltip: {
-                  sx: {
-                    padding: 0,
-                  },
+        <CustomAvatar
+          className="user-avatar-picture"
+          src={personProfile.avatar.url}
+          alt={personProfile.avatar.alt}
+          name={personProfile.name}
+          variant="rounded"
+          sx={{
+            transition: 'transform 300ms ease',
+            height: 30,
+            width: 30,
+          }}
+        />
+        {!!(user?.xsup && ws?.activeSubscriptions?.length) && (
+          <Tooltip
+            arrow
+            placement="bottom-start"
+            slotProps={{
+              tooltip: {
+                sx: {
+                  padding: 0,
                 },
-              }}
-              title={
-                <Card
+              },
+            }}
+            title={
+              <Card
+                sx={{
+                  width: 400,
+                  maxWidth: '90vw',
+                  maxHeight: '90vh',
+                  height: 600,
+                  padding: 2,
+                }}
+              >
+                <Stack
+                  width="100%"
+                  height="100%"
                   sx={{
-                    width: 400,
-                    maxWidth: '90vw',
-                    maxHeight: '90vh',
-                    height: 600,
-                    padding: 2,
+                    overflowY: 'auto',
                   }}
                 >
-                  <Stack
-                    width="100%"
-                    height="100%"
-                    sx={{
-                      overflowY: 'auto',
-                    }}
-                  >
-                    <Typography variant="h4">SuperAdmin Stats</Typography>
-                    <Typography variant="h6">
-                      Active subscriptions ({ws.activeSubscriptions.length}):
+                  <Typography variant="h4">SuperAdmin Stats</Typography>
+                  <Typography variant="h6">
+                    Active subscriptions ({ws.activeSubscriptions.length}):
+                  </Typography>
+                  {ws.activeSubscriptions.map((as) => (
+                    <Typography
+                      key={as}
+                      variant="caption"
+                    >
+                      {as}
                     </Typography>
-                    {ws.activeSubscriptions.map((as) => (
-                      <Typography
-                        key={as}
-                        variant="caption"
-                      >
-                        {as}
-                      </Typography>
-                    ))}
-                  </Stack>
-                </Card>
-              }
-            >
-              <Iconify
-                icon="mdi:info"
-                sx={{
-                  position: 'absolute',
-                  bottom: -2,
-                  left: -2,
-                }}
-                width={10}
-              />
-            </Tooltip>
-          )}
-        </StatusBadge>
+                  ))}
+                </Stack>
+              </Card>
+            }
+          >
+            <Iconify
+              icon="mdi:info"
+              sx={{
+                position: 'absolute',
+                bottom: -2,
+                left: -2,
+              }}
+              width={10}
+            />
+          </Tooltip>
+        )}
       </IconButton>
 
       <MenuPopover
@@ -305,7 +298,11 @@ export default function AccountPopover() {
             Preferences
           </Typography>
 
-          <Stack direction="row" spacing={1} alignItems="end">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="end"
+          >
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="caption"
@@ -326,7 +323,9 @@ export default function AccountPopover() {
                 }}
               >
                 <Iconify
-                  icon={themeMode === 'light' ? 'solar:sun-2-bold-duotone' : 'iconamoon:mode-dark-light'}
+                  icon={
+                    themeMode === 'light' ? 'solar:sun-2-bold-duotone' : 'iconamoon:mode-dark-light'
+                  }
                   width={18}
                 />
               </IconButton>

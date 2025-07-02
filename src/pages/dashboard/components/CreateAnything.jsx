@@ -203,7 +203,7 @@ function CreateAnything({ handleVoice }) {
                       {chipCategories.find((cat) => cat.id === selectedCategory)?.name}
                     </h3>
                     <div className="flex items-center gap-2">
-                      <button
+                      {/* <button
                         onClick={handleRefreshUseCases}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                         title="Show next 5 ideas"
@@ -221,7 +221,7 @@ function CreateAnything({ handleVoice }) {
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                           />
                         </svg>
-                      </button>
+                      </button> */}
                       <button
                         onClick={handleCloseCategoryView}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"

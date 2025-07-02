@@ -13,13 +13,12 @@ import {
 import { m } from 'framer-motion';
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useParams } from 'react-router-dom';
 
 import { getBase64FromFile, cn } from '@lib/utils';
 
 import { AIVoiceInput } from './AIVoiceInput';
 import SendButton from './SendButton.jsx';
-import { selectCurrentThread } from '../../redux/slices/room.js';
-import { dispatch, useSelector } from '../../redux/store.js';
 import { optimai } from '../../utils/axios.js';
 import { uploadRoomMedia } from '../../utils/media';
 import Iconify from '../iconify/Iconify.jsx';
@@ -67,7 +66,6 @@ const AltanAnimatedSvg = ({ size = 145, ratio = 84 / 72, className, pathClassNam
  * If inside a Panel (from react-resizable-panels), the drag overlay is bounded.
  * Otherwise, it defaults to the full window overlay.
  */
-
 
 const BASE_MENU_ITEMS = [
   {
@@ -120,16 +118,14 @@ const AttachmentHandler = ({
   // For drag-and-drop
   const [dragOver, setDragOver] = useState(false);
   const dragTimeoutRef = useRef(null);
-  const currentThread = useSelector(selectCurrentThread);
 
   // State for flows and dialog
   const [flows, setFlows] = useState([]);
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [flowSearchTerm, setFlowSearchTerm] = useState('');
 
-  // Get altaner_id directly from URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const altanerId = urlParams.get('altaner_id');
+  // Get altaner_id from route params
+  const { altanerId } = useParams();
 
   // Determine menu items based on altanerId presence
   const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, FLOW_MENU_ITEM] : BASE_MENU_ITEMS;
@@ -140,8 +136,6 @@ const AttachmentHandler = ({
       fetchAltanerData(altanerId, setFlows);
     }
   }, [altanerId]);
-
-  const enableRefresh = currentThread?.is_main && currentThread.id === threadId;
 
   // File input
   const fileInputRef = useRef(null);
@@ -287,7 +281,6 @@ const AttachmentHandler = ({
     },
     [handleUrlUpload, flows],
   );
-
 
   const handleSpeechStart = useCallback(() => {
     console.log('Speech recognition started');
@@ -493,7 +486,6 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
           </button>
           <SendButton
             onSendMessage={onSendMessage}
-            containerRef={containerRef}
             isDisabled={!isSendEnabled}
           />
         </div>
