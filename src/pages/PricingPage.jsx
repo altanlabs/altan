@@ -1,4 +1,4 @@
-import { Box, Container, Typography, Stack, Divider } from '@mui/material';
+import { Box, Container, Typography, Stack, Divider, Chip } from '@mui/material';
 
 // sections
 import { CompactLayout } from '../layouts/dashboard';
@@ -27,9 +27,23 @@ export default function PricingPage() {
             variant="h5"
             sx={{ color: 'text.secondary', fontWeight: 400 }}
           >
-            Every subscription includes 20% extra platform credits. You can buy more credits at any
-            time.
+            Access pro features and get monthly credits to spend across AI agents, database and tasks.
           </Typography>
+          {/* Early Bird Discount Banner */}
+          <Box sx={{ mb: 4, textAlign: 'center' }}>
+            <Chip
+              label="🎉 Early Bird 20% Lifetime Discount on All Plans"
+              color="primary"
+              variant="filled"
+              sx={{
+                py: 2,
+                px: 3,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                borderRadius: 2,
+              }}
+            />
+          </Box>
         </Stack>
 
         <NewPricing />

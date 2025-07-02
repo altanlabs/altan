@@ -14,7 +14,7 @@ const isCapacitorPlatform = () => {
   }
 };
 
-export const API_BASE = `${!!import.meta.env.VITE_BACKEND_DEV ? 'dev-' : ''}api.altan.ai`;
+export const API_BASE = 'api.altan.ai';
 export const API_BASE_URL = `https://${API_BASE}`;
 
 const AUTH_API_ENDPOINTS = {

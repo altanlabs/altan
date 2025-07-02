@@ -16,6 +16,7 @@ import {
   alpha,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
@@ -206,6 +207,7 @@ export default function NewPricing() {
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
   const accountId = useSelector(selectAccountId);
+  const history = useHistory();
 
   useEffect(() => {
     const fetchPricing = async () => {
@@ -254,6 +256,13 @@ export default function NewPricing() {
   };
 
   const handleCheckout = async (billingOptionId) => {
+    // Check if user is authenticated
+    if (!accountId) {
+      // Redirect to register page if not authenticated
+      history.push('/auth/register');
+      return;
+    }
+
     try {
       const response = await optimai_shop.get('/stripe/subscribe', {
         params: {
@@ -344,8 +353,43 @@ export default function NewPricing() {
         <PricingCard
           title="Pro"
           price={proBillingOption ? formatPrice(proBillingOption.price, 'monthly') : 0}
-          description={proPlan.description}
-          priceSubtext={`€${proPlan.credits / 100} in monthly credits`}
+          description={proPlan?.description}
+          priceSubtext={
+            proBillingOption ? (
+              <Box>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    mb: 0.5,
+                  }}
+                >
+                  €{proPlan.credits / 100} in monthly credits
+                </Typography>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      textDecoration: 'line-through',
+                      color: 'text.disabled',
+                    }}
+                  >
+                    €{proPlan.credits / 100}/mo
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'success.main',
+                      fontWeight: 600,
+                    }}
+                  >
+                    20% off
+                  </Typography>
+                </Stack>
+              </Box>
+            ) : null
+          }
           features={PRO_FEATURES}
           buttonText="Choose Plan"
           onButtonClick={handleProClick}
@@ -357,7 +401,40 @@ export default function NewPricing() {
           price={growthBillingOption ? formatPrice(growthBillingOption.price, 'monthly') : 0}
           description={currentGrowthPlan?.description}
           priceSubtext={
-            currentGrowthPlan ? `€${currentGrowthPlan.credits / 100} in monthly credits` : ''
+            growthBillingOption ? (
+              <Box>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    mb: 0.5,
+                  }}
+                >
+                  €{currentGrowthPlan.credits / 100} in monthly credits
+                </Typography>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      textDecoration: 'line-through',
+                      color: 'text.disabled',
+                    }}
+                  >
+                    €{currentGrowthPlan.credits / 100}/mo
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'success.main',
+                      fontWeight: 600,
+                    }}
+                  >
+                    20% off
+                  </Typography>
+                </Stack>
+              </Box>
+            ) : null
           }
           features={GROWTH_FEATURES}
           buttonText="Choose Plan"
@@ -402,13 +479,14 @@ export default function NewPricing() {
                           variant="body2"
                           fontWeight={600}
                         >
-                          €{price}/mo
+                          €{plan.credits / 100} credits
                         </Typography>
                         <Typography
                           variant="body2"
-                          color="text.secondary"
+                          color="success.main"
+                          fontWeight={600}
                         >
-                          €{plan.credits / 100} credits
+                          €{price}/mo
                         </Typography>
                       </Stack>
                     </MenuItem>
@@ -423,7 +501,7 @@ export default function NewPricing() {
         <PricingCard
           title="Enterprise"
           price="Custom"
-          description={enterprisePlan.description}
+          description={enterprisePlan?.description}
           priceSubtext="Custom credit allocation"
           features={ENTERPRISE_FEATURES}
           buttonText="Book a Call"

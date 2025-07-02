@@ -15,7 +15,6 @@ const isIOSCapacitor = () => {
   try {
     const isNative = Capacitor.isNativePlatform();
     const platform = Capacitor.getPlatform();
-    console.log('🔍 Platform Detection:', { isNative, platform });
     return isNative && platform === 'ios';
   } catch (error) {
     console.log('❌ Platform detection error:', error);
@@ -43,16 +42,6 @@ const CompactLayout = ({
 
   // Debug logging
   useEffect(() => {
-    console.log('📱 CompactLayout Debug Info:', {
-      isIOS,
-      isMobile,
-      isDesktop,
-      headerVisible,
-      hideHeader,
-      title,
-      userAgent: navigator.userAgent,
-    });
-
     // Check safe area support
     if (typeof CSS !== 'undefined' && CSS.supports) {
       const supportsSafeArea = CSS.supports('padding-top', 'env(safe-area-inset-top)');
@@ -84,7 +73,6 @@ const CompactLayout = ({
     const baseMultiplier = breadcrumb || toolbarChildren ? 2 : 0.75;
     const calculatedTop =
       headerMobileHeight * baseMultiplier + 15 + (isMobile && toolbarChildren ? 40 : 0);
-    console.log('📏 Calculated top padding:', calculatedTop, 'px');
     return calculatedTop;
   }, [breadcrumb, isMobile, toolbarChildren, headerMobileHeight, hideHeader]);
 
@@ -132,7 +120,6 @@ const CompactLayout = ({
         paddingTop: isIOS ? 'env(safe-area-inset-top)' : 0,
         paddingBottom: noPadding ? 0 : '1.25rem',
       };
-      console.log('🎯 Style (hideHeader):', style);
       return style;
     }
 
@@ -147,13 +134,10 @@ const CompactLayout = ({
     } else {
       paddingTop = isIOS ? 'env(safe-area-inset-top)' : 0;
     }
-
     const style = {
       paddingTop,
       paddingBottom: noPadding ? 0 : '1.25rem',
     };
-
-    console.log('🎯 Final style applied:', style);
     return style;
   };
 
