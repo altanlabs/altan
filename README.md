@@ -17,7 +17,11 @@ Altan mobile
 
 
 MOBILE
-
 npm run build:mobile
 npx cap sync ios
 npx cap open ios
+
+
+WEB
+bun run build
+firebase deploy

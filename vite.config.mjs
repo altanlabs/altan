@@ -1,4 +1,3 @@
-// vite.config.mjs
 import react from '@vitejs/plugin-react-swc';
 import autoprefixer from 'autoprefixer';
 import fs from 'fs/promises';
@@ -10,18 +9,11 @@ import { defineConfig } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 import wasm from 'vite-plugin-wasm';
 
-// import topLevelAwait from "vite-plugin-top-level-await";
-
 const WRONG_CODE = `import { bpfrpt_proptype_WindowScroller } from "../WindowScroller.js";`;
 
 function reactVirtualized() {
   return {
     name: 'flat:react-virtualized',
-    // Note: we cannot use the `transform` hook here
-    //       because libraries are pre-bundled in vite directly,
-    //       plugins aren't able to hack that step currently.
-    //       so instead we manually edit the file in node_modules.
-    //       all we need is to find the timing before pre-bundling.
     configResolved: async () => {
       const require = createRequire(import.meta.url);
       const reactVirtualizedPath = require.resolve('react-virtualized');
@@ -43,52 +35,37 @@ function reactVirtualized() {
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
   const isMobile = process.env.VITE_BUILD_TARGET === 'mobile';
-  // const isProd = mode === 'production';
-
   return {
+    base: '/',  
     build: {
-      target: isMobile ? 'es2019' : 'esnext', // Use more compatible target for mobile
-      cssCodeSplit: !isMobile, // For mobile, keep CSS together
-      emptyOutDir: true,                 // wipe old chunks → avoids 404s
-      minify: isDev ? false : (isMobile ? false : 'esbuild'), // Disable minify for mobile debugging
-      sourcemap: isDev || isMobile, // Generate sourcemaps for dev and mobile debugging
-      outDir: 'dist', // Build output directory
-      assetsInlineLimit: isMobile ? 4096 : 0, // Inline small assets for mobile
-      reportCompressedSize: false, // Disable compressed size reporting for speed
-      chunkSizeWarningLimit: 1000, // Raise default chunk size warning limit
+      target: isMobile ? 'es2019' : 'esnext',
+      cssCodeSplit: !isMobile,
+      emptyOutDir: true,
+      minify: false, // Disable minification to avoid PropTypes circular dependency issues
+      sourcemap: isDev || isMobile,
+      outDir: 'dist',
+      assetsInlineLimit: isMobile ? 4096 : 0,
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          // Simplified chunking strategy for mobile to avoid initialization issues
-          manualChunks: isMobile ? undefined : (id) => {
-            // Only use chunking for web builds
-            if (id.includes('node_modules')) {
-              // Group vendor chunks more efficiently
-              if (id.includes('@mui')) return 'mui';
-              if (id.includes('react') && !id.includes('react-router')) return 'react-vendor';
-              if (id.includes('redux')) return 'redux';
-              if (id.includes('@ionic')) return 'ionic';
-              if (id.includes('recharts') || id.includes('chart')) return 'charts';
-              if (id.includes('@ag-grid')) return 'ag-grid';
-              if (id.includes('lexical') || id.includes('@lexical')) return 'lexical';
-              return 'vendor';
-            }
-          },
+          // Fix chunk naming to ensure all assets go to assets/ directory
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js', 
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          // Remove ALL manual chunking - let Vite handle dependencies automatically
+          manualChunks: undefined,
           minifyInternalExports: true,
-          // Ensure proper format for mobile
           format: isMobile ? 'es' : 'es',
         },
-        // Increase memory for Rollup
-        maxParallelFileOps: 2, // Reduce parallel operations to save memory
+        maxParallelFileOps: 2,
       },
     },
     plugins: [
-      react({
-        // Add JSX runtime configuration for better compatibility
-        jsxRuntime: 'automatic',
-      }),
+      react({ jsxRuntime: 'automatic' }),
       reactVirtualized(),
       wasm(),
-      ...(isDev ? [mkcert()] : []), // Only use mkcert in dev
+      ...(isDev ? [mkcert()] : []),
       {
         name: 'vite:tailwind',
         enforce: 'post',
@@ -100,21 +77,10 @@ export default defineConfig(({ mode }) => {
           },
         }),
       },
-      // topLevelAwait()
-      // comlink()
     ],
-    // worker: {
-    //   plugins: [comlink()],
-    // },
     optimizeDeps: {
-      include: ['react', 'react-dom', '@ionic/react', '@ionic/core'],
-      exclude: ['fsevents'],
-      // Force optimization for mobile builds
-      ...(isMobile && {
-        esbuildOptions: {
-          target: 'es2019',
-        },
-      }),
+      exclude: ['fsevents'], // Only exclude platform-specific files
+      ...(isMobile && { esbuildOptions: { target: 'es2019' } }),
     },
     resolve: {
       alias: {
@@ -152,13 +118,10 @@ export default defineConfig(({ mode }) => {
       https: isDev,
       host: isDev ? 'dev-local.altan.ai' : undefined,
     },
-    // Additional configuration for mobile compatibility
     ...(isMobile && {
       esbuild: {
         target: 'es2019',
-        supported: {
-          'top-level-await': false, // Disable top-level await for iOS compatibility
-        },
+        supported: { 'top-level-await': false },
       },
     }),
   };

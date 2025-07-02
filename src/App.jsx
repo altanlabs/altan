@@ -33,6 +33,7 @@ import { PersistGate } from 'redux-persist/lib/integration/react';
 
 // ionic
 import { IonApp, setupIonicReact } from '@ionic/react';
+import { IonReactRouter } from '@ionic/react-router';
 
 // redux
 import { AuthProvider } from './auth/JwtContext.jsx';
@@ -66,36 +67,34 @@ setupIonicReact({
 function App() {
   return (
     <IonApp>
-      <AuthProvider>
-        <HelmetProvider>
-          <ReduxProvider store={store}>
-            <PersistGate
-              loading={null}
-              persistor={persistor}
-            >
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <SettingsProvider>
-                  {/* <BrowserRouter> */}
-                  {/* <ScrollToTop /> */}
-                  <MotionLazyContainer>
-                    <ThemeProvider>
-                      <ThemeSettings>
-                        <ThemeLocalization>
-                          <SnackbarProvider>
-                            {/* <StyledChart /> */}
-                            <Router />
-                          </SnackbarProvider>
-                        </ThemeLocalization>
-                      </ThemeSettings>
-                    </ThemeProvider>
-                  </MotionLazyContainer>
-                  {/* </BrowserRouter> */}
-                </SettingsProvider>
-              </LocalizationProvider>
-            </PersistGate>
-          </ReduxProvider>
-        </HelmetProvider>
-      </AuthProvider>
+      <IonReactRouter>
+        <AuthProvider>
+          <HelmetProvider>
+            <ReduxProvider store={store}>
+              <PersistGate
+                loading={null}
+                persistor={persistor}
+              >
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <SettingsProvider>
+                    <MotionLazyContainer>
+                      <ThemeProvider>
+                        <ThemeSettings>
+                          <ThemeLocalization>
+                            <SnackbarProvider>
+                              <Router />
+                            </SnackbarProvider>
+                          </ThemeLocalization>
+                        </ThemeSettings>
+                      </ThemeProvider>
+                    </MotionLazyContainer>
+                  </SettingsProvider>
+                </LocalizationProvider>
+              </PersistGate>
+            </ReduxProvider>
+          </HelmetProvider>
+        </AuthProvider>
+      </IonReactRouter>
     </IonApp>
   );
 }
