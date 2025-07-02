@@ -217,7 +217,7 @@ const FloatingTextArea = ({
             }`}
             style={mode === 'mobile' ? {
               padding: '12px 12px 0 12px',
-              paddingBottom: isIOS() ? '0' : 'max(10px, env(safe-area-inset-bottom))',
+              paddingBottom: isIOS() ? '4px' : 'max(10px, env(safe-area-inset-bottom))',
               transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
               willChange: 'transform',
