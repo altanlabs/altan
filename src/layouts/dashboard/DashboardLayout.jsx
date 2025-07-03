@@ -9,7 +9,6 @@ import Main from './Main.jsx';
 import NavVertical from './nav/NavVertical.jsx';
 import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
-import useResponsive from '../../hooks/useResponsive.js';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
@@ -82,7 +81,6 @@ const DashboardLayout = ({ children }) => {
       search: newParams.toString(),
     });
   };
-  const isDesktop = useResponsive('up', 'md');
 
   const [idea, setIdea] = useState('');
   const [open, setOpen] = useState(false);
@@ -174,7 +172,7 @@ const DashboardLayout = ({ children }) => {
   return (
     <VoiceConversationProvider>
       {!hideHeader && <Header onOpenNav={handleToggleNav} />}
-      {isDesktop && <FloatingNavigation />}
+      <FloatingNavigation />
       {user && <FloatingVoiceWidget />}
 
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
