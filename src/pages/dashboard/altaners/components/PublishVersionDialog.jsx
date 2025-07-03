@@ -21,6 +21,7 @@ import AddDomainDialog from '../../../dashboard/interfaces/components/AddDomainD
 const versionTypes = ['major', 'minor', 'patch'];
 
 function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
+  console.log('open', open);
   const dispatch = useDispatch();
   const [name, setName] = useState('');
   const [versionType, setVersionType] = useState('patch');
@@ -77,13 +78,54 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
   return (
     <>
       <CustomDialog
-        open={open}
+        dialogOpen={open}
         onClose={onClose}
-        title="Publish New Version"
-        maxWidth="sm"
-        fullWidth
+        alwaysFullWidth
+        className="min-h-[500px] max-w-[500px]"
       >
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, minHeight: '500px', width: '100%' }}>
+          <Typography
+            variant="h6"
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
+            Publish New Version
+          </Typography>
+
+          {/* Explanation for first-time users */}
+          {!defaultDomain && allCustomDomains.length === 0 && (
+            <Alert
+              severity="info"
+              sx={{ mb: 3 }}
+              icon={<Iconify icon="mdi:information" />}
+            >
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 500, mb: 1 }}
+              >
+                🚀 Ready to share your project with the world?
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Publishing will create a public domain that you can share with others. Your project
+                will be live and accessible to anyone with the link.
+              </Typography>
+            </Alert>
+          )}
+
+          {/* General explanation */}
+          {(defaultDomain || allCustomDomains.length > 0) && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 3 }}
+            >
+              Create a new version of your project and deploy it to all configured domains. This
+              will make your latest changes live for all users.
+            </Typography>
+          )}
+
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
               {/* Publishing Destination */}
@@ -92,45 +134,88 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                   variant="subtitle2"
                   sx={{ mb: 1.5, fontWeight: 600 }}
                 >
-                  Publishing to Domains
+                  {defaultDomain || allCustomDomains.length > 0
+                    ? 'Publishing to Domains'
+                    : 'Deployment'}
                 </Typography>
                 <Stack spacing={1.5}>
-                  {/* Default Altan domain */}
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 1,
-                      bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50'),
-                      border: '1px solid',
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
+                  {/* Show message for first-time users */}
+                  {!defaultDomain && allCustomDomains.length === 0 && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: 1,
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark' ? 'primary.900' : 'primary.50',
+                        border: '1px solid',
+                        borderColor: 'primary.main',
+                      }}
                     >
-                      <Iconify
-                        icon="mdi:web"
-                        sx={{ color: 'primary.main' }}
-                      />
-                      <Link
-                        href={defaultDomain}
-                        target="_blank"
-                        underline="hover"
-                        sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
                       >
-                        {defaultDomain}
-                      </Link>
-                      <Chip
-                        label="Primary"
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ ml: 'auto' }}
-                      />
-                    </Stack>
-                  </Box>
+                        <Iconify
+                          icon="mdi:rocket-launch"
+                          sx={{ color: 'primary.main' }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500 }}
+                        >
+                          A public domain will be created automatically
+                        </Typography>
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1, ml: 3 }}
+                      >
+                        You&apos;ll get a shareable link like: project-name.altanlabs.com
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Default Altan domain */}
+                  {defaultDomain && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: 1,
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                      >
+                        <Iconify
+                          icon="mdi:web"
+                          sx={{ color: 'primary.main' }}
+                        />
+                        <Link
+                          href={defaultDomain}
+                          target="_blank"
+                          underline="hover"
+                          sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                        >
+                          {defaultDomain}
+                        </Link>
+                        <Chip
+                          label="Primary"
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ ml: 'auto' }}
+                        />
+                      </Stack>
+                    </Box>
+                  )}
 
                   {/* Custom domains */}
                   {allCustomDomains.length > 0 && (
@@ -219,11 +304,17 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 >
                   Version Name (Optional)
                 </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Give your release a descriptive name to track what&apos;s new
+                </Typography>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 bg-input focus:ring-primary border border-divider rounded-lg shadow-sm focus:outline-none"
                   placeholder="e.g., New features release, Bug fixes..."
                   style={{
                     backgroundColor: 'var(--mui-palette-background-paper)',
@@ -233,7 +324,9 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                     fontSize: '14px',
                     outline: 'none',
                     width: '100%',
+                    minHeight: '40px',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.2s ease',
                   }}
                 />
               </Box>
@@ -272,6 +365,13 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                     >
                       Version Type
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      Choose how to increment your version number
+                    </Typography>
                     <select
                       value={versionType}
                       onChange={(e) => setVersionType(e.target.value)}
@@ -308,6 +408,7 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                   </Box>
                 </Collapse>
               </Box>
+
               {/* Action Buttons */}
               <Stack
                 direction="row"
@@ -316,11 +417,11 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 sx={{ pt: 2 }}
               >
                 <Button
-                  variant="soft"
-                  color="error"
+                  variant="outlined"
+                  color="inherit"
                   onClick={onClose}
                   sx={{
-                    minHeight: '40px',
+                    minHeight: '44px',
                     px: 3,
                   }}
                 >
@@ -328,8 +429,8 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 </Button>
                 <Button
                   type="submit"
-                  variant="soft"
-                  color="inherit"
+                  variant="contained"
+                  color="primary"
                   disabled={isSubmitting}
                   startIcon={
                     isSubmitting ? (
@@ -337,22 +438,28 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                         icon="mdi:loading"
                         className="animate-spin"
                       />
-                    ) : null
+                    ) : (
+                      <Iconify icon="mdi:rocket-launch" />
+                    )
                   }
                   sx={{
-                    minHeight: '40px',
-                    px: 3,
+                    minHeight: '44px',
+                    px: 4,
                     fontWeight: 600,
-                    boxShadow: 2,
+                    fontSize: '0.95rem',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
                     '&:hover': {
-                      boxShadow: 4,
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 25px rgba(102, 126, 234, 0.5)',
                     },
                     '&:disabled': {
                       opacity: 0.7,
+                      transform: 'none',
                     },
                   }}
                 >
-                  {isSubmitting ? 'Publishing...' : 'Publish New Version'}
+                  {isSubmitting ? 'Publishing...' : 'Publish Version'}
                 </Button>
               </Stack>
             </Stack>

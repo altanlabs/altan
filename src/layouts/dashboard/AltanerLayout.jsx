@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import { Box } from '@mui/material';
 import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
-import { Outlet, useParams, useLocation } from 'react-router-dom';
+import { Outlet, useParams, useLocation, useHistory } from 'react-router-dom';
 
 import AltanerHeader from './header/AltanerHeader.jsx';
 import Main from './Main.jsx';
@@ -37,8 +37,6 @@ const Loadable = (Component) => (props) => (
   </Suspense>
 );
 
-const CloneTemplate = lazy(() => import('../../components/clone/CloneTemplate.jsx'));
-
 const ACCOUNT_ENTITIES = [
   'actionexecution',
   'taskexecution',
@@ -70,8 +68,18 @@ const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
 
 const AltanerLayout = () => {
-  const [searchParams, setSearchParams] = useLocation();
-  const [templateId, setTemplateId] = useState('');
+  const location = useLocation();
+  const history = useHistory();
+  
+  // Parse search params manually for React Router v5
+  const searchParams = new URLSearchParams(location.search);
+  const setSearchParams = (newParams) => {
+    history.replace({
+      pathname: location.pathname,
+      search: newParams.toString()
+    });
+  };
+  
   const ws = useWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
@@ -122,29 +130,25 @@ const AltanerLayout = () => {
   }, [accountId, accountInitialized, accountLoading]);
 
   useEffect(() => {
-    if (!templateId) {
-      const id = searchParams.get('template');
-      if (!!id?.length) {
-        setTemplateId(id);
-        searchParams.delete('template');
-        setSearchParams(searchParams);
-      }
+    const id = searchParams.get('template');
+    if (!!id?.length) {
+      // Remove the template param from current URL
+      searchParams.delete('template');
+      setSearchParams(searchParams);
+      // Navigate to the new clone template page
+      history.push(`/clone/${id}`);
     }
-  }, [searchParams, setSearchParams, templateId]);
+  }, [location.search, history, searchParams, setSearchParams]);
 
   useEffect(() => {
     dispatch(getRoles());
   }, []);
-
-  const handleClose = useCallback(() => setTemplateId(''), []);
 
   if (!accountInitialized || !!accountLoading) return <LoadingScreen />;
 
   return (
     <>
       <AltanerHeader />
-
-      {!!templateId && Loadable(CloneTemplate)({ templateId, onClose: handleClose })}
 
       <Box
         sx={{

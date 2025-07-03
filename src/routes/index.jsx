@@ -29,6 +29,7 @@ import {
   AdminPage,
   MarketplacePage,
   TemplatePage,
+  CloneTemplatePage,
   PermissionDeniedPage,
   IntegrationPage,
   StandaloneWorkflowPage,
@@ -542,6 +543,17 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <TemplatePage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/clone/:templateId"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <CloneTemplatePage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

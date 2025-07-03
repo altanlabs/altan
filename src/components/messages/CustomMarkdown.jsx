@@ -215,7 +215,7 @@ const CustomLink = ({ href, children }) => {
 
   // If the text of the link is exactly the URL, render a native <a> tag.
   const textContent = Array.isArray(children) ? children.join('') : children;
-  if (textContent.trim() === href) {
+  if (textContent && typeof textContent === 'string' && textContent.trim() === href) {
     return (
       <a href={href} target="_blank" rel="nofollow noreferrer">
         {children}
@@ -277,9 +277,30 @@ class MarkdownErrorBoundary extends React.Component {
 const SuggestionButton = ({ children, threadId }) => {
   const handleClick = () => {
     // Extract text content from children (could be array or string)
-    const textContent = Array.isArray(children)
-      ? children.join('').trim()
-      : (children || '').toString().trim();
+    let textContent = '';
+
+    try {
+      if (typeof children === 'string') {
+        textContent = children.trim();
+      } else if (typeof children === 'number') {
+        textContent = String(children).trim();
+      } else if (Array.isArray(children)) {
+        // Handle array of children - filter out non-string elements
+        textContent = children
+          .filter(child => typeof child === 'string' || typeof child === 'number')
+          .join('')
+          .trim();
+      } else if (children && typeof children === 'object' && children.props && children.props.children) {
+        // Handle React element with text content
+        textContent = String(children.props.children || '').trim();
+      } else {
+        textContent = String(children || '').trim();
+      }
+    } catch (error) {
+      console.warn('Error extracting text content from children:', error);
+      textContent = '';
+    }
+
     if (threadId && textContent) {
       dispatch(sendMessage({
         content: textContent,
@@ -369,13 +390,28 @@ const CustomMarkdown = ({
                 return !inline && match ? (
                   <CodeBlock
                     language={match[1]}
-                    value={String(children).replace(/\n$/, '')}
+                    value={String(children || '').replace(/\n$/, '')}
                     className={className}
                     {...props}
                   />
                 ) : (
                   <code className="  bg-gray-100 dark:bg-[#3E3E3E] rounded-md text-gray-800 dark:text-gray-200 text-[0.875em] font-normal px-1.5 py-0.5">
-                    {String(children).trim()}
+                    {(() => {
+                      try {
+                        if (typeof children === 'string') {
+                          return children.trim();
+                        } else if (typeof children === 'number') {
+                          return String(children).trim();
+                        } else if (Array.isArray(children)) {
+                          return children.join('').trim();
+                        } else {
+                          return String(children || '').trim();
+                        }
+                      } catch (error) {
+                        console.warn('Error processing inline code children:', error);
+                        return String(children || '');
+                      }
+                    })()}
                   </code>
                 );
               },

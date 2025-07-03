@@ -129,7 +129,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
     try {
       const results = await dispatch(searchAccounts(searchParams));
       setSearchResults(results || []);
-    } catch (error) {
+    } catch {
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -202,6 +202,217 @@ function NavAccount({ mini = false, isDashboard = false }) {
     [account?.logo_url, account?.id, name, theme.palette.background.neutral],
   );
 
+  // Memoize the dialog to prevent re-renders
+  const memoizedDialog = useMemo(() => (
+    <CustomDialog
+      dialogOpen={open}
+      onClose={handleClose}
+      aria-labelledby="account-dialog-title"
+    >
+      <DialogTitle
+        id="account-dialog-title"
+        sx={{
+          padding: 2,
+        }}
+      >
+        Switch Workspace
+        {!!user?.xsup && (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showAllAccounts}
+                onChange={handleSwitchChange}
+                name="showAllAccounts"
+                color="primary"
+              />
+            }
+            label="All Accounts"
+            sx={{ ml: 2 }}
+          />
+        )}
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          padding: 1,
+        }}
+      >
+        <Stack
+          direction="column"
+          spacing={1}
+          padding={1}
+          sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 99,
+          }}
+        >
+          {user?.xsup && showAllAccounts ? (
+            <>
+              <TextField
+                size="small"
+                margin="dense"
+                id="account-search-id"
+                label="Search by ID..."
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={searchById}
+                onChange={(e) => setSearchById(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Iconify
+                        icon="mdi:identifier"
+                        width={20}
+                        height={20}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                size="small"
+                margin="dense"
+                id="account-search-name"
+                label="Search by name..."
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={searchByName}
+                onChange={(e) => setSearchByName(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Iconify
+                        icon="mdi:account"
+                        width={20}
+                        height={20}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                size="small"
+                margin="dense"
+                id="account-search-email"
+                label="Search by owner email..."
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={searchByEmail}
+                onChange={(e) => setSearchByEmail(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Iconify
+                        icon={isSearching ? 'eos-icons:loading' : 'mdi:email'}
+                        width={20}
+                        height={20}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </>
+          ) : (
+            <TextField
+              autoFocus
+              size="small"
+              margin="dense"
+              id="account-search"
+              label="Search..."
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify
+                      icon="eva:search-fill"
+                      width={20}
+                      height={20}
+                    />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
+        </Stack>
+        <Virtuoso
+          style={{
+            width: '100%',
+            height: 'min(55vh, 400px)',
+            maxWidth: '100%',
+            scrollBehavior: 'smooth',
+            overflowX: 'hidden',
+          }}
+          data={filteredAccounts}
+          components={{
+            Footer: () => <div style={{ height: '10px' }} />,
+            Header: () => <div style={{ height: '10px' }} />,
+            EmptyPlaceholder: () => (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '200px',
+                  p: 2,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary" textAlign="center">
+                  {user?.xsup && showAllAccounts
+                    ? 'Search by account name, email, or ID to find accounts'
+                    : 'No accounts found'}
+                </Typography>
+              </Box>
+            ),
+          }}
+          overscan={2}
+          increaseViewportBy={{ bottom: 0, top: 0 }}
+          itemContent={(index, item) =>
+            !!user?.xsup ? (
+              <AccountDetailRow
+                key={item.id}
+                account={item}
+                handleChangeAccount={handleChangeAccount}
+                searchTerm={debouncedSearchQuery}
+              />
+            ) : (
+              <ListItemButton
+                key={item.id}
+                onClick={() => handleChangeAccount(item.id)}
+              >
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar src={addAccountIdToUrl(item?.logo_url, item.id)} />
+                  </ListItemAvatar>
+                  <ListItemText primary={item?.name} />
+                </Stack>
+              </ListItemButton>
+            )}
+        />
+      </DialogContent>
+      <DialogActions>
+        <CreateAccount />
+        <Button onClick={handleClose}>Close</Button>
+      </DialogActions>
+    </CustomDialog>
+  ), [open, handleClose, user?.xsup, showAllAccounts, handleSwitchChange, searchById, searchByName, searchByEmail, isSearching, searchTerm, filteredAccounts, debouncedSearchQuery, handleChangeAccount]);
+
   // Don't render if user is not available
   if (!user) {
     return null;
@@ -249,214 +460,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
           </IconButton>
         </Tooltip>
       )}
-      <CustomDialog
-        dialogOpen={open}
-        onClose={handleClose}
-        aria-labelledby="account-dialog-title"
-        className="max-w-xs"
-      >
-        <DialogTitle
-          id="account-dialog-title"
-          sx={{
-            padding: 2,
-          }}
-        >
-          Switch Workspace
-          {!!user?.xsup && (
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAllAccounts}
-                  onChange={handleSwitchChange}
-                  name="showAllAccounts"
-                  color="primary"
-                />
-              }
-              label="All Accounts"
-              sx={{ ml: 2 }}
-            />
-          )}
-        </DialogTitle>
-        <DialogContent
-          sx={{
-            padding: 1,
-          }}
-        >
-          <Stack
-            direction="column"
-            spacing={1}
-            padding={1}
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 99,
-            }}
-          >
-            {user?.xsup && showAllAccounts ? (
-              <>
-                <TextField
-                  size="small"
-                  margin="dense"
-                  id="account-search-id"
-                  label="Search by ID..."
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={searchById}
-                  onChange={(e) => setSearchById(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Iconify
-                          icon="mdi:identifier"
-                          width={20}
-                          height={20}
-                        />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  size="small"
-                  margin="dense"
-                  id="account-search-name"
-                  label="Search by name..."
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={searchByName}
-                  onChange={(e) => setSearchByName(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Iconify
-                          icon="mdi:account"
-                          width={20}
-                          height={20}
-                        />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  size="small"
-                  margin="dense"
-                  id="account-search-email"
-                  label="Search by owner email..."
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={searchByEmail}
-                  onChange={(e) => setSearchByEmail(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Iconify
-                          icon={isSearching ? 'eos-icons:loading' : 'mdi:email'}
-                          width={20}
-                          height={20}
-                        />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </>
-            ) : (
-              <TextField
-                autoFocus
-                size="small"
-                margin="dense"
-                id="account-search"
-                label="Search..."
-                type="text"
-                fullWidth
-                variant="outlined"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify
-                        icon="eva:search-fill"
-                        width={20}
-                        height={20}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
-          </Stack>
-          <Virtuoso
-            style={{
-              width: '100%',
-              height: '55vh',
-              maxWidth: '100%',
-              scrollBehavior: 'smooth',
-              overflowX: 'hidden',
-            }}
-            data={filteredAccounts}
-            components={{
-              Footer: () => <div style={{ height: '10px' }} />,
-              Header: () => <div style={{ height: '10px' }} />,
-              EmptyPlaceholder: () => (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '200px',
-                    p: 2,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary" textAlign="center">
-                    {user?.xsup && showAllAccounts
-                      ? 'Search by account name, email, or ID to find accounts'
-                      : 'No accounts found'}
-                  </Typography>
-                </Box>
-              ),
-            }}
-            overscan={2}
-            increaseViewportBy={{ bottom: 0, top: 0 }}
-            itemContent={(index, item) =>
-              !!user?.xsup ? (
-                <AccountDetailRow
-                  key={item.id}
-                  account={item}
-                  handleChangeAccount={handleChangeAccount}
-                  searchTerm={debouncedSearchQuery}
-                />
-              ) : (
-                <ListItemButton
-                  key={item.id}
-                  onClick={() => handleChangeAccount(item.id)}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      width: '100%',
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar src={addAccountIdToUrl(item?.logo_url, item.id)} />
-                    </ListItemAvatar>
-                    <ListItemText primary={item?.name} />
-                  </Stack>
-                </ListItemButton>
-              )}
-          />
-        </DialogContent>
-        <DialogActions>
-          <CreateAccount />
-          <Button onClick={handleClose}>Close</Button>
-        </DialogActions>
-      </CustomDialog>
+      {memoizedDialog}
     </>
   );
 }

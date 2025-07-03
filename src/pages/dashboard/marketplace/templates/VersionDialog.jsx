@@ -149,7 +149,7 @@ const VersionDialog = ({ open, onClose, template }) => {
                 sx={{ mr: 1 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  history.push(`/dashboard?template=${version.id}`);
+                  history.push(`/clone/${version.id}`);
                 }}
               >
                 Clone

@@ -82,5 +82,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to your microphone to enable voice conversations with AI agents.</string>
 </dict>
 </plist>

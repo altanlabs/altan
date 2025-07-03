@@ -1,8 +1,8 @@
-import { m, AnimatePresence } from 'framer-motion';
-import React, { memo, useCallback, useEffect, useRef } from 'react';
 import { useTheme } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
+import { AnimatePresence } from 'framer-motion';
+import React, { memo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@lib/utils';
@@ -26,28 +26,16 @@ const CustomDialog = ({
   className,
   children,
   showCloseButton = true,
-  enableSwipeToClose = true,
   ...other
 }) => {
   const theme = useTheme();
   const isSmallScreen = useResponsive('down', 'sm');
-  const dragConstraints = useRef(null);
 
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
     }
   }, [onClose]);
-
-  // Handle swipe to close
-  const handleDragEnd = useCallback((event, info) => {
-    if (!enableSwipeToClose || !isSmallScreen) return;
-
-    // If dragged down more than 100px or with significant velocity, close
-    if (info.offset.y > 100 || info.velocity.y > 500) {
-      handleClose();
-    }
-  }, [enableSwipeToClose, isSmallScreen, handleClose]);
 
   // Prevent body scroll when dialog is open on mobile
   useEffect(() => {
@@ -66,31 +54,13 @@ const CustomDialog = ({
         {dialogOpen && (
           <>
             {/* Backdrop */}
-            <m.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+            <div
               className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
               onClick={handleClose}
             />
 
             {/* Bottom Sheet */}
-            <m.div
-              ref={dragConstraints}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{
-                type: 'spring',
-                damping: 25,
-                stiffness: 200,
-                mass: 0.8,
-              }}
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.5 }}
-              onDragEnd={handleDragEnd}
+            <div
               className={cn(
                 'fixed bottom-0 left-0 right-0 z-[9999] max-h-[90vh] min-h-[40vh] w-full',
                 'rounded-t-2xl border-t border-gray-300 dark:border-gray-700 shadow-2xl',
@@ -120,7 +90,7 @@ const CustomDialog = ({
               >
                 {children}
               </div>
-            </m.div>
+            </div>
           </>
         )}
       </AnimatePresence>

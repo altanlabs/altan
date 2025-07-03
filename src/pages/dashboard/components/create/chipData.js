@@ -4,7 +4,7 @@ export const chipCategories = [
     name: 'Website 3.0',
     useCases: [
       {
-        title: 'Fullscreen Hero Landing Page',
+        title: 'Video Landing Page',
         prompt: `Create a fullscreen hero landing page with the following specifications:
 
 🌅 Hero Section Layout (Fullscreen Landing Page)
@@ -54,6 +54,59 @@ Important Notes:
 - Use proper font imports from Google Fonts
 - Ensure proper theme configuration without circular references
 - Use single backticks for template literals, not triple backticks`,
+      },
+      {
+        title: 'Sunglasses eCommerce website',
+        prompt: `I want to create a website for a company that makes sunglasses called MELLER.
+
+Here’s more info:
+I want the website to have a big landing screen where this video is shown in the background:
+
+https://shorturl.at/otnus
+Use a small white gradient over the video. the rest of the website has to be white and the buttons and styles to be black.
+
+If I scroll down, I want then to have the 4 types of sunglasses you can buy. I want the website to be very simple but very cool.
+Add this logo on the top left: https://shorturl.at/5sn4i
+And use this 2 images for each sunglass type as images of the diferent sunglasses the website sells:
+
+https://shorturl.at/c6fVz & https://shorturl.at/tfwm2
+https://tinyurl.com/4ue5eykh & https://tinyurl.com/mr2r8hy6
+https://tinyurl.com/2xrj8y33 & https://tinyurl.com/3jkzrm4z
+https://tinyurl.com/mr5jhza2 & https://tinyurl.com/wc99m9b4
+Make the website work, that if you click buy one of the sunglasses, it adds it to your basket and you can do the checkout.
+`,
+      },
+      {
+        title: 'Website for a restaurant',
+        prompt: `I want to create a landing page for a restaurant.
+
+Here’s some more info:
+Create a fullscreen, non-scrollable landing page for a high-end Italian restaurant called *Carbone*. Use a dark-gradient overlay on this background video:
+
+https://shorturl.at/wvWye
+
+**Design & Layout:**
+
+- Luxurious, modern Italian aesthetic (inspired by Carbone NYC)
+- White or gold text over dark background, readable buttons
+
+**Navbar:**
+
+- Fixed, elegant, minimal, with tabs: Home, Menu, Hours, Reservations — each opens as a sleek modal, not a new page
+
+**Features:**
+
+- *Reservations modal*: choose date, time, guests, table (inside/outside)
+- *AI agent* (bottom right): assists with bookings and questions, supports voice input
+- *Menu modal*: list stylish dishes (e.g., Spicy Rigatoni Vodka)
+- *Hours modal*: show current availability elegantly
+
+**Other:**
+
+- Fully responsive
+- Smooth transitions and hover effects
+- Ensure video scales and text stays legible across all devices
+`,
       },
     ],
   },

@@ -84,6 +84,10 @@ export const TemplatePage = Loadable(
   lazy(() => import('../pages/dashboard/marketplace/TemplatePage.jsx')),
 );
 
+export const CloneTemplatePage = Loadable(
+  lazy(() => import('../pages/CloneTemplatePage.jsx')),
+);
+
 export const AgentsPage = Loadable(lazy(() => import('../pages/dashboard/AgentsPage.jsx')));
 
 export const AgentPage = Loadable(lazy(() => import('../pages/dashboard/AgentPage.jsx')));

@@ -38,7 +38,6 @@ const Loadable = (Component) => (props) => (
   </Suspense>
 );
 
-const CloneTemplate = lazy(() => import('../../components/clone/CloneTemplate.jsx'));
 const AltanerFromIdea = lazy(() => import('../../components/clone/AltanerFromIdea.jsx'));
 
 const ACCOUNT_ENTITIES = [
@@ -83,7 +82,6 @@ const DashboardLayout = ({ children }) => {
       search: newParams.toString(),
     });
   };
-  const [clonedTemplateId, setTemplateId] = useState('');
   const isDesktop = useResponsive('up', 'md');
 
   const [idea, setIdea] = useState('');
@@ -148,13 +146,13 @@ const DashboardLayout = ({ children }) => {
   }, [accountId, accountInitialized, accountLoading, user]);
 
   useEffect(() => {
-    if (!clonedTemplateId) {
-      const id = searchParams.get('cloned_template');
-      if (!!id?.length) {
-        setTemplateId(id);
-        searchParams.delete('cloned_template');
-        setSearchParams(searchParams);
-      }
+    const id = searchParams.get('cloned_template');
+    if (!!id?.length) {
+      // Remove the cloned_template param from current URL
+      searchParams.delete('cloned_template');
+      setSearchParams(searchParams);
+      // Navigate to the new clone template page
+      history.push(`/clone/${id}`);
     }
 
     const ideaParam = searchParams.get('idea');
@@ -163,9 +161,9 @@ const DashboardLayout = ({ children }) => {
       searchParams.delete('idea');
       setSearchParams(searchParams);
     }
-  }, [location.search, history, clonedTemplateId]);
+  }, [location.search, history, searchParams, setSearchParams]);
 
-  const handleClose = useCallback(() => setTemplateId(''), []);
+  const handleClose = useCallback(() => setIdea(''), []);
 
   useEffect(() => {
     if (accountId && user) {
@@ -179,9 +177,6 @@ const DashboardLayout = ({ children }) => {
       {isDesktop && <FloatingNavigation />}
       {user && <FloatingVoiceWidget />}
 
-      {!!clonedTemplateId &&
-        !!user &&
-        Loadable(CloneTemplate)({ clonedTemplateId, onClose: handleClose })}
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
       <Box
         sx={{

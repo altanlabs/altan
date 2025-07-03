@@ -38,8 +38,6 @@ const Loadable = (Component) => (props) => (
   </Suspense>
 );
 
-const CloneTemplate = lazy(() => import('../../components/clone/CloneTemplate.jsx'));
-
 const ACCOUNT_ENTITIES = [
   'actionexecution',
   'taskexecution',
@@ -82,7 +80,6 @@ const ProjectLayout = ({ children }) => {
       search: newParams.toString()
     });
   };
-  const [templateId, setTemplateId] = useState('');
   const ws = useWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
@@ -133,21 +130,19 @@ const ProjectLayout = ({ children }) => {
   }, [accountId, accountInitialized, accountLoading]);
 
   useEffect(() => {
-    if (!templateId) {
-      const id = searchParams.get('template');
-      if (!!id?.length) {
-        setTemplateId(id);
-        searchParams.delete('template');
-        setSearchParams(searchParams);
-      }
+    const id = searchParams.get('template');
+    if (!!id?.length) {
+      // Remove the template param from current URL
+      searchParams.delete('template');
+      setSearchParams(searchParams);
+      // Navigate to the new clone template page
+      history.push(`/clone/${id}`);
     }
-  }, [location.search, history, templateId]);
+  }, [location.search, history, searchParams, setSearchParams]);
 
   useEffect(() => {
     dispatch(getRoles());
   }, []);
-
-  const handleClose = useCallback(() => setTemplateId(''), []);
 
   if (!accountInitialized || !!accountLoading) return <LoadingScreen />;
 
@@ -155,8 +150,6 @@ const ProjectLayout = ({ children }) => {
     <>
       {/* The ProjectHeader is only for account-related functionality, not for component navigation */}
       <ProjectHeader />
-
-      {!!templateId && Loadable(CloneTemplate)({ templateId, onClose: handleClose })}
 
       <Box
         sx={{

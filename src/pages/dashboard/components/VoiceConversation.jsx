@@ -104,6 +104,8 @@ const VoiceConversation = ({
   const [fetchError, setFetchError] = useState(null);
   const [browserCompatibilityError, setBrowserCompatibilityError] = useState(null);
   const [userInteractionRequired, setUserInteractionRequired] = useState(false);
+  const [permissionRequested, setPermissionRequested] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   // Use prop language or fallback to current locale language
   const effectiveLanguage = currentLang.value || initialLanguage;
@@ -119,6 +121,8 @@ const VoiceConversation = ({
     isConnected,
     isConnecting,
     effectiveLanguage,
+    permissionRequested,
+    permissionDenied,
   });
 
   // Check browser compatibility on mount
@@ -132,9 +136,12 @@ const VoiceConversation = ({
       return;
     }
 
-    // For iOS, show user interaction requirement message
-    if (isIOS() || isMobile()) {
-      console.log('📱 [VoiceConversation] Mobile/iOS detected, requiring user interaction');
+    // For Capacitor apps, we need explicit user interaction for permissions
+    if (isCapacitorNative()) {
+      console.log('⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request');
+      setUserInteractionRequired(true);
+    } else if (isIOS() || isMobile()) {
+      console.log('📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction');
       setUserInteractionRequired(true);
     }
   }, []);
@@ -205,37 +212,6 @@ const VoiceConversation = ({
       // Reset user interaction requirement
       setUserInteractionRequired(false);
 
-      // iOS-specific microphone permission check
-      if (isIOS() || isMobile()) {
-        console.log('📱 [VoiceConversation] iOS/Mobile detected, testing microphone access...');
-
-        try {
-          // Test microphone access first
-          const testStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false,
-          });
-
-          console.log('✅ [VoiceConversation] Microphone test successful, audio tracks:', testStream.getAudioTracks().length);
-
-          // If successful, stop the test stream
-          testStream.getTracks().forEach(track => {
-            console.log('🔇 [VoiceConversation] Stopping test track:', track.kind, track.id);
-            track.stop();
-          });
-
-          // Small delay to ensure cleanup
-          await new Promise(resolve => setTimeout(resolve, 100));
-          console.log('⏱️ [VoiceConversation] Test stream cleanup completed');
-        } catch (micError) {
-          console.error('❌ [VoiceConversation] Microphone access denied:', micError);
-          const errorMessage = 'Microphone access is required for voice conversations. Please allow microphone access and try again.';
-          setFetchError(errorMessage);
-          onError?.(new Error(errorMessage));
-          return;
-        }
-      }
-
       // Start the conversation with enhanced error handling
       console.log('🎤 [VoiceConversation] Starting conversation with ElevenLabs...');
       const success = await startConversation({
@@ -272,6 +248,7 @@ const VoiceConversation = ({
                      error.message?.includes('NotAllowedError')) {
             console.warn('🚫 [VoiceConversation] Permission denied error');
             setFetchError('Microphone access denied. Please allow microphone access in your browser settings.');
+            setPermissionDenied(true);
           } else {
             console.error('💥 [VoiceConversation] Unknown error:', error);
             setFetchError(`Voice conversation error: ${error.message || 'Unknown error'}`);
@@ -294,6 +271,64 @@ const VoiceConversation = ({
       onError?.(error);
     }
   }, [effectiveElevenlabsId, effectiveLanguage, dynamicVariables, startConversation, onConnect, onDisconnect, onMessage, onError]);
+
+  // Enhanced permission request function
+  const requestMicrophonePermission = useCallback(async () => {
+    console.log('🎤 [VoiceConversation] Requesting microphone permission...');
+    setPermissionRequested(true);
+    setPermissionDenied(false);
+    setFetchError(null);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          ...(isIOS() && {
+            sampleRate: 44100,
+            channelCount: 1,
+          }),
+        },
+        video: false,
+      });
+
+      console.log('✅ [VoiceConversation] Microphone permission granted:', {
+        audioTracks: stream.getAudioTracks().length,
+        trackDetails: stream.getAudioTracks().map(track => ({
+          id: track.id,
+          kind: track.kind,
+          label: track.label,
+          enabled: track.enabled,
+        })),
+      });
+
+      // Clean up test stream
+      stream.getTracks().forEach(track => {
+        console.log('🔇 [VoiceConversation] Stopping permission test track:', track.kind, track.id);
+        track.stop();
+      });
+
+      // Small delay for cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('✅ [VoiceConversation] Microphone permission setup complete');
+
+      // Auto-start conversation after permission granted
+      await handleStartConversation();
+    } catch (error) {
+      console.error('❌ [VoiceConversation] Microphone permission denied:', error);
+      setPermissionDenied(true);
+
+      let errorMessage = 'Microphone access is required for voice conversations.';
+      if (isCapacitorNative()) {
+        errorMessage += ' Please allow microphone access in your device settings or when prompted.';
+      } else {
+        errorMessage += ' Please allow microphone access in your browser settings.';
+      }
+
+      setFetchError(errorMessage);
+    }
+  }, [handleStartConversation]);
 
   // Show browser compatibility error
   if (browserCompatibilityError) {
@@ -319,9 +354,11 @@ const VoiceConversation = ({
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
         <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
           <Typography variant="body2">{fetchError}</Typography>
-          {(isIOS() || isMobile()) && (
+          {(isCapacitorNative() || isIOS() || isMobile()) && (
             <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-              iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.
+              {isCapacitorNative()
+                ? 'Make sure to allow microphone access when prompted by your device.'
+                : 'iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.'}
             </Typography>
           )}
         </Alert>
@@ -366,22 +403,37 @@ const VoiceConversation = ({
 
   return (
     <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
-      {/* iOS/Mobile Warning */}
-      {(isIOS() || isMobile()) && userInteractionRequired && !isConnected && (
+      {/* Capacitor/iOS Permission Request */}
+      {(isCapacitorNative() || isIOS() || isMobile()) && userInteractionRequired && !isConnected && !permissionRequested && (
         <Alert severity="info" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>
           <Typography variant="body2">
-            {isIOS() ? 'iOS Safari' : 'Mobile'} requires user interaction to access microphone.
-            Tap the button below to enable voice conversation.
+            {isCapacitorNative()
+              ? 'Please allow microphone access to enable voice conversations.'
+              : `${isIOS() ? 'iOS Safari' : 'Mobile'} requires user interaction to access microphone. Tap the button below to enable voice conversation.`}
           </Typography>
+        </Alert>
+      )}
+
+      {/* Show error if agent fetch failed */}
+      {fetchError && (
+        <Alert severity="error" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>
+          <Typography variant="body2">{fetchError}</Typography>
+          {(isCapacitorNative() || isIOS() || isMobile()) && (
+            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+              {isCapacitorNative()
+                ? 'Make sure to allow microphone access when prompted by your device.'
+                : 'iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.'}
+            </Typography>
+          )}
         </Alert>
       )}
 
       {/* Compact Language Switcher + Call Button Row */}
       <div className="flex items-center gap-3">
-        {/* Call Button */}
+        {/* Call Button / Permission Request Button */}
         {!isConnected ? (
           <button
-            onClick={handleStartConversation}
+            onClick={userInteractionRequired && !permissionRequested ? requestMicrophonePermission : handleStartConversation}
             disabled={isConnecting || fetchingAgent}
             className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-ring disabled:pointer-events-auto disabled:opacity-50 group backdrop-blur-md bg-white/80 dark:bg-[#1c1c1c] p-1.5 h-auto border border-gray-200/50 dark:border-gray-700/50 shadow-lg rounded-full hover:bg-white/70 dark:hover:bg-gray-900/70 active:bg-white/70 dark:active:bg-gray-900/70 transition-all duration-300"
           >
@@ -418,7 +470,11 @@ const VoiceConversation = ({
                 ? translate('voice.loading')
                 : isConnecting
                   ? translate('voice.connecting')
-                  : translate('voice.speakTo', { agentName: effectiveAgentName })}
+                  : userInteractionRequired && !permissionRequested
+                    ? isCapacitorNative()
+                      ? 'Allow Microphone Access'
+                      : 'Enable Voice Chat'
+                    : translate('voice.speakTo', { agentName: effectiveAgentName })}
             </span>
           </button>
         ) : (
@@ -488,6 +544,16 @@ const VoiceConversation = ({
           </>
         )}
       </div>
+
+      {/* Show "Try Again" button if permission was denied */}
+      {permissionDenied && (
+        <button
+          onClick={requestMicrophonePermission}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Try Again
+        </button>
+      )}
     </div>
   );
 };
