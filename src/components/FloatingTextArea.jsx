@@ -68,6 +68,7 @@ const FloatingTextArea = ({
   const selectedMessage = useSelector((state) => messageSelector(state, messageId));
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
   const [editorEmpty, setEditorEmpty] = useState(true);
@@ -126,6 +127,30 @@ const FloatingTextArea = ({
       editorRef.current.sendContent = sendContent;
     }
   }, [sendContent]);
+
+  // Keyboard detection for iOS
+  useEffect(() => {
+    if (!isIOS()) return;
+
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        const viewportHeight = window.visualViewport.height;
+        const windowHeight = window.innerHeight;
+        // Consider keyboard open if viewport is significantly smaller than window
+        setIsKeyboardOpen(viewportHeight < windowHeight * 0.8);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+      
+      return () => {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
+      };
+    }
+  }, []);
 
   return (
     <>
@@ -217,7 +242,7 @@ const FloatingTextArea = ({
             }`}
             style={mode === 'mobile' ? {
               padding: '12px 12px 0 12px',
-              paddingBottom: isIOS() ? '4px' : 'max(10px, env(safe-area-inset-bottom))',
+              paddingBottom: isIOS() ? (isKeyboardOpen ? '4px' : '14px') : 'max(10px, env(safe-area-inset-bottom))',
               transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
               willChange: 'transform',

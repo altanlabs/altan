@@ -1,5 +1,5 @@
 // @mui
-import { Container, Stack, Typography, Link, Dialog, DialogContent, IconButton } from '@mui/material';
+import { Container, Stack, Typography, Link, Dialog, DialogContent, IconButton, Box } from '@mui/material';
 import PropTypes from 'prop-types';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -117,16 +117,33 @@ export default function Login({ modal = false, onClose }) {
   }
 
   return (
-    <Container
+    <Box
       sx={{
+        minHeight: '100vh',
+        minHeight: '100dvh', // Use dynamic viewport height for mobile
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
+        overflowY: 'auto',
+        // Ensure scrolling works on mobile
+        WebkitOverflowScrolling: 'touch',
       }}
     >
-      {content}
-    </Container>
+      <Container
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: {
+            xs: 'flex-start', // Start from top on mobile
+            md: 'center', // Center on desktop
+          },
+          alignItems: 'center',
+          flex: 1,
+          py: { xs: 4, md: 0 }, // Add vertical padding on mobile
+          px: { xs: 2, md: 3 }, // Reduce horizontal padding on mobile
+        }}
+      >
+        {content}
+      </Container>
+    </Box>
   );
 }

@@ -31,6 +31,28 @@ const NavDropdown = memo(
       }, 300); // 300ms delay before closing
     };
 
+    const handleClick = () => {
+      clearTimeout(timeoutRef.current);
+      setIsOpen(!isOpen);
+    };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }, []);
+
     useEffect(() => {
       // Clean up timeout on unmount
       return () => {
@@ -66,6 +88,8 @@ const NavDropdown = memo(
         ref={dropdownRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        style={{ cursor: 'pointer' }}
       >
         {typeof triggerElement === 'function' ? triggerElement(isOpen) : triggerElement}
 

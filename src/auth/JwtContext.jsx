@@ -238,11 +238,13 @@ export function AuthProvider({ children }) {
             responseType: 'code',
           },
           ios: {
-            redirectUrl: 'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
+            redirectUrl:
+              'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
             responseType: 'code',
           },
           android: {
-            redirectUrl: 'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
+            redirectUrl:
+              'com.googleusercontent.apps.389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p://',
             responseType: 'code',
           },
         });
@@ -251,8 +253,18 @@ export function AuthProvider({ children }) {
         console.log('✅ Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
 
         // Extract tokens
-        const idToken = result.access_token_response?.id_token || result.id_token || result.idToken || result.authentication?.id_token || result.response?.id_token || null;
-        const accessToken = result.access_token_response?.access_token || result.access_token || result.accessToken || result.authentication?.access_token;
+        const idToken =
+          result.access_token_response?.id_token ||
+          result.id_token ||
+          result.idToken ||
+          result.authentication?.id_token ||
+          result.response?.id_token ||
+          null;
+        const accessToken =
+          result.access_token_response?.access_token ||
+          result.access_token ||
+          result.accessToken ||
+          result.authentication?.access_token;
         console.log('🔑 Extracted tokens:');
         console.log('- ID Token:', idToken ? 'Found ✅' : 'Missing ❌');
         console.log('- Access Token:', accessToken ? 'Found ✅' : 'Missing ❌');

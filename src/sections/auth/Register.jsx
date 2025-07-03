@@ -1,4 +1,4 @@
-import { Stack, Typography, Link, Card, CardHeader, Container, Avatar } from '@mui/material';
+import { Stack, Typography, Link, Card, CardHeader, Container, Avatar, Box } from '@mui/material';
 import { blue } from '@mui/material/colors';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -23,12 +23,13 @@ const InvitationCard = ({ invitation }) => {
     <Card
       elevation={3}
       sx={{
-        position: 'fixed',
-        top: 0,
+        position: { xs: 'static', md: 'fixed' },
+        top: { md: 0 },
         p: 0,
-        right: 10,
+        right: { md: 10 },
         maxWidth: 400,
-        margin: '16px auto',
+        margin: { xs: '16px auto', md: '16px auto' },
+        mb: { xs: 2, md: 0 },
       }}
     >
       <CardHeader
@@ -94,89 +95,118 @@ export default function Register() {
   }, []);
 
   return (
-    <Container
+    <Box
       sx={{
+        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
-      <Stack
-        justifyContent="center"
-        alignItems="center"
-        spacing={2}
+      <Container
         sx={{
-          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: {
+            xs: 'flex-start',
+            md: 'center',
+          },
+          alignItems: 'center',
+          flex: 1,
+          py: { xs: 4, md: 0 },
+          px: { xs: 2, md: 3 },
         }}
       >
-        <Logo
-          sx={{
-            zIndex: 9,
-            ml: 2,
-            pt: 1,
-          }}
-        />
-        <Typography variant="h3">Welcome to Altan</Typography>
-
-        <Typography variant="body2">Get started absolutely free.</Typography>
-
-        {/* Google Auth first */}
-        <AuthWithSocial
-          invitation={invitation}
-          idea={idea}
-        />
-
-        {/* Registration form */}
-        <AuthRegisterForm
-          invitation={invitation}
-          idea={idea}
-        />
-
         <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ mb: 1 }}
+          justifyContent="center"
+          alignItems="center"
+          spacing={2}
+          sx={{
+            width: '100%',
+            maxWidth: { xs: '100%', sm: 400 },
+          }}
         >
-          <Typography variant="body2"> Already have an account? </Typography>
-          <Link
-            component={RouterLink}
-            to={`${PATH_AUTH.login}${window.location.search}`}
-            variant="subtitle2"
-          >
-            Sign in
-          </Link>
-        </Stack>
+          {!!invitation && (
+            <Box sx={{ width: '100%', display: { xs: 'block', md: 'none' } }}>
+              <InvitationCard invitation={invitation} />
+            </Box>
+          )}
+          
+          <Logo
+            sx={{
+              zIndex: 9,
+              ml: 2,
+              pt: 1,
+            }}
+          />
+          <Typography variant="h3">Welcome to Altan</Typography>
 
-        {!!invitation && <InvitationCard invitation={invitation} />}
-        <Typography
-          component="div"
-          sx={{ color: 'text.secondary', mt: 2, typography: 'caption', textAlign: 'center' }}
-        >
-          {'By signing up, I agree to '}
-          <Link
-            underline="always"
-            color="text.primary"
-            href="https://altan.ai/terms"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Typography variant="body2">Get started absolutely free.</Typography>
+
+          {/* Google Auth first */}
+          <AuthWithSocial
+            invitation={invitation}
+            idea={idea}
+          />
+
+          {/* Registration form */}
+          <AuthRegisterForm
+            invitation={invitation}
+            idea={idea}
+          />
+
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ mb: 1 }}
           >
-            Terms of Service
-          </Link>
-          {' and '}
-          <Link
-            underline="always"
-            color="text.primary"
-            href="https://altan.ai/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
+            <Typography variant="body2"> Already have an account? </Typography>
+            <Link
+              component={RouterLink}
+              to={`${PATH_AUTH.login}${window.location.search}`}
+              variant="subtitle2"
+            >
+              Sign in
+            </Link>
+          </Stack>
+
+          <Typography
+            component="div"
+            sx={{ color: 'text.secondary', mt: 2, typography: 'caption', textAlign: 'center' }}
           >
-            Privacy Policy
-          </Link>
-          .
-        </Typography>
-      </Stack>
-    </Container>
+            {'By signing up, I agree to '}
+            <Link
+              underline="always"
+              color="text.primary"
+              href="https://altan.ai/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms of Service
+            </Link>
+            {' and '}
+            <Link
+              underline="always"
+              color="text.primary"
+              href="https://altan.ai/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </Typography>
+        </Stack>
+        
+        {/* Desktop invitation card */}
+        {!!invitation && (
+          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            <InvitationCard invitation={invitation} />
+          </Box>
+        )}
+      </Container>
+    </Box>
   );
 }

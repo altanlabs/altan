@@ -230,15 +230,6 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
                   />
                 </HeaderIconButton>
               )}
-              <HeaderIconButton
-                onClick={handleClose}
-                sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-              >
-                <Iconify
-                  icon="mdi:close"
-                  width={20}
-                />
-              </HeaderIconButton>
             </div>
           </div>
 

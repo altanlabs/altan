@@ -1,10 +1,56 @@
-import { MenuItem, Typography, Menu } from '@mui/material';
+import { MenuItem, Typography, Menu, Alert } from '@mui/material';
 import axios from 'axios';
 import React, { memo, useState, useCallback, useEffect } from 'react';
 
 import Iconify from '../../../components/iconify';
 import { useLocales } from '../../../locales';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
+
+// Helper function to detect iOS
+const isIOS = () => {
+  const result = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  console.log('🍎 [VoiceConversation] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform });
+  return result;
+};
+
+// Helper function to detect mobile browsers
+const isMobile = () => {
+  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  console.log('📱 [VoiceConversation] Mobile Detection:', { result, userAgent: navigator.userAgent });
+  return result;
+};
+
+// Helper function to check if browser supports required features
+const checkBrowserSupport = () => {
+  const issues = [];
+
+  console.log('🔍 [VoiceConversation] Checking browser support...');
+
+  if (!navigator.mediaDevices) {
+    issues.push('MediaDevices API not supported');
+    console.error('❌ [VoiceConversation] MediaDevices API not supported');
+  } else {
+    console.log('✅ [VoiceConversation] MediaDevices API available');
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    issues.push('getUserMedia not supported');
+    console.error('❌ [VoiceConversation] getUserMedia not supported');
+  } else {
+    console.log('✅ [VoiceConversation] getUserMedia available');
+  }
+
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    issues.push('Web Audio API not supported');
+    console.error('❌ [VoiceConversation] Web Audio API not supported');
+  } else {
+    console.log('✅ [VoiceConversation] Web Audio API available');
+  }
+
+  console.log('🔍 [VoiceConversation] Browser support check complete:', { issues });
+  return issues;
+};
 
 const VoiceConversation = ({
   altanAgentId = null,
@@ -19,11 +65,23 @@ const VoiceConversation = ({
   onMessage,
   onError,
 }) => {
+  console.log('🎤 [VoiceConversation] Component initialized with props:', {
+    altanAgentId,
+    elevenlabsId,
+    agentName,
+    initialLanguage,
+    showLanguageSelector,
+    displayAvatar,
+    dynamicVariables,
+  });
+
   const { currentLang, onChangeLang, allLangs, translate } = useLocales();
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
   const [fetchedAgent, setFetchedAgent] = useState(null);
   const [fetchingAgent, setFetchingAgent] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [browserCompatibilityError, setBrowserCompatibilityError] = useState(null);
+  const [userInteractionRequired, setUserInteractionRequired] = useState(false);
 
   // Use prop language or fallback to current locale language
   const effectiveLanguage = currentLang.value || initialLanguage;
@@ -35,21 +93,48 @@ const VoiceConversation = ({
     stopConversation,
   } = useVoiceConversation();
 
+  console.log('🎤 [VoiceConversation] Voice conversation state:', {
+    isConnected,
+    isConnecting,
+    effectiveLanguage,
+  });
+
+  // Check browser compatibility on mount
+  useEffect(() => {
+    console.log('🔄 [VoiceConversation] Component mounted, checking compatibility...');
+
+    const supportIssues = checkBrowserSupport();
+    if (supportIssues.length > 0) {
+      console.error('❌ [VoiceConversation] Browser compatibility issues found:', supportIssues);
+      setBrowserCompatibilityError(`Browser compatibility issues: ${supportIssues.join(', ')}`);
+      return;
+    }
+
+    // For iOS, show user interaction requirement message
+    if (isIOS() || isMobile()) {
+      console.log('📱 [VoiceConversation] Mobile/iOS detected, requiring user interaction');
+      setUserInteractionRequired(true);
+    }
+  }, []);
+
   // Fetch agent data when altanAgentId is provided but elevenlabsId is not
   useEffect(() => {
     const fetchAgentData = async () => {
       if (!altanAgentId || elevenlabsId) {
+        console.log('⏭️ [VoiceConversation] Skipping agent fetch:', { altanAgentId, elevenlabsId });
         return; // Don't fetch if we don't have altanAgentId or if we already have elevenlabsId
       }
 
+      console.log('🔄 [VoiceConversation] Fetching agent data for:', altanAgentId);
       setFetchingAgent(true);
       setFetchError(null);
 
       try {
         const response = await axios.get(`https://api.altan.ai/platform/agent/${altanAgentId}/public`);
+        console.log('✅ [VoiceConversation] Agent data fetched successfully:', response.data.agent);
         setFetchedAgent(response.data.agent);
       } catch (error) {
-        console.error('Failed to fetch agent:', error);
+        console.error('❌ [VoiceConversation] Failed to fetch agent:', error);
         setFetchError('Failed to load agent information');
       } finally {
         setFetchingAgent(false);
@@ -63,65 +148,176 @@ const VoiceConversation = ({
   const effectiveElevenlabsId = elevenlabsId || fetchedAgent?.elevenlabs_id || 'agent_01jy1hqg8jehq8v9zd7j9qxa2a';
 
   // Determine the effective agent name to use
-  const effectiveAgentName = agentName || fetchedAgent?.name ;
+  const effectiveAgentName = agentName || fetchedAgent?.name;
 
   // Determine the effective avatar URL
   const effectiveAvatarUrl = fetchedAgent?.avatar_url;
 
+  console.log('🎯 [VoiceConversation] Effective values:', {
+    effectiveElevenlabsId,
+    effectiveAgentName,
+    effectiveAvatarUrl,
+  });
+
   const handleLanguageMenuOpen = useCallback((event) => {
+    console.log('🌐 [VoiceConversation] Language menu opened');
     setLanguageMenuAnchor(event.currentTarget);
   }, []);
 
   const handleLanguageMenuClose = useCallback(() => {
+    console.log('🌐 [VoiceConversation] Language menu closed');
     setLanguageMenuAnchor(null);
   }, []);
 
   const handleLanguageChange = useCallback((langValue) => {
+    console.log('🌐 [VoiceConversation] Language changed to:', langValue);
     onChangeLang(langValue);
     handleLanguageMenuClose();
   }, [onChangeLang, handleLanguageMenuClose]);
 
-  const handleStartConversation = useCallback(() => {
-    startConversation({
-      agentId: effectiveElevenlabsId,
-      dynamicVariables,
-      overrides: {
-        agent: {
-          language: effectiveLanguage,
+  // Enhanced start conversation with iOS-specific handling
+  const handleStartConversation = useCallback(async () => {
+    console.log('🚀 [VoiceConversation] Starting conversation...');
+
+    try {
+      // Reset user interaction requirement
+      setUserInteractionRequired(false);
+
+      // iOS-specific microphone permission check
+      if (isIOS() || isMobile()) {
+        console.log('📱 [VoiceConversation] iOS/Mobile detected, testing microphone access...');
+
+        try {
+          // Test microphone access first
+          const testStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: false,
+          });
+
+          console.log('✅ [VoiceConversation] Microphone test successful, audio tracks:', testStream.getAudioTracks().length);
+
+          // If successful, stop the test stream
+          testStream.getTracks().forEach(track => {
+            console.log('🔇 [VoiceConversation] Stopping test track:', track.kind, track.id);
+            track.stop();
+          });
+
+          // Small delay to ensure cleanup
+          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log('⏱️ [VoiceConversation] Test stream cleanup completed');
+        } catch (micError) {
+          console.error('❌ [VoiceConversation] Microphone access denied:', micError);
+          const errorMessage = 'Microphone access is required for voice conversations. Please allow microphone access and try again.';
+          setFetchError(errorMessage);
+          onError?.(new Error(errorMessage));
+          return;
+        }
+      }
+
+      // Start the conversation with enhanced error handling
+      console.log('🎤 [VoiceConversation] Starting conversation with ElevenLabs...');
+      const success = await startConversation({
+        agentId: effectiveElevenlabsId,
+        dynamicVariables,
+        overrides: {
+          agent: {
+            language: effectiveLanguage,
+          },
         },
-      },
-      onConnect: () => {
-        console.log('Voice conversation connected!');
-        onConnect?.();
-      },
-      onDisconnect: () => {
-        console.log('Voice conversation ended!');
-        onDisconnect?.();
-      },
-      onMessage: (message) => {
-        console.log('Voice message received:', message);
-        onMessage?.(message);
-      },
-      onError: (error) => {
-        console.error('Voice conversation error:', error);
-        onError?.(error);
-      },
-    });
+        onConnect: () => {
+          console.log('✅ [VoiceConversation] Voice conversation connected!');
+          setFetchError(null); // Clear any previous errors
+          onConnect?.();
+        },
+        onDisconnect: () => {
+          console.log('🔌 [VoiceConversation] Voice conversation ended!');
+          onDisconnect?.();
+        },
+        onMessage: (message) => {
+          console.log('💬 [VoiceConversation] Voice message received:', message);
+          onMessage?.(message);
+        },
+        onError: (error) => {
+          console.error('❌ [VoiceConversation] Voice conversation error:', error);
+
+          // Handle iOS-specific errors
+          if (error.message?.includes('capture failure') ||
+              error.message?.includes('MediaStreamTrack ended')) {
+            console.warn('🍎 [VoiceConversation] iOS Safari capture failure detected');
+            setFetchError('Voice connection lost. This may be due to iOS Safari limitations. Please try again.');
+            setUserInteractionRequired(true);
+          } else if (error.message?.includes('Permission denied') ||
+                     error.message?.includes('NotAllowedError')) {
+            console.warn('🚫 [VoiceConversation] Permission denied error');
+            setFetchError('Microphone access denied. Please allow microphone access in your browser settings.');
+          } else {
+            console.error('💥 [VoiceConversation] Unknown error:', error);
+            setFetchError(`Voice conversation error: ${error.message || 'Unknown error'}`);
+          }
+
+          onError?.(error);
+        },
+      });
+
+      if (!success) {
+        console.warn('⚠️ [VoiceConversation] Conversation start failed, requiring user interaction');
+        setUserInteractionRequired(true);
+      } else {
+        console.log('✅ [VoiceConversation] Conversation started successfully');
+      }
+    } catch (error) {
+      console.error('💥 [VoiceConversation] Failed to start conversation:', error);
+      setFetchError(`Failed to start conversation: ${error.message}`);
+      setUserInteractionRequired(true);
+      onError?.(error);
+    }
   }, [effectiveElevenlabsId, effectiveLanguage, dynamicVariables, startConversation, onConnect, onDisconnect, onMessage, onError]);
+
+  // Show browser compatibility error
+  if (browserCompatibilityError) {
+    console.log('❌ [VoiceConversation] Rendering browser compatibility error');
+    return (
+      <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
+        <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
+          <Typography variant="body2">
+            {browserCompatibilityError}
+          </Typography>
+          <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+            Please try using a modern browser like Chrome, Firefox, or Safari.
+          </Typography>
+        </Alert>
+      </div>
+    );
+  }
 
   // Show error if agent fetch failed
   if (fetchError) {
+    console.log('❌ [VoiceConversation] Rendering fetch error:', fetchError);
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
-        <div className="text-red-500 text-center">
+        <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
           <Typography variant="body2">{fetchError}</Typography>
-        </div>
+          {(isIOS() || isMobile()) && (
+            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+              iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.
+            </Typography>
+          )}
+        </Alert>
+        {userInteractionRequired && (
+          <button
+            onClick={handleStartConversation}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
 
   // Show loading state when fetching agent data
   if (fetchingAgent && altanAgentId && !elevenlabsId) {
+    console.log('⏳ [VoiceConversation] Rendering loading state');
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3">
@@ -144,8 +340,19 @@ const VoiceConversation = ({
     );
   }
 
+  console.log('🎨 [VoiceConversation] Rendering main component');
+
   return (
     <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
+      {/* iOS/Mobile Warning */}
+      {(isIOS() || isMobile()) && userInteractionRequired && !isConnected && (
+        <Alert severity="info" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>
+          <Typography variant="body2">
+            {isIOS() ? 'iOS Safari' : 'Mobile'} requires user interaction to access microphone.
+            Tap the button below to enable voice conversation.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Compact Language Switcher + Call Button Row */}
       <div className="flex items-center gap-3">
@@ -163,6 +370,7 @@ const VoiceConversation = ({
                   alt={effectiveAgentName}
                   className="w-full h-full rounded-full object-cover"
                   onError={(e) => {
+                    console.warn('🖼️ [VoiceConversation] Avatar image failed to load:', effectiveAvatarUrl);
                     // Fallback to SVG if image fails to load
                     e.target.style.display = 'none';
                     e.target.nextElementSibling.style.display = 'block';
@@ -193,7 +401,10 @@ const VoiceConversation = ({
           </button>
         ) : (
           <button
-            onClick={stopConversation}
+            onClick={() => {
+              console.log('🛑 [VoiceConversation] Stop conversation button clicked');
+              stopConversation();
+            }}
             className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-ring disabled:pointer-events-auto disabled:opacity-50 group backdrop-blur-md bg-red-500/90 dark:bg-red-600/90 p-1.5 h-auto border border-red-400/50 dark:border-red-500/50 shadow-lg rounded-full hover:bg-red-600/90 dark:hover:bg-red-700/90 active:bg-red-600/90 dark:active:bg-red-700/90 transition-all duration-300"
           >
             <span className="me-1.5 w-8 h-8 bg-white/20 rounded-full text-white flex items-center justify-center transition-all duration-300">

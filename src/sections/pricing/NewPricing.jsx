@@ -23,6 +23,7 @@ import { SkeletonPricingCard } from '../../components/skeleton';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { optimai, optimai_shop } from '../../utils/axios';
+import { openUrl } from '../../utils/auth';
 
 // ----------------------------------------------------------------------
 
@@ -281,7 +282,8 @@ export default function NewPricing() {
         },
       });
 
-      window.location.href = response.data.url;
+      // Open URL using platform-aware utility
+      await openUrl(response.data.url);
     } catch (error) {
       console.error('Error initiating checkout:', error);
     }

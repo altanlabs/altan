@@ -1,4 +1,4 @@
-import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Tooltip, Typography, useTheme, TextField, Snackbar, Alert } from '@mui/material';
+import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Tooltip, Typography, useTheme, TextField, Snackbar, Alert, useMediaQuery } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -53,11 +53,14 @@ function Agent({ agentId, id, onGoBack }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const location = useLocation();
-  const history = useHistory();;
+  const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, currentAgentDmRoomId, isLoading } = useSelector((state) => state.agents);
   console.log('currentAgent', currentAgent);
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Get initial tab from URL params or default to 'agent'
   const searchParams = new URLSearchParams(location.search);
@@ -262,7 +265,7 @@ function Agent({ agentId, id, onGoBack }) {
           sx={{
             borderBottom: 1,
             borderColor: theme.palette.divider,
-            px: 2,
+            px: { xs: 1, sm: 2 },
             py: 1.5,
           }}
         >
@@ -281,6 +284,7 @@ function Agent({ agentId, id, onGoBack }) {
               <Typography
                 variant="subtitle2"
                 color="text.primary"
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
               >
                 {communicationMode === 'chat'
                   ? 'Live Chat'
@@ -306,9 +310,9 @@ function Agent({ agentId, id, onGoBack }) {
                 variant="soft"
                 sx={{
                   minWidth: 'auto',
-                  px: 1.5,
+                  px: { xs: 0.75, sm: 1.5 },
                   py: 0.5,
-                  fontSize: '0.75rem',
+                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
                   color: communicationMode === 'chat' ? undefined : 'text.secondary',
                 }}
               >
@@ -321,9 +325,9 @@ function Agent({ agentId, id, onGoBack }) {
                 variant="soft"
                 sx={{
                   minWidth: 'auto',
-                  px: 1.5,
+                  px: { xs: 0.75, sm: 1.5 },
                   py: 0.5,
-                  fontSize: '0.75rem',
+                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
                   color: communicationMode === 'voice' ? undefined : 'text.secondary',
                 }}
               >
@@ -336,9 +340,9 @@ function Agent({ agentId, id, onGoBack }) {
                 variant="soft"
                 sx={{
                   minWidth: 'auto',
-                  px: 1.5,
+                  px: { xs: 0.75, sm: 1.5 },
                   py: 0.5,
-                  fontSize: '0.75rem',
+                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
                   color: communicationMode === 'widget' ? undefined : 'text.secondary',
                 }}
               >
@@ -368,6 +372,134 @@ function Agent({ agentId, id, onGoBack }) {
     );
   };
 
+  const renderMobileTabNavigation = () => (
+    <Box
+      sx={{
+        borderBottom: 1,
+        borderColor: theme.palette.divider,
+        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+        overflow: 'auto',
+      }}
+    >
+      <Box sx={{ display: 'flex', px: 1, py: 1 }}>
+        {TABS.map((tab) => (
+          <Button
+            key={tab.id}
+            onClick={() => handleTabChange(tab.id)}
+            startIcon={
+              <Iconify
+                icon={tab.icon}
+                color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
+                sx={{ fontSize: '1rem' }}
+              />
+            }
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              py: 1,
+              px: 1,
+              fontSize: '0.75rem',
+              fontWeight: 'medium',
+              color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
+              bgcolor:
+                activeTab === tab.id
+                  ? theme.palette.mode === 'dark'
+                    ? 'grey.800'
+                    : 'grey.100'
+                  : 'transparent',
+              borderRadius: 1,
+              mx: 0.25,
+              '&:hover': {
+                bgcolor:
+                  activeTab === tab.id
+                    ? theme.palette.mode === 'dark'
+                      ? 'grey.700'
+                      : 'grey.200'
+                    : theme.palette.mode === 'dark'
+                      ? 'grey.800'
+                      : 'grey.100',
+                color: 'text.primary',
+              },
+            }}
+          >
+            {tab.label}
+          </Button>
+        ))}
+      </Box>
+    </Box>
+  );
+
+  const renderDesktopTabNavigation = () => (
+    <Box
+      sx={{
+        width: { md: 160, lg: 180 },
+        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+        borderRight: 1,
+        borderColor: theme.palette.divider,
+      }}
+    >
+      <Box sx={{ p: 1 }}>
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 'bold',
+            mb: 1,
+            display: 'block',
+            fontSize: { md: '0.7rem', lg: '0.75rem' },
+          }}
+        >
+          Configuration
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {TABS.map((tab) => (
+            <Button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              startIcon={
+                <Iconify
+                  icon={tab.icon}
+                  color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
+                />
+              }
+              sx={{
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                py: 1,
+                px: 1.5,
+                fontSize: { md: '0.75rem', lg: '0.875rem' },
+                fontWeight: 'medium',
+                color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
+                bgcolor:
+                  activeTab === tab.id
+                    ? theme.palette.mode === 'dark'
+                      ? 'grey.800'
+                      : 'grey.100'
+                    : 'transparent',
+                borderLeft: activeTab === tab.id ? 3 : 0,
+                borderColor: theme.palette.mode === 'dark' ? 'grey.600' : 'grey.400',
+                borderRadius: 1,
+                '&:hover': {
+                  bgcolor:
+                    activeTab === tab.id
+                      ? theme.palette.mode === 'dark'
+                        ? 'grey.700'
+                        : 'grey.200'
+                      : theme.palette.mode === 'dark'
+                        ? 'grey.800'
+                        : 'grey.100',
+                  color: 'text.primary',
+                },
+              }}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+
   if (isLoading || !agentData) {
     return <AltanLogo />;
   }
@@ -385,12 +517,12 @@ function Agent({ agentId, id, onGoBack }) {
         sx={{
           borderBottom: 1,
           borderColor: theme.palette.divider,
-          px: 3,
+          px: { xs: 1, sm: 2, md: 3 },
           py: 1,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
             <Tooltip title="Go Back">
               <IconButton
                 onClick={handleGoBack}
@@ -405,9 +537,9 @@ function Agent({ agentId, id, onGoBack }) {
               </IconButton>
             </Tooltip>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
               <UploadAvatar
-                sx={{ width: 64, height: 64 }}
+                sx={{ width: { xs: 48, sm: 56, md: 64 }, height: { xs: 48, sm: 56, md: 64 } }}
                 file={agentData.avatar_url}
                 onDrop={handleDropSingleFile}
                 onDelete={() => handleFieldChange('avatar_url', null)}
@@ -417,11 +549,11 @@ function Agent({ agentId, id, onGoBack }) {
                   tooltip: 'Choose another avatar',
                 }}
               />
-              <Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
                 <input
                   type="text"
                   style={{
-                    fontSize: '1.25rem',
+                    fontSize: isMobile ? '1rem' : '1.25rem',
                     fontWeight: 'bold',
                     color: theme.palette.text.primary,
                     backgroundColor: 'transparent',
@@ -429,6 +561,7 @@ function Agent({ agentId, id, onGoBack }) {
                     outline: 'none',
                     borderBottom: '2px solid transparent',
                     minWidth: 0,
+                    width: '100%',
                   }}
                   value={agentData.name || ''}
                   onChange={(e) => handleFieldChange('name', e.target.value)}
@@ -443,7 +576,7 @@ function Agent({ agentId, id, onGoBack }) {
                 <input
                   type="text"
                   style={{
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
                     color: theme.palette.text.secondary,
                     backgroundColor: 'transparent',
                     border: 'none',
@@ -469,11 +602,12 @@ function Agent({ agentId, id, onGoBack }) {
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
             <Tooltip title="Agent Information">
               <IconButton
                 onClick={() => setInfoDialogOpen(true)}
                 sx={{ color: 'text.secondary' }}
+                size={isMobile ? 'small' : 'medium'}
               >
                 <Iconify icon="eva:info-outline" />
               </IconButton>
@@ -483,6 +617,7 @@ function Agent({ agentId, id, onGoBack }) {
                 <IconButton
                   onClick={handleVersionHistory}
                   sx={{ color: 'text.secondary' }}
+                  size={isMobile ? 'small' : 'medium'}
                 >
                   <Iconify icon="mdi:history" />
                 </IconButton>
@@ -492,6 +627,7 @@ function Agent({ agentId, id, onGoBack }) {
               <IconButton
                 onClick={() => setShareDialogOpen(true)}
                 sx={{ color: 'text.secondary' }}
+                size={isMobile ? 'small' : 'medium'}
               >
                 <Iconify icon="eva:share-fill" />
               </IconButton>
@@ -500,101 +636,52 @@ function Agent({ agentId, id, onGoBack }) {
               onClick={() => setDeleteDialog(true)}
               variant="contained"
               color="error"
-              size="small"
+              size={isMobile ? 'small' : 'small'}
               startIcon={<Iconify icon="eva:trash-2-outline" />}
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                px: { xs: 1, sm: 2 },
+              }}
             >
-              Delete
+              {isMobile ? '' : 'Delete'}
             </Button>
           </Box>
         </Box>
       </Box>
 
+      {/* Mobile Tab Navigation */}
+      {isMobile && renderMobileTabNavigation()}
+
       {/* Main Content Area */}
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left Panel: Configuration */}
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
+        {/* Configuration Panel */}
         <Box
           sx={{
-            width: '60%',
+            width: { xs: '100%', md: '60%' },
             display: 'flex',
-            borderRight: 1,
+            borderRight: { md: 1 },
             borderColor: theme.palette.divider,
+            flex: 1,
           }}
         >
-          {/* Tab Navigation */}
-          <Box
-            sx={{
-              width: 160,
-              bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-              borderRight: 1,
-              borderColor: theme.palette.divider,
-            }}
-          >
-            <Box sx={{ p: 1 }}>
-              <Typography
-                variant="overline"
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 'bold',
-                  mb: 1,
-                  display: 'block',
-                }}
-              >
-                Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                {TABS.map((tab) => (
-                  <Button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    startIcon={
-                      <Iconify
-                        icon={tab.icon}
-                        color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
-                      />
-                    }
-                    sx={{
-                      justifyContent: 'flex-start',
-                      textAlign: 'left',
-                      py: 1,
-                      px: 1.5,
-                      fontSize: '0.875rem',
-                      fontWeight: 'medium',
-                      color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
-                      bgcolor:
-                        activeTab === tab.id
-                          ? theme.palette.mode === 'dark'
-                            ? 'grey.800'
-                            : 'grey.100'
-                          : 'transparent',
-                      borderLeft: activeTab === tab.id ? 3 : 0,
-                      borderColor: theme.palette.mode === 'dark' ? 'grey.600' : 'grey.400',
-                      borderRadius: 1,
-                      '&:hover': {
-                        bgcolor:
-                          activeTab === tab.id
-                            ? theme.palette.mode === 'dark'
-                              ? 'grey.700'
-                              : 'grey.200'
-                            : theme.palette.mode === 'dark'
-                              ? 'grey.800'
-                              : 'grey.100',
-                        color: 'text.primary',
-                      },
-                    }}
-                  >
-                    {tab.label}
-                  </Button>
-                ))}
-              </Box>
-            </Box>
-          </Box>
+          {/* Desktop Tab Navigation */}
+          {!isMobile && renderDesktopTabNavigation()}
 
           {/* Tab Content */}
           <Box sx={{ flex: 1, overflow: 'hidden' }}>{renderTabContent()}</Box>
         </Box>
 
-        {/* Right Panel: Communication (Chat/Voice/Widget) */}
-        <Box sx={{ width: '40%' }}>{renderCommunicationPanel()}</Box>
+        {/* Communication Panel: Only show on desktop */}
+        {!isMobile && (
+          <Box
+            sx={{
+              width: { md: '40%' },
+              display: 'block',
+            }}
+          >
+            {renderCommunicationPanel()}
+          </Box>
+        )}
       </Box>
 
       {/* Dialogs */}

@@ -1,4 +1,4 @@
-import { TextField, InputAdornment, Typography, IconButton, Tooltip } from '@mui/material';
+import { TextField, InputAdornment, IconButton, Tooltip } from '@mui/material';
 import { m } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { memo, useState, useMemo, useCallback, useEffect } from 'react';
@@ -229,7 +229,9 @@ const ItemSwitcher = memo(
           {isFlowType(activeComponentType) && currentItem && renderStatusIndicator(currentItem)}
           {isAgentType(activeComponentType) && currentItem && renderAvatar(currentItem)}
 
-          {currentItemName}
+          <span className="hidden sm:inline">
+            {currentItemName}
+          </span>
 
           <m.span
             animate={{ rotate: isOpen ? 180 : 0 }}

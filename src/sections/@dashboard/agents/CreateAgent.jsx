@@ -5,6 +5,7 @@ import { useState, useCallback, memo } from 'react';
 
 import useAgentAttributes from './useAgentAttributes';
 import Iconify from '../../../components/iconify/Iconify';
+import CustomDialog from '../../../components/dialogs/CustomDialog';
 
 function CreateAgent({ altanerComponentId = null }) {
   const [open, setOpen] = useState(false);
@@ -27,10 +28,11 @@ function CreateAgent({ altanerComponentId = null }) {
       >
         New AI Agent
       </Button>
-      <Dialog
-        fullWidth
-        open={open}
+      <CustomDialog
+        dialogOpen={open}
         onClose={handleClose}
+        alwaysFullWidth
+        showCloseButton={false}
       >
         <Stack
           direction="row"
@@ -83,7 +85,7 @@ function CreateAgent({ altanerComponentId = null }) {
             </LoadingButton>
           </Tooltip>
         </DialogActions>
-      </Dialog>
+      </CustomDialog>
     </>
   );
 }

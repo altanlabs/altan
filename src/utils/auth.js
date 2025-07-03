@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import axios from 'axios';
 
 /**
@@ -11,6 +12,28 @@ const isCapacitorPlatform = () => {
     return Capacitor.isNativePlatform();
   } catch {
     return false;
+  }
+};
+
+/**
+ * Opens a URL using the appropriate method based on platform
+ * @param {string} url - The URL to open
+ * @param {Object} options - Additional options for browser opening
+ * @returns {Promise<void>}
+ */
+export const openUrl = async (url, options = {}) => {
+  try {
+    if (isCapacitorPlatform()) {
+      // Use Browser plugin for mobile platforms
+      await Browser.open({ url, ...options });
+    } else {
+      // Use window.location.href for web platforms
+      window.location.href = url;
+    }
+  } catch (error) {
+    console.error('Error opening URL:', error);
+    // Fallback to window.open if Browser.open fails
+    window.open(url, '_blank');
   }
 };
 

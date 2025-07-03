@@ -17,9 +17,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 3000,
+      launchShowDuration: 0,
       launchAutoHide: true,
-      backgroundColor: "#ffffffff",
+      backgroundColor: "#ffffff", // White background to match LaunchScreen
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
       showSpinner: false,
@@ -29,7 +29,7 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
       layoutName: "launch_screen",
-      useDialog: true,
+      useDialog: false, // Disable Capacitor overlay
     },
     Keyboard: {
       resize: KeyboardResize.Body,

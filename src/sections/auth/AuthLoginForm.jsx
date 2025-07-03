@@ -83,7 +83,10 @@ export default function AuthLoginForm({ idea = null, invitation = null }) {
 
         <Stack
           spacing={1.5}
-          sx={{ minWidth: 300 }}
+          sx={{ 
+            minWidth: { xs: 280, sm: 300 }, // Smaller min width on mobile
+            width: '100%',
+          }}
         >
           {!!errors.afterSubmit && <Alert severity="error">{errors.afterSubmit.message}</Alert>}
 
