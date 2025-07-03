@@ -1,21 +1,36 @@
+import { Capacitor } from '@capacitor/core';
 import { useConversation } from '@elevenlabs/react';
 import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 const VoiceConversationContext = createContext(null);
 
+// Helper function to detect Capacitor native platform
+const isCapacitorNative = () => {
+  try {
+    const result = Capacitor.isNativePlatform();
+    console.log('⚡ [VoiceProvider] Capacitor Native Detection:', { result, platform: Capacitor.getPlatform() });
+    return result;
+  } catch (error) {
+    console.log('⚡ [VoiceProvider] Capacitor not available:', error);
+    return false;
+  }
+};
+
 // Helper function to detect iOS
 const isIOS = () => {
   const result = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  console.log('🍎 [VoiceProvider] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform });
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+         (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
+  console.log('🍎 [VoiceProvider] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
   return result;
 };
 
 // Helper function to detect mobile browsers
 const isMobile = () => {
-  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  console.log('📱 [VoiceProvider] Mobile Detection:', { result, userAgent: navigator.userAgent });
+  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
+  console.log('📱 [VoiceProvider] Mobile Detection:', { result, userAgent: navigator.userAgent, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
   return result;
 };
 
@@ -290,6 +305,13 @@ export const VoiceConversationProvider = ({ children }) => {
         ...(Object.keys(dynamicVariables).length > 0 && { dynamicVariables }),
       };
 
+      // Add callbacks to session config
+      const callbackConfig = {};
+      if (onConnect) callbackConfig.onConnect = onConnect;
+      if (onDisconnect) callbackConfig.onDisconnect = onDisconnect;
+      if (onMessage) callbackConfig.onMessage = onMessage;
+      if (onError) callbackConfig.onError = onError;
+
       // iOS-specific session configuration
       if (isIOS() || isMobile()) {
         console.log('📱 [VoiceProvider] Applying iOS/Mobile optimizations...');
@@ -308,14 +330,11 @@ export const VoiceConversationProvider = ({ children }) => {
       console.log('🎤 [VoiceProvider] Final session config:', sessionConfig);
       console.log('🔄 [VoiceProvider] Starting ElevenLabs session...');
 
-      await conversation.startSession(sessionConfig);
+      await conversation.startSession({
+        ...sessionConfig,
+        ...callbackConfig,
+      });
       console.log('✅ [VoiceProvider] ElevenLabs session started successfully');
-
-      // Call optional callbacks
-      if (onConnect) {
-        console.log('🔗 [VoiceProvider] Calling onConnect callback');
-        onConnect();
-      }
 
       return true;
     } catch (error) {

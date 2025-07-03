@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { MenuItem, Typography, Menu, Alert } from '@mui/material';
 import axios from 'axios';
 import React, { memo, useState, useCallback, useEffect } from 'react';
@@ -6,18 +7,32 @@ import Iconify from '../../../components/iconify';
 import { useLocales } from '../../../locales';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
 
+// Helper function to detect Capacitor native platform
+const isCapacitorNative = () => {
+  try {
+    const result = Capacitor.isNativePlatform();
+    console.log('⚡ [VoiceConversation] Capacitor Native Detection:', { result, platform: Capacitor.getPlatform() });
+    return result;
+  } catch (error) {
+    console.log('⚡ [VoiceConversation] Capacitor not available:', error);
+    return false;
+  }
+};
+
 // Helper function to detect iOS
 const isIOS = () => {
   const result = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  console.log('🍎 [VoiceConversation] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform });
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+         (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
+  console.log('🍎 [VoiceConversation] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
   return result;
 };
 
 // Helper function to detect mobile browsers
 const isMobile = () => {
-  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  console.log('📱 [VoiceConversation] Mobile Detection:', { result, userAgent: navigator.userAgent });
+  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
+  console.log('📱 [VoiceConversation] Mobile Detection:', { result, userAgent: navigator.userAgent, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
   return result;
 };
 
@@ -26,6 +41,13 @@ const checkBrowserSupport = () => {
   const issues = [];
 
   console.log('🔍 [VoiceConversation] Checking browser support...');
+
+  // Skip strict browser checks for Capacitor native apps
+  if (isCapacitorNative()) {
+    console.log('⚡ [VoiceConversation] Capacitor native app detected, skipping browser compatibility checks');
+    console.log('🔍 [VoiceConversation] Capacitor platform:', Capacitor.getPlatform());
+    return []; // Assume Capacitor WebView supports required features
+  }
 
   if (!navigator.mediaDevices) {
     issues.push('MediaDevices API not supported');

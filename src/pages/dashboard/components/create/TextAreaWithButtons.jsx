@@ -140,7 +140,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
 
   return (
     <div className="relative">
-      <div className="w-full px-4 pt-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary shadow-lg bg-white dark:bg-[#1c1c1c]">
+      <div className="w-full px-4 pt-3 pb-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary shadow-lg bg-white dark:bg-[#1c1c1c]">
         {/* Attachments Preview Section */}
         {attachments.length > 0 && (
           <div className="flex gap-2 items-center mb-2 overflow-x-auto scrollbar-hide">
@@ -208,7 +208,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
 
         <textarea
           ref={textareaRef}
-          className="w-full bg-transparent min-h-[24px] max-h-[200px] focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400/80 dark:placeholder-gray-500/80 resize-none pb-14"
+          className="w-full bg-transparent min-h-[24px] max-h-[200px] focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400/80 dark:placeholder-gray-500/80 resize-none mb-1"
           placeholder={'Describe your next idea...'}
           value={inputValue}
           onChange={(e) => {
@@ -217,7 +217,9 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
           }}
           onPaste={handlePaste}
         />
-        <div className="absolute bottom-2 left-4 right-3 flex justify-between items-center">
+        
+        {/* Buttons section - now positioned below textarea instead of overlapping */}
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             {/* Plus button */}
             <div className="relative">
