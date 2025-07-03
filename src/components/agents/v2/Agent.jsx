@@ -75,11 +75,6 @@ function Agent({ agentId, id, onGoBack }) {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
 
-  // Set communication mode based on active tab
-  const [communicationMode, setCommunicationMode] = useState(
-    initialTab === 'voice' ? 'voice' : initialTab === 'widget' ? 'widget' : 'chat',
-  );
-
   // Voice conversation is now handled by the VoiceConversation component
 
   // Handle tab change with URL update
@@ -98,15 +93,6 @@ function Agent({ agentId, id, onGoBack }) {
       const newSearch = newSearchParams.toString();
       const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
       history.push(newPath, { replace: true });
-
-      // Set communication mode based on tab
-      if (tabId === 'voice') {
-        setCommunicationMode('voice');
-      } else if (tabId === 'widget') {
-        setCommunicationMode('widget');
-      } else {
-        setCommunicationMode('chat');
-      }
     },
     [location.pathname, location.search, history.push],
   );
@@ -130,7 +116,6 @@ function Agent({ agentId, id, onGoBack }) {
 
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
-      setCommunicationMode(urlTab === 'voice' ? 'voice' : urlTab === 'widget' ? 'widget' : 'chat');
     }
   }, [location.search, activeTab]);
 
@@ -260,119 +245,27 @@ function Agent({ agentId, id, onGoBack }) {
   const renderCommunicationPanel = () => {
     return (
       <Box sx={{ height: '100%', bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50' }}>
-        {/* Communication Mode Toggle */}
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: theme.palette.divider,
-            px: { xs: 1, sm: 2 },
-            py: 1.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Iconify
-                icon={
-                  communicationMode === 'chat'
-                    ? 'eva:message-circle-outline'
-                    : communicationMode === 'voice'
-                      ? 'eva:mic-outline'
-                      : 'eva:cube-outline'
-                }
-                color={theme.palette.text.secondary}
-              />
-              <Typography
-                variant="subtitle2"
-                color="text.primary"
-                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-              >
-                {communicationMode === 'chat'
-                  ? 'Live Chat'
-                  : communicationMode === 'voice'
-                    ? 'Voice Chat'
-                    : 'Widget Preview'}
-              </Typography>
-            </Box>
-
-            {/* Mode Toggle */}
-            <Box
-              sx={{
-                display: 'flex',
-                bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
-                borderRadius: 1,
-                p: 0.5,
-              }}
-            >
-              <Button
-                onClick={() => setCommunicationMode('chat')}
-                size="small"
-                color="inherit"
-                variant="soft"
-                sx={{
-                  minWidth: 'auto',
-                  px: { xs: 0.75, sm: 1.5 },
-                  py: 0.5,
-                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
-                  color: communicationMode === 'chat' ? undefined : 'text.secondary',
-                }}
-              >
-                Chat
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => setCommunicationMode('voice')}
-                size="small"
-                variant="soft"
-                sx={{
-                  minWidth: 'auto',
-                  px: { xs: 0.75, sm: 1.5 },
-                  py: 0.5,
-                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
-                  color: communicationMode === 'voice' ? undefined : 'text.secondary',
-                }}
-              >
-                Voice
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => setCommunicationMode('widget')}
-                size="small"
-                variant="soft"
-                sx={{
-                  minWidth: 'auto',
-                  px: { xs: 0.75, sm: 1.5 },
-                  py: 0.5,
-                  fontSize: { xs: '0.6rem', sm: '0.75rem' },
-                  color: communicationMode === 'widget' ? undefined : 'text.secondary',
-                }}
-              >
-                Widget
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Render content based on mode */}
-        <Box sx={{ height: 'calc(100% - 60px)' }}>
-          {communicationMode === 'chat' ? (
-            <ChatPreview currentAgentDmRoomId={currentAgentDmRoomId} />
-          ) : communicationMode === 'voice' ? (
+        {/* Render content based on active tab */}
+        <Box sx={{ height: '100%' }}>
+          {activeTab === 'voice' ? (
             <VoicePreview
               agentData={agentData}
               onConfigureVoice={() => handleTabChange('voice')}
             />
-          ) : (
+          ) : activeTab === 'widget' ? (
             <WidgetPreview
               agentData={agentData}
               onConfigureWidget={() => handleTabChange('widget')}
             />
+          ) : (
+            <ChatPreview currentAgentDmRoomId={currentAgentDmRoomId} />
           )}
         </Box>
       </Box>
     );
   };
 
-  const renderMobileTabNavigation = () => (
+  const renderTabNavigation = () => (
     <Box
       sx={{
         borderBottom: 1,
@@ -381,7 +274,7 @@ function Agent({ agentId, id, onGoBack }) {
         overflow: 'auto',
       }}
     >
-      <Box sx={{ display: 'flex', px: 1, py: 1 }}>
+      <Box sx={{ display: 'flex', px: { xs: 0.5, sm: 1 }, py: { xs: 0.5, sm: 0.75 } }}>
         {TABS.map((tab) => (
           <Button
             key={tab.id}
@@ -390,15 +283,15 @@ function Agent({ agentId, id, onGoBack }) {
               <Iconify
                 icon={tab.icon}
                 color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
-                sx={{ fontSize: '1rem' }}
+                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
               />
             }
             sx={{
               flex: 1,
               minWidth: 0,
-              py: 1,
-              px: 1,
-              fontSize: '0.75rem',
+              py: { xs: 0.5, sm: 0.75 },
+              px: { xs: 0.75, sm: 1 },
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
               fontWeight: 'medium',
               color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
               bgcolor:
@@ -408,7 +301,7 @@ function Agent({ agentId, id, onGoBack }) {
                     : 'grey.100'
                   : 'transparent',
               borderRadius: 1,
-              mx: 0.25,
+              mx: 0.125,
               '&:hover': {
                 bgcolor:
                   activeTab === tab.id
@@ -425,77 +318,6 @@ function Agent({ agentId, id, onGoBack }) {
             {tab.label}
           </Button>
         ))}
-      </Box>
-    </Box>
-  );
-
-  const renderDesktopTabNavigation = () => (
-    <Box
-      sx={{
-        width: { md: 160, lg: 180 },
-        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-        borderRight: 1,
-        borderColor: theme.palette.divider,
-      }}
-    >
-      <Box sx={{ p: 1 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            color: 'text.secondary',
-            fontWeight: 'bold',
-            mb: 1,
-            display: 'block',
-            fontSize: { md: '0.7rem', lg: '0.75rem' },
-          }}
-        >
-          Configuration
-        </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          {TABS.map((tab) => (
-            <Button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              startIcon={
-                <Iconify
-                  icon={tab.icon}
-                  color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
-                />
-              }
-              sx={{
-                justifyContent: 'flex-start',
-                textAlign: 'left',
-                py: 1,
-                px: 1.5,
-                fontSize: { md: '0.75rem', lg: '0.875rem' },
-                fontWeight: 'medium',
-                color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
-                bgcolor:
-                  activeTab === tab.id
-                    ? theme.palette.mode === 'dark'
-                      ? 'grey.800'
-                      : 'grey.100'
-                    : 'transparent',
-                borderLeft: activeTab === tab.id ? 3 : 0,
-                borderColor: theme.palette.mode === 'dark' ? 'grey.600' : 'grey.400',
-                borderRadius: 1,
-                '&:hover': {
-                  bgcolor:
-                    activeTab === tab.id
-                      ? theme.palette.mode === 'dark'
-                        ? 'grey.700'
-                        : 'grey.200'
-                      : theme.palette.mode === 'dark'
-                        ? 'grey.800'
-                        : 'grey.100',
-                  color: 'text.primary',
-                },
-              }}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </Box>
       </Box>
     </Box>
   );
@@ -649,8 +471,8 @@ function Agent({ agentId, id, onGoBack }) {
         </Box>
       </Box>
 
-      {/* Mobile Tab Navigation */}
-      {isMobile && renderMobileTabNavigation()}
+      {/* Tab Navigation */}
+      {renderTabNavigation()}
 
       {/* Main Content Area */}
       <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
@@ -664,9 +486,6 @@ function Agent({ agentId, id, onGoBack }) {
             flex: 1,
           }}
         >
-          {/* Desktop Tab Navigation */}
-          {!isMobile && renderDesktopTabNavigation()}
-
           {/* Tab Content */}
           <Box sx={{ flex: 1, overflow: 'hidden' }}>{renderTabContent()}</Box>
         </Box>

@@ -407,10 +407,7 @@ const ModuleExecutionsOverviewModal = () => {
     <CustomDialog
       dialogOpen={Boolean(open)}
       onClose={onClose}
-      maxWidth="xl"
       fullWidth
-      // overflowHidden
-      className="h-full w-full relative"
     >
       <Stack
         direction="row"

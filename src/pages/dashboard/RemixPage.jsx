@@ -117,7 +117,7 @@ const RemixPage = () => {
   }, [status, handleReload, interfaceComponent]);
 
   const handleRemixClick = () => {
-    history.push(`/clone/${app.template.selected_version_id}`);
+    history.push(`/?template=${app.template.selected_version_id}`, { replace: true });
   };
 
   const handleComponentClick = (type) => {

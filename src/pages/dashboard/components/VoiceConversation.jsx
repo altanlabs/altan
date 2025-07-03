@@ -496,7 +496,7 @@ const VoiceConversation = ({
         )}
 
         {/* Minimal Flag Selector - Matching Button Style */}
-        {showLanguageSelector && (
+        {showLanguageSelector && !isConnected && (
           <>
             <button
               onClick={handleLanguageMenuOpen}

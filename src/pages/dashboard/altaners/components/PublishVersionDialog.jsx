@@ -80,7 +80,6 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
       <CustomDialog
         dialogOpen={open}
         onClose={onClose}
-        alwaysFullWidth
         className="min-h-[500px] max-w-[500px]"
       >
         <Box sx={{ p: 3, minHeight: '500px', width: '100%' }}>

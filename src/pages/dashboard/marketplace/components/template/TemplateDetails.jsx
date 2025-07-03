@@ -111,7 +111,7 @@ const TemplateDetails = ({ templateId = null }) => {
       setLoading(true);
 
       if (canClone) {
-        history.push(`/clone/${template.selected_version_id}`);
+        history.push(`/?template=${template.selected_version_id}`, { replace: true });
       } else {
         const response = await optimai_shop.post(
           `/v2/stripe/checkout/template?template_id=${templateId}&account_id=${account.id}`,

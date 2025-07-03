@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import AltanersWidget from './components/AltanersWidget';
+import CreateAgentDashboard from './components/CreateAgentDashboard.jsx';
 import CreateAnything from './components/CreateAnything.jsx';
 import VoiceConversation from './components/VoiceConversation.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
@@ -200,7 +201,11 @@ const DashboardPage = () => {
                       dynamicVariables={agentConfig?.dynamicVariables}
                     />
                   ) : (
-                    <CreateAnything handleVoice={() => setIsVoice(!isVoice)} />
+                    mode === 'agents' ? (
+                      <CreateAgentDashboard handleVoice={() => setIsVoice(!isVoice)} />
+                    ) : (
+                      <CreateAnything handleVoice={() => setIsVoice(!isVoice)} />
+                    )
                   )}
                   {isVoice && (
                     <Typography

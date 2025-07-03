@@ -18,7 +18,7 @@ import {
   ListItemText,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
-import React, { useCallback, useState, memo, useMemo, useEffect } from 'react';
+import React, { useCallback, useState, memo, useMemo, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { useHistory } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
@@ -59,8 +59,6 @@ const StyledRoot = styled('div')(({ theme, isDashboard }) => ({
 
 // ----------------------------------------------------------------------
 
-const selectAllAccountsLoading = (state) => state.superadmin.isLoading.accounts;
-const selectAllAccountsInitialized = (state) => state.superadmin.initialized.accounts;
 const selectAllAccounts = (state) => state.superadmin.accounts;
 const selectAccounts = (state) => state.general.accounts;
 
@@ -72,8 +70,10 @@ function NavAccount({ mini = false, isDashboard = false }) {
   const account = useSelector(selectAccountDetails);
   const accounts = useSelector(selectAccounts);
   const allAccounts = useSelector(selectAllAccounts);
-  const allAccountsInitialized = useSelector(selectAllAccountsInitialized);
-  const allAccountsLoading = useSelector(selectAllAccountsLoading);
+
+  // Use refs to prevent unnecessary re-renders
+  const searchTimeoutRef = useRef(null);
+  const isSearchingRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchById, setSearchById] = useState('');
@@ -83,18 +83,24 @@ function NavAccount({ mini = false, isDashboard = false }) {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Combine all search terms for debouncing
-  const combinedSearchTerm = `${searchById}|${searchByName}|${searchByEmail}`;
-  const debouncedSearchQuery = useDebounce(combinedSearchTerm, 500);
+  // Combine all search terms for debouncing - use a longer debounce to reduce flicker
+  const combinedSearchTerm = useMemo(() => `${searchById}|${searchByName}|${searchByEmail}`, [searchById, searchByName, searchByEmail]);
+  const debouncedSearchQuery = useDebounce(combinedSearchTerm, 800); // Increased from 500ms to 800ms
+
+  // Memoize the search term check to prevent unnecessary re-renders
+  const hasAnySearchTerm = useMemo(() =>
+    Boolean(searchById.trim() || searchByName.trim() || searchByEmail.trim()),
+  [searchById, searchByName, searchByEmail],
+  );
 
   // For superadmins, use search results when searching, otherwise use filtered accounts
-  const hasAnySearchTerm = searchById.trim() || searchByName.trim() || searchByEmail.trim();
   const filteredAccounts = useFilteredAccounts({
     allAccounts: user?.xsup && showAllAccounts && hasAnySearchTerm ? searchResults : allAccounts,
     accounts,
     searchTerm: user?.xsup && showAllAccounts && hasAnySearchTerm ? '' : searchTerm, // Don't double-filter if using search results
     showAllAccounts,
   });
+
   const name = useMemo(() => account?.name || user?.first_name, [account?.name, user?.first_name]);
 
   const handleClick = useCallback(() => setOpen(true), []);
@@ -106,9 +112,12 @@ function NavAccount({ mini = false, isDashboard = false }) {
     setSearchByName('');
     setSearchByEmail('');
     setSearchResults([]);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   }, []);
 
-  // Search accounts using the new endpoint for superadmins
+  // Optimize search function to prevent excessive API calls
   const performSearch = useCallback(async () => {
     if (!user?.xsup || !showAllAccounts) {
       setSearchResults([]);
@@ -125,35 +134,32 @@ function NavAccount({ mini = false, isDashboard = false }) {
       return;
     }
 
+    // Prevent multiple concurrent searches
+    if (isSearchingRef.current) {
+      return;
+    }
+
+    isSearchingRef.current = true;
     setIsSearching(true);
+
     try {
       const results = await dispatch(searchAccounts(searchParams));
       setSearchResults(results || []);
-    } catch {
+    } catch (error) {
+      console.error('Search failed:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
+      isSearchingRef.current = false;
     }
   }, [user?.xsup, showAllAccounts, searchById, searchByName, searchByEmail]);
 
   // Effect to perform search when debounced query changes
   useEffect(() => {
-    if (user?.xsup && showAllAccounts) {
+    if (user?.xsup && showAllAccounts && debouncedSearchQuery) {
       performSearch();
     }
   }, [debouncedSearchQuery, user?.xsup, showAllAccounts, performSearch]);
-
-  // Remove the old getAllAccounts logic since we're now using search
-  const superAdminAccounts = useCallback(() => {
-    // No longer needed - we use search instead
-  }, []);
-
-  useEffect(() => {
-    // Remove the automatic fetching of all accounts
-    // if (user?.xsup && showAllAccounts && !allAccountsInitialized && !allAccountsLoading) {
-    //   superAdminAccounts();
-    // }
-  }, [showAllAccounts, user?.xsup, allAccountsInitialized, allAccountsLoading, superAdminAccounts]);
 
   const handleChangeAccount = useCallback(
     (id) => {
@@ -202,13 +208,185 @@ function NavAccount({ mini = false, isDashboard = false }) {
     [account?.logo_url, account?.id, name, theme.palette.background.neutral],
   );
 
-  // Memoize the dialog to prevent re-renders
-  const memoizedDialog = useMemo(() => (
-    <CustomDialog
-      dialogOpen={open}
-      onClose={handleClose}
-      aria-labelledby="account-dialog-title"
+  // Optimize input handlers to prevent excessive re-renders
+  const handleSearchTermChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleSearchByIdChange = useCallback((e) => {
+    setSearchById(e.target.value);
+  }, []);
+
+  const handleSearchByNameChange = useCallback((e) => {
+    setSearchByName(e.target.value);
+  }, []);
+
+  const handleSearchByEmailChange = useCallback((e) => {
+    setSearchByEmail(e.target.value);
+  }, []);
+
+  // Memoize the search fields to prevent re-renders
+  const searchFields = useMemo(() => {
+    if (user?.xsup && showAllAccounts) {
+      return (
+        <>
+          <TextField
+            size="small"
+            margin="dense"
+            id="account-search-id"
+            label="Search by ID..."
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={searchById}
+            onChange={handleSearchByIdChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify
+                    icon="mdi:identifier"
+                    width={20}
+                    height={20}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            size="small"
+            margin="dense"
+            id="account-search-name"
+            label="Search by name..."
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={searchByName}
+            onChange={handleSearchByNameChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify
+                    icon="mdi:account"
+                    width={20}
+                    height={20}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            size="small"
+            margin="dense"
+            id="account-search-email"
+            label="Search by owner email..."
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={searchByEmail}
+            onChange={handleSearchByEmailChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify
+                    icon={isSearching ? 'eos-icons:loading' : 'mdi:email'}
+                    width={20}
+                    height={20}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </>
+      );
+    }
+
+    return (
+      <TextField
+        autoFocus
+        size="small"
+        margin="dense"
+        id="account-search"
+        label="Search..."
+        type="text"
+        fullWidth
+        variant="outlined"
+        value={searchTerm}
+        onChange={handleSearchTermChange}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Iconify
+                icon="eva:search-fill"
+                width={20}
+                height={20}
+              />
+            </InputAdornment>
+          ),
+        }}
+      />
+    );
+  }, [user?.xsup, showAllAccounts, searchById, searchByName, searchByEmail, searchTerm, isSearching, handleSearchByIdChange, handleSearchByNameChange, handleSearchByEmailChange, handleSearchTermChange]);
+
+  // Memoize the virtual list content to prevent unnecessary re-renders
+  const virtualListContent = useCallback((index, item) => {
+    if (!!user?.xsup) {
+      return (
+        <AccountDetailRow
+          key={item.id}
+          account={item}
+          handleChangeAccount={handleChangeAccount}
+          searchTerm={debouncedSearchQuery}
+        />
+      );
+    }
+
+    return (
+      <ListItemButton
+        key={item.id}
+        onClick={() => handleChangeAccount(item.id)}
+      >
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <ListItemAvatar>
+            <Avatar src={addAccountIdToUrl(item?.logo_url, item.id)} />
+          </ListItemAvatar>
+          <ListItemText primary={item?.name} />
+        </Stack>
+      </ListItemButton>
+    );
+  }, [user?.xsup, handleChangeAccount, debouncedSearchQuery]);
+
+  // Optimize the empty placeholder
+  const emptyPlaceholder = useMemo(() => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '200px',
+        p: 2,
+      }}
     >
+      <Typography variant="body2" color="text.secondary" textAlign="center">
+        {user?.xsup && showAllAccounts
+          ? 'Search by account name, email, or ID to find accounts'
+          : 'No accounts found'}
+      </Typography>
+    </Box>
+  ), [user?.xsup, showAllAccounts]);
+
+  // Improve the dialog memoization by splitting dependencies
+  const dialogContent = useMemo(() => (
+    <>
       <DialogTitle
         id="account-dialog-title"
         sx={{
@@ -246,100 +424,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
             zIndex: 99,
           }}
         >
-          {user?.xsup && showAllAccounts ? (
-            <>
-              <TextField
-                size="small"
-                margin="dense"
-                id="account-search-id"
-                label="Search by ID..."
-                type="text"
-                fullWidth
-                variant="outlined"
-                value={searchById}
-                onChange={(e) => setSearchById(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify
-                        icon="mdi:identifier"
-                        width={20}
-                        height={20}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                size="small"
-                margin="dense"
-                id="account-search-name"
-                label="Search by name..."
-                type="text"
-                fullWidth
-                variant="outlined"
-                value={searchByName}
-                onChange={(e) => setSearchByName(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify
-                        icon="mdi:account"
-                        width={20}
-                        height={20}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                size="small"
-                margin="dense"
-                id="account-search-email"
-                label="Search by owner email..."
-                type="text"
-                fullWidth
-                variant="outlined"
-                value={searchByEmail}
-                onChange={(e) => setSearchByEmail(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify
-                        icon={isSearching ? 'eos-icons:loading' : 'mdi:email'}
-                        width={20}
-                        height={20}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </>
-          ) : (
-            <TextField
-              autoFocus
-              size="small"
-              margin="dense"
-              id="account-search"
-              label="Search..."
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Iconify
-                      icon="eva:search-fill"
-                      width={20}
-                      height={20}
-                    />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          )}
+          {searchFields}
         </Stack>
         <Virtuoso
           style={{
@@ -353,65 +438,19 @@ function NavAccount({ mini = false, isDashboard = false }) {
           components={{
             Footer: () => <div style={{ height: '10px' }} />,
             Header: () => <div style={{ height: '10px' }} />,
-            EmptyPlaceholder: () => (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '200px',
-                  p: 2,
-                }}
-              >
-                <Typography variant="body2" color="text.secondary" textAlign="center">
-                  {user?.xsup && showAllAccounts
-                    ? 'Search by account name, email, or ID to find accounts'
-                    : 'No accounts found'}
-                </Typography>
-              </Box>
-            ),
+            EmptyPlaceholder: () => emptyPlaceholder,
           }}
           overscan={2}
           increaseViewportBy={{ bottom: 0, top: 0 }}
-          itemContent={(index, item) =>
-            !!user?.xsup ? (
-              <AccountDetailRow
-                key={item.id}
-                account={item}
-                handleChangeAccount={handleChangeAccount}
-                searchTerm={debouncedSearchQuery}
-              />
-            ) : (
-              <ListItemButton
-                key={item.id}
-                onClick={() => handleChangeAccount(item.id)}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                  }}
-                >
-                  <ListItemAvatar>
-                    <Avatar src={addAccountIdToUrl(item?.logo_url, item.id)} />
-                  </ListItemAvatar>
-                  <ListItemText primary={item?.name} />
-                </Stack>
-              </ListItemButton>
-            )}
+          itemContent={virtualListContent}
         />
       </DialogContent>
       <DialogActions>
         <CreateAccount />
         <Button onClick={handleClose}>Close</Button>
       </DialogActions>
-    </CustomDialog>
-  ), [open, handleClose, user?.xsup, showAllAccounts, handleSwitchChange, searchById, searchByName, searchByEmail, isSearching, searchTerm, filteredAccounts, debouncedSearchQuery, handleChangeAccount]);
+    </>
+  ), [user?.xsup, showAllAccounts, handleSwitchChange, searchFields, filteredAccounts, emptyPlaceholder, virtualListContent, handleClose]);
 
   // Don't render if user is not available
   if (!user) {
@@ -460,7 +499,13 @@ function NavAccount({ mini = false, isDashboard = false }) {
           </IconButton>
         </Tooltip>
       )}
-      {memoizedDialog}
+      <CustomDialog
+        dialogOpen={open}
+        onClose={handleClose}
+        aria-labelledby="account-dialog-title"
+      >
+        {dialogContent}
+      </CustomDialog>
     </>
   );
 }

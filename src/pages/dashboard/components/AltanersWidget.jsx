@@ -177,7 +177,7 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
             >
               <Typography
                 variant="h4"
-                sx={{ fontWeight: 600 }}
+                sx={{ fontWeight: 600, mx: 1 }}
               >
                 Projects
               </Typography>

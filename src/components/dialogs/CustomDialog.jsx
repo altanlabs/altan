@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import { AnimatePresence } from 'framer-motion';
-import React, { memo, useCallback, useEffect } from 'react';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@lib/utils';
@@ -18,7 +18,9 @@ const CustomDialog = ({
   blur = true,
   // sx = null,
   // paperSx = null,
-  alwaysFullWidth = false,
+  fullWidth = false,
+  alwaysFullWidth = false, // Deprecated: use fullWidth instead
+  fullViewportWidth = false, // For true 100% viewport width
   alwaysFullScreen = false,
   hideBackdrop = false,
   // height = '80vh',
@@ -31,6 +33,12 @@ const CustomDialog = ({
   const theme = useTheme();
   const isSmallScreen = useResponsive('down', 'sm');
 
+  // Stabilize the screen size check to prevent flickering
+  const isMobile = useMemo(() => isSmallScreen && !alwaysFullScreen, [isSmallScreen, alwaysFullScreen]);
+
+  // Support both fullWidth and alwaysFullWidth for backward compatibility
+  const shouldUseFullWidth = useMemo(() => fullWidth || alwaysFullWidth, [fullWidth, alwaysFullWidth]);
+
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -39,18 +47,20 @@ const CustomDialog = ({
 
   // Prevent body scroll when dialog is open on mobile
   useEffect(() => {
-    if (isSmallScreen && dialogOpen) {
+    if (isMobile && dialogOpen) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = 'unset';
       };
     }
-  }, [isSmallScreen, dialogOpen]);
+  }, [isMobile, dialogOpen]);
 
-  // Mobile bottom sheet content
-  const MobileBottomSheet = () => {
+  // Mobile bottom sheet content - memoized to prevent re-renders
+  const MobileBottomSheet = useMemo(() => {
+    if (!isMobile) return null;
+
     const portalContent = (
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {dialogOpen && (
           <>
             {/* Backdrop */}
@@ -97,79 +107,94 @@ const CustomDialog = ({
     );
 
     return createPortal(portalContent, document.body);
-  };
+  }, [isMobile, dialogOpen, handleClose, blur, overflowHidden, className, children]);
 
-  // Desktop Dialog (existing behavior)
-  const DesktopDialog = () => (
-    <Dialog
-      open={dialogOpen}
-      onClose={onClose}
-      fullScreen={alwaysFullScreen}
-      fullWidth={alwaysFullWidth}
-      hideBackdrop={hideBackdrop}
-      container={document.body}
-      PaperProps={{
-        sx: {
-          ...(blur && {
-            backgroundColor: 'transparent',
-          }),
-          ...(overflowHidden && { overflow: 'hidden' }),
-        },
-        className: cn(
-          'w-fit overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2',
-          className,
-        ),
-      }}
-      sx={{
-        zIndex: 9999,
-        '& .MuiBackdrop-root': {
-          backdropFilter: 'blur(10px)',
-          backgroundColor:
-            theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
-        },
-      }}
-      {...other}
-    >
-      {/* Close Button for Desktop */}
-      {showCloseButton && onClose && (
-        <IconButton
-          onClick={handleClose}
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 10000,
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(255,255,255,0.1)'
-              : 'rgba(0,0,0,0.1)',
+  // Desktop Dialog - memoized to prevent re-renders
+  const DesktopDialog = useMemo(() => {
+    if (isMobile) return null;
+
+    return (
+      <Dialog
+        open={dialogOpen}
+        onClose={onClose}
+        fullScreen={alwaysFullScreen}
+        fullWidth={shouldUseFullWidth}
+        maxWidth={shouldUseFullWidth ? false : 'sm'}
+        hideBackdrop={hideBackdrop}
+        container={document.body}
+        // Remove transitions to prevent flickering
+        TransitionProps={{
+          timeout: 0,
+        }}
+        PaperProps={{
+          sx: {
+            ...(blur && {
+              backgroundColor: 'transparent',
+            }),
+            ...(overflowHidden && { overflow: 'hidden' }),
+            ...(shouldUseFullWidth && {
+              width: fullViewportWidth ? '100vw' : '90vw',
+              maxWidth: 'none',
+            }),
+          },
+          className: cn(
+            shouldUseFullWidth
+              ? 'overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2'
+              : 'w-fit overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2',
+            className,
+          ),
+        }}
+        sx={{
+          zIndex: 9999,
+          '& .MuiBackdrop-root': {
             backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: theme.palette.mode === 'dark'
-                ? 'rgba(255,255,255,0.2)'
-                : 'rgba(0,0,0,0.2)',
-            },
-          }}
-        >
-          <Iconify
-            icon="mingcute:close-line"
-            width={20}
+            backgroundColor:
+              theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
+          },
+        }}
+        {...other}
+      >
+        {/* Close Button for Desktop */}
+        {showCloseButton && onClose && (
+          <IconButton
+            onClick={handleClose}
+            size="small"
             sx={{
-              color: theme.palette.text.primary,
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 10000,
+              backgroundColor: theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.1)'
+                : 'rgba(0,0,0,0.1)',
+              backdropFilter: 'blur(10px)',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.2)'
+                  : 'rgba(0,0,0,0.2)',
+              },
             }}
-          />
-        </IconButton>
-      )}
-      {children}
-    </Dialog>
-  );
+          >
+            <Iconify
+              icon="mingcute:close-line"
+              width={20}
+              sx={{
+                color: theme.palette.text.primary,
+              }}
+            />
+          </IconButton>
+        )}
+        {children}
+      </Dialog>
+    );
+  }, [isMobile, dialogOpen, onClose, alwaysFullScreen, shouldUseFullWidth, fullViewportWidth, hideBackdrop, blur, overflowHidden, className, theme, handleClose, showCloseButton, children, other]);
 
-  // Render different components based on screen size
-  if (isSmallScreen && !alwaysFullScreen) {
-    return <MobileBottomSheet />;
+  // Return the appropriate dialog based on screen size
+  if (isMobile) {
+    return MobileBottomSheet;
   }
 
-  return <DesktopDialog />;
+  return DesktopDialog;
 };
 
 export default memo(CustomDialog);

@@ -18,7 +18,6 @@ import { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 // components
-import CreateAgent from './CreateAgent.jsx';
 import Agent from '../../../components/agents/Agent';
 import { AgentCarousel } from '../../../components/carousel';
 import SearchField from '../../../components/custom-input/SearchField.jsx';
@@ -194,7 +193,6 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     );
   }
 
-  const MemoizedCreateAgent = memo(() => <CreateAgent altanerComponentId={altanerComponentId} />);
 
   // Sample carousel cards data for agents
   const agentCarouselCards = [
@@ -274,7 +272,6 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
             >
               Agents
             </Typography>
-            <MemoizedCreateAgent />
           </Stack>
 
           <Stack
@@ -357,7 +354,6 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
           >
             Agents
           </Typography>
-          <MemoizedCreateAgent />
         </Stack>
 
         <Stack

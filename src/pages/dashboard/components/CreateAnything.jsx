@@ -34,15 +34,6 @@ function CreateAnything({ handleVoice }) {
     setCurrentUseCaseIndex(0);
   };
 
-  const handleRefreshUseCases = () => {
-    const selectedCat = chipCategories.find((cat) => cat.id === selectedCategory);
-    if (selectedCat) {
-      const maxIndex = Math.max(0, selectedCat.useCases.length - 5);
-      const nextIndex = (currentUseCaseIndex + 5) % (maxIndex + 5);
-      setCurrentUseCaseIndex(nextIndex);
-    }
-  };
-
   const getCurrentUseCases = () => {
     const selectedCat = chipCategories.find((cat) => cat.id === selectedCategory);
     if (selectedCat) {
