@@ -332,7 +332,6 @@ const ModuleExecutionsOverviewModal = () => {
   const open = useSelector(selectModuleExecInMenu);
   const moduleExecutions = useSelector(selectCurrentExecutionModuleInMenu);
   const [showMediaAccordion, setShowMediaAccordion] = useState(false);
-
   const toggleMediaAccordion = useCallback(() => setShowMediaAccordion((prev) => !prev), []);
 
   const executionStats = useMemo(() => {
@@ -388,7 +387,6 @@ const ModuleExecutionsOverviewModal = () => {
         : content !== null
           ? { content, global_vars }
           : global_vars || {};
-
     return separateRequestResponse(rawData);
   }, [content, executionStatus, global_vars, executionArrayLength]);
 
