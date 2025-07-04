@@ -24,10 +24,11 @@ export default function AuthWithSocial({ invitation, idea }) {
   return (
     <Stack
       justifyContent="center"
+      alignItems="center"
       spacing={2}
       sx={{ 
-        minWidth: { xs: 280, sm: 300 }, // Smaller min width on mobile
         width: '100%',
+        maxWidth: { xs: '100%', sm: 400 },
       }}
     >
       <Button
@@ -47,9 +48,8 @@ export default function AuthWithSocial({ invitation, idea }) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           height: '48px',
           fontSize: '0.875rem',
-          maxWidth: { xs: '280px', sm: '320px' }, // Constrain max width
-          width: 'fit-content', // Don't stretch to full container width
-          minWidth: '240px', // Ensure minimum readable width
+          width: '100%',
+          maxWidth: { xs: '280px', sm: '320px' },
           '&:hover': {
             backgroundColor: '#f8f9fa',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
