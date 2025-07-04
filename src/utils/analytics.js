@@ -28,25 +28,33 @@ const logTrackingEvent = (eventType, data) => {
  */
 export const trackSignUp = (method = 'default') => {
   try {
+    console.log('🔄 Tracking sign-up event before backend call...', { method });
+
     // Check if gtag is available
     if (typeof window !== 'undefined' && window.gtag) {
       // Get all URL parameters
       const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
 
-      // Track the sign-up event
-      window.gtag('event', 'sign_up', {
+      const eventParams = {
         method,
         ...urlParams, // Captures all query params like ?utm_source=..., ?idea=...
-      });
+      };
+
+      // Send event to GA4
+      window.gtag('event', 'sign_up', eventParams);
 
       const logData = { method, ...urlParams };
-      console.log('📊 Sign-up event tracked:', logData);
+      console.log('✅ Sign-up event tracked successfully:', logData);
       logTrackingEvent('sign_up', logData);
     } else {
-      console.warn('gtag not available - sign-up tracking skipped');
+      console.warn('❌ gtag not available - sign-up tracking skipped', {
+        windowExists: typeof window !== 'undefined',
+        gtagExists: typeof window?.gtag,
+        dataLayerExists: typeof window?.dataLayer,
+      });
     }
   } catch (error) {
-    console.error('Error tracking sign-up event:', error);
+    console.error('💥 Error tracking sign-up event:', error);
   }
 };
 
@@ -56,22 +64,31 @@ export const trackSignUp = (method = 'default') => {
  */
 export const trackLogin = (method = 'default') => {
   try {
+    console.log('🔄 Tracking login event before backend call...', { method });
+
     if (typeof window !== 'undefined' && window.gtag) {
       const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
 
-      window.gtag('event', 'login', {
+      const eventParams = {
         method,
         ...urlParams,
-      });
+      };
+
+      // Send event to GA4
+      window.gtag('event', 'login', eventParams);
 
       const logData = { method, ...urlParams };
-      console.log('📊 Login event tracked:', logData);
+      console.log('✅ Login event tracked successfully:', logData);
       logTrackingEvent('login', logData);
     } else {
-      console.warn('gtag not available - login tracking skipped');
+      console.warn('❌ gtag not available - login tracking skipped', {
+        windowExists: typeof window !== 'undefined',
+        gtagExists: typeof window?.gtag,
+        dataLayerExists: typeof window?.dataLayer,
+      });
     }
   } catch (error) {
-    console.error('Error tracking login event:', error);
+    console.error('💥 Error tracking login event:', error);
   }
 };
 

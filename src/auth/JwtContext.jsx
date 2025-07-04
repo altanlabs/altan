@@ -270,6 +270,9 @@ export function AuthProvider({ children }) {
         console.log('- ID Token:', idToken ? 'Found ✅' : 'Missing ❌');
         console.log('- Access Token:', accessToken ? 'Found ✅' : 'Missing ❌');
 
+        // Track Google sign-up BEFORE backend call
+        trackSignUp('google');
+
         // Send the Google token to your backend for verification
         const response = await axios.post(
           `${AUTH_API}/oauth/google/mobile`,
@@ -301,9 +304,6 @@ export function AuthProvider({ children }) {
               type: 'LOGIN',
               payload: userProfile,
             });
-
-            // Track Google sign-up/login
-            trackSignUp('google');
           } catch {
             throw new Error('Failed to complete mobile Google authentication');
           }
@@ -328,6 +328,9 @@ export function AuthProvider({ children }) {
       }
       const url = constructBaseUrl(AUTH_API, '/login/google', params);
 
+      // Track Google sign-up BEFORE opening popup
+      trackSignUp('google');
+
       const width = 600;
       const height = 600;
       const left = window.screen.width / 2 - width / 2;
@@ -338,9 +341,6 @@ export function AuthProvider({ children }) {
       const checkPopup = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkPopup);
-
-          // Track Google authentication for web
-          trackSignUp('google');
 
           const redirectUrl = new URL('https://www.altan.ai');
           if (invitation_id) {
@@ -357,6 +357,9 @@ export function AuthProvider({ children }) {
 
   // LOGIN
   const login = useCallback(async (payload, idea, invitation_id) => {
+    // Track email login BEFORE backend call
+    trackLogin('email');
+
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
@@ -396,9 +399,6 @@ export function AuthProvider({ children }) {
           type: 'LOGIN',
           payload: userProfile,
         });
-
-        // Track email login
-        trackLogin('email');
       } catch (error) {
         console.error('Failed to get user profile after mobile login:', error);
         // Try to authorize user as fallback
@@ -409,9 +409,6 @@ export function AuthProvider({ children }) {
             type: 'LOGIN',
             payload: userProfile,
           });
-
-          // Track email login (fallback)
-          trackLogin('email');
         } catch (fallbackError) {
           console.error('Mobile login fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile authentication');
@@ -433,9 +430,6 @@ export function AuthProvider({ children }) {
         redirectUrl.searchParams.append('iid', invitation_id);
       }
 
-      // Track email login for web before redirect
-      trackLogin('email');
-
       window.location.href = redirectUrl.toString();
     }
   }, []);
@@ -455,6 +449,9 @@ export function AuthProvider({ children }) {
 
   // REGISTER
   const register = useCallback(async (email, password, firstName, lastName, iid, idea) => {
+    // Track email registration BEFORE backend call
+    trackSignUp('email');
+
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
@@ -499,9 +496,6 @@ export function AuthProvider({ children }) {
           type: 'REGISTER',
           payload: userProfile,
         });
-        
-        // Track email registration
-        trackSignUp('email');
       } catch (error) {
         console.error('Failed to get user profile after mobile registration:', error);
         // Try to authorize user as fallback
@@ -512,9 +506,6 @@ export function AuthProvider({ children }) {
             type: 'REGISTER',
             payload: userProfile,
           });
-          
-          // Track email registration (fallback)
-          trackSignUp('email');
         } catch (fallbackError) {
           console.error('Mobile registration fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile registration');
@@ -529,9 +520,6 @@ export function AuthProvider({ children }) {
       if (idea) {
         redirectUrl.searchParams.append('idea', idea);
       }
-
-      // Track email registration for web before redirect
-      trackSignUp('email');
 
       window.location.href = redirectUrl.toString();
     }

@@ -1,17 +1,15 @@
-import { AppBar, Toolbar, Box, Link } from '@mui/material';
+import { AppBar, Toolbar, Box, Stack, Button } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import { Link as RouterLink } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 // @mui
 
+// auth
+import { useAuthContext } from '../../auth/useAuthContext';
 // config
-import Logo from '../../components/logo';
 import { HEADER } from '../../config-global';
 // utils
-import { PATH_PAGE } from '../../routes/paths';
 import { bgBlur } from '../../utils/cssStyles';
-// routes
-// components
 
 // ----------------------------------------------------------------------
 
@@ -21,7 +19,8 @@ Header.propTypes = {
 
 export default function Header({ isOffset }) {
   const theme = useTheme();
-
+  const history = useHistory();
+  const { logout } = useAuthContext();
   return (
     <AppBar
       color="transparent"
@@ -46,16 +45,34 @@ export default function Header({ isOffset }) {
           }),
         }}
       >
-        <Logo />
+        <Stack maxWidth={100}>
+          <img
+            alt="Altan Logo Header"
+            onClick={() => history.replace('/')}
+            style={{ cursor: 'pointer' }}
+            src={
+              theme.palette.mode === 'dark'
+                ? '/logos/horizontalWhite.png'
+                : '/logos/horizontalBlack.png'
+            }
+            height={17}
+          />
+        </Stack>
 
-        <Link
-          component={RouterLink}
-          to={PATH_PAGE.faqs}
-          variant="subtitle2"
-          color="inherit"
+        <Stack
+          direction="row"
+          spacing={2}
         >
-          Need Help?
-        </Link>
+          <Button
+            variant="soft"
+            color="inherit"
+            onClick={() => {
+              logout();
+            }}
+          >
+            Logout
+          </Button>
+        </Stack>
       </Toolbar>
 
       {isOffset && <Shadow />}
