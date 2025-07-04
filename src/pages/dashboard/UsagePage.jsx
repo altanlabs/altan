@@ -302,22 +302,6 @@ const UsageOverview = ({
             </div>
           </div>
         </div>
-
-        {/* Manage Subscription Button */}
-        <div className="mt-6 flex w-full justify-end">
-          <button
-            onClick={() => history.push('/pricing')}
-            className={`flex h-10 items-center gap-2 rounded-full px-5 text-sm font-medium leading-none text-white transition-colors ${
-              isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
-            }`}
-          >
-            <span>Manage subscription</span>
-            <Iconify
-              icon="mdi:currency-usd"
-              width={16}
-            />
-          </button>
-        </div>
       </div>
     </div>
   );

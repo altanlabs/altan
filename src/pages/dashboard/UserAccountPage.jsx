@@ -1,4 +1,4 @@
-import { Box, Stack, Card, CardContent, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import queryString from 'query-string';
 import React, { useState, useEffect, memo, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
@@ -6,7 +6,6 @@ import { useLocation, useHistory } from 'react-router-dom';
 
 import StaticDrawerNav from './altaners/nav/StaticDrawerNav';
 import APIKeys from './APIKeys';
-import Iconify from '../../components/iconify';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
@@ -15,64 +14,19 @@ import {
   AccountGeneral,
   AccountMembers,
 } from '../../sections/@dashboard/user/account';
+import AccountBilling from '../../sections/@dashboard/user/account/AccountBilling';
 import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup';
-import { optimai_shop } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
 
 const selectAccountLoading = (state) => state.general.isLoading;
-
-// --------------------------------------------------------
-// Inline component to trigger a redirect to billing portal
-// --------------------------------------------------------
-function AccountBillingRedirect() {
-  const account = useSelector(selectAccount);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRedirectUrl = async () => {
-      try {
-        const { data } = await optimai_shop.get(`/stripe/portal-session?account_id=${account.id}`);
-        window.location.href = data.url; // Redirect to the URL returned by the backend
-      } catch (error) {
-        console.error('Error fetching billing portal URL:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRedirectUrl();
-  }, [account.id]);
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent>
-          <Stack
-            spacing={3}
-            alignItems="center"
-          >
-            <Typography>Loading billing portal...</Typography>
-            <Iconify
-              icon="eos-icons:loading"
-              width={32}
-              height={32}
-            />
-          </Stack>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return null;
-}
 
 function UserAccountPage() {
   const isSmallScreen = useResponsive('down', 'sm');
   const account = useSelector(selectAccount);
   const isLoading = useSelector(selectAccountLoading);
   const location = useLocation();
-  const history = useHistory();;
+  const history = useHistory();
   const { tab } = queryString.parse(location.search);
   const [currentTab, setCurrentTab] = useState(tab || 'general');
 
@@ -95,12 +49,12 @@ function UserAccountPage() {
         icon: 'fluent-mdl2:team-favorite',
         component: <AccountMembers />,
       },
-      // billing: {
-      //   id: 'billing',
-      //   name: 'Billing',
-      //   icon: 'mdi:currency-usd',
-      //   component: <AccountBillingRedirect />,
-      // },
+      billing: {
+        id: 'billing',
+        name: 'Billing',
+        icon: 'mdi:currency-usd',
+        component: <AccountBilling key={account.id} />,
+      },
       api: {
         id: 'api',
         name: 'API Keys',

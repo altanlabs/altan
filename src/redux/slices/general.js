@@ -38,6 +38,7 @@ const initialState = {
   roles: {},
   account: {
     id: null,
+    stripe_id: null,
     webhooks: [],
     forms: [],
     members: [],
@@ -1244,6 +1245,7 @@ export const getAccount = (selectedAccountId) => async (dispatch, getState) => {
         slice.actions.setAccount({
           id: accountBody?.id,
           name: accountBody?.name,
+          stripe_id: accountBody?.stripe_id,
           room_id: accountBody.room_id,
           logo_url: accountBody?.logo_url,
           organisation_id: organisation?.id,

@@ -1,12 +1,14 @@
-import { Link, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useHistory, useLocation } from 'react-router-dom';
+import { Link, Typography } from '@mui/material';
 
 import { EmailInboxIcon } from '../../assets/icons';
 import { useAuthContext } from '../../auth/useAuthContext';
 // @mui
 // routes
 import Iconify from '../../components/iconify';
+import { useSnackbar } from '../../components/snackbar';
 import { PATH_AUTH } from '../../routes/paths';
 // components
 // sections
@@ -16,17 +18,70 @@ import AuthVerifyCodeForm from '../../sections/auth/AuthVerifyCodeForm';
 // ----------------------------------------------------------------------
 
 export default function VerifyCodePage() {
-  const { user, resendVerification } = useAuthContext();
+  const { user, resendVerification, verifyEmail } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
+  const history = useHistory();
+  const location = useLocation();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [attemptedCode, setAttemptedCode] = useState(null);
+
+  // Extract code from URL parameters
+  const searchParams = new URLSearchParams(location.search);
+  const codeFromUrl = searchParams.get('code');
+
+  // Automatically verify if code is provided in URL
+  useEffect(() => {
+    if (codeFromUrl && codeFromUrl.length === 6 && !isVerifying && attemptedCode !== codeFromUrl) {
+      setIsVerifying(true);
+      setAttemptedCode(codeFromUrl);
+      verifyEmail(codeFromUrl)
+        .then(() => {
+          enqueueSnackbar('Email verified successfully!');
+          history.push('/');
+        })
+        .catch((error) => {
+          console.error(error);
+          enqueueSnackbar(error.message || 'Verification failed', { variant: 'error' });
+          setIsVerifying(false);
+          // Remove the code from URL to prevent further attempts
+          history.replace(location.pathname);
+        });
+    }
+  }, [codeFromUrl, verifyEmail, enqueueSnackbar, history, isVerifying, attemptedCode, location.pathname]);
 
   const handleResendCode = async () => {
     try {
       await resendVerification();
-      // You might want to show a success message here
+      enqueueSnackbar('Verification code resent successfully!');
     } catch (error) {
-      // Handle error (maybe show an error message)
       console.error(error);
+      enqueueSnackbar(error.message || 'Failed to resend verification code', { variant: 'error' });
     }
   };
+
+  // If we're auto-verifying, show loading state
+  if (isVerifying) {
+    return (
+      <>
+        <Helmet>
+          <title> Verify Code · Altan</title>
+        </Helmet>
+
+        <EmailInboxIcon sx={{ mb: 5, height: 96 }} />
+
+        <Typography
+          variant="h3"
+          paragraph
+        >
+          Verifying your email...
+        </Typography>
+
+        <Typography sx={{ color: 'text.secondary', mb: 5 }}>
+          Please wait while we verify your email address.
+        </Typography>
+      </>
+    );
+  }
 
   return (
     <>
@@ -48,13 +103,13 @@ export default function VerifyCodePage() {
         box to verify your email.
       </Typography>
 
-      <AuthVerifyCodeForm />
+      <AuthVerifyCodeForm initialCode={codeFromUrl} />
 
       <Typography
         variant="body2"
         sx={{ my: 3 }}
       >
-        Don't have a code? &nbsp;
+        Don&apos;t have a code? &nbsp;
         <Link
           variant="subtitle2"
           onClick={handleResendCode}
