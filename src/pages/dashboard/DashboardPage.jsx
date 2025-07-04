@@ -239,7 +239,7 @@ const DashboardPage = () => {
       </CompactLayout>
       {isVoice && showFloatingVoice && (
         <m.div
-          className="fixed bottom-6 left-0 right-0 z-[9999] flex justify-center"
+          className="fixed bottom-12 sm:bottom-6 left-0 right-0 z-[9999] flex justify-center"
           initial="hidden"
           animate="visible"
           exit="hidden"

@@ -125,7 +125,7 @@ const VoiceConversation = ({
     permissionDenied,
   });
 
-  // Check browser compatibility on mount
+  // Check browser compatibility and permission state on mount
   useEffect(() => {
     console.log('🔄 [VoiceConversation] Component mounted, checking compatibility...');
 
@@ -136,14 +136,35 @@ const VoiceConversation = ({
       return;
     }
 
-    // For Capacitor apps, we need explicit user interaction for permissions
-    if (isCapacitorNative()) {
-      console.log('⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request');
-      setUserInteractionRequired(true);
-    } else if (isIOS() || isMobile()) {
-      console.log('📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction');
-      setUserInteractionRequired(true);
-    }
+    // Check if microphone permission is already granted
+    const checkExistingPermission = async () => {
+      try {
+        // Check permission state if available
+        if (navigator.permissions && navigator.permissions.query) {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+          console.log('🎤 [VoiceConversation] Current microphone permission state:', permissionStatus.state);
+
+          if (permissionStatus.state === 'granted') {
+            console.log('✅ [VoiceConversation] Microphone permission already granted');
+            setUserInteractionRequired(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ [VoiceConversation] Could not check permission state:', error);
+      }
+
+      // For Capacitor apps, we need explicit user interaction for permissions
+      if (isCapacitorNative()) {
+        console.log('⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request');
+        setUserInteractionRequired(true);
+      } else if (isIOS() || isMobile()) {
+        console.log('📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction');
+        setUserInteractionRequired(true);
+      }
+    };
+
+    checkExistingPermission();
   }, []);
 
   // Fetch agent data when altanAgentId is provided but elevenlabsId is not
@@ -313,6 +334,9 @@ const VoiceConversation = ({
       await new Promise(resolve => setTimeout(resolve, 100));
       console.log('✅ [VoiceConversation] Microphone permission setup complete');
 
+      // Reset user interaction requirement since permission is now granted
+      setUserInteractionRequired(false);
+
       // Auto-start conversation after permission granted
       await handleStartConversation();
     } catch (error) {
@@ -403,17 +427,6 @@ const VoiceConversation = ({
 
   return (
     <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
-      {/* Capacitor/iOS Permission Request */}
-      {(isCapacitorNative() || isIOS() || isMobile()) && userInteractionRequired && !isConnected && !permissionRequested && (
-        <Alert severity="info" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>
-          <Typography variant="body2">
-            {isCapacitorNative()
-              ? 'Please allow microphone access to enable voice conversations.'
-              : `${isIOS() ? 'iOS Safari' : 'Mobile'} requires user interaction to access microphone. Tap the button below to enable voice conversation.`}
-          </Typography>
-        </Alert>
-      )}
-
       {/* Show error if agent fetch failed */}
       {fetchError && (
         <Alert severity="error" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>

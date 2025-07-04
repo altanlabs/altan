@@ -131,6 +131,7 @@ export const Terms = Loadable(lazy(() => import('../pages/Terms.jsx')));
 export const Privacy = Loadable(lazy(() => import('../pages/Privacy.jsx')));
 
 export const PricingPage = Loadable(lazy(() => import('../pages/PricingPage.jsx')));
+export const PurchaseSuccessPage = Loadable(lazy(() => import('../pages/PurchaseSuccessPage.jsx')));
 export const ComingSoonPage = Loadable(lazy(() => import('../pages/ComingSoonPage.jsx')));
 export const MaintenancePage = Loadable(lazy(() => import('../pages/MaintenancePage.jsx')));
 

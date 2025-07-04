@@ -6,7 +6,7 @@ import { useHistory } from 'react-router-dom';
 import Iconify from '../../../../../components/iconify';
 
 const ProjectTemplateCard = ({ template }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const name = template.name || template.public_name || 'Unnamed Template';
   const iconUrl =
     template.account?.logo_url || template.parent?.icon_url || '/assets/placeholder.svg';
@@ -31,6 +31,26 @@ const ProjectTemplateCard = ({ template }) => {
   }
 
   const handleClick = () => {
+    // Track project click event
+    try {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'open_project', {
+          template_id: template.id,
+          template_name: name,
+          template_price: template.price || 0,
+          remix_count: remixCount,
+        });
+        console.log('📊 Project click tracked:', {
+          template_id: template.id,
+          template_name: name,
+          template_price: template.price || 0,
+          remix_count: remixCount,
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking project click:', error);
+    }
+
     history.push(`/template/${template.id}`);
   };
 

@@ -7,6 +7,7 @@ import { createContext, useEffect, useReducer, useCallback, useMemo } from 'reac
 
 // utils
 import { AUTH_API } from './utils';
+import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken } from '../utils/auth';
 import { optimai, unauthorizeUser, authorizeUser } from '../utils/axios';
 
@@ -300,6 +301,9 @@ export function AuthProvider({ children }) {
               type: 'LOGIN',
               payload: userProfile,
             });
+
+            // Track Google sign-up/login
+            trackSignUp('google');
           } catch {
             throw new Error('Failed to complete mobile Google authentication');
           }
@@ -388,6 +392,9 @@ export function AuthProvider({ children }) {
           type: 'LOGIN',
           payload: userProfile,
         });
+
+        // Track email login
+        trackLogin('email');
       } catch (error) {
         console.error('Failed to get user profile after mobile login:', error);
         // Try to authorize user as fallback
@@ -398,6 +405,9 @@ export function AuthProvider({ children }) {
             type: 'LOGIN',
             payload: userProfile,
           });
+
+          // Track email login (fallback)
+          trackLogin('email');
         } catch (fallbackError) {
           console.error('Mobile login fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile authentication');
@@ -482,6 +492,9 @@ export function AuthProvider({ children }) {
           type: 'REGISTER',
           payload: userProfile,
         });
+        
+        // Track email registration
+        trackSignUp('email');
       } catch (error) {
         console.error('Failed to get user profile after mobile registration:', error);
         // Try to authorize user as fallback
@@ -492,6 +505,9 @@ export function AuthProvider({ children }) {
             type: 'REGISTER',
             payload: userProfile,
           });
+          
+          // Track email registration (fallback)
+          trackSignUp('email');
         } catch (fallbackError) {
           console.error('Mobile registration fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile registration');

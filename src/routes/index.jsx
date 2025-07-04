@@ -38,6 +38,7 @@ import {
   Page403,
   Page404,
   PricingPage,
+  PurchaseSuccessPage,
   RemixPage,
   ComingSoonPage,
   MaintenancePage,
@@ -654,6 +655,17 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <PricingPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/purchase/success"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <DashboardLayout>
+              <PurchaseSuccessPage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

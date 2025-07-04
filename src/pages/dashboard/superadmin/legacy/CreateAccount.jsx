@@ -12,6 +12,7 @@ import { useDispatch } from 'react-redux';
 
 import Iconify from '../../../../components/iconify';
 import { createAccount } from '../../../../redux/slices/general';
+import CustomDialog from '../../../../components/dialogs/CustomDialog';
 
 function CreateAccount() {
   const [open, setOpen] = useState(false);
@@ -55,9 +56,8 @@ function CreateAccount() {
       >
         Create Workspace
       </Button>
-      <Dialog
-        fullWidth
-        open={open}
+      <CustomDialog
+        dialogOpen={open}
         onClose={handleClose}
       >
         <DialogTitle>Create a New Workspace</DialogTitle>
@@ -87,7 +87,7 @@ function CreateAccount() {
             Create
           </Button>
         </DialogActions>
-      </Dialog>
+      </CustomDialog>
     </>
   );
 }

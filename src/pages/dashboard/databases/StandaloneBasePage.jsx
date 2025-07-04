@@ -10,8 +10,9 @@ import { selectBaseById } from '../../../redux/slices/bases';
 
 function StandaloneBasePage() {
   const { baseId } = useParams();
-  const history = useHistory();;
-  const [searchParams] = useLocation();
+  const history = useHistory();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
   const hideChat = searchParams.get('hideChat') === 'true';
   const ws = useWebSocket();
 
@@ -71,7 +72,7 @@ function StandaloneBasePage() {
       </Helmet>
       <div className="h-screen w-screen overflow-hidden">
         <Base
-          hideChat={true}
+          hideChat={hideChat}
           onNavigate={handleNavigate}
         />
       </div>

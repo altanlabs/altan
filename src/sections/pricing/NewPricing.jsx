@@ -22,8 +22,8 @@ import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
-import { optimai, optimai_shop } from '../../utils/axios';
 import { openUrl } from '../../utils/auth';
+import { optimai, optimai_shop } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -56,6 +56,38 @@ const ENTERPRISE_FEATURES = [
   { text: 'Custom integrations', available: true },
   { text: 'Dedicated database pools', available: true },
 ];
+
+// ----------------------------------------------------------------------
+
+/**
+ * Track checkout event for pricing plans
+ */
+const trackCheckoutEvent = (plan, billingOption, planType) => {
+  try {
+    if (typeof window !== 'undefined' && window.gtag) {
+      const value = billingOption.price / 100; // Convert cents to euros
+      const currency = 'EUR';
+
+      window.gtag('event', 'begin_checkout', {
+        currency,
+        value,
+        items: [{
+          item_id: plan.id,
+          item_name: plan.name,
+          item_category: 'subscription',
+          item_variant: planType,
+          price: value,
+          quantity: 1,
+        }],
+        plan_type: planType,
+        billing_frequency: billingOption.billing_frequency,
+        credits_included: plan.credits,
+      });
+    }
+  } catch (error) {
+    console.error('Error tracking checkout event:', error);
+  }
+};
 
 // ----------------------------------------------------------------------
 
@@ -292,6 +324,8 @@ export default function NewPricing() {
   const handleProClick = () => {
     const billingOption = getBillingOption(proPlan, 'monthly');
     if (billingOption) {
+      // Track checkout event
+      trackCheckoutEvent(proPlan, billingOption, 'pro');
       handleCheckout(billingOption.id);
     }
   };
@@ -300,11 +334,29 @@ export default function NewPricing() {
     const selectedPlan = growthPlans[selectedGrowthTier];
     const billingOption = getBillingOption(selectedPlan, 'monthly');
     if (billingOption) {
+      // Track checkout event
+      trackCheckoutEvent(selectedPlan, billingOption, 'growth');
       handleCheckout(billingOption.id);
     }
   };
 
   const handleEnterpriseClick = () => {
+    // Track lead generation for enterprise plan
+    try {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'generate_lead', {
+          currency: 'EUR',
+          value: 0, // No immediate value for lead generation
+          plan_type: 'enterprise',
+          lead_source: 'pricing_page',
+          action: 'book_call',
+        });
+        console.log('📊 Lead generation tracked for enterprise plan');
+      }
+    } catch (error) {
+      console.error('Error tracking lead generation:', error);
+    }
+
     window.open('https://calendly.com/david-altan/15-min-onboarding-agency-clone', '_blank');
   };
 
