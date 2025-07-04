@@ -5,6 +5,29 @@ import { chipCategories } from './create/chipData';
 import TextAreaWithButtons from './create/TextAreaWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
 
+/**
+ * Track project creation events
+ */
+const trackCreateProject = (projectData) => {
+  try {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'create_project', {
+        project_name: projectData.name || 'Untitled Project',
+        project_type: projectData.type || 'App',
+        has_attachments: projectData.hasAttachments || false,
+        attachment_count: projectData.attachmentCount || 0,
+        has_github_integration: projectData.hasGithub || false,
+        is_public: projectData.isPublic !== undefined ? projectData.isPublic : true,
+        user_authenticated: projectData.userAuthenticated || false,
+        prompt_length: projectData.promptLength || 0,
+        creation_source: 'dashboard',
+      });
+    }
+  } catch (error) {
+    console.error('Error tracking project creation:', error);
+  }
+};
+
 function CreateAnything({ handleVoice }) {
   const history = useHistory();
   const { isAuthenticated } = useAuthContext();
@@ -89,6 +112,18 @@ function CreateAnything({ handleVoice }) {
         }
 
         const data = await response.json();
+        // Track project creation for non-authenticated users
+        trackCreateProject({
+          name: resourceName,
+          type: selectedType,
+          hasAttachments: files.length > 0,
+          attachmentCount: files.length,
+          hasGithub: !!githubData?.url,
+          isPublic: isPublic,
+          userAuthenticated: false,
+          promptLength: inputValue.length,
+        });
+
         // Redirect to signup with the idea ID
         history.push(`/auth/register?idea=${data.id}`);
       } catch (error) {
@@ -138,6 +173,19 @@ function CreateAnything({ handleVoice }) {
       }
 
       const data = await response.json();
+
+      // Track project creation for authenticated users
+      trackCreateProject({
+        name: resourceName,
+        type: selectedType,
+        hasAttachments: files.length > 0,
+        attachmentCount: files.length,
+        hasGithub: !!githubData?.url,
+        isPublic: isPublic,
+        userAuthenticated: true,
+        promptLength: inputValue.length,
+      });
+
       history.push(`/?idea=${data.id}`);
     } catch (error) {
       console.error('Error creating idea:', error);

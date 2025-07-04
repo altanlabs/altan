@@ -3,9 +3,31 @@ import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import AgentFormWithButtons from './create/AgentFormWithButtons';
-import { chipCategories } from './create/chipData';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { createAgent } from '../../../redux/slices/general';
+
+/**
+ * Track agent creation events
+ */
+const trackCreateAgent = (agentData) => {
+  try {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'create_agent', {
+        agent_name: agentData.name || 'Untitled Agent',
+        agent_type: agentData.agentType || 'General Assistant',
+        industry: agentData.industry || null,
+        goal: agentData.goal || 'Assist users',
+        has_voice: agentData.hasVoice || false,
+        voice_name: agentData.voiceName || null,
+        use_case_length: agentData.useCaseLength || 0,
+        was_enhanced: agentData.wasEnhanced || false,
+        creation_source: 'dashboard',
+      });
+    }
+  } catch (error) {
+    console.error('Error tracking agent creation:', error);
+  }
+};
 
 // Agent types and configurations
 const agentTypes = ['Personal Assistant', 'Business Agent'];
@@ -268,8 +290,6 @@ function CreateAgentDashboard({ handleVoice }) {
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuthContext();
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [currentUseCaseIndex, setCurrentUseCaseIndex] = useState(0);
 
   // Agent form data
   const [formData, setFormData] = useState({
@@ -280,33 +300,6 @@ function CreateAgentDashboard({ handleVoice }) {
     voice: null,
     useCase: '',
   });
-
-  // Chip handling functions
-  const handleChipClick = (useCase) => {
-    setFormData((prev) => ({
-      ...prev,
-      useCase: useCase.prompt,
-    }));
-    setSelectedCategory(null);
-  };
-
-  const handleCategoryClick = (categoryId) => {
-    setSelectedCategory(categoryId);
-    setCurrentUseCaseIndex(0);
-  };
-
-  const handleCloseCategoryView = () => {
-    setSelectedCategory(null);
-    setCurrentUseCaseIndex(0);
-  };
-
-  const getCurrentUseCases = () => {
-    const selectedCat = chipCategories.find((cat) => cat.id === selectedCategory);
-    if (selectedCat) {
-      return selectedCat.useCases.slice(currentUseCaseIndex, currentUseCaseIndex + 5);
-    }
-    return [];
-  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -391,8 +384,12 @@ function CreateAgentDashboard({ handleVoice }) {
 
       // Use the enhanced data from the API
       const agentName = enhancementData.name || formData.name || 'AI Assistant';
-      const prompt = enhancementData.prompt || `You are a helpful AI assistant. Your goal is to assist users based on: ${formData.useCase}`;
-      const description = enhancementData.description || formData.useCase.substring(0, 100) + (formData.useCase.length > 100 ? '...' : '');
+      const prompt =
+        enhancementData.prompt ||
+        `You are a helpful AI assistant. Your goal is to assist users based on: ${formData.useCase}`;
+      const description =
+        enhancementData.description ||
+        formData.useCase.substring(0, 100) + (formData.useCase.length > 100 ? '...' : '');
 
       // Create agent using redux action
       const agentData = {
@@ -400,16 +397,18 @@ function CreateAgentDashboard({ handleVoice }) {
         prompt: prompt,
         description: description,
         // Include voice configuration as nested object if voice is selected
-        voice: formData.voice ? {
-          name: formData.voice.name,
-          voice_id: formData.voice.voice_id,
-          model_id: 'eleven_flash_v2',
-          agent_output_audio_format: 'pcm_16000',
-          optimize_streaming_latency: 4,
-          stability: 0.5,
-          speed: 1,
-          similarity_boost: 0.8,
-        } : null,
+        voice: formData.voice
+          ? {
+              name: formData.voice.name,
+              voice_id: formData.voice.voice_id,
+              model_id: 'eleven_flash_v2',
+              agent_output_audio_format: 'pcm_16000',
+              optimize_streaming_latency: 4,
+              stability: 0.5,
+              speed: 1,
+              similarity_boost: 0.8,
+            }
+          : null,
         meta_data: {
           agent_type: formData.agentType || 'General Assistant',
           goal: formData.goal || 'Assist users',
@@ -422,6 +421,18 @@ function CreateAgentDashboard({ handleVoice }) {
       };
 
       const newAgent = await dispatch(createAgent(agentData));
+
+      // Track agent creation
+      trackCreateAgent({
+        name: agentName,
+        agentType: formData.agentType,
+        industry: formData.industry,
+        goal: formData.goal,
+        hasVoice: !!formData.voice,
+        voiceName: formData.voice?.name,
+        useCaseLength: formData.useCase.length,
+        wasEnhanced: true,
+      });
 
       // Redirect to agent page
       history.push(`/agent/${newAgent.id}`);

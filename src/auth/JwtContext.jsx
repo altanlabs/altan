@@ -338,6 +338,10 @@ export function AuthProvider({ children }) {
       const checkPopup = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkPopup);
+
+          // Track Google authentication for web
+          trackSignUp('google');
+
           const redirectUrl = new URL('https://www.altan.ai');
           if (invitation_id) {
             redirectUrl.searchParams.append('iid', invitation_id);
@@ -428,6 +432,9 @@ export function AuthProvider({ children }) {
       if (invitation_id) {
         redirectUrl.searchParams.append('iid', invitation_id);
       }
+
+      // Track email login for web before redirect
+      trackLogin('email');
 
       window.location.href = redirectUrl.toString();
     }
@@ -522,6 +529,10 @@ export function AuthProvider({ children }) {
       if (idea) {
         redirectUrl.searchParams.append('idea', idea);
       }
+
+      // Track email registration for web before redirect
+      trackSignUp('email');
+
       window.location.href = redirectUrl.toString();
     }
   }, []);

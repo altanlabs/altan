@@ -7,6 +7,27 @@ import Iconify from '../../../components/iconify';
 import { useLocales } from '../../../locales';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
 
+/**
+ * Track voice conversation events
+ */
+const trackVoiceConversation = (action, agentData = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'voice_conversation', {
+        action, // 'start' or 'end'
+        agent_id: agentData.agentId || 'unknown',
+        agent_name: agentData.agentName || 'unknown',
+        language: agentData.language || 'unknown',
+        platform: agentData.platform || 'unknown',
+        agent_type: agentData.altanAgentId ? 'altan_agent' : 'elevenlabs_agent',
+        altan_agent_id: agentData.altanAgentId || null,
+      });
+    }
+  } catch (error) {
+    console.error('Error tracking voice conversation:', error);
+  }
+};
+
 // Helper function to detect Capacitor native platform
 const isCapacitorNative = () => {
   try {
@@ -247,10 +268,24 @@ const VoiceConversation = ({
           console.log('✅ [VoiceConversation] Voice conversation connected!');
           setFetchError(null); // Clear any previous errors
           onConnect?.();
+          trackVoiceConversation('start', {
+            agentId: effectiveElevenlabsId,
+            agentName: effectiveAgentName,
+            language: effectiveLanguage,
+            platform: isCapacitorNative() ? Capacitor.getPlatform() : 'web',
+            altanAgentId: altanAgentId,
+          });
         },
         onDisconnect: () => {
           console.log('🔌 [VoiceConversation] Voice conversation ended!');
           onDisconnect?.();
+          trackVoiceConversation('end', {
+            agentId: effectiveElevenlabsId,
+            agentName: effectiveAgentName,
+            language: effectiveLanguage,
+            platform: isCapacitorNative() ? Capacitor.getPlatform() : 'web',
+            altanAgentId: altanAgentId,
+          });
         },
         onMessage: (message) => {
           console.log('💬 [VoiceConversation] Voice message received:', message);
@@ -400,7 +435,6 @@ const VoiceConversation = ({
 
   // Show loading state when fetching agent data
   if (fetchingAgent && altanAgentId && !elevenlabsId) {
-    console.log('⏳ [VoiceConversation] Rendering loading state');
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3">
@@ -422,8 +456,6 @@ const VoiceConversation = ({
       </div>
     );
   }
-
-  console.log('🎨 [VoiceConversation] Rendering main component');
 
   return (
     <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
