@@ -257,30 +257,35 @@ const ItemSwitcher = memo(
 
     const renderSearchInput = useCallback(
       () => (
-        <TextField
-          size="small"
-          fullWidth
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search items..."
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 1,
-              fontSize: '0.875rem',
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Iconify
-                  icon="eva:search-fill"
-                  width={20}
-                  sx={{ color: 'text.disabled' }}
-                />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <TextField
+            size="small"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search items..."
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+                fontSize: '0.875rem',
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify
+                    icon="eva:search-fill"
+                    width={20}
+                    sx={{ color: 'text.disabled' }}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </div>
       ),
       [searchQuery],
     );
