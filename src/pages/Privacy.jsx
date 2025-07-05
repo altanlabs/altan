@@ -1,7 +1,7 @@
 import { Container } from '@mui/material';
 
 import { CompactLayout } from '../layouts/dashboard';
-
+import Footer from '../layouts/main/Footer';
 
 export default function Privacy() {
   return (
@@ -159,6 +159,7 @@ export default function Privacy() {
           </p>
         </div>
       </Container>
+      <Footer />
     </CompactLayout>
   );
 }

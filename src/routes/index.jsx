@@ -55,6 +55,7 @@ import {
   RoomPage,
   Terms,
   Privacy,
+  ContactPage,
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
@@ -646,6 +647,15 @@ const Router = () => {
               <Privacy />
             </DashboardLayout>
           </AuthGuard>
+        </Route>
+
+        <Route
+          path="/contact"
+          exact
+        >
+          <DashboardLayout>
+            <ContactPage />
+          </DashboardLayout>
         </Route>
 
         <Route

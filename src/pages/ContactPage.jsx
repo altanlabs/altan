@@ -1,24 +1,16 @@
-import { Helmet } from 'react-helmet-async';
 
-// @mui
-// _mock
 // sections
-import { ContactHero } from '../sections/contact';
+import { CompactLayout } from '../layouts/dashboard';
+import Footer from '../layouts/main/Footer';
+import { ContactSupport } from '../sections/contact';
 
 // ----------------------------------------------------------------------
 
 export default function ContactPage() {
   return (
-    <>
-      <Helmet>
-        <title> Contact us · Altan</title>
-      </Helmet>
-
-      <ContactHero />
-
-      {/* <ContactForm /> */}
-
-      {/* <ContactMap contacts={_mapContact} /> */}
-    </>
+    <CompactLayout title="Contact us · Altan">
+      <ContactSupport />
+      <Footer />
+    </CompactLayout>
   );
 }

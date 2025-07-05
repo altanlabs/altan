@@ -22,6 +22,7 @@ import {
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
+import Footer from '../main/Footer.jsx';
 
 const AltanLogoFixed = (
   <AltanLogo

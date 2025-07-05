@@ -153,3 +153,5 @@ export const AccountPage = Loadable(
 export const AccountsPage = Loadable(
   lazy(() => import('../pages/dashboard/marketplace/AccountsPage.jsx')),
 );
+
+export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx')));

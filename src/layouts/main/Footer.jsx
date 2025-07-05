@@ -1,5 +1,5 @@
 import { Box, Grid, Link, Stack, Divider, Container, Typography } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 // @mui
 // routes
@@ -13,16 +13,16 @@ const LINKS = [
   {
     headline: 'Altan',
     children: [
-      { key: 'about-us', name: 'About us', href: PATH_PAGE.about },
-      { key: 'contact-us', name: 'Contact us', href: PATH_PAGE.contact },
-      { key: 'faqs', name: 'FAQs', href: PATH_PAGE.faqs },
-      { key: 'status', name: 'Status', href: 'https://status.altan.ai/' },
+      // { key: 'about-us', name: 'About us', href: PATH_PAGE.about },
+      { key: 'contact', name: 'Contact us', href: PATH_PAGE.contact },
+      { key: 'docs', name: 'Docs', href: 'https://docs.altan.ai' },
+      { key: 'status', name: 'Status', href: 'https://uptime.altan.ai/' },
     ],
   },
   {
     headline: 'Legal',
     children: [
-      { key: 'terms_conditions', name: 'Terms & Conditions', href: PATH_PAGE.terms },
+      { key: 'terms', name: 'Terms & Conditions', href: PATH_PAGE.terms },
       { key: 'privacy', name: 'Privacy Policy', href: PATH_PAGE.privacy },
     ],
   },
@@ -45,49 +45,15 @@ const LINKS = [
 // ----------------------------------------------------------------------
 
 export default function Footer() {
-  const { pathname } = useLocation();
-
-  const isHome = pathname === '/';
-
-  const simpleFooter = (
-    <Box
-      component="footer"
-      sx={{
-        py: 5,
-        textAlign: 'center',
-        position: 'relative',
-        bgcolor: 'rgba(0, 0, 0, 0.45)',
-      }}
-    >
-      <Container>
-        <Logo sx={{ mb: 1, mx: 'auto' }} />
-
-        <Typography
-          variant="caption"
-          component="div"
-        >
-          © All rights reserved
-          <br /> made by &nbsp;
-          <Link href="https://www.altan.ai/">Altan </Link>
-        </Typography>
-      </Container>
-    </Box>
-  );
-
-  const handleSocialClick = (path) => {
-    window.open(path, '_blank');
-  };
-
   const mainFooter = (
     <Box
       component="footer"
       sx={{
         position: 'relative',
-        bgcolor: 'background.default',
+        backgroundColor: 'background.default',
       }}
     >
       <Divider />
-
       <Container sx={{ pt: 10 }}>
         <Grid
           container
@@ -119,8 +85,7 @@ export default function Footer() {
               variant="body2"
               sx={{ pr: { md: 5 } }}
             >
-              Altan was founded in 2022 with the vision to leverage AI innovation for the greater
-              good of humanity.
+              Altan was founded in 2023 with the vision to create autonomous companies.
             </Typography>
 
             <Stack
@@ -163,17 +128,24 @@ export default function Footer() {
                     {list.headline}
                   </Typography>
 
-                  {list.children.map((link) => (
-                    <Link
-                      key={link.key}
-                      component={RouterLink}
-                      to={link.href}
-                      color="inherit"
-                      variant="body2"
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
+                  {list.children.map((link) => {
+                    const isExternal = link.href.startsWith('http');
+
+                    return (
+                      <Link
+                        key={link.key}
+                        component={isExternal ? 'a' : RouterLink}
+                        to={isExternal ? undefined : link.href}
+                        href={isExternal ? link.href : undefined}
+                        target={isExternal ? '_blank' : undefined}
+                        rel={isExternal ? 'noopener noreferrer' : undefined}
+                        color="inherit"
+                        variant="body2"
+                      >
+                        {link.name}
+                      </Link>
+                    );
+                  })}
                 </Stack>
               ))}
             </Stack>

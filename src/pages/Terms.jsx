@@ -2,6 +2,8 @@ import { Container } from '@mui/material';
 
 import { CompactLayout } from '../layouts/dashboard';
 
+import Footer from '../layouts/main/Footer';
+
 export default function Terms() {
   return (
     <CompactLayout title="Terms of Service · Altan">
@@ -124,6 +126,7 @@ export default function Terms() {
           </div>
         </section>
       </Container>
+      <Footer />
     </CompactLayout>
   );
 }

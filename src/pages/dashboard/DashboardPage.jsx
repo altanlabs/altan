@@ -15,6 +15,7 @@ import useLocales from '../../locales/useLocales.js';
 import { selectIsAccountFree } from '../../redux/slices/general';
 import Agents from '../../sections/@dashboard/agents/Agents.jsx';
 import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
+import Footer from '../../layouts/main/Footer.jsx';
 
 const DashboardPage = () => {
   const { mode = 'projects' } = useParams();
@@ -228,13 +229,13 @@ const DashboardPage = () => {
               className="flex flex-col pt-6"
               variants={fadeIn}
             >
-              <div className="w-full px-2 sm:px-6 pt-1 sm:pt-3 pb-1 sm:pb-3 sm:rounded-2xl sm:shadow-md sm:border sm:border-gray-100 sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
+              <div className="w-full px-2 sm:px-6 pt-1 sm:pt-3 pb-1 sm:pb-3 sm:rounded-t-2xl sm:shadow-md sm:border sm:border-gray-100 sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
                 {renderContentBasedOnMode(mode)}
               </div>
             </m.div>
           </m.div>
         </div>
-
+        <Footer />
         {/* Floating Voice Conversation - only show when in voice mode and scrolled */}
       </CompactLayout>
       {isVoice && showFloatingVoice && (

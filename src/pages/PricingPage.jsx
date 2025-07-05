@@ -3,6 +3,7 @@ import { Box, Container, Typography, Stack, Divider, Chip } from '@mui/material'
 // sections
 import { CompactLayout } from '../layouts/dashboard';
 import { NewPricing, PricingFAQ } from '../sections/pricing';
+import Footer from '../layouts/main/Footer';
 
 // ----------------------------------------------------------------------
 
@@ -67,6 +68,7 @@ export default function PricingPage() {
           </Typography>
         </Box>
       </Container>
+      <Footer />
     </CompactLayout>
   );
 }
