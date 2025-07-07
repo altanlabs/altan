@@ -114,6 +114,19 @@ const MultiSelectAutocomplete = ({
       renderInput={renderInput}
       {...(hasDescriptions ? { renderOption } : {})}
       limitTags={2}
+      PopperProps={{
+        style: {
+          zIndex: 99999,
+        },
+        placement: 'bottom-start',
+      }}
+      slotProps={{
+        popper: {
+          style: {
+            zIndex: 99999,
+          },
+        },
+      }}
     />
   );
 };

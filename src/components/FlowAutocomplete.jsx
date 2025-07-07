@@ -108,6 +108,19 @@ function FlowAutocomplete({ onChange, value, multiple = false }) {
               )}
               value={selectedValue}
               onChange={handleChange}
+              PopperProps={{
+                style: {
+                  zIndex: 99999,
+                },
+                placement: 'bottom-start',
+              }}
+              slotProps={{
+                popper: {
+                  style: {
+                    zIndex: 99999,
+                  },
+                },
+              }}
             />
             <Divider className="w-full">or</Divider>
           </>

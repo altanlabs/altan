@@ -363,6 +363,11 @@ const FormParameters = ({
           onChange={onAddParam}
           onInputChange={onInputChange}
           renderInput={memoizedRenderInput}
+          PopperProps={{
+            style: {
+              zIndex: 10000,
+            },
+          }}
         />
       )}
     </FormPathProvider>

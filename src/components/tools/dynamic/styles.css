@@ -4,3 +4,21 @@
 .ant-select-dropdown {
   z-index: 999999
 }
+
+/* Material-UI Autocomplete Poppers */
+.MuiAutocomplete-popper {
+  z-index: 99999 !important;
+}
+
+.MuiPopper-root {
+  z-index: 99999 !important;
+}
+
+/* Ensure autocomplete dropdowns appear above dialogs */
+.MuiAutocomplete-listbox {
+  z-index: 99999 !important;
+}
+
+.MuiAutocomplete-paper {
+  z-index: 99999 !important;
+}

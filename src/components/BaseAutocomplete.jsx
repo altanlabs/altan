@@ -51,6 +51,19 @@ const BaseAutocomplete = ({ value, onChange }) => {
                 {...getTagProps({ index })}
               />
             ))}
+          PopperProps={{
+            style: {
+              zIndex: 99999,
+            },
+            placement: 'bottom-start',
+          }}
+          slotProps={{
+            popper: {
+              style: {
+                zIndex: 99999,
+              },
+            },
+          }}
         />
         {altaner && (
           <FormControlLabel

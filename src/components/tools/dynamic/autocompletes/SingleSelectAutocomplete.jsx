@@ -81,6 +81,19 @@ const SingleSelectAutocomplete = ({ value, onChange, title, options, selectedSch
             renderOption,
           }
         : {})}
+      PopperProps={{
+        style: {
+          zIndex: 99999,
+        },
+        placement: 'bottom-start',
+      }}
+      slotProps={{
+        popper: {
+          style: {
+            zIndex: 99999,
+          },
+        },
+      }}
     />
   );
 };

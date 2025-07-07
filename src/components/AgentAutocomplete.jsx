@@ -37,7 +37,7 @@ const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
     return new Date(dateString).toLocaleDateString(); // Using toLocaleDateString for brevity
-  } catch (e) {
+  } catch {
     return 'Invalid date';
   }
 };
@@ -398,6 +398,19 @@ const AgentAutocomplete = ({ onChange, value, multiple = false, hideCreation = f
               PaperComponent={({ children }) => (
                 <Paper elevation={3}>{children}</Paper> // Add some elevation to dropdown
               )}
+              PopperProps={{
+                style: {
+                  zIndex: 99999,
+                },
+                placement: 'bottom-start',
+              }}
+              slotProps={{
+                popper: {
+                  style: {
+                    zIndex: 99999,
+                  },
+                },
+              }}
             // Consider adding loading and loadingText props if allAgents fetch is async
             />
           ) : (

@@ -59,7 +59,6 @@ function RenameModuleDialog() {
     <CustomDialog
       dialogOpen={open}
       onClose={onClose}
-      fullWidth
     >
       <DialogTitle>
         <CardTitle>Rename Module</CardTitle>

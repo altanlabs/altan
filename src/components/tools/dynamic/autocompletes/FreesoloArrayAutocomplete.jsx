@@ -38,6 +38,19 @@ const FreesoloArrayAutocomplete = ({ fieldKey, title, schema, value, onChange })
           label="Create option and press enter"
         />
       )}
+      PopperProps={{
+        style: {
+          zIndex: 99999,
+        },
+        placement: 'bottom-start',
+      }}
+      slotProps={{
+        popper: {
+          style: {
+            zIndex: 99999,
+          },
+        },
+      }}
     />
   );
 };

@@ -148,6 +148,9 @@ const DynamicFormFieldHeaderActions = ({
           slotProps={{
             popper: {
               className: 'min-w-[250px]',
+              style: {
+                zIndex: 10000,
+              },
             },
           }}
           renderOption={renderOption}
