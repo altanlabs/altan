@@ -703,12 +703,11 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     const base = baseId ? state.bases.bases[baseId] : null;
     const api = getTablesApi(base);
 
-    // Convert recordIds to URLSearchParams format
-    const params = new URLSearchParams();
+    // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
-    ids.forEach((id) => params.append('record_ids', id));
-
-    await api.delete(`/table/${tableId}/record`, { params });
+    await api.delete(`/table/${tableId}/record`, {
+      data: { ids },
+    });
 
     // Update state for each deleted record
     ids.forEach((recordId) => {
