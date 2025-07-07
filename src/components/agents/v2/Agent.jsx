@@ -1,4 +1,18 @@
-import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Tooltip, Typography, useTheme, TextField, Snackbar, Alert, useMediaQuery } from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Tooltip,
+  Typography,
+  useTheme,
+  TextField,
+  Snackbar,
+  Alert,
+  useMediaQuery,
+} from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -425,6 +439,20 @@ function Agent({ agentId, id, onGoBack }) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+            <Tooltip title="Delete Agent">
+              <IconButton
+                onClick={() => setDeleteDialog(true)}
+                sx={{
+                  color: 'error.main',
+                  '&:hover': {
+                    bgcolor: theme.palette.mode === 'dark' ? 'error.dark' : 'error.lighter',
+                  },
+                }}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                <Iconify icon="eva:trash-2-outline" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Agent Information">
               <IconButton
                 onClick={() => setInfoDialogOpen(true)}
@@ -445,27 +473,14 @@ function Agent({ agentId, id, onGoBack }) {
                 </IconButton>
               </Tooltip>
             )}
-            <Tooltip title="Share Agent">
-              <IconButton
-                onClick={() => setShareDialogOpen(true)}
-                sx={{ color: 'text.secondary' }}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                <Iconify icon="eva:share-fill" />
-              </IconButton>
-            </Tooltip>
             <Button
-              onClick={() => setDeleteDialog(true)}
-              variant="contained"
-              color="error"
-              size={isMobile ? 'small' : 'small'}
-              startIcon={<Iconify icon="eva:trash-2-outline" />}
-              sx={{
-                fontSize: { xs: '0.7rem', sm: '0.875rem' },
-                px: { xs: 1, sm: 2 },
-              }}
+              onClick={() => setShareDialogOpen(true)}
+              variant="soft"
+              color="inherit"
+              size={isMobile ? 'small' : 'medium'}
+              startIcon={<Iconify icon="eva:share-fill" />}
             >
-              {isMobile ? '' : 'Delete'}
+              {isMobile ? 'Share' : 'Share Agent'}
             </Button>
           </Box>
         </Box>
@@ -475,7 +490,14 @@ function Agent({ agentId, id, onGoBack }) {
       {renderTabNavigation()}
 
       {/* Main Content Area */}
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          overflow: { xs: 'auto', md: 'hidden' },
+          flexDirection: { xs: 'column', md: 'row' },
+        }}
+      >
         {/* Configuration Panel */}
         <Box
           sx={{
@@ -487,7 +509,7 @@ function Agent({ agentId, id, onGoBack }) {
           }}
         >
           {/* Tab Content */}
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>{renderTabContent()}</Box>
+          <Box sx={{ flex: 1, overflow: { xs: 'auto', md: 'hidden' } }}>{renderTabContent()}</Box>
         </Box>
 
         {/* Communication Panel: Only show on desktop */}
@@ -545,7 +567,11 @@ function Agent({ agentId, id, onGoBack }) {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pb: 4 }}>
             <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 Agent ID
               </Typography>
               <TextField
@@ -568,7 +594,11 @@ function Agent({ agentId, id, onGoBack }) {
               />
             </Box>
             <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 ElevenLabs Voice ID
               </Typography>
               <TextField
@@ -580,7 +610,9 @@ function Agent({ agentId, id, onGoBack }) {
                   readOnly: true,
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
-                      onClick={() => handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
+                      onClick={() =>
+                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
+                      }
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >

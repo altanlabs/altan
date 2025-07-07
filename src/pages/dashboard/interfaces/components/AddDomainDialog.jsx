@@ -13,6 +13,7 @@ import {
 import React, { useState } from 'react';
 
 import { optimai } from '../../../../utils/axios';
+import CustomDialog from '../../../../components/dialogs/CustomDialog';
 
 function AddDomainDialog({ open, onClose, ui }) {
   const [domain, setDomain] = useState('');
@@ -42,10 +43,9 @@ function AddDomainDialog({ open, onClose, ui }) {
   };
 
   return (
-    <Dialog
-      open={open}
+    <CustomDialog
+      dialogOpen={open}
       onClose={onClose}
-      fullWidth
     >
       <DialogTitle>Add Domain</DialogTitle>
       <DialogContent>
@@ -128,7 +128,7 @@ function AddDomainDialog({ open, onClose, ui }) {
         <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleAddDomain}>Add</Button>
       </DialogActions>
-    </Dialog>
+    </CustomDialog>
   );
 }
 

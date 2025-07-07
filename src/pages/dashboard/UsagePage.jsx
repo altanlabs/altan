@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Container, Typography, useTheme } from '@mui/material';
+import { Box, CircularProgress, Container, Typography, useTheme, Button } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateRangePicker } from '@mui/x-date-pickers-pro';
@@ -122,7 +122,6 @@ const UsageOverview = ({
   billingCycle,
   containerStyle,
   subscriptionData,
-  history,
 }) => {
   const totalCredits = stats.totalCredits || 0; // Usage-based credits from API
   const monthlyBudget = subscriptionData.totalCredits || 10000; // Get budget from subscription
@@ -315,6 +314,7 @@ const UsagePage = () => {
   const [rawUsageData, setRawUsageData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const isDarkMode = theme.palette.mode === 'dark';
   const UI_COLORS = useMemo(() => getThemeColors(isDarkMode), [isDarkMode]);
 
@@ -659,9 +659,7 @@ const UsagePage = () => {
           billingCycle={billingCycle}
           containerStyle={getContainerStyles()}
           subscriptionData={subscriptionData}
-          history={history}
         />
-
         {/* Header with title and controls */}
         <div className="flex flex-col gap-4 mb-6">
           {/* Title and View Task Usage Button */}

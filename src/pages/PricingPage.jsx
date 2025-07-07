@@ -1,13 +1,17 @@
 import { Box, Container, Typography, Stack, Divider, Chip } from '@mui/material';
+import { useSelector } from 'react-redux';
 
-// sections
 import { CompactLayout } from '../layouts/dashboard';
-import { NewPricing, PricingFAQ } from '../sections/pricing';
 import Footer from '../layouts/main/Footer';
+import { selectIsAccountFree } from '../redux/slices/general';
+import { NewPricing, PricingFAQ } from '../sections/pricing';
+import SubscribedPricing from '../sections/pricing/SubscribedPricing';
 
 // ----------------------------------------------------------------------
 
 export default function PricingPage() {
+  const isAccountFree = useSelector(selectIsAccountFree);
+
   return (
     <CompactLayout title="Pricing · Altan">
       <Container
@@ -22,32 +26,37 @@ export default function PricingPage() {
             variant="h2"
             sx={{ mb: 2 }}
           >
-            Pricing
+            {isAccountFree ? 'Pricing' : 'Manage Your Plan'}
           </Typography>
           <Typography
             variant="h5"
             sx={{ color: 'text.secondary', fontWeight: 400 }}
           >
-            Access pro features and get monthly credits to spend across AI agents, database and tasks.
+            {isAccountFree
+              ? 'Access pro features and get monthly credits to spend across AI agents, database and tasks.'
+              : 'Upgrade your plan or purchase additional credits for your AI agents and workflows.'}
           </Typography>
-          {/* Early Bird Discount Banner */}
-          <Box sx={{ mb: 4, textAlign: 'center' }}>
-            <Chip
-              label="🎉 Early Bird 20% Lifetime Discount on All Plans"
-              color="primary"
-              variant="filled"
-              sx={{
-                py: 2,
-                px: 3,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                borderRadius: 2,
-              }}
-            />
-          </Box>
+          {/* Early Bird Discount Banner - Only show for free accounts */}
+          {isAccountFree && (
+            <Box sx={{ mb: 4, textAlign: 'center' }}>
+              <Chip
+                label="🎉 Early Bird 20% Lifetime Discount on All Plans"
+                color="primary"
+                variant="filled"
+                sx={{
+                  py: 2,
+                  px: 3,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                }}
+              />
+            </Box>
+          )}
         </Stack>
 
-        <NewPricing />
+        {/* Conditionally render based on account type */}
+        {isAccountFree ? <NewPricing /> : <SubscribedPricing />}
 
         <Divider sx={{ my: 10 }} />
 

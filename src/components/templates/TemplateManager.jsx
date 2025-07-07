@@ -42,6 +42,7 @@ import formatData from '../../utils/formatData';
 import { fToNow } from '../../utils/formatTime';
 import Iconify from '../iconify/Iconify';
 import FormParameter from '../tools/form/FormParameter';
+import CustomDialog from '../dialogs/CustomDialog';
 
 const TemplateItem = memo(({ version, mode }) => {
   const [copied, setCopied] = useState(false);
@@ -588,10 +589,9 @@ const TemplateManager = ({
       )}
 
       {/* Publish New Version Dialog */}
-      <Dialog
-        open={isPublishDialogOpen}
+      <CustomDialog
+        dialogOpen={isPublishDialogOpen}
         onClose={() => setIsPublishDialogOpen(false)}
-        fullWidth
         maxWidth="sm"
       >
         <DialogTitle>Publish New Version</DialogTitle>
@@ -623,7 +623,7 @@ const TemplateManager = ({
             Publish
           </LoadingButton>
         </DialogActions>
-      </Dialog>
+      </CustomDialog>
 
       {/* {onClose && (
         <Box sx={{ position: 'sticky', bottom: 0, p: 2 }}>

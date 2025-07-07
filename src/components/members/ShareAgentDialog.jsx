@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
+import { useState, useEffect } from 'react';
 import useResponsive from '../../hooks/useResponsive';
 
 import { editGate } from '../../redux/slices/gates';
@@ -86,7 +86,8 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
             <div
               className="animate-spin rounded-full h-8 w-8 border-b-2"
               style={{ borderColor: theme.palette.primary.main }}
-            ></div>
+            >
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -117,7 +118,8 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                       : theme.palette.grey[200],
                     borderColor: theme.palette.divider,
                   }}
-                ></div>
+                >
+                </div>
               </label>
             </div>
 
@@ -127,28 +129,26 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                 <div
                   className="rounded-lg p-5"
                   style={{
-                    border: `1px solid ${theme.palette.primary.light}`,
-                    background: theme.palette.mode === 'dark'
-                      ? theme.palette.primary.dark + '22'
-                      : theme.palette.primary.lighter,
+                    border: `1px solid ${theme.palette.divider}`,
+                    background: theme.palette.background.paper,
                   }}
                 >
                   <div className="flex items-center space-x-2 mb-4">
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ background: theme.palette.primary.main }}
-                    ></div>
+                      style={{ background: theme.palette.text.secondary }}
+                    />
                     <h2
                       className="text-lg font-semibold"
-                      style={{ color: theme.palette.primary.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Voice Experience
                     </h2>
                     <span
                       className="px-2 py-1 text-xs rounded-full font-medium"
                       style={{
-                        background: theme.palette.primary.lighter,
-                        color: theme.palette.primary.main,
+                        background: theme.palette.grey[100],
+                        color: theme.palette.text.secondary,
                       }}
                     >
                       VOICE
@@ -158,18 +158,18 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                   <div className="space-y-3 mb-4">
                     <h3
                       className="text-sm font-medium"
-                      style={{ color: theme.palette.primary.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Voice Agent Page
                     </h3>
-                    <p className="text-xs" style={{ color: theme.palette.primary.main }}>
+                    <p className="text-xs" style={{ color: theme.palette.text.secondary }}>
                       Direct link to voice conversation with your agent
                     </p>
                     <div
                       className="flex items-center space-x-2 p-3 rounded-lg"
                       style={{
-                        background: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.primary.light}`,
+                        background: theme.palette.background.default,
+                        border: `1px solid ${theme.palette.divider}`,
                       }}
                     >
                       <input
@@ -181,16 +181,16 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                       />
                       <button
                         onClick={() => handleCopyLink(voiceAgentPage)}
-                        className="p-2 transition-colors"
-                        style={{ color: theme.palette.primary.main }}
+                        className="p-2 transition-colors hover:bg-gray-100"
+                        style={{ color: theme.palette.text.secondary }}
                         title="Copy link"
                       >
                         <Iconify icon="mdi:content-copy" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => window.open(voiceAgentPage, '_blank')}
-                        className="p-2 transition-colors"
-                        style={{ color: theme.palette.primary.main }}
+                        className="p-2 transition-colors hover:bg-gray-100"
+                        style={{ color: theme.palette.text.secondary }}
                         title="Open in new tab"
                       >
                         <Iconify icon="mdi:open-in-new" className="w-4 h-4" />
@@ -202,11 +202,11 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                   <div className="space-y-3">
                     <h3
                       className="text-sm font-medium"
-                      style={{ color: theme.palette.primary.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Voice Widget Embed
                     </h3>
-                    <p className="text-xs" style={{ color: theme.palette.primary.main }}>
+                    <p className="text-xs" style={{ color: theme.palette.text.secondary }}>
                       Add a floating voice chat widget to your website
                     </p>
                     <div className="relative">
@@ -216,18 +216,18 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                         rows={2}
                         className="w-full p-3 text-sm font-mono rounded-lg resize-none outline-none"
                         style={{
-                          background: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.primary.light}`,
+                          background: theme.palette.background.default,
+                          border: `1px solid ${theme.palette.divider}`,
                           color: theme.palette.text.primary,
                         }}
                       />
                       <button
                         onClick={() => handleCopyLink(voiceAgentWidget)}
-                        className="absolute top-2 right-2 p-2 rounded border transition-colors"
+                        className="absolute top-2 right-2 p-2 rounded border transition-colors hover:bg-gray-100"
                         style={{
-                          color: theme.palette.primary.main,
-                          background: theme.palette.primary.lighter,
-                          borderColor: theme.palette.primary.light,
+                          color: theme.palette.text.secondary,
+                          background: theme.palette.background.paper,
+                          borderColor: theme.palette.divider,
                         }}
                         title="Copy code"
                       >
@@ -241,28 +241,26 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                 <div
                   className="rounded-lg p-5"
                   style={{
-                    border: `1px solid ${theme.palette.success.light}`,
-                    background: theme.palette.mode === 'dark'
-                      ? theme.palette.success.dark + '22'
-                      : theme.palette.success.lighter,
+                    border: `1px solid ${theme.palette.divider}`,
+                    background: theme.palette.background.paper,
                   }}
                 >
                   <div className="flex items-center space-x-2 mb-4">
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ background: theme.palette.success.main }}
-                    ></div>
+                      style={{ background: theme.palette.text.secondary }}
+                    />
                     <h2
                       className="text-lg font-semibold"
-                      style={{ color: theme.palette.success.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Text Experience
                     </h2>
                     <span
                       className="px-2 py-1 text-xs rounded-full font-medium"
                       style={{
-                        background: theme.palette.success.lighter,
-                        color: theme.palette.success.main,
+                        background: theme.palette.grey[100],
+                        color: theme.palette.text.secondary,
                       }}
                     >
                       TEXT
@@ -272,18 +270,18 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                   <div className="space-y-3 mb-4">
                     <h3
                       className="text-sm font-medium"
-                      style={{ color: theme.palette.success.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Text Agent Page
                     </h3>
-                    <p className="text-xs" style={{ color: theme.palette.success.main }}>
+                    <p className="text-xs" style={{ color: theme.palette.text.secondary }}>
                       Direct link to text conversation with your agent
                     </p>
                     <div
                       className="flex items-center space-x-2 p-3 rounded-lg"
                       style={{
-                        background: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.success.light}`,
+                        background: theme.palette.background.default,
+                        border: `1px solid ${theme.palette.divider}`,
                       }}
                     >
                       <input
@@ -295,16 +293,16 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                       />
                       <button
                         onClick={() => handleCopyLink(shareLink)}
-                        className="p-2 transition-colors"
-                        style={{ color: theme.palette.success.main }}
+                        className="p-2 transition-colors hover:bg-gray-100"
+                        style={{ color: theme.palette.text.secondary }}
                         title="Copy link"
                       >
                         <Iconify icon="mdi:content-copy" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => window.open(shareLink, '_blank')}
-                        className="p-2 transition-colors"
-                        style={{ color: theme.palette.success.main }}
+                        className="p-2 transition-colors hover:bg-gray-100"
+                        style={{ color: theme.palette.text.secondary }}
                         title="Open in new tab"
                       >
                         <Iconify icon="mdi:open-in-new" className="w-4 h-4" />
@@ -316,11 +314,11 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                   <div className="space-y-3">
                     <h3
                       className="text-sm font-medium"
-                      style={{ color: theme.palette.success.dark }}
+                      style={{ color: theme.palette.text.primary }}
                     >
                       Text Widget Embed
                     </h3>
-                    <p className="text-xs" style={{ color: theme.palette.success.main }}>
+                    <p className="text-xs" style={{ color: theme.palette.text.secondary }}>
                       Add a text-based chatbot widget to your website
                     </p>
                     <div className="relative">
@@ -330,18 +328,18 @@ export default function ShareAgentDialog({ open, onClose, agent }) {
                         rows={2}
                         className="w-full p-3 text-sm font-mono rounded-lg resize-none outline-none"
                         style={{
-                          background: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.success.light}`,
+                          background: theme.palette.background.default,
+                          border: `1px solid ${theme.palette.divider}`,
                           color: theme.palette.text.primary,
                         }}
                       />
                       <button
                         onClick={() => handleCopyLink(snippetCode)}
-                        className="absolute top-2 right-2 p-2 rounded border transition-colors"
+                        className="absolute top-2 right-2 p-2 rounded border transition-colors hover:bg-gray-100"
                         style={{
-                          color: theme.palette.success.main,
-                          background: theme.palette.success.lighter,
-                          borderColor: theme.palette.success.light,
+                          color: theme.palette.text.secondary,
+                          background: theme.palette.background.paper,
+                          borderColor: theme.palette.divider,
                         }}
                         title="Copy code"
                       >

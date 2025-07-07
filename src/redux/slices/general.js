@@ -816,7 +816,6 @@ const FREE_PLAN_ID = 'a13e9a2b-f4c7-485c-8394-64e46bc7bf11';
 export const selectIsAccountFree = createSelector(
   [selectAccountSubscriptions],
   (subscriptions) => {
-
     if (!subscriptions || subscriptions.length === 0) {
       return true; // No subscriptions means free account
     }
@@ -825,7 +824,6 @@ export const selectIsAccountFree = createSelector(
     const activeSubscription = subscriptions.find(
       (sub) => sub.status === 'active' || sub.status === 'trialing',
     );
-
 
     if (!activeSubscription) {
       return true; // No active subscription means free account
@@ -1321,7 +1319,6 @@ export const getAccountCompany = () => async (dispatch, getState) => {
 // ----------------------------------------------------------------------
 
 export const createAccountResource =
-
   (resource_name, payload, reducer) => async (dispatch, getState) => {
     try {
       const response = await optimai.post(`/utils/${resource_name}`, payload);
@@ -2011,7 +2008,7 @@ export const clearAccountState = () => async (dispatch) =>
     dispatch(clearGateState());
     dispatch(clearAltanerState());
     dispatch(clearAgentsUsage());
-    dispatch(clearSpacesState()); ;
+    dispatch(clearSpacesState());
   });
 
 export const switchAccount =

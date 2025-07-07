@@ -145,7 +145,7 @@ function WidgetTab({ agentData, onFieldChange }) {
     <Box sx={{ display: 'flex', height: '100%' }}>
       {/* Left Panel: Configuration */}
       <Box sx={{ overflow: 'auto', width: '100%' }}>
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ p: 2, pb: { xs: 10, md: 2 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Interface Card */}
           <Box
             sx={{
