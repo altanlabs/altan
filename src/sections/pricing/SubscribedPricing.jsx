@@ -328,7 +328,7 @@ export default function SubscribedPricing() {
                 variant="h6"
                 sx={{ mb: 2, fontWeight: 600 }}
               >
-                You're on our highest Growth plan!
+                You&apos;re on our highest Growth plan!
               </Typography>
               <Typography
                 variant="body2"
@@ -492,13 +492,13 @@ export default function SubscribedPricing() {
                   variant="body2"
                   color="text.secondary"
                 >
-                  €{(totalCredits - remainingCredits) / 100} used
+                  €{Math.round((totalCredits - remainingCredits) / 100)} used
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"
                 >
-                  €{remainingCredits / 100} remaining
+                  €{Math.round(remainingCredits / 100)} remaining
                 </Typography>
               </Stack>
             </Box>
@@ -524,4 +524,4 @@ export default function SubscribedPricing() {
       </Grid>
     </Box>
   );
-} 
+}

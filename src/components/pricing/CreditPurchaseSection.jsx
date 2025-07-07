@@ -92,7 +92,7 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
 
   const content = (
     <Box sx={{ p: 2 }}>
-      <Typography variant={compact ? "h6" : "h5"} sx={{ mb: 3, fontWeight: 600 }}>
+      <Typography variant={compact ? 'h6' : 'h5'} sx={{ mb: 3, fontWeight: 600 }}>
         {title}
       </Typography>
 
@@ -151,4 +151,4 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
       {content}
     </Card>
   );
-} 
+}

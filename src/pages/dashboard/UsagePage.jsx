@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Container, Typography, useTheme, Button } from '@mui/material';
+import { Box, CircularProgress, Container, Typography, useTheme } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateRangePicker } from '@mui/x-date-pickers-pro';
@@ -299,6 +299,16 @@ const UsageOverview = ({
                 </div>
               ))}
             </div>
+
+            {/* Credit Usage Summary */}
+            <div className="mx-2 mt-4 flex justify-between items-center">
+              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <span className="font-medium">Credit Spent:</span> €{stats.estimatedCost}
+              </div>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <span className="font-medium">Remaining Credits:</span> €{stats.remainingCreditsEuro}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -314,7 +324,6 @@ const UsagePage = () => {
   const [rawUsageData, setRawUsageData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const isDarkMode = theme.palette.mode === 'dark';
   const UI_COLORS = useMemo(() => getThemeColors(isDarkMode), [isDarkMode]);
 
@@ -493,13 +502,14 @@ const UsagePage = () => {
     return {
       totalCredits: Math.round(totals.totalCredits),
       totalTokens: Math.round(totals.totalTokens),
-      estimatedCost: (totals.totalCredits / 100).toFixed(2),
+      estimatedCost: Math.round(totals.totalCredits / 100),
+      remainingCreditsEuro: Math.round(subscriptionData.remainingCredits / 100),
       totalTaskCredits: Math.round(totals.taskCredits * 3),
       aiCredits: Math.round(totals.aiCredits),
       taskCredits: Math.round(totals.taskCredits),
       databaseCredits: Math.round(totals.databaseCredits),
     };
-  }, [processedData]);
+  }, [processedData, subscriptionData.remainingCredits]);
 
   // Chart rendering
   const renderChart = () => {
@@ -808,19 +818,7 @@ const UsagePage = () => {
         </div>
 
         {/* Stats Cards - Better Mobile Layout */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6">
-          <div
-            className={`${getContainerStyles()} rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-700`}
-          >
-            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-1">Credit Spent</div>
-            <div className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white">
-              {loading ? (
-                <div className="animate-pulse h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-24"></div>
-              ) : (
-                `€${stats.estimatedCost}`
-              )}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mb-6">
           <div
             className={`${getContainerStyles()} rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-700`}
           >
