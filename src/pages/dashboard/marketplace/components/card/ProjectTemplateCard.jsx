@@ -15,19 +15,10 @@ const ProjectTemplateCard = ({ template }) => {
 
   function getCoverUrl(template) {
     const selectedVersion = template.selected_version;
-    if (selectedVersion?.build_metadata?.meta_data?.cover_url) {
-      return selectedVersion.build_metadata.meta_data.cover_url;
+    if (selectedVersion?.deployment?.cover_url) {
+      return selectedVersion.deployment.cover_url;
     }
-
-    if (template.versions && template.versions.length > 0) {
-      for (const version of template.versions) {
-        if (version.build_metadata?.meta_data?.cover_url) {
-          return version.build_metadata.meta_data.cover_url;
-        }
-      }
-    }
-
-    return template.meta_data?.cover_url || '/assets/placeholder.svg';
+    return template.parent?.cover_url || '/assets/placeholder.svg';
   }
 
   const handleClick = () => {
@@ -35,12 +26,6 @@ const ProjectTemplateCard = ({ template }) => {
     try {
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'open_project', {
-          template_id: template.id,
-          template_name: name,
-          template_price: template.price || 0,
-          remix_count: remixCount,
-        });
-        console.log('📊 Project click tracked:', {
           template_id: template.id,
           template_name: name,
           template_price: template.price || 0,

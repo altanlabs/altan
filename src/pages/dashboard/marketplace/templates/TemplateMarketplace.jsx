@@ -247,8 +247,11 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
         selectedCategories.length === 0 ||
         selectedCategories.includes(template.meta_data?.category);
 
+      // Cover URL filter - for altaner type, exclude templates without cover_url
+      const hasCoverUrl = templateType !== 'altaner' || template.selected_version?.deployment?.cover_url;
+
       return (
-        matchesSearch && matchesVertical && matchesFeature && matchesUseCase && matchesCategory
+        matchesSearch && matchesVertical && matchesFeature && matchesUseCase && matchesCategory && hasCoverUrl
       );
     });
   };
@@ -400,11 +403,13 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
           />
         ) : showMainSkeleton ? (
           // Show skeleton grid during initial load or type switching
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {Array.from({ length: skeletonCount }).map((_, index) => (
-              <SkeletonCard key={`skeleton-${index}`} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: skeletonCount }).map((_, index) => (
+                <SkeletonCard key={`skeleton-${index}`} />
+              ))}
+            </div>
+          </>
         ) : sortedCommunityTemplates.length === 0 &&
           !loadingCommunity &&
           !loadingMore &&

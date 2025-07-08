@@ -14,6 +14,7 @@ import React, { useState } from 'react';
 
 import Iconify from './iconify/Iconify';
 import IconRenderer from './icons/IconRenderer';
+import CustomDialog from './dialogs/CustomDialog';
 
 const IconAutocomplete = ({ onChange, value = '' }) => {
   const [isSelecting, setIsSelecting] = useState(!value);
@@ -131,11 +132,9 @@ const IconAutocomplete = ({ onChange, value = '' }) => {
         )}
       </Stack>
 
-      <Dialog
-        open={openDialog}
+      <CustomDialog
+        dialogOpen={openDialog}
         onClose={() => setOpenDialog(false)}
-        maxWidth="md"
-        fullWidth
       >
         <DialogTitle>Select Icon</DialogTitle>
         <DialogContent>
@@ -204,13 +203,11 @@ const IconAutocomplete = ({ onChange, value = '' }) => {
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
         </DialogActions>
-      </Dialog>
+      </CustomDialog>
 
-      <Dialog
-        open={openCustomUrlDialog}
+      <CustomDialog
+        dialogOpen={openCustomUrlDialog}
         onClose={() => setOpenCustomUrlDialog(false)}
-        maxWidth="sm"
-        fullWidth
       >
         <DialogTitle>Add Custom Icon URL</DialogTitle>
         <DialogContent>
@@ -237,7 +234,7 @@ const IconAutocomplete = ({ onChange, value = '' }) => {
             Add Icon
           </Button>
         </DialogActions>
-      </Dialog>
+      </CustomDialog>
     </>
   );
 };

@@ -90,8 +90,14 @@ class GraphExtractor {
       const exceptModuleId =
         this.nextMappings.excepts[currentModuleId] ||
         (this.newModules.get(`new-e-${currentModuleId}`) ? `new-e-${currentModuleId}` : null);
+      // Safety check: Only process except module if it actually exists
       if (exceptModuleId) {
-        this.processModules(exceptModuleId, currentModuleId, null, true);
+        const exceptModuleExists =
+          exceptModuleId.startsWith('new-') || this.moduleTypes[exceptModuleId] !== undefined;
+
+        if (exceptModuleExists) {
+          this.processModules(exceptModuleId, currentModuleId, null, true);
+        }
       }
     }
     if (moduleType === 'router') {
@@ -134,8 +140,8 @@ class GraphExtractor {
       sourceHandle: !!conditionId
         ? `${lastModuleId}-s:${conditionId}`
         : !isExceptSrc
-            ? `${lastModuleId}-s`
-            : `${lastModuleId}-e`,
+          ? `${lastModuleId}-s`
+          : `${lastModuleId}-e`,
       data: {
         selectIndex: 0,
         sourceNodeColor: isExceptSrc
