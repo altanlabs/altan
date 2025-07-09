@@ -431,7 +431,7 @@ const ModuleExecutionsOverviewModal = () => {
               variant="determinate"
               value={errorPercentage}
               sx={{
-                width: 160,
+                width: 180,
                 height: 10,
                 borderRadius: 5,
                 bgcolor: STATUS_COLOR_MAP.success,
@@ -449,12 +449,7 @@ const ModuleExecutionsOverviewModal = () => {
             />
           </Box>
         </Stack>
-        <IconButton
-          onClick={onClose}
-          size="small"
-        >
-          <Iconify icon="mdi:close" />
-        </IconButton>
+
       </Stack>
 
       {executionArrayLength > 0 && (

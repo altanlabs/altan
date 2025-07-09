@@ -7,7 +7,7 @@ import {
   Tooltip,
   DialogContent,
 } from '@mui/material';
-import React, { useEffect, useCallback, memo, useMemo, useState } from 'react';
+import React, { useEffect, useCallback, memo, useMemo } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 
 import ComponentTypeParams from './ComponentTypeParams';
@@ -211,8 +211,7 @@ const componentTypes = {
 };
 
 const AltanerComponentDialog = ({ altanerId, open, onClose, altanerComponentId }) => {
-  const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const [isSubmittingTest, setIsSubmittingTest] = useState(false);
+  const [dispatchWithFeedback] = useFeedbackDispatch();
   const altaner = useSelector(selectCurrentAltaner);
 
   const component = useMemo(() => {
@@ -405,7 +404,7 @@ const AltanerComponentDialog = ({ altanerId, open, onClose, altanerComponentId }
             borderClassName="h-[80px] w-[250px]"
             enableBorder={true}
             className="p-2"
-            loading={isSubmittingTest}
+            loading={false}
             disabled={isSubmitDisabled}
             loadingIcon="svg-spinners:12-dots-scale-rotate"
           />

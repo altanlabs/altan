@@ -65,14 +65,14 @@ const ComponentSwitcher = memo(
       />
     );
 
-    const addComponentOption = {
-      label: 'Add component',
-      icon: 'eva:plus-fill',
-      onClick: () => {
-        onAddClick();
-        // NavDropdown will call closeDropdown internally
-      },
-    };
+    // const addComponentOption = {
+    //   label: 'Add component',
+    //   icon: 'eva:plus-fill',
+    //   onClick: () => {
+    //     onAddClick();
+    //     // NavDropdown will call closeDropdown internally
+    //   },
+    // };
 
     // Map `components` to the format expected by `NavDropdown`'s `items` prop
     const dropdownItems = components.map(comp => ({ ...comp, id: comp.id.toString() }));
@@ -82,7 +82,7 @@ const ComponentSwitcher = memo(
         triggerElement={renderTriggerElement} // Pass the function directly, NavDropdown will call it with isOpen
         items={dropdownItems}
         renderItem={renderComponentItem}
-        addOption={addComponentOption}
+        // addOption={addComponentOption}
         dropdownStyle={{ right: -50 }}
         dropdownWidth="12rem"
       />

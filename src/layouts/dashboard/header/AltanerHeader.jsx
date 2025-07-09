@@ -43,7 +43,7 @@ import { bgBlur } from '../../../utils/cssStyles';
 
 function AltanerHeader() {
   const theme = useTheme();
-  const history = useHistory();;
+  const history = useHistory();
   const { altanerId, altanerComponentId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);

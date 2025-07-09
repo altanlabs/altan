@@ -1,13 +1,42 @@
-import { Box, Grid, Link, Stack, Divider, Container, Typography } from '@mui/material';
+import { Box, Grid, Link, Stack, Divider, Container, Typography, IconButton } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
 // @mui
 // routes
+import Iconify from '../../components/iconify';
 import Logo from '../../components/logo';
 import { PATH_PAGE } from '../../routes/paths';
 // _mock
 
 // ----------------------------------------------------------------------
+
+const _socials = [
+  {
+    name: 'LinkedIn',
+    icon: 'eva:linkedin-fill',
+    path: 'https://www.linkedin.com/company/altanlabs',
+  },
+  {
+    name: 'X (Twitter)',
+    icon: 'eva:twitter-fill',
+    path: 'https://x.com/altan_ai',
+  },
+  {
+    name: 'Instagram',
+    icon: 'ant-design:instagram-filled',
+    path: 'https://www.instagram.com/altanlabs/',
+  },
+  {
+    name: 'Discord',
+    icon: 'ic:baseline-discord',
+    path: 'https://discord.com/invite/2zPbKuukgx',
+  },
+  {
+    name: 'WhatsApp',
+    icon: 'ic:baseline-whatsapp',
+    path: 'https://chat.whatsapp.com/CQMTRev8J0PJgS7c4ol5I1?mode=ac_t',
+  },
+];
 
 const LINKS = [
   {
@@ -45,6 +74,10 @@ const LINKS = [
 // ----------------------------------------------------------------------
 
 export default function Footer() {
+  const handleSocialClick = (path) => {
+    window.open(path, '_blank', 'noopener noreferrer');
+  };
+
   const mainFooter = (
     <Box
       component="footer"
@@ -97,11 +130,11 @@ export default function Footer() {
                 mb: { xs: 5, md: 0 },
               }}
             >
-              {/* {_socials.map((social) => (
+              {_socials.map((social) => (
                 <IconButton key={social.name} onClick={() => handleSocialClick(social.path)}>
                   <Iconify icon={social.icon} />
                 </IconButton>
-              ))} */}
+              ))}
             </Stack>
           </Grid>
 

@@ -77,6 +77,12 @@ function FlowAutocomplete({ onChange, value, multiple = false }) {
 
   const openCreate = useCallback(() => setOpen(true), []);
 
+  // Prevent event bubbling when clicking on chips
+  const handleMouseDown = useCallback((event) => {
+    // Stop propagation to prevent dialog from closing when clicking on chips
+    event.stopPropagation();
+  }, []);
+
   return (
     <>
       <Stack
@@ -86,42 +92,48 @@ function FlowAutocomplete({ onChange, value, multiple = false }) {
       >
         {flows && flows.length > 0 ? (
           <>
-            <Autocomplete
-              fullWidth
-              multiple={multiple}
-              size="small"
-              id="flow-autocomplete"
-              options={flows}
-              isOptionEqualToValue={(option, value) =>
-                option.id === (typeof value === 'string' ? value : value.id)}
-              getOptionLabel={(option) => option.name}
-              renderOption={renderOption}
-              getOptionKey={(option) => option.id}
-              renderInput={({ key, ...params }) => (
-                <TextField
-                  key={key}
-                  {...params}
-                  placeholder={multiple ? 'Select Flows' : 'Select a Flow'}
-                  variant="filled"
-                  hiddenLabel
-                />
-              )}
-              value={selectedValue}
-              onChange={handleChange}
-              PopperProps={{
-                style: {
-                  zIndex: 99999,
-                },
-                placement: 'bottom-start',
-              }}
-              slotProps={{
-                popper: {
+            <div
+              onMouseDown={handleMouseDown}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: '100%' }}
+            >
+              <Autocomplete
+                fullWidth
+                multiple={multiple}
+                size="small"
+                id="flow-autocomplete"
+                options={flows}
+                isOptionEqualToValue={(option, value) =>
+                  option.id === (typeof value === 'string' ? value : value.id)}
+                getOptionLabel={(option) => option.name}
+                renderOption={renderOption}
+                getOptionKey={(option) => option.id}
+                renderInput={({ key, ...params }) => (
+                  <TextField
+                    key={key}
+                    {...params}
+                    placeholder={multiple ? 'Select Flows' : 'Select a Flow'}
+                    variant="filled"
+                    hiddenLabel
+                  />
+                )}
+                value={selectedValue}
+                onChange={handleChange}
+                PopperProps={{
                   style: {
                     zIndex: 99999,
                   },
-                },
-              }}
-            />
+                  placement: 'bottom-start',
+                }}
+                slotProps={{
+                  popper: {
+                    style: {
+                      zIndex: 99999,
+                    },
+                  },
+                }}
+              />
+            </div>
             <Divider className="w-full">or</Divider>
           </>
         ) : null}

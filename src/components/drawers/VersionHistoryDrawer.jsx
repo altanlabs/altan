@@ -89,11 +89,12 @@ const PreviewOverlay = styled(Box)(({ theme }) => ({
 }));
 
 const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId }) => {
+  console.log(versions);
   const [dispatchWithFeedback] = useFeedbackDispatch();
   const dispatch = useDispatch();
 
   if (!open) return null;
-
+  
   const sortedVersions = [...(versions?.items || [])].sort(
     (a, b) => new Date(b.date_creation) - new Date(a.date_creation),
   );
@@ -163,22 +164,19 @@ const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId 
                 key={version.id}
                 isSelected={isSelected}
               >
-                {/* Restore Button - Only show for non-selected versions */}
-                {!isSelected && (
-                  <RestoreButton
-                    className="restore-button"
-                    onClick={() => handleRestoreVersion(version.template_id, version.id)}
-                    startIcon={
-                      <Iconify
-                        icon="eva:refresh-fill"
-                        width={16}
-                        height={16}
-                      />
-                    }
-                  >
-                    Restore
-                  </RestoreButton>
-                )}
+                <RestoreButton
+                  className="restore-button"
+                  onClick={() => handleRestoreVersion(version.template_id, version.id)}
+                  startIcon={
+                    <Iconify
+                      icon="eva:refresh-fill"
+                      width={16}
+                      height={16}
+                    />
+                  }
+                >
+                  Restore
+                </RestoreButton>
 
                 <ListItemText
                   primary={
@@ -206,7 +204,7 @@ const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId 
                       {hasPreview && (
                         <PreviewContainer>
                           <img
-                            src={version.build_metadata.meta_data.cover_url}
+                            src={version.deployment?.cover_url || version.build_metadata?.meta_data?.cover_url}
                             alt={`Preview of version ${version.version_string}`}
                             style={{
                               width: '100%',
