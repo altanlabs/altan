@@ -1,30 +1,30 @@
-import { Tooltip } from '@mui/material';
-import { m } from 'framer-motion';
+// import { Tooltip } from '@mui/material';
+// import { m } from 'framer-motion';
 import { truncate } from 'lodash';
 import { useSnackbar } from 'notistack';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { cn } from '@lib/utils';
+// import { cn } from '@lib/utils';
 
 import CustomDialog from '../../../../components/dialogs/CustomDialog';
 import Iconify from '../../../../components/iconify';
 import useMessageListener from '../../../../hooks/useMessageListener.ts';
 import {
-  selectHasDiffChanges,
-  selectDiffContent,
-  selectDiffIsLoading,
+  // selectHasDiffChanges,
+  // selectDiffContent,
+  // selectDiffIsLoading,
   acceptChanges,
   discardChanges,
 } from '../../../../redux/slices/codeEditor';
-import { dispatch, useSelector } from '../../../../redux/store.js';
+import { dispatch } from '../../../../redux/store.js';
 import { optimai } from '../../../../utils/axios';
 
 function IframeControls({
   interfaceId,
   previewIframeRef,
   chatIframeRef,
-  fatalError,
+  // fatalError,
   setFatalError,
 }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -39,9 +39,9 @@ function IframeControls({
   const [openErrorsDialog, setOpenErrorsDialog] = useState(false);
 
   // Add selectors for diff changes
-  const hasDiffChanges = useSelector(selectHasDiffChanges);
-  const isDiffLoading = useSelector(selectDiffIsLoading);
-  const diffContent = useSelector(selectDiffContent);
+  // const hasDiffChanges = useSelector(selectHasDiffChanges);
+  // const isDiffLoading = useSelector(selectDiffIsLoading);
+  // const diffContent = useSelector(selectDiffContent);
 
   // Handler for code revision confirmation
   const handleRevisionConfirm = useCallback(async () => {
@@ -62,11 +62,16 @@ function IframeControls({
         return; // TODO: handle console errors
       }
       // Build a notification object from the received data
+      // Ensure message is always a string
+      const errorMessage = typeof data.data.message === 'object' && data.data.message !== null
+        ? data.data.message.message || JSON.stringify(data.data.message)
+        : String(data.data.message || 'Unknown error');
+
       const notification = {
         id: uuidv4(),
         timestamp: data.timestamp || new Date().toISOString(),
         error_type: data.error_type,
-        message: data.data.message,
+        message: errorMessage,
         details: data.data.stack,
         fatal: data.fatal || false,
       };
@@ -187,9 +192,9 @@ function IframeControls({
   });
 
   // Handler to toggle targeting mode
-  const handleTargetSelection = useCallback(() => {
-    setIsTargeting((prev) => !prev);
-  }, [setIsTargeting]);
+  // const handleTargetSelection = useCallback(() => {
+  //   setIsTargeting((prev) => !prev);
+  // }, [setIsTargeting]);
 
   useEffect(() => {
     if (!!previewIframeRef?.current?.contentWindow) {
@@ -265,8 +270,6 @@ function IframeControls({
 
   return (
     <>
-
-
       {/* Errors Dialog */}
       <CustomDialog
         dialogOpen={openErrorsDialog}
@@ -387,7 +390,6 @@ function IframeControls({
 }
 
 export default memo(IframeControls);
-
 
 // <div className="left-4 z-50 flex space-x-1">
 //   {/* Errors Dialog Button */}

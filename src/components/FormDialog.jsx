@@ -75,6 +75,7 @@ const FormDialog = ({
     <CustomDialog
       dialogOpen={open}
       onClose={onClose}
+      fullWidth
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
