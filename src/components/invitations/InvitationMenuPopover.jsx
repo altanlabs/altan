@@ -141,6 +141,7 @@ const InvitationMenuPopover = ({ isDashboard = false, redirect_url = null }) => 
           </Typography>
 
           {/* Role Selection */}
+
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Select Roles
@@ -161,7 +162,7 @@ const InvitationMenuPopover = ({ isDashboard = false, redirect_url = null }) => 
 
           <FormProvider {...methods}>
             {/* Email Invitation Section */}
-            <Box sx={{ mb: 3 }}>
+            {/* <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 2 }}>
                 Invite by email
               </Typography>
@@ -201,8 +202,9 @@ const InvitationMenuPopover = ({ isDashboard = false, redirect_url = null }) => 
                   ),
                 }}
               />
-            </Box>
-            <Divider sx={{ my: 1 }} />
+            </Box> */}
+
+            {/* <Divider sx={{ my: 1 }} /> */}
 
             {/* Link Invitation Section */}
             <Box>
