@@ -7,6 +7,7 @@ import {
   selectRoomAttribute,
 } from '../redux/slices/room';
 import { useSelector } from '../redux/store';
+import { CompactLayout } from '../layouts/dashboard/index.js';
 
 const selectRoomName = selectRoomAttribute('name');
 const selectRoomDescription = selectRoomAttribute('description');
@@ -18,17 +19,12 @@ const RoomPage = () => {
 
   return(
     <>
-      <Helmet>
-        <title>{roomName || 'Room'}</title>
-        <meta
-          name="description"
-          content={roomDescription}
+      <CompactLayout noPadding>
+        <Room
+          key={roomId}
+          roomId={roomId}
         />
-      </Helmet>
-      <Room
-        key={roomId}
-        roomId={roomId}
-      />
+      </CompactLayout>
     </>
   );
 };

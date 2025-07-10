@@ -94,6 +94,7 @@ import {
   addMessageReaction,
   addMember,
   roomMemberUpdate,
+  roomUpdate,
   addThread,
   threadUpdate,
   changeThreadReadState,
@@ -170,8 +171,8 @@ const TEMPLATE_ACTIONS = {
 
 export const handleWebSocketEvent = async (data, user_id) => {
   // dispatch(addWebSocketEvent(data));
-  // console.log("data", data.type)
-  // console.log('content', data.data);
+  console.log('data', data.type);
+  console.log('content', data.data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -596,6 +597,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'RoomNew':
       dispatch(addGateRoom(data.data.attributes));
+      break;
+    case 'RoomUpdate':
+      dispatch(roomUpdate(data.data));
       break;
     case 'RoomMemberJoined':
       dispatch(addMember(data.data.attributes));

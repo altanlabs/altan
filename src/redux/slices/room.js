@@ -2,7 +2,6 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 import { truncate } from 'lodash';
 import { createCachedSelector } from 're-reselect';
 
-import { addGateRoom } from './gate';
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
 import {
@@ -84,15 +83,30 @@ const initialState = {
     mainThread: false,
     allThreads: false,
     publicRooms: false,
+    userRooms: false,
   },
   loading: {
     room: false,
     mainThread: false,
     allThreads: false,
     publicRooms: false,
+    userRooms: false,
   },
   room: null,
   publicRooms: [],
+  userRooms: [],
+  userRoomsPagination: {
+    hasNextPage: false,
+    nextCursor: null,
+    isLoadingMore: false,
+  },
+  // Add search state
+  searchRooms: {
+    results: [],
+    isSearching: false,
+    query: '',
+    hasResults: false,
+  },
   me: null,
   calendar_events: [],
   authorization_requests: [],
@@ -243,6 +257,39 @@ const slice = createSlice({
       state.initialized.publicRooms = true;
       state.loading.publicRooms = false;
     },
+    setUserRooms: (state, action) => {
+      const { rooms, hasNextPage, nextCursor, isLoadMore = false } = action.payload;
+      if (isLoadMore) {
+        state.userRooms = [...state.userRooms, ...rooms];
+      } else {
+        state.userRooms = rooms;
+      }
+      state.userRoomsPagination.hasNextPage = hasNextPage;
+      state.userRoomsPagination.nextCursor = nextCursor;
+      state.userRoomsPagination.isLoadingMore = false;
+      state.initialized.userRooms = true;
+      state.loading.userRooms = false;
+    },
+    setUserRoomsLoadingMore: (state, action) => {
+      state.userRoomsPagination.isLoadingMore = action.payload;
+    },
+    // Add search actions
+    setSearchRoomsQuery: (state, action) => {
+      state.searchRooms.query = action.payload;
+      if (!action.payload) {
+        // Clear search results when query is empty
+        state.searchRooms.results = [];
+        state.searchRooms.hasResults = false;
+      }
+    },
+    setSearchRoomsLoading: (state, action) => {
+      state.searchRooms.isSearching = action.payload;
+    },
+    setSearchRoomsResults: (state, action) => {
+      state.searchRooms.results = action.payload;
+      state.searchRooms.hasResults = action.payload.length > 0;
+      state.searchRooms.isSearching = false;
+    },
     setLoading: (state, action) => {
       state.loading[action.payload] = true;
     },
@@ -272,8 +319,7 @@ const slice = createSlice({
       delete roomObject.events;
       const threads = roomObject.threads;
       delete roomObject.threads;
-      // const calendar_events = roomObject.calendar_events;
-      // delete roomObject.calendar_events;
+
       state.room = {
         id: roomObject.id,
         name: roomObject.name,
@@ -425,10 +471,6 @@ const slice = createSlice({
       } else {
         console.warn(`Thread with id '${id}' not found.`);
       }
-    },
-    addEvent: (state, action) => {
-      const calendar_event = action.payload;
-      state.calendar_events.push(calendar_event);
     },
     changeThreadReadState: (state, action) => {
       const data = action.payload;
@@ -649,6 +691,52 @@ const slice = createSlice({
         };
       }
     },
+    roomUpdate: (state, action) => {
+      const { ids, changes } = action.payload;
+
+      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings.");
+        return;
+      }
+
+      if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
+        console.error("Invalid 'changes': Must be an object.");
+        return;
+      }
+
+      ids.forEach((roomId) => {
+        // Update current room if it matches
+        if (state.room && state.room.id === roomId) {
+          Object.keys(changes).forEach((key) => {
+            state.room[key] = changes[key];
+          });
+        }
+
+        // Update in userRooms array
+        const userRoomIndex = state.userRooms.findIndex(room => room.id === roomId);
+        if (userRoomIndex !== -1) {
+          Object.keys(changes).forEach((key) => {
+            state.userRooms[userRoomIndex][key] = changes[key];
+          });
+        }
+
+        // Update in publicRooms array
+        const publicRoomIndex = state.publicRooms.findIndex(room => room.id === roomId);
+        if (publicRoomIndex !== -1) {
+          Object.keys(changes).forEach((key) => {
+            state.publicRooms[publicRoomIndex][key] = changes[key];
+          });
+        }
+
+        // Update in searchRooms results
+        const searchRoomIndex = state.searchRooms.results.findIndex(room => room.id === roomId);
+        if (searchRoomIndex !== -1) {
+          Object.keys(changes).forEach((key) => {
+            state.searchRooms.results[searchRoomIndex][key] = changes[key];
+          });
+        }
+      });
+    },
   },
 });
 
@@ -682,6 +770,7 @@ export const {
   threadUpdate,
   addMember,
   roomMemberUpdate,
+  roomUpdate,
   clearUploadState,
   addMessageExecution,
   updateMessageExecution,
@@ -692,6 +781,13 @@ export const {
   updateMessageContent,
   addAuthorizationRequest,
   updateAuthorizationRequest,
+  setPublicRooms,
+  setUserRooms,
+  setUserRoomsLoadingMore,
+  // Add search actions
+  setSearchRoomsQuery,
+  setSearchRoomsLoading,
+  setSearchRoomsResults,
 } = slice.actions;
 
 // SELECTORS
@@ -732,6 +828,17 @@ export const selectThreads = (state) => selectRoomState(state).threads;
 
 export const selectAuthorizationRequests = (state) =>
   selectRoomState(state).authorization_requests.filter(request => !request.is_completed);
+
+export const selectUserRooms = (state) => selectRoomState(state).userRooms;
+
+export const selectUserRoomsPagination = (state) => selectRoomState(state).userRoomsPagination;
+
+// Add search selectors
+export const selectSearchRooms = (state) => selectRoomState(state).searchRooms;
+export const selectSearchRoomsQuery = (state) => selectSearchRooms(state).query;
+export const selectSearchRoomsResults = (state) => selectSearchRooms(state).results;
+export const selectSearchRoomsLoading = (state) => selectSearchRooms(state).isSearching;
+export const selectSearchRoomsHasResults = (state) => selectSearchRooms(state).hasResults;
 
 export const selectThreadsById = (state) => selectThreads(state).byId;
 
@@ -1087,6 +1194,76 @@ export const fetchPublicRooms = () => async (dispatch) => {
     return rooms;
   } catch (e) {
     console.error('error fetching room', e);
+    return Promise.reject(e);
+  }
+};
+
+export const fetchUserRooms = () => async (dispatch) => {
+  try {
+    dispatch(slice.actions.setLoading('userRooms'));
+    const response = await optimai_room.get('/');
+    console.log('response', response.data);
+    const { rooms, has_next_page, next_cursor } = response.data;
+    dispatch(slice.actions.setUserRooms({
+      rooms,
+      hasNextPage: has_next_page,
+      nextCursor: next_cursor,
+      isLoadMore: false,
+    }));
+    return rooms;
+  } catch (e) {
+    console.error('error fetching user rooms', e);
+    return Promise.reject(e);
+  }
+};
+
+export const fetchMoreUserRooms = () => async (dispatch, getState) => {
+  try {
+    const state = getState();
+    const pagination = selectUserRoomsPagination(state);
+
+    if (!pagination.hasNextPage || pagination.isLoadingMore) {
+      return;
+    }
+
+    dispatch(slice.actions.setUserRoomsLoadingMore(true));
+    const response = await optimai_room.get(`/?cursor=${pagination.nextCursor}`);
+    const { rooms, has_next_page, next_cursor } = response.data;
+    dispatch(slice.actions.setUserRooms({
+      rooms,
+      hasNextPage: has_next_page,
+      nextCursor: next_cursor,
+      isLoadMore: true,
+    }));
+    return rooms;
+  } catch (e) {
+    console.error('error fetching more user rooms', e);
+    dispatch(slice.actions.setUserRoomsLoadingMore(false));
+    return Promise.reject(e);
+  }
+};
+
+export const searchUserRooms = (query) => async (dispatch) => {
+  try {
+    if (!query?.trim()) {
+      dispatch(slice.actions.setSearchRoomsQuery(''));
+      return;
+    }
+
+    dispatch(slice.actions.setSearchRoomsQuery(query));
+    dispatch(slice.actions.setSearchRoomsLoading(true));
+
+    console.log('Searching for:', query);
+    const response = await optimai_room.get(`/?name=${encodeURIComponent(query)}&limit=50`);
+    const { rooms } = response.data;
+    console.log('API returned rooms:', rooms?.length, 'for query:', query);
+    console.log('First few rooms:', rooms?.slice(0, 3)?.map(r => r.name));
+
+    dispatch(slice.actions.setSearchRoomsResults(rooms || []));
+    return rooms;
+  } catch (e) {
+    console.error('error searching user rooms', e);
+    dispatch(slice.actions.setSearchRoomsLoading(false));
     return Promise.reject(e);
   }
 };
@@ -1469,14 +1646,26 @@ export const deleteMessage =
     }
   };
 
-export const createRoom = (config) => async (dispatch) => {
+export const createRoom = (roomData) => async (dispatch, getState) => {
   try {
-    const response = await optimai.post('/person/room', config);
-    if (config.gate_id) {
-      dispatch(addGateRoom(response.data.room));
-    }
-    return response.data.room;
+    const response = await optimai_room.post('/', roomData);
+    const { room, main_thread, members } = response.data;
+
+    // Optionally add the new room to the userRooms list
+    const state = getState();
+    const currentRooms = selectUserRooms(state);
+    const pagination = selectUserRoomsPagination(state);
+
+    dispatch(slice.actions.setUserRooms({
+      rooms: [room, ...currentRooms],
+      hasNextPage: pagination.hasNextPage,
+      nextCursor: pagination.nextCursor,
+      isLoadMore: false,
+    }));
+
+    return { room, main_thread, members };
   } catch (e) {
+    console.error('error creating room', e);
     return Promise.reject(e);
   }
 };
@@ -1524,10 +1713,15 @@ export const createRoomEvent = (event) => async (dispatch, getState) => {
   }
 };
 
-export const deleteRoom = () => async (dispatch, getState) => {
+export const deleteRoom = (roomId) => async (dispatch, getState) => {
   try {
-    const { room } = getState().room;
-    const response = await optimai_room.delete(`/${room.id}`);
+    // Use the provided roomId or fall back to current room if not provided
+    const targetRoomId = roomId || getState().room.room?.id;
+    if (!targetRoomId) {
+      throw new Error('No room ID provided');
+    }
+    
+    const response = await optimai_room.delete(`/${targetRoomId}`);
     return Promise.resolve(response);
   } catch (e) {
     return Promise.reject(e);

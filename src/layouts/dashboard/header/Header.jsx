@@ -1,13 +1,20 @@
 import { Capacitor } from '@capacitor/core';
 // @mui
-import { Stack, AppBar, Toolbar } from '@mui/material';
+import {
+  Stack,
+  AppBar,
+  Toolbar,
+  IconButton,
+} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import ChatDrawer from './ChatDrawer';
 import HeaderActions from './HeaderActions';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { StyledChart } from '../../../components/chart';
+import Iconify from '../../../components/iconify';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
@@ -33,6 +40,15 @@ function Header() {
   const history = useHistory();
   const headerVisible = useSelector(selectHeaderVisible);
   const isIOS = isIOSCapacitor();
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+
+  const handleChatDrawerOpen = () => {
+    setChatDrawerOpen(true);
+  };
+
+  const handleChatDrawerClose = () => {
+    setChatDrawerOpen(false);
+  };
 
   if (!headerVisible) {
     return null;
@@ -63,37 +79,58 @@ function Header() {
   };
 
   return (
-    <AppBar sx={getHeaderStyles()}>
-      <Toolbar
-        variant="dense"
-        sx={{
-          zIndex: 5,
-          height: HEADER.H_MOBILE,
-          px: { lg: 5 },
-          pl: { lg: 3 },
-        }}
-      >
-        <Stack maxWidth={100}>
-          <img
-            alt="Altan Logo Header"
-            onClick={() => history.replace('/')}
-            style={{ cursor: 'pointer' }}
-            src={
-              theme.palette.mode === 'dark'
-                ? '/logos/horizontalWhite.png'
-                : '/logos/horizontalBlack.png'
-            }
-            height={17}
-          />
-        </Stack>
+    <>
+      <AppBar sx={getHeaderStyles()}>
+        <Toolbar
+          variant="dense"
+          sx={{
+            zIndex: 5,
+            height: HEADER.H_MOBILE,
+            px: { lg: 5 },
+            pl: { lg: 3 },
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <IconButton
+              onClick={handleChatDrawerOpen}
+              sx={{
+                color: theme.palette.text.primary,
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              <Iconify icon="eva:menu-2-fill" />
+            </IconButton>
 
-        <StyledChart />
-        <HeaderActions
-          user={user}
-          isDesktop={isDesktop}
-        />
-      </Toolbar>
-    </AppBar>
+            <Stack maxWidth={100}>
+              <img
+                alt="Altan Logo Header"
+                onClick={() => history.replace('/')}
+                style={{ cursor: 'pointer' }}
+                src={
+                  theme.palette.mode === 'dark'
+                    ? '/logos/horizontalWhite.png'
+                    : '/logos/horizontalBlack.png'
+                }
+                height={17}
+              />
+            </Stack>
+          </Stack>
+
+          <StyledChart />
+          <HeaderActions
+            user={user}
+            isDesktop={isDesktop}
+          />
+        </Toolbar>
+      </AppBar>
+
+      <ChatDrawer
+        open={chatDrawerOpen}
+        onClose={handleChatDrawerClose}
+      />
+    </>
   );
 }
 

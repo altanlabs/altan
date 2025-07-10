@@ -122,7 +122,9 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={true}>
-            <RoomPage />
+            <DashboardLayout>
+              <RoomPage />
+            </DashboardLayout>
           </AuthGuard>
         </Route>
 
