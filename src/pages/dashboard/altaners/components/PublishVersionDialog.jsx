@@ -90,7 +90,7 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
             Publish New Version
           </Typography>
 
-          {/* Explanation for first-time users */}
+          {/* Simplified explanation for first-time users */}
           {!defaultDomain && allCustomDomains.length === 0 && (
             <Alert
               severity="info"
@@ -99,29 +99,21 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
             >
               <Typography
                 variant="body2"
-                sx={{ fontWeight: 500, mb: 1 }}
-              >
-                🚀 Ready to share your project with the world?
-              </Typography>
-              <Typography
-                variant="body2"
                 color="text.secondary"
               >
-                Publishing will create a public domain that you can share with others. Your project
-                will be live and accessible to anyone with the link.
+                Publishing will create a public domain that you can share with others.
               </Typography>
             </Alert>
           )}
 
-          {/* General explanation */}
+          {/* Simplified general explanation */}
           {(defaultDomain || allCustomDomains.length > 0) && (
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mb: 3 }}
             >
-              Create a new version of your project and deploy it to all configured domains. This
-              will make your latest changes live for all users.
+              Deploy your latest changes to all configured domains.
             </Typography>
           )}
 
@@ -166,13 +158,6 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                           A public domain will be created automatically
                         </Typography>
                       </Stack>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 1, ml: 3 }}
-                      >
-                        You&apos;ll get a shareable link like: project-name.altanlabs.com
-                      </Typography>
                     </Box>
                   )}
 
@@ -295,41 +280,6 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 </Stack>
               </Box>
 
-              {/* Version Name */}
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ mb: 1, fontWeight: 600 }}
-                >
-                  Version Name (Optional)
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Give your release a descriptive name to track what&apos;s new
-                </Typography>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., New features release, Bug fixes..."
-                  style={{
-                    backgroundColor: 'var(--mui-palette-background-paper)',
-                    border: '1px solid var(--mui-palette-divider)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    width: '100%',
-                    minHeight: '40px',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.2s ease',
-                  }}
-                />
-              </Box>
-
               {/* Advanced Settings Toggle */}
               <Box>
                 <Stack
@@ -358,52 +308,76 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
 
                 <Collapse in={showAdvanced}>
                   <Box sx={{ mt: 2, pl: 2, borderLeft: '2px solid', borderColor: 'divider' }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 1, fontWeight: 600 }}
-                    >
-                      Version Type
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Choose how to increment your version number
-                    </Typography>
-                    <select
-                      value={versionType}
-                      onChange={(e) => setVersionType(e.target.value)}
-                      style={{
-                        backgroundColor: 'var(--mui-palette-background-paper)',
-                        border: '1px solid var(--mui-palette-divider)',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      {versionTypes.map((type) => (
-                        <option
-                          key={type}
-                          value={type}
-                        >
-                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 1 }}
-                    >
-                      {versionType === 'major' &&
-                        'Breaking changes that are not backwards compatible'}
-                      {versionType === 'minor' && 'New features that are backwards compatible'}
-                      {versionType === 'patch' && 'Bug fixes and minor improvements'}
-                    </Typography>
+                    {/* Version Name */}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
+                        Version Name (Optional)
+                      </Typography>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g., New features release, Bug fixes..."
+                        style={{
+                          backgroundColor: 'var(--mui-palette-background-paper)',
+                          border: '1px solid var(--mui-palette-divider)',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          width: '100%',
+                          minHeight: '40px',
+                          boxSizing: 'border-box',
+                          transition: 'border-color 0.2s ease',
+                        }}
+                      />
+                    </Box>
+
+                    {/* Version Type */}
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
+                        Version Type
+                      </Typography>
+                      <select
+                        value={versionType}
+                        onChange={(e) => setVersionType(e.target.value)}
+                        style={{
+                          backgroundColor: 'var(--mui-palette-background-paper)',
+                          border: '1px solid var(--mui-palette-divider)',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        {versionTypes.map((type) => (
+                          <option
+                            key={type}
+                            value={type}
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                      >
+                        {versionType === 'major' &&
+                          'Breaking changes that are not backwards compatible'}
+                        {versionType === 'minor' && 'New features that are backwards compatible'}
+                        {versionType === 'patch' && 'Bug fixes and minor improvements'}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Collapse>
               </Box>
