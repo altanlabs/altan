@@ -112,12 +112,6 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   const hasMessages = messageIds && messageIds.length > 0;
   return (
     <>
-      <Helmet>
-        <title>
-          {helmetName} |{' '}
-          {gateId && !!gate?.account?.company?.name ? gate?.account?.company?.name : 'Altan'}
-        </title>
-      </Helmet>
       {/* Main container with flex layout for proper centering in empty state */}
       <div
         className="h-full"
@@ -140,9 +134,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
             overflowY: 'auto',
             position: 'relative',
             width: '100%',
-            // Add bottom padding for mobile to account for floating text area
-            paddingBottom: isMobile && !hideInput ? '120px' : '0px',
-            // Only hide if we're certain there are no messages AND not in drawer mode
+            paddingBottom: isMobile && !hideInput ? '100px' : '0px',
             ...(!hasMessages && mode !== 'drawer' ? { display: 'none' } : {}),
           }}
           className="no-scrollbar"
@@ -170,8 +162,8 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
               </h1>
             </div>
           )}
-          {!hideInput && (
-            isMobile ? (
+          {!hideInput &&
+            (isMobile ? (
               <div
                 className="absolute bottom-0 left-0 right-0"
                 style={{
@@ -189,7 +181,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
                 />
               </div>
             ) : (
-              <div className="flex justify-center mb-6 w-full max-w-4xl mx-auto">
+              <div className="flex justify-center w-full max-w-4xl mx-auto">
                 <div className="w-full">
                   <FloatingTextArea
                     threadId={threadId}
@@ -200,10 +192,9 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
                   />
                 </div>
               </div>
-            )
-          )}
+            ))}
           {!hideInput && !hasMessages && mode !== 'drawer' && (
-            <div className="w-full max-w-4xl mx-auto">
+            <div className="w-full max-w-4xl mx-auto px-4">
               <RoomDetailsSection room={room} />
             </div>
           )}
