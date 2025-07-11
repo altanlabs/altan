@@ -1,4 +1,4 @@
-import { Typography, IconButton, Box } from '@mui/material';
+import { Typography, IconButton, Box, TextField } from '@mui/material';
 import { m } from 'framer-motion';
 import { useRef, memo, useCallback, useMemo, useState } from 'react';
 import { batch } from 'react-redux';
@@ -12,6 +12,8 @@ import {
   makeSelectThreadName,
   setDrawerOpen,
   setThreadMain,
+  patchThread,
+  deleteThread,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import { formatRelativeTime } from '../../../utils/dateUtils.js';
@@ -22,11 +24,7 @@ const variants = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const ThreadMinified = ({
-  threadId,
-  message = null,
-  disableConnector = false,
-}) => {
+const ThreadMinified = ({ threadId, message = null, disableConnector = false }) => {
   const selectors = useMemo(
     () => ({
       unreadMessages: makeHasUnreadMessages(),
@@ -49,23 +47,29 @@ const ThreadMinified = ({
   );
 
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const inputRef = useRef(null);
 
   const handleSelectThread = useCallback(() => {
+    if (isEditing || isDeleting) return; // Don't select thread when editing or deleting
     batch(() => {
       dispatch(setThreadMain({ current: threadId }));
       if (!!isSmallScreen) {
         dispatch(setDrawerOpen(false));
       }
     });
-  }, [isSmallScreen, threadId]);
+  }, [isSmallScreen, threadId, isEditing, isDeleting]);
 
   const longPressTimeoutRef = useRef(null);
 
   const startLongPress = useCallback(() => {
+    if (isEditing || isDeleting) return;
     longPressTimeoutRef.current = setTimeout(() => {
       handleSelectThread();
     }, 500);
-  }, [handleSelectThread]);
+  }, [handleSelectThread, isEditing, isDeleting]);
 
   const clearLongPress = useCallback(() => {
     clearTimeout(longPressTimeoutRef.current);
@@ -73,29 +77,96 @@ const ThreadMinified = ({
 
   const [anchorEl, setAnchorEl] = useState(null);
 
-  const handleContextMenu = useCallback((event) => {
-    event.preventDefault();
-    setAnchorEl(event.currentTarget);
-  }, []);
+  const handleContextMenu = useCallback(
+    (event) => {
+      if (isEditing || isDeleting) return;
+      event.preventDefault();
+      setAnchorEl(event.currentTarget);
+    },
+    [isEditing, isDeleting],
+  );
 
   const handleClosePopover = useCallback(() => {
     setAnchorEl(null);
   }, []);
 
-  const handleEditThread = useCallback((event) => {
-    event.stopPropagation();
-    console.log('Edit thread:', threadId);
-  }, [threadId]);
+  const handleEditThread = useCallback(
+    (event) => {
+      event.stopPropagation();
+      setIsEditing(true);
+      setEditedName(threadName);
+      // Focus the input after it's rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+    },
+    [threadName],
+  );
 
-  const handleShareThread = useCallback((event) => {
+  const handleSaveEdit = useCallback(
+    async (event) => {
+      event.stopPropagation();
+      if (editedName.trim() && editedName !== threadName) {
+        try {
+          await dispatch(patchThread({ threadId, name: editedName.trim() }));
+        } catch (error) {
+          console.error('Failed to update thread name:', error);
+        }
+      }
+      setIsEditing(false);
+      setEditedName('');
+    },
+    [threadId, editedName, threadName],
+  );
+
+  const handleCancelEdit = useCallback((event) => {
     event.stopPropagation();
-    console.log('Share thread:', threadId);
-  }, [threadId]);
+    setIsEditing(false);
+    setEditedName('');
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === 'Enter') {
+        handleSaveEdit(event);
+      } else if (event.key === 'Escape') {
+        handleCancelEdit(event);
+      }
+    },
+    [handleSaveEdit, handleCancelEdit],
+  );
+
+  const handleShareThread = useCallback(
+    (event) => {
+      event.stopPropagation();
+      console.log('Share thread:', threadId);
+    },
+    [threadId],
+  );
 
   const handleDeleteThread = useCallback((event) => {
     event.stopPropagation();
-    console.log('Delete thread:', threadId);
-  }, [threadId]);
+    setIsDeleting(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(
+    async (event) => {
+      event.stopPropagation();
+      try {
+        await dispatch(deleteThread(threadId));
+      } catch (error) {
+        console.error('Failed to delete thread:', error);
+      }
+      setIsDeleting(false);
+    },
+    [threadId],
+  );
+
+  const handleCancelDelete = useCallback((event) => {
+    event.stopPropagation();
+    setIsDeleting(false);
+  }, []);
 
   return (
     <m.div
@@ -121,68 +192,155 @@ const ThreadMinified = ({
           threadStatus === 'blocked' && 'bg-orange-50 dark:bg-orange-900/10',
           threadStatus === 'dead' && 'bg-green-50 dark:bg-green-900/10',
           threadStatus === 'fenix' && 'bg-yellow-50 dark:bg-yellow-900/10',
+          isEditing && 'bg-blue-50 dark:bg-blue-900/10',
+          isDeleting && 'bg-red-50 dark:bg-red-900/10',
         )}
       >
         {/* Thread name with unread indicator */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Typography
-            variant="body2"
-            className="text-gray-900 dark:text-gray-100 font-normal truncate"
-          >
-            {threadName}
-          </Typography>
-          {unreadMessages && (
-            <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+          {isEditing ? (
+            <TextField
+              ref={inputRef}
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              variant="standard"
+              size="small"
+              className="flex-1"
+              sx={{
+                '& .MuiInput-root': {
+                  fontSize: '0.875rem',
+                  '&:before': { borderBottom: 'none' },
+                  '&:after': { borderBottom: '1px solid #3b82f6' },
+                  '&:hover:before': { borderBottom: 'none' },
+                },
+                '& .MuiInput-input': {
+                  padding: '2px 0',
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              variant="body2"
+              className={cn(
+                'font-normal truncate',
+                isDeleting ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100',
+              )}
+            >
+              {threadName}
+            </Typography>
           )}
+          {unreadMessages && <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>}
         </div>
 
         {/* Right side - timestamp or action buttons */}
         <div className="flex items-center ml-4 relative min-w-[100px]">
-          {/* Timestamp - hidden on hover */}
+          {/* Timestamp - hidden on hover, edit, or delete */}
           <Typography
             variant="caption"
             className={cn(
               'text-gray-500 dark:text-gray-400 transition-all duration-200 ease-out absolute right-0 whitespace-nowrap',
-              isHovered ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0',
+              isHovered || isEditing || isDeleting
+                ? 'opacity-0 translate-x-2'
+                : 'opacity-100 translate-x-0',
             )}
           >
             {threadCreationDate ? formatRelativeTime(threadCreationDate) : ''}
           </Typography>
 
-          {/* Action buttons - shown on hover */}
-          <div
-            className={cn(
-              'flex items-center gap-1 transition-all duration-200 ease-out absolute right-0',
-              isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none',
-            )}
-          >
-            <IconButton
-              size="small"
-              onClick={handleEditThread}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              sx={{ width: 24, height: 24 }}
-            >
-              <Iconify icon="solar:pen-bold" width={14} />
-            </IconButton>
+          {/* Edit mode buttons */}
+          {isEditing && (
+            <div className="flex items-center gap-1 absolute right-0">
+              <IconButton
+                size="small"
+                onClick={handleCancelEdit}
+                className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:close-circle-bold"
+                  width={14}
+                />
+              </IconButton>
 
-            <IconButton
-              size="small"
-              onClick={handleShareThread}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              sx={{ width: 24, height: 24 }}
-            >
-              <Iconify icon="solar:share-bold" width={14} />
-            </IconButton>
+              <IconButton
+                size="small"
+                onClick={handleSaveEdit}
+                className="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:check-circle-bold"
+                  width={14}
+                />
+              </IconButton>
+            </div>
+          )}
 
-            <IconButton
-              size="small"
-              onClick={handleDeleteThread}
-              className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-              sx={{ width: 24, height: 24 }}
+          {/* Delete confirmation buttons */}
+          {isDeleting && (
+            <div className="flex items-center gap-1 absolute right-0">
+              <IconButton
+                size="small"
+                onClick={handleCancelDelete}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:close-circle-bold"
+                  width={14}
+                />
+              </IconButton>
+
+              <IconButton
+                size="small"
+                onClick={handleConfirmDelete}
+                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:trash-bin-trash-bold"
+                  width={14}
+                />
+              </IconButton>
+            </div>
+          )}
+
+          {/* Regular action buttons - shown on hover when not editing or deleting */}
+          {!isEditing && !isDeleting && (
+            <div
+              className={cn(
+                'flex items-center gap-1 transition-all duration-200 ease-out absolute right-0',
+                isHovered
+                  ? 'opacity-100 translate-x-0'
+                  : 'opacity-0 translate-x-2 pointer-events-none',
+              )}
             >
-              <Iconify icon="solar:trash-bin-trash-bold" width={14} />
-            </IconButton>
-          </div>
+              <IconButton
+                size="small"
+                onClick={handleEditThread}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:pen-bold"
+                  width={14}
+                />
+              </IconButton>
+
+              <IconButton
+                size="small"
+                onClick={handleDeleteThread}
+                className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                sx={{ width: 24, height: 24 }}
+              >
+                <Iconify
+                  icon="solar:trash-bin-trash-bold"
+                  width={14}
+                />
+              </IconButton>
+            </div>
+          )}
         </div>
       </Box>
 

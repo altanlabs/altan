@@ -683,7 +683,7 @@ const slice = createSlice({
         return;
       }
       const requestId = ids[0];
-      const requestIndex = state.authorization_requests.findIndex(req => req.id === requestId);
+      const requestIndex = state.authorization_requests.findIndex((req) => req.id === requestId);
       if (requestIndex !== -1) {
         state.authorization_requests[requestIndex] = {
           ...state.authorization_requests[requestIndex],
@@ -713,7 +713,7 @@ const slice = createSlice({
         }
 
         // Update in userRooms array
-        const userRoomIndex = state.userRooms.findIndex(room => room.id === roomId);
+        const userRoomIndex = state.userRooms.findIndex((room) => room.id === roomId);
         if (userRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
             state.userRooms[userRoomIndex][key] = changes[key];
@@ -721,7 +721,7 @@ const slice = createSlice({
         }
 
         // Update in publicRooms array
-        const publicRoomIndex = state.publicRooms.findIndex(room => room.id === roomId);
+        const publicRoomIndex = state.publicRooms.findIndex((room) => room.id === roomId);
         if (publicRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
             state.publicRooms[publicRoomIndex][key] = changes[key];
@@ -729,7 +729,7 @@ const slice = createSlice({
         }
 
         // Update in searchRooms results
-        const searchRoomIndex = state.searchRooms.results.findIndex(room => room.id === roomId);
+        const searchRoomIndex = state.searchRooms.results.findIndex((room) => room.id === roomId);
         if (searchRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
             state.searchRooms.results[searchRoomIndex][key] = changes[key];
@@ -827,7 +827,7 @@ export const selectTotalMembers = createSelector(
 export const selectThreads = (state) => selectRoomState(state).threads;
 
 export const selectAuthorizationRequests = (state) =>
-  selectRoomState(state).authorization_requests.filter(request => !request.is_completed);
+  selectRoomState(state).authorization_requests.filter((request) => !request.is_completed);
 
 export const selectUserRooms = (state) => selectRoomState(state).userRooms;
 
@@ -1204,12 +1204,14 @@ export const fetchUserRooms = () => async (dispatch) => {
     const response = await optimai_room.get('/');
     console.log('response', response.data);
     const { rooms, has_next_page, next_cursor } = response.data;
-    dispatch(slice.actions.setUserRooms({
-      rooms,
-      hasNextPage: has_next_page,
-      nextCursor: next_cursor,
-      isLoadMore: false,
-    }));
+    dispatch(
+      slice.actions.setUserRooms({
+        rooms,
+        hasNextPage: has_next_page,
+        nextCursor: next_cursor,
+        isLoadMore: false,
+      }),
+    );
     return rooms;
   } catch (e) {
     console.error('error fetching user rooms', e);
@@ -1229,12 +1231,14 @@ export const fetchMoreUserRooms = () => async (dispatch, getState) => {
     dispatch(slice.actions.setUserRoomsLoadingMore(true));
     const response = await optimai_room.get(`/?cursor=${pagination.nextCursor}`);
     const { rooms, has_next_page, next_cursor } = response.data;
-    dispatch(slice.actions.setUserRooms({
-      rooms,
-      hasNextPage: has_next_page,
-      nextCursor: next_cursor,
-      isLoadMore: true,
-    }));
+    dispatch(
+      slice.actions.setUserRooms({
+        rooms,
+        hasNextPage: has_next_page,
+        nextCursor: next_cursor,
+        isLoadMore: true,
+      }),
+    );
     return rooms;
   } catch (e) {
     console.error('error fetching more user rooms', e);
@@ -1257,7 +1261,10 @@ export const searchUserRooms = (query) => async (dispatch) => {
     const response = await optimai_room.get(`/?name=${encodeURIComponent(query)}&limit=50`);
     const { rooms } = response.data;
     console.log('API returned rooms:', rooms?.length, 'for query:', query);
-    console.log('First few rooms:', rooms?.slice(0, 3)?.map(r => r.name));
+    console.log(
+      'First few rooms:',
+      rooms?.slice(0, 3)?.map((r) => r.name),
+    );
 
     dispatch(slice.actions.setSearchRoomsResults(rooms || []));
     return rooms;
@@ -1656,12 +1663,14 @@ export const createRoom = (roomData) => async (dispatch, getState) => {
     const currentRooms = selectUserRooms(state);
     const pagination = selectUserRoomsPagination(state);
 
-    dispatch(slice.actions.setUserRooms({
-      rooms: [room, ...currentRooms],
-      hasNextPage: pagination.hasNextPage,
-      nextCursor: pagination.nextCursor,
-      isLoadMore: false,
-    }));
+    dispatch(
+      slice.actions.setUserRooms({
+        rooms: [room, ...currentRooms],
+        hasNextPage: pagination.hasNextPage,
+        nextCursor: pagination.nextCursor,
+        isLoadMore: false,
+      }),
+    );
 
     return { room, main_thread, members };
   } catch (e) {
@@ -1720,7 +1729,7 @@ export const deleteRoom = (roomId) => async (dispatch, getState) => {
     if (!targetRoomId) {
       throw new Error('No room ID provided');
     }
-    
+
     const response = await optimai_room.delete(`/${targetRoomId}`);
     return Promise.resolve(response);
   } catch (e) {
@@ -1903,8 +1912,28 @@ export const createMemberContextMenu =
         },
         i: `mdi-account-${!roomMember.is_kicked ? 'remove' : 'add'}`,
       });
-      items.push({ l: `${!roomMember.is_silenced ? 'Silence' : 'Unsilence'} Member`, a: { k: 'patchMember', p: { action: !roomMember.is_silenced ? 'mute' : 'unmute', body: { room_member_id: roomMember.id } } }, i: `mdi-volume-${!roomMember.silenced ? 'off' : 'on'}` });
-      items.push({ l: `${!roomMember.is_vblocked ? 'Inhabilitate' : 'Habilitate'} Video`, a: { k: 'patchMember', p: { action: !roomMember.is_vblocked ? 'vblock' : 'unvblock', body: { room_member_id: roomMember.id, role: 'viewer' } } }, i: `mdi-video-${!roomMember.is_vblocked ? 'off' : 'on'}` });
+      items.push({
+        l: `${!roomMember.is_silenced ? 'Silence' : 'Unsilence'} Member`,
+        a: {
+          k: 'patchMember',
+          p: {
+            action: !roomMember.is_silenced ? 'mute' : 'unmute',
+            body: { room_member_id: roomMember.id },
+          },
+        },
+        i: `mdi-volume-${!roomMember.silenced ? 'off' : 'on'}`,
+      });
+      items.push({
+        l: `${!roomMember.is_vblocked ? 'Inhabilitate' : 'Habilitate'} Video`,
+        a: {
+          k: 'patchMember',
+          p: {
+            action: !roomMember.is_vblocked ? 'vblock' : 'unvblock',
+            body: { room_member_id: roomMember.id, role: 'viewer' },
+          },
+        },
+        i: `mdi-video-${!roomMember.is_vblocked ? 'off' : 'on'}`,
+      });
 
       const changeRoleItem = {
         l: 'Change Role',
@@ -1989,16 +2018,18 @@ export const createMemberContextMenu =
     return Promise.resolve(items);
   };
 
-export const updateMessage = ({ messageId, content, threadId }) => async (dispatch) => {
-  try {
-    await optimai_room.patch(`/messages/${messageId}`, {
-      content,
-    });
-    dispatch(updateMessageContent({ messageId, content }));
-  } catch (error) {
-    console.error('Error updating message:', error);
-    throw error;
-  }
-};
+export const updateMessage =
+  ({ messageId, content, threadId }) =>
+  async (dispatch) => {
+    try {
+      await optimai_room.patch(`/messages/${messageId}`, {
+        content,
+      });
+      dispatch(updateMessageContent({ messageId, content }));
+    } catch (error) {
+      console.error('Error updating message:', error);
+      throw error;
+    }
+  };
 
-export const selectDrawerExpanded = (state) => (state).drawerExpanded;
+export const selectDrawerExpanded = (state) => state.drawerExpanded;

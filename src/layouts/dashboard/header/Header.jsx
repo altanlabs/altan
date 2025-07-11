@@ -91,17 +91,19 @@ function Header() {
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1}>
-            <IconButton
-              onClick={handleChatDrawerOpen}
-              sx={{
-                color: theme.palette.text.primary,
-                '&:hover': {
-                  backgroundColor: theme.palette.action.hover,
-                },
-              }}
-            >
-              <Iconify icon="eva:menu-2-fill" />
-            </IconButton>
+            {user && (
+              <IconButton
+                onClick={handleChatDrawerOpen}
+                sx={{
+                  color: theme.palette.text.primary,
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                <Iconify icon="eva:menu-2-fill" />
+              </IconButton>
+            )}
 
             <Stack maxWidth={100}>
               <img
