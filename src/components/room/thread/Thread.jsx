@@ -181,7 +181,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
                 />
               </div>
             ) : (
-              <div className="flex justify-center w-full max-w-4xl mx-auto">
+              <div className="flex justify-center w-full max-w-4xl mx-auto mb-2">
                 <div className="w-full">
                   <FloatingTextArea
                     threadId={threadId}

@@ -397,13 +397,7 @@ const ConversationsList = () => {
     .slice(0, 10); // Limit to recent 10 conversations
 
   return (
-    <Stack spacing={2}>
-      <Typography
-        variant="h6"
-        sx={{ fontSize: '1rem', fontWeight: 600, mb: 2 }}
-      >
-        Recent Conversations ({conversationThreads.length})
-      </Typography>
+    <>
       <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
         {conversationThreads.length > 0 ? (
           <Stack spacing={1}>
@@ -427,7 +421,7 @@ const ConversationsList = () => {
           </Typography>
         )}
       </Box>
-    </Stack>
+    </>
   );
 };
 
