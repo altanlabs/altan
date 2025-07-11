@@ -1,11 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 // @mui
-import {
-  Stack,
-  AppBar,
-  Toolbar,
-  IconButton,
-} from '@mui/material';
+import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
@@ -90,7 +85,11 @@ function Header() {
             pl: { lg: 3 },
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+          >
             {user && (
               <IconButton
                 onClick={handleChatDrawerOpen}
@@ -127,11 +126,12 @@ function Header() {
           />
         </Toolbar>
       </AppBar>
-
-      <ChatDrawer
-        open={chatDrawerOpen}
-        onClose={handleChatDrawerClose}
-      />
+      {user && (
+        <ChatDrawer
+          open={chatDrawerOpen}
+          onClose={handleChatDrawerClose}
+        />
+      )}
     </>
   );
 }
