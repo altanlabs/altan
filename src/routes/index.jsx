@@ -33,6 +33,7 @@ import {
   PermissionDeniedPage,
   IntegrationPage,
   StandaloneWorkflowPage,
+  StandaloneRoomPage,
   //
   Page500,
   Page403,
@@ -116,12 +117,21 @@ const Router = () => {
           </CompactLayout>
         </Route>
 
+        <Route
+          path="/r/:roomId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <StandaloneRoomPage />
+          </AuthGuard>
+        </Route>
+
         {/* Room Route */}
         <Route
           path="/room/:roomId"
           exact
         >
-          <AuthGuard requireAuth={true}>
+          <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <RoomPage />
             </DashboardLayout>

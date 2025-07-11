@@ -78,7 +78,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
   const isDesktop = useResponsive('up', 'md');
   const agents = useSelector(getAgents);
   const initialized = useSelector(getAgentsInitialized);
-  const history = useHistory();;
+  const history = useHistory();
   const location = useLocation();
   const { isAuthenticated } = useAuthContext();
 
@@ -193,41 +193,45 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     );
   }
 
-
   // Sample carousel cards data for agents
   const agentCarouselCards = [
     {
       backgroundPath: '/videos/agents/agents1.mp4',
       title: 'Best LLMs Available',
-      description: 'Access the most advanced language models including GPT-4, Claude, Gemini, and more. Choose the perfect LLM for your specific use case and requirements.',
+      description:
+        'Access the most advanced language models including GPT-4, Claude, Gemini, and more. Choose the perfect LLM for your specific use case and requirements.',
       buttonText: 'Explore Models',
       navigateTo: '/auth/register',
     },
     {
       backgroundPath: '/videos/agents/agents1.mp4',
       title: 'Natural AI Voices',
-      description: 'The most human-like AI voices on the market. Our advanced voice synthesis creates incredibly natural speech that your users will love.',
+      description:
+        'The most human-like AI voices on the market. Our advanced voice synthesis creates incredibly natural speech that your users will love.',
       buttonText: 'Hear Voices',
       navigateTo: '/auth/register',
     },
     {
       backgroundPath: '/videos/agents/agents1.mp4',
       title: 'Custom Tools Integration',
-      description: 'Add powerful tools to your agents so they can perform tasks across your entire tech stack. Connect APIs, databases, and services seamlessly.',
+      description:
+        'Add powerful tools to your agents so they can perform tasks across your entire tech stack. Connect APIs, databases, and services seamlessly.',
       buttonText: 'Add Tools',
       navigateTo: '/auth/register',
     },
     {
       backgroundPath: '/videos/agents/agents1.mp4',
       title: 'Realtime Speech-to-Speech',
-      description: 'Experience lightning-fast speech-to-speech conversations with minimal latency. Perfect for phone calls, voice assistants, and live interactions.',
+      description:
+        'Experience lightning-fast speech-to-speech conversations with minimal latency. Perfect for phone calls, voice assistants, and live interactions.',
       buttonText: 'Try Voice Chat',
       navigateTo: '/auth/register',
     },
     {
       backgroundPath: '/videos/agents/agents1.mp4',
       title: 'Website Widget',
-      description: 'Deploy your AI agents instantly with our easy-to-integrate website widget. Add intelligent chat to any website in just a few lines of code.',
+      description:
+        'Deploy your AI agents instantly with our easy-to-integrate website widget. Add intelligent chat to any website in just a few lines of code.',
       buttonText: 'Get Widget',
       navigateTo: '/auth/register',
     },
@@ -496,11 +500,6 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
           </Stack>
         )}
       </Box>
-
-      <TemplateMarketplace
-        type="agent"
-        hideFilters
-      />
 
       {!!altanerComponentId && (
         <AltanerComponentDialog

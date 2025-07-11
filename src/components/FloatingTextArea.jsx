@@ -47,8 +47,10 @@ const makeSelectReplyTo = () =>
 
 // iOS detection utility
 const isIOS = () => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
 };
 
 const FloatingTextArea = ({
@@ -144,7 +146,7 @@ const FloatingTextArea = ({
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleViewportChange);
       window.visualViewport.addEventListener('scroll', handleViewportChange);
-      
+
       return () => {
         window.visualViewport.removeEventListener('resize', handleViewportChange);
         window.visualViewport.removeEventListener('scroll', handleViewportChange);
@@ -155,7 +157,7 @@ const FloatingTextArea = ({
   return (
     <>
       {!!(replyTo || selectedMessage) && !isViewer && (
-        <div className="relative w-full max-w-[800px] mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-4 rounded-t-xl p-2 backdrop-blur-lg flex flex-col bg-white/80 dark:bg-gray-900/80">
+        <div className="relative w-full max-w-[500px] mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-4 rounded-t-xl p-2 backdrop-blur-lg flex flex-col bg-white/80 dark:bg-gray-900/80">
           <Typography
             variant="caption"
             noWrap
@@ -189,7 +191,9 @@ const FloatingTextArea = ({
           </Stack>
         </div>
       )}
-      {!isViewer && (mode === 'standard' || mode === 'mobile') && <FileUpload threadId={threadId} />}
+      {!isViewer && (mode === 'standard' || mode === 'mobile') && (
+        <FileUpload threadId={threadId} />
+      )}
       {isViewer ? (
         <div className="flex flex-col items-center space-y-3 mb-4 text-center">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -238,19 +242,27 @@ const FloatingTextArea = ({
             className={`relative flex w-full flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
                 ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
-                : 'max-w-[850px] pb-3 pt-3 px-4 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
+                : 'w-full pb-3 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
             }`}
-            style={mode === 'mobile' ? {
-              padding: '12px 12px 0 12px',
-              paddingBottom: isIOS() ? (isKeyboardOpen ? '4px' : '14px') : 'max(10px, env(safe-area-inset-bottom))',
-              transform: 'translate3d(0, 0, 0)',
-              WebkitTransform: 'translate3d(0, 0, 0)',
-              willChange: 'transform',
-              WebkitBackdropFilter: 'blur(20px)',
-            } : undefined}
+            style={
+              mode === 'mobile'
+                ? {
+                    padding: '12px 12px 0 12px',
+                    paddingBottom: isIOS()
+                      ? isKeyboardOpen
+                        ? '4px'
+                        : '14px'
+                      : 'max(10px, env(safe-area-inset-bottom))',
+                    transform: 'translate3d(0, 0, 0)',
+                    WebkitTransform: 'translate3d(0, 0, 0)',
+                    willChange: 'transform',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }
+                : undefined
+            }
           >
             {attachments?.length > 0 && (
-              <div className="flex w-full overflow-x-auto space-x-3">
+              <div className="flex w-full overflow-x-auto space-x-3 px-4">
                 {attachments.map((attachment, index) => {
                   const isImage = attachment.mime_type?.startsWith('image/');
                   const isPDF = attachment.mime_type === 'application/pdf';
@@ -366,7 +378,7 @@ const FloatingTextArea = ({
                 })}
               </div>
             )}
-            <div className="flex flex-col w-full relative py-1">
+            <div className="flex flex-col w-full relative py-1 px-4">
               <div>
                 <Editor
                   key={`${threadId}_${messageId}`}
@@ -381,18 +393,20 @@ const FloatingTextArea = ({
               </div>
             </div>
             {!isViewer && (mode === 'standard' || mode === 'mobile') && (
-              <AttachmentHandler
-                isSendEnabled={isSendEnabled}
-                onSendMessage={editorRef.current.sendMessage}
-                attachments={attachments}
-                threadId={threadId}
-                setAttachments={setAttachments}
-                containerRef={containerRef}
-                editorRef={editorRef}
-                mode={mode}
-                mobileActiveView={mobileActiveView}
-                onMobileToggle={onMobileToggle}
-              />
+              <div className="px-4">
+                <AttachmentHandler
+                  isSendEnabled={isSendEnabled}
+                  onSendMessage={editorRef.current.sendMessage}
+                  attachments={attachments}
+                  threadId={threadId}
+                  setAttachments={setAttachments}
+                  containerRef={containerRef}
+                  editorRef={editorRef}
+                  mode={mode}
+                  mobileActiveView={mobileActiveView}
+                  onMobileToggle={onMobileToggle}
+                />
+              </div>
             )}
           </div>
         </>

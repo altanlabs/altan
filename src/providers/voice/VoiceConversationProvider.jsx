@@ -81,6 +81,8 @@ export const VoiceConversationProvider = ({ children }) => {
   const [toolCalls, setToolCalls] = useState([]);
   const [navigationPath, setNavigationPath] = useState('');
   const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [disconnectionReason, setDisconnectionReason] = useState(null);
+  const [connectionStartTime, setConnectionStartTime] = useState(null);
   const history = useHistory();
 
   // Tool handler functions
@@ -154,30 +156,8 @@ export const VoiceConversationProvider = ({ children }) => {
     }
   }, [handleRedirect]);
 
-  // Enhanced conversation with iOS-specific handling
+  // Enhanced conversation with comprehensive debugging
   const conversation = useConversation({
-    onConnect: () => {
-      setConnectionAttempts(0); // Reset attempts on successful connection
-    },
-    onDisconnect: () => {
-      setToolCalls([]);
-      setNavigationPath('');
-    },
-    onMessage: () => {
-    },
-    onError: (error) => {
-      setConnectionAttempts(prev => {
-        const newAttempts = prev + 1;
-        return newAttempts;
-      });
-
-      // iOS-specific error handling
-      if (isIOS() || isMobile()) {
-        if (error.message?.includes('capture failure') ||
-            error.message?.includes('MediaStreamTrack ended')) {
-        }
-      }
-    },
     clientTools: {
       redirect: async ({ path }) => {
         if (!path) {
@@ -190,6 +170,67 @@ export const VoiceConversationProvider = ({ children }) => {
       },
     },
     onToolCall: handleToolCall,
+    // Add comprehensive event listeners for debugging
+    onConnect: () => {
+      console.log('🔗 [VoiceConversationProvider] Global onConnect - ElevenLabs connected');
+      setConnectionStartTime(Date.now());
+      setDisconnectionReason(null);
+    },
+    onDisconnect: () => {
+      const connectionDuration = connectionStartTime ? Date.now() - connectionStartTime : 0;
+      console.log('🔌 [VoiceConversationProvider] Global onDisconnect - ElevenLabs disconnected');
+      console.log('⏱️ [VoiceConversationProvider] Connection duration:', connectionDuration, 'ms');
+      if (connectionDuration < 5000) {
+        console.warn('⚠️ [VoiceConversationProvider] Short connection duration detected - possible configuration issue');
+      }
+      setDisconnectionReason('ElevenLabs SDK disconnected');
+      setConnectionStartTime(null);
+    },
+    onError: (error) => {
+      console.log('❌ [VoiceConversationProvider] Global onError:', error);
+      console.log('❌ [VoiceConversationProvider] Error type:', typeof error);
+      console.log('❌ [VoiceConversationProvider] Error name:', error?.name);
+      console.log('❌ [VoiceConversationProvider] Error message:', error?.message);
+      console.log('❌ [VoiceConversationProvider] Error stack:', error?.stack);
+      console.log('❌ [VoiceConversationProvider] Error details:', JSON.stringify(error, null, 2));
+      
+      // Check for specific ElevenLabs error patterns
+      if (error?.message?.includes('ping') || error?.message?.includes('pong')) {
+        console.warn('⚠️ [VoiceConversationProvider] Ping/Pong error - connection keepalive issue');
+      }
+      if (error?.message?.includes('WebSocket')) {
+        console.warn('⚠️ [VoiceConversationProvider] WebSocket error - network or protocol issue');
+      }
+      if (error?.message?.includes('agent')) {
+        console.warn('⚠️ [VoiceConversationProvider] Agent error - check agent configuration');
+      }
+      
+      setDisconnectionReason(`Error: ${error.message}`);
+    },
+    onMessage: (message) => {
+      console.log('💬 [VoiceConversationProvider] Global onMessage:', message);
+      console.log('💬 [VoiceConversationProvider] Message type:', typeof message);
+      console.log('💬 [VoiceConversationProvider] Message details:', JSON.stringify(message, null, 2));
+      
+      // Check for specific message types that might indicate issues
+      if (message?.type === 'interruption') {
+        console.warn('⚠️ [VoiceConversationProvider] Interruption message received:', message);
+      }
+      if (message?.type === 'ping') {
+        console.log('🏓 [VoiceConversationProvider] Ping message received');
+      }
+      if (message?.type === 'pong') {
+        console.log('🏓 [VoiceConversationProvider] Pong message received');
+      }
+    },
+    onModeChange: (mode) => {
+      console.log('🔄 [VoiceConversationProvider] Mode change:', mode);
+      console.log('🔄 [VoiceConversationProvider] Mode details:', JSON.stringify(mode, null, 2));
+    },
+    onStatusChange: (status) => {
+      console.log('📊 [VoiceConversationProvider] Status change:', status);
+      console.log('📊 [VoiceConversationProvider] Status details:', JSON.stringify(status, null, 2));
+    },
   });
 
   const startConversation = useCallback(async (options = {}) => {
@@ -225,12 +266,56 @@ export const VoiceConversationProvider = ({ children }) => {
         ...(Object.keys(dynamicVariables).length > 0 && { dynamicVariables }),
       };
 
-      // Add callbacks to session config
+      // Add callbacks to session config with internal state management
       const callbackConfig = {};
-      if (onConnect) callbackConfig.onConnect = onConnect;
-      if (onDisconnect) callbackConfig.onDisconnect = onDisconnect;
+      if (onConnect) {
+        callbackConfig.onConnect = () => {
+          console.log('🔗 [VoiceConversationProvider] Internal onConnect called');
+          setConnectionAttempts(0); // Reset attempts on successful connection
+          onConnect();
+        };
+      } else {
+        callbackConfig.onConnect = () => {
+          console.log('🔗 [VoiceConversationProvider] Internal onConnect called (no user callback)');
+          setConnectionAttempts(0); // Reset attempts on successful connection
+        };
+      }
+
+      if (onDisconnect) {
+        callbackConfig.onDisconnect = () => {
+          console.log('🔌 [VoiceConversationProvider] Internal onDisconnect called');
+          setToolCalls([]);
+          setNavigationPath('');
+          onDisconnect();
+        };
+      } else {
+        callbackConfig.onDisconnect = () => {
+          console.log('🔌 [VoiceConversationProvider] Internal onDisconnect called (no user callback)');
+          setToolCalls([]);
+          setNavigationPath('');
+        };
+      }
+
       if (onMessage) callbackConfig.onMessage = onMessage;
-      if (onError) callbackConfig.onError = onError;
+
+      if (onError) {
+        callbackConfig.onError = (error) => {
+          console.log('❌ [VoiceConversationProvider] Internal onError called:', error);
+          setConnectionAttempts(prev => {
+            const newAttempts = prev + 1;
+            return newAttempts;
+          });
+          onError(error);
+        };
+      } else {
+        callbackConfig.onError = () => {
+          console.log('❌ [VoiceConversationProvider] Internal onError called (no user callback)');
+          setConnectionAttempts(prev => {
+            const newAttempts = prev + 1;
+            return newAttempts;
+          });
+        };
+      }
 
       // iOS-specific session configuration
       if (isIOS() || isMobile()) {
@@ -246,10 +331,33 @@ export const VoiceConversationProvider = ({ children }) => {
         };
       }
 
+      console.log('🚀 [VoiceConversationProvider] Starting ElevenLabs session with config:', {
+        agentId: sessionConfig.agentId,
+        hasOverrides: !!sessionConfig.overrides,
+        hasDynamicVariables: !!sessionConfig.dynamicVariables,
+        hasCallbacks: Object.keys(callbackConfig).length > 0,
+        dynamicVariablesKeys: Object.keys(dynamicVariables),
+        dynamicVariablesValues: dynamicVariables,
+        overrides: sessionConfig.overrides,
+        sessionConfig,
+        callbackConfig,
+      });
+
+      // Log conversation status before starting
+      console.log('📊 [VoiceConversationProvider] Conversation status before start:', conversation.status);
+
       await conversation.startSession({
         ...sessionConfig,
         ...callbackConfig,
       });
+
+            console.log('✅ [VoiceConversationProvider] ElevenLabs session started successfully');
+      console.log('📊 [VoiceConversationProvider] Conversation status after start:', conversation.status);
+
+      // Add a small delay to see if disconnection happens immediately
+      setTimeout(() => {
+        console.log('📊 [VoiceConversationProvider] Conversation status 1 second after start:', conversation.status);
+      }, 1000);
 
       return true;
     } catch (error) {
@@ -297,6 +405,8 @@ export const VoiceConversationProvider = ({ children }) => {
     toolCalls,
     navigationPath,
     connectionAttempts,
+    disconnectionReason,
+    connectionStartTime,
 
     // Actions
     startConversation,

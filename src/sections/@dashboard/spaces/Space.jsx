@@ -440,6 +440,7 @@ const Space = ({ navigate, spaceId, isPreview }) => {
                             key={`space_tool_${tool.id}_${index}`}
                             item={tool}
                             onEdit={handleToolEdit}
+                            spaceId={current.id}
                           />
                         )}
                       />

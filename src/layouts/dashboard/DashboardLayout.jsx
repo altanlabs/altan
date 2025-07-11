@@ -9,6 +9,7 @@ import Main from './Main.jsx';
 import NavVertical from './nav/NavVertical.jsx';
 import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
+import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
@@ -22,7 +23,6 @@ import {
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
-import Footer from '../main/Footer.jsx';
 
 const AltanLogoFixed = (
   <AltanLogo
@@ -170,10 +170,14 @@ const DashboardLayout = ({ children }) => {
     }
   }, [accountId, user]);
 
+  // Check if we should hide FloatingNavigation on mobile in /room path
+  const isMobile = useResponsive('down', 'md'); // Mobile is anything below md breakpoint
+  const shouldHideFloatingNav = location.pathname.startsWith('/room') && isMobile;
+
   return (
     <VoiceConversationProvider>
       {!hideHeader && <Header onOpenNav={handleToggleNav} />}
-      <FloatingNavigation />
+      {!shouldHideFloatingNav && <FloatingNavigation />}
       {user && <FloatingVoiceWidget />}
 
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}

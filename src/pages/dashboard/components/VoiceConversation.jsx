@@ -32,7 +32,10 @@ const trackVoiceConversation = (action, agentData = {}) => {
 const isCapacitorNative = () => {
   try {
     const result = Capacitor.isNativePlatform();
-    console.log('⚡ [VoiceConversation] Capacitor Native Detection:', { result, platform: Capacitor.getPlatform() });
+    console.log('⚡ [VoiceConversation] Capacitor Native Detection:', {
+      result,
+      platform: Capacitor.getPlatform(),
+    });
     return result;
   } catch (error) {
     console.log('⚡ [VoiceConversation] Capacitor not available:', error);
@@ -42,18 +45,29 @@ const isCapacitorNative = () => {
 
 // Helper function to detect iOS
 const isIOS = () => {
-  const result = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
-         (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
-  console.log('🍎 [VoiceConversation] iOS Detection:', { result, userAgent: navigator.userAgent, platform: navigator.platform, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
+  const result =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+    (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
+  console.log('🍎 [VoiceConversation] iOS Detection:', {
+    result,
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none',
+  });
   return result;
 };
 
 // Helper function to detect mobile browsers
 const isMobile = () => {
-  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-         (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
-  console.log('📱 [VoiceConversation] Mobile Detection:', { result, userAgent: navigator.userAgent, capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none' });
+  const result =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
+  console.log('📱 [VoiceConversation] Mobile Detection:', {
+    result,
+    userAgent: navigator.userAgent,
+    capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none',
+  });
   return result;
 };
 
@@ -65,7 +79,9 @@ const checkBrowserSupport = () => {
 
   // Skip strict browser checks for Capacitor native apps
   if (isCapacitorNative()) {
-    console.log('⚡ [VoiceConversation] Capacitor native app detected, skipping browser compatibility checks');
+    console.log(
+      '⚡ [VoiceConversation] Capacitor native app detected, skipping browser compatibility checks',
+    );
     console.log('🔍 [VoiceConversation] Capacitor platform:', Capacitor.getPlatform());
     return []; // Assume Capacitor WebView supports required features
   }
@@ -131,12 +147,7 @@ const VoiceConversation = ({
   // Use prop language or fallback to current locale language
   const effectiveLanguage = currentLang.value || initialLanguage;
 
-  const {
-    isConnected,
-    isConnecting,
-    startConversation,
-    stopConversation,
-  } = useVoiceConversation();
+  const { isConnected, isConnecting, startConversation, stopConversation } = useVoiceConversation();
 
   console.log('🎤 [VoiceConversation] Voice conversation state:', {
     isConnected,
@@ -163,7 +174,10 @@ const VoiceConversation = ({
         // Check permission state if available
         if (navigator.permissions && navigator.permissions.query) {
           const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-          console.log('🎤 [VoiceConversation] Current microphone permission state:', permissionStatus.state);
+          console.log(
+            '🎤 [VoiceConversation] Current microphone permission state:',
+            permissionStatus.state,
+          );
 
           if (permissionStatus.state === 'granted') {
             console.log('✅ [VoiceConversation] Microphone permission already granted');
@@ -177,10 +191,14 @@ const VoiceConversation = ({
 
       // For Capacitor apps, we need explicit user interaction for permissions
       if (isCapacitorNative()) {
-        console.log('⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request');
+        console.log(
+          '⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request',
+        );
         setUserInteractionRequired(true);
       } else if (isIOS() || isMobile()) {
-        console.log('📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction');
+        console.log(
+          '📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction',
+        );
         setUserInteractionRequired(true);
       }
     };
@@ -201,7 +219,9 @@ const VoiceConversation = ({
       setFetchError(null);
 
       try {
-        const response = await axios.get(`https://api.altan.ai/platform/agent/${altanAgentId}/public`);
+        const response = await axios.get(
+          `https://api.altan.ai/platform/agent/${altanAgentId}/public`,
+        );
         console.log('✅ [VoiceConversation] Agent data fetched successfully:', response.data.agent);
         setFetchedAgent(response.data.agent);
       } catch (error) {
@@ -216,7 +236,8 @@ const VoiceConversation = ({
   }, [altanAgentId, elevenlabsId]);
 
   // Determine the effective elevenlabsId to use
-  const effectiveElevenlabsId = elevenlabsId || fetchedAgent?.elevenlabs_id || 'agent_01jy1hqg8jehq8v9zd7j9qxa2a';
+  const effectiveElevenlabsId =
+    elevenlabsId || fetchedAgent?.elevenlabs_id || 'agent_01jy1hqg8jehq8v9zd7j9qxa2a';
 
   // Determine the effective agent name to use
   const effectiveAgentName = agentName || fetchedAgent?.name;
@@ -224,38 +245,29 @@ const VoiceConversation = ({
   // Determine the effective avatar URL
   const effectiveAvatarUrl = fetchedAgent?.avatar_url;
 
-  console.log('🎯 [VoiceConversation] Effective values:', {
-    effectiveElevenlabsId,
-    effectiveAgentName,
-    effectiveAvatarUrl,
-  });
-
   const handleLanguageMenuOpen = useCallback((event) => {
-    console.log('🌐 [VoiceConversation] Language menu opened');
     setLanguageMenuAnchor(event.currentTarget);
   }, []);
 
   const handleLanguageMenuClose = useCallback(() => {
-    console.log('🌐 [VoiceConversation] Language menu closed');
     setLanguageMenuAnchor(null);
   }, []);
 
-  const handleLanguageChange = useCallback((langValue) => {
-    console.log('🌐 [VoiceConversation] Language changed to:', langValue);
-    onChangeLang(langValue);
-    handleLanguageMenuClose();
-  }, [onChangeLang, handleLanguageMenuClose]);
+  const handleLanguageChange = useCallback(
+    (langValue) => {
+      onChangeLang(langValue);
+      handleLanguageMenuClose();
+    },
+    [onChangeLang, handleLanguageMenuClose],
+  );
 
   // Enhanced start conversation with iOS-specific handling
   const handleStartConversation = useCallback(async () => {
-    console.log('🚀 [VoiceConversation] Starting conversation...');
-
     try {
       // Reset user interaction requirement
       setUserInteractionRequired(false);
 
       // Start the conversation with enhanced error handling
-      console.log('🎤 [VoiceConversation] Starting conversation with ElevenLabs...');
       const success = await startConversation({
         agentId: effectiveElevenlabsId,
         dynamicVariables,
@@ -295,15 +307,23 @@ const VoiceConversation = ({
           console.error('❌ [VoiceConversation] Voice conversation error:', error);
 
           // Handle iOS-specific errors
-          if (error.message?.includes('capture failure') ||
-              error.message?.includes('MediaStreamTrack ended')) {
+          if (
+            error.message?.includes('capture failure') ||
+            error.message?.includes('MediaStreamTrack ended')
+          ) {
             console.warn('🍎 [VoiceConversation] iOS Safari capture failure detected');
-            setFetchError('Voice connection lost. This may be due to iOS Safari limitations. Please try again.');
+            setFetchError(
+              'Voice connection lost. This may be due to iOS Safari limitations. Please try again.',
+            );
             setUserInteractionRequired(true);
-          } else if (error.message?.includes('Permission denied') ||
-                     error.message?.includes('NotAllowedError')) {
+          } else if (
+            error.message?.includes('Permission denied') ||
+            error.message?.includes('NotAllowedError')
+          ) {
             console.warn('🚫 [VoiceConversation] Permission denied error');
-            setFetchError('Microphone access denied. Please allow microphone access in your browser settings.');
+            setFetchError(
+              'Microphone access denied. Please allow microphone access in your browser settings.',
+            );
             setPermissionDenied(true);
           } else {
             console.error('💥 [VoiceConversation] Unknown error:', error);
@@ -315,7 +335,9 @@ const VoiceConversation = ({
       });
 
       if (!success) {
-        console.warn('⚠️ [VoiceConversation] Conversation start failed, requiring user interaction');
+        console.warn(
+          '⚠️ [VoiceConversation] Conversation start failed, requiring user interaction',
+        );
         setUserInteractionRequired(true);
       } else {
         console.log('✅ [VoiceConversation] Conversation started successfully');
@@ -326,11 +348,19 @@ const VoiceConversation = ({
       setUserInteractionRequired(true);
       onError?.(error);
     }
-  }, [effectiveElevenlabsId, effectiveLanguage, dynamicVariables, startConversation, onConnect, onDisconnect, onMessage, onError]);
+  }, [
+    effectiveElevenlabsId,
+    effectiveLanguage,
+    dynamicVariables,
+    startConversation,
+    onConnect,
+    onDisconnect,
+    onMessage,
+    onError,
+  ]);
 
   // Enhanced permission request function
   const requestMicrophonePermission = useCallback(async () => {
-    console.log('🎤 [VoiceConversation] Requesting microphone permission...');
     setPermissionRequested(true);
     setPermissionDenied(false);
     setFetchError(null);
@@ -349,25 +379,13 @@ const VoiceConversation = ({
         video: false,
       });
 
-      console.log('✅ [VoiceConversation] Microphone permission granted:', {
-        audioTracks: stream.getAudioTracks().length,
-        trackDetails: stream.getAudioTracks().map(track => ({
-          id: track.id,
-          kind: track.kind,
-          label: track.label,
-          enabled: track.enabled,
-        })),
-      });
-
       // Clean up test stream
-      stream.getTracks().forEach(track => {
-        console.log('🔇 [VoiceConversation] Stopping permission test track:', track.kind, track.id);
+      stream.getTracks().forEach((track) => {
         track.stop();
       });
 
       // Small delay for cleanup
-      await new Promise(resolve => setTimeout(resolve, 100));
-      console.log('✅ [VoiceConversation] Microphone permission setup complete');
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Reset user interaction requirement since permission is now granted
       setUserInteractionRequired(false);
@@ -394,11 +412,15 @@ const VoiceConversation = ({
     console.log('❌ [VoiceConversation] Rendering browser compatibility error');
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
-        <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
-          <Typography variant="body2">
-            {browserCompatibilityError}
-          </Typography>
-          <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+        <Alert
+          severity="error"
+          sx={{ width: '100%', maxWidth: 500 }}
+        >
+          <Typography variant="body2">{browserCompatibilityError}</Typography>
+          <Typography
+            variant="caption"
+            sx={{ mt: 1, display: 'block' }}
+          >
             Please try using a modern browser like Chrome, Firefox, or Safari.
           </Typography>
         </Alert>
@@ -411,10 +433,16 @@ const VoiceConversation = ({
     console.log('❌ [VoiceConversation] Rendering fetch error:', fetchError);
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
-        <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
+        <Alert
+          severity="error"
+          sx={{ width: '100%', maxWidth: 500 }}
+        >
           <Typography variant="body2">{fetchError}</Typography>
           {(isCapacitorNative() || isIOS() || isMobile()) && (
-            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{ mt: 1, display: 'block' }}
+            >
               {isCapacitorNative()
                 ? 'Make sure to allow microphone access when prompted by your device.'
                 : 'iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.'}
@@ -441,9 +469,7 @@ const VoiceConversation = ({
           {/* Loading skeleton for call button */}
           <div className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium backdrop-blur-md bg-gray-200/80 dark:bg-gray-700/80 p-1.5 h-auto border border-gray-200/50 dark:border-gray-700/50 shadow-lg rounded-full transition-all duration-300 animate-pulse">
             <span className="me-1.5 w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
-            <span className="pe-2.5 mx-auto text-gray-400 dark:text-gray-500">
-              Loading
-            </span>
+            <span className="pe-2.5 mx-auto text-gray-400 dark:text-gray-500">Loading</span>
           </div>
 
           {/* Loading skeleton for language selector */}
@@ -461,10 +487,16 @@ const VoiceConversation = ({
     <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
       {/* Show error if agent fetch failed */}
       {fetchError && (
-        <Alert severity="error" sx={{ width: '100%', maxWidth: 500, mb: 2 }}>
+        <Alert
+          severity="error"
+          sx={{ width: '100%', maxWidth: 500, mb: 2 }}
+        >
           <Typography variant="body2">{fetchError}</Typography>
           {(isCapacitorNative() || isIOS() || isMobile()) && (
-            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{ mt: 1, display: 'block' }}
+            >
               {isCapacitorNative()
                 ? 'Make sure to allow microphone access when prompted by your device.'
                 : 'iOS/Mobile tip: Make sure microphone permissions are enabled and try tapping the button again.'}
@@ -478,7 +510,11 @@ const VoiceConversation = ({
         {/* Call Button / Permission Request Button */}
         {!isConnected ? (
           <button
-            onClick={userInteractionRequired && !permissionRequested ? requestMicrophonePermission : handleStartConversation}
+            onClick={
+              userInteractionRequired && !permissionRequested
+                ? requestMicrophonePermission
+                : handleStartConversation
+            }
             disabled={isConnecting || fetchingAgent}
             className="relative inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-ring disabled:pointer-events-auto disabled:opacity-50 group backdrop-blur-md bg-white/80 dark:bg-[#1c1c1c] p-1.5 h-auto border border-gray-200/50 dark:border-gray-700/50 shadow-lg rounded-full hover:bg-white/70 dark:hover:bg-gray-900/70 active:bg-white/70 dark:active:bg-gray-900/70 transition-all duration-300"
           >
@@ -489,7 +525,10 @@ const VoiceConversation = ({
                   alt={effectiveAgentName}
                   className="w-full h-full rounded-full object-cover"
                   onError={(e) => {
-                    console.warn('🖼️ [VoiceConversation] Avatar image failed to load:', effectiveAvatarUrl);
+                    console.warn(
+                      '🖼️ [VoiceConversation] Avatar image failed to load:',
+                      effectiveAvatarUrl,
+                    );
                     // Fallback to SVG if image fails to load
                     e.target.style.display = 'none';
                     e.target.nextElementSibling.style.display = 'block';

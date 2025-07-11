@@ -109,7 +109,7 @@ const GeneralToolbar = ({ className, children, header = false }) => {
         className,
       )}
     >
-      {!drawerOpen && (
+      {/* {!drawerOpen && (
         <Tooltip title="Open drawer">
           <IconButton
             size="small"
@@ -121,7 +121,7 @@ const GeneralToolbar = ({ className, children, header = false }) => {
             />
           </IconButton>
         </Tooltip>
-      )}
+      )} */}
       {!drawerOpen && !!enableRefresh && (
         <Tooltip
           title="New conversation"

@@ -16,7 +16,7 @@ const ChatPreview = memo(({ currentAgentDmRoomId }) => {
         //   roomId={currentAgentDmRoomId}
         //   header={false}
         // />
-        <iframe src={`/room/${currentAgentDmRoomId}?header=false`} style={{ width: '100%', height: '100%', border: 'none' }}/>
+        <iframe src={`/r/${currentAgentDmRoomId}?header=false`} style={{ width: '100%', height: '100%', border: 'none' }}/>
       ) : (
         <Box
           sx={{

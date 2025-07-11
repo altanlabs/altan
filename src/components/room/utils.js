@@ -48,9 +48,8 @@ export function getMemberDetails(member, me = null) {
         ...common,
       };
     case 'user':
-      const userPerson = member.member.user.person;
       return {
-        src: userPerson?.avatar_url,
+        src: member.member.user?.avatar_url,
         status: member.id === me?.id ? 'online' : 'offline',
         email: member?.member?.user?.email,
         ...common,

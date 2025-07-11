@@ -31,7 +31,7 @@ export const ResetPasswordPage = Loadable(
 );
 
 export const RoomPage = Loadable(lazy(() => import('../pages/RoomPage.jsx')));
-
+export const StandaloneRoomPage = Loadable(lazy(() => import('../pages/StandaloneRoomPage.jsx')));
 // DASHBOARD: GENERAL
 // export const GeneralAppPage = Loadable(lazy(() => import('../pages/dashboard/GeneralAppPage')));
 export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));

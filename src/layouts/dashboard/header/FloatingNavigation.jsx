@@ -47,25 +47,27 @@ const FloatingNavigation = () => {
       ),
     },
     // Conditionally show Usage or Pricing based on authentication
-    isAuthenticated ? {
-      path: '/usage',
-      label: 'Usage',
-      icon: (
-        <Iconify
-          icon="material-symbols:monitoring"
-          className="w-[18px] h-[18px]"
-        />
-      ),
-    } : {
-      path: '/pricing',
-      label: 'Pricing',
-      icon: (
-        <Iconify
-          icon="material-symbols:payments"
-          className="w-[18px] h-[18px]"
-        />
-      ),
-    },
+    isAuthenticated
+      ? {
+          path: '/usage',
+          label: 'Usage',
+          icon: (
+            <Iconify
+              icon="material-symbols:monitoring"
+              className="w-[18px] h-[18px]"
+            />
+          ),
+        }
+      : {
+          path: '/pricing',
+          label: 'Pricing',
+          icon: (
+            <Iconify
+              icon="material-symbols:payments"
+              className="w-[18px] h-[18px]"
+            />
+          ),
+        },
   ];
 
   // Check if current path matches navigation item
@@ -193,7 +195,10 @@ const FloatingNavigation = () => {
           const isActive = isActivePath(item.path);
 
           return (
-            <li key={item.path} className={isDesktop ? '' : 'flex-1'}>
+            <li
+              key={item.path}
+              className={isDesktop ? '' : 'flex-1'}
+            >
               <a
                 href="#"
                 onClick={(e) => {
@@ -203,14 +208,10 @@ const FloatingNavigation = () => {
                 className={getButtonStyles(item.path, index)}
               >
                 {/* Icon */}
-                <div className={isDesktop ? '' : 'mb-1'}>
-                  {item.icon}
-                </div>
+                <div className={isDesktop ? '' : 'mb-1'}>{item.icon}</div>
 
                 {/* Label - only show on mobile */}
-                {!isDesktop && (
-                  <span className="text-xs font-medium">{item.label}</span>
-                )}
+                {!isDesktop && <span className="text-xs font-medium">{item.label}</span>}
 
                 {/* Tooltip - only show on desktop */}
                 {isDesktop && (
@@ -240,8 +241,8 @@ const FloatingNavigation = () => {
                             ? 'bg-white shadow-none'
                             : 'bg-white shadow-[0_1px_4px_0px_rgba(0,0,0,0.075)]'
                           : theme.palette.mode === 'dark'
-                          ? 'bg-gray-800'
-                          : 'bg-gray-50'
+                            ? 'bg-gray-800'
+                            : 'bg-gray-50'
                       }`}
                       initial={false}
                       transition={{

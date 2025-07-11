@@ -250,16 +250,15 @@ export const KnowledgeCard = ({ item }) => {
   );
 };
 
-export const SpaceToolCard = ({ item, onEdit }) => {
+export const SpaceToolCard = ({ item, onEdit, spaceId }) => {
   const isClientTool = item.tool?.tool_type === 'client';
-  const onClickEdit = () => onEdit(item);
-  
+  const onClickEdit = () => onEdit(item);  
   return (
     <BaseCard
       item={item}
       mode="tool"
       draggable={false}
-      onDelete={() => dispatch(deleteToolLink(item.id))}
+      onDelete={() => dispatch(deleteToolLink(item.id,item.tool.id, spaceId))}
     >
       <div
         className="flex items-center space-x-2 w-full cursor-pointer"

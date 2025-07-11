@@ -688,13 +688,13 @@ export const deleteResourceLink = (linkId) => async (dispatch, getState) => {
   }
 };
 
-export const deleteToolLink = (linkId) => async (dispatch, getState) => {
+export const deleteToolLink = (linkId, toolId, spaceId) => async (dispatch, getState) => {
   const { current } = getState().spaces;
   if (!current || current.id === 'root')
     return Promise.reject('cannot delete tool link in invalid space');
   if (!linkId) return Promise.reject('cannot delete invalid tool');
   try {
-    await optimai.delete(`/graph/space-tool/${linkId}`);
+    await optimai.delete(`/space/${spaceId}/tools/${toolId}`);
     dispatch(slice.actions.deleteCurrentTool(linkId));
     return Promise.resolve('success');
   } catch (e) {

@@ -1,18 +1,20 @@
 /* eslint-disable react/display-name */
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
+import { useEffect, memo, useMemo } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
 
 import ProjectHeader from './header/ProjectHeader.jsx';
 import Main from './Main.jsx';
-import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
+// import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
+import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import {
   clearCurrentAltaner,
   getAltanerById,
   selectCurrentAltaner,
+  selectSortedAltanerComponents,
 } from '../../redux/slices/altaners';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
 import { getFlows } from '../../redux/slices/flows';
@@ -24,19 +26,6 @@ import {
 } from '../../redux/slices/general';
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
-
-const AltanLogoFixed = (
-  <AltanLogo
-    wrapped
-    fixed
-  />
-);
-
-const Loadable = (Component) => (props) => (
-  <Suspense fallback={AltanLogoFixed}>
-    <Component {...props} />
-  </Suspense>
-);
 
 const ACCOUNT_ENTITIES = [
   'actionexecution',
@@ -71,21 +60,45 @@ const selectAccountInitialized = (state) => state.general.generalInitialized.acc
 const ProjectLayout = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
-  
+
   // Parse search params manually for React Router v5
   const searchParams = new URLSearchParams(location.search);
   const setSearchParams = (newParams) => {
     history.replace({
       pathname: location.pathname,
-      search: newParams.toString()
+      search: newParams.toString(),
     });
   };
   const ws = useWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
-  const { altanerId } = useParams();
+  const { altanerId, componentId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
+  const sortedComponents = useSelector(selectSortedAltanerComponents);
+
+  // Get current component and interface ID
+  const currentComponent = sortedComponents?.[componentId];
+  const isInterfaceComponent = currentComponent?.type === 'interface';
+  const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
+
+  // Memoize dynamic variables to prevent re-renders
+  const dynamicVariables = useMemo(() => {
+    const baseVariables = {
+      '[$vars].message_id': 'test',
+      '[$vars].room.meta_data.components.base.id': 'test',
+      ...(altaner?.room_id && { '[$vars].room_id': altaner.room_id }),
+      ...(altanerId && { '[$vars].room.meta_data.altaner.id': altanerId }),
+    };
+
+    if (interfaceId) {
+      baseVariables['[$vars].room.meta_data.components.interface.params.id'] = interfaceId;
+    }
+
+    return baseVariables;
+  }, [interfaceId, altaner?.room_id, altanerId]);
+
+  console.log('dynamicVariables', dynamicVariables);
 
   useEffect(() => {
     if (altanerId !== altaner?.id) {
@@ -147,7 +160,7 @@ const ProjectLayout = ({ children }) => {
   if (!accountInitialized || !!accountLoading) return <LoadingScreen />;
 
   return (
-    <>
+    <VoiceConversationProvider>
       {/* The ProjectHeader is only for account-related functionality, not for component navigation */}
       <ProjectHeader />
 
@@ -157,11 +170,29 @@ const ProjectLayout = ({ children }) => {
           minHeight: { lg: 1 },
         }}
       >
-        <Main>
-          {children}
-        </Main>
+        <Main>{children}</Main>
       </Box>
-    </>
+
+      {/* Fixed Voice Conversation Widget */}
+      {/* <Box
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <VoiceConversation
+          altanAgentId="60118b1a-8072-4149-ad36-7c7508135e6f"
+          displayAvatar={false}
+          showLanguageSelector={false}
+          dynamicVariables={dynamicVariables}
+        />
+      </Box> */}
+    </VoiceConversationProvider>
   );
 };
 
