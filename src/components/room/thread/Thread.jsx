@@ -114,7 +114,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
     <>
       {/* Main container with flex layout for proper centering in empty state */}
       <div
-        className="h-full"
+        className="h-full ml-2"
         style={{
           position: 'relative',
           display: 'flex',

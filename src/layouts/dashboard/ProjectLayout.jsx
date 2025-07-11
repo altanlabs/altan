@@ -98,8 +98,6 @@ const ProjectLayout = ({ children }) => {
     return baseVariables;
   }, [interfaceId, altaner?.room_id, altanerId]);
 
-  console.log('dynamicVariables', dynamicVariables);
-
   useEffect(() => {
     if (altanerId !== altaner?.id) {
       dispatch(getAltanerById(altanerId));

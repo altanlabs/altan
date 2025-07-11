@@ -5,19 +5,9 @@ import { useHistory } from 'react-router-dom';
 
 import CustomDialog from '../../../../components/dialogs/CustomDialog';
 import { optimai } from '../../../../utils/axios';
-// import { selectAccountSubscriptions } from '../../../../redux/slices/general';
 
 function PublishDialog({ open, onClose, interfaceId, name, deploymentUrl }) {
-  const history = useHistory();;
-  // const activeSubscriptions = useSelector(selectAccountSubscriptions);
-
-  // Check if user has any active paid subscription
-  // const hasActivePaidSubscription = useMemo(() => {
-  //   return activeSubscriptions?.some(
-  //     (sub) => sub.status === 'active' && sub.billing_option?.plan?.name.toLowerCase() !== 'free',
-  //   );
-  // }, [activeSubscriptions]);
-
+  const history = useHistory();
   const hasActivePaidSubscription = true;
 
   const [message, setMessage] = useState('New version');
@@ -57,7 +47,6 @@ function PublishDialog({ open, onClose, interfaceId, name, deploymentUrl }) {
   const handleSecretCodeSubmit = () => {
     if (secretCode === 'ALTAN4EVER') {
       setShowCodeInput(false);
-      // Clear the code and continue with publish flow
       setSecretCode('');
     } else {
       setError('Invalid code');

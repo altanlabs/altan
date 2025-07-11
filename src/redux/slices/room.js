@@ -1539,9 +1539,10 @@ export const patchThread =
 
 export const archiveMainThread =
   ({ threadId }) =>
-  async () => {
+  async (dispatch) => {
     try {
       await optimai_room.post(`/thread/${threadId}/archive-main`, {});
+      dispatch(slice.actions.setMessagesIds([]));
       return Promise.resolve('success');
     } catch (e) {
       console.error(`error refreshing conversation: ${e.message}`);

@@ -89,12 +89,11 @@ const PreviewOverlay = styled(Box)(({ theme }) => ({
 }));
 
 const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId }) => {
-  console.log(versions);
   const [dispatchWithFeedback] = useFeedbackDispatch();
   const dispatch = useDispatch();
 
   if (!open) return null;
-  
+
   const sortedVersions = [...(versions?.items || [])].sort(
     (a, b) => new Date(b.date_creation) - new Date(a.date_creation),
   );
@@ -204,7 +203,10 @@ const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId 
                       {hasPreview && (
                         <PreviewContainer>
                           <img
-                            src={version.deployment?.cover_url || version.build_metadata?.meta_data?.cover_url}
+                            src={
+                              version.deployment?.cover_url ||
+                              version.build_metadata?.meta_data?.cover_url
+                            }
                             alt={`Preview of version ${version.version_string}`}
                             style={{
                               width: '100%',

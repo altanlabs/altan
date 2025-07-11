@@ -86,17 +86,11 @@ const fetchAltanerData = async (id, setFlowsCallback) => {
   try {
     // Fetch data from the API
     const response = await optimai.get(`/altaner/${id}/flows`);
-
-    // Assuming optimai.get returns the data directly or an object with a data property
-    // Adjust this based on the actual structure of the response object
-    const data = response.data || response; // Example: adjust as needed
-
-    console.log('Altaner data fetched:', data);
+    const data = response.data || response;
     if (data?.flows && Array.isArray(data.flows)) {
       setFlowsCallback(data.flows);
     } else {
-      console.error('Failed to fetch or parse altaner flows. Response data:', data);
-      setFlowsCallback([]); // Set empty if flows are not found or not an array
+      setFlowsCallback([]);
     }
   } catch (error) {
     console.error('Error fetching altaner data:', error);
@@ -243,7 +237,6 @@ const AttachmentHandler = ({
 
       // Insert URLs into editor
       if (editorRef?.current?.insertText) {
-        console.log('Inserting markdown:', markdownUrls);
         editorRef.current.insertText(markdownUrls);
       }
       handleMenuClose();
