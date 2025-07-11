@@ -1,14 +1,12 @@
 import { createSelector } from '@reduxjs/toolkit';
 import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import RoomDetailsSection from './RoomDetailsSection.jsx';
 import ThreadMessages from './ThreadMessages.jsx';
 import useResponsive from '../../../hooks/useResponsive';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
-import { selectGate } from '../../../redux/slices/gate';
 import {
   fetchThread,
   makeSelectThread,
@@ -41,7 +39,6 @@ const makeSelectThreadById = () =>
   );
 
 const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = false }) => {
-  const { gateId } = useParams();
   const history = useHistory();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
@@ -55,7 +52,6 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
     threadSelector(state, mode === 'drawer' ? drawer.current : tId),
   );
   const threadId = thread?.id;
-  const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -101,10 +97,6 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
       };
     }
   }, [isOpen, threadId]);
-
-  const helmetName = thread?.is_main
-    ? room?.name || 'Room'
-    : `${thread?.name || 'Thread'} | ${room?.name || 'Room'}`;
 
   // Get message IDs to check if the thread has messages
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
@@ -165,7 +157,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
           {!hideInput &&
             (isMobile ? (
               <div
-                className="absolute bottom-0 left-0 right-0"
+                className="fixed bottom-0 left-0 right-0"
                 style={{
                   zIndex: 1000,
                   transform: 'translate3d(0, 0, 0)',

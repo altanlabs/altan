@@ -10,10 +10,10 @@ import {
   makeHasUnreadMessages,
   makeSelectThreadAttribute,
   makeSelectThreadName,
-  setDrawerOpen,
-  setThreadMain,
   patchThread,
   deleteThread,
+  setDrawerOpen,
+  switchToThreadInTab,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import { formatRelativeTime } from '../../../utils/dateUtils.js';
@@ -24,7 +24,7 @@ const variants = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const ThreadMinified = ({ threadId, message = null, disableConnector = false }) => {
+const ThreadMinified = ({ threadId, message = null, disableConnector = false, onSelect = null }) => {
   const selectors = useMemo(
     () => ({
       unreadMessages: makeHasUnreadMessages(),
@@ -54,13 +54,20 @@ const ThreadMinified = ({ threadId, message = null, disableConnector = false }) 
 
   const handleSelectThread = useCallback(() => {
     if (isEditing || isDeleting) return; // Don't select thread when editing or deleting
-    batch(() => {
-      dispatch(setThreadMain({ current: threadId }));
-      if (!!isSmallScreen) {
-        dispatch(setDrawerOpen(false));
-      }
-    });
-  }, [isSmallScreen, threadId, isEditing, isDeleting]);
+
+    if (onSelect) {
+      // If onSelect is provided, use it (for external contexts like popover)
+      onSelect(threadId);
+    } else {
+      // Default behavior for internal usage
+      batch(() => {
+        dispatch(switchToThreadInTab(threadId));
+        if (!!isSmallScreen) {
+          dispatch(setDrawerOpen(false));
+        }
+      });
+    }
+  }, [isSmallScreen, threadId, isEditing, isDeleting, onSelect]);
 
   const longPressTimeoutRef = useRef(null);
 
@@ -135,14 +142,6 @@ const ThreadMinified = ({ threadId, message = null, disableConnector = false }) 
       }
     },
     [handleSaveEdit, handleCancelEdit],
-  );
-
-  const handleShareThread = useCallback(
-    (event) => {
-      event.stopPropagation();
-      console.log('Share thread:', threadId);
-    },
-    [threadId],
   );
 
   const handleDeleteThread = useCallback((event) => {

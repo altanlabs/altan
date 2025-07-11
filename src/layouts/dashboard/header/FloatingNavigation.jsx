@@ -22,7 +22,7 @@ const FloatingNavigation = () => {
       icon: (
         <Iconify
           icon="material-symbols:home"
-          className="w-[18px] h-[18px]"
+          className="w-[12px] h-[12px]"
         />
       ),
     },
@@ -32,7 +32,7 @@ const FloatingNavigation = () => {
       icon: (
         <Iconify
           icon="fluent:bot-sparkle-20-filled"
-          className="w-[18px] h-[18px]"
+          className="w-[12px] h-[12px]"
         />
       ),
     },
@@ -42,7 +42,7 @@ const FloatingNavigation = () => {
       icon: (
         <Iconify
           icon="fluent:flash-flow-24-filled"
-          className="w-[18px] h-[18px]"
+          className="w-[12px] h-[12px]"
         />
       ),
     },
@@ -54,7 +54,7 @@ const FloatingNavigation = () => {
           icon: (
             <Iconify
               icon="material-symbols:monitoring"
-              className="w-[18px] h-[18px]"
+              className="w-[12px] h-[12px]"
             />
           ),
         }
@@ -64,7 +64,7 @@ const FloatingNavigation = () => {
           icon: (
             <Iconify
               icon="material-symbols:payments"
-              className="w-[18px] h-[18px]"
+              className="w-[12px] h-[12px]"
             />
           ),
         },
@@ -105,13 +105,13 @@ const FloatingNavigation = () => {
     if (isDesktop) {
       // Desktop styles (original floating design)
       let baseStyles =
-        'group relative flex items-center justify-center h-10 w-12 leading-none transition-colors duration-100 ease-out my-1.5';
+        'group relative flex items-center justify-center h-8 w-10 leading-none transition-colors duration-100 ease-out my-1';
 
       // Add margins
       if (isLast) {
-        baseStyles += ' ml-1.5 mr-1.5';
+        baseStyles += ' ml-1 mr-1';
       } else {
-        baseStyles += ' ml-1.5';
+        baseStyles += ' ml-1';
       }
 
       // Add text color based on theme and active state
@@ -131,7 +131,7 @@ const FloatingNavigation = () => {
     } else {
       // Mobile styles (tab design)
       let baseStyles =
-        'group relative flex flex-col items-center justify-center h-16 flex-1 transition-colors duration-100 ease-out';
+        'group relative flex flex-col items-center justify-center h-14 flex-1 transition-colors duration-100 ease-out';
 
       // Add text color based on theme and active state
       if (isActive) {
@@ -217,7 +217,7 @@ const FloatingNavigation = () => {
                 {isDesktop && (
                   <span
                     role="tooltip"
-                    className={`pointer-events-none absolute top-12 left-1/2 z-10 block origin-top -translate-x-1/2 scale-90 rounded-lg px-1.5 py-1 text-xs leading-none font-medium opacity-0 transition-all duration-75 ease-out group-hover:scale-100 group-hover:opacity-100 whitespace-nowrap ${
+                    className={`pointer-events-none absolute top-12 left-1/2 z-10 block origin-top -translate-x-1/2 scale-90 rounded-lg text-xs leading-none font-medium opacity-0 transition-all duration-75 ease-out group-hover:scale-100 group-hover:opacity-100 whitespace-nowrap ${
                       theme.palette.mode === 'dark'
                         ? 'bg-gray-700 text-white'
                         : 'bg-gray-100 text-gray-900'

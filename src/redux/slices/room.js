@@ -126,6 +126,13 @@ const initialState = {
     },
     respond: {},
   },
+  // Add tab state management
+  tabs: {
+    byId: {},
+    allIds: [],
+    activeTabId: null,
+    nextTabId: 1,
+  },
   drawerOpen: false,
   drawerOpenJob: false,
   drawerExpanded: false,
@@ -451,6 +458,13 @@ const slice = createSlice({
         delete tempThread.messages.byId;
         delete tempThread.messages.allIds;
         state.threads.byId[thread.id] = tempThread;
+
+        // Update corresponding tab name if it exists
+        const tabWithThisThread = Object.values(state.tabs.byId).find(tab => tab.threadId === thread.id);
+        if (tabWithThisThread && thread.name) {
+          tabWithThisThread.name = thread.name;
+        }
+
         if (tempThread.is_main) {
           state.thread.main.current = state.mainThread = thread.id;
         }
@@ -515,6 +529,14 @@ const slice = createSlice({
           Object.keys(changes).forEach((key) => {
             thread[key] = changes[key];
           });
+
+          // Update corresponding tab name if the thread name changed
+          if (changes.name) {
+            const tabWithThisThread = Object.values(state.tabs.byId).find(tab => tab.threadId === id);
+            if (tabWithThisThread) {
+              tabWithThisThread.name = changes.name;
+            }
+          }
         } else {
           console.warn(`Thread with id '${id}' not found.`);
         }
@@ -737,6 +759,165 @@ const slice = createSlice({
         }
       });
     },
+    // Add tab management actions
+    createTab: (state, action) => {
+      const { threadId, threadName, isMainThread = false } = action.payload;
+      const tabId = `tab-${state.tabs.nextTabId}`;
+
+      state.tabs.byId[tabId] = {
+        id: tabId,
+        threadId,
+        name: threadName || (isMainThread ? 'Main' : 'New Thread'),
+        isMainThread,
+        isActive: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      state.tabs.allIds.push(tabId);
+      state.tabs.nextTabId += 1;
+
+      // If this is the first tab or no active tab, make it active
+      if (!state.tabs.activeTabId) {
+        state.tabs.activeTabId = tabId;
+        state.tabs.byId[tabId].isActive = true;
+        state.thread.main.current = threadId;
+      }
+    },
+    switchTab: (state, action) => {
+      const { tabId } = action.payload;
+
+      if (!state.tabs.byId[tabId]) {
+        console.warn(`Tab with id '${tabId}' not found.`);
+        return;
+      }
+
+      // Deactivate current active tab
+      if (state.tabs.activeTabId && state.tabs.byId[state.tabs.activeTabId]) {
+        state.tabs.byId[state.tabs.activeTabId].isActive = false;
+      }
+
+      // Activate new tab
+      state.tabs.activeTabId = tabId;
+      state.tabs.byId[tabId].isActive = true;
+
+      // Update the main thread to match the tab's thread
+      state.thread.main.current = state.tabs.byId[tabId].threadId;
+    },
+    closeTab: (state, action) => {
+      const { tabId } = action.payload;
+
+      if (!state.tabs.byId[tabId]) {
+        console.warn(`Tab with id '${tabId}' not found.`);
+        return;
+      }
+
+      const wasActive = state.tabs.byId[tabId].isActive;
+
+      // Remove tab
+      delete state.tabs.byId[tabId];
+      state.tabs.allIds = state.tabs.allIds.filter(id => id !== tabId);
+
+      // If this was the active tab, we need to switch to another tab
+      if (wasActive) {
+        if (state.tabs.allIds.length > 0) {
+          // Switch to the last remaining tab
+          const newActiveTabId = state.tabs.allIds[state.tabs.allIds.length - 1];
+          state.tabs.activeTabId = newActiveTabId;
+          state.tabs.byId[newActiveTabId].isActive = true;
+          state.thread.main.current = state.tabs.byId[newActiveTabId].threadId;
+        } else {
+          // No tabs left
+          state.tabs.activeTabId = null;
+          state.thread.main.current = null;
+        }
+      }
+    },
+    updateTab: (state, action) => {
+      const { tabId, changes } = action.payload;
+
+      if (!state.tabs.byId[tabId]) {
+        console.warn(`Tab with id '${tabId}' not found.`);
+        return;
+      }
+
+      Object.keys(changes).forEach((key) => {
+        state.tabs.byId[tabId][key] = changes[key];
+      });
+    },
+    clearTabs: (state) => {
+      state.tabs = {
+        byId: {},
+        allIds: [],
+        activeTabId: null,
+        nextTabId: 1,
+      };
+    },
+    loadTabs: (state, action) => {
+      const { tabs } = action.payload;
+      if (tabs && typeof tabs === 'object') {
+        state.tabs = {
+          byId: tabs.byId || {},
+          allIds: tabs.allIds || [],
+          activeTabId: tabs.activeTabId || null,
+          nextTabId: tabs.nextTabId || 1,
+        };
+
+        // Update current thread to match active tab
+        if (state.tabs.activeTabId && state.tabs.byId[state.tabs.activeTabId]) {
+          state.thread.main.current = state.tabs.byId[state.tabs.activeTabId].threadId;
+        }
+      }
+    },
+    switchToThread: (state, action) => {
+      const { threadId, threadName } = action.payload;
+
+      if (!threadId) {
+        console.warn('No threadId provided for switchToThread');
+        return;
+      }
+
+      // Find if there's already a tab for this thread
+      const existingTab = Object.values(state.tabs.byId).find(tab => tab.threadId === threadId);
+
+      if (existingTab) {
+        // Switch to existing tab
+        if (state.tabs.activeTabId && state.tabs.byId[state.tabs.activeTabId]) {
+          state.tabs.byId[state.tabs.activeTabId].isActive = false;
+        }
+
+        state.tabs.activeTabId = existingTab.id;
+        state.tabs.byId[existingTab.id].isActive = true;
+        state.thread.main.current = threadId;
+      } else {
+        // Create new tab for this thread
+        const tabId = `tab-${state.tabs.nextTabId}`;
+
+        // Determine if this is the main thread
+        const isMainThread = threadId === state.mainThread;
+
+        state.tabs.byId[tabId] = {
+          id: tabId,
+          threadId,
+          name: threadName || (isMainThread ? 'Main' : 'Thread'),
+          isMainThread,
+          isActive: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        state.tabs.allIds.push(tabId);
+        state.tabs.nextTabId += 1;
+
+        // Deactivate current tab
+        if (state.tabs.activeTabId && state.tabs.byId[state.tabs.activeTabId]) {
+          state.tabs.byId[state.tabs.activeTabId].isActive = false;
+        }
+
+        // Activate new tab
+        state.tabs.activeTabId = tabId;
+        state.tabs.byId[tabId].isActive = true;
+        state.thread.main.current = threadId;
+      }
+    },
   },
 });
 
@@ -788,6 +969,14 @@ export const {
   setSearchRoomsQuery,
   setSearchRoomsLoading,
   setSearchRoomsResults,
+  // Add tab management actions
+  createTab,
+  switchTab,
+  closeTab,
+  updateTab,
+  clearTabs,
+  loadTabs,
+  switchToThread,
 } = slice.actions;
 
 // SELECTORS
@@ -1181,6 +1370,36 @@ export const makeSelectThreadAttribute = () =>
   createSelector(
     [makeSelectThread(), (state, threadId, attribute) => attribute],
     (thread, attribute) => thread?.[attribute],
+  );
+
+// Add tab selectors
+export const selectTabs = (state) => selectRoomState(state).tabs;
+
+export const selectTabsById = (state) => selectTabs(state).byId;
+
+export const selectTabsAllIds = (state) => selectTabs(state).allIds;
+
+export const selectActiveTabId = (state) => selectTabs(state).activeTabId;
+
+export const selectActiveTab = createSelector(
+  [selectTabsById, selectActiveTabId],
+  (tabsById, activeTabId) => (activeTabId ? tabsById[activeTabId] : null),
+);
+
+export const selectTabsCount = createSelector(
+  [selectTabsAllIds],
+  (allIds) => allIds.length,
+);
+
+export const selectTabsArray = createSelector(
+  [selectTabsById, selectTabsAllIds],
+  (tabsById, allIds) => allIds.map(id => tabsById[id]),
+);
+
+export const makeSelectTabById = () =>
+  createSelector(
+    [selectTabsById, (state, tabId) => tabId],
+    (tabsById, tabId) => tabsById[tabId],
   );
 
 // ACTIONS
@@ -1599,14 +1818,29 @@ export const createThread =
         { name: drawer?.threadName || content },
       );
       const { thread } = response.data;
-      dispatch(
-        slice.actions.setThreadDrawer({
-          current: thread.id,
-          threadName: null,
-          isCreation: false,
-          messageId: null,
-        }),
-      );
+
+      // Check if tabs are enabled
+      const state = getState();
+      const tabsEnabled = state.room.tabs.allIds.length > 0;
+
+      if (tabsEnabled) {
+        // Create a tab for the new thread and switch to it
+        dispatch(switchToThread({
+          threadId: thread.id,
+          threadName: thread.name || drawer?.threadName || 'New Thread',
+        }));
+      } else {
+        // Fallback to traditional drawer system
+        dispatch(
+          slice.actions.setThreadDrawer({
+            current: thread.id,
+            threadName: null,
+            isCreation: false,
+            messageId: null,
+          }),
+        );
+      }
+
       dispatch(
         sendMessage({
           threadId: thread.id,
@@ -2034,3 +2268,43 @@ export const updateMessage =
   };
 
 export const selectDrawerExpanded = (state) => state.drawerExpanded;
+
+// Helper action creator for tab-aware thread switching
+export const switchToThreadInTab = (threadId, threadName) => (dispatch, getState) => {
+  const state = getState();
+  const tabsEnabled = state.room.tabs.allIds.length > 0;
+
+  if (tabsEnabled) {
+    // Use tab-aware switching
+    dispatch(switchToThread({ threadId, threadName }));
+  } else {
+    // Fallback to traditional switching
+    dispatch(setThreadMain({ current: threadId }));
+  }
+};
+
+export const createNewThread = () => async (dispatch, getState) => {
+  try {
+    const { room } = getState().room;
+
+    // Create a new thread without a predefined name
+    // The thread will get its name from the first message content
+    const response = await optimai_room.post(`/${room.id}/thread`, { name: 'New Thread' });
+    const { thread } = response.data;
+
+    // Add the thread to the state
+    dispatch(addThread(thread));
+
+    // Create a tab for the new thread and switch to it
+    // Use a temporary name that will be updated when the first message is sent
+    dispatch(switchToThread({
+      threadId: thread.id,
+      threadName: thread.name || 'New Thread',
+    }));
+
+    return Promise.resolve(thread.id);
+  } catch (e) {
+    console.error('Failed to create new thread:', e);
+    return Promise.reject(e.message);
+  }
+};

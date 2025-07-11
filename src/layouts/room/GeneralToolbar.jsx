@@ -1,58 +1,48 @@
-import { IconButton, Tooltip } from '@mui/material';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 import { cn } from '@lib/utils';
 
-import ThreadToolbar from './ThreadToolbar.jsx';
-import Iconify from '../../components/iconify/Iconify.jsx';
+import { TabBar } from '../../components/tabs';
+import { useTabPersistence } from '../../hooks/useTabPersistence';
 import {
-  archiveMainThread,
-  makeSelectSortedThreadMessageIds,
-  selectCurrentThread,
-  selectMessagesIds,
+  selectTabsCount,
+  selectMainThread,
+  createTab,
 } from '../../redux/slices/room';
-import { dispatch, useSelector } from '../../redux/store.js';
-
-const handleRefreshConversation = (threadId) => dispatch(archiveMainThread({ threadId }));
+import { dispatch } from '../../redux/store.js';
 
 const GeneralToolbar = ({ className }) => {
-  const currentThread = useSelector(selectCurrentThread);
-  const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
-  const messageIds = useSelector((state) => messagesIdsSelector(state, currentThread?.id));
-  const hasMessages = messageIds && messageIds.length > 0;
-  console.log('hasMessages', hasMessages);
-  const enableRefresh = currentThread?.is_main && hasMessages;
-  const onRefreshConversation = useCallback(
-    () => handleRefreshConversation(currentThread?.id),
-    [currentThread?.id],
-  );
+  const mainThread = useSelector(selectMainThread);
+  const tabsCount = useSelector(selectTabsCount);
+
+  // Initialize tab persistence
+  useTabPersistence();
+
+  // Initialize tabs when room loads
+  useEffect(() => {
+    if (mainThread && tabsCount === 0) {
+      // Create initial tab for main thread
+      dispatch(createTab({
+        threadId: mainThread,
+        threadName: 'Main',
+        isMainThread: true,
+      }));
+    }
+  }, [mainThread, tabsCount]);
+
   return (
     <div
       className={cn(
-        'relative left-0 right-0 z-10 top-0 flex flex-row items-center justify-start p-1.5 px-4 pb-1.5 space-x-1 transition transition-all duration-500 backdrop-blur-md bg-[#FFFFFF]/95 dark:bg-[#121212]/95',
+        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md bg-[#FFFFFF]/95 dark:bg-[#121212]/95',
         className,
       )}
     >
-      {!!enableRefresh && (
-        <Tooltip
-          title="New conversation"
-          placement="right"
-          arrow
-        >
-          <IconButton
-            size="small"
-            onClick={onRefreshConversation}
-          >
-            <Iconify
-              width={20}
-              icon="solar:pen-new-square-linear"
-            />
-          </IconButton>
-        </Tooltip>
-      )}
+      {/* Tab Bar */}
+      <TabBar />
 
-      <ThreadToolbar />
-      <div style={{ flexGrow: 1 }}></div>
+      {/* Additional toolbar content can be added here if needed */}
+      <div style={{ flexGrow: 1 }} />
     </div>
   );
 };
