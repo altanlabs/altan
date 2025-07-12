@@ -81,8 +81,12 @@ function Header() {
           sx={{
             zIndex: 5,
             height: HEADER.H_MOBILE,
-            px: { lg: 5 },
-            pl: { lg: 3 },
+
+            '&.MuiToolbar-root': {
+              padding: '4px !important',
+              paddingLeft: '4px !important',
+              paddingRight: '4px !important',
+            },
           }}
         >
           <Stack

@@ -1,18 +1,11 @@
 import { IconButton, Tooltip } from '@mui/material';
 import { memo, useCallback } from 'react';
 
-import { cn } from '@lib/utils';
-
 import { createNewThread } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
 
-const NewTabButton = ({
-  onNewTab,
-  disabled = false,
-  size = 'small',
-  variant = 'outlined',
-}) => {
+const NewTabButton = ({ onNewTab, disabled = false, size = 'small', variant = 'outlined' }) => {
   const handleNewTab = useCallback(async () => {
     if (disabled) return;
 
@@ -37,6 +30,7 @@ const NewTabButton = ({
         size={size}
         onClick={handleNewTab}
         disabled={disabled}
+        color="inherit"
       >
         <Iconify
           icon="solar:pen-new-square-linear"

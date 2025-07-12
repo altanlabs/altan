@@ -1,12 +1,13 @@
 import { createSelector } from '@reduxjs/toolkit';
 import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { useHistory, useParams } from 'react-router-dom';
 
-import RoomDetailsSection from './RoomDetailsSection.jsx';
 import ThreadMessages from './ThreadMessages.jsx';
 import useResponsive from '../../../hooks/useResponsive';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
+import { selectGate } from '../../../redux/slices/gate';
 import {
   fetchThread,
   makeSelectThread,
@@ -39,6 +40,7 @@ const makeSelectThreadById = () =>
   );
 
 const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = false }) => {
+  const { gateId } = useParams();
   const history = useHistory();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
@@ -52,6 +54,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
     threadSelector(state, mode === 'drawer' ? drawer.current : tId),
   );
   const threadId = thread?.id;
+  const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -98,15 +101,25 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
     }
   }, [isOpen, threadId]);
 
+  const helmetName = thread?.is_main
+    ? room?.name || 'Room'
+    : `${thread?.name || 'Thread'} | ${room?.name || 'Room'}`;
+
   // Get message IDs to check if the thread has messages
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
   const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
   const hasMessages = messageIds && messageIds.length > 0;
   return (
     <>
+      <Helmet>
+        <title>
+          {helmetName} |{' '}
+          {gateId && !!gate?.account?.company?.name ? gate?.account?.company?.name : 'Altan'}
+        </title>
+      </Helmet>
       {/* Main container with flex layout for proper centering in empty state */}
       <div
-        className="h-full ml-2"
+        className="h-full"
         style={{
           position: 'relative',
           display: 'flex',
@@ -126,7 +139,9 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
             overflowY: 'auto',
             position: 'relative',
             width: '100%',
-            paddingBottom: isMobile && !hideInput ? '100px' : '0px',
+            // Add bottom padding for mobile to account for floating text area
+            paddingBottom: isMobile && hideInput ? '120px' : '0px',
+            // Only hide if we're certain there are no messages AND not in drawer mode
             ...(!hasMessages && mode !== 'drawer' ? { display: 'none' } : {}),
           }}
           className="no-scrollbar"
@@ -147,49 +162,24 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
             ...(mode === 'drawer' ? { marginTop: 'auto' } : {}),
           }}
         >
-          {!hasMessages && mode !== 'drawer' && (
-            <div className="text-center mb-8 flex-shrink-0">
-              <h1 className="text-3xl font-normal text-gray-800 dark:text-gray-200">
-                {room?.meta_data?.title || 'How can I help?'}
-              </h1>
-            </div>
-          )}
-          {!hideInput &&
-            (isMobile ? (
-              <div
-                className="fixed bottom-0 left-0 right-0"
-                style={{
-                  zIndex: 1000,
-                  transform: 'translate3d(0, 0, 0)',
-                  WebkitTransform: 'translate3d(0, 0, 0)',
-                }}
-              >
-                <FloatingTextArea
-                  threadId={threadId}
-                  messageId={isCreation ? messageId || 'orphan_thread' : null}
-                  containerRef={containerRef}
-                  roomId={room?.id}
-                  mode="mobile"
-                />
+          <div className="absolute bottom-0 left-0 right-0 flex items-center flex-col overflow-hidden z-0 transition-all duration-300 px-2 py-2">
+            {!hasMessages && mode !== 'drawer' && (
+              <div className="text-center mb-8 flex-shrink-0">
+                <h1 className="text-3xl font-normal text-gray-800 dark:text-gray-200">
+                  {room?.meta_data?.title || 'How can I help?'}
+                </h1>
               </div>
-            ) : (
-              <div className="flex justify-center w-full max-w-4xl mx-auto mb-2">
-                <div className="w-full">
-                  <FloatingTextArea
-                    threadId={threadId}
-                    messageId={isCreation ? messageId || 'orphan_thread' : null}
-                    containerRef={containerRef}
-                    roomId={room?.id}
-                    mode="standard"
-                  />
-                </div>
-              </div>
-            ))}
-          {!hideInput && !hasMessages && mode !== 'drawer' && (
-            <div className="w-full max-w-4xl mx-auto px-4">
-              <RoomDetailsSection room={room} />
-            </div>
-          )}
+            )}
+            {!hideInput && (
+              <FloatingTextArea
+                threadId={threadId}
+                messageId={isCreation ? messageId || 'orphan_thread' : null}
+                containerRef={containerRef}
+                roomId={room?.id}
+                mode="standard"
+              />
+            )}
+          </div>
         </div>
       </div>
     </>

@@ -239,10 +239,10 @@ const FloatingTextArea = ({
             }}
           /> */}
           <div
-            className={`relative flex w-full flex-col gap-2 transition-colors duration-200 ${
+            className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
-                ? 'max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
-                : 'w-full pb-3 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
+                ? 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
+                : 'w-full max-w-[700px] mx-auto pb-3 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
             }`}
             style={
               mode === 'mobile'
