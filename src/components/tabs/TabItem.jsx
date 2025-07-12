@@ -1,4 +1,5 @@
 import { IconButton, Tooltip } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import { memo, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
@@ -17,6 +18,7 @@ const TabItem = ({
   maxWidth = 200,
   canClose = true,
 }) => {
+  const theme = useTheme();
   // Use the thread name selector to get the real-time thread name
   const threadNameSelector = useMemo(makeSelectThreadName, []);
   const actualThreadName = useSelector((state) => threadNameSelector(state, tab.threadId));
@@ -61,11 +63,7 @@ const TabItem = ({
   return (
     <div
       className={cn(
-        'relative flex items-center gap-1 px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none',
-        isActive
-          ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-          : 'bg-transparent text-gray-500 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800',
-        'rounded-md',
+        'relative flex items-center gap-1 px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none rounded-md',
         className,
       )}
       onClick={handleClick}
@@ -79,7 +77,28 @@ const TabItem = ({
           handleClick(e);
         }
       }}
-      style={{ maxWidth }}
+      style={{
+        maxWidth,
+        backgroundColor: isActive
+          ? alpha(theme.palette.grey[500], 0.08)
+          : 'transparent',
+        color: isActive
+          ? theme.palette.text.primary
+          : theme.palette.text.secondary,
+        '&:hover': {
+          backgroundColor: alpha(theme.palette.grey[500], 0.08),
+        },
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          e.target.style.backgroundColor = 'transparent';
+        }
+      }}
     >
       {/* Tab Name */}
       <span
@@ -88,6 +107,11 @@ const TabItem = ({
           isActive ? 'font-semibold' : 'font-normal',
         )}
         title={displayName}
+        style={{
+          color: isActive
+            ? theme.palette.text.primary
+            : theme.palette.text.secondary,
+        }}
       >
         {displayName}
       </span>
@@ -106,17 +130,22 @@ const TabItem = ({
               size="small"
               onClick={handleClose}
               onKeyDown={handleCloseKeyDown}
-              className="!p-0.5 !min-w-0 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="!p-0.5 !min-w-0"
               sx={{
                 '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  backgroundColor: alpha(theme.palette.grey[500], 0.24),
                 },
               }}
             >
               <Iconify
                 icon="solar:close-circle-linear"
                 width={14}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  '&:hover': {
+                    color: theme.palette.text.primary,
+                  },
+                }}
               />
             </IconButton>
           </Tooltip>

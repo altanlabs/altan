@@ -1,3 +1,4 @@
+import { useTheme, alpha } from '@mui/material/styles';
 import { useState, memo } from 'react';
 import { useHistory } from 'react-router-dom';
 
@@ -29,6 +30,7 @@ const trackCreateProject = (projectData) => {
 };
 
 function CreateAnything({ handleVoice }) {
+  const theme = useTheme();
   const history = useHistory();
   const { isAuthenticated } = useAuthContext();
   const [inputValue, setInputValue] = useState('');
@@ -227,7 +229,22 @@ function CreateAnything({ handleVoice }) {
                     <button
                       key={category.id}
                       onClick={() => handleCategoryClick(category.id)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                      style={{
+                        backgroundColor: alpha(theme.palette.grey[500], 0.08),
+                        color: theme.palette.text.primary,
+                        border: 'none',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.grey[500], 0.16),
+                        },
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.16);
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
+                      }}
                     >
                       {category.name}
                     </button>
