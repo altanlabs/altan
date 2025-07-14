@@ -111,10 +111,8 @@ const FloatingTextArea = ({
     setJoinError(null);
     try {
       const response = await optimai_room.get(`/${roomId}/join`);
-      if (response.status === 200 || response.status === 201) {
-        // TODO: fix this to not reload the page
-        window.location.reload();
-      } else {
+      // If the response indicates failure, throw an error
+      if (!response?.data?.success) {
         throw new Error('You must be part of the workspace!');
       }
     } catch (error) {

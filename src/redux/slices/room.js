@@ -543,9 +543,16 @@ const slice = createSlice({
       });
     },
     addMember: (state, action) => {
-      const roomMember = action.payload;
+      const { roomMember, currentUserId } = action.payload;
       state.members.byId[roomMember.id] = roomMember;
       state.members.allIds.push(roomMember.id);
+
+      // Update the me state if the member being added is the current user
+      console.log('addMember: currentUserId:', currentUserId, 'roomMember.member.user.id:', roomMember.member?.user?.id);
+      if (currentUserId && roomMember.member?.user?.id === currentUserId) {
+        console.log('addMember: Updating me state for current user');
+        state.me = roomMember;
+      }
     },
     roomMemberUpdate: (state, action) => {
       const { ids, changes } = action.payload;

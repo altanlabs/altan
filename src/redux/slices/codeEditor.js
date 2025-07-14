@@ -380,6 +380,9 @@ export const saveFile = (interfaceId, path, content) => async (dispatch) => {
         file_name: path,
         content: content,
       });
+      await optimai.post(`/interfaces/dev/${interfaceId}/repo/commit`, {
+        message: `Edited file ${path}`,
+      });
       dispatch(markFileSaved(path));
     } else {
       throw new Error('Cannot save binary files');

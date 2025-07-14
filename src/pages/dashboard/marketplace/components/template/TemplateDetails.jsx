@@ -6,6 +6,7 @@ import EmptyContent from '../../../../../components/empty-content';
 import Iconify from '../../../../../components/iconify';
 import { selectAccount } from '../../../../../redux/slices/general';
 import { optimai_shop } from '../../../../../utils/axios';
+import { Stack } from '@mui/material';
 
 const formatPrice = (priceInCents) => {
   if (!priceInCents && priceInCents !== 0) return 'Price not available';
@@ -253,34 +254,51 @@ const TemplateDetails = ({ templateId = null }) => {
           </div>
         </div>
 
-        <button
-          onClick={handleTemplateAction}
-          disabled={loading || isClonabilityLoading}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded transition-colors flex items-center"
+        <Stack
+          direction="row"
+          spacing={1}
         >
-          {isClonabilityLoading ? (
-            <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-white mr-1"></div>
-          ) : (
-            <Iconify
-              icon={
-                canClone
-                  ? 'eva:copy-outline'
-                  : template?.price === 0
-                    ? 'eva:download-outline'
-                    : 'eva:shopping-cart-fill'
-              }
-              width={14}
-              className="mr-1"
-            />
+          {template?.preview_url && (
+            <button
+              type="button"
+              onClick={handleOpenPreviewInNewTab}
+              className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full shadow-lg transition-colors"
+              title="Open in new tab"
+            >
+              <Iconify
+                icon="mdi:open-in-new"
+                width={20}
+              />
+            </button>
           )}
-          {canClone ? 'Clone' : template?.price === 0 ? 'Get Free' : 'Buy'}
-        </button>
+
+          <button
+            onClick={handleTemplateAction}
+            disabled={loading || isClonabilityLoading}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded transition-colors flex items-center"
+          >
+            {isClonabilityLoading ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-white mr-1"></div>
+            ) : (
+              <Iconify
+                icon={
+                  canClone
+                    ? 'eva:copy-outline'
+                    : template?.price === 0
+                      ? 'eva:download-outline'
+                      : 'eva:shopping-cart-fill'
+                }
+                width={14}
+                className="mr-1"
+              />
+            )}
+            {canClone ? 'Clone' : template?.price === 0 ? 'Get Free' : 'Buy'}
+          </button>
+        </Stack>
       </header>
 
       {/* Preview section that takes remaining space */}
-      <div
-        className="p-2 flex-1 min-h-0"
-      >
+      <div className="p-2 flex-1 min-h-0">
         <div className="relative w-full h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg">
           {template?.preview_url ? (
             <iframe
@@ -305,34 +323,6 @@ const TemplateDetails = ({ templateId = null }) => {
               </p>
             </div>
           )}
-
-          <div className="absolute top-3 right-3 flex space-x-2">
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full shadow-lg transition-colors"
-              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            >
-              <Iconify
-                icon={fullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}
-                width={20}
-              />
-            </button>
-
-            {template?.preview_url && (
-              <button
-                type="button"
-                onClick={handleOpenPreviewInNewTab}
-                className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full shadow-lg transition-colors"
-                title="Open in new tab"
-              >
-                <Iconify
-                  icon="mdi:open-in-new"
-                  width={20}
-                />
-              </button>
-            )}
-          </div>
         </div>
       </div>
 

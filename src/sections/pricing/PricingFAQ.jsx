@@ -5,7 +5,9 @@ import {
   Typography,
   Box,
   Stack,
+  Button,
 } from '@mui/material';
+
 import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
@@ -30,7 +32,13 @@ const FAQ_DATA = [
     id: 3,
     question: 'What are credits and what do they mean?',
     answer:
-      'Credits are our unified billing unit that simplifies usage across different features. Each credit represents a specific amount of processing power, and different operations consume different amounts of credits based on their complexity and resource requirements.',
+      'Credits are our unified billing unit that simplifies usage across the entire Altan platform. Here are some examples of how credits are consumed:',
+    examples: [
+      '• AI Credits: Used for AI agents and conversations, with consumption varying by LLM model (GPT-4 uses more credits than GPT-3.5)',
+      '• Database Credits: Consumed for database operations like queries, updates, and data processing',
+      '• Task Credits: Used for workflows and automations, with consumption based on payload size and execution time',
+      '• Integration Credits: Used for third-party API calls and data synchronization',
+    ],
   },
   {
     id: 4,
@@ -85,14 +93,48 @@ export default function PricingFAQ() {
                 sx={{
                   color: 'text.secondary',
                   lineHeight: 1.6,
+                  mb: faq.examples || faq.link ? 2 : 0,
                 }}
               >
                 {faq.answer}
               </Typography>
+
+              {faq.examples && (
+                <Box sx={{ mb: faq.link ? 2 : 0 }}>
+                  {faq.examples.map((example, idx) => (
+                    <Typography
+                      key={idx}
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        lineHeight: 1.6,
+                        mb: 0.5,
+                      }}
+                    >
+                      {example}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+
+              {faq.link && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  href={faq.link}
+                  startIcon={<Iconify icon="eva:arrow-forward-fill" />}
+                  sx={{
+                    mt: 1,
+                    textTransform: 'none',
+                  }}
+                >
+                  {faq.linkText}
+                </Button>
+              )}
             </AccordionDetails>
           </Accordion>
         ))}
       </Stack>
     </Box>
   );
-} 
+}

@@ -171,8 +171,6 @@ const TEMPLATE_ACTIONS = {
 
 export const handleWebSocketEvent = async (data, user_id) => {
   // dispatch(addWebSocketEvent(data));
-  // console.log('data', data.type);
-  // console.log('content', data.data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -602,7 +600,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(roomUpdate(data.data));
       break;
     case 'RoomMemberJoined':
-      dispatch(addMember(data.data.attributes));
+      dispatch(addMember({
+        roomMember: data.data.attributes,
+        currentUserId: user_id,
+      }));
       break;
     case 'RoomMemberUpdate':
       dispatch(roomMemberUpdate(data.data));
