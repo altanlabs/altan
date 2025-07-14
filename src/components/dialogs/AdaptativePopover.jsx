@@ -49,7 +49,7 @@ const AdaptivePopover = ({
     }
 
     setPopoverPosition({ vertical, horizontal });
-  }, [anchorEl, defaultSize, fallbackPosition]);
+  }, [anchorEl, defaultSize.width, defaultSize.height, fallbackPosition.vertical, fallbackPosition.horizontal]);
 
   return (
     <Popover

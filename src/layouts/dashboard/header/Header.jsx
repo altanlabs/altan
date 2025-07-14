@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 // @mui
 import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import ChatDrawer from './ChatDrawer';
@@ -35,14 +35,31 @@ function Header() {
   const history = useHistory();
   const headerVisible = useSelector(selectHeaderVisible);
   const isIOS = isIOSCapacitor();
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
 
-  const handleChatDrawerOpen = () => {
-    setChatDrawerOpen(true);
-  };
+  // Initialize persistent drawer state from localStorage
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(() => {
+    if (!user) return false; // Don't open for unauthenticated users
+    const savedState = localStorage.getItem('chatDrawerOpen');
+    return savedState ? JSON.parse(savedState) : false;
+  });
 
-  const handleChatDrawerClose = () => {
-    setChatDrawerOpen(false);
+  // Update localStorage whenever drawer state changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('chatDrawerOpen', JSON.stringify(chatDrawerOpen));
+    }
+  }, [chatDrawerOpen, user]);
+
+  // Reset drawer state when user changes
+  useEffect(() => {
+    if (!user) {
+      setChatDrawerOpen(false);
+      localStorage.removeItem('chatDrawerOpen');
+    }
+  }, [user]);
+
+  const handleChatDrawerToggle = () => {
+    setChatDrawerOpen(!chatDrawerOpen);
   };
 
   if (!headerVisible) {
@@ -96,15 +113,14 @@ function Header() {
           >
             {user && (
               <IconButton
-                onClick={handleChatDrawerOpen}
+                onClick={handleChatDrawerToggle}
                 sx={{
-                  color: theme.palette.text.primary,
                   '&:hover': {
                     backgroundColor: theme.palette.action.hover,
                   },
                 }}
               >
-                <Iconify icon="eva:menu-2-fill" />
+                <Iconify icon="ph:sidebar-duotone" />
               </IconButton>
             )}
 
@@ -133,7 +149,8 @@ function Header() {
       {user && (
         <ChatDrawer
           open={chatDrawerOpen}
-          onClose={handleChatDrawerClose}
+          onClose={() => setChatDrawerOpen(false)}
+          persistent={true}
         />
       )}
     </>

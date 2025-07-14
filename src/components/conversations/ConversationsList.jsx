@@ -2,7 +2,6 @@ import { Stack, Typography, Box } from '@mui/material';
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
-import ThreadMinified from '../room/thread/ThreadMinified.jsx';
 import {
   fetchRoomAllThreads,
   selectRoomStateInitialized,
@@ -11,6 +10,7 @@ import {
   selectRoomThreadsIds,
 } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
+import ThreadMinified from '../room/thread/ThreadMinified.jsx';
 
 const ConversationsList = ({
   maxHeight = 400,

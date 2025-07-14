@@ -1,8 +1,9 @@
 import { Stack, Typography, Box, Divider } from '@mui/material';
-import { memo, useMemo, useRef } from 'react';
+import { memo, useMemo, useRef, useState, useCallback } from 'react';
 
 import { cn } from '@lib/utils';
 
+import MemberDetailsPopover from './MemberDetailsPopover.jsx';
 import MessageEndButtons from './MessageEndButtons.jsx';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import MessageBox from './wrapper/MessageBox.tsx';
@@ -46,11 +47,10 @@ const MessageBoxWrapper = ({
   const drawerMessageId = useSelector(selectDrawerMessageId);
   const avatarRef = useRef(null);
   const connectorRef = useRef(null);
-  const {
-    shouldShowMember,
-    shouldShowDateSeparator,
-    renderMessageThreads,
-  } = useMessageThreads({
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverAnchorEl, setPopoverAnchorEl] = useState(null);
+
+  const { shouldShowMember, shouldShowDateSeparator, renderMessageThreads } = useMessageThreads({
     message,
     threadId,
     mode,
@@ -58,6 +58,11 @@ const MessageBoxWrapper = ({
     avatarRef,
     connectorRef,
   });
+
+  const handlePopoverClose = useCallback(() => {
+    setPopoverOpen(false);
+    setPopoverAnchorEl(null);
+  }, []);
 
   const memberMe = me?.member;
   const sender = members.byId[message.member_id] || {
@@ -72,37 +77,57 @@ const MessageBoxWrapper = ({
       user: { avatar_url: null },
     },
   };
+
+  const handleAvatarClick = useCallback((event) => {
+    event.stopPropagation();
+    // Only show popover for real members, not system messages
+    if (sender.member && sender.member.member_type !== 'system') {
+      setPopoverAnchorEl(event.currentTarget);
+      setPopoverOpen(true);
+    }
+  }, [sender.member?.member_type]);
+
   const is_me = sender.member?.id === memberMe?.id;
   const senderName = !is_me && getMemberName(sender);
   const picture = getPicture(sender.member);
   const isMessagePotentialParent = message.id === drawerMessageId;
 
-  const renderAvatar = useMemo(() => !!shouldShowMember && (
-    <CustomAvatar
-      alt={sender?.id}
-      sx={{ width: 28, height: 28 }}
-      src={picture}
-      ref={avatarRef}
-      name={sender?.member?.guest?.nickname || 'Member'}
-    />
-  ), [shouldShowMember, sender?.id, sender?.member?.guest?.nickname, picture]);
+  const renderAvatar = useMemo(
+    () =>
+      !!shouldShowMember && (
+        <CustomAvatar
+          alt={sender?.id}
+          sx={{
+            width: 28,
+            height: 28,
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.8,
+            },
+          }}
+          src={picture}
+          ref={avatarRef}
+          name={sender?.member?.guest?.nickname || 'Member'}
+          onClick={handleAvatarClick}
+        />
+      ),
+    [shouldShowMember, sender?.id, sender?.member?.guest?.nickname, picture, handleAvatarClick],
+  );
 
   return (
     <>
-      {
-        !!shouldShowDateSeparator && (
-          <Divider
-            sx={{
-              width: '100%',
-            }}
-          >
-            <div className="text-xs text-center my-1 px-3 min-w-[100px] max-w-[120px] rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              {formatDate(message.date_creation)}
-            </div>
-          </Divider>
-        )
-      }
-      <div className="relative flex flex-col w-full space-y-2" >
+      {!!shouldShowDateSeparator && (
+        <Divider
+          sx={{
+            width: '100%',
+          }}
+        >
+          <div className="text-xs text-center my-1 px-3 min-w-[100px] max-w-[120px] rounded-lg">
+            {formatDate(message.date_creation)}
+          </div>
+        </Divider>
+      )}
+      <div className="relative flex flex-col w-full space-y-2">
         <MessageReply message={message} />
         <MessageBox
           isMe={is_me}
@@ -110,68 +135,68 @@ const MessageBoxWrapper = ({
           // type={message.type}
           className={cn(
             shouldShowMember ? 'p-[10px_4px]' : 'p-[2px_4px]',
-            isMessagePotentialParent && !disableEndButtons ? 'shadow-md rounded-lg p-[15px] shadow-light dark:shadow-dark' : '',
+            isMessagePotentialParent && !disableEndButtons
+              ? 'shadow-md rounded-lg p-[15px] shadow-light dark:shadow-dark'
+              : '',
           )}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+          >
             {renderAvatar}
             <Stack
               direction="row"
               alignItems="center"
               spacing={1}
             >
-              {
-                !!shouldShowMember && (
-                  <div className="group relative inline-flex items-baseline gap-2">
-                    <Typography className="text-sm font-medium">
-                      {is_me ? 'You' : senderName}
-                    </Typography>
-                    <span className="text-[10px] text-[#555] dark:text-[#99aab5] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
-                    </span>
-                  </div>
-                )
-              }
-              {
-                !disableEndButtons && (
-                  <MessageEndButtons
-                    message={message}
-                    threadId={threadId}
-                    shouldShowMember={shouldShowMember}
-                  />
-                )
-              }
+              {!!shouldShowMember && (
+                <div className="group relative inline-flex items-baseline gap-2">
+                  <Typography className="text-sm font-medium">
+                    {is_me ? 'You' : senderName}
+                  </Typography>
+                  <span className="text-[10px] text-[#555] dark:text-[#99aab5] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
+                  </span>
+                </div>
+              )}
+              {!disableEndButtons && (
+                <MessageEndButtons
+                  message={message}
+                  threadId={threadId}
+                  shouldShowMember={shouldShowMember}
+                />
+              )}
             </Stack>
           </Stack>
-          {
-            !shouldShowMember && (
-              <Box
-                className="group"
-                sx={{
-                  position: 'absolute',
-                  left: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  opacity: 0,
-                  '&:hover': {
-                    opacity: 1,
-                  },
-                  transition: 'opacity 200ms ease-out',
-                  backgroundColor: (theme) => theme.palette.mode === 'light' ? '#e5e7eb' : '#555',
-                  borderRadius: 1,
-                  px: 0.5,
-                  '& span': {
-                    fontSize: '0.75rem',
-                    color: (theme) => theme.palette.mode === 'light' ? '#555' : '#fff',
-                  },
-                }}
-              >
-                <span>
-                  {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
-                </span>
-              </Box>
-            )
-          }
+          {!shouldShowMember && (
+            <Box
+              className="group"
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                opacity: 0,
+                '&:hover': {
+                  opacity: 1,
+                },
+                transition: 'opacity 200ms ease-out',
+                backgroundColor: (theme) => (theme.palette.mode === 'light' ? '#e5e7eb' : '#555'),
+                borderRadius: 1,
+                px: 0.5,
+                '& span': {
+                  fontSize: '0.75rem',
+                  color: (theme) => (theme.palette.mode === 'light' ? '#555' : '#fff'),
+                },
+              }}
+            >
+              <span>
+                {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
+              </span>
+            </Box>
+          )}
           <Stack
             direction="row"
             alignItems="center"
@@ -183,8 +208,21 @@ const MessageBoxWrapper = ({
           <Reactions messageId={message.id} />
           {renderMessageThreads}
         </MessageBox>
-        <svg ref={connectorRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
+        <svg
+          ref={connectorRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        />
       </div>
+
+      {/* Member Details Popover */}
+      <MemberDetailsPopover
+        isOpen={popoverOpen}
+        anchorEl={popoverAnchorEl}
+        onClose={handlePopoverClose}
+        member={sender.member}
+        memberName={is_me ? 'You' : senderName}
+        picture={picture}
+      />
     </>
   );
 };

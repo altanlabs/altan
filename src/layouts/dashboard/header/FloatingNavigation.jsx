@@ -16,6 +16,16 @@ const FloatingNavigation = () => {
 
   // Navigation items configuration
   const navigationItems = [
+    // {
+    //   path: '/chat',
+    //   label: 'Chat',
+    //   icon: (
+    //     <Iconify
+    //       icon="material-symbols:chat"
+    //       className="w-[12px] h-[12px]"
+    //     />
+    //   ),
+    // },
     {
       path: '/',
       label: 'Projects',

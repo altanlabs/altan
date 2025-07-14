@@ -186,8 +186,6 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
       <CustomDialog
         dialogOpen={open}
         onClose={handleClose}
-        alwaysFullWidth
-        maxWidth={showExpertPackages ? 'lg' : 'sm'}
       >
         <div className="w-full bg-white/40 dark:bg-black/40">
           <div className="flex justify-between items-center px-8 py-6 border-b border-gray-800">

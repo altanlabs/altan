@@ -1,7 +1,8 @@
 import { Capacitor } from '@capacitor/core';
-import React, { memo, useMemo, useEffect } from 'react';
+import React, { memo, useMemo, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
+import { useAuthContext } from '../../../auth/useAuthContext';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
@@ -9,6 +10,7 @@ import { useSelector } from '../../../redux/store';
 
 // Default header heights and spacing (tailor these as needed)
 const DEFAULT_HEADER_MOBILE_HEIGHT = HEADER.H_MOBILE;
+const DRAWER_WIDTH = 275; // Match the actual drawer width from ChatDrawer
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -34,20 +36,52 @@ const CompactLayout = ({
   headerMobileHeight = DEFAULT_HEADER_MOBILE_HEIGHT,
   // subToolbarHeight = DEFAULT_SUBTOOLBAR_HEIGHT,
   hideHeader = false,
+  drawerVisible = true,
 }) => {
   const headerVisible = useSelector(selectHeaderVisible);
   const isDesktop = useResponsive('up', 'lg');
   const isMobile = useResponsive('down', 'sm');
   const isIOS = isIOSCapacitor();
+  const { user } = useAuthContext();
+
+  // Track drawer state from localStorage
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Listen for drawer state changes
+  useEffect(() => {
+    if (!user) {
+      setDrawerOpen(false);
+      return;
+    }
+
+    const checkDrawerState = () => {
+      const savedState = localStorage.getItem('chatDrawerOpen');
+      setDrawerOpen(savedState ? JSON.parse(savedState) : false);
+    };
+
+    // Initial check
+    checkDrawerState();
+
+    // Listen for localStorage changes
+    const handleStorageChange = (event) => {
+      if (event.key === 'chatDrawerOpen') {
+        checkDrawerState();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for direct changes (same tab)
+    const interval = setInterval(checkDrawerState, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [user]);
 
   // Debug logging
   useEffect(() => {
-    // Check safe area support
-    if (typeof CSS !== 'undefined' && CSS.supports) {
-      const supportsSafeArea = CSS.supports('padding-top', 'env(safe-area-inset-top)');
-      console.log('🛡️ Safe area support:', supportsSafeArea);
-    }
-
     // Try to get safe area values
     if (isIOS) {
       const testElement = document.createElement('div');
@@ -60,7 +94,6 @@ const CompactLayout = ({
       const computedStyle = getComputedStyle(testElement);
       const safeAreaTop = computedStyle.paddingTop;
 
-      console.log('🔒 Safe area inset top:', safeAreaTop);
       document.body.removeChild(testElement);
     }
   }, [isIOS, isMobile, isDesktop, headerVisible, hideHeader, title]);
@@ -119,6 +152,9 @@ const CompactLayout = ({
       const style = {
         paddingTop: isIOS ? 'env(safe-area-inset-top)' : 0,
         paddingBottom: noPadding ? 0 : '1.25rem',
+        // Adjust for persistent drawer only if drawerVisible is true
+        paddingLeft: user && drawerOpen && isDesktop && drawerVisible ? `${DRAWER_WIDTH}px` : 0,
+        marginLeft: user && drawerOpen && isDesktop && drawerVisible ? 0 : 0,
       };
       return style;
     }
@@ -134,10 +170,15 @@ const CompactLayout = ({
     } else {
       paddingTop = isIOS ? 'env(safe-area-inset-top)' : 0;
     }
+
     const style = {
       paddingTop,
       paddingBottom: noPadding ? 0 : '1.25rem',
+      // Adjust for persistent drawer only if drawerVisible is true
+      paddingLeft: user && drawerOpen && isDesktop && drawerVisible ? `${DRAWER_WIDTH}px` : 0,
+      marginLeft: user && drawerOpen && isDesktop && drawerVisible ? 0 : 0,
     };
+
     return style;
   };
 

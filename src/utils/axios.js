@@ -89,6 +89,7 @@ const unauthorizeUser = () => {
   setSession(null, optimai_room);
   setSession(null, optimai_tables);
   setSession(null, optimai_tables_legacy);
+  setSession(null, optimai_agent);
 };
 
 const axiosInstances = {

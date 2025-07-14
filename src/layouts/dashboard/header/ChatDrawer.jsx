@@ -2,11 +2,6 @@ import {
   Drawer,
   Box,
   Typography,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Button,
   CircularProgress,
   TextField,
@@ -15,13 +10,16 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  Stack,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { m } from 'framer-motion';
 import { memo, useEffect, useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import CreateRoomDialog from './CreateRoomDialog';
 import Iconify from '../../../components/iconify';
+import { HEADER } from '../../../config-global';
+import { cn } from '../../../lib/utils';
 import {
   selectUserRooms,
   selectUserRoomsPagination,
@@ -36,9 +34,97 @@ import {
 } from '../../../redux/slices/room';
 import { useSelector, useDispatch } from '../../../redux/store';
 import { fToNow } from '../../../utils/formatTime';
+import FloatingNavigation from './FloatingNavigation';
 
-const ChatDrawer = ({ open, onClose }) => {
-  const theme = useTheme();
+const variants = {
+  hidden: { opacity: 0.8, scale: 0.98 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.15, ease: 'easeOut' } },
+};
+
+// Room Item Component matching ThreadMinified style
+const RoomItem = memo(({ room, onSelect, onMenuOpen }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleClick = useCallback(() => {
+    onSelect(room);
+  }, [room, onSelect]);
+
+  const handleMenuClick = useCallback((event) => {
+    event.stopPropagation();
+    onMenuOpen(event, room);
+  }, [room, onMenuOpen]);
+
+  return (
+    <m.div
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      exit="hidden"
+      className="relative"
+    >
+      <Box
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleClick}
+        className={cn(
+          'group relative flex items-center justify-between px-3 py-2 mx-1 rounded-lg cursor-pointer',
+          'transition-all duration-200 ease-out',
+          'hover:bg-gray-100 dark:hover:bg-gray-800/50',
+        )}
+      >
+        {/* Room name */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Typography
+            variant="body2"
+            className="font-normal truncate text-gray-900 dark:text-gray-100"
+          >
+            {room.name || room.title || 'Room'}
+          </Typography>
+        </div>
+
+        {/* Right side - timestamp or action buttons */}
+        <div className="flex items-center ml-4 relative min-w-[100px]">
+          {/* Timestamp - hidden on hover */}
+          <Typography
+            variant="caption"
+            className={cn(
+              'text-gray-500 dark:text-gray-400 transition-all duration-200 ease-out absolute right-0 whitespace-nowrap',
+              isHovered ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0',
+            )}
+          >
+            {room.last_interaction ? fToNow(room.last_interaction) : ''}
+          </Typography>
+
+          {/* Action button - shown on hover */}
+          <div
+            className={cn(
+              'flex items-center gap-1 transition-all duration-200 ease-out absolute right-0',
+              isHovered
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 translate-x-2 pointer-events-none',
+            )}
+          >
+            <IconButton
+              size="small"
+              onClick={handleMenuClick}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              sx={{ width: 24, height: 24 }}
+            >
+              <Iconify
+                icon="eva:more-vertical-fill"
+                width={14}
+              />
+            </IconButton>
+          </div>
+        </div>
+      </Box>
+    </m.div>
+  );
+});
+
+RoomItem.displayName = 'RoomItem';
+
+const ChatDrawer = ({ open, onClose, persistent = false }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const userRooms = useSelector(selectUserRooms);
@@ -91,11 +177,13 @@ const ChatDrawer = ({ open, onClose }) => {
     ? (searchHasResults ? '' : 'No rooms found matching your search.')
     : 'No chat rooms found.';
 
-  const handleRoomClick = (room) => {
-    // Navigate to the room and close the drawer
+  const handleRoomClick = useCallback((room) => {
+    // Navigate to the room and close the drawer only if not persistent
     history.push(`/room/${room.id}`);
-    onClose();
-  };
+    if (!persistent) {
+      onClose();
+    }
+  }, [history, persistent, onClose]);
 
   const handleLoadMore = () => {
     dispatch(fetchMoreUserRooms());
@@ -109,11 +197,10 @@ const ChatDrawer = ({ open, onClose }) => {
     setCreateRoomOpen(false);
   };
 
-  const handleMenuOpen = (event, room) => {
-    event.stopPropagation();
+  const handleMenuOpen = useCallback((event, room) => {
     setMenuAnchorEl(event.currentTarget);
     setMenuRoom(room);
-  };
+  }, []);
 
   const handleMenuClose = () => {
     setMenuAnchorEl(null);
@@ -132,10 +219,12 @@ const ChatDrawer = ({ open, onClose }) => {
   };
 
   const handleCreateRoomSuccess = (result) => {
-    // Optionally navigate to the new room
+    // Navigate to the new room and close only if not persistent
     if (result?.room?.id) {
       history.push(`/room/${result.room.id}`);
-      onClose();
+      if (!persistent) {
+        onClose();
+      }
     }
   };
 
@@ -169,37 +258,74 @@ const ChatDrawer = ({ open, onClose }) => {
     }
   };
 
+  const drawerProps = persistent
+    ? {
+        variant: 'persistent',
+        anchor: 'left',
+        open,
+        // Don't provide onClose for persistent variant as it shouldn't close on backdrop click
+      }
+    : {
+        variant: 'temporary',
+        anchor: 'left',
+        open,
+        onClose,
+      };
+
+  // Calculate header height for positioning
+  const headerHeight = HEADER.H_MOBILE;
+
   return (
     <>
       <Drawer
-        anchor="left"
-        open={open}
-        onClose={onClose}
+        {...drawerProps}
         PaperProps={{
           sx: {
-            width: 350,
-            backgroundColor: theme.palette.background.default,
+            width: 275,
+            border: 'none',
+            backgroundColor: 'background.default',
+            ...(persistent && {
+              position: 'fixed',
+              top: `${headerHeight}px`,
+              height: `calc(100vh - ${headerHeight}px)`,
+            }),
+            ...(!persistent && {
+              marginTop: `${headerHeight}px`,
+              height: `calc(100vh - ${headerHeight}px)`,
+            }),
           },
+        }}
+        // For persistent drawer, we need to adjust the modal props to not create a backdrop
+        ModalProps={{
+          keepMounted: true,
+          ...(persistent && {
+            BackdropProps: {
+              style: { display: 'none' },
+            },
+          }),
         }}
       >
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
-          <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}
-              >
-                Chat Rooms
-              </Typography>
+          <Box sx={{ px: 1.5, mt: -1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                my: 1.5,
+              }}
+            >
               <Button
-                variant="contained"
+                variant="soft"
+                color="inherit"
                 size="small"
+                fullWidth
                 onClick={handleCreateRoomOpen}
                 startIcon={<Iconify icon="eva:plus-fill" />}
                 sx={{ fontSize: '0.75rem', py: 0.5, px: 1 }}
               >
-                Create
+                New chat room
               </Button>
             </Box>
 
@@ -218,7 +344,10 @@ const ChatDrawer = ({ open, onClose }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Iconify icon="eva:search-fill" sx={{ fontSize: 18 }} />
+                    <Iconify
+                      icon="eva:search-fill"
+                      sx={{ fontSize: 18 }}
+                    />
                   </InputAdornment>
                 ),
                 endAdornment: localSearchQuery && (
@@ -228,7 +357,10 @@ const ChatDrawer = ({ open, onClose }) => {
                       onClick={handleSearchClear}
                       sx={{ p: 0.5 }}
                     >
-                      <Iconify icon="eva:close-fill" sx={{ fontSize: 16 }} />
+                      <Iconify
+                        icon="eva:close-fill"
+                        sx={{ fontSize: 16 }}
+                      />
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -240,81 +372,52 @@ const ChatDrawer = ({ open, onClose }) => {
           <Box sx={{ flex: 1, overflow: 'auto' }}>
             {/* Loading State */}
             {isSearching && (
-              <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <CircularProgress size={20} />
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1, fontSize: '0.875rem' }}>
+              <Stack
+                spacing={2}
+                sx={{ p: 1.5 }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ textAlign: 'center' }}
+                >
                   Searching...
                 </Typography>
-              </Box>
+              </Stack>
             )}
 
             {/* Room List View */}
             {!isSearching && (
-              <Box>
-                <List sx={{ p: 0 }}>
+              <Stack>
+                <Box sx={{ maxHeight: '100%', overflow: 'auto' }}>
                   {displayRooms && displayRooms.length > 0 ? (
-                    displayRooms.map((room) => (
-                      <ListItem
-                        key={room.id}
-                        button
-                        onClick={() => handleRoomClick(room)}
-                        sx={{
-                          py: 1,
-                          px: 1.5,
-                          '&:hover': {
-                            backgroundColor: theme.palette.action.hover,
-                          },
-                        }}
-                      >
-                        <ListItemAvatar sx={{ minWidth: 36 }}>
-                          <Avatar
-                            sx={{
-                              bgcolor: 'primary.main',
-                              width: 32,
-                              height: 32,
-                              fontSize: '0.875rem',
-                            }}
-                          >
-                            {room.name ? room.name[0] : '?'}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={room.name || room.title || 'Room'}
-                          secondary={room.last_interaction ? fToNow(room.last_interaction) : null}
-                          primaryTypographyProps={{
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                            noWrap: true,
-                          }}
-                          secondaryTypographyProps={{
-                            fontSize: '0.75rem',
-                            color: 'text.secondary',
-                          }}
+                    <Stack
+                      spacing={0.5}
+                      sx={{ p: 1 }}
+                    >
+                      {displayRooms.map((room) => (
+                        <RoomItem
+                          key={room.id}
+                          room={room}
+                          onSelect={handleRoomClick}
+                          onMenuOpen={handleMenuOpen}
                         />
-                        <IconButton
-                          size="small"
-                          onClick={(event) => handleMenuOpen(event, room)}
-                          sx={{
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          <Iconify icon="eva:more-vertical-fill" sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </ListItem>
-                    ))
+                      ))}
+                    </Stack>
                   ) : (
-                    <Box sx={{ p: 1.5 }}>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ fontSize: '0.875rem' }}
-                      >
-                        {noRoomsMessage}
-                      </Typography>
-                    </Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        textAlign: 'center',
+                        whiteSpace: 'pre-line',
+                        p: 1.5,
+                      }}
+                    >
+                      {noRoomsMessage}
+                    </Typography>
                   )}
-                </List>
+                </Box>
 
                 {/* Load More Button - only show if not searching */}
                 {!searchQuery && userRoomsPagination.hasNextPage && (
@@ -337,7 +440,7 @@ const ChatDrawer = ({ open, onClose }) => {
                     </Button>
                   </Box>
                 )}
-              </Box>
+              </Stack>
             )}
           </Box>
         </Box>
@@ -357,13 +460,22 @@ const ChatDrawer = ({ open, onClose }) => {
       >
         <MenuItem onClick={() => handleEditRoomOpen(menuRoom)}>
           <ListItemIcon>
-            <Iconify icon="eva:edit-fill" sx={{ fontSize: 18 }} />
+            <Iconify
+              icon="eva:edit-fill"
+              sx={{ fontSize: 18 }}
+            />
           </ListItemIcon>
           Edit Room
         </MenuItem>
-        <MenuItem onClick={handleDeleteRoom} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={handleDeleteRoom}
+          sx={{ color: 'error.main' }}
+        >
           <ListItemIcon>
-            <Iconify icon="eva:trash-2-fill" sx={{ fontSize: 18, color: 'error.main' }} />
+            <Iconify
+              icon="eva:trash-2-fill"
+              sx={{ fontSize: 18, color: 'error.main' }}
+            />
           </ListItemIcon>
           Delete Room
         </MenuItem>

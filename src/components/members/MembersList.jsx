@@ -1,17 +1,23 @@
-import { Box, Typography, Stack, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Stack,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+} from '@mui/material';
 import { useState, memo } from 'react';
 import { useSelector } from 'react-redux';
 
+import { selectMembers, selectMe, patchMember } from '../../redux/slices/room';
+import { dispatch } from '../../redux/store';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 import MemberInviteDialog from '../room/drawer/MemberInviteDialog.jsx';
 import { getMemberDetails } from '../room/utils';
-import {
-  selectMembers,
-  selectMe,
-  patchMember
-} from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
 
 const MembersList = ({
   maxHeight = 400,
@@ -19,8 +25,7 @@ const MembersList = ({
   compact = false,
   showInviteButton = true,
   onMemberSelect,
-  emptyMessage = "No members to display.",
-  loadingMessage = "Loading...",
+  emptyMessage = 'No members to display.',
 }) => {
   const members = useSelector(selectMembers);
   const me = useSelector(selectMe);
@@ -60,10 +65,12 @@ const MembersList = ({
         case 'unvblock':
         case 'set_role':
         case 'agent_interaction':
-          await dispatch(patchMember({
-            action,
-            body: { room_member_id: selectedMember.id, ...actionData },
-          }));
+          await dispatch(
+            patchMember({
+              action,
+              body: { room_member_id: selectedMember.id, ...actionData },
+            }),
+          );
           break;
         case 'mention':
           // TODO: Implement mention functionality
@@ -117,13 +124,12 @@ const MembersList = ({
           label: 'Change Role',
           icon: 'mdi:account-convert',
           type: 'submenu',
-          children: roleOptions
-            .map(r => ({
-              label: r.label,
-              action: 'set_role',
-              actionData: { role: r.value },
-              isCurrentRole: r.value === selectedMember.role,
-            })),
+          children: roleOptions.map((r) => ({
+            label: r.label,
+            action: 'set_role',
+            actionData: { role: r.value },
+            isCurrentRole: r.value === selectedMember.role,
+          })),
         });
       }
 
@@ -164,9 +170,16 @@ const MembersList = ({
   return (
     <Stack spacing={compact ? 1 : 2}>
       {showTitle && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: compact ? 1 : 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: compact ? 1 : 2,
+          }}
+        >
           <Typography
-            variant={compact ? "subtitle1" : "h6"}
+            variant={compact ? 'subtitle1' : 'h6'}
             sx={{ fontSize: compact ? '0.875rem' : '1rem', fontWeight: 600 }}
           >
             Members ({membersList.length})
@@ -207,7 +220,7 @@ const MembersList = ({
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
-                      variant={compact ? "body2" : "subtitle2"}
+                      variant={compact ? 'body2' : 'subtitle2'}
                       noWrap
                     >
                       {memberDetails.name}
@@ -239,7 +252,10 @@ const MembersList = ({
                       '&:hover': { opacity: 1 },
                     }}
                   >
-                    <Iconify icon="eva:more-vertical-fill" width={compact ? 16 : 20} />
+                    <Iconify
+                      icon="eva:more-vertical-fill"
+                      width={compact ? 16 : 20}
+                    />
                   </IconButton>
                 </Box>
               );
@@ -262,9 +278,7 @@ const MembersList = ({
         onClose={handleCloseContextMenu}
         anchorReference="anchorPosition"
         anchorPosition={
-          contextMenu !== null
-            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-            : undefined
+          contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
         }
         sx={{
           '& .MuiPaper-root': {
@@ -278,17 +292,34 @@ const MembersList = ({
         {selectedMember && (
           <>
             <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 600 }}
+              >
                 {getMemberDetails(selectedMember, me).name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Current Role: {selectedMember.role ? selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1) : 'Member'}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Current Role:{' '}
+                {selectedMember.role
+                  ? selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1)
+                  : 'Member'}
               </Typography>
-              {selectedMember.member?.member_type === 'agent' && selectedMember.agent_interaction && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  Agent Mode: {selectedMember.agent_interaction === 'mention_only' ? 'Mention Only' : 'Always Respond'}
-                </Typography>
-              )}
+              {selectedMember.member?.member_type === 'agent' &&
+                selectedMember.agent_interaction && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block' }}
+                  >
+                    Agent Mode:{' '}
+                    {selectedMember.agent_interaction === 'mention_only'
+                      ? 'Mention Only'
+                      : 'Always Respond'}
+                  </Typography>
+                )}
             </Box>
             <Divider />
           </>
@@ -304,7 +335,8 @@ const MembersList = ({
             // In a more complex implementation, you might want to use nested menus
             return item.children.map((child, childIndex) => {
               const isCurrentRole = child.isCurrentRole || false;
-              const isCurrentAgentMode = item.label === 'Agent Interaction' &&
+              const isCurrentAgentMode =
+                item.label === 'Agent Interaction' &&
                 selectedMember?.agent_interaction === child.actionData?.agent_interaction;
 
               return (
@@ -313,9 +345,10 @@ const MembersList = ({
                   onClick={() => handleMemberAction(child.action, child.actionData)}
                   sx={{
                     pl: 4,
-                    bgcolor: (isCurrentRole || isCurrentAgentMode) ? 'action.selected' : 'inherit',
+                    bgcolor: isCurrentRole || isCurrentAgentMode ? 'action.selected' : 'inherit',
                     '&:hover': {
-                      bgcolor: (isCurrentRole || isCurrentAgentMode) ? 'action.selected' : 'action.hover',
+                      bgcolor:
+                        isCurrentRole || isCurrentAgentMode ? 'action.selected' : 'action.hover',
                     },
                   }}
                 >
@@ -324,13 +357,17 @@ const MembersList = ({
                     primaryTypographyProps={{
                       variant: 'body2',
                       sx: {
-                        fontWeight: (isCurrentRole || isCurrentAgentMode) ? 600 : 400,
-                        color: (isCurrentRole || isCurrentAgentMode) ? 'primary.main' : 'inherit',
+                        fontWeight: isCurrentRole || isCurrentAgentMode ? 600 : 400,
+                        color: isCurrentRole || isCurrentAgentMode ? 'primary.main' : 'inherit',
                       },
                     }}
                   />
                   {(isCurrentRole || isCurrentAgentMode) && (
-                    <Iconify icon="eva:checkmark-fill" width={16} sx={{ color: 'primary.main', ml: 1 }} />
+                    <Iconify
+                      icon="eva:checkmark-fill"
+                      width={16}
+                      sx={{ color: 'primary.main', ml: 1 }}
+                    />
                   )}
                 </MenuItem>
               );
@@ -344,7 +381,10 @@ const MembersList = ({
               disabled={item.disabled}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                <Iconify icon={item.icon} width={20} />
+                <Iconify
+                  icon={item.icon}
+                  width={20}
+                />
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
@@ -358,4 +398,4 @@ const MembersList = ({
   );
 };
 
-export default memo(MembersList); 
+export default memo(MembersList);

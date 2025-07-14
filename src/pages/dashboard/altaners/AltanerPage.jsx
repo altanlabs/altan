@@ -191,6 +191,7 @@ const AltanerPage = () => {
     <CompactLayout
       title={`${formatComponentType(currentTab?.type)} · ${altaner?.name || 'Loading'}`}
       noPadding
+      drawerVisible={false}
     >
       <Stack
         height="100%"

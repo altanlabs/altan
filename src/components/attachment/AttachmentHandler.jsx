@@ -9,6 +9,11 @@ import {
   ListItemButton,
   ListItemText,
   TextField,
+  Chip,
+  Avatar,
+  Popover,
+  Box,
+  Typography,
 } from '@mui/material';
 import { m } from 'framer-motion';
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
@@ -108,6 +113,9 @@ const AttachmentHandler = ({
   mode = 'standard',
   mobileActiveView = 'chat',
   onMobileToggle = null,
+  selectedAgent = null,
+  setSelectedAgent = null,
+  agents = [],
 }) => {
   // For drag-and-drop
   const [dragOver, setDragOver] = useState(false);
@@ -139,8 +147,19 @@ const AttachmentHandler = ({
 
   // Menu state
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
 
   const [showSpeechInput, setShowSpeechInput] = useState(false);
+
+  // Debug log for agents
+  useEffect(() => {
+    console.log('🤖 Available agents:', agents);
+  }, [agents]);
+
+  // Debug log for selected agent
+  useEffect(() => {
+    console.log('👤 Selected agent changed:', selectedAgent);
+  }, [selectedAgent]);
 
   /** *************************************************************************
    * Multiple Attachments
@@ -210,6 +229,27 @@ const AttachmentHandler = ({
   const handleMenuClose = () => {
     setMenuAnchor(null);
   };
+
+  const handleAgentMenuOpen = (event) => {
+    event.preventDefault();
+    setAgentMenuAnchor(event.currentTarget);
+  };
+
+  const handleAgentMenuClose = () => {
+    setAgentMenuAnchor(null);
+  };
+
+  const handleAgentSelect = (agent) => {
+    console.log('🎯 Agent selected:', agent);
+    setSelectedAgent(agent);
+    setAgentMenuAnchor(null);
+  };
+
+  // Simplified send message handler - no mention logic needed here
+  const handleSendMessage = useCallback(() => {
+    console.log('🚀 handleSendMessage called - calling onSendMessage');
+    onSendMessage();
+  }, [onSendMessage]);
 
   // Handle the new URL upload option
   const handleUrlUpload = useCallback(
@@ -398,6 +438,100 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
             />
           </button>
 
+          {/* Agent Selection Chip */}
+          {agents.length > 0 && (
+            <Chip
+              avatar={
+                selectedAgent ? (
+                  <Avatar
+                    src={selectedAgent.src}
+                    alt={selectedAgent.name}
+                    sx={{ width: 20, height: 20 }}
+                  />
+                ) : undefined
+              }
+              icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
+              label={
+                selectedAgent
+                  ? selectedAgent.name
+                  : agents.length === 1
+                    ? agents[0].name
+                    : `${agents.length} agents`
+              }
+              size="small"
+              variant="soft"
+              color="default"
+              onClick={handleAgentMenuOpen}
+              onDelete={selectedAgent ? () => setSelectedAgent(null) : undefined}
+              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+              sx={{
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                height: '28px',
+                '& .MuiChip-icon': {
+                  fontSize: '14px',
+                  marginLeft: '4px',
+                },
+              }}
+            />
+          )}
+
+          {/* Agent Menu */}
+          <Popover
+            open={Boolean(agentMenuAnchor)}
+            anchorEl={agentMenuAnchor}
+            onClose={handleAgentMenuClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
+            }}
+            transformOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            PaperProps={{
+              sx: {
+                maxWidth: '250px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Box p={1}>
+              <Typography
+                variant="caption"
+                sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
+              >
+                Select an agent to mention
+              </Typography>
+              {agents.map((agent) => (
+                <MenuItem
+                  key={agent.id}
+                  onClick={() => handleAgentSelect(agent)}
+                  sx={{
+                    borderRadius: '8px',
+                    margin: '2px 0',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  <Avatar
+                    src={agent.src}
+                    alt={agent.name}
+                    sx={{ width: 24, height: 24, marginRight: 1 }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 500 }}
+                  >
+                    {agent.name}
+                  </Typography>
+                </MenuItem>
+              ))}
+            </Box>
+          </Popover>
+
           {/* Attachment Menu */}
           <Menu
             anchorEl={menuAnchor}
@@ -478,7 +612,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
             />
           </button>
           <SendButton
-            onSendMessage={onSendMessage}
+            onSendMessage={handleSendMessage}
             isDisabled={!isSendEnabled}
           />
         </div>

@@ -206,6 +206,7 @@ export default function ProjectPage() {
       <CompactLayout
         title={altaner?.name || 'Project'}
         noPadding
+        drawerVisible={false}
       >
         <div
           className="relative h-full"
@@ -245,6 +246,7 @@ export default function ProjectPage() {
     <CompactLayout
       title={altaner?.name || 'Project'}
       noPadding
+      drawerVisible={false}
     >
       <Box sx={{ display: 'flex', height: '100%' }}>
         {/* Main content */}

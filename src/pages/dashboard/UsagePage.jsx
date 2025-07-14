@@ -122,6 +122,7 @@ const UsageOverview = ({
   billingCycle,
   containerStyle,
   subscriptionData,
+  history, // Add history prop
 }) => {
   const totalCredits = stats.totalCredits || 0; // Usage-based credits from API
   const monthlyBudget = subscriptionData.totalCredits || 10000; // Get budget from subscription
@@ -305,6 +306,19 @@ const UsageOverview = ({
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <span className="font-medium">Credit Spent:</span> €{stats.estimatedCost}
               </div>
+
+              {/* Upgrade Link */}
+              <button
+                onClick={() => history.push('/pricing')}
+                className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
+                  isDarkMode
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+              >
+                Upgrade
+              </button>
+
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <span className="font-medium">Remaining Credits:</span> €{stats.remainingCreditsEuro}
               </div>
@@ -661,7 +675,7 @@ const UsagePage = () => {
       title="Usage · Altan"
       className="min-h-screen"
     >
-      <Container sx={{ py: 6 }}>
+      <Container sx={{ pb: 6, pt: 4 }}>
         {/* Usage Overview Section */}
         <UsageOverview
           stats={stats}
@@ -669,6 +683,7 @@ const UsagePage = () => {
           billingCycle={billingCycle}
           containerStyle={getContainerStyles()}
           subscriptionData={subscriptionData}
+          history={history} // Pass history prop
         />
         {/* Header with title and controls */}
         <div className="flex flex-col gap-4 mb-6">

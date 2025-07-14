@@ -109,8 +109,11 @@ const TabBar = ({
     const container = scrollContainerRef.current;
     if (!container) return maxTabWidth;
 
-    const buttonSpace = (showHistoryButton ? 40 : 0) + (showMembersButton ? 40 : 0) + (showNewTabButton ? 40 : 0);
-    const availableWidth = container.clientWidth - buttonSpace;
+    // Account for all buttons in the right area
+    const buttonSpace = (showHistoryButton ? 40 : 0) + (showMembersButton ? 40 : 0);
+    // Reserve space for the new tab button in the scrollable area
+    const newTabButtonSpace = showNewTabButton ? 40 : 0;
+    const availableWidth = container.clientWidth - buttonSpace - newTabButtonSpace;
     const idealWidth = Math.max(minTabWidth, Math.min(maxTabWidth, availableWidth / tabs.length));
 
     return Math.floor(idealWidth);
@@ -159,22 +162,36 @@ const TabBar = ({
         style={{ scrollbarWidth: 'none' }}
       >
         <div className="flex items-end gap-0.5 px-1">
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              data-tab-id={tab.id}
-              className="flex-shrink-0 group"
-            >
-              <TabItem
-                tab={tab}
-                isActive={tab.id === activeTabId}
-                onSwitch={handleTabSwitch}
-                onClose={handleTabClose}
-                maxWidth={tabWidth}
-                canClose={tabsCount > 1}
-              />
+          {tabs.map((tab, index) => (
+            <div key={tab.id} className="flex items-center">
+              <div
+                data-tab-id={tab.id}
+                className="flex-shrink-0 group"
+              >
+                <TabItem
+                  tab={tab}
+                  isActive={tab.id === activeTabId}
+                  onSwitch={handleTabSwitch}
+                  onClose={handleTabClose}
+                  maxWidth={tabWidth}
+                  canClose={tabsCount > 1}
+                />
+              </div>
+              {/* Chrome-style divider between tabs */}
+              {index < tabs.length - 1 && (
+                <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1 opacity-50" />
+              )}
             </div>
           ))}
+
+          {/* New tab button - positioned next to the last tab, Chrome style */}
+          {showNewTabButton && (
+            <div className="flex-shrink-0 ml-1">
+              <NewTabButton
+                onNewTab={handleNewTab}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -204,15 +221,6 @@ const TabBar = ({
         {/* Members button */}
         {showMembersButton && (
           <MembersButton
-            size="small"
-            variant="outlined"
-          />
-        )}
-
-        {/* New tab button */}
-        {showNewTabButton && (
-          <NewTabButton
-            onNewTab={handleNewTab}
             size="small"
             variant="outlined"
           />

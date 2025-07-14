@@ -17,7 +17,6 @@ import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
 import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
-import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 // config
 import { HEADER } from '../../../config-global';
 // hooks
@@ -293,69 +292,7 @@ function ProjectHeader() {
                     </HeaderIconButton>
                   </Tooltip>
                 )}
-                {isInterfaceComponent && !isMobile && (
-                  <Tooltip
-                    title={viewType === 'code' ? 'Turn off Code Editor' : 'Turn on Code Editor'}
-                  >
-                    <button
-                      onClick={() => {
-                        dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
-                      }}
-                      style={{
-                        backgroundColor: alpha(theme.palette.grey[500], 0.08),
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.grey[500], 0.24),
-                        },
-                      }}
-                      className="relative flex items-center rounded-md h-[30px] w-12 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-opacity-80 active:scale-98"
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.24);
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
-                      }}
-                      aria-label={`${viewType === 'code' ? 'Turn off' : 'Turn on'} Code Editor`}
-                    >
-                      {/* Sliding indicator with icon */}
-                      <div
-                        className={`absolute w-6 h-6 rounded-sm shadow-lg transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex items-center justify-center will-change-transform ${
-                          viewType === 'code' ? 'left-1 scale-100' : 'right-1 scale-105'
-                        }`}
-                        style={{
-                          backgroundColor:
-                            viewType === 'code'
-                              ? theme.palette.primary.main
-                              : theme.palette.background.paper,
-                          color: viewType === 'code' ? theme.palette.primary.contrastText : theme.palette.text.secondary,
-                          boxShadow:
-                            viewType === 'code'
-                              ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.25)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
-                              : theme.shadows[2],
-                        }}
-                      >
-                        <Iconify
-                          icon="mdi:code-tags"
-                          className={`w-4 h-3 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
-                            viewType === 'code'
-                              ? 'scale-105'
-                              : 'scale-100'
-                          }`}
-                        />
-                      </div>
-
-                      {/* Background glow effect when active */}
-                      {viewType === 'code' && (
-                        <div
-                          className="absolute inset-0 rounded-full opacity-20 transition-all duration-600 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
-                          style={{
-                            background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.3)} 0%, transparent 70%)`,
-                            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                          }}
-                        />
-                      )}
-                    </button>
-                  </Tooltip>
-                )}
+  
               </>
             ) : (
               <HoverBorderGradient
@@ -425,35 +362,78 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                  <Tooltip title="Distribution">
-                    <HeaderIconButton onClick={() => setOpenSettings(true)}>
-                      <Iconify
-                        icon="mdi:broadcast"
-                        className="w-5 h-5"
-                      />
-                    </HeaderIconButton>
-                  </Tooltip>
+                  {isInterfaceComponent && (
+                    <Tooltip
+                      title={viewType === 'code' ? 'Turn off Code Editor' : 'Turn on Code Editor'}
+                    >
+                      <button
+                        onClick={() => {
+                          dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
+                        }}
+                        style={{
+                          backgroundColor: alpha(theme.palette.grey[500], 0.08),
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.grey[500], 0.24),
+                          },
+                        }}
+                        className="relative flex items-center rounded-md h-[30px] w-12 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-opacity-80 active:scale-98"
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.24);
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
+                        }}
+                        aria-label={`${viewType === 'code' ? 'Turn off' : 'Turn on'} Code Editor`}
+                      >
+                        {/* Sliding indicator with icon */}
+                        <div
+                          className={`absolute w-6 h-6 rounded-sm shadow-lg transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex items-center justify-center will-change-transform ${
+                            viewType === 'code' ? 'left-1 scale-100' : 'right-1 scale-105'
+                          }`}
+                          style={{
+                            backgroundColor:
+                              viewType === 'code'
+                                ? theme.palette.primary.main
+                                : theme.palette.background.paper,
+                            color: viewType === 'code' ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                            boxShadow:
+                              viewType === 'code'
+                                ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.25)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
+                                : theme.shadows[2],
+                          }}
+                        >
+                          <Iconify
+                            icon="mdi:code-tags"
+                            className={`w-4 h-3 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+                              viewType === 'code'
+                                ? 'scale-105'
+                                : 'scale-100'
+                            }`}
+                          />
+                        </div>
 
-                  <InvitationMenuPopover isDashboard={true} />
-
-                  <Tooltip title="History">
-                    <HeaderIconButton onClick={() => setOpenVersionHistory(true)}>
-                      <Iconify
-                        icon="mdi:history"
-                        className="w-5 h-5"
-                      />
-                    </HeaderIconButton>
-                  </Tooltip>
-                  {isInterfaceComponent && interfaceId && (
-                    <Tooltip title="Settings">
-                      <HeaderIconButton onClick={() => setOpenSettingsDrawer(true)}>
-                        <Iconify
-                          icon="mdi:cog"
-                          className="w-5 h-5"
-                        />
-                      </HeaderIconButton>
+                        {/* Background glow effect when active */}
+                        {viewType === 'code' && (
+                          <div
+                            className="absolute inset-0 rounded-full opacity-20 transition-all duration-600 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                            style={{
+                              background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.3)} 0%, transparent 70%)`,
+                              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                            }}
+                          />
+                        )}
+                      </button>
                     </Tooltip>
                   )}
+
+                  <MobileActionsMenu
+                    onDistribution={() => setOpenSettings(true)}
+                    onHistory={() => setOpenVersionHistory(true)}
+                    onSettings={
+                      isInterfaceComponent && interfaceId ? () => setOpenSettingsDrawer(true) : null
+                    }
+                    onUpgrade={() => history.push('/pricing')}
+                  />
 
                   <Button
                     size="small"

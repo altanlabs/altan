@@ -1,0 +1,13 @@
+
+              {/* Upgrade Link */}
+              <button
+                onClick={() => history.push('/pricing')}
+                className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
+                  isDarkMode
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+              >
+                Upgrade
+              </button>
+

@@ -82,11 +82,6 @@ const DashboardPage = () => {
 
   const agentConfig = getAgentId();
 
-  // Print if account is free
-  useEffect(() => {
-    console.log('Is account free?', isAccountFree);
-  }, [isAccountFree]);
-
   // Save voice preference to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('voicePreference', JSON.stringify(isVoice));
@@ -201,12 +196,10 @@ const DashboardPage = () => {
                       displayAvatar={agentConfig.displayAvatar}
                       dynamicVariables={agentConfig?.dynamicVariables}
                     />
+                  ) : mode === 'agents' ? (
+                    <CreateAgentDashboard handleVoice={() => setIsVoice(!isVoice)} />
                   ) : (
-                    mode === 'agents' ? (
-                      <CreateAgentDashboard handleVoice={() => setIsVoice(!isVoice)} />
-                    ) : (
-                      <CreateAnything handleVoice={() => setIsVoice(!isVoice)} />
-                    )
+                    <CreateAnything handleVoice={() => setIsVoice(!isVoice)} />
                   )}
                   {isVoice && (
                     <Typography
@@ -229,13 +222,14 @@ const DashboardPage = () => {
               className="flex flex-col pt-6"
               variants={fadeIn}
             >
-              <div className="px-6 py-2 w-full sm:rounded-t-2xl sm:shadow-md sm:border sm:border-gray-100 sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
+              <div className="px-6 py-2 w-full sm:rounded-t-2xl sm:shadow-md sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
                 {renderContentBasedOnMode(mode)}
+                <Footer />
               </div>
             </m.div>
           </m.div>
         </div>
-        <Footer />
+
         {/* Floating Voice Conversation - only show when in voice mode and scrolled */}
       </CompactLayout>
       {isVoice && showFloatingVoice && (

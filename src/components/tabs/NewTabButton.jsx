@@ -1,11 +1,10 @@
-import { IconButton, Tooltip } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import { memo, useCallback } from 'react';
 
 import { createNewThread } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
-import Iconify from '../iconify/Iconify.jsx';
 
-const NewTabButton = ({ onNewTab, disabled = false, size = 'small', variant = 'outlined' }) => {
+const NewTabButton = ({ onNewTab, disabled = false }) => {
   const handleNewTab = useCallback(async () => {
     if (disabled) return;
 
@@ -26,17 +25,29 @@ const NewTabButton = ({ onNewTab, disabled = false, size = 'small', variant = 'o
       title="New thread"
       placement="bottom"
     >
-      <IconButton
-        size={size}
+      <div
+        className="flex items-center justify-center px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
         onClick={handleNewTab}
-        disabled={disabled}
-        color="inherit"
+        role="button"
+        aria-label="New thread"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleNewTab();
+          }
+        }}
+        style={{
+          minWidth: 'auto',
+          width: 32,
+          height: 32,
+          fontSize: '16px',
+          fontWeight: 'bold',
+          color: 'inherit',
+        }}
       >
-        <Iconify
-          icon="solar:pen-new-square-linear"
-          width={18}
-        />
-      </IconButton>
+        +
+      </div>
     </Tooltip>
   );
 };

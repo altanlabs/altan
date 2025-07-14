@@ -15,6 +15,7 @@ import {
   createThread,
   makeSelectMessage,
   selectMe,
+  selectMembers,
   selectMessagesById,
   selectRoomState,
   sendMessage,
@@ -22,6 +23,7 @@ import {
 } from '../redux/slices/room';
 import { dispatch, useSelector } from '../redux/store.js';
 import { optimai_room } from '../utils/axios.js';
+import { getMemberDetails } from './room/utils.js';
 
 const handleCancelReply = (threadId) => dispatch(setThreadRespond({ messageId: null, threadId }));
 
@@ -71,31 +73,51 @@ const FloatingTextArea = ({
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
 
   const { enqueueSnackbar } = useSnackbar();
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [attachments, setAttachments] = useState([]);
   const editorRef = useRef({});
 
+  // Get agents from room members
+  const members = useSelector(selectMembers);
+  const agents = Object.values(members.byId || {}).filter(member =>
+    member?.member?.member_type === 'agent',
+  ).map(member => getMemberDetails(member));
+
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => !me || (!!me && ['viewer', 'listener'].includes(me.role)), [me]);
   const sendContent = useCallback(
     (content) => {
       if (content.trim() || (attachments && attachments.length > 0)) {
+        // Handle selected agent mention
+        let finalContent = content;
+        if (selectedAgent) {
+          console.log('🏷️ Prepending mention for selected agent:', selectedAgent);
+          const mentionText = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**`;
+          finalContent = mentionText + (content ? '\n' + content : '');
+          console.log('📝 Final content with mention:', finalContent);
+
+          // Clear selected agent after sending
+          setSelectedAgent(null);
+          console.log('🧹 Cleared selected agent');
+        }
+
         // Create a clean attachments array without `preview`
         const sanitizedAttachments = attachments.map(({ preview, ...rest }) => rest);
 
         dispatch(
           !messageId
-            ? sendMessage({ threadId, content, attachments: sanitizedAttachments })
-            : createThread({ content, attachments: sanitizedAttachments }),
+            ? sendMessage({ threadId, content: finalContent, attachments: sanitizedAttachments })
+            : createThread({ content: finalContent, attachments: sanitizedAttachments }),
         ).catch((e) => enqueueSnackbar(e, { variant: 'error' }));
 
         // Clear attachments after sending
         setAttachments([]);
       }
     },
-    [attachments, messageId, threadId, enqueueSnackbar],
+    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent],
   );
 
   // Removes a single attachment by index
@@ -240,7 +262,7 @@ const FloatingTextArea = ({
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
                 ? 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
-                : 'w-full max-w-[700px] mx-auto pb-3 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
+                : 'w-full max-w-[700px] mx-auto pb-2 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
             }`}
             style={
               mode === 'mobile'
@@ -403,6 +425,9 @@ const FloatingTextArea = ({
                   mode={mode}
                   mobileActiveView={mobileActiveView}
                   onMobileToggle={onMobileToggle}
+                  selectedAgent={selectedAgent}
+                  setSelectedAgent={setSelectedAgent}
+                  agents={agents}
                 />
               </div>
             )}

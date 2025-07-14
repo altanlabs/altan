@@ -34,7 +34,7 @@ const GeneralToolbar = ({ className }) => {
   return (
     <div
       className={cn(
-        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md bg-[#FFFFFF]/95 dark:bg-[#121212]/95',
+        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md bg-[#FFFFFF]/95 dark:bg-[#121212]/95 px-1',
         className,
       )}
     >
