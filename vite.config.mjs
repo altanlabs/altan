@@ -61,6 +61,7 @@ export default defineConfig(({ mode }) => {
       reportCompressedSize: false,
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
+        treeshake: false, // Disable tree-shaking to avoid readonly property issues
         output: {
           // Fix chunk naming to ensure all assets go to assets/ directory
           chunkFileNames: 'assets/[name]-[hash].js',
@@ -68,10 +69,10 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name]-[hash].[ext]',
           // Remove ALL manual chunking - let Vite handle dependencies automatically
           manualChunks: undefined,
-          minifyInternalExports: true,
+          minifyInternalExports: false, // Disable this to avoid property assignment issues
           format: isMobile ? 'es' : 'es',
         },
-        maxParallelFileOps: 2,
+        maxParallelFileOps: 1, // Reduce parallel operations in CI
       },
     },
     plugins: [
