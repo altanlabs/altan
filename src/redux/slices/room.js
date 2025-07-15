@@ -542,8 +542,18 @@ const slice = createSlice({
         }
       });
     },
-    addMember: (state, action) => {
-      const { roomMember, currentUserId } = action.payload;
+        addMember: (state, action) => {
+      const payload = action.payload;
+
+      // Handle both old and new payload structures for backward compatibility
+      const roomMember = payload.roomMember || payload;
+      const currentUserId = payload.currentUserId;
+
+      if (!roomMember || !roomMember.id) {
+        console.warn('addMember: Invalid roomMember payload', payload);
+        return;
+      }
+
       state.members.byId[roomMember.id] = roomMember;
       state.members.allIds.push(roomMember.id);
 
