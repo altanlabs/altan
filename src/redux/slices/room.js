@@ -189,12 +189,12 @@ const extractMessagesFromThread = (state, thread) => {
     delete message.executions;
     messagesById[message.id] = message;
   }
-  Object.assign(state.messages.byId, messagesById);
+  state.messages.byId = { ...state.messages.byId, ...messagesById };
   state.messages.allIds = [...state.messages.allIds, ...Object.keys(messagesById)];
-  Object.assign(state.messagesExecutions, messagesExecutions);
-  Object.assign(state.executions.byId, executionsById);
+  state.messagesExecutions = { ...state.messagesExecutions, ...messagesExecutions };
+  state.executions.byId = { ...state.executions.byId, ...executionsById };
   state.executions.allIds = [...state.executions.allIds, ...Object.keys(executionsById)];
-  Object.assign(state.messagesContent, messagesContentById);
+  state.messagesContent = { ...state.messagesContent, ...messagesContentById };
 };
 
 const mergeShallowArray = (array1, array2) => {
@@ -352,7 +352,7 @@ const slice = createSlice({
         delete thread.messages.allIds;
       }
       state.messages.allIds = Object.keys(state.messages.byId);
-      Object.assign(state.threads.byId, tempThreads.byId);
+      state.threads.byId = { ...state.threads.byId, ...tempThreads.byId };
       state.threads.allIds = Object.keys(tempThreads.byId);
       state.events = paginateCollection(events);
       state.initialized.room = true;
@@ -420,7 +420,7 @@ const slice = createSlice({
       if (!state.threads.byId[thread.id]) {
         state.threads.byId[thread.id] = tempThread;
       } else {
-        Object.assign(state.threads.byId[thread.id], tempThread);
+        state.threads.byId[thread.id] = { ...state.threads.byId[thread.id], ...tempThread };
       }
       state.thread.main.current = state.mainThread = thread.id;
       state.initialized.mainThread = true;
@@ -443,7 +443,7 @@ const slice = createSlice({
         state.thread.drawer = initialState.thread.drawer;
       } else {
         // state.thread.drawer = drawer;
-        Object.assign(state.thread.drawer, drawer);
+        state.thread.drawer = { ...state.thread.drawer, ...drawer };
       }
       state.drawerOpen = true;
     },
@@ -542,7 +542,7 @@ const slice = createSlice({
         }
       });
     },
-        addMember: (state, action) => {
+    addMember: (state, action) => {
       const payload = action.payload;
 
       // Handle both old and new payload structures for backward compatibility
