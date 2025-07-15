@@ -7,12 +7,11 @@ import AgentFormWithButtons from './create/AgentFormWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import SendButton from '../../../components/attachment/SendButton';
 import Iconify from '../../../components/iconify';
-import { createAgent } from '../../../redux/slices/general';
+import { createAgent, selectSortedAgents } from '../../../redux/slices/general';
 import { useSelector } from '../../../redux/store';
 import { optimai } from '../../../utils/axios';
 
-// Agent selector
-const getAgents = (state) => state.general.account?.agents;
+// Agent selectors
 const getAccount = (state) => state.general.account;
 
 // Chat Mode Component
@@ -23,7 +22,7 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
 
-  const shouldShowAgentSelection = isAuthenticated && agents && agents.length > 0;
+  const shouldShowAgentSelection = isAuthenticated && agents.length > 0;
 
   // Get localStorage key for this account
   const getLocalStorageKey = () => (account?.id ? `selected_agent_${account.id}` : null);
@@ -31,7 +30,7 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
   // Load selected agent from localStorage on mount
   useEffect(() => {
     const storageKey = getLocalStorageKey();
-    if (storageKey && agents && agents.length > 0) {
+    if (storageKey && agents.length > 0) {
       const savedAgentId = localStorage.getItem(storageKey);
       if (savedAgentId) {
         const foundAgent = agents.find((agent) => agent.id === savedAgentId);
@@ -114,7 +113,7 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
                 ) : undefined
               }
               icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
-              label={selectedAgent ? selectedAgent.name : `${agents?.length || 0} agents`}
+              label={selectedAgent ? selectedAgent.name : `${agents.length} agents`}
               size="small"
               variant="outlined"
               color="default"
@@ -499,7 +498,7 @@ CreateMode.displayName = 'CreateMode';
 // Main Component
 function CreateAgentDashboard({ handleVoice }) {
   const { isAuthenticated } = useAuthContext();
-  const agents = useSelector(getAgents);
+  const agents = useSelector(selectSortedAgents);
   const account = useSelector(getAccount);
   const history = useHistory();
   const location = useLocation();

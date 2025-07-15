@@ -6,21 +6,21 @@ import VoiceConversation from './VoiceConversation';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import Iconify from '../../../components/iconify';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
+import { selectSortedAgents } from '../../../redux/slices/general';
 
 // Agent selector
-const getAgents = (state) => state.general.account?.agents;
 const getAccount = (state) => state.general.account;
 
 const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
   const { isAuthenticated } = useAuthContext();
-  const agents = useSelector(getAgents);
+  const agents = useSelector(selectSortedAgents);
   const account = useSelector(getAccount);
   const { isConnected } = useVoiceConversation();
 
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
 
-  const shouldShowAgentSelection = isAuthenticated && agents && agents.length > 0;
+  const shouldShowAgentSelection = isAuthenticated && agents.length > 0;
 
   // Get localStorage key for this account
   const getLocalStorageKey = () => (account?.id ? `selected_agent_${account.id}` : null);
@@ -28,7 +28,7 @@ const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
   // Load selected agent from localStorage on mount
   useEffect(() => {
     const storageKey = getLocalStorageKey();
-    if (storageKey && agents && agents.length > 0) {
+    if (storageKey && agents.length > 0) {
       const savedAgentId = localStorage.getItem(storageKey);
       if (savedAgentId) {
         const foundAgent = agents.find((agent) => agent.id === savedAgentId);

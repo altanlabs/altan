@@ -854,6 +854,19 @@ export const selectCustomConnectionTypes = createSelector(
   },
 );
 
+export const selectSortedAgents = createSelector(
+  [selectAccount],
+  (account) => {
+    const agents = account?.agents;
+    return agents ? [...agents].sort((a, b) => a.name.localeCompare(b.name)) : [];
+  },
+  {
+    memoizeOptions: {
+      resultEqualityCheck: checkArraysEqualsProperties(),
+    },
+  },
+);
+
 export const selectAccountDetails = createSelector(
   [selectAccount],
   (account) =>
