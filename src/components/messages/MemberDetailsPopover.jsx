@@ -57,7 +57,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   const memberType = member.member?.member_type || member.member_type;
 
   // Fix: Default to mention_only when undefined
-  const agentInteraction = member.agent_interaction || 'mention_only';
+  const agentInteraction = member?.agent_interaction || 'mention_only';
 
   const handleEditAgent = () => {
     if (isAgent && (member.member?.agent?.id || member.agent?.id)) {
@@ -67,6 +67,10 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   };
 
   const handleRoleChange = async (newRole) => {
+    if (!member?.id) {
+      console.error('No member ID available for role change');
+      return;
+    }
     try {
       await dispatch(
         patchMember({
@@ -80,6 +84,10 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   };
 
   const handleAgentInteractionChange = async (newInteraction) => {
+    if (!member?.id) {
+      console.error('No member ID available for agent interaction change');
+      return;
+    }
     try {
       await dispatch(
         patchMember({
@@ -93,6 +101,10 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   };
 
   const handleMemberAction = async (action, actionData = {}) => {
+    if (!member?.id) {
+      console.error('No member ID available for member action');
+      return;
+    }
     try {
       switch (action) {
         case 'kick':
@@ -117,7 +129,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   };
 
   const canShowSettings = me && ['admin', 'owner'].includes(me.role || 'viewer');
-  const canManageRoles = canShowSettings && (member.role !== 'owner' || me.role === 'owner');
+  const canManageRoles = canShowSettings && (member?.role !== 'owner' || (me && me.role === 'owner'));
   const canManageAgentInteraction = canShowSettings && isAgent;
 
   const roleOptions = [
@@ -127,7 +139,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
     { label: 'Viewer', value: 'viewer' },
   ];
 
-  if (me.role === 'owner' && member.role !== 'owner') {
+  if (me && me.role === 'owner' && member?.role !== 'owner') {
     roleOptions.push({ label: 'Owner', value: 'owner' });
   }
 
@@ -222,17 +234,17 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
               <Button
                 variant="outlined"
                 size="small"
-                color={member.is_kicked ? 'success' : 'error'}
+                color={member?.is_kicked ? 'success' : 'error'}
                 startIcon={
                   <Iconify
-                    icon={member.is_kicked ? 'mdi:account-plus' : 'mdi:account-minus'}
+                    icon={member?.is_kicked ? 'mdi:account-plus' : 'mdi:account-minus'}
                     width={16}
                   />
                 }
-                onClick={() => handleMemberAction(member.is_kicked ? 'readmit' : 'kick')}
+                onClick={() => handleMemberAction(member?.is_kicked ? 'readmit' : 'kick')}
                 fullWidth
               >
-                {member.is_kicked ? 'Readmit Member' : 'Kick Member'}
+                {member?.is_kicked ? 'Readmit Member' : 'Kick Member'}
               </Button>
             )}
 
@@ -244,7 +256,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
               >
                 <InputLabel>Role</InputLabel>
                 <Select
-                  value={member.role || 'member'}
+                  value={member?.role || 'member'}
                   onChange={(e) => handleRoleChange(e.target.value)}
                   label="Role"
                   startAdornment={
@@ -313,12 +325,12 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
             <Box sx={{ mt: 0.5, pl: 1 }}>
               <DetailRow
                 label="Member ID"
-                value={member.id}
+                value={member?.id}
                 copyable
               />
               <DetailRow
                 label="Created"
-                value={formatDate(member.date_creation)}
+                value={formatDate(member?.date_creation)}
               />
               <DetailRow
                 label="Type"
