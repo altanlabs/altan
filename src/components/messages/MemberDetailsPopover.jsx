@@ -1,4 +1,15 @@
-import { Box, Typography, Stack, Button, Divider, Popover, Select, FormControl, InputLabel, MenuItem } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Stack,
+  Button,
+  Divider,
+  Popover,
+  Select,
+  FormControl,
+  InputLabel,
+  MenuItem,
+} from '@mui/material';
 import { memo } from 'react';
 import { useSelector } from 'react-redux';
 
@@ -184,13 +195,21 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
           </Stack>
 
           {/* Action Buttons and Controls */}
-          <Stack spacing={1} sx={{ mt: 1 }}>
+          <Stack
+            spacing={1}
+            sx={{ mt: 1 }}
+          >
             {/* Edit Agent Button (only for agents) */}
             {isAgent && (
               <Button
                 variant="outlined"
                 size="small"
-                startIcon={<Iconify icon="eva:edit-fill" width={16} />}
+                startIcon={
+                  <Iconify
+                    icon="eva:edit-fill"
+                    width={16}
+                  />
+                }
                 onClick={handleEditAgent}
                 fullWidth
               >
@@ -219,16 +238,28 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
 
             {/* Role Select Dropdown */}
             {canManageRoles && (
-              <FormControl fullWidth size="small">
+              <FormControl
+                fullWidth
+                size="small"
+              >
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={member.role || 'member'}
                   onChange={(e) => handleRoleChange(e.target.value)}
                   label="Role"
-                  startAdornment={<Iconify icon="mdi:account-star" width={16} sx={{ mr: 1 }} />}
+                  startAdornment={
+                    <Iconify
+                      icon="mdi:account-star"
+                      width={16}
+                      sx={{ mr: 1 }}
+                    />
+                  }
                 >
                   {roleOptions.map((role) => (
-                    <MenuItem key={role.value} value={role.value}>
+                    <MenuItem
+                      key={role.value}
+                      value={role.value}
+                    >
                       {role.label}
                     </MenuItem>
                   ))}
@@ -238,16 +269,28 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
 
             {/* Agent Interaction Select Dropdown */}
             {canManageAgentInteraction && (
-              <FormControl fullWidth size="small">
+              <FormControl
+                fullWidth
+                size="small"
+              >
                 <InputLabel>Agent Mode</InputLabel>
                 <Select
                   value={agentInteraction}
                   onChange={(e) => handleAgentInteractionChange(e.target.value)}
                   label="Agent Mode"
-                  startAdornment={<Iconify icon="fluent:comment-multiple-mention-16-filled" width={16} sx={{ mr: 1 }} />}
+                  startAdornment={
+                    <Iconify
+                      icon="fluent:comment-multiple-mention-16-filled"
+                      width={16}
+                      sx={{ mr: 1 }}
+                    />
+                  }
                 >
                   {agentInteractionOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
+                    <MenuItem
+                      key={option.value}
+                      value={option.value}
+                    >
                       {option.label}
                     </MenuItem>
                   ))}

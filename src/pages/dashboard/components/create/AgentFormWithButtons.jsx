@@ -1,9 +1,11 @@
 import { Icon } from '@iconify/react';
+import { Chip, Avatar, Popover, Box, Typography, MenuItem } from '@mui/material';
 import { m } from 'framer-motion';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
 import VoiceSelector from '../../../../components/agents/v2/components/VoiceSelector';
+import Iconify from '../../../../components/iconify';
 
 function AgentFormWithButtons({
   formData,
@@ -14,7 +16,15 @@ function AgentFormWithButtons({
   agentTypes,
   industries,
   availableGoals,
-  showIndustry,
+  shouldShowAgentSelection,
+  onAgentSelect,
+  onNewAgentClick,
+  agents,
+  selectedAgent,
+  setSelectedAgent,
+  agentMenuAnchor,
+  handleAgentMenuOpen,
+  handleAgentMenuClose,
 }) {
   const textareaRef = useRef(null);
   const [isStructuredMode, setIsStructuredMode] = useState(true);
@@ -118,6 +128,11 @@ function AgentFormWithButtons({
       // In text mode, check if there's content in useCase
       return formData.useCase.trim().length > 0;
     }
+  };
+
+  // Check if form is ready for agent selection
+  const isAgentSelectionReady = () => {
+    return formData.useCase.trim().length > 0;
   };
 
   // Toggle between structured and free-form mode
@@ -348,26 +363,8 @@ function AgentFormWithButtons({
               </div>
             )}
 
-            {activeField.type === 'goal' && (
-              <div className="p-2 max-h-48 overflow-y-auto">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Goal</div>
-                {availableGoals.map((goal) => (
-                  <button
-                    key={goal}
-                    onClick={() => {
-                      handleInputChange('goal', goal);
-                      setActiveField(null);
-                    }}
-                    className="w-full text-left px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                  >
-                    {goal}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeField.type === 'industry' && showIndustry && (
-              <div className="p-2 max-h-48 overflow-y-auto">
+            {activeField.type === 'industry' && (
+              <div className="p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Industry</div>
                 {industries.map((industry) => (
                   <button
@@ -384,6 +381,24 @@ function AgentFormWithButtons({
               </div>
             )}
 
+            {activeField.type === 'goal' && (
+              <div className="p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Goal</div>
+                {availableGoals.map((goal) => (
+                  <button
+                    key={goal}
+                    onClick={() => {
+                      handleInputChange('goal', goal);
+                      setActiveField(null);
+                    }}
+                    className="w-full text-left px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  >
+                    {goal}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {activeField.type === 'name' && (
               <div className="p-2">
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Agent Name</div>
@@ -391,12 +406,6 @@ function AgentFormWithButtons({
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  onBlur={() => setActiveField(null)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setActiveField(null);
-                    }
-                  }}
                   placeholder="Enter agent name..."
                   className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   autoFocus
@@ -449,6 +458,130 @@ function AgentFormWithButtons({
                 className="w-5 h-5 text-slate-700 dark:text-white"
               />
             </button>
+
+            {/* Agent Selection Chip */}
+            {shouldShowAgentSelection && (
+              <Chip
+                avatar={
+                  selectedAgent ? (
+                    <Avatar
+                      src={selectedAgent.avatar_url}
+                      alt={selectedAgent.name}
+                      sx={{ width: 20, height: 20 }}
+                    />
+                  ) : undefined
+                }
+                icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
+                label={
+                  selectedAgent
+                    ? selectedAgent.name
+                    : `${agents?.length || 0} agents`
+                }
+                size="small"
+                variant="outlined"
+                color="default"
+                onClick={handleAgentMenuOpen}
+                onDelete={selectedAgent ? () => setSelectedAgent(null) : undefined}
+                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                sx={{
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  height: '28px',
+                  '& .MuiChip-icon': {
+                    fontSize: '14px',
+                    marginLeft: '4px',
+                  },
+                }}
+              />
+            )}
+
+            {/* Agent Menu */}
+            <Popover
+              open={Boolean(agentMenuAnchor)}
+              anchorEl={agentMenuAnchor}
+              onClose={handleAgentMenuClose}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              PaperProps={{
+                sx: {
+                  maxWidth: '250px',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                },
+              }}
+            >
+              <Box p={1}>
+                <Typography
+                  variant="caption"
+                  sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
+                >
+                  Select an agent or create new
+                </Typography>
+                {/* New Agent option */}
+                <MenuItem
+                  onClick={onNewAgentClick}
+                  sx={{
+                    borderRadius: '8px',
+                    margin: '2px 0',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      marginRight: 1,
+                      backgroundColor: 'primary.main',
+                    }}
+                  >
+                    <Iconify icon="mdi:plus" sx={{ fontSize: 16 }} />
+                  </Avatar>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 500 }}
+                  >
+                    New Agent
+                  </Typography>
+                </MenuItem>
+                {/* Existing agents */}
+                {agents?.map((agent) => (
+                  <MenuItem
+                    key={agent.id}
+                    onClick={() => onAgentSelect(agent)}
+                    disabled={!isAgentSelectionReady()}
+                    sx={{
+                      borderRadius: '8px',
+                      margin: '2px 0',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                      },
+                    }}
+                  >
+                    <Avatar
+                      src={agent.avatar_url}
+                      alt={agent.name}
+                      sx={{ width: 24, height: 24, marginRight: 1 }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 500 }}
+                    >
+                      {agent.name}
+                    </Typography>
+                  </MenuItem>
+                ))}
+              </Box>
+            </Popover>
 
             {/* Mode indicator */}
             {isStructuredMode && (

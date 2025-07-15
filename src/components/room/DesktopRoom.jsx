@@ -2,6 +2,7 @@ import { Drawer } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import React, { memo, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import RoomContent from './RoomContent.jsx';
 import Threads from './Threads.jsx';
@@ -9,7 +10,7 @@ import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
-import { selectRoomId, selectRoomState, setDrawerOpen } from '../../redux/slices/room';
+import { selectRoomId, selectRoomState, setDrawerOpen, createNewThread, sendMessage } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
 const onCloseDrawer = () => dispatch(setDrawerOpen(false));
@@ -39,6 +40,8 @@ const DesktopRoom = ({
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
   const { initialized, isLoading, drawerOpen } = useSelector(roomSelector);
+  const location = useLocation();
+  const history = useHistory();
 
   useEffect(() => {
     if (isOpen && roomId) {
@@ -49,6 +52,40 @@ const DesktopRoom = ({
       };
     }
   }, [isOpen, roomId]);
+
+  // Handle message query parameter
+  useEffect(() => {
+    if (initialized.room && roomId && location.search) {
+      const searchParams = new URLSearchParams(location.search);
+      const message = searchParams.get('message');
+
+      if (message) {
+        // Create a new thread and send the message
+        dispatch(createNewThread())
+          .then((threadId) => {
+            if (threadId) {
+              // Send the message to the new thread
+              dispatch(sendMessage({
+                threadId,
+                content: decodeURIComponent(message),
+                attachments: [],
+              }));
+            }
+          })
+          .catch((error) => {
+            console.error('Error creating thread or sending message:', error);
+          });
+
+        // Clean up the URL by removing the message parameter
+        searchParams.delete('message');
+        const newSearch = searchParams.toString();
+        history.replace({
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : '',
+        });
+      }
+    }
+  }, [initialized.room, roomId, location.search, location.pathname, history]);
 
   const renderRoomContent = <RoomContent className="w-full" />;
 

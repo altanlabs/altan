@@ -8,20 +8,19 @@ import AltanersWidget from './components/AltanersWidget';
 import CreateAgentDashboard from './components/CreateAgentDashboard.jsx';
 import CreateAnything from './components/CreateAnything.jsx';
 import VoiceConversation from './components/VoiceConversation.jsx';
+import VoiceConversationWithAgentSelection from './components/VoiceConversationWithAgentSelection.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
 import Footer from '../../layouts/main/Footer.jsx';
 import useLocales from '../../locales/useLocales.js';
-import { selectIsAccountFree } from '../../redux/slices/general';
 import Agents from '../../sections/@dashboard/agents/Agents.jsx';
 import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
 
 const DashboardPage = () => {
   const { mode = 'projects' } = useParams();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
   const accountId = useSelector((state) => state.general.account?.id);
-  const isAccountFree = useSelector(selectIsAccountFree);
 
   const agents = {
     unauthenticated: {
@@ -163,13 +162,15 @@ const DashboardPage = () => {
                       mb: 1,
                     }}
                   >
-                    {translate(
-                      mode === 'agents'
-                        ? 'dashboard.agents.title'
-                        : mode === 'flows'
-                          ? 'dashboard.flows.title'
-                          : 'dashboard.createAnything.title',
-                    )}
+                    {mode === 'agents' && isAuthenticated && user?.first_name && user?.last_name
+                      ? 'What can I do for you?'
+                      : translate(
+                          mode === 'agents'
+                            ? 'dashboard.agents.title'
+                            : mode === 'flows'
+                              ? 'dashboard.flows.title'
+                              : 'dashboard.createAnything.title',
+                        )}
                   </Typography>
                   <Typography
                     variant="h6"
@@ -180,22 +181,30 @@ const DashboardPage = () => {
                       mb: 2,
                     }}
                   >
-                    {translate(
-                      mode === 'agents'
-                        ? 'dashboard.agents.subtitle'
-                        : mode === 'flows'
-                          ? 'dashboard.flows.subtitle'
-                          : 'dashboard.createAnything.subtitle',
-                    )}
+                    {mode === 'agents' && isAuthenticated && user?.first_name && user?.last_name
+                      ? 'Chat with your agents to get the job done'
+                      : translate(
+                          mode === 'agents'
+                            ? 'dashboard.agents.subtitle'
+                            : mode === 'flows'
+                              ? 'dashboard.flows.subtitle'
+                              : 'dashboard.createAnything.subtitle',
+                        )}
                   </Typography>
                   {/* Only show original voice component when not floating or when not in voice mode */}
                   {isVoice ? (
-                    <VoiceConversation
-                      altanAgentId={agentConfig.id}
-                      agentName={agentConfig.name}
-                      displayAvatar={agentConfig.displayAvatar}
-                      dynamicVariables={agentConfig?.dynamicVariables}
-                    />
+                    mode === 'agents' ? (
+                      <VoiceConversationWithAgentSelection
+                        onCreateAgent={() => setIsVoice(false)}
+                      />
+                    ) : (
+                      <VoiceConversation
+                        altanAgentId={agentConfig.id}
+                        agentName={agentConfig.name}
+                        displayAvatar={agentConfig.displayAvatar}
+                        dynamicVariables={agentConfig?.dynamicVariables}
+                      />
+                    )
                   ) : mode === 'agents' ? (
                     <CreateAgentDashboard handleVoice={() => setIsVoice(!isVoice)} />
                   ) : (

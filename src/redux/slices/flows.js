@@ -1737,7 +1737,9 @@ export const deleteFlowModule = (moduleId) => async () => {
 
 export const duplicateWorkflow = (flowId, componentId) => async () => {
   try {
-    const response = await optimai.post(`/flow/${flowId}/duplicate?altaner_component_id=${componentId}`);
+    const response = await optimai.post(
+      `/flow/${flowId}/duplicate?altaner_component_id=${componentId}`,
+    );
     return response.flow;
   } catch (e) {
     return Promise.reject(e);

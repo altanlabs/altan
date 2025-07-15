@@ -439,7 +439,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
           </button>
 
           {/* Agent Selection Chip */}
-          {agents.length > 0 && (
+          {agents.length > 1 && (
             <Chip
               avatar={
                 selectedAgent ? (
@@ -454,9 +454,7 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
               label={
                 selectedAgent
                   ? selectedAgent.name
-                  : agents.length === 1
-                    ? agents[0].name
-                    : `${agents.length} agents`
+                  : `${agents.length} agents`
               }
               size="small"
               variant="soft"

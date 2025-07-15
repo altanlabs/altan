@@ -18,7 +18,7 @@ import { optimai } from '../../utils/axios';
 import {CustomAvatar} from '../custom-avatar';
 
 const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [openPopover, setOpenPopover] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -26,7 +26,7 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
 
   const handleClosePopover = useCallback(() => setOpenPopover(null), []);
 
-  const navigateToMember = useCallback(() => {
+  const navigateToEditPage = useCallback(() => {
     if (onClick) {
       onClick(agent.id);
     } else {
@@ -44,6 +44,15 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
     }
     handleClosePopover();
   }, [agent.id, handleClosePopover, history, onClick]);
+
+  const handleNavigateToRoom = useCallback(async () => {
+    try {
+      const response = await optimai.get(`/agent/${agent.id}/dm`);
+      history.push(`/room/${response.data.id}`);
+    } catch (error) {
+      console.error('Error getting DM room:', error);
+    }
+  }, [agent.id, history]);
 
   const handleDelete = useCallback(() => {
     dispatchWithFeedback(deleteAccountAgent(agent.id), {
@@ -89,7 +98,7 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
       {!minified ? (
         <div
           className="flex flex-col items-center text-center cursor-pointer p-2"
-          onClick={navigateToMember}
+          onClick={handleNavigateToRoom}
           onContextMenu={handleContextMenu}
         >
           {/* Agent Avatar with Status Badge */}
@@ -124,7 +133,7 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
         >
           <div className="relative">
             <CustomAvatar
-              onClick={navigateToMember}
+              onClick={handleNavigateToRoom}
               onContextMenu={handleContextMenu}
               alt={agent.name}
               name={agent.name}
@@ -148,7 +157,7 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
         arrow="bottom-center"
         sx={{ width: 200 }}
       >
-        <MenuItem onClick={navigateToMember}>
+        <MenuItem onClick={navigateToEditPage}>
           <Iconify icon="eva:edit-fill" />
           Edit
         </MenuItem>

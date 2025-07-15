@@ -9,7 +9,6 @@ const SendButton = ({ onSendMessage, isDisabled }) => {
       onSendMessage();
     }
   };
-
   return (
     <Button
       onClick={handleClick}

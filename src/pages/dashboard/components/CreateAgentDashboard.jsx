@@ -1,291 +1,270 @@
+import { Chip, Avatar, Popover, Box, Typography, MenuItem } from '@mui/material';
 import { memo, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import AgentFormWithButtons from './create/AgentFormWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import SendButton from '../../../components/attachment/SendButton';
+import Iconify from '../../../components/iconify';
 import { createAgent } from '../../../redux/slices/general';
+import { useSelector } from '../../../redux/store';
+import { optimai } from '../../../utils/axios';
 
-/**
- * Track agent creation events
- */
-const trackCreateAgent = (agentData) => {
-  try {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'create_agent', {
-        agent_name: agentData.name || 'Untitled Agent',
-        agent_type: agentData.agentType || 'General Assistant',
-        industry: agentData.industry || null,
-        goal: agentData.goal || 'Assist users',
-        has_voice: agentData.hasVoice || false,
-        voice_name: agentData.voiceName || null,
-        use_case_length: agentData.useCaseLength || 0,
-        was_enhanced: agentData.wasEnhanced || false,
-        creation_source: 'dashboard',
-      });
+// Agent selector
+const getAgents = (state) => state.general.account?.agents;
+const getAccount = (state) => state.general.account;
+
+// Chat Mode Component
+const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, account }) => {
+  const history = useHistory();
+  const [loading, setLoading] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
+
+  const shouldShowAgentSelection = isAuthenticated && agents && agents.length > 0;
+
+  // Get localStorage key for this account
+  const getLocalStorageKey = () => (account?.id ? `selected_agent_${account.id}` : null);
+
+  // Load selected agent from localStorage on mount
+  useEffect(() => {
+    const storageKey = getLocalStorageKey();
+    if (storageKey && agents && agents.length > 0) {
+      const savedAgentId = localStorage.getItem(storageKey);
+      if (savedAgentId) {
+        const foundAgent = agents.find((agent) => agent.id === savedAgentId);
+        if (foundAgent) {
+          setSelectedAgent(foundAgent);
+        }
+      }
     }
-  } catch (error) {
-    console.error('Error tracking agent creation:', error);
-  }
-};
+  }, [agents, account?.id]);
 
-// Agent types and configurations
-const agentTypes = ['Personal Assistant', 'Business Agent'];
+  // Save selected agent to localStorage when it changes
+  useEffect(() => {
+    const storageKey = getLocalStorageKey();
+    if (storageKey && selectedAgent) {
+      localStorage.setItem(storageKey, selectedAgent.id);
+    }
+  }, [selectedAgent, account?.id]);
 
-const personalAssistantGoals = [
-  'Personal Assistant',
-  'Learning Companion',
-  'Creative Helper',
-  'Health & Wellness',
-  'Task Management',
-  'Research Assistant',
-];
+  const handleAgentMenuOpen = (event) => {
+    event.preventDefault();
+    setAgentMenuAnchor(event.currentTarget);
+  };
 
-const industries = [
-  'Retail & E-commerce',
-  'Healthcare & Medical',
-  'Finance & Banking',
-  'Real Estate',
-  'Education & Training',
-  'Hospitality & Travel',
-  'Automotive',
-  'Professional Services',
-  'Technology & Software',
-  'Government & Public',
-  'Food & Beverage',
-  'Manufacturing',
-  'Fitness & Wellness',
-  'Legal Services',
-  'Non-Profit',
-  'Media & Entertainment',
-];
+  const handleAgentMenuClose = () => {
+    setAgentMenuAnchor(null);
+  };
 
-const industryGoalsMap = {
-  'Retail & E-commerce': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Product Recommendations',
-    'Order Tracking',
-    'Returns & Exchanges',
-    'Lead Generation',
-    'Loyalty Programs',
-  ],
-  'Healthcare & Medical': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Appointment Scheduling',
-    'Patient Intake',
-    'Symptom Guidance',
-    'Insurance Verification',
-    'Prescription Reminders',
-    'Telehealth Support',
-  ],
-  'Finance & Banking': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Account Inquiries',
-    'Loan Applications',
-    'Fraud Alerts',
-    'Investment Guidance',
-    'Bill Payment Support',
-    'Financial Planning',
-  ],
-  'Real Estate': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Property Search',
-    'Viewing Appointments',
-    'Market Information',
-    'Mortgage Guidance',
-    'Listing Information',
-  ],
-  'Education & Training': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Student Enrollment',
-    'Course Recommendations',
-    'Tutoring Support',
-    'Campus Information',
-    'Career Guidance',
-    'Learning Companion',
-  ],
-  'Hospitality & Travel': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Reservation Management',
-    'Concierge Services',
-    'Guest Services',
-    'Travel Planning',
-    'Loyalty Programs',
-    'Check-in Support',
-  ],
-  Automotive: [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Service Scheduling',
-    'Vehicle Diagnostics',
-    'Parts Ordering',
-    'Warranty Information',
-    'Sales Support',
-    'Financing Assistance',
-  ],
-  'Professional Services': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Consultation Booking',
-    'Client Intake',
-    'Service Recommendations',
-    'Project Updates',
-    'Billing Inquiries',
-    'Resource Library',
-  ],
-  'Technology & Software': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Technical Support',
-    'Product Demos',
-    'API Documentation',
-    'User Onboarding',
-    'Feature Requests',
-    'Sales Engineering',
-  ],
-  'Government & Public': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Citizen Services',
-    'Permit Applications',
-    'Tax Assistance',
-    'Public Information',
-    'Emergency Information',
-    'Appointment Scheduling',
-  ],
-  'Food & Beverage': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Order Taking',
-    'Reservation Management',
-    'Menu Recommendations',
-    'Delivery Tracking',
-    'Loyalty Programs',
-    'Nutritional Information',
-  ],
-  Manufacturing: [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Inventory Management',
-    'Quality Control',
-    'Maintenance Scheduling',
-    'Safety Protocols',
-    'Production Planning',
-    'Supplier Communication',
-  ],
-  'Fitness & Wellness': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Class Booking',
-    'Workout Planning',
-    'Nutrition Guidance',
-    'Progress Tracking',
-    'Membership Management',
-    'Wellness Coaching',
-  ],
-  'Legal Services': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Consultation Scheduling',
-    'Case Intake',
-    'Legal Resources',
-    'Billing Inquiries',
-    'Document Preparation',
-    'Case Updates',
-  ],
-  'Non-Profit': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Volunteer Coordination',
-    'Donation Processing',
-    'Program Information',
-    'Event Management',
-    'Beneficiary Support',
-    'Impact Reporting',
-  ],
-  'Media & Entertainment': [
-    'Customer Support',
-    'Outbound Sales',
-    'Learning and Development',
-    'Scheduling',
-    'Lead Qualification',
-    'Answering Service',
-    'Content Recommendations',
-    'Subscription Management',
-    'Technical Support',
-    'Event Information',
-    'Fan Engagement',
-    'Content Discovery',
-  ],
-};
+  const handleAgentSelect = (agent) => {
+    setSelectedAgent(agent);
+    handleAgentMenuClose();
+  };
 
-function CreateAgentDashboard({ handleVoice }) {
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || !selectedAgent) return;
+
+    setLoading(true);
+    try {
+      const response = await optimai.get(`/agent/${selectedAgent.id}/dm`);
+      const roomId = response.data.id;
+      history.push(`/room/${roomId}?message=${encodeURIComponent(chatMessage)}`);
+    } catch (error) {
+      console.error('Error getting agent room:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const canSend = chatMessage.trim() && (selectedAgent || !shouldShowAgentSelection);
+
+  return (
+    <div className="w-full px-4 pt-3 pb-3 rounded-2xl shadow-lg bg-white dark:bg-[#1c1c1c]">
+      <textarea
+        value={chatMessage}
+        onChange={(e) => setChatMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Ask anything or describe what you need help with..."
+        className="w-full bg-transparent min-h-[24px] max-h-[200px] focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400/80 dark:placeholder-gray-500/80 resize-none mb-3"
+        style={{ fontSize: '16px' }}
+      />
+
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          {/* Agent Selection Chip */}
+          {shouldShowAgentSelection && (
+            <Chip
+              avatar={
+                selectedAgent ? (
+                  <Avatar
+                    src={selectedAgent.avatar_url}
+                    alt={selectedAgent.name}
+                    sx={{ width: 20, height: 20 }}
+                  />
+                ) : undefined
+              }
+              icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
+              label={selectedAgent ? selectedAgent.name : `${agents?.length || 0} agents`}
+              size="small"
+              variant="outlined"
+              color="default"
+              onClick={handleAgentMenuOpen}
+              onDelete={selectedAgent ? () => setSelectedAgent(null) : undefined}
+              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+              sx={{
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                height: '28px',
+                '& .MuiChip-icon': {
+                  fontSize: '14px',
+                  marginLeft: '4px',
+                },
+              }}
+            />
+          )}
+
+          {/* Agent Menu */}
+          <Popover
+            open={Boolean(agentMenuAnchor)}
+            anchorEl={agentMenuAnchor}
+            onClose={handleAgentMenuClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
+            }}
+            transformOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            PaperProps={{
+              sx: {
+                maxWidth: '250px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Box p={1}>
+              <Typography
+                variant="caption"
+                sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
+              >
+                Select an agent or create new
+              </Typography>
+              {/* New Agent option */}
+              <MenuItem
+                onClick={() => {
+                  onCreateAgent();
+                  handleAgentMenuClose();
+                }}
+                sx={{
+                  borderRadius: '8px',
+                  margin: '2px 0',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                }}
+              >
+                <Avatar
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    marginRight: 1,
+                    backgroundColor: 'primary.main',
+                  }}
+                >
+                  <Iconify
+                    icon="mdi:plus"
+                    sx={{ fontSize: 16 }}
+                  />
+                </Avatar>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 500 }}
+                >
+                  New Agent
+                </Typography>
+              </MenuItem>
+              {/* Existing agents */}
+              {agents?.map((agent) => (
+                <MenuItem
+                  key={agent.id}
+                  onClick={() => handleAgentSelect(agent)}
+                  sx={{
+                    borderRadius: '8px',
+                    margin: '2px 0',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  <Avatar
+                    src={agent.avatar_url}
+                    alt={agent.name}
+                    sx={{ width: 24, height: 24, marginRight: 1 }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 500 }}
+                  >
+                    {agent.name}
+                  </Typography>
+                </MenuItem>
+              ))}
+            </Box>
+          </Popover>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Voice input button */}
+          <button
+            onClick={handleVoice}
+            disabled={loading}
+            className="flex items-center justify-center p-2 rounded-full bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"></path>
+            </svg>
+          </button>
+
+          {/* Send button */}
+          {canSend && (
+            <SendButton
+              onSendMessage={handleSendMessage}
+              isDisabled={loading}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+ChatMode.displayName = 'ChatMode';
+
+// Create Mode Component
+const CreateMode = memo(({ handleVoice, onGoBack }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuthContext();
@@ -300,6 +279,58 @@ function CreateAgentDashboard({ handleVoice }) {
     voice: null,
     useCase: '',
   });
+
+  // Agent types and configurations
+  const agentTypes = ['Personal Assistant', 'Business Agent'];
+  const personalAssistantGoals = [
+    'Personal Assistant',
+    'Learning Companion',
+    'Creative Helper',
+    'Health & Wellness',
+    'Task Management',
+    'Research Assistant',
+  ];
+  const industries = [
+    'Retail & E-commerce',
+    'Healthcare & Medical',
+    'Finance & Banking',
+    'Real Estate',
+    'Education & Training',
+    'Hospitality & Travel',
+    'Automotive',
+    'Professional Services',
+    'Technology & Software',
+    'Government & Public',
+    'Food & Beverage',
+    'Manufacturing',
+    'Fitness & Wellness',
+    'Legal Services',
+    'Non-Profit',
+    'Media & Entertainment',
+  ];
+
+  const industryGoalsMap = {
+    'Retail & E-commerce': ['Customer Support', 'Outbound Sales', 'Product Recommendations'],
+    'Healthcare & Medical': ['Appointment Scheduling', 'Patient Intake', 'Symptom Guidance'],
+    'Finance & Banking': ['Account Inquiries', 'Loan Applications', 'Investment Guidance'],
+    'Real Estate': ['Property Search', 'Viewing Appointments', 'Market Information'],
+    'Education & Training': ['Student Enrollment', 'Course Recommendations', 'Tutoring Support'],
+    'Hospitality & Travel': ['Reservation Management', 'Concierge Services', 'Travel Planning'],
+    Automotive: ['Service Scheduling', 'Vehicle Diagnostics', 'Parts Ordering'],
+    'Professional Services': ['Consultation Booking', 'Client Intake', 'Service Recommendations'],
+    'Technology & Software': ['Technical Support', 'Product Demos', 'User Onboarding'],
+    'Government & Public': ['Citizen Services', 'Permit Applications', 'Public Information'],
+    'Food & Beverage': ['Order Taking', 'Reservation Management', 'Menu Recommendations'],
+    Manufacturing: ['Inventory Management', 'Quality Control', 'Production Planning'],
+    'Fitness & Wellness': ['Class Booking', 'Workout Planning', 'Nutrition Guidance'],
+    'Legal Services': ['Consultation Scheduling', 'Case Intake', 'Legal Resources'],
+    'Non-Profit': ['Volunteer Coordination', 'Donation Processing', 'Program Information'],
+    'Media & Entertainment': [
+      'Content Recommendations',
+      'Subscription Management',
+      'Fan Engagement',
+    ],
+  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -352,20 +383,17 @@ function CreateAgentDashboard({ handleVoice }) {
   };
 
   const handleCreate = async () => {
-    // Check if user is authenticated
     if (!isAuthenticated) {
       history.push('/auth/login');
       return;
     }
 
-    // Require at least a use case description
     if (!formData.useCase.trim()) {
       return;
     }
 
     setLoading(true);
     try {
-      // Call the enhancement endpoint with user's input
       const enhancementResponse = await fetch('https://api.altan.ai/galaxia/hook/IrrJw9', {
         method: 'POST',
         headers: {
@@ -381,8 +409,6 @@ function CreateAgentDashboard({ handleVoice }) {
       }
 
       const enhancementData = await enhancementResponse.json();
-
-      // Use the enhanced data from the API
       const agentName = enhancementData.name || formData.name || 'AI Assistant';
       const prompt =
         enhancementData.prompt ||
@@ -391,12 +417,10 @@ function CreateAgentDashboard({ handleVoice }) {
         enhancementData.description ||
         formData.useCase.substring(0, 100) + (formData.useCase.length > 100 ? '...' : '');
 
-      // Create agent using redux action
       const agentData = {
         name: agentName,
         prompt: prompt,
         description: description,
-        // Include voice configuration as nested object if voice is selected
         voice: formData.voice
           ? {
               name: formData.voice.name,
@@ -414,35 +438,99 @@ function CreateAgentDashboard({ handleVoice }) {
           goal: formData.goal || 'Assist users',
           industry: formData.industry || null,
           use_case: formData.useCase,
-          voice_name: formData.voice?.name || null, // Keep for backward compatibility
+          voice_name: formData.voice?.name || null,
           created_from: 'dashboard',
           enhanced: true,
         },
       };
 
       const newAgent = await dispatch(createAgent(agentData));
-
-      // Track agent creation
-      trackCreateAgent({
-        name: agentName,
-        agentType: formData.agentType,
-        industry: formData.industry,
-        goal: formData.goal,
-        hasVoice: !!formData.voice,
-        voiceName: formData.voice?.name,
-        useCaseLength: formData.useCase.length,
-        wasEnhanced: true,
-      });
-
-      // Redirect to agent page
       history.push(`/agent/${newAgent.id}`);
     } catch (error) {
       console.error('Error creating agent:', error);
-      // Handle error - could show a toast notification
     } finally {
       setLoading(false);
     }
   };
+
+  return (
+    <div className="w-full">
+      {/* Back button */}
+      <div className="flex items-center mb-4">
+        <button
+          onClick={onGoBack}
+          className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+        >
+          <Iconify
+            icon="eva:arrow-ios-back-fill"
+            width={16}
+            height={16}
+          />
+          Back to chat
+        </button>
+      </div>
+
+      <AgentFormWithButtons
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleCreate={handleCreate}
+        loading={loading}
+        handleVoice={handleVoice}
+        agentTypes={agentTypes}
+        industries={industries}
+        availableGoals={getAvailableGoals()}
+        isFormValid={isFormValid()}
+        shouldShowAgentSelection={false}
+        onAgentSelect={() => {}}
+        onNewAgentClick={() => {}}
+        agents={[]}
+        selectedAgent={null}
+        setSelectedAgent={() => {}}
+        agentMenuAnchor={null}
+        handleAgentMenuOpen={() => {}}
+        handleAgentMenuClose={() => {}}
+      />
+    </div>
+  );
+});
+
+CreateMode.displayName = 'CreateMode';
+
+// Main Component
+function CreateAgentDashboard({ handleVoice }) {
+  const { isAuthenticated } = useAuthContext();
+  const agents = useSelector(getAgents);
+  const account = useSelector(getAccount);
+  const history = useHistory();
+  const location = useLocation();
+
+  // Parse query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const modeFromUrl = searchParams.get('mode');
+  const [mode, setMode] = useState(modeFromUrl || 'chat'); // 'chat' or 'create'
+
+  // Update URL when mode changes
+  const updateMode = (newMode) => {
+    setMode(newMode);
+    const newSearchParams = new URLSearchParams(location.search);
+    if (newMode === 'chat') {
+      newSearchParams.delete('mode');
+    } else {
+      newSearchParams.set('mode', newMode);
+    }
+    const newSearch = newSearchParams.toString();
+    history.replace({
+      pathname: location.pathname,
+      search: newSearch ? `?${newSearch}` : '',
+    });
+  };
+
+  // Initialize mode from URL on mount
+  useEffect(() => {
+    if (modeFromUrl && modeFromUrl !== mode) {
+      setMode(modeFromUrl);
+    }
+  }, [modeFromUrl, mode]);
 
   return (
     <div className="w-full max-w-[750px] mx-auto">
@@ -452,18 +540,20 @@ function CreateAgentDashboard({ handleVoice }) {
           data-aos-delay="200"
         >
           <div className="relative flex flex-col mt-2">
-            <AgentFormWithButtons
-              formData={formData}
-              handleInputChange={handleInputChange}
-              handleCreate={handleCreate}
-              loading={loading}
-              handleVoice={handleVoice}
-              agentTypes={agentTypes}
-              industries={industries}
-              availableGoals={getAvailableGoals()}
-              isFormValid={isFormValid()}
-              showIndustry={formData.agentType === 'Business Agent'}
-            />
+            {mode === 'chat' ? (
+              <ChatMode
+                agents={agents}
+                isAuthenticated={isAuthenticated}
+                handleVoice={handleVoice}
+                onCreateAgent={() => updateMode('create')}
+                account={account}
+              />
+            ) : (
+              <CreateMode
+                handleVoice={handleVoice}
+                onGoBack={() => updateMode('chat')}
+              />
+            )}
           </div>
         </div>
       </div>
