@@ -97,7 +97,6 @@ export default function Register() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
@@ -133,7 +132,7 @@ export default function Register() {
               <InvitationCard invitation={invitation} />
             </Box>
           )}
-          
+
           <Logo
             sx={{
               zIndex: 9,
@@ -199,7 +198,7 @@ export default function Register() {
             .
           </Typography>
         </Stack>
-        
+
         {/* Desktop invitation card */}
         {!!invitation && (
           <Box sx={{ display: { xs: 'none', md: 'block' } }}>

@@ -119,7 +119,6 @@ export default function Login({ modal = false, onClose }) {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
         minHeight: '100dvh', // Use dynamic viewport height for mobile
         display: 'flex',
         flexDirection: 'column',

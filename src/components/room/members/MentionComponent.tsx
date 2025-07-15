@@ -5,7 +5,6 @@ import MemberCard from './MemberCard';
 import { RootState, useSelector } from '../../../redux/store';
 import { getMemberDetails } from '../../room/utils';
 
-
 // Assume this is your mention component
 const MentionComponent = ({ mentionName, mentionId }) => {
   const { members, externalMembers, me } = useSelector((state: RootState) => state.room);
@@ -19,11 +18,17 @@ const MentionComponent = ({ mentionName, mentionId }) => {
       slotProps={{
         tooltip: {
           sx: {
-            padding: 0
-          }
-        }
+            padding: 0,
+          },
+        },
       }}
-      title={<MemberCard member={member} memberDetails={memberDetails} badgeSize={60}/>}
+      title={
+        <MemberCard
+          member={member}
+          memberDetails={memberDetails}
+          badgeSize={60}
+        />
+      }
     >
       <span className="mention">@{mentionName}</span>
     </Tooltip>
