@@ -388,7 +388,7 @@ function ProjectHeader() {
                         {/* Sliding indicator with icon */}
                         <div
                           className={`absolute w-6 h-6 rounded-sm shadow-lg transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex items-center justify-center will-change-transform ${
-                            viewType === 'code' ? 'left-1 scale-100' : 'right-1 scale-105'
+                            viewType === 'code' ? 'right-1 scale-105' : 'left-1 scale-100'
                           }`}
                           style={{
                             backgroundColor:

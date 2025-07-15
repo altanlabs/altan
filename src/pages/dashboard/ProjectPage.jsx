@@ -262,7 +262,7 @@ export default function ProjectPage() {
             >
               {/* Chat Panel */}
               <Panel
-                defaultSize={30}
+                defaultSize={35}
                 minSize={20}
                 maxSize={65}
                 className="overflow-hidden"

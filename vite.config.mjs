@@ -93,7 +93,44 @@ export default defineConfig(({ mode }) => {
       },
     ],
     optimizeDeps: {
-      exclude: ['fsevents'], // Only exclude platform-specific files
+      exclude: [
+        'fsevents',
+        // Common problematic packages
+        'react-virtualized',
+        'react-beautiful-dnd',
+        '@hello-pangea/dnd',
+        'three',
+        'firebase',
+        '@monaco-editor/react',
+        'monaco-editor',
+        // AG Grid packages
+        'ag-grid-react',
+        '@ag-grid-community/react',
+        '@ag-grid-community/core',
+        '@ag-grid-enterprise/core',
+        // Chart libraries
+        'chart.js',
+        'react-chartjs-2',
+        // Survey libraries  
+        'survey-core',
+        'survey-creator-core',
+        'survey-react-ui',
+        'survey-creator-react',
+        // JSON editors
+        'react-json-editor-ajrm',
+        'json-edit-react',
+        // Lexical editor
+        'lexical',
+        '@lexical/react',
+      ],
+      include: [
+        // Force include commonly needed packages
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'react-redux',
+        '@reduxjs/toolkit',
+      ],
       ...(isMobile && { esbuildOptions: { target: 'es2019' } }),
     },
     resolve: {

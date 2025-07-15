@@ -1,6 +1,6 @@
 /* eslint-disable import/order */
 // MUI imports
-import { Typography, MenuItem, Tooltip } from '@mui/material';
+import { Typography, MenuItem, Tooltip, IconButton } from '@mui/material';
 
 // React and routing imports
 import { memo, useCallback, useState } from 'react';
@@ -13,9 +13,9 @@ import ShareAgentDialog from './ShareAgentDialog.jsx';
 import Iconify from '../../components/iconify';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog.jsx';
-import { deleteAccountAgent } from '../../redux/slices/general';
+import { deleteAccountAgent, updateAgent } from '../../redux/slices/general';
 import { optimai } from '../../utils/axios';
-import {CustomAvatar} from '../custom-avatar';
+import { CustomAvatar } from '../custom-avatar';
 
 const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }) => {
   const history = useHistory();
@@ -64,6 +64,16 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
     handleClosePopover();
   }, [agent.id, dispatchWithFeedback, handleClosePopover, history]);
 
+  const handlePinToggle = useCallback(() => {
+    const newPinnedState = !agent.is_pinned;
+    dispatchWithFeedback(updateAgent(agent.id, { is_pinned: newPinnedState }), {
+      successMessage: newPinnedState ? 'Agent pinned successfully' : 'Agent unpinned successfully',
+      errorMessage: 'Failed to update agent: ',
+      useSnackbar: true,
+    });
+    handleClosePopover();
+  }, [agent.id, agent.is_pinned, dispatchWithFeedback, handleClosePopover]);
+
   const handleChat = useCallback(async () => {
     try {
       const response = await optimai.get(`/agent/${agent.id}/dm`);
@@ -88,16 +98,22 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
     setOpenPopover(event.currentTarget);
   }, []);
 
+  const handleMenuButtonClick = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpenPopover(event.currentTarget);
+  }, []);
+
   // Extract useful info for display
-  const llmInfo = agent.llm_config?.provider
-    ? `${agent.llm_config.provider} / ${agent.llm_config.model_id}`
-    : 'Unknown model';
+  // const llmInfo = agent.llm_config?.provider
+  //   ? `${agent.llm_config.provider} / ${agent.llm_config.model_id}`
+  //   : 'Unknown model';
 
   return (
     <>
       {!minified ? (
         <div
-          className="flex flex-col items-center text-center cursor-pointer p-2"
+          className="flex flex-col items-center text-center cursor-pointer p-2 relative group"
           onClick={handleNavigateToRoom}
           onContextMenu={handleContextMenu}
         >
@@ -112,15 +128,49 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
                 height: 64,
               }}
             />
+            {/* Pin indicator */}
+            {agent.is_pinned && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                <Iconify
+                  icon="mdi:pin"
+                  width={10}
+                  sx={{ color: 'white' }}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Agent Name */}
-          <Typography
-            variant="body1"
-            className="font-semibold text-gray-900 dark:text-gray-100 mb-1"
-          >
-            {agent.name}
-          </Typography>
+          {/* Agent Name with Edit Icon */}
+          <div className="flex items-center gap-1 mb-1">
+            <Typography
+              variant="body1"
+              className="font-semibold text-gray-900 dark:text-gray-100"
+            >
+              {agent.name}
+            </Typography>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateToEditPage();
+              }}
+              size="small"
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              sx={{
+                color: 'text.secondary',
+                width: 20,
+                height: 20,
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'action.hover',
+                },
+              }}
+            >
+              <Iconify
+                icon="eva:edit-2-outline"
+                width={14}
+              />
+            </IconButton>
+          </div>
 
           {/* Model Info */}
           {/* <div className="text-xs text-gray-600 dark:text-gray-400">{llmInfo}</div> */}
@@ -131,7 +181,7 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
           arrow
           followCursor
         >
-          <div className="relative">
+          <div className="relative group">
             <CustomAvatar
               onClick={handleNavigateToRoom}
               onContextMenu={handleContextMenu}
@@ -147,6 +197,42 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
                 },
               }}
             />
+            {/* Pin indicator for minified mode */}
+            {agent.is_pinned && (
+              <div className="absolute -top-1 -left-1 w-3 h-3 bg-yellow-500 rounded-full flex items-center justify-center">
+                <Iconify
+                  icon="mdi:pin"
+                  width={8}
+                  sx={{ color: 'white' }}
+                />
+              </div>
+            )}
+            {/* Three-dots menu button for minified mode */}
+            <IconButton
+              onClick={handleMenuButtonClick}
+              size="small"
+              className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              sx={{
+                width: 16,
+                height: 16,
+                color: 'text.secondary',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(4px)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 1)',
+                  color: 'text.primary',
+                },
+                boxShadow: 1,
+                '& .MuiTouchRipple-root': {
+                  display: 'none',
+                },
+              }}
+            >
+              <Iconify
+                icon="eva:more-vertical-fill"
+                width={10}
+              />
+            </IconButton>
           </div>
         </Tooltip>
       )}
@@ -164,6 +250,10 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
         <MenuItem onClick={handleChat}>
           <Iconify icon="bxs:chat" />
           Chat with agent
+        </MenuItem>
+        <MenuItem onClick={handlePinToggle}>
+          <Iconify icon={agent.is_pinned ? 'mdi:pin-off' : 'mdi:pin'} />
+          {agent.is_pinned ? 'Unpin agent' : 'Pin agent'}
         </MenuItem>
         <MenuItem onClick={() => setShareDialog(true)}>
           <Iconify icon="mdi:share" />

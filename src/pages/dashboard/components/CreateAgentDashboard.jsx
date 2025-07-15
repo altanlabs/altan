@@ -21,8 +21,14 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
   const [chatMessage, setChatMessage] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
+  const [agentSearchTerm, setAgentSearchTerm] = useState('');
 
   const shouldShowAgentSelection = isAuthenticated && agents.length > 0;
+
+  // Filter agents based on search term
+  const filteredAgents = agents.filter((agent) =>
+    agent.name.toLowerCase().includes(agentSearchTerm.toLowerCase()),
+  );
 
   // Get localStorage key for this account
   const getLocalStorageKey = () => (account?.id ? `selected_agent_${account.id}` : null);
@@ -52,15 +58,23 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
   const handleAgentMenuOpen = (event) => {
     event.preventDefault();
     setAgentMenuAnchor(event.currentTarget);
+    setAgentSearchTerm(''); // Reset search when opening
   };
 
   const handleAgentMenuClose = () => {
     setAgentMenuAnchor(null);
+    setAgentSearchTerm(''); // Reset search when closing
   };
 
   const handleAgentSelect = (agent) => {
     setSelectedAgent(agent);
     handleAgentMenuClose();
+  };
+
+  const handleAgentSearchKeyDown = (event) => {
+    if (event.key === 'Enter' && filteredAgents.length === 1) {
+      handleAgentSelect(filteredAgents[0]);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -115,11 +129,33 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
               icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
               label={selectedAgent ? selectedAgent.name : `${agents.length} agents`}
               size="small"
-              variant="outlined"
+              variant="soft"
               color="default"
               onClick={handleAgentMenuOpen}
               onDelete={selectedAgent ? () => setSelectedAgent(null) : undefined}
               className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+              sx={{
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                height: '28px',
+                '& .MuiChip-icon': {
+                  fontSize: '14px',
+                  marginLeft: '4px',
+                },
+              }}
+            />
+          )}
+
+          {/* Create Agent Chip */}
+          {isAuthenticated && (
+            <Chip
+              icon={<Iconify icon="mdi:plus" />}
+              label="Create Agent"
+              size="small"
+              variant="outlined"
+              color="default"
+              onClick={onCreateAgent}
+              className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20"
               sx={{
                 borderRadius: '12px',
                 fontSize: '0.75rem',
@@ -154,50 +190,18 @@ const ChatMode = memo(({ agents, isAuthenticated, handleVoice, onCreateAgent, ac
             }}
           >
             <Box p={1}>
-              <Typography
-                variant="caption"
-                sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
-              >
-                Select an agent or create new
-              </Typography>
-              {/* New Agent option */}
-              <MenuItem
-                onClick={() => {
-                  onCreateAgent();
-                  handleAgentMenuClose();
-                }}
-                sx={{
-                  borderRadius: '8px',
-                  margin: '2px 0',
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                <Avatar
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    marginRight: 1,
-                    backgroundColor: 'primary.main',
-                  }}
-                >
-                  <Iconify
-                    icon="mdi:plus"
-                    sx={{ fontSize: 16 }}
-                  />
-                </Avatar>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 500 }}
-                >
-                  New Agent
-                </Typography>
-              </MenuItem>
+              {/* Search input */}
+              <input
+                type="text"
+                placeholder="Search agents..."
+                value={agentSearchTerm}
+                onChange={(e) => setAgentSearchTerm(e.target.value)}
+                onKeyDown={handleAgentSearchKeyDown}
+                autoFocus
+                className="w-full px-2 py-1 mb-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
+              />
               {/* Existing agents */}
-              {agents?.map((agent) => (
+              {filteredAgents?.map((agent) => (
                 <MenuItem
                   key={agent.id}
                   onClick={() => handleAgentSelect(agent)}

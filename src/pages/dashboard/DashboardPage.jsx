@@ -55,8 +55,8 @@ const DashboardPage = () => {
     if (savedPreference !== null) {
       return JSON.parse(savedPreference);
     }
-    // Default: voice mode for unauthenticated users, text mode for authenticated users
-    return !isAuthenticated;
+    // Default: text mode for all users
+    return false;
   });
 
   const [showFloatingVoice, setShowFloatingVoice] = useState(false);

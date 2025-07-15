@@ -14,6 +14,7 @@ import { ComponentTarget } from '../../components/editor/nodes/ComponentTargetNo
 import { useDebounce } from '../../hooks/useDebounce';
 import { makeSelectMessageContent, sendMessage } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store.js';
+import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup.jsx';
 import CodeBlock from '../CodeBlock.jsx';
 import MentionComponent from '../room/members/MentionComponent.tsx';
 import CommitWidget from '../widgets/components/CommitWidget.jsx';
@@ -480,6 +481,10 @@ const CustomMarkdown = ({
                 {children}
               </SuggestionGroup>
             ),
+            // Custom stripe component
+            stripe: () => {
+              return <StripeConnect />;
+            },
             // Superscript
             sup: ({ children }) => <sup>{children}</sup>,
             // Collapsible sections

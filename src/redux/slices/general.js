@@ -1075,6 +1075,12 @@ const ACCOUNT_GQ = {
   },
   agents: {
     '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id'],
+    cloned_from: {
+      '@fields': ['id'],
+      version: {
+        '@fields': ['template_id'],
+      },
+    },
   },
   developer_apps: {
     '@fields': '@all',
@@ -1689,7 +1695,7 @@ export const fetchWebhookEvents = (webhookId) => async (dispatch, getState) => {
 
     return Promise.resolve(webhook?.events?.items || []);
   } catch (e) {
-    console.error(`error: could not fetch webhook events: ${e}`);
+    +console.error(`error: could not fetch webhook events: ${e}`);
     return Promise.reject(e.toString());
   }
 };

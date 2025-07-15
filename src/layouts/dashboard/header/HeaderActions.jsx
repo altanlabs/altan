@@ -1,4 +1,4 @@
-import { Stack, IconButton, Tooltip, Menu, MenuItem, Button } from '@mui/material';
+import { Stack, IconButton, Menu, MenuItem, Button } from '@mui/material';
 import { memo, useCallback, useState } from 'react';
 import { Link as RouterLink, useHistory } from 'react-router-dom';
 
@@ -55,7 +55,7 @@ const HeaderActions = ({ user, isDesktop }) => {
 
         <InvitationMenuPopover isDashboard={true} />
 
-        <Tooltip
+        {/* <Tooltip
           arrow
           followCursor
           title={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} mode`}
@@ -69,7 +69,7 @@ const HeaderActions = ({ user, isDesktop }) => {
               height={18}
             />
           </HeaderIconButton>
-        </Tooltip>
+        </Tooltip> */}
 
         <Button
           size="small"
@@ -149,8 +149,6 @@ const HeaderActions = ({ user, isDesktop }) => {
               setOpen={setOpenHireExpert}
               iconOnly={true}
             />
-            
-
             <IconButton
               size="small"
               onClick={handleMenuOpen}

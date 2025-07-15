@@ -13,6 +13,7 @@ import {
   Select,
   MenuItem,
   Skeleton,
+  Button,
 } from '@mui/material';
 import { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -69,11 +70,119 @@ const AgentCardSkeleton = memo(() => (
 
 AgentCardSkeleton.displayName = 'AgentCardSkeleton';
 
+// Component for rendering agent sections
+const AgentSection = memo(({
+  title,
+  agents,
+  isExpanded,
+  onToggleExpanded,
+  onAgentClick,
+}) => {
+  if (agents.length === 0) return null;
+
+  return (
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2,
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {title}
+        </Typography>
+        <Button
+          size="small"
+          onClick={onToggleExpanded}
+          endIcon={<Iconify icon={isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'} />}
+          sx={{
+            color: 'text.secondary',
+            '&:hover': {
+              backgroundColor: 'action.hover',
+            },
+          }}
+        >
+          {isExpanded ? 'Show Less' : 'Show More'}
+        </Button>
+      </Box>
+
+      {isExpanded ? (
+        // Grid view when expanded
+        <Grid container spacing={3}>
+          {agents.map((agent) => (
+            <Grid
+              key={agent.id}
+              item
+              xs={12}
+              sm={6}
+              md={4}
+              lg={3}
+            >
+              <AgentCard
+                agent={agent}
+                onClick={() => onAgentClick(agent.id)}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        // Horizontal scroll view when collapsed
+        <Box
+          sx={{
+            display: 'flex',
+            overflowX: 'auto',
+            gap: 3,
+            pb: 1,
+            '&::-webkit-scrollbar': {
+              height: 8,
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: 4,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.5)',
+              },
+            },
+          }}
+        >
+          {agents.map((agent) => (
+            <Box
+              key={agent.id}
+              sx={{
+                minWidth: 280,
+                maxWidth: 280,
+                flexShrink: 0,
+              }}
+            >
+              <AgentCard
+                agent={agent}
+                onClick={() => onAgentClick(agent.id)}
+              />
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+});
+
+AgentSection.displayName = 'AgentSection';
+
 function Agents({ filterIds = null, altanerComponentId = null, altanerId = null }) {
   const [searchMembers, setSearchMembers] = useState('');
   const [editAltanerComponentOpen, setEditAltanerComponentOpen] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [sortOption, setSortOption] = useState('last_edited_newest');
+  const [myAgentsExpanded, setMyAgentsExpanded] = useState(false);
+  const [clonedAgentsExpanded, setClonedAgentsExpanded] = useState(false);
+  const [pinnedAgentsExpanded, setPinnedAgentsExpanded] = useState(false);
+
   const onSearchMembers = (event) => setSearchMembers(event.target.value);
   const isDesktop = useResponsive('up', 'md');
   const agents = useSelector(getAgents);
@@ -116,22 +225,29 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     );
   }, [agents, altanerComponentId, filterIds]);
 
-  const { originalAgents, clonedAgents } = useMemo(() => {
+  const { originalAgents, clonedAgents, pinnedAgents } = useMemo(() => {
     // First filter agents based on search term
     const filteredBySearch = filtered.reduce(
       (acc, agent) => {
         if (agent.name.toLowerCase().includes(searchMembers.toLowerCase())) {
-          acc[!agent.cloned_template_id ? 'originalAgents' : 'clonedAgents'].push(agent);
+          if (agent.is_pinned) {
+            acc.pinnedAgents.push(agent);
+          } else if (!agent.cloned_template_id) {
+            acc.originalAgents.push(agent);
+          } else {
+            acc.clonedAgents.push(agent);
+          }
         }
         return acc;
       },
       {
         originalAgents: [],
         clonedAgents: [],
+        pinnedAgents: [],
       },
     );
 
-    // Apply sorting to both arrays
+    // Apply sorting to all arrays
     const sortAgents = (agents) => {
       return [...agents].sort((a, b) => {
         // Sort based on the selected option
@@ -164,6 +280,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     return {
       originalAgents: sortAgents(filteredBySearch.originalAgents),
       clonedAgents: sortAgents(filteredBySearch.clonedAgents),
+      pinnedAgents: sortAgents(filteredBySearch.pinnedAgents),
     };
   }, [filtered, searchMembers, sortOption]);
 
@@ -428,75 +545,32 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
         {!filtered.length ? (
           <SearchNotFound query={searchMembers} />
         ) : (
-          <Stack spacing={3}>
-            {originalAgents.length > 0 && (
-              <Box>
-                <Grid
-                  container
-                  spacing={3}
-                >
-                  {originalAgents.map((agent) => (
-                    <Grid
-                      key={agent.id}
-                      item
-                      xs={12}
-                      sm={6}
-                      md={4}
-                      lg={3}
-                    >
-                      <AgentCard
-                        agent={agent}
-                        onClick={() => handleAgentClick(agent.id)}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
+          <Stack spacing={4}>
+            {pinnedAgents.length > 0 && (
+              <AgentSection
+                title="Pinned Agents"
+                agents={pinnedAgents}
+                isExpanded={pinnedAgentsExpanded}
+                onToggleExpanded={() => setPinnedAgentsExpanded(!pinnedAgentsExpanded)}
+                onAgentClick={handleAgentClick}
+              />
             )}
 
-            {clonedAgents.length > 0 && (
-              <Box>
-                <Box sx={{ mb: 2, typography: 'h6' }}>Cloned Agents</Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    gap: 3,
-                    pb: 1, // Add padding bottom for scrollbar
-                    '&::-webkit-scrollbar': {
-                      height: 8,
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      backgroundColor: 'rgba(0,0,0,0.1)',
-                      borderRadius: 4,
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      borderRadius: 4,
-                      '&:hover': {
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                      },
-                    },
-                  }}
-                >
-                  {clonedAgents.map((agent) => (
-                    <Box
-                      key={agent.id}
-                      sx={{
-                        minWidth: 280, // Set a minimum width for each card
-                        maxWidth: 280, // Prevent cards from growing too large
-                        flexShrink: 0, // Prevent cards from shrinking
-                      }}
-                    >
-                      <AgentCard
-                        agent={agent}
-                        onClick={() => handleAgentClick(agent.id)}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
+            <AgentSection
+              title="My Agents"
+              agents={originalAgents}
+              isExpanded={myAgentsExpanded}
+              onToggleExpanded={() => setMyAgentsExpanded(!myAgentsExpanded)}
+              onAgentClick={handleAgentClick}
+            />
+
+            <AgentSection
+              title="Cloned Agents"
+              agents={clonedAgents}
+              isExpanded={clonedAgentsExpanded}
+              onToggleExpanded={() => setClonedAgentsExpanded(!clonedAgentsExpanded)}
+              onAgentClick={handleAgentClick}
+            />
           </Stack>
         )}
       </Box>
