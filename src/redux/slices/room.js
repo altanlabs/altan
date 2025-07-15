@@ -168,7 +168,7 @@ const initialState = {
 
 const extractMessagesFromThread = (state, thread) => {
   const messagesById = {};
-  const messagesExecutions = [];
+  const messagesExecutions = {};
   const executionsById = {};
   const messagesContentById = {};
   const threadMessages = thread.messages;
