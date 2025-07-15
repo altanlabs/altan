@@ -15,19 +15,32 @@ function reactVirtualized() {
   return {
     name: 'flat:react-virtualized',
     configResolved: async () => {
-      const require = createRequire(import.meta.url);
-      const reactVirtualizedPath = require.resolve('react-virtualized');
-      const { pathname: reactVirtualizedFilePath } = new url.URL(
-        reactVirtualizedPath,
-        import.meta.url,
-      );
-      const file = reactVirtualizedFilePath.replace(
-        path.join('dist', 'commonjs', 'index.js'),
-        path.join('dist', 'es', 'WindowScroller', 'utils', 'onScroll.js'),
-      );
-      const code = await fs.readFile(file, 'utf-8');
-      const modified = code.replace(WRONG_CODE, '');
-      await fs.writeFile(file, modified);
+      try {
+        const require = createRequire(import.meta.url);
+        const reactVirtualizedPath = require.resolve('react-virtualized');
+        const { pathname: reactVirtualizedFilePath } = new url.URL(
+          reactVirtualizedPath,
+          import.meta.url,
+        );
+        const file = reactVirtualizedFilePath.replace(
+          path.join('dist', 'commonjs', 'index.js'),
+          path.join('dist', 'es', 'WindowScroller', 'utils', 'onScroll.js'),
+        );
+        const code = await fs.readFile(file, 'utf-8');
+        
+        // Skip if already patched
+        if (!code.includes(WRONG_CODE)) {
+          console.log('react-virtualized already patched or patch not needed');
+          return;
+        }
+        
+        const modified = code.replace(WRONG_CODE, '');
+        await fs.writeFile(file, modified);
+        console.log('react-virtualized patched successfully');
+      } catch (error) {
+        // In CI environments, node_modules might be readonly
+        console.warn('Could not patch react-virtualized (this is usually fine in CI):', error.message);
+      }
     },
   };
 }
