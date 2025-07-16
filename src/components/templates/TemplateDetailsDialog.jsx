@@ -86,14 +86,6 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
     } catch (error) {
       console.error('Error tracking template clone:', error);
     }
-
-    // For free templates, navigate directly to clone page
-    if (price === 0) {
-      history.push(`/clone/template/${template.id}`);
-      onClose();
-      return;
-    }
-
     // For paid templates, initiate Stripe checkout flow
     try {
       if (!account?.id) {
