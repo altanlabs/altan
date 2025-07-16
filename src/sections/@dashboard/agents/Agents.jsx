@@ -13,25 +13,25 @@ import {
   Select,
   MenuItem,
   Skeleton,
-  Button,
 } from '@mui/material';
 import { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 // components
 import Agent from '../../../components/agents/Agent';
+import AgentSection from '../../../components/agents/AgentSection';
 import { AgentCarousel } from '../../../components/carousel';
 import SearchField from '../../../components/custom-input/SearchField.jsx';
 import Iconify from '../../../components/iconify';
-import AgentCard from '../../../components/members/AgentCard.jsx';
 import SearchNotFound from '../../../components/search-not-found';
 import useResponsive from '../../../hooks/useResponsive';
 import AltanerComponentDialog from '../../../pages/dashboard/altaners/components/AltanerComponentDialog.jsx';
 
 // hooks
-import TemplateMarketplace from '../../../pages/dashboard/marketplace/templates/TemplateMarketplace.jsx';
+import AgentTemplateMarketplace from '../../../components/agents/AgentTemplateMarketplace';
 import { useSelector } from '../../../redux/store';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { shouldHideClonedAgent } from '../../../utils/constants';
 
 // selectors
 const getAgents = (state) => state.general.account?.agents;
@@ -69,110 +69,6 @@ const AgentCardSkeleton = memo(() => (
 ));
 
 AgentCardSkeleton.displayName = 'AgentCardSkeleton';
-
-// Component for rendering agent sections
-const AgentSection = memo(({
-  title,
-  agents,
-  isExpanded,
-  onToggleExpanded,
-  onAgentClick,
-}) => {
-  if (agents.length === 0) return null;
-
-  return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 2,
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {title}
-        </Typography>
-        <Button
-          size="small"
-          onClick={onToggleExpanded}
-          endIcon={<Iconify icon={isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'} />}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              backgroundColor: 'action.hover',
-            },
-          }}
-        >
-          {isExpanded ? 'Show Less' : 'Show More'}
-        </Button>
-      </Box>
-
-      {isExpanded ? (
-        // Grid view when expanded
-        <Grid container spacing={3}>
-          {agents.map((agent) => (
-            <Grid
-              key={agent.id}
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              lg={3}
-            >
-              <AgentCard
-                agent={agent}
-                onClick={() => onAgentClick(agent.id)}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      ) : (
-        // Horizontal scroll view when collapsed
-        <Box
-          sx={{
-            display: 'flex',
-            overflowX: 'auto',
-            gap: 3,
-            pb: 1,
-            '&::-webkit-scrollbar': {
-              height: 8,
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: 'rgba(0,0,0,0.1)',
-              borderRadius: 4,
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              borderRadius: 4,
-              '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.5)',
-              },
-            },
-          }}
-        >
-          {agents.map((agent) => (
-            <Box
-              key={agent.id}
-              sx={{
-                minWidth: 280,
-                maxWidth: 280,
-                flexShrink: 0,
-              }}
-            >
-              <AgentCard
-                agent={agent}
-                onClick={() => onAgentClick(agent.id)}
-              />
-            </Box>
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-});
-
-AgentSection.displayName = 'AgentSection';
 
 function Agents({ filterIds = null, altanerComponentId = null, altanerId = null }) {
   const [searchMembers, setSearchMembers] = useState('');
@@ -220,9 +116,15 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     if (!!altanerComponentId && !filterIds?.length) {
       return [];
     }
-    return (agents ?? []).filter(
-      (agent) => !filterIds || !filterIds.length || filterIds.includes(agent.id),
-    );
+    return (agents ?? []).filter((agent) => {
+      // Hide agents cloned from Altan's official templates
+      if (shouldHideClonedAgent(agent)) {
+        return false;
+      }
+
+      // Apply existing filter logic
+      return !filterIds || !filterIds.length || filterIds.includes(agent.id);
+    });
   }, [agents, altanerComponentId, filterIds]);
 
   const { originalAgents, clonedAgents, pinnedAgents } = useMemo(() => {
@@ -359,10 +261,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
     return (
       <Box>
         <AgentCarousel cards={agentCarouselCards} />
-        <TemplateMarketplace
-          type="agent"
-          hideFilters
-        />
+        <AgentTemplateMarketplace />
       </Box>
     );
   }
@@ -452,13 +351,13 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
   }
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '100%' }}>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 3,
+          mb: 2,
           mt: 1,
           px: 1,
         }}
@@ -537,8 +436,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
       <Box
         sx={{
           px: 2.5,
-          pt: 2.5,
-          pb: 4,
+          py: 4,
           overflow: 'auto',
         }}
       >
@@ -555,9 +453,8 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
                 onAgentClick={handleAgentClick}
               />
             )}
-
             <AgentSection
-              title="My Agents"
+              title="Created by you"
               agents={originalAgents}
               isExpanded={myAgentsExpanded}
               onToggleExpanded={() => setMyAgentsExpanded(!myAgentsExpanded)}
@@ -565,7 +462,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
             />
 
             <AgentSection
-              title="Cloned Agents"
+              title="Your cloned agents"
               agents={clonedAgents}
               isExpanded={clonedAgentsExpanded}
               onToggleExpanded={() => setClonedAgentsExpanded(!clonedAgentsExpanded)}
@@ -574,6 +471,9 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
           </Stack>
         )}
       </Box>
+
+      <Divider />
+      <AgentTemplateMarketplace />
 
       {!!altanerComponentId && (
         <AltanerComponentDialog

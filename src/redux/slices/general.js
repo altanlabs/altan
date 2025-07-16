@@ -11,6 +11,7 @@ import { clearNotificationsState } from './notifications';
 import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
 import { optimai, optimai_integration } from '../../utils/axios';
+import { ALTAN_AGENT_TEMPLATE_IDS } from '../../utils/constants';
 import { checkArraysEqualsProperties, checkObjectsEqual } from '../helpers/memoize';
 
 // ----------------------------------------------------------------------
@@ -858,7 +859,17 @@ export const selectSortedAgents = createSelector(
   [selectAccount],
   (account) => {
     const agents = account?.agents;
-    return agents ? [...agents].sort((a, b) => a.name.localeCompare(b.name)) : [];
+    if (!agents) return [];
+
+    // Filter out agents cloned from Altan's official templates
+    const filteredAgents = agents.filter((agent) => {
+      return !(
+        agent?.cloned_from?.version?.template_id &&
+        ALTAN_AGENT_TEMPLATE_IDS.includes(agent.cloned_from.version.template_id)
+      );
+    });
+
+    return filteredAgents.sort((a, b) => a.name.localeCompare(b.name));
   },
   {
     memoizeOptions: {
@@ -1074,7 +1085,7 @@ const ACCOUNT_GQ = {
     '@fields': ['@base@exc:meta_data', 'name'],
   },
   agents: {
-    '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id'],
+    '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id', 'is_pinned'],
     cloned_from: {
       '@fields': ['id'],
       version: {

@@ -1,7 +1,6 @@
 import { Container } from '@mui/material';
 
 import { CompactLayout } from '../layouts/dashboard';
-
 import Footer from '../layouts/main/Footer';
 
 export default function Terms() {
@@ -15,9 +14,9 @@ export default function Terms() {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">Introduction</h2>
             <p>
-              Welcome to Altan, operated by Altan Labs Inc. These Terms of Service ("Terms") govern
+              Welcome to Altan, operated by Altan Labs Inc. These Terms of Service (&ldquo;Terms&rdquo;) govern
               your access to and use of our services, including our website and applications
-              (collectively, the "Services"). By using our Services, you agree to comply with and be
+              (collectively, the &ldquo;Services&rdquo;). By using our Services, you agree to comply with and be
               bound by these Terms. If you do not agree to these Terms, please do not use our Services.
             </p>
 
@@ -57,11 +56,19 @@ export default function Terms() {
                 any other person or entity
               </li>
               <li>
-                To engage in any other conduct that restricts or inhibits anyone's use or enjoyment
+                To engage in any other conduct that restricts or inhibits anyone&rsquo;s use or enjoyment
                 of our Services, or which, as determined by us, may harm Altan or users of our
                 Services, or expose them to liability
               </li>
             </ul>
+
+            <h2 className="text-2xl font-bold mt-8 mb-4">Refunds &amp; Right of Withdrawal</h2>
+            <p>
+              New users receive complimentary credits to evaluate our services before making any paid commitments. By subscribing to a paid plan, you acknowledge that your plan includes a fixed number of credits or usage allowance. In accordance with consumer protection laws, you have the right to withdraw from your subscription within 14 days of purchase. However, if you access or consume any part of the service (e.g., use credits or features), you expressly waive your right to withdraw and are not eligible for a refund, as the digital service has been fully performed.
+            </p>
+            <p>
+              Refunds are only eligible if no credits have been used and the service remains unused. If any part of the subscription has been consumed, including partial use of credits, no refund will be issued.
+            </p>
 
             <h2 className="text-2xl font-bold mt-8 mb-4">Intellectual Property</h2>
             <p>
@@ -109,7 +116,7 @@ export default function Terms() {
             <h2 className="text-2xl font-bold mt-8 mb-4">Changes to Terms</h2>
             <p>
               We reserve the right, at our sole discretion, to modify or replace these Terms at any
-              time. If a revision is material, we will provide at least 30 days' notice prior to any
+              time. If a revision is material, we will provide at least 30 days&rsquo; notice prior to any
               new terms taking effect. By continuing to access or use our Services after those
               revisions become effective, you agree to be bound by the revised terms.
             </p>

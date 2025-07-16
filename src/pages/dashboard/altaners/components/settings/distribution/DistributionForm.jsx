@@ -34,7 +34,7 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
-    price: template?.product?.price || 0,
+    price: template?.price || 0,
     category: template?.meta_data?.category || '',
     verticals: template?.meta_data?.verticals || [],
     useCases: template?.meta_data?.useCases || [],
@@ -45,13 +45,13 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    const initialPrice = template?.product?.price;
+    const initialPrice = template?.price;
     if (typeof initialPrice === 'number') {
       setPriceDigits(String(initialPrice));
     } else {
       setPriceDigits('');
     }
-  }, [template?.product?.price]);
+  }, [template?.price]);
 
   const handleChange = (field) => (event) => {
     if (field === 'price') {
@@ -106,8 +106,8 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
       name: formData.name,
       description: formData.description,
       price: formData.price,
+      category: formData.category, // Category should be top-level, not in meta_data
       meta_data: {
-        category: formData.category,
         verticals: formData.verticals,
         useCases: formData.useCases,
         features: formData.features,
@@ -366,7 +366,10 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
                 'Support',
                 'Other',
               ].map((dept) => (
-                <MenuItem key={dept} value={dept}>
+                <MenuItem
+                  key={dept}
+                  value={dept}
+                >
                   {dept}
                 </MenuItem>
               ))}

@@ -373,12 +373,14 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
       </div>
 
       {/* Featured Section */}
-      <FeaturedSection
-        templates={filteredFeaturedTemplates}
-        switchingType={switchingType || loadingFeatured}
-        onViewDetails={handleViewTemplateDetails}
-        templateType={templateType}
-      />
+      {templateType !== 'agent' && (
+        <FeaturedSection
+          templates={filteredFeaturedTemplates}
+          switchingType={switchingType || loadingFeatured}
+          onViewDetails={handleViewTemplateDetails}
+          templateType={templateType}
+        />
+      )}
 
       {/* Results */}
       <div className="px-2 sm:px-4 py-4">
@@ -414,16 +416,16 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
           !loadingCommunity &&
           !loadingMore &&
           !switchingType ? (
-          // Show EmptyContent only if no community templates found and not loading
-          <EmptyContent
-            title="No templates found"
-            description="Try adjusting your search or filters"
-            img="/assets/illustrations/illustration_empty_content.svg"
-          />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {sortedCommunityTemplates.map((template) => (
+        // Show EmptyContent only if no community templates found and not loading
+              <EmptyContent
+                title="No templates found"
+                description="Try adjusting your search or filters"
+                img="/assets/illustrations/illustration_empty_content.svg"
+              />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                  {sortedCommunityTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={template}
@@ -431,39 +433,39 @@ const TemplateMarketplace = ({ type = 'altaner', hideFilters = false }) => {
                   templateType={templateType}
                 />
               ))}
-            </div>
+                </div>
 
-            {/* Load More Button */}
-            {hasMore && !loadingMore && (
-              <div className="flex justify-center py-8">
-                <button
-                  onClick={loadMoreTemplates}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-darker transition-colors text-sm"
-                >
-                  Load More
-                </button>
-              </div>
-            )}
+                {/* Load More Button */}
+                {hasMore && !loadingMore && (
+                  <div className="flex justify-center py-8">
+                    <button
+                      onClick={loadMoreTemplates}
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-darker transition-colors text-sm"
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
 
-            {/* Loading More Skeleton */}
-            {loadingMore && (
-              <div className="py-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {Array.from({ length: 4 }).map((_, index) => (
+                {/* Loading More Skeleton */}
+                {loadingMore && (
+                  <div className="py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {Array.from({ length: 4 }).map((_, index) => (
                     <SkeletonCard key={`loading-skeleton-${index}`} />
                   ))}
-                </div>
-              </div>
-            )}
+                    </div>
+                  </div>
+                )}
 
-            {/* End of results message */}
-            {!hasMore && !hasActiveFilters && communityTemplates.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-secondary">You&apos;ve reached the end of the templates</p>
-              </div>
+                {/* End of results message */}
+                {!hasMore && !hasActiveFilters && communityTemplates.length > 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-secondary">You&apos;ve reached the end of the templates</p>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
       </div>
     </div>
   );

@@ -21,7 +21,6 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -40,11 +39,11 @@ import { dispatch, useSelector } from '../../redux/store';
 import { bgBlur } from '../../utils/cssStyles';
 import formatData from '../../utils/formatData';
 import { fToNow } from '../../utils/formatTime';
+import CustomDialog from '../dialogs/CustomDialog';
 import Iconify from '../iconify/Iconify';
 import FormParameter from '../tools/form/FormParameter';
-import CustomDialog from '../dialogs/CustomDialog';
 
-const TemplateItem = memo(({ version, mode }) => {
+const TemplateItem = memo(({ version }) => {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -175,6 +174,8 @@ const TemplateItem = memo(({ version, mode }) => {
   );
 });
 
+TemplateItem.displayName = 'TemplateItem';
+
 const BRANCH_SCHEMA = (branches) => ({
   'x-override-label': 'Select your branch...',
   type: 'string',
@@ -274,6 +275,59 @@ const TEMPLATE_SCHEMA = {
   required: ['name'],
 };
 
+// Schema specifically for agent templates with category
+const AGENT_TEMPLATE_SCHEMA = {
+  type: 'object',
+  description: 'Schema for updating an agent template.',
+  properties: {
+    name: {
+      'x-hide-label': true,
+      'x-disable-free-text': true,
+      type: 'string',
+      description: 'The name of the template.',
+    },
+    description: {
+      'x-hide-label': true,
+      'x-disable-free-text': true,
+      type: 'string',
+      description: 'A description of the template.',
+    },
+    is_visible: {
+      'x-hide-label': true,
+      'x-disable-free-text': true,
+      type: 'boolean',
+      title: 'Visible in Marketplace',
+      description: 'Whether the template is visible in the marketplace.',
+    },
+    category: {
+      'x-hide-label': true,
+      'x-disable-free-text': true,
+      type: 'string',
+      title: 'Category',
+      description: 'The category for this agent template.',
+      enum: [
+        'official',
+        'personal',
+        'sales',
+        'marketing',
+        'finance',
+        'operations',
+        'support',
+      ],
+      'x-enum-labels': [
+        'Official',
+        'Personal',
+        'Sales',
+        'Marketing',
+        'Finance',
+        'Operations',
+        'Support',
+      ],
+    },
+  },
+  required: ['name'],
+};
+
 const sortTemplatesByDateCreation = (a, b) => {
   return new Date(b.date_creation) - new Date(a.date_creation);
 };
@@ -341,13 +395,20 @@ const TemplateManager = ({
 
   useEffect(() => {
     if (template) {
-      resetTemplateForm({
+      const formData = {
         name: template.name || '',
         description: template.description || '',
         is_visible: template.is_visible || false,
-      });
+      };
+
+      // For agent templates, include category from top-level field
+      if (mode === 'agent') {
+        formData.category = template.category || '';
+      }
+
+      resetTemplateForm(formData);
     }
-  }, [template, resetTemplateForm]);
+  }, [template, resetTemplateForm, mode]);
 
   // Set default values when opening the publish dialog
   useEffect(() => {
@@ -386,7 +447,22 @@ const TemplateManager = ({
   const onUpdateTemplate = useCallback(
     handleTemplateSubmit((data) => {
       if (!template?.id) return;
-      const formattedData = formatData(data, TEMPLATE_SCHEMA.properties);
+      const schema = mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA;
+      let formattedData = formatData(data, schema.properties);
+
+      // For agent templates, ensure category is passed as a top-level field, not in metadata
+      if (mode === 'agent' && data.category) {
+        formattedData = {
+          ...formattedData,
+          category: data.category,
+        };
+        // Remove category from meta_data if it exists
+        if (formattedData.meta_data?.category) {
+          const { category, ...restMetaData } = formattedData.meta_data;
+          formattedData.meta_data = restMetaData;
+        }
+      }
+
       dispatchWithFeedback(updateTemplate(template.id, formattedData), {
         successMessage: `Template ${data.name} was updated successfully`,
         errorMessage: `Could not update ${mode} template:`,
@@ -509,8 +585,9 @@ const TemplateManager = ({
       {activeTab === 'general' && (
         <FormProvider {...templateMethods}>
           <Stack spacing={2}>
-            {Object.entries(TEMPLATE_SCHEMA.properties).map(([key, fieldSchema]) => {
-              const required = TEMPLATE_SCHEMA.required.includes(key);
+            {Object.entries((mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA).properties).map(([key, fieldSchema]) => {
+              const schema = mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA;
+              const required = schema.required.includes(key);
               return (
                 <FormParameter
                   key={key}

@@ -3,6 +3,7 @@ export const categoryOptions = [
   { value: 'internal_tools', label: 'Internal Tools' },
   { value: 'sites', label: 'Websites' },
   { value: 'games', label: 'Games' },
+  { value: 'clones', label: 'Clones' },
   { value: 'ai_apps', label: 'AI Apps' },
 ];
 
