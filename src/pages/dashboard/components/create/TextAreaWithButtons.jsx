@@ -139,7 +139,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
 
     // Append autopilot mode text to the prompt when enabled
     const finalPrompt = autopilotEnabled
-      ? `${inputValue.trim()}\n\n<hide>Autopilot mode is on</hide>`
+      ? `${inputValue.trim()}\n\n<hide>Autopilot mode is on. So please plan the project and execute all steps automatically in the background without asking for confirmation.</hide>`
       : inputValue.trim();
 
     // Pass the final prompt directly to handleCreate
