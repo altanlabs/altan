@@ -387,7 +387,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
 
   const handleCreate = async () => {
     if (!isAuthenticated) {
-      history.push('/auth/login');
+      history.push('/auth/register');
       return;
     }
 
@@ -510,10 +510,17 @@ function CreateAgentDashboard({ handleVoice }) {
   // Parse query parameters
   const searchParams = new URLSearchParams(location.search);
   const modeFromUrl = searchParams.get('mode');
-  const [mode, setMode] = useState(modeFromUrl || 'chat'); // 'chat' or 'create'
+
+  // For unauthenticated users, always default to 'create' mode
+  const defaultMode = isAuthenticated ? (modeFromUrl || 'chat') : 'create';
+  const [mode, setMode] = useState(defaultMode);
 
   // Update URL when mode changes
   const updateMode = (newMode) => {
+    // Don't allow unauthenticated users to switch to chat mode
+    if (!isAuthenticated && newMode === 'chat') {
+      return;
+    }
     setMode(newMode);
     const newSearchParams = new URLSearchParams(location.search);
     if (newMode === 'chat') {
@@ -528,12 +535,14 @@ function CreateAgentDashboard({ handleVoice }) {
     });
   };
 
-  // Initialize mode from URL on mount
+  // Initialize mode from URL on mount, but respect authentication status
   useEffect(() => {
-    if (modeFromUrl && modeFromUrl !== mode) {
+    if (isAuthenticated && modeFromUrl && modeFromUrl !== mode) {
       setMode(modeFromUrl);
+    } else if (!isAuthenticated && mode !== 'create') {
+      setMode('create');
     }
-  }, [modeFromUrl, mode]);
+  }, [modeFromUrl, mode, isAuthenticated]);
 
   return (
     <div className="w-full max-w-[750px] mx-auto">

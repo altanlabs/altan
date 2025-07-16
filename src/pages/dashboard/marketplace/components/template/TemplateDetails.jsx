@@ -173,10 +173,6 @@ const TemplateDetails = ({ templateId = null }) => {
     }
   };
 
-  const toggleFullscreen = () => {
-    setFullscreen(!fullscreen);
-  };
-
   if (loading && !template) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] py-16">

@@ -108,10 +108,7 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
     return (
       <Box>
         <ProjectCarousel cards={projectCarouselCards} />
-        <TemplateMarketplace
-          type="altaner"
-          hideFilters
-        />
+        <AltanerTemplateMarketplace />
       </Box>
     );
   }

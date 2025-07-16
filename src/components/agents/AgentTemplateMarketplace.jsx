@@ -53,10 +53,9 @@ const AgentTemplateMarketplace = () => {
           sx={{
             fontWeight: 600,
             mb: 1,
-            color: 'primary.main',
           }}
         >
-          Agent Marketplace
+          Marketplace
         </Typography>
         <Typography
           variant="body1"

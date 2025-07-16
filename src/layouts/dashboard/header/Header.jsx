@@ -73,6 +73,7 @@ function Header() {
       boxShadow: 'none',
       height: HEADER.H_MOBILE,
       zIndex: 3,
+      px: 1,
       transition: theme.transitions.create(['height'], {
         duration: theme.transitions.duration.shorter,
       }),
