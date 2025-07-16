@@ -1,6 +1,6 @@
 /* eslint-disable import/order */
 // MUI imports
-import { Typography, MenuItem, Tooltip, IconButton, Button } from '@mui/material';
+import { Typography, MenuItem, Tooltip, IconButton } from '@mui/material';
 
 // React and routing imports
 import { memo, useCallback, useState } from 'react';
@@ -132,17 +132,10 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
                 width: 64,
                 height: 64,
               }}
-              className={`transition-opacity duration-200 ${
-                agent.template_type !== 'marketplace' ? 'group-hover:opacity-0' : ''
-              }`}
             />
             {/* Pin indicator */}
             {agent.is_pinned && (
-              <div
-                className={`absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center transition-opacity duration-200 ${
-                  agent.template_type !== 'marketplace' ? 'group-hover:opacity-0' : ''
-                }`}
-              >
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
                 <Iconify
                   icon="mdi:pin"
                   width={10}
@@ -161,66 +154,6 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
               {agent.name}
             </Typography>
           </div>
-
-          {/* Hover overlay with action buttons - only for non-template agents */}
-          {agent.template_type !== 'marketplace' && (
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1 bg-black/20 rounded-full">
-              <Button
-                variant="contained"
-                color="inherit"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    const response = await optimai.get(`/agent/${agent.id}/dm`);
-                    history.push(`/room/${response.data.id}`);
-                  } catch (error) {
-                    console.error('Error getting DM room:', error);
-                  }
-                }}
-                sx={{
-                  minWidth: 'auto',
-                  px: 1.5,
-                  py: 0.75,
-                  fontSize: '0.8rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  color: 'text.primary',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 1)',
-                  },
-                  boxShadow: 1,
-                }}
-              >
-                <Iconify
-                  icon="bxs:chat"
-                  width={16}
-                  sx={{ mr: 0.5 }}
-                />
-                Chat
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateToEditPage();
-                }}
-                sx={{
-                  minWidth: 'auto',
-                  px: 1.5,
-                  py: 0.75,
-                  fontSize: '0.8rem',
-                  boxShadow: 1,
-                }}
-              >
-                <Iconify
-                  icon="eva:edit-fill"
-                  width={16}
-                  sx={{ mr: 0.5 }}
-                />
-                Edit
-              </Button>
-            </div>
-          )}
 
           {/* Model Info */}
           {/* <div className="text-xs text-gray-600 dark:text-gray-400">{llmInfo}</div> */}

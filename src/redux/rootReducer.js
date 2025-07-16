@@ -16,6 +16,7 @@ import marketplaceReducer from './slices/marketplace';
 import mediaReducer from './slices/media';
 import moneyReducer from './slices/money';
 import notificationsReducer from './slices/notifications';
+import previewControlReducer from './slices/previewControl';
 import roomsReducer from './slices/room';
 import spaceReducer from './slices/spaces';
 import subscriptionsReducer from './slices/subscriptions';
@@ -46,6 +47,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   media: mediaReducer,
   notifications: notificationsReducer,
+  previewControl: previewControlReducer,
   connections: connectionsReducer,
   gates: gatesReducer,
   flows: flowsReducer,

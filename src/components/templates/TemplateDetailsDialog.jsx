@@ -322,7 +322,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             text={
               loading
                 ? 'Loading...'
-                : `${price === 0 ? 'Get Template' : `Purchase Template · ${formatPrice(price)}`}`
+                : `${price === 0 ? 'Clone Free' : `Purchase Template · ${formatPrice(price)}`}`
             }
             onClick={handleClone}
             disabled={loading}

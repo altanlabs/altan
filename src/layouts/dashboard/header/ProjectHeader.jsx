@@ -17,6 +17,7 @@ import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
 import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
+import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
 // config
 import { HEADER } from '../../../config-global';
 // hooks
@@ -37,6 +38,13 @@ import {
   setDisplayMode,
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
+import {
+  navigateToPath,
+  refreshIframe,
+  openInNewTab,
+  toggleIframeViewMode,
+  selectIframeViewMode,
+} from '../../../redux/slices/previewControl';
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
@@ -133,6 +141,9 @@ function ProjectHeader() {
   const dispatch = useDispatch();
   const isIOS = isIOSCapacitor();
 
+  // Get iframe view mode from Redux
+  const iframeViewMode = useSelector(selectIframeViewMode);
+
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
@@ -150,6 +161,23 @@ function ProjectHeader() {
   const [openSettingsDrawer, setOpenSettingsDrawer] = useState(false);
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+
+  // Navigation handlers for URLNavigationBar using Redux
+  const handleNavigateToPath = useCallback((path) => {
+    dispatch(navigateToPath(path));
+  }, [dispatch]);
+
+  const handleToggleIframeViewMode = useCallback(() => {
+    dispatch(toggleIframeViewMode());
+  }, [dispatch]);
+
+  const handleOpenIframeInNewTab = useCallback(() => {
+    dispatch(openInNewTab());
+  }, [dispatch]);
+
+  const handleRefreshIframe = useCallback(() => {
+    dispatch(refreshIframe());
+  }, [dispatch]);
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat') {
@@ -292,7 +320,7 @@ function ProjectHeader() {
                     </HeaderIconButton>
                   </Tooltip>
                 )}
-  
+
               </>
             ) : (
               <HoverBorderGradient
@@ -316,6 +344,18 @@ function ProjectHeader() {
               </HoverBorderGradient>
             )}
           </Stack>
+
+          {/* Middle section - URL Navigation Bar */}
+          {altaner?.id && isInterfaceComponent && !isMobile && (
+            <URLNavigationBar
+              onNavigate={handleNavigateToPath}
+              onToggleViewMode={handleToggleIframeViewMode}
+              onOpenInNewTab={handleOpenIframeInNewTab}
+              onRefresh={handleRefreshIframe}
+              viewMode={iframeViewMode}
+              disabled={!ui || viewType === 'code'}
+            />
+          )}
 
           <Stack
             direction="row"

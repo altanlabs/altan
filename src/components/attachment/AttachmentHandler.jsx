@@ -151,16 +151,6 @@ const AttachmentHandler = ({
 
   const [showSpeechInput, setShowSpeechInput] = useState(false);
 
-  // Debug log for agents
-  useEffect(() => {
-    console.log('🤖 Available agents:', agents);
-  }, [agents]);
-
-  // Debug log for selected agent
-  useEffect(() => {
-    console.log('👤 Selected agent changed:', selectedAgent);
-  }, [selectedAgent]);
-
   /** *************************************************************************
    * Multiple Attachments
    ***************************************************************************/

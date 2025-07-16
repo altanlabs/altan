@@ -67,8 +67,11 @@ function CreateAnything({ handleVoice }) {
     return [];
   };
 
-  const handleCreate = async (files, githubData, isPublic = true) => {
-    if (!inputValue.trim()) {
+  const handleCreate = async (files, githubData, isPublic = true, customPrompt = null) => {
+    // Use custom prompt if provided, otherwise use inputValue
+    const promptToUse = customPrompt || inputValue;
+
+    if (!promptToUse.trim()) {
       return;
     }
 
@@ -97,7 +100,7 @@ function CreateAnything({ handleVoice }) {
           },
           body: JSON.stringify({
             name: resourceName,
-            idea: inputValue,
+            idea: promptToUse,
             icon: selectedIcon,
             attachments,
             is_public: isPublic,
@@ -123,7 +126,7 @@ function CreateAnything({ handleVoice }) {
           hasGithub: !!githubData?.url,
           isPublic: isPublic,
           userAuthenticated: false,
-          promptLength: inputValue.length,
+          promptLength: promptToUse.length,
         });
 
         // Redirect to signup with the idea ID
@@ -158,7 +161,7 @@ function CreateAnything({ handleVoice }) {
         },
         body: JSON.stringify({
           name: resourceName,
-          idea: inputValue,
+          idea: promptToUse,
           icon: selectedIcon,
           attachments,
           is_public: isPublic,
@@ -185,7 +188,7 @@ function CreateAnything({ handleVoice }) {
         hasGithub: !!githubData?.url,
         isPublic: isPublic,
         userAuthenticated: true,
-        promptLength: inputValue.length,
+        promptLength: promptToUse.length,
       });
 
       history.push(`/?idea=${data.id}`);

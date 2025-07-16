@@ -9,7 +9,7 @@ const AGENT_CATEGORIES = [
     key: 'official',
     title: 'Official Agents',
     description: 'Curated agents from the Altan team',
-    initialExpanded: true,
+    initialExpanded: false,
   },
   {
     key: 'personal',

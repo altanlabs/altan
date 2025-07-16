@@ -85,11 +85,7 @@ export default function AgentDetailsDialog({ open, onClose, agentData = null }) 
     }
 
     if (error || !agent) {
-      return (
-        <Box sx={{ p: 2 }}>
-          <Alert severity="error">{error || 'Agent information not available'}</Alert>
-        </Box>
-      );
+      return null;
     }
 
     return (

@@ -29,7 +29,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(true); // Default to public
   const [visibilityMenuOpen, setVisibilityMenuOpen] = useState(false);
-  const [autopilotEnabled, setAutopilotEnabled] = useState(false);
+  const [autopilotEnabled, setAutopilotEnabled] = useState(true);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -136,7 +136,14 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
   // Modified handleSubmit to include the GitHub repository as github_url, isPublic flag, and autopilot mode
   const handleSubmit = () => {
     if (!inputValue.trim()) return;
-    handleCreate(attachments, githubRepo || null, isPublic, autopilotEnabled);
+
+    // Append autopilot mode text to the prompt when enabled
+    const finalPrompt = autopilotEnabled
+      ? `${inputValue.trim()}\n\n<hide>Autopilot mode is on</hide>`
+      : inputValue.trim();
+
+    // Pass the final prompt directly to handleCreate
+    handleCreate(attachments, githubRepo || null, isPublic, finalPrompt);
   };
 
   return (
@@ -374,27 +381,23 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                 onClick={() => setAutopilotEnabled(!autopilotEnabled)}
                 className={`relative w-32 h-7 cursor-pointer overflow-hidden rounded-full border transition-all duration-300 flex items-center justify-center ${
                   autopilotEnabled
-                    ? 'bg-black border-black text-white dark:bg-white dark:border-white dark:text-black'
+                    ? 'bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 border-transparent text-white shadow-lg shadow-purple-500/25'
                     : 'bg-slate-200 border-slate-300 text-slate-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-slate-300 dark:hover:bg-gray-600'
                 }`}
               >
-                {/* Animated background */}
-                <div
-                  className={`absolute left-[20%] top-1/2 -translate-y-1/2 h-2 w-2 rounded-full transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:translate-y-0 group-hover:h-full group-hover:w-full group-hover:scale-[1.2] ${
-                    autopilotEnabled
-                      ? 'bg-black dark:bg-white scale-[1.2] left-[0%] top-[0%] translate-y-0 h-full w-full'
-                      : 'bg-black dark:bg-white scale-[1]'
-                  }`}
-                />
+                {/* Animated background for hover state when disabled */}
+                {!autopilotEnabled && (
+                  <div className="absolute left-[20%] top-1/2 -translate-y-1/2 h-2 w-2 rounded-full transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:translate-y-0 group-hover:h-full group-hover:w-full group-hover:scale-[1.2] bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 scale-[1]" />
+                )}
 
                 {/* Default text - only show when not enabled */}
                 {!autopilotEnabled && (
                   <span className="relative z-10 text-xs font-medium transition-all duration-300 group-hover:translate-x-8 group-hover:opacity-0 px-4">
-                    Autopilot
+                    Manual
                   </span>
                 )}
 
-                {/* Enabled/Hover state with icon */}
+                {/* Enabled/Hover state with icon and gradient text */}
                 <div
                   className={`absolute inset-0 z-20 flex items-center justify-center gap-2 px-3 transition-all duration-300 ${
                     autopilotEnabled
@@ -404,15 +407,27 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                 >
                   <Icon
                     icon={autopilotEnabled ? 'mdi:lightning-bolt' : 'mdi:lightning-bolt-outline'}
-                    className="w-3.5 h-3.5"
+                    className={`w-3.5 h-3.5 ${autopilotEnabled ? 'text-white' : 'text-white'}`}
                   />
-                  <span className="text-xs font-medium">Autopilot</span>
+                  <span
+                    className={`text-xs font-bold ${
+                      autopilotEnabled ? 'text-white' : 'text-white'
+                    }`}
+                  >
+                    {autopilotEnabled ? 'Autopilot' : 'Manual'}
+                  </span>
                 </div>
+
+                {/* Animated gradient overlay for enabled state */}
+                {autopilotEnabled && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 opacity-100 animate-gradient-x" />
+                )}
               </button>
 
               {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                Autopilot mode will plan your project and execute all steps automatically in the background
+                Autopilot mode will plan your project and execute all steps automatically in the
+                background
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
               </div>
             </div>

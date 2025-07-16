@@ -485,6 +485,10 @@ const CustomMarkdown = ({
             stripe: () => {
               return <StripeConnect />;
             },
+            // Hide component - doesn't render children
+            hide: () => {
+              return null;
+            },
             // Superscript
             sup: ({ children }) => <sup>{children}</sup>,
             // Collapsible sections
