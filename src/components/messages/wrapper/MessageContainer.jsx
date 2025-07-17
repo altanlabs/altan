@@ -35,12 +35,9 @@ const MessageContainer = ({
           border: '2px solid #ba2c2c',
         },
         transition: 'backdrop-filter 100ms ease, background-color 100ms ease',
-        ...!!message?.replied && {
-          marginTop: 1,
-        },
         ...(isMessagePotentialParent && !disableEndButtons) && {
-          marginTop: 5,
-          marginBottom: 5,
+          marginTop: 2,
+          marginBottom: 2,
         },
         ...(!isSmallScreen && {
           '&:hover .hidden-child': {

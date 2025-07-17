@@ -454,7 +454,7 @@ const MembersAutocomplete = ({
       renderOption={renderCustomOption}
       renderTags={renderTags} // Assuming renderTags is defined elsewhere and handles multiple selections well
       loading={membersLoading} // Show loading indicator in input if members are still loading/refetching
-      PaperComponent={CustomPaper}
+      // PaperComponent={CustomPaper}
       ListboxProps={{ style: { maxHeight: 300 } }} // Control dropdown height
       noOptionsText={
         membersError ? 'Error loading members' :

@@ -3,7 +3,7 @@ import { m } from 'framer-motion';
 import { memo, useMemo } from 'react';
 
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
-import { selectMessagesById } from '../../../redux/slices/room';
+import { selectMessagesById, selectMe, selectMembers } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store.js';
 import MessageBoxWrapper from '../../messages/MessageBoxWrapper.jsx';
 import MessageContent from '../../messages/MessageContent.jsx';
@@ -68,10 +68,22 @@ const Message = ({
     previousMessage,
   } = useSelector((state) => messageSelector(state, messageId, previousMessageId));
 
+  const me = useSelector(selectMe);
+  const members = useSelector(selectMembers);
+
+  // Determine if this message is from the current user
+  const memberMe = me?.member;
+  const sender = members.byId[message?.member_id];
+  const is_me = sender?.member?.id === memberMe?.id;
+
   if (!message || !!message.space) return null;
   return (
     <m.div
-      className="overflow-hidden items-start min-w-[200px] mx-auto w-full ml-0 mr-8 xl:mr-10 lg:mr-7 md:mr-7 sm:mr-4 flex-col pb-3 pt-3 px-4 max-w-[850px]"
+      className={`overflow-hidden items-start min-w-[200px] w-full max-w-[800px] mx-auto flex-col py-1 px-4 ${
+        is_me
+          ? 'flex justify-end'
+          : 'flex justify-start'
+      }`}
       variants={variants}
       initial="hidden"
       animate="visible"

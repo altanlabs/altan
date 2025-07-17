@@ -1,7 +1,5 @@
 import { m } from 'framer-motion';
-import { memo, useCallback, type ReactElement } from 'react';
-import { useState, useEffect } from 'react';
-import { useHistory } from 'react-router';
+import { memo, type ReactElement, useCallback, useState, useEffect } from 'react';
 
 import { optimai } from '@utils/axios';
 import { fToNow } from '@utils/formatTime';
@@ -39,11 +37,9 @@ function PublicAppCard({
 }: PublicAppCardProps): ReactElement {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const history = useHistory();;
 
   // eslint-disable-next-line no-undef
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   const interfaceComponent = components?.items.find((item) => item.type === 'interface');
 
@@ -58,7 +54,6 @@ function PublicAppCard({
         } catch (error) {
           // Silently handle error in production
           if (import.meta.env.MODE !== 'production') {
-             
             console.error('Error fetching preview:', error);
           }
         }
@@ -69,21 +64,22 @@ function PublicAppCard({
     void fetchPreview();
   }, [interfaceComponent?.params?.id]);
 
+  // Open in a new tab instead of using history.push
   const onClickApp = useCallback((): void => {
-    history.push(`/remix/${id}`);
-  }, [id, history]);
+    window.open(`/remix/${id}`, '_blank', 'noopener,noreferrer');
+  }, [id]);
 
   const finalImageUrl = previewUrl || icon_url || '/placeholder-image.png';
 
   const motionProps = isSafari
-  ? { initial: { y: 20, scale: 0.95 }, animate: { scale: 1, y: 0 } }
-  : { initial: { opacity: 0, scale: 0.95, y: 20 }, animate: { opacity: 1, scale: 1, y: 0 } }
+    ? { initial: { y: 20, scale: 0.95 }, animate: { scale: 1, y: 0 } }
+    : { initial: { opacity: 0, scale: 0.95, y: 20 }, animate: { opacity: 1, scale: 1, y: 0 } };
 
   return (
     <>
       <m.button
         onClick={onClickApp}
-        { ...motionProps }
+        {...motionProps}
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{
           willChange: 'opacity',

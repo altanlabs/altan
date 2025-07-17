@@ -38,28 +38,17 @@
       this.init();
     }
 
-    async init() {
-      console.log('🤖 AltanVoiceWidget: Initializing with agent ID:', this.agentId);
-      
+    async init() {      
       if (!this.agentId) {
         console.error('AltanVoiceWidget: agentId is required');
         return;
       }
 
       try {
-        console.log('🤖 Loading agent data...');
         await this.loadAgent();
-        console.log('🤖 Agent loaded:', this.agentData);
-        
-        console.log('🤖 Loading ElevenLabs client...');
         await this.loadElevenLabsClient();
-        
-        console.log('🤖 Creating widget...');
         this.createWidget();
-        
-        console.log('🤖 Widget initialized successfully!');
       } catch (error) {
-        console.error('🤖 AltanVoiceWidget initialization failed:', error);
         this.onError?.(error);
       }
     }
@@ -67,27 +56,22 @@
     async loadAgent() {
       try {
         const apiUrl = `${WIDGET_CONFIG.API_BASE_URL}/${this.agentId}/public`;
-        console.log('🤖 Fetching agent from:', apiUrl);
         
         const response = await fetch(apiUrl);
-        console.log('🤖 API Response status:', response.status, response.statusText);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch agent: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('🤖 API Response data:', data);
         
         this.agentData = data.agent;
         
         // Update position from agent metadata if available
         if (this.agentData.meta_data?.widget?.position) {
           this.position = this.agentData.meta_data.widget.position;
-          console.log('🤖 Updated position from agent metadata:', this.position);
         }
       } catch (error) {
-        console.error('🤖 Failed to load agent:', error);
         throw error;
       }
     }

@@ -268,7 +268,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null }) 
     (index, mId) => {
       if (!mId) return null;
       return (
-        <div className="w-full flex flex-row items-center justify-center">
+        <div className="w-full flex justify-center">
           <Message
             previousMessageId={index ? messageIds[index - 1] : null}
             messageId={mId}

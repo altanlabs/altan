@@ -150,19 +150,12 @@ export const roomPolicyFields = [
   },
 ];
 
-const SettingsDialog = () => {
+const SettingsDialog = ({ open = false, onClose }) => {
   const room = useSelector(selectRoom);
   const me = useSelector(selectMe);
-  const isViewer = useMemo(
-    () => me?.role && ['viewer', 'listener'].includes(me.role),
-    [me],
-  );
-  const isAdmin = useMemo(
-    () => me?.role && ['admin', 'owner'].includes(me.role),
-    [me],
-  );
+  const isViewer = useMemo(() => me?.role && ['viewer', 'listener'].includes(me.role), [me]);
+  const isAdmin = useMemo(() => me?.role && ['admin', 'owner'].includes(me.role), [me]);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // include new boolean flags
@@ -175,10 +168,10 @@ const SettingsDialog = () => {
     'policy.agent_interaction': room?.policy?.agent_interaction || 'mention_only',
     'policy.memory_enabled': room?.policy?.memory_enabled ?? true,
     'policy.cagi_enabled': room?.policy?.cagi_enabled ?? false,
+    'policy.voice_enabled': room?.policy?.voice_enabled ?? false,
     'policy.agent_timeout': room?.policy?.agent_timeout ?? 1,
     'policy.requirements': room?.policy?.requirements?.data || [],
   });
-  const [avatarFile, setAvatarFile] = useState(null);
 
   const handleChange = useCallback((key, value) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
@@ -186,8 +179,18 @@ const SettingsDialog = () => {
 
   const handleSave = useCallback(async () => {
     setLoading(true);
-    const [name, description, privacy, default_role, max_members, agent_interaction,
-      memory_enabled, cagi_enabled, agent_timeout, requirements,
+    const [
+      name,
+      description,
+      privacy,
+      default_role,
+      max_members,
+      agent_interaction,
+      memory_enabled,
+      cagi_enabled,
+      voice_enabled,
+      agent_timeout,
+      requirements,
     ] = [
       formState.name,
       formState.description,
@@ -197,6 +200,7 @@ const SettingsDialog = () => {
       formState['policy.agent_interaction'],
       formState['policy.memory_enabled'],
       formState['policy.cagi_enabled'],
+      formState['policy.voice_enabled'],
       parseFloat(formState['policy.agent_timeout']),
       formState['policy.requirements'],
     ];
@@ -204,16 +208,26 @@ const SettingsDialog = () => {
     const payload = {
       name,
       description,
-      policy: { privacy, default_role, agent_interaction, memory_enabled, cagi_enabled, max_members, agent_timeout, requirements: { data: requirements } },
+      policy: {
+        privacy,
+        default_role,
+        agent_interaction,
+        memory_enabled,
+        cagi_enabled,
+        max_members,
+        voice_enabled,
+        agent_timeout,
+        requirements: { data: requirements },
+      },
     };
 
     dispatch(updateRoom(payload))
       .catch((err) => console.error('Update failed', err))
       .finally(() => {
         setLoading(false);
-        setDialogOpen(false);
+        onClose();
       });
-  }, [formState, avatarFile]);
+  }, [formState, onClose]);
 
   const actionHandler = useCallback((action) => {
     setLoading(true);
@@ -225,192 +239,152 @@ const SettingsDialog = () => {
   if (!room) return null;
 
   return (
-    <>
-      <span
-        onClick={() => setDialogOpen(true)}
-        className="text-lg tracking-wide truncate hover:opacity-80 cursor-pointer"
-      >
-        {room.name}
-      </span>
-
-      <CustomDialog
-        dialogOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        aria-labelledby="settings-dialog"
-        className="relative max-h-[90vh] overflow-y-auto"
+    <CustomDialog
+      dialogOpen={open}
+      onClose={onClose}
+      aria-labelledby="settings-dialog"
+      className="relative max-h-[90vh] overflow-y-auto"
+    >
+      <Stack
+        spacing={2}
+        padding={3}
       >
         <Stack
-          spacing={2}
-          padding={3}
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
         >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography variant="h6">Room Settings</Typography>
-            <IconButton
-              size="small"
-              onClick={() => setDialogOpen(false)}
-            >
-              <Iconify icon="mdi:close" />
-            </IconButton>
-          </Stack>
+          <Typography variant="h6">Room Settings</Typography>
+        </Stack>
 
-          {!isViewer && (
-            <>
-              {/* <UploadAvatar
+        {!isViewer && (
+          <>
+            {/* <UploadAvatar
                 accept={{ 'image/*': [] }}
                 file={avatarSrc}
                 onDrop={handleDrop}
               /> */}
 
-              <FormControl fullWidth>
-                <Paper
-                  sx={{
-                    background: 'none',
-                    border: (t) => `dashed 1px ${t.palette.divider}`,
-                    p: 2,
-                    mb: 2,
-                  }}
-                >
-                  <Stack spacing={2}>
-                    {roomDetailsFields.map(({ key, title, description, options }) => (
-                      <TextField
-                        key={key}
-                        name={key}
-                        label={title}
-                        helperText={description}
-                        select={!!options}
-                        variant="filled"
-                        size="small"
-                        value={formState[key]}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                      >
-                        {options?.map(({ value, label }) => (
-                          <MenuItem
-                            key={value}
-                            value={value}
-                          >
-                            {label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    ))}
-                  </Stack>
-                </Paper>
+            <FormControl fullWidth>
+              <Paper
+                sx={{
+                  background: 'none',
+                  border: (t) => `dashed 1px ${t.palette.divider}`,
+                  p: 2,
+                  mb: 2,
+                }}
+              >
+                <Stack spacing={2}>
+                  {roomDetailsFields.map(({ key, title, description, options }) => (
+                    <TextField
+                      key={key}
+                      name={key}
+                      label={title}
+                      helperText={description}
+                      select={!!options}
+                      variant="filled"
+                      size="small"
+                      value={formState[key]}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    >
+                      {options?.map(({ value, label }) => (
+                        <MenuItem
+                          key={value}
+                          value={value}
+                        >
+                          {label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  ))}
+                </Stack>
+              </Paper>
 
-                <Paper
-                  sx={{
-                    background: 'none',
-                    border: (t) => `dashed 1px ${t.palette.divider}`,
-                    p: 2,
-                  }}
-                >
-                  <Stack spacing={2}>
-                    {roomPolicyFields.map(({ key, title, description, options }) => (
-                      <TextField
-                        key={key}
-                        name={key}
-                        label={title}
-                        helperText={description}
-                        select={!!options}
-                        variant="filled"
-                        size="small"
-                        value={formState[key]}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                      >
-                        {options?.map(({ value, label }) => (
-                          <MenuItem
-                            key={value}
-                            value={value}
-                          >
-                            {label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    ))}
+              <Paper
+                sx={{
+                  background: 'none',
+                  border: (t) => `dashed 1px ${t.palette.divider}`,
+                  p: 2,
+                }}
+              >
+                <Stack spacing={2}>
+                  {roomPolicyFields.map(({ key, title, description, options }) => (
+                    <TextField
+                      key={key}
+                      name={key}
+                      label={title}
+                      helperText={description}
+                      select={!!options}
+                      variant="filled"
+                      size="small"
+                      value={formState[key]}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    >
+                      {options?.map(({ value, label }) => (
+                        <MenuItem
+                          key={value}
+                          value={value}
+                        >
+                          {label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  ))}
 
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={formState['policy.memory_enabled']}
-                          onChange={(e) => handleChange('policy.memory_enabled', e.target.checked)}
-                        />
-                      }
-                      label="Enable memory"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={formState['policy.cagi_enabled']}
-                          onChange={(e) => handleChange('policy.cagi_enabled', e.target.checked)}
-                        />
-                      }
-                      label="Enable CAGI"
-                    />
-                  </Stack>
-                </Paper>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formState['policy.memory_enabled']}
+                        onChange={(e) => handleChange('policy.memory_enabled', e.target.checked)}
+                      />
+                    }
+                    label="Enable memory"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formState['policy.cagi_enabled']}
+                        onChange={(e) => handleChange('policy.cagi_enabled', e.target.checked)}
+                      />
+                    }
+                    label="Enable CAGI"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formState['policy.voice_enabled']}
+                        onChange={(e) => handleChange('policy.voice_enabled', e.target.checked)}
+                      />
+                    }
+                    label="Enable Voice"
+                  />
+                </Stack>
+              </Paper>
 
-                <Button
-                  variant="soft"
-                  fullWidth
-                  onClick={handleSave}
-                  disabled={loading}
-                >
-                  Save
-                </Button>
-
-                <Divider
-                  sx={{
-                    my: 3,
-                    typography: 'overline',
-                    color: 'text.disabled',
-                    '&::before, &::after': { borderTopStyle: 'dashed' },
-                  }}
-                >
-                  OR
-                </Divider>
-              </FormControl>
-            </>
-          )}
-
-          <Button
-            variant="soft"
-            color="error"
-            fullWidth
-            onClick={() => actionHandler(exitRoom)}
-            disabled={loading}
-            startIcon={<Iconify icon="solar:exit-bold-duotone" />}
-          >
-            Exit room
-          </Button>
-
-          {isAdmin && (
-            <ButtonGroup fullWidth>
               <Button
                 variant="soft"
-                color="warning"
-                onClick={() => actionHandler(() => updateRoomStatus('archived'))}
+                fullWidth
+                onClick={handleSave}
                 disabled={loading}
-                startIcon={<Iconify icon="entypo:archive" />}
               >
-                Archive
+                Save
               </Button>
-              <Button
-                variant="soft"
-                color="error"
-                onClick={() => actionHandler(deleteRoom)}
-                disabled={loading}
-                startIcon={<Iconify icon="mdi:trash" />}
-              >
-                Delete room
-              </Button>
-            </ButtonGroup>
-          )}
-        </Stack>
-      </CustomDialog>
-    </>
+            </FormControl>
+          </>
+        )}
+
+        <Button
+          variant="soft"
+          color="error"
+          fullWidth
+          onClick={() => actionHandler(exitRoom)}
+          disabled={loading}
+          startIcon={<Iconify icon="solar:exit-bold-duotone" />}
+        >
+          Exit room
+        </Button>
+      </Stack>
+    </CustomDialog>
   );
 };
 

@@ -10,6 +10,7 @@ import Iconify from './iconify/Iconify.jsx';
 import FileUpload from './room/thread/FileUpload.jsx';
 import MessageMinified from './room/thread/MessageMinified.jsx';
 import { useSnackbar } from './snackbar';
+import { useVoiceConversation } from '../providers/voice/VoiceConversationProvider';
 import { checkObjectsEqual } from '../redux/helpers/memoize';
 import {
   createThread,
@@ -20,6 +21,7 @@ import {
   selectRoomState,
   sendMessage,
   setThreadRespond,
+  selectIsVoiceActive,
 } from '../redux/slices/room';
 import { dispatch, useSelector } from '../redux/store.js';
 import { optimai_room } from '../utils/axios.js';
@@ -80,11 +82,15 @@ const FloatingTextArea = ({
   const [attachments, setAttachments] = useState([]);
   const editorRef = useRef({});
 
+  // Voice conversation hooks
+  const isVoiceActive = useSelector((state) => selectIsVoiceActive(threadId)(state));
+  const { conversation } = useVoiceConversation();
+
   // Get agents from room members
   const members = useSelector(selectMembers);
-  const agents = Object.values(members.byId || {}).filter(member =>
-    member?.member?.member_type === 'agent',
-  ).map(member => getMemberDetails(member));
+  const agents = Object.values(members.byId || {})
+    .filter((member) => member?.member?.member_type === 'agent')
+    .map((member) => getMemberDetails(member));
 
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => !me || (!!me && ['viewer', 'listener'].includes(me.role)), [me]);
@@ -94,14 +100,11 @@ const FloatingTextArea = ({
         // Handle selected agent mention
         let finalContent = content;
         if (selectedAgent) {
-          console.log('🏷️ Prepending mention for selected agent:', selectedAgent);
           const mentionText = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**`;
           finalContent = mentionText + (content ? '\n' + content : '');
-          console.log('📝 Final content with mention:', finalContent);
 
           // Clear selected agent after sending
           setSelectedAgent(null);
-          console.log('🧹 Cleared selected agent');
         }
 
         // Create a clean attachments array without `preview`
@@ -112,6 +115,14 @@ const FloatingTextArea = ({
             ? sendMessage({ threadId, content: finalContent, attachments: sanitizedAttachments })
             : createThread({ content: finalContent, attachments: sanitizedAttachments }),
         ).catch((e) => enqueueSnackbar(e, { variant: 'error' }));
+
+        if (isVoiceActive && conversation) {
+          try {
+            conversation.sendUserMessage(finalContent);
+          } catch (error) {
+            console.error('❌ [TEXT_TO_VOICE] FloatingTextArea failed:', error);
+          }
+        }
 
         // Clear attachments after sending
         setAttachments([]);

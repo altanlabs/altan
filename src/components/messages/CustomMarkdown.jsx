@@ -377,6 +377,7 @@ const CustomMarkdown = ({
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
+  
 
   if (!content?.length && !messageId) {
     return null;

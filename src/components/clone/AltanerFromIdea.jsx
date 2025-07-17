@@ -110,7 +110,6 @@ function AltanerFromIdea({ idea, onClose }) {
   const [isCreating, setIsCreating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [progressValue, setProgressValue] = useState(0);
-  const history = useHistory();;
 
   useEffect(() => {
     if (!idea || isCreating) return;
@@ -120,7 +119,7 @@ function AltanerFromIdea({ idea, onClose }) {
       'Assembling your AI team',
       'Creating main components',
       'Creating repository',
-      'Finalizing setup',
+      'Creating database',
       'Redirecting to your project',
     ];
 

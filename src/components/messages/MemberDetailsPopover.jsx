@@ -34,7 +34,7 @@ const DetailRow = ({ label, value, copyable = false }) => (
           variant="caption"
           sx={{ fontFamily: 'monospace' }}
         >
-          {value}
+          {value || 'N/A'}
         </Typography>
       </Box>
     ) : (
@@ -54,7 +54,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
   if (!member) return null;
 
   const isAgent = member.member?.member_type === 'agent' || member.member_type === 'agent';
-  const memberType = member.member?.member_type || member.member_type;
+  const memberType = member.member?.member_type || member.member_type || 'member';
 
   // Fix: Default to mention_only when undefined
   const agentInteraction = member?.agent_interaction || 'mention_only';
@@ -148,6 +148,12 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
     { label: 'Always Respond', value: 'always' },
   ];
 
+  // Safely get values with fallbacks
+  const memberId = member?.id || 'Unknown';
+  const memberRole = member?.role || 'member';
+  const dateCreation = member?.date_creation || null;
+  const agentDescription = member?.member?.agent?.description || member?.agent?.description || '';
+
   return (
     <Popover
       open={isOpen}
@@ -186,21 +192,21 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
               sx={{ width: 48, height: 48 }}
               variant="circular"
               src={picture}
-              name={memberName}
+              name={memberName || 'Unknown User'}
             />
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="subtitle1"
                 fontWeight="medium"
               >
-                {memberName}
+                {memberName || 'Unknown User'}
               </Typography>
-              {(member?.member?.agent?.description || member?.agent?.description) && (
+              {agentDescription && (
                 <Typography
                   variant="caption"
                   color="text.secondary"
                 >
-                  {member?.member?.agent?.description || member?.agent?.description}
+                  {agentDescription}
                 </Typography>
               )}
             </Box>
@@ -256,7 +262,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
               >
                 <InputLabel>Role</InputLabel>
                 <Select
-                  value={member?.role || 'member'}
+                  value={memberRole}
                   onChange={(e) => handleRoleChange(e.target.value)}
                   label="Role"
                   startAdornment={
@@ -325,12 +331,12 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
             <Box sx={{ mt: 0.5, pl: 1 }}>
               <DetailRow
                 label="Member ID"
-                value={member?.id}
+                value={memberId}
                 copyable
               />
               <DetailRow
                 label="Created"
-                value={formatDate(member?.date_creation)}
+                value={formatDate(dateCreation)}
               />
               <DetailRow
                 label="Type"

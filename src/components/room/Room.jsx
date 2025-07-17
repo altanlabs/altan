@@ -13,6 +13,7 @@ import {
 import { dispatch, useSelector } from '../../redux/store';
 
 import DesktopRoom from './DesktopRoom.jsx';
+import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 
 // import AltanLogo from '../loaders/AltanLogo.jsx';
 
@@ -87,12 +88,14 @@ const Room = ({
 
   return (
     <RoomAuthGuard>
-      <DesktopRoom
-        header={header}
-        previewComponent={previewComponent}
-        isMobile={isMobile}
-        mobileActiveView={mobileActiveView}
-      />
+      <VoiceConversationProvider>
+        <DesktopRoom
+          header={header}
+          previewComponent={previewComponent}
+          isMobile={isMobile}
+          mobileActiveView={mobileActiveView}
+        />
+      </VoiceConversationProvider>
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}
     </RoomAuthGuard>
   );

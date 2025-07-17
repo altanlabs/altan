@@ -111,6 +111,11 @@ const initialState = {
   calendar_events: [],
   authorization_requests: [],
   runningResponses: {},
+  // Add voice conversation state
+  voiceConversations: {
+    byThreadId: {}, // threadId -> { isActive, agentId, elevenlabsId, conversation }
+    isConnecting: false,
+  },
   thread: {
     drawer: {
       navigation: [],
@@ -460,7 +465,9 @@ const slice = createSlice({
         state.threads.byId[thread.id] = tempThread;
 
         // Update corresponding tab name if it exists
-        const tabWithThisThread = Object.values(state.tabs.byId).find(tab => tab.threadId === thread.id);
+        const tabWithThisThread = Object.values(state.tabs.byId).find(
+          (tab) => tab.threadId === thread.id,
+        );
         if (tabWithThisThread && thread.name) {
           tabWithThisThread.name = thread.name;
         }
@@ -532,7 +539,9 @@ const slice = createSlice({
 
           // Update corresponding tab name if the thread name changed
           if (changes.name) {
-            const tabWithThisThread = Object.values(state.tabs.byId).find(tab => tab.threadId === id);
+            const tabWithThisThread = Object.values(state.tabs.byId).find(
+              (tab) => tab.threadId === id,
+            );
             if (tabWithThisThread) {
               tabWithThisThread.name = changes.name;
             }
@@ -558,7 +567,12 @@ const slice = createSlice({
       state.members.allIds.push(roomMember.id);
 
       // Update the me state if the member being added is the current user
-      console.log('addMember: currentUserId:', currentUserId, 'roomMember.member.user.id:', roomMember.member?.user?.id);
+      console.log(
+        'addMember: currentUserId:',
+        currentUserId,
+        'roomMember.member.user.id:',
+        roomMember.member?.user?.id,
+      );
       if (currentUserId && roomMember.member?.user?.id === currentUserId) {
         console.log('addMember: Updating me state for current user');
         state.me = roomMember;
@@ -832,7 +846,7 @@ const slice = createSlice({
 
       // Remove tab
       delete state.tabs.byId[tabId];
-      state.tabs.allIds = state.tabs.allIds.filter(id => id !== tabId);
+      state.tabs.allIds = state.tabs.allIds.filter((id) => id !== tabId);
 
       // If this was the active tab, we need to switch to another tab
       if (wasActive) {
@@ -935,6 +949,43 @@ const slice = createSlice({
         state.thread.main.current = threadId;
       }
     },
+    // Voice conversation actions
+    startVoiceConversation: (state, action) => {
+      const { threadId, agentId, elevenlabsId, conversation } = action.payload;
+      state.voiceConversations.byThreadId[threadId] = {
+        isActive: true,
+        agentId,
+        elevenlabsId,
+        conversation,
+        startedAt: new Date().toISOString(),
+      };
+      state.voiceConversations.isConnecting = false;
+    },
+    setVoiceConversationConnecting: (state, action) => {
+      const { threadId, isConnecting } = action.payload;
+      state.voiceConversations.isConnecting = isConnecting;
+      if (isConnecting && !state.voiceConversations.byThreadId[threadId]) {
+        state.voiceConversations.byThreadId[threadId] = {
+          isActive: false,
+          agentId: null,
+          elevenlabsId: null,
+          conversation: null,
+        };
+      }
+    },
+    stopVoiceConversation: (state, action) => {
+      const { threadId } = action.payload;
+      if (state.voiceConversations.byThreadId[threadId]) {
+        delete state.voiceConversations.byThreadId[threadId];
+      }
+      state.voiceConversations.isConnecting = false;
+    },
+    updateVoiceConversation: (state, action) => {
+      const { threadId, updates } = action.payload;
+      if (state.voiceConversations.byThreadId[threadId]) {
+        Object.assign(state.voiceConversations.byThreadId[threadId], updates);
+      }
+    },
   },
 });
 
@@ -994,6 +1045,11 @@ export const {
   clearTabs,
   loadTabs,
   switchToThread,
+  // Voice conversation actions
+  startVoiceConversation,
+  setVoiceConversationConnecting,
+  stopVoiceConversation,
+  updateVoiceConversation,
 } = slice.actions;
 
 // SELECTORS
@@ -1145,7 +1201,7 @@ export const makeSelectHasMessageContent = () =>
 export const makeSelectMessageExecutions = () =>
   createSelector(
     [selectMessagesExecutions, (state, messageId) => messageId],
-    (messagesExecutions, messageId) => messagesExecutions[messageId],
+    (messagesExecutions, messageId) => messagesExecutions[messageId] || [],
   );
 
 export const makeSelectExecution = () =>
@@ -1403,14 +1459,11 @@ export const selectActiveTab = createSelector(
   (tabsById, activeTabId) => (activeTabId ? tabsById[activeTabId] : null),
 );
 
-export const selectTabsCount = createSelector(
-  [selectTabsAllIds],
-  (allIds) => allIds.length,
-);
+export const selectTabsCount = createSelector([selectTabsAllIds], (allIds) => allIds.length);
 
 export const selectTabsArray = createSelector(
   [selectTabsById, selectTabsAllIds],
-  (tabsById, allIds) => allIds.map(id => tabsById[id]),
+  (tabsById, allIds) => allIds.map((id) => tabsById[id]),
 );
 
 export const makeSelectTabById = () =>
@@ -1418,6 +1471,23 @@ export const makeSelectTabById = () =>
     [selectTabsById, (state, tabId) => tabId],
     (tabsById, tabId) => tabsById[tabId],
   );
+
+// Voice conversation selectors
+export const selectVoiceConversations = (state) => selectRoomState(state).voiceConversations;
+
+export const selectVoiceConversationByThreadId = (threadId) =>
+  createSelector(
+    [selectVoiceConversations],
+    (voiceConversations) => voiceConversations.byThreadId[threadId] || null,
+  );
+
+export const selectIsVoiceActive = (threadId) =>
+  createSelector(
+    [selectVoiceConversations],
+    (voiceConversations) => !!voiceConversations.byThreadId[threadId]?.isActive,
+  );
+
+export const selectIsVoiceConnecting = (state) => selectVoiceConversations(state).isConnecting;
 
 // ACTIONS
 
@@ -1819,6 +1889,39 @@ export const sendMessage =
     }
   };
 
+export const sendAgentMessage =
+  ({ content, attachments, threadId, agentId }) =>
+  async (dispatch, getState) => {
+    try {
+      const {
+        thread: { respond },
+      } = getState().room;
+      const config = {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          dispatch(slice.actions.updateMediaProgress({ threadId, percentCompleted }));
+        },
+      };
+      if (attachments?.length > 0) {
+        dispatch(slice.actions.setIsUploading({ threadId, messageId: null }));
+      }
+
+      const response = await optimai_room.post(
+        `/thread/${threadId}/agents/message?agent_id=${agentId}`,
+        { content, attachments, replied_id: respond[threadId] },
+        config,
+      );
+      SOUND_OUT.play();
+      if (!!respond) {
+        dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
+      }
+      return response.data;
+    } catch (e) {
+      console.error('Failed to send message:', e);
+      return Promise.reject(e.message);
+    }
+  };
+
 export const createThread =
   ({ content, attachments }) =>
   async (dispatch, getState) => {
@@ -1842,10 +1945,12 @@ export const createThread =
 
       if (tabsEnabled) {
         // Create a tab for the new thread and switch to it
-        dispatch(switchToThread({
-          threadId: thread.id,
-          threadName: thread.name || drawer?.threadName || 'New Thread',
-        }));
+        dispatch(
+          switchToThread({
+            threadId: thread.id,
+            threadName: thread.name || drawer?.threadName || 'New Thread',
+          }),
+        );
       } else {
         // Fallback to traditional drawer system
         dispatch(
@@ -2314,10 +2419,12 @@ export const createNewThread = () => async (dispatch, getState) => {
 
     // Create a tab for the new thread and switch to it
     // Use a temporary name that will be updated when the first message is sent
-    dispatch(switchToThread({
-      threadId: thread.id,
-      threadName: thread.name || 'New Thread',
-    }));
+    dispatch(
+      switchToThread({
+        threadId: thread.id,
+        threadName: thread.name || 'New Thread',
+      }),
+    );
 
     return Promise.resolve(thread.id);
   } catch (e) {

@@ -18,7 +18,7 @@ const MessageMedia = ({ messageId, className = '', itemClassName = '' }) => {
   const mediaSelector = useMemo(makeSelectMessageMedia, []);
   const media = useSelector((state) => mediaSelector(state, messageId));
 
-  if (!media) {
+  if (!media || !media.length) {
     return null;
   }
 

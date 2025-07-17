@@ -127,87 +127,96 @@ const MessageBoxWrapper = ({
           </div>
         </Divider>
       )}
-      <div className="relative flex flex-col w-full space-y-2">
+      <div className={`relative flex flex-col w-full space-y-2 ${is_me ? 'items-end' : 'items-start'}`}>
         <MessageReply message={message} />
-        <MessageBox
-          isMe={is_me}
-          timestamp={message.date_creation}
-          // type={message.type}
-          className={cn(
-            shouldShowMember ? 'p-[10px_4px]' : 'p-[2px_4px]',
-            isMessagePotentialParent && !disableEndButtons
-              ? 'shadow-md rounded-lg p-[15px] shadow-light dark:shadow-dark'
-              : '',
-          )}
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
+        <div className={`${is_me ? 'ml-auto max-w-[80%]' : 'w-full'} min-w-0`}>
+          <MessageBox
+            isMe={is_me}
+            timestamp={message.date_creation}
+            // type={message.type}
+            className={cn(
+              'p-[2px]', // Standardized padding for all messages
+              isMessagePotentialParent && !disableEndButtons
+                ? 'shadow-md rounded-lg p-[10px] shadow-light dark:shadow-dark'
+                : '',
+            )}
           >
-            {renderAvatar}
             <Stack
               direction="row"
               alignItems="center"
               spacing={1}
             >
-              {!!shouldShowMember && (
-                <div className="group relative inline-flex items-baseline gap-2">
-                  <Typography className="text-sm font-medium">
-                    {is_me ? 'You' : senderName}
-                  </Typography>
-                  <span className="text-[10px] text-[#555] dark:text-[#99aab5] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
-                  </span>
-                </div>
-              )}
-              {!disableEndButtons && (
-                <MessageEndButtons
-                  message={message}
-                  threadId={threadId}
-                  shouldShowMember={shouldShowMember}
-                />
-              )}
+              {!is_me && renderAvatar}
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ width: '100%' }}
+              >
+                {!!shouldShowMember && !is_me && (
+                  <div className="group relative inline-flex items-baseline gap-2">
+                    <Typography className="text-sm font-medium">
+                      {senderName}
+                    </Typography>
+                    <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#555] dark:text-[#99aab5]">
+                      {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
+                    </span>
+                  </div>
+                )}
+                {!disableEndButtons && (
+                  <MessageEndButtons
+                    message={message}
+                    threadId={threadId}
+                    shouldShowMember={shouldShowMember}
+                  />
+                )}
+              </Stack>
             </Stack>
-          </Stack>
-          {!shouldShowMember && (
-            <Box
-              className="group"
-              sx={{
-                position: 'absolute',
-                left: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                opacity: 0,
-                '&:hover': {
-                  opacity: 1,
-                },
-                transition: 'opacity 200ms ease-out',
-                backgroundColor: (theme) => (theme.palette.mode === 'light' ? '#e5e7eb' : '#555'),
-                borderRadius: 1,
-                px: 0.5,
-                '& span': {
-                  fontSize: '0.75rem',
-                  color: (theme) => (theme.palette.mode === 'light' ? '#555' : '#fff'),
-                },
-              }}
+            {!shouldShowMember && (
+              <Box
+                className="group"
+                sx={{
+                  position: 'absolute',
+                  left: is_me ? 'auto' : 8,
+                  right: is_me ? 8 : 'auto',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  opacity: 0,
+                  '&:hover': {
+                    opacity: 1,
+                  },
+                  transition: 'opacity 200ms ease-out',
+                  backgroundColor: is_me
+                    ? 'rgba(0, 0, 0, 0.1)'
+                    : (theme) => (theme.palette.mode === 'light' ? '#e5e7eb' : '#555'),
+                  borderRadius: 1,
+                  px: 0.5,
+                  '& span': {
+                    fontSize: '0.75rem',
+                    color: is_me
+                      ? '#666'
+                      : (theme) => (theme.palette.mode === 'light' ? '#555' : '#fff'),
+                  },
+                }}
+              >
+                <span>
+                  {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
+                </span>
+              </Box>
+            )}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              paddingLeft={is_me ? 0 : 4.5}
+              paddingRight={0}
             >
-              <span>
-                {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
-              </span>
-            </Box>
-          )}
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            paddingLeft={4.5}
-          >
-            {children}
-          </Stack>
+              {children}
+            </Stack>
+            {renderMessageThreads}
+          </MessageBox>
           <Reactions messageId={message.id} />
-          {renderMessageThreads}
-        </MessageBox>
+        </div>
         <svg
           ref={connectorRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
