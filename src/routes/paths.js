@@ -144,6 +144,11 @@ export const PATH_DASHBOARD = {
     root: path(ROOTS_DASHBOARD, '/catalogs'),
     view: (catalogId) => path(ROOTS_DASHBOARD, `/catalogs/${catalogId}`),
   },
+  testing: {
+    root: path(ROOTS_DASHBOARD, '/testing'),
+    textVoiceDemo: path(ROOTS_DASHBOARD, '/testing/text-voice-demo'),
+    advancedEditor: path(ROOTS_DASHBOARD, '/testing/advanced-editor'),
+  },
 };
 
 export const PATH_DOCS = {

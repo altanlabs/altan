@@ -7,7 +7,7 @@ import AgentSectionCategory from './AgentSectionCategory';
 const AGENT_CATEGORIES = [
   {
     key: 'official',
-    title: 'Official Agents',
+    title: 'Base Agents',
     description: 'Curated agents from the Altan team',
     initialExpanded: false,
   },

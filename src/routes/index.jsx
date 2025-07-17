@@ -57,6 +57,8 @@ import {
   Terms,
   Privacy,
   ContactPage,
+  DemoTextVoicePage,
+  AdvancedEditorPage,
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
@@ -635,6 +637,18 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <MediaPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Testing Routes */}
+        <Route
+          path="/testing/text-voice-demo"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <DemoTextVoicePage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

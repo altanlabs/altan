@@ -4,8 +4,8 @@ import Tooltip from '@mui/material/Tooltip';
 import { useState, useCallback, memo } from 'react';
 
 import useAgentAttributes from './useAgentAttributes';
-import Iconify from '../../../components/iconify/Iconify';
 import CustomDialog from '../../../components/dialogs/CustomDialog';
+import Iconify from '../../../components/iconify/Iconify';
 
 function CreateAgent({ altanerComponentId = null }) {
   const [open, setOpen] = useState(false);
@@ -31,7 +31,6 @@ function CreateAgent({ altanerComponentId = null }) {
       <CustomDialog
         dialogOpen={open}
         onClose={handleClose}
-        alwaysFullWidth
         showCloseButton={false}
       >
         <Stack

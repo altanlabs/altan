@@ -11,7 +11,7 @@ import { selectSortedAgents } from '../../../redux/slices/general';
 // Agent selector
 const getAccount = (state) => state.general.account;
 
-const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
+const VoiceConversationWithAgentSelection = memo(() => {
   const { isAuthenticated } = useAuthContext();
   const agents = useSelector(selectSortedAgents);
   const account = useSelector(getAccount);
@@ -19,6 +19,9 @@ const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
 
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredAgents, setFilteredAgents] = useState([]);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const shouldShowAgentSelection = isAuthenticated && agents.length > 0;
 
@@ -47,18 +50,58 @@ const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
     }
   }, [selectedAgent, account?.id]);
 
+  // Filter agents based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredAgents(agents || []);
+    } else {
+      const filtered = (agents || []).filter((agent) =>
+        agent.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+      setFilteredAgents(filtered);
+    }
+    setFocusedIndex(-1);
+  }, [searchQuery, agents]);
+
   const handleAgentMenuOpen = (event) => {
     event.preventDefault();
     setAgentMenuAnchor(event.currentTarget);
+    setSearchQuery('');
+    setFocusedIndex(-1);
   };
 
   const handleAgentMenuClose = () => {
     setAgentMenuAnchor(null);
+    setSearchQuery('');
+    setFocusedIndex(-1);
   };
 
   const handleAgentSelect = (agent) => {
     setSelectedAgent(agent);
     handleAgentMenuClose();
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setFocusedIndex((prev) =>
+        prev < filteredAgents.length - 1 ? prev + 1 : 0,
+      );
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setFocusedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredAgents.length - 1,
+      );
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (focusedIndex >= 0 && filteredAgents[focusedIndex]) {
+        handleAgentSelect(filteredAgents[focusedIndex]);
+      } else if (filteredAgents.length > 0) {
+        handleAgentSelect(filteredAgents[0]);
+      }
+    } else if (event.key === 'Escape') {
+      handleAgentMenuClose();
+    }
   };
 
   // Default agent configuration when no agent is selected
@@ -120,74 +163,60 @@ const VoiceConversationWithAgentSelection = memo(({ onCreateAgent }) => {
               }}
             >
               <Box p={1}>
-                <Typography
-                  variant="caption"
-                  sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
-                >
-                  Select an agent or create new
-                </Typography>
-                {/* New Agent option */}
-                <MenuItem
-                  onClick={() => {
-                    onCreateAgent();
-                    handleAgentMenuClose();
-                  }}
-                  sx={{
-                    borderRadius: '8px',
-                    margin: '2px 0',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                  }}
-                >
-                  <Avatar
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      marginRight: 1,
-                      backgroundColor: 'primary.main',
-                    }}
-                  >
-                    <Iconify
-                      icon="mdi:plus"
-                      sx={{ fontSize: 16 }}
-                    />
-                  </Avatar>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 500 }}
-                  >
-                    New Agent
-                  </Typography>
-                </MenuItem>
-                {/* Existing agents */}
-                {agents?.map((agent) => (
-                  <MenuItem
-                    key={agent.id}
-                    onClick={() => handleAgentSelect(agent)}
-                    sx={{
-                      borderRadius: '8px',
-                      margin: '2px 0',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                      },
-                    }}
-                  >
-                    <Avatar
-                      src={agent.avatar_url}
-                      alt={agent.name}
-                      sx={{ width: 24, height: 24, marginRight: 1 }}
-                    />
+                {/* Search Input */}
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search agents..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 mb-2"
+                  autoFocus
+                />
+
+                {/* Filtered agents */}
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {filteredAgents.length > 0 ? (
+                    filteredAgents.map((agent, index) => (
+                      <MenuItem
+                        key={agent.id}
+                        onClick={() => handleAgentSelect(agent)}
+                        sx={{
+                          borderRadius: '8px',
+                          margin: '2px 0',
+                          backgroundColor: focusedIndex === index ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={agent.avatar_url}
+                          alt={agent.name}
+                          sx={{ width: 24, height: 24, marginRight: 1 }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500 }}
+                        >
+                          {agent.name}
+                        </Typography>
+                      </MenuItem>
+                    ))
+                  ) : (
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 500 }}
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        color: 'text.secondary',
+                        textAlign: 'center',
+                      }}
                     >
-                      {agent.name}
+                      No agents found
                     </Typography>
-                  </MenuItem>
-                ))}
+                  )}
+                </div>
               </Box>
             </Popover>
           </>

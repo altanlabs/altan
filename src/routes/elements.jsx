@@ -155,3 +155,11 @@ export const AccountsPage = Loadable(
 );
 
 export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx')));
+
+// TESTING PAGES
+export const DemoTextVoicePage = Loadable(
+  lazy(() => import('../pages/testing/DemoTextVoicePage.jsx')),
+);
+export const AdvancedEditorPage = Loadable(
+  lazy(() => import('../pages/testing/AdvancedEditorPage.jsx')),
+);

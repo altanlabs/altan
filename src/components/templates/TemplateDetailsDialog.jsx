@@ -160,7 +160,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             <Box
               sx={{
                 p: 3,
-                pb: 2,
+                pb: 1,
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
@@ -220,7 +220,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
 
             {/* Preview Section */}
             {template?.meta_data?.video_url ? (
-              <Box sx={{ px: 1 }}>
+              <Box sx={{ px: 2 }}>
                 <Box
                   sx={{
                     position: 'relative',
@@ -253,12 +253,12 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 </Box>
               </Box>
             ) : template?.preview_url ? (
-              <Box sx={{ px: 1 }}>
+              <Box sx={{ px: 2 }}>
                 <Box
                   sx={{
                     position: 'relative',
                     width: '100%',
-                    height: 'calc(100vh - 200px)', // Use viewport height minus space for header and footer
+                    height: 'calc(100vh - 150px)', // Use viewport height minus space for header and footer
                     backgroundColor: 'grey.50',
                     borderRadius: 2,
                     overflow: 'hidden',

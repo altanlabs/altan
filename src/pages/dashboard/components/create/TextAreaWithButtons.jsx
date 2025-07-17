@@ -139,7 +139,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
 
     // Append autopilot mode text to the prompt when enabled
     const finalPrompt = autopilotEnabled
-      ? `${inputValue.trim()}\n\n<hide>Autopilot mode is on. So please plan the project and execute all steps automatically in the background without asking for confirmation.</hide>`
+      ? `${inputValue.trim()}\n\n<hide>Create the plan, once the plan is define: execute the plan starting from step 1 until the last step. Do not stop the plan execution until the last step is completed. You can only stop the plan execution if you encounter a critical error, then prompt the user.</hide>`
       : inputValue.trim();
 
     // Pass the final prompt directly to handleCreate
@@ -148,7 +148,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
 
   return (
     <div className="relative">
-      <div className="w-full px-4 pt-3 pb-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary shadow-lg bg-white dark:bg-[#1c1c1c]">
+      <div className="w-full px-4 pt-3 pb-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary shadow-lg bg-white dark:bg-[#1c1c1c]">
         {/* Attachments Preview Section */}
         {attachments.length > 0 && (
           <div className="flex gap-2 items-center mb-2 overflow-x-auto scrollbar-hide">

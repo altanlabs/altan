@@ -331,33 +331,10 @@ export const VoiceConversationProvider = ({ children }) => {
         };
       }
 
-      console.log('🚀 [VoiceConversationProvider] Starting ElevenLabs session with config:', {
-        agentId: sessionConfig.agentId,
-        hasOverrides: !!sessionConfig.overrides,
-        hasDynamicVariables: !!sessionConfig.dynamicVariables,
-        hasCallbacks: Object.keys(callbackConfig).length > 0,
-        dynamicVariablesKeys: Object.keys(dynamicVariables),
-        dynamicVariablesValues: dynamicVariables,
-        overrides: sessionConfig.overrides,
-        sessionConfig,
-        callbackConfig,
-      });
-
-      // Log conversation status before starting
-      console.log('📊 [VoiceConversationProvider] Conversation status before start:', conversation.status);
-
       await conversation.startSession({
         ...sessionConfig,
         ...callbackConfig,
       });
-
-            console.log('✅ [VoiceConversationProvider] ElevenLabs session started successfully');
-      console.log('📊 [VoiceConversationProvider] Conversation status after start:', conversation.status);
-
-      // Add a small delay to see if disconnection happens immediately
-      setTimeout(() => {
-        console.log('📊 [VoiceConversationProvider] Conversation status 1 second after start:', conversation.status);
-      }, 1000);
 
       return true;
     } catch (error) {

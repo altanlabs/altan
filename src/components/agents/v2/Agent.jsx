@@ -40,6 +40,7 @@ import WidgetPreview from './components/WidgetPreview';
 import AgentTab from './tabs/AgentTab';
 import VoiceTab from './tabs/VoiceTab';
 import WidgetTab from './tabs/WidgetTab';
+import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
 
 // Tab Components
 
@@ -63,16 +64,15 @@ const TABS = [
   { id: 'widget', label: 'Widget', icon: 'eva:cube-outline', component: WidgetTab },
 ];
 
-function Agent({ agentId, id, onGoBack }) {
+function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const location = useLocation();
   const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, currentAgentDmRoomId, isLoading } = useSelector((state) => state.agents);
-  console.log('currentAgent', currentAgent);
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
-
+  console.log('altanerComponentId', altanerComponentId);
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -258,9 +258,33 @@ function Agent({ agentId, id, onGoBack }) {
 
   const renderCommunicationPanel = () => {
     return (
-      <Box sx={{ height: '100%', bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50' }}>
-        {/* Render content based on active tab */}
-        <Box sx={{ height: '100%' }}>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Preview description (only on mobile) */}
+        {isMobile && (
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: theme.palette.divider,
+              bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+              px: 2,
+              py: 1,
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              {activeTab === 'voice'
+                ? 'Test your agent with voice conversations'
+                : activeTab === 'widget'
+                  ? 'See how your widget will look and behave'
+                  : 'Chat with your agent to test its responses'}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Preview Content */}
+        <Box sx={{ flex: 1, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50' }}>
           {activeTab === 'voice' ? (
             <VoicePreview
               agentData={agentData}
@@ -286,9 +310,25 @@ function Agent({ agentId, id, onGoBack }) {
         borderColor: theme.palette.divider,
         bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
         overflow: 'auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
       }}
     >
-      <Box sx={{ display: 'flex', px: { xs: 0.5, sm: 1 }, py: { xs: 0.5, sm: 0.75 } }}>
+      {/* Left side - Edit label and Tabs */}
+      <Box sx={{ display: 'flex', alignItems: 'center', px: 4, py: { xs: 0.5, sm: 0.75 } }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+            fontSize: '1rem',
+            mr: 2,
+            display: { xs: 'none', sm: 'block' },
+          }}
+        >
+          Edit
+        </Typography>
         {TABS.map((tab) => (
           <Button
             key={tab.id}
@@ -301,7 +341,6 @@ function Agent({ agentId, id, onGoBack }) {
               />
             }
             sx={{
-              flex: 1,
               minWidth: 0,
               py: { xs: 0.5, sm: 0.75 },
               px: { xs: 0.75, sm: 1 },
@@ -333,8 +372,48 @@ function Agent({ agentId, id, onGoBack }) {
           </Button>
         ))}
       </Box>
+
+      {/* Right side - Preview label (only on desktop) */}
+      {!isMobile && (
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              color: 'text.primary',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontSize: '1rem',
+            }}
+          >
+            <Iconify
+              icon="eva:eye-outline"
+              sx={{ fontSize: '1.25rem' }}
+            />
+            Preview
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
+
+  if (altanerComponentId && !id) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h6">Create Your First AI Agent</Typography>
+        <CreateAgent altanerComponentId={altanerComponentId} />
+      </Box>
+    );
+  }
 
   if (isLoading || !agentData) {
     return <AltanLogo />;

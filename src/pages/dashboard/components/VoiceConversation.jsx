@@ -32,10 +32,6 @@ const trackVoiceConversation = (action, agentData = {}) => {
 const isCapacitorNative = () => {
   try {
     const result = Capacitor.isNativePlatform();
-    console.log('⚡ [VoiceConversation] Capacitor Native Detection:', {
-      result,
-      platform: Capacitor.getPlatform(),
-    });
     return result;
   } catch (error) {
     console.log('⚡ [VoiceConversation] Capacitor not available:', error);
@@ -49,12 +45,6 @@ const isIOS = () => {
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
     (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
-  console.log('🍎 [VoiceConversation] iOS Detection:', {
-    result,
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none',
-  });
   return result;
 };
 
@@ -63,46 +53,31 @@ const isMobile = () => {
   const result =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
     (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
-  console.log('📱 [VoiceConversation] Mobile Detection:', {
-    result,
-    userAgent: navigator.userAgent,
-    capacitorPlatform: isCapacitorNative() ? Capacitor.getPlatform() : 'none',
-  });
   return result;
 };
 
 // Helper function to check if browser supports required features
 const checkBrowserSupport = () => {
   const issues = [];
-
-  console.log('🔍 [VoiceConversation] Checking browser support...');
-
   // Skip strict browser checks for Capacitor native apps
   if (isCapacitorNative()) {
-    console.log(
-      '⚡ [VoiceConversation] Capacitor native app detected, skipping browser compatibility checks',
-    );
-    console.log('🔍 [VoiceConversation] Capacitor platform:', Capacitor.getPlatform());
     return []; // Assume Capacitor WebView supports required features
   }
 
   if (!navigator.mediaDevices) {
     issues.push('MediaDevices API not supported');
-    console.error('❌ [VoiceConversation] MediaDevices API not supported');
   } else {
     console.log('✅ [VoiceConversation] MediaDevices API available');
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {
     issues.push('getUserMedia not supported');
-    console.error('❌ [VoiceConversation] getUserMedia not supported');
   } else {
     console.log('✅ [VoiceConversation] getUserMedia available');
   }
 
   if (!window.AudioContext && !window.webkitAudioContext) {
     issues.push('Web Audio API not supported');
-    console.error('❌ [VoiceConversation] Web Audio API not supported');
   } else {
     console.log('✅ [VoiceConversation] Web Audio API available');
   }
@@ -124,16 +99,6 @@ const VoiceConversation = ({
   onMessage,
   onError,
 }) => {
-  console.log('🎤 [VoiceConversation] Component initialized with props:', {
-    altanAgentId,
-    elevenlabsId,
-    agentName,
-    initialLanguage,
-    showLanguageSelector,
-    displayAvatar,
-    dynamicVariables,
-  });
-
   const { currentLang, onChangeLang, allLangs, translate } = useLocales();
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
   const [fetchedAgent, setFetchedAgent] = useState(null);
@@ -149,21 +114,10 @@ const VoiceConversation = ({
 
   const { isConnected, isConnecting, startConversation, stopConversation } = useVoiceConversation();
 
-  console.log('🎤 [VoiceConversation] Voice conversation state:', {
-    isConnected,
-    isConnecting,
-    effectiveLanguage,
-    permissionRequested,
-    permissionDenied,
-  });
-
   // Check browser compatibility and permission state on mount
   useEffect(() => {
-    console.log('🔄 [VoiceConversation] Component mounted, checking compatibility...');
-
     const supportIssues = checkBrowserSupport();
     if (supportIssues.length > 0) {
-      console.error('❌ [VoiceConversation] Browser compatibility issues found:', supportIssues);
       setBrowserCompatibilityError(`Browser compatibility issues: ${supportIssues.join(', ')}`);
       return;
     }
@@ -174,13 +128,8 @@ const VoiceConversation = ({
         // Check permission state if available
         if (navigator.permissions && navigator.permissions.query) {
           const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-          console.log(
-            '🎤 [VoiceConversation] Current microphone permission state:',
-            permissionStatus.state,
-          );
 
           if (permissionStatus.state === 'granted') {
-            console.log('✅ [VoiceConversation] Microphone permission already granted');
             setUserInteractionRequired(false);
             return;
           }
@@ -191,14 +140,8 @@ const VoiceConversation = ({
 
       // For Capacitor apps, we need explicit user interaction for permissions
       if (isCapacitorNative()) {
-        console.log(
-          '⚡ [VoiceConversation] Capacitor app detected, requiring explicit permission request',
-        );
         setUserInteractionRequired(true);
       } else if (isIOS() || isMobile()) {
-        console.log(
-          '📱 [VoiceConversation] Mobile/iOS browser detected, requiring user interaction',
-        );
         setUserInteractionRequired(true);
       }
     };
@@ -210,11 +153,9 @@ const VoiceConversation = ({
   useEffect(() => {
     const fetchAgentData = async () => {
       if (!altanAgentId || elevenlabsId) {
-        console.log('⏭️ [VoiceConversation] Skipping agent fetch:', { altanAgentId, elevenlabsId });
         return; // Don't fetch if we don't have altanAgentId or if we already have elevenlabsId
       }
 
-      console.log('🔄 [VoiceConversation] Fetching agent data for:', altanAgentId);
       setFetchingAgent(true);
       setFetchError(null);
 
@@ -222,7 +163,6 @@ const VoiceConversation = ({
         const response = await axios.get(
           `https://api.altan.ai/platform/agent/${altanAgentId}/public`,
         );
-        console.log('✅ [VoiceConversation] Agent data fetched successfully:', response.data.agent);
         setFetchedAgent(response.data.agent);
       } catch (error) {
         console.error('❌ [VoiceConversation] Failed to fetch agent:', error);
@@ -277,7 +217,6 @@ const VoiceConversation = ({
           },
         },
         onConnect: () => {
-          console.log('✅ [VoiceConversation] Voice conversation connected!');
           setFetchError(null); // Clear any previous errors
           onConnect?.();
           trackVoiceConversation('start', {
@@ -289,7 +228,6 @@ const VoiceConversation = ({
           });
         },
         onDisconnect: () => {
-          console.log('🔌 [VoiceConversation] Voice conversation ended!');
           onDisconnect?.();
           trackVoiceConversation('end', {
             agentId: effectiveElevenlabsId,
@@ -300,7 +238,6 @@ const VoiceConversation = ({
           });
         },
         onMessage: (message) => {
-          console.log('💬 [VoiceConversation] Voice message received:', message);
           onMessage?.(message);
         },
         onError: (error) => {
@@ -311,7 +248,6 @@ const VoiceConversation = ({
             error.message?.includes('capture failure') ||
             error.message?.includes('MediaStreamTrack ended')
           ) {
-            console.warn('🍎 [VoiceConversation] iOS Safari capture failure detected');
             setFetchError(
               'Voice connection lost. This may be due to iOS Safari limitations. Please try again.',
             );
@@ -409,7 +345,6 @@ const VoiceConversation = ({
 
   // Show browser compatibility error
   if (browserCompatibilityError) {
-    console.log('❌ [VoiceConversation] Rendering browser compatibility error');
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
         <Alert
@@ -430,7 +365,6 @@ const VoiceConversation = ({
 
   // Show error if agent fetch failed
   if (fetchError) {
-    console.log('❌ [VoiceConversation] Rendering fetch error:', fetchError);
     return (
       <div className="flex flex-col items-center gap-4 py-6 max-w-4xl mx-auto">
         <Alert
