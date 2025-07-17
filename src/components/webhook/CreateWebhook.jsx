@@ -24,6 +24,7 @@ const CreateWebhook = () => {
       <CustomDialog
         dialogOpen={open}
         onClose={handleClose}
+        fullWidth
       >
         <CreateWebhookParameters />
       </CustomDialog>
