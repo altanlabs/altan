@@ -23,7 +23,7 @@ const RemixPage = () => {
   const [loading, setLoading] = useState(true);
   const [uiInterface, setUiInterface] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState('interface');
-  const history = useHistory();;
+  const history = useHistory();
   const iframeRef = useRef(null);
   const [iframeUrl, setIframeUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -175,9 +175,15 @@ const RemixPage = () => {
 
               <Typography
                 variant="body2"
+                onClick={() => history.push(`/accounts/${app.account_id}`)}
                 sx={{
                   color: 'text.secondary',
                   fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                  },
                 }}
               >
                 by {app.account}

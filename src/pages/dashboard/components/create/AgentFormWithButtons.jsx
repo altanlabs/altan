@@ -165,6 +165,44 @@ function AgentFormWithButtons({
     });
   };
 
+  // Check if a field should be enabled based on dependency chain
+  const isFieldEnabled = (fieldType) => {
+    switch (fieldType) {
+      case 'agentType':
+        return true; // Always enabled
+      case 'industry':
+        return formData.agentType === 'Business Agent';
+      case 'goal':
+        if (formData.agentType === 'Personal Assistant') {
+          return !!formData.agentType;
+        } else if (formData.agentType === 'Business Agent') {
+          return !!formData.industry;
+        }
+        return false;
+      case 'name':
+        return !!formData.goal;
+      case 'voice':
+        return !!formData.name;
+      default:
+        return false;
+    }
+  };
+
+  // Get the styling for a field based on its state
+  const getFieldStyling = (fieldType, hasValue) => {
+    const isEnabled = isFieldEnabled(fieldType);
+
+    if (!isEnabled) {
+      return 'text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 cursor-not-allowed';
+    }
+
+    if (hasValue) {
+      return 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30';
+    }
+
+    return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30';
+  };
+
   // Render clickable structured text
   const renderStructuredDisplay = () => {
     const parts = [];
@@ -172,15 +210,13 @@ function AgentFormWithButtons({
     parts.push('Create a ');
 
     // Agent Type - Always clickable
+    const agentTypeEnabled = isFieldEnabled('agentType');
     parts.push(
       <button
         key="agentType"
-        onClick={(e) => handleFieldClick('agentType', e)}
-        className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-          formData.agentType
-            ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-            : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-        }`}
+        onClick={agentTypeEnabled ? (e) => handleFieldClick('agentType', e) : undefined}
+        disabled={!agentTypeEnabled}
+        className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('agentType', !!formData.agentType)}`}
       >
         {formData.agentType || 'Agent Type'}
         <Icon
@@ -194,16 +230,14 @@ function AgentFormWithButtons({
     if (formData.agentType === 'Business Agent') {
       parts.push(' for the ');
 
-      // Industry - Always clickable for Business Agent
+      // Industry - Enabled when Agent Type is selected
+      const industryEnabled = isFieldEnabled('industry');
       parts.push(
         <button
           key="industry"
-          onClick={(e) => handleFieldClick('industry', e)}
-          className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-            formData.industry
-              ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-              : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-          }`}
+          onClick={industryEnabled ? (e) => handleFieldClick('industry', e) : undefined}
+          disabled={!industryEnabled}
+          className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('industry', !!formData.industry)}`}
         >
           {formData.industry || 'Industry'}
           <Icon
@@ -215,17 +249,14 @@ function AgentFormWithButtons({
 
       parts.push(' industry that helps me with ');
 
-      // Goal - Only clickable if industry is selected for Business Agent
-      if (formData.industry) {
+      // Goal - Enabled when industry is selected for Business Agent
+      const goalEnabled = isFieldEnabled('goal');
+      if (goalEnabled) {
         parts.push(
           <button
             key="goal"
             onClick={(e) => handleFieldClick('goal', e)}
-            className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-              formData.goal
-                ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-                : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-            }`}
+            className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('goal', !!formData.goal)}`}
           >
             {formData.goal || 'Goal'}
             <Icon
@@ -236,7 +267,7 @@ function AgentFormWithButtons({
         );
       } else {
         parts.push(
-          <span className="inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded">
+          <span className="inline-flex items-center px-3 py-1 mx-1 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-full cursor-not-allowed">
             Goal
           </span>,
         );
@@ -245,16 +276,14 @@ function AgentFormWithButtons({
       // For Personal Assistant, show goal first
       parts.push(' that helps me with ');
 
-      // Goal - Always clickable for Personal Assistant
+      // Goal - Enabled when Agent Type is selected for Personal Assistant
+      const goalEnabled = isFieldEnabled('goal');
       parts.push(
         <button
           key="goal"
-          onClick={(e) => handleFieldClick('goal', e)}
-          className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-            formData.goal
-              ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-              : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-          }`}
+          onClick={goalEnabled ? (e) => handleFieldClick('goal', e) : undefined}
+          disabled={!goalEnabled}
+          className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('goal', !!formData.goal)}`}
         >
           {formData.goal || 'Goal'}
           <Icon
@@ -267,16 +296,14 @@ function AgentFormWithButtons({
 
     parts.push('. The agent is named ');
 
-    // Agent Name - Always clickable
+    // Agent Name - Enabled when Goal is selected
+    const nameEnabled = isFieldEnabled('name');
     parts.push(
       <button
         key="name"
-        onClick={(e) => handleFieldClick('name', e)}
-        className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-          formData.name
-            ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-            : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-        }`}
+        onClick={nameEnabled ? (e) => handleFieldClick('name', e) : undefined}
+        disabled={!nameEnabled}
+        className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('name', !!formData.name)}`}
       >
         {formData.name || 'Agent Name'}
         <Icon
@@ -288,16 +315,14 @@ function AgentFormWithButtons({
 
     parts.push(' with ');
 
-    // Voice - Always clickable
+    // Voice - Enabled when Agent Name is filled
+    const voiceEnabled = isFieldEnabled('voice');
     parts.push(
       <button
         key="voice"
-        onClick={(e) => handleFieldClick('voice', e)}
-        className={`inline-flex items-center px-2 py-0.5 mx-1 text-sm font-medium rounded transition-colors ${
-          formData.voice
-            ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-            : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-        }`}
+        onClick={voiceEnabled ? (e) => handleFieldClick('voice', e) : undefined}
+        disabled={!voiceEnabled}
+        className={`inline-flex items-center px-3 py-1 mx-1 text-sm font-medium rounded-full transition-colors ${getFieldStyling('voice', !!formData.voice)}`}
       >
         {formData.voice?.name || 'Voice'}
         <Icon
@@ -586,7 +611,7 @@ function AgentFormWithButtons({
             {/* Mode indicator */}
             {isStructuredMode && (
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                Click the fields to customize
+                Blue = next step, Green = complete, Gray = locked
               </span>
             )}
           </div>

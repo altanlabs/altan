@@ -17,6 +17,7 @@ import { useSelector, dispatch } from '../../redux/store.js';
 import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup.jsx';
 import CodeBlock from '../CodeBlock.jsx';
 import MentionComponent from '../room/members/MentionComponent.tsx';
+import AuthorizationWidget from '../widgets/AuthorizationWidget.jsx';
 import CommitWidget from '../widgets/components/CommitWidget.jsx';
 import NoCredits from '../widgets/components/NoCredits.jsx';
 import VersionWidget from '../widgets/components/VersionWidget.jsx';
@@ -101,7 +102,7 @@ function extractResources(message) {
   return resources;
 }
 
-const CustomLink = ({ href, children }) => {
+const CustomLink = ({ href, children, threadId }) => {
   // Construct a markdown-style message from children and href
   const message = Array.isArray(children)
     ? `[${children.join('')}](${href})`
@@ -117,6 +118,14 @@ const CustomLink = ({ href, children }) => {
   if (resources.length > 0) {
     return resources.map((resource) => {
       switch (resource.resourceName.toLowerCase()) {
+        case 'authorize':
+          return (
+            <AuthorizationWidget
+              key={resource.id}
+              connectionTypeId={resource.id}
+              threadId={threadId}
+            />
+          );
         case 'version':
           return (
             <VersionWidget
@@ -377,7 +386,6 @@ const CustomMarkdown = ({
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
-  
 
   if (!content?.length && !messageId) {
     return null;
@@ -467,7 +475,7 @@ const CustomMarkdown = ({
               </ul>
             ),
             // Custom Link (assumes CustomLink is defined/imported)
-            a: CustomLink,
+            a: (props) => <CustomLink {...props} threadId={threadId} />,
             // Custom suggestion component
             suggestion: ({ children }) => {
               return (

@@ -458,20 +458,22 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
 
   return (
     <div className="w-full">
-      {/* Back button */}
-      <div className="flex items-center mb-4">
-        <button
-          onClick={onGoBack}
-          className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-        >
-          <Iconify
-            icon="eva:arrow-ios-back-fill"
-            width={16}
-            height={16}
-          />
-          Back to chat
-        </button>
-      </div>
+      {/* Back button - only show when authenticated */}
+      {isAuthenticated && (
+        <div className="flex items-center mb-4">
+          <button
+            onClick={onGoBack}
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            <Iconify
+              icon="eva:arrow-ios-back-fill"
+              width={16}
+              height={16}
+            />
+            Back to chat
+          </button>
+        </div>
+      )}
 
       <AgentFormWithButtons
         formData={formData}

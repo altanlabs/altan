@@ -12,18 +12,6 @@ const ALTANER_CATEGORIES = [
     initialExpanded: false,
   },
   {
-    key: 'clones',
-    title: 'Clones',
-    description: 'Clones of popular apps',
-    initialExpanded: false,
-  },
-  {
-    key: 'saas',
-    title: 'SaaS',
-    description: 'Software as a Service applications',
-    initialExpanded: false,
-  },
-  {
     key: 'internal_tools',
     title: 'Internal Tools',
     description: 'Business automation and internal applications',
@@ -36,9 +24,21 @@ const ALTANER_CATEGORIES = [
     initialExpanded: false,
   },
   {
+    key: 'saas',
+    title: 'SaaS',
+    description: 'Software as a Service applications',
+    initialExpanded: false,
+  },
+  {
     key: 'ai_apps',
     title: 'AI Apps',
     description: 'AI-powered applications and tools',
+    initialExpanded: false,
+  },
+  {
+    key: 'clones',
+    title: 'Clones',
+    description: 'Clones of popular apps',
     initialExpanded: false,
   },
 ];

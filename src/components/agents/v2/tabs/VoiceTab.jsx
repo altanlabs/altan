@@ -6,10 +6,13 @@ import {
   FormControl,
   Slider,
   Chip,
+  TextField,
+  Button,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
+import Iconify from '../../../iconify';
 import VoiceSelector from '../components/VoiceSelector';
 
 const AUDIO_FORMATS = [
@@ -24,10 +27,7 @@ const AUDIO_FORMATS = [
 
 const VOICE_MODELS = [
   { id: 'eleven_turbo_v2', name: 'Turbo v2' },
-  // { id: 'eleven_turbo_v2_5', name: 'Turbo v2.5' },
   { id: 'eleven_flash_v2', name: 'Flash v2 (Recommended)' },
-  // { id: 'eleven_flash_v2_5', name: 'Flash v2.5 (Recommended)' },
-  // { id: 'eleven_v3', name: 'V3 (Best)' },
 ];
 
 const LANGUAGES = [
@@ -84,6 +84,8 @@ function VoiceTab({ agentData, onFieldChange }) {
     },
   );
 
+  const [selectedLanguageForFirstMessage, setSelectedLanguageForFirstMessage] = useState('en');
+
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
     setVoiceSettings(newSettings);
@@ -112,19 +114,19 @@ function VoiceTab({ agentData, onFieldChange }) {
     // Handle "All" and "None" special cases
     if (selectedLanguages.includes('__ALL__')) {
       // Select all languages except the default one
-      languagesToProcess = LANGUAGES
-        .filter(lang => lang.code !== voiceSettings.meta_data?.language)
-        .map(lang => lang.code);
+      languagesToProcess = LANGUAGES.filter(
+        (lang) => lang.code !== voiceSettings.meta_data?.language,
+      ).map((lang) => lang.code);
     } else if (selectedLanguages.includes('__NONE__') || selectedLanguages.length === 0) {
       // Clear all selections
       languagesToProcess = [];
     } else {
       // Filter out special values and use selected languages
-      languagesToProcess = selectedLanguages.filter(lang => !lang.startsWith('__'));
+      languagesToProcess = selectedLanguages.filter((lang) => !lang.startsWith('__'));
     }
 
     const newLanguagePresets = {};
-    languagesToProcess.forEach(langCode => {
+    languagesToProcess.forEach((langCode) => {
       if (langCode !== voiceSettings.meta_data?.language) {
         newLanguagePresets[langCode] = {
           overrides: {
@@ -143,6 +145,44 @@ function VoiceTab({ agentData, onFieldChange }) {
     handleMetaDataChange('language_presets', newLanguagePresets);
   };
 
+  const handleFirstMessageChange = (language, value) => {
+    const currentLanguagePresets = voiceSettings.meta_data?.language_presets || {};
+    const defaultFirstMessage = agentData?.first_message || '';
+    const defaultLanguage = voiceSettings.meta_data?.language || 'en';
+
+    // Treat all languages the same way - store everything in language_presets
+    const updatedPresets = { ...currentLanguagePresets };
+
+    // Create or update the language preset with proper deep copying
+    const existingPreset = updatedPresets[language];
+    updatedPresets[language] = {
+      overrides: {
+        tts: existingPreset?.overrides?.tts || null,
+        conversation: existingPreset?.overrides?.conversation || null,
+        agent: {
+          first_message: value,
+          language: existingPreset?.overrides?.agent?.language || null,
+          prompt: existingPreset?.overrides?.agent?.prompt || null,
+        },
+      },
+      first_message_translation: {
+        source_hash: JSON.stringify({
+          firstMessage: defaultFirstMessage,
+          language: defaultLanguage,
+        }),
+        text: value,
+      },
+    };
+
+    const newMetaData = {
+      ...voiceSettings.meta_data,
+      language_presets: updatedPresets,
+    };
+    const newSettings = { ...voiceSettings, meta_data: newMetaData };
+    setVoiceSettings(newSettings);
+    onFieldChange('voice', newSettings);
+  };
+
   const getModelName = (modelId) => {
     const model = VOICE_MODELS.find((m) => m.id === modelId);
     return model ? model.name : modelId;
@@ -155,17 +195,50 @@ function VoiceTab({ agentData, onFieldChange }) {
 
   const getAdditionalLanguages = () => {
     const selectedLanguages = Object.keys(voiceSettings.meta_data?.language_presets || {});
-    const availableLanguages = LANGUAGES
-      .filter(lang => lang.code !== voiceSettings.meta_data?.language)
-      .map(lang => lang.code);
+    const availableLanguages = LANGUAGES.filter(
+      (lang) => lang.code !== voiceSettings.meta_data?.language,
+    ).map((lang) => lang.code);
 
     // If all available languages are selected, return all the individual language codes
-    if (selectedLanguages.length === availableLanguages.length &&
-        availableLanguages.every(lang => selectedLanguages.includes(lang))) {
+    if (
+      selectedLanguages.length === availableLanguages.length &&
+      availableLanguages.every((lang) => selectedLanguages.includes(lang))
+    ) {
       return selectedLanguages;
     }
 
     return selectedLanguages;
+  };
+
+  const getFirstMessageForLanguage = (language) => {
+    const languagePresets = voiceSettings.meta_data?.language_presets || {};
+    const defaultFirstMessage = agentData?.first_message || '';
+
+    // Try to get from language_presets first, fallback to default first_message for default language
+    const presetMessage = languagePresets[language]?.overrides?.agent?.first_message;
+
+    if (presetMessage) {
+      return presetMessage;
+    }
+
+    // If it's the default language and no preset exists, return the default first_message
+    const defaultLanguage = voiceSettings.meta_data?.language || 'en';
+    if (language === defaultLanguage) {
+      return defaultFirstMessage;
+    }
+
+    return '';
+  };
+
+  const getAvailableLanguagesForFirstMessage = () => {
+    const defaultLanguage = voiceSettings.meta_data?.language || 'en';
+    const selectedAdditionalLanguages = Object.keys(
+      voiceSettings.meta_data?.language_presets || {},
+    );
+
+    // Create a unique array with default language first, then additional languages
+    const allLanguages = [defaultLanguage, ...selectedAdditionalLanguages];
+    return Array.from(new Set(allLanguages));
   };
 
   return (
@@ -281,13 +354,15 @@ function VoiceTab({ agentData, onFieldChange }) {
                 multiple
                 value={(() => {
                   const selectedLanguages = getAdditionalLanguages();
-                  const availableLanguages = LANGUAGES
-                    .filter(lang => lang.code !== voiceSettings.meta_data?.language)
-                    .map(lang => lang.code);
+                  const availableLanguages = LANGUAGES.filter(
+                    (lang) => lang.code !== voiceSettings.meta_data?.language,
+                  ).map((lang) => lang.code);
 
                   // If all languages are selected, include the "__ALL__" value to show it as selected
-                  if (selectedLanguages.length === availableLanguages.length &&
-                      availableLanguages.every(lang => selectedLanguages.includes(lang))) {
+                  if (
+                    selectedLanguages.length === availableLanguages.length &&
+                    availableLanguages.every((lang) => selectedLanguages.includes(lang))
+                  ) {
                     return [...selectedLanguages, '__ALL__'];
                   }
 
@@ -297,7 +372,10 @@ function VoiceTab({ agentData, onFieldChange }) {
                 renderValue={(selected) => {
                   if (selected.length === 0) {
                     return (
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary' }}
+                      >
                         Add additional languages
                       </Typography>
                     );
@@ -305,7 +383,7 @@ function VoiceTab({ agentData, onFieldChange }) {
                   return (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected
-                        .filter(lang => !lang.startsWith('__'))
+                        .filter((lang) => !lang.startsWith('__'))
                         .map((value) => (
                           <Chip
                             key={value}
@@ -324,19 +402,124 @@ function VoiceTab({ agentData, onFieldChange }) {
                 <MenuItem value="__NONE__">
                   <em>None</em>
                 </MenuItem>
-                {LANGUAGES.filter(lang => lang.code !== voiceSettings.meta_data?.language).map((language) => (
-                  <MenuItem
-                    key={language.code}
-                    value={language.code}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span>{language.flag}</span>
-                      <span>{language.name}</span>
-                    </Box>
-                  </MenuItem>
-                ))}
+                {LANGUAGES.filter((lang) => lang.code !== voiceSettings.meta_data?.language).map(
+                  (language) => (
+                    <MenuItem
+                      key={language.code}
+                      value={language.code}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{language.flag}</span>
+                        <span>{language.name}</span>
+                      </Box>
+                    </MenuItem>
+                  ),
+                )}
               </Select>
             </FormControl>
+          </Box>
+
+          {/* First Message Card */}
+          <Box
+            sx={{
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 2,
+              p: 2,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                mb: 2,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.primary', mb: 1 }}
+                >
+                  First Message
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary' }}
+                >
+                  Customize the first message for different languages. Switch between languages to
+                  view and edit translations.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Iconify icon="solar:translation-outline" />}
+                sx={{ flexShrink: 0, ml: 2 }}
+                disabled
+              >
+                Translate all
+              </Button>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Language Selector */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ minWidth: 'fit-content' }}
+                >
+                  Language:
+                </Typography>
+                <FormControl
+                  size="small"
+                  sx={{ minWidth: 200 }}
+                >
+                  <Select
+                    value={selectedLanguageForFirstMessage}
+                    onChange={(e) => setSelectedLanguageForFirstMessage(e.target.value)}
+                    renderValue={(selected) => getLanguageName(selected)}
+                  >
+                    {getAvailableLanguagesForFirstMessage().map((language) => (
+                      <MenuItem
+                        key={language}
+                        value={language}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <span>{LANGUAGES.find((l) => l.code === language)?.flag || '🏳️'}</span>
+                          <span>
+                            {LANGUAGES.find((l) => l.code === language)?.name || language}
+                          </span>
+                          {language === (voiceSettings.meta_data?.language || 'en') && (
+                            <Chip
+                              label="Default"
+                              size="small"
+                              color="primary"
+                              sx={{ ml: 1, height: 20 }}
+                            />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* First Message Input */}
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                value={getFirstMessageForLanguage(selectedLanguageForFirstMessage)}
+                onChange={(e) => {
+                  handleFirstMessageChange(selectedLanguageForFirstMessage, e.target.value);
+                }}
+                placeholder={`Enter the first message in ${getLanguageName(selectedLanguageForFirstMessage)}...`}
+                variant="outlined"
+                size="small"
+              />
+
+            </Box>
           </Box>
 
           {/* Model Selection */}
