@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Website - Altan Chat Widget</title>
+    <style>
+        /* Mock website styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .website-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 { color: #333; }
+        p { line-height: 1.6; color: #666; }
+        
+        /* Chat widget styles */
+        .altan-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .chat-bubble {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+        }
+        
+        .chat-bubble:hover {
+            transform: scale(1.1);
+        }
+        
+        .chat-form {
+            display: none;
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .chat-form h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: #555;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .chat-iframe-container {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 999;
+        }
+        
+        .chat-iframe-header {
+            background: #667eea;
+            color: white;
+            padding: 12px 16px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-chat {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chat-iframe {
+            width: 100%;
+            height: calc(100% - 48px);
+            border: none;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+        }
+        
+        .error {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mock website content -->
+    <div class="website-content">
+        <h1>Welcome to Our Amazing Website</h1>
+        <p>This is a demo website to test the Altan AI chat widget integration. The chat bubble in the bottom right corner represents how the widget would appear on any website.</p>
+        <p>Click the chat bubble to start a conversation with our AI agent. You'll be asked to provide some basic information, and then you'll be connected to a room where you can chat with the agent.</p>
+        <p>This simulates the experience of a random website visitor who wants to ask questions or get help.</p>
+        
+        <h2>How it works:</h2>
+        <ol>
+            <li>Visitor clicks the chat bubble</li>
+            <li>A form appears asking for basic contact info</li>
+            <li>Widget calls the API to create a guest and room</li>
+            <li>Chat interface opens in an iframe</li>
+            <li>Visitor can chat with the AI agent</li>
+        </ol>
+    </div>
+
+    <!-- Altan Chat Widget -->
+    <div class="altan-widget">
+        <!-- Chat bubble -->
+        <div class="chat-bubble" id="chatBubble">
+            💬
+        </div>
+        
+        <!-- Guest info form -->
+        <div class="chat-form" id="chatForm">
+            <h3>Start a conversation</h3>
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" id="firstName" placeholder="Enter your first name" required>
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" id="lastName" placeholder="Enter your last name" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label>Phone (optional)</label>
+                <input type="tel" id="phone" placeholder="Enter your phone number">
+            </div>
+            <div class="error" id="formError"></div>
+            <div class="form-buttons">
+                <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="startChatBtn">Start Chat</button>
+            </div>
+        </div>
+        
+        <!-- Chat iframe container -->
+        <div class="chat-iframe-container" id="chatContainer">
+            <div class="chat-iframe-header">
+                <span id="agentName">AI Assistant</span>
+                <button class="close-chat" id="closeChatBtn">×</button>
+            </div>
+            <div class="loading" id="chatLoading">Loading chat...</div>
+            <iframe class="chat-iframe" id="chatIframe" style="display: none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        class AltanWidget {
+            constructor() {
+                this.agentId = '10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11'; // Public agent ID
+                this.apiBaseUrl = 'https://api.altan.ai/platform/guest';
+                this.roomBaseUrl = 'https://altan.ai/r';
+                
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                document.getElementById('chatBubble').addEventListener('click', () => {
+                    this.showForm();
+                });
+                
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    this.hideForm();
+                });
+                
+                document.getElementById('startChatBtn').addEventListener('click', () => {
+                    this.startChat();
+                });
+                
+                document.getElementById('closeChatBtn').addEventListener('click', () => {
+                    this.closeChat();
+                });
+                
+                // Close form when clicking outside
+                document.addEventListener('click', (e) => {
+                    const widget = document.querySelector('.altan-widget');
+                    if (!widget.contains(e.target)) {
+                        this.hideForm();
+                    }
+                });
+            }
+            
+            showForm() {
+                document.getElementById('chatForm').style.display = 'block';
+                document.getElementById('firstName').focus();
+            }
+            
+            hideForm() {
+                document.getElementById('chatForm').style.display = 'none';
+                this.clearError();
+            }
+            
+            closeChat() {
+                document.getElementById('chatContainer').style.display = 'none';
+                document.getElementById('chatIframe').src = '';
+            }
+            
+            showError(message) {
+                document.getElementById('formError').textContent = message;
+            }
+            
+            clearError() {
+                document.getElementById('formError').textContent = '';
+            }
+            
+            generateExternalId() {
+                return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            async startChat() {
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                
+                // Validation
+                if (!firstName || !lastName || !email) {
+                    this.showError('Please fill in all required fields');
+                    return;
+                }
+                
+                if (!this.isValidEmail(email)) {
+                    this.showError('Please enter a valid email address');
+                    return;
+                }
+                
+                const startBtn = document.getElementById('startChatBtn');
+                startBtn.disabled = true;
+                startBtn.textContent = 'Creating room...';
+                this.clearError();
+                
+                try {
+                    const roomData = await this.createGuestRoom({
+                        external_id: this.generateExternalId(),
+                        guest_id: '', // Will be created
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        phone: phone
+                    });
+                    
+                    this.openChat(roomData.room_id, roomData.agent.name);
+                    this.hideForm();
+                    
+                } catch (error) {
+                    console.error('Error creating room:', error);
+                    this.showError('Failed to start chat. Please try again.');
+                } finally {
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start Chat';
+                }
+            }
+            
+            async createGuestRoom(guestData) {
+                const url = `${this.apiBaseUrl}/room?agent_id=${this.agentId}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(guestData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+                
+                return await response.json();
+            }
+            
+            openChat(roomId, agentName) {
+                document.getElementById('agentName').textContent = agentName || 'AI Assistant';
+                document.getElementById('chatContainer').style.display = 'block';
+                document.getElementById('chatLoading').style.display = 'flex';
+                document.getElementById('chatIframe').style.display = 'none';
+                
+                // Load the room in iframe
+                const iframe = document.getElementById('chatIframe');
+                iframe.onload = () => {
+                    document.getElementById('chatLoading').style.display = 'none';
+                    iframe.style.display = 'block';
+                };
+                
+                iframe.src = `${this.roomBaseUrl}/${roomId}`;
+            }
+            
+            isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+        }
+        
+        // Initialize the widget when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new AltanWidget();
+        });
+    </script>
+</body>
+</html> 
