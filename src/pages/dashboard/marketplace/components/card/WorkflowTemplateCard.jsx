@@ -23,6 +23,20 @@ const WorkflowTemplateCard = ({ template }) => {
   const remixCount = template.remix_count || 0;
 
   const handleClick = () => {
+    // Track project click event
+    try {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'open_project', {
+          template_id: template.id,
+          template_name: name,
+          template_price: template.price || 0,
+          remix_count: remixCount,
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking project click:', error);
+    }
+
     history.push(`/template/${template.id}`);
   };
 

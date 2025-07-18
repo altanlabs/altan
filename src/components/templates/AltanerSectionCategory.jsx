@@ -30,7 +30,7 @@ function getCoverUrl(template) {
   return template.parent?.cover_url || '/assets/placeholder.svg';
 }
 
-const AltanerSectionCategory = memo(({ category, title, initialExpanded = false }) => {
+const AltanerSectionCategory = memo(({ category, title, initialExpanded = false, onTemplateClick }) => {
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,13 @@ const AltanerSectionCategory = memo(({ category, title, initialExpanded = false 
 
   const handleTemplateClick = useCallback(
     (templateId) => {
-      // Find the original template and transform it for the dialog
+      // If external onTemplateClick handler is provided, use it instead
+      if (onTemplateClick) {
+        onTemplateClick(templateId);
+        return;
+      }
+
+      // Fallback to local dialog handling for backward compatibility
       const template = templates.find((t) => t.id === templateId);
       if (template) {
         const transformedTemplate = transformTemplateForDisplay(template);
@@ -57,7 +63,7 @@ const AltanerSectionCategory = memo(({ category, title, initialExpanded = false 
         setDialogOpen(true);
       }
     },
-    [templates],
+    [templates, onTemplateClick],
   );
 
   // Fetch templates for this specific category
@@ -198,4 +204,4 @@ const AltanerSectionCategory = memo(({ category, title, initialExpanded = false 
 
 AltanerSectionCategory.displayName = 'AltanerSectionCategory';
 
-export default AltanerSectionCategory; 
+export default AltanerSectionCategory;

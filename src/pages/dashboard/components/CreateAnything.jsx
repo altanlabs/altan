@@ -5,6 +5,7 @@ import { useHistory } from 'react-router-dom';
 import { chipCategories } from './create/chipData';
 import TextAreaWithButtons from './create/TextAreaWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { Chip } from '@mui/material';
 
 /**
  * Track project creation events
@@ -207,6 +208,13 @@ function CreateAnything({ handleVoice }) {
           data-aos-delay="200"
         >
           <div className="relative flex flex-col mt-2">
+            {/* Downtime Chip */}
+            <Chip
+              label="We&apos;re experiencing some downtime in previews due to unexpected demand. We&apos;re working on a fix, please come back later."
+              color="error"
+              variant="outlined"
+              className="w-full mb-2"
+            />
             <TextAreaWithButtons
               inputValue={inputValue}
               setInputValue={setInputValue}

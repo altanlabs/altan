@@ -2,11 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
+import { Stack } from '@mui/material';
+
 import EmptyContent from '../../../../../components/empty-content';
 import Iconify from '../../../../../components/iconify';
+
 import { selectAccount } from '../../../../../redux/slices/general';
+
 import { optimai_shop } from '../../../../../utils/axios';
-import { Stack } from '@mui/material';
 
 const formatPrice = (priceInCents) => {
   if (!priceInCents && priceInCents !== 0) return 'Price not available';
@@ -27,7 +30,6 @@ const TemplateDetails = ({ templateId = null }) => {
   const [error, setError] = useState(null);
   const [canClone, setCanClone] = useState(false);
   const [isClonabilityLoading, setIsClonabilityLoading] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const containerRef = useRef(null);
 

@@ -143,6 +143,33 @@ The `create_version` tool captures a snapshot of the entire project—code, data
 
 ---
 
+### INTERFACE ERROR CHECKING RULE
+
+**MANDATORY: Always check for client errors after Interface agent delegation.**
+
+After delegating any task to the Interface agent, you must:
+
+1. **Check for errors** by calling `get_interface_errors()`
+2. **Analyze results** - if client errors are found:
+   - Delegate back to Interface agent to validate and fix errors
+   - Interface agent must first confirm errors exist before attempting fixes
+3. **Continue normally** if no errors are found
+
+**When to apply:**
+- Immediately after any Interface agent completes a task
+- Before proceeding to next steps or memory updates
+- Before considering the Interface task complete
+
+**Sample sequence:**
+```
+1. [@Interface](/member/interface-id) [task delegation]
+2. get_interface_errors  // Check for client errors
+3. [If errors found] [@Interface](/member/interface-id) [validate errors exist and fix them]
+4. [Continue with normal flow]
+```
+
+---
+
 ### MEMORY UPDATE RULE
 
 Call `update_memory()` **once per generation**, **after all other actions**.

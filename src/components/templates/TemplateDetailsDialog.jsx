@@ -175,11 +175,10 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 }}
               >
                 <Box
-                  onClick={() => {
-                    if (template?.account?.id) {
-                      history.push(`/accounts/${template.account.id}`);
-                      onClose();
-                    }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    history.push(`/accounts/${template.account.id}`);
                   }}
                   sx={{
                     cursor: template?.account?.id ? 'pointer' : 'default',

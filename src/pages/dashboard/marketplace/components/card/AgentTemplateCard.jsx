@@ -6,7 +6,7 @@ import { useHistory } from 'react-router-dom';
 import Iconify from '../../../../../components/iconify';
 
 const AgentTemplateCard = ({ template }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const name = template.name || template.public_name || 'Unnamed Agent';
   const avatarUrl = template.parent?.avatar_url || '/assets/default-avatar.png';
   const llmInfo = template.parent?.llm_config?.provider
@@ -15,6 +15,20 @@ const AgentTemplateCard = ({ template }) => {
   const remixCount = template.remix_count || Math.floor(Math.random() * 5000) + 100;
 
   const handleClick = () => {
+    // Track project click event
+    try {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'open_project', {
+          template_id: template.id,
+          template_name: name,
+          template_price: template.price || 0,
+          remix_count: remixCount,
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking project click:', error);
+    }
+
     history.push(`/template/${template.id}`);
   };
 
