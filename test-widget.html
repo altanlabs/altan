@@ -216,32 +216,6 @@
             💬
         </div>
         
-        <!-- Guest info form -->
-        <div class="chat-form" id="chatForm">
-            <h3>Start a conversation</h3>
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" id="firstName" placeholder="Enter your first name" required>
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" id="lastName" placeholder="Enter your last name" required>
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" placeholder="Enter your email" required>
-            </div>
-            <div class="form-group">
-                <label>Phone (optional)</label>
-                <input type="tel" id="phone" placeholder="Enter your phone number">
-            </div>
-            <div class="error" id="formError"></div>
-            <div class="form-buttons">
-                <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
-                <button class="btn btn-primary" id="startChatBtn">Start Chat</button>
-            </div>
-        </div>
-        
         <!-- Chat iframe container -->
         <div class="chat-iframe-container" id="chatContainer">
             <div class="chat-iframe-header">
@@ -258,7 +232,7 @@
             constructor() {
                 this.agentId = '10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11'; // Public agent ID
                 this.apiBaseUrl = 'https://api.altan.ai/platform/guest';
-                this.roomBaseUrl = 'https://altan.ai/r';
+                this.roomBaseUrl = 'https://dev-local.altan.ai:5173/r';
                 
                 this.initEventListeners();
             }
@@ -290,8 +264,8 @@
             }
             
             showForm() {
-                document.getElementById('chatForm').style.display = 'block';
-                document.getElementById('firstName').focus();
+                // Skip the form and start chat immediately with anonymous guest
+                this.startChat();
             }
             
             hideForm() {
@@ -305,11 +279,16 @@
             }
             
             showError(message) {
-                document.getElementById('formError').textContent = message;
+                // Show error in the chat container instead of form
+                const loading = document.getElementById('chatLoading');
+                loading.textContent = `Error: ${message}`;
+                loading.style.color = 'red';
             }
             
             clearError() {
-                document.getElementById('formError').textContent = '';
+                const loading = document.getElementById('chatLoading');
+                loading.textContent = 'Loading chat...';
+                loading.style.color = '#666';
             }
             
             generateExternalId() {
@@ -317,46 +296,32 @@
             }
             
             async startChat() {
-                const firstName = document.getElementById('firstName').value.trim();
-                const lastName = document.getElementById('lastName').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const phone = document.getElementById('phone').value.trim();
-                
-                // Validation
-                if (!firstName || !lastName || !email) {
-                    this.showError('Please fill in all required fields');
-                    return;
-                }
-                
-                if (!this.isValidEmail(email)) {
-                    this.showError('Please enter a valid email address');
-                    return;
-                }
-                
-                const startBtn = document.getElementById('startChatBtn');
-                startBtn.disabled = true;
-                startBtn.textContent = 'Creating room...';
+                // Show chat container immediately with loading
+                document.getElementById('chatContainer').style.display = 'block';
+                document.getElementById('chatLoading').style.display = 'flex';
+                document.getElementById('chatIframe').style.display = 'none';
                 this.clearError();
                 
                 try {
+                    // Step 1: Create anonymous guest
                     const roomData = await this.createGuestRoom({
                         external_id: this.generateExternalId(),
                         guest_id: '', // Will be created
-                        first_name: firstName,
-                        last_name: lastName,
-                        email: email,
-                        phone: phone
+                        first_name: 'Anonymous',
+                        last_name: 'Visitor',
+                        email: `visitor_${Date.now()}@anonymous.com`,
+                        phone: ''
                     });
                     
-                    this.openChat(roomData.room_id, roomData.agent.name);
-                    this.hideForm();
+                    console.log('Room created:', roomData);
+                    
+                    // Step 2: Open chat interface with guest_id for iframe authentication
+                    document.getElementById('chatLoading').textContent = 'Loading chat...';
+                    this.openChat(roomData.room_id, roomData.guest.id, roomData.agent.name);
                     
                 } catch (error) {
                     console.error('Error creating room:', error);
                     this.showError('Failed to start chat. Please try again.');
-                } finally {
-                    startBtn.disabled = false;
-                    startBtn.textContent = 'Start Chat';
                 }
             }
             
@@ -379,20 +344,21 @@
                 return await response.json();
             }
             
-            openChat(roomId, agentName) {
+            openChat(roomId, guestId, agentName) {
                 document.getElementById('agentName').textContent = agentName || 'AI Assistant';
                 document.getElementById('chatContainer').style.display = 'block';
                 document.getElementById('chatLoading').style.display = 'flex';
                 document.getElementById('chatIframe').style.display = 'none';
                 
-                // Load the room in iframe
+                // Load the room in iframe with guest_id for authentication
                 const iframe = document.getElementById('chatIframe');
                 iframe.onload = () => {
                     document.getElementById('chatLoading').style.display = 'none';
-                    iframe.style.display = 'block';
+                    document.getElementById('chatIframe').style.display = 'block';
                 };
                 
-                iframe.src = `${this.roomBaseUrl}/${roomId}`;
+                // Pass guest_id so iframe can authenticate itself (avoiding CORS)
+                iframe.src = `${this.roomBaseUrl}/${roomId}?guest_id=${guestId}`;
             }
             
             isValidEmail(email) {

@@ -123,7 +123,7 @@ const Router = () => {
           path="/r/:roomId"
           exact
         >
-          <AuthGuard requireAuth={true}>
+          <AuthGuard requireAuth={false}>
             <StandaloneRoomPage />
           </AuthGuard>
         </Route>

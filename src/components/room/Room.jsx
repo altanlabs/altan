@@ -1,9 +1,10 @@
-import React, { memo, useEffect, useCallback, lazy, Suspense } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { memo, useEffect, useCallback } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
 
-import { isMobile } from './utils';
+import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
+import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import {
   fetchRoom,
   clearRoomState,
@@ -11,9 +12,6 @@ import {
   selectRoomStateLoading,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
-
-import DesktopRoom from './DesktopRoom.jsx';
-import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 
 // import AltanLogo from '../loaders/AltanLogo.jsx';
 
@@ -46,9 +44,15 @@ const Room = ({
 }) => {
   const history = useHistory();
   const { guest, user } = useAuthContext();
+  const location = useLocation();
 
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
+
+  // Check if this is a guest access via URL parameter
+  const searchParams = new URLSearchParams(location.search);
+  const guestId = searchParams.get('guest_id');
+  const isGuestAccess = !!guestId;
 
   useEffect(() => {
     return () => {
@@ -57,12 +61,19 @@ const Room = ({
   }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
-    dispatch(fetchRoom({ roomId, user, guest }))
+    // For guest access, create a mock guest object to satisfy the fetchRoom function
+    const guestObj = isGuestAccess ? { id: guestId, member: { id: guestId } } : guest;
+
+    dispatch(fetchRoom({ roomId, user, guest: guestObj }))
       .then((response) => !response && history.replace('/404'))
       .catch((error) => {
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
           case 401:
+            // For guest access, ignore 401 errors as auth is handled differently
+            if (!isGuestAccess) {
+              console.error('Authentication error for user:', error);
+            }
             break;
           case 404:
             history.replace('/404');
@@ -74,13 +85,13 @@ const Room = ({
             console.error('Error fetching gate room:', error);
         }
       });
-  }, [guest, history, roomId, user]);
+  }, [guest, guestId, history, isGuestAccess, roomId, user]);
 
   useEffect(() => {
-    if (!!roomId && !initialized && !!(user || guest)) {
+    if (!!roomId && !initialized && (!!(user || guest) || isGuestAccess)) {
       handleFetchRoom();
     }
-  }, [roomId, initialized]);
+  }, [roomId, initialized, handleFetchRoom]);
 
   if (!initialized || loading) {
     return null;

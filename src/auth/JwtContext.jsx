@@ -67,6 +67,7 @@ const reducer = (state, action) => {
         ...state,
         isAuthenticated: true,
         user: action.payload.user,
+        guest: null, // Clear guest when user logs in
         // Update room-style structure
         authenticated: {
           user: true,
@@ -197,6 +198,7 @@ export function AuthProvider({ children }) {
         // No need to initialize GoogleAuth plugin for the new library
         // GenericOAuth2 doesn't require initialization
 
+        // Try to get user profile (normal authentication)
         const userProfile = await getUserProfile();
         dispatch({
           type: 'INITIAL',

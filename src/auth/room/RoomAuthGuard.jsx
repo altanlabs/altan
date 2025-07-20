@@ -1,5 +1,6 @@
 import { Stack, Typography } from '@mui/material';
 import { useMemo, memo } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
 import ContextMenuRoom from '../../components/contextmenu/ContextMenuRoom.jsx';
@@ -19,10 +20,17 @@ const checkIsRoomFull = (room) =>
   room.policy.max_members !== -1 && room.policy.max_members <= room?.members?.items?.length;
 
 const RoomAuthGuard = ({ children }) => {
+  const location = useLocation();
   const room = useSelector(selectRoom);
   const me = useSelector(selectMe);
 
   const { user, guest, authenticated } = useAuthContext();
+  
+  // Check if this is guest access via URL parameter
+  const searchParams = new URLSearchParams(location.search);
+  const guestId = searchParams.get('guest_id');
+  const isGuestAccess = !!guestId;
+  
   const member = useMemo(
     () =>
       !!((authenticated.user || authenticated.guest) && authenticated.member)
@@ -36,6 +44,14 @@ const RoomAuthGuard = ({ children }) => {
     if (!room) {
       return blockers;
     }
+    
+    // Special handling for guest DM rooms
+    if (isGuestAccess && room.is_dm) {
+      // For guest access to DM rooms, allow access without member checks
+      // The backend has already validated the guest has access to this room
+      return blockers; // No blockers for valid guest DM access
+    }
+    
     const isRoomMember = checkMemberIsRoomMember(room, member);
     if (isRoomMember) {
       return blockers;
@@ -47,7 +63,7 @@ const RoomAuthGuard = ({ children }) => {
 
     blockers.userKicked = me?.is_kicked;
     return blockers;
-  }, [room, member, me?.is_kicked]);
+  }, [room, member, me?.is_kicked, isGuestAccess]);
 
   const accessDenied = useMemo(
     () => Object.values(accessBlockers).some((blocker) => !!blocker),

@@ -5,7 +5,6 @@ import { addResponseInterceptor } from './interceptors';
 
 const OPTIMAI_BASE_URL = 'https://api.altan.ai';
 
-
 const optimai_tables = axios.create({
   name: 'optimai_tables',
   baseURL: `${OPTIMAI_BASE_URL}/tables/v2`,
@@ -19,11 +18,13 @@ const optimai_tables_legacy = axios.create({
 const optimai_root = axios.create({
   name: 'optimai_root',
   baseURL: OPTIMAI_BASE_URL,
+  withCredentials: true,
 });
 
 const optimai = axios.create({
   name: 'optimai',
   baseURL: `${OPTIMAI_BASE_URL}/platform`,
+  withCredentials: true,
 });
 
 const optimai_integration = axios.create({
@@ -44,6 +45,7 @@ const optimai_shop = axios.create({
 const optimai_room = axios.create({
   name: 'optimai_room',
   baseURL: `${OPTIMAI_BASE_URL}/room`,
+  withCredentials: true,
 });
 
 const optimai_galaxia = axios.create({
@@ -156,7 +158,7 @@ export const endpoints = {
 export const fetcher = async (args) => {
   const [url, config] = Array.isArray(args) ? args : [args];
 
-  const res = await axiosInstance.get(url, { ...config });
+  const res = await optimai.get(url, { ...config });
 
   return res.data;
 };

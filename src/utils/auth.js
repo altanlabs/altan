@@ -1,6 +1,7 @@
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+
+import { optimai_root } from './axios';
 
 /**
  * Platform detection for Capacitor
@@ -141,7 +142,10 @@ export const refreshToken = async (axiosInstance) => {
         throw new Error('Invalid Axios instance');
       }
       console.debug('Using web token refresh endpoint:', refreshEndpoint);
-      const res = await axios.get(refreshEndpoint, { withCredentials: true });
+      
+      // Extract path from full URL to work with optimai_root baseURL
+      const refreshPath = refreshEndpoint.replace(API_BASE_URL, '');
+      const res = await optimai_root.get(refreshPath);
       const { user, token } = res.data;
 
       return Promise.resolve({ user, accessToken: token.access_token });

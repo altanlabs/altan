@@ -20,7 +20,7 @@ import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
-import { selectAccountId } from '../../redux/slices/general';
+import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { openUrl } from '../../utils/auth';
 import { optimai, optimai_shop } from '../../utils/axios';
@@ -240,6 +240,7 @@ export default function NewPricing() {
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
   const accountId = useSelector(selectAccountId);
+  const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
 
   useEffect(() => {
@@ -496,59 +497,61 @@ export default function NewPricing() {
           onButtonClick={handleGrowthClick}
           sx={{ mt: { md: -2 } }}
         >
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{ mb: 2, fontWeight: 600 }}
-            >
-              Choose your credit tier:
-            </Typography>
-            <FormControl fullWidth>
-              <Select
-                value={selectedGrowthTier}
-                onChange={handleGrowthTierChange}
-                sx={{
-                  '& .MuiSelect-select': {
-                    py: 1.5,
-                  },
-                }}
+          {!isAccountFree ? (
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 2, fontWeight: 600 }}
               >
-                {growthPlans.map((plan, index) => {
-                  const billingOption = getBillingOption(plan, 'monthly');
-                  const price = billingOption
-                    ? formatPrice(billingOption.price, 'monthly')
-                    : 0;
+                Choose your credit tier:
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  value={selectedGrowthTier}
+                  onChange={handleGrowthTierChange}
+                  sx={{
+                    '& .MuiSelect-select': {
+                      py: 1.5,
+                    },
+                  }}
+                >
+                  {growthPlans.map((plan, index) => {
+                    const billingOption = getBillingOption(plan, 'monthly');
+                    const price = billingOption
+                      ? formatPrice(billingOption.price, 'monthly')
+                      : 0;
 
-                  return (
-                    <MenuItem
-                      key={plan.id}
-                      value={index}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        width="100%"
+                    return (
+                      <MenuItem
+                        key={plan.id}
+                        value={index}
                       >
-                        <Typography
-                          variant="body2"
-                          fontWeight={600}
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          width="100%"
                         >
-                          €{plan.credits / 100} credits
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="success.main"
-                          fontWeight={600}
-                        >
-                          €{price}/mo
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
-                  );
-                })}
-              </Select>
-            </FormControl>
-          </Box>
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
+                          >
+                            €{plan.credits / 100} credits
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="success.main"
+                            fontWeight={600}
+                          >
+                            €{price}/mo
+                          </Typography>
+                        </Stack>
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
+            </Box>
+          ) : null}
         </PricingCard>
 
         {/* Enterprise Plan */}
