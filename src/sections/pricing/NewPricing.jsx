@@ -71,14 +71,16 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
       window.gtag('event', 'begin_checkout', {
         currency,
         value,
-        items: [{
-          item_id: plan.id,
-          item_name: plan.name,
-          item_category: 'subscription',
-          item_variant: planType,
-          price: value,
-          quantity: 1,
-        }],
+        items: [
+          {
+            item_id: plan.id,
+            item_name: plan.name,
+            item_category: 'subscription',
+            item_variant: planType,
+            price: value,
+            quantity: 1,
+          },
+        ],
         plan_type: planType,
         billing_frequency: billingOption.billing_frequency,
         credits_included: plan.credits,
@@ -358,7 +360,7 @@ export default function NewPricing() {
       console.error('Error tracking lead generation:', error);
     }
 
-    window.open('https://calendly.com/david-altan/15-min-onboarding-agency-clone', '_blank');
+    window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
   };
 
   const currentGrowthPlan = growthPlans[selectedGrowthTier];
@@ -399,7 +401,8 @@ export default function NewPricing() {
           gap: 3,
           gridTemplateColumns: {
             xs: '1fr',
-            md: 'repeat(3, 1fr)',
+            sm: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)',
           },
           alignItems: 'start',
         }}
@@ -411,38 +414,17 @@ export default function NewPricing() {
           description={proPlan?.description}
           priceSubtext={
             proBillingOption ? (
-              <Box>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'primary.main',
-                    fontWeight: 600,
-                    mb: 0.5,
-                  }}
-                >
-                  €{proPlan.credits / 100} in monthly credits
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      textDecoration: 'line-through',
-                      color: 'text.disabled',
-                    }}
-                  >
-                    €{proPlan.credits / 100}/mo
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'success.main',
-                      fontWeight: 600,
-                    }}
-                  >
-                    20% off
-                  </Typography>
-                </Stack>
-              </Box>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'success.main',
+                  fontWeight: 600,
+                }}
+              >
+                + €
+                {Math.round(proPlan.credits / 100 - formatPrice(proBillingOption.price, 'monthly'))}{' '}
+                free credits
+              </Typography>
             ) : null
           }
           features={PRO_FEATURES}
@@ -457,45 +439,26 @@ export default function NewPricing() {
           description={currentGrowthPlan?.description}
           priceSubtext={
             growthBillingOption ? (
-              <Box>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'primary.main',
-                    fontWeight: 600,
-                    mb: 0.5,
-                  }}
-                >
-                  €{currentGrowthPlan.credits / 100} in monthly credits
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      textDecoration: 'line-through',
-                      color: 'text.disabled',
-                    }}
-                  >
-                    €{currentGrowthPlan.credits / 100}/mo
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'success.main',
-                      fontWeight: 600,
-                    }}
-                  >
-                    20% off
-                  </Typography>
-                </Stack>
-              </Box>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'success.main',
+                  fontWeight: 600,
+                }}
+              >
+                + €
+                {Math.round(
+                  currentGrowthPlan.credits / 100 -
+                    formatPrice(growthBillingOption.price, 'monthly'),
+                )}{' '}
+                free credits
+              </Typography>
             ) : null
           }
           features={GROWTH_FEATURES}
           buttonText="Choose Plan"
-          highlighted
+          highlighted={true}
           onButtonClick={handleGrowthClick}
-          sx={{ mt: { md: -2 } }}
         >
           {!isAccountFree ? (
             <Box sx={{ mb: 3 }}>
@@ -517,9 +480,7 @@ export default function NewPricing() {
                 >
                   {growthPlans.map((plan, index) => {
                     const billingOption = getBillingOption(plan, 'monthly');
-                    const price = billingOption
-                      ? formatPrice(billingOption.price, 'monthly')
-                      : 0;
+                    const price = billingOption ? formatPrice(billingOption.price, 'monthly') : 0;
 
                     return (
                       <MenuItem

@@ -1,4 +1,4 @@
-import { Stack } from '@mui/material';
+import { Stack, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { CLEAR_EDITOR_COMMAND } from 'lexical';
 import { memo, useMemo, useState, useEffect } from 'react';
 
@@ -19,6 +19,48 @@ import {
 import { useSelector, dispatch } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
 
+// Function to extract commit resources from message content
+function extractCommitResources(message) {
+  if (!message) return [];
+
+  const pattern = /\[(.*?)\]\((?:\/)?([^/]+)(?:\/([^/)]+))?\)/g;
+  let match;
+  const commitResources = [];
+
+  while ((match = pattern.exec(message))) {
+    const [, name, resourceType, resourceId] = match;
+    if (name && resourceType && resourceType.toLowerCase() === 'commit') {
+      commitResources.push({
+        id: resourceId || resourceType,
+        name,
+        resourceName: resourceType,
+        fullMatch: match[0], // Store the full match for removal
+      });
+    }
+  }
+  return commitResources;
+}
+
+// Function to create a markdown with only commit widgets
+function createCommitOnlyMarkdown(messageContent, commitResources) {
+  if (!commitResources.length) return '';
+
+  return commitResources.map(commit => `[${commit.name}](${commit.resourceName}${commit.id ? `/${commit.id}` : ''})`).join('\n\n');
+}
+
+// Function to remove commit resources from message content
+function removeCommitResources(messageContent, commitResources) {
+  if (!commitResources.length) return messageContent;
+
+  let cleanedContent = messageContent;
+  commitResources.forEach(commit => {
+    cleanedContent = cleanedContent.replace(commit.fullMatch, '');
+  });
+
+  // Clean up extra whitespace and newlines
+  return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+}
+
 const MessageContent = ({ message, threadId }) => {
   const selectors = useMemo(
     () => ({
@@ -36,9 +78,16 @@ const MessageContent = ({ message, threadId }) => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editorEmpty, setEditorEmpty] = useState(false);
+  const [thoughtAccordionOpen, setThoughtAccordionOpen] = useState(false);
   const editorRef = useMemo(() => ({ current: {} }), []);
 
   const isOwnMessage = message.member_id === me?.id;
+
+  // Check if message contains commits
+  const commitResources = useMemo(() => extractCommitResources(messageContent), [messageContent]);
+  const hasCommits = commitResources.length > 0;
+  const textContentWithoutCommits = useMemo(() => removeCommitResources(messageContent, commitResources), [messageContent, commitResources]);
+  const commitOnlyContent = useMemo(() => createCommitOnlyMarkdown(messageContent, commitResources), [messageContent, commitResources]);
 
   const handleMessageClick = () => {
     console.log('TODO');
@@ -105,11 +154,110 @@ const MessageContent = ({ message, threadId }) => {
 
   return (
     <Stack
-      spacing={1}
+      spacing={0}
       width="100%"
     >
+      {/* Show accordion with thought process when commits are detected */}
+      {hasCommits && (textContentWithoutCommits || (message?.thread_id === threadId)) && (
+        <Accordion
+          expanded={thoughtAccordionOpen}
+          onChange={() => setThoughtAccordionOpen(!thoughtAccordionOpen)}
+          className="w-full"
+          sx={{
+            margin: 0,
+            '&.MuiAccordion-root.Mui-expanded': { margin: 0 },
+            '&.MuiAccordion-root': {
+              boxShadow: 'none',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              '&:before': { display: 'none' },
+            },
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<Iconify icon="mdi:chevron-down" />}
+            sx={{
+              minHeight: 'auto',
+              '& .MuiAccordionSummary-content': {
+                margin: '8px 0',
+                '&.Mui-expanded': { margin: '8px 0' },
+              },
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Iconify
+                icon="mdi:brain"
+                className="text-gray-600 dark:text-gray-400"
+                width={16}
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Worked for a while
+              </span>
+            </div>
+          </AccordionSummary>
+          <AccordionDetails sx={{ padding: '0 16px 16px 16px' }}>
+            <Stack spacing={1}>
+              {/* Show text content without commits */}
+              {textContentWithoutCommits && (
+                <div onClick={handleMessageClick}>
+                  {isEditing ? (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative flex w-full mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-2 max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-gray-900/95 hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-gray-900/95 focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50"
+                    >
+                      <div className="flex flex-col w-full relative py-1">
+                        <Editor
+                          key={`edit_${message.id}`}
+                          threadId={threadId}
+                          editorRef={editorRef}
+                          placeholder="Edit your message..."
+                          setEditorEmpty={setEditorEmpty}
+                          disabled={false}
+                          namespace={`edit_${message.id}`}
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="px-4 py-1 text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="px-4 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors"
+                          >
+                            Enviar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
+                      <CustomMarkdown
+                        text={textContentWithoutCommits}
+                        threadId={threadId}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Show task executions in the accordion */}
+              {message?.thread_id === threadId && (
+                <MessageTaskExecutions
+                  messageId={message.id}
+                  date_creation={message.date_creation}
+                />
+              )}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {/* Main content area */}
       <div onClick={handleMessageClick}>
-        {isEditing ? (
+        {isEditing && !hasCommits ? (
           <div
             onClick={(e) => e.stopPropagation()}
             className="relative flex w-full mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-2 max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-gray-900/95 hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-gray-900/95 focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50"
@@ -142,10 +290,19 @@ const MessageContent = ({ message, threadId }) => {
           </div>
         ) : (
           <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
-            <CustomMarkdown
-              messageId={message?.id}
-              threadId={threadId}
-            />
+            {hasCommits ? (
+              // Show only commit widgets as main content
+              <CustomMarkdown
+                text={commitOnlyContent}
+                threadId={threadId}
+              />
+            ) : (
+              // Show regular content
+              <CustomMarkdown
+                messageId={message?.id}
+                threadId={threadId}
+              />
+            )}
           </div>
         )}
       </div>
@@ -192,7 +349,8 @@ const MessageContent = ({ message, threadId }) => {
         </div>
       )}
       <MessageMedia messageId={message.id} />
-      {message?.thread_id === threadId && (
+      {/* Only show task executions here if no commits detected */}
+      {!hasCommits && message?.thread_id === threadId && (
         <MessageTaskExecutions
           messageId={message.id}
           date_creation={message.date_creation}
