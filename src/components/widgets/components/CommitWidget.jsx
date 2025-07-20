@@ -1,5 +1,5 @@
 /* eslint-disable react/display-name */
-import { Box, Typography, Chip, Tooltip, CircularProgress, Button } from '@mui/material';
+import { Box, Typography, Tooltip, CircularProgress, Button } from '@mui/material';
 import { memo, useState, useEffect } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
@@ -10,6 +10,7 @@ const CommitWidget = memo(({ hash }) => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [showFileDetails, setShowFileDetails] = useState(false);
   const [dispatchWithFeedback] = useFeedbackDispatch();
 
   const fetchCommitDetails = async () => {
@@ -114,21 +115,92 @@ const CommitWidget = memo(({ hash }) => {
           >
             {details.message}
           </Typography>
+
           {details.changed_files?.length > 0 && (
-            <Box
-              display="flex"
-              gap={0.5}
-              flexWrap="wrap"
-            >
-              {details.changed_files.map((file, index) => (
-                <Chip
-                  key={index}
-                  label={file}
-                  size="small"
-                  variant="soft"
-                  sx={{ fontSize: '0.75rem', color: 'text.secondary' }}
-                />
-              ))}
+            <Box>
+              <Button
+                size="small"
+                onClick={() => setShowFileDetails(!showFileDetails)}
+                startIcon={<Iconify icon={showFileDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} />}
+                variant="text"
+                sx={{
+                  fontSize: '0.75rem',
+                  color: 'text.secondary',
+                  textTransform: 'none',
+                  p: 0.5,
+                  mb: showFileDetails ? 1 : 0,
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                {details.stats?.files_changed || details.changed_files.length} file{(details.stats?.files_changed || details.changed_files.length) !== 1 ? 's' : ''} changed
+                {details.stats && ` (+${details.stats.total_additions}, -${details.stats.total_deletions})`}
+              </Button>
+
+              {showFileDetails && details.stats?.file_stats && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    p: 1.5,
+                    bgcolor: 'background.neutral',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  {details.stats.file_stats.map((fileStat, index) => (
+                    <Box
+                      key={index}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      py={0.5}
+                      sx={{
+                        borderBottom: index < details.stats.file_stats.length - 1 ? '1px solid' : 'none',
+                        borderBottomColor: 'divider',
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: '0.75rem',
+                          color: 'text.secondary',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {fileStat.file}
+                      </Typography>
+                      <Box display="flex" gap={1} alignItems="center">
+                        {fileStat.additions > 0 && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: '0.7rem',
+                              color: 'success.main',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            +{fileStat.additions}
+                          </Typography>
+                        )}
+                        {fileStat.deletions > 0 && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: '0.7rem',
+                              color: 'error.main',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            -{fileStat.deletions}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
         </Box>
