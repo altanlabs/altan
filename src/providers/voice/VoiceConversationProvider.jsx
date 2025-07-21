@@ -17,16 +17,18 @@ const isCapacitorNative = () => {
 
 // Helper function to detect iOS
 const isIOS = () => {
-  const result = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
-         (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
+  const result =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+    (isCapacitorNative() && Capacitor.getPlatform() === 'ios');
   return result;
 };
 
 // Helper function to detect mobile browsers
 const isMobile = () => {
-  const result = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-         (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
+  const result =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (isCapacitorNative() && ['ios', 'android'].includes(Capacitor.getPlatform()));
   return result;
 };
 
@@ -50,18 +52,18 @@ const requestMicrophonePermission = async (retries = 3) => {
 
       // Test that we actually have audio
       if (stream.getAudioTracks().length === 0) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         throw new Error('No audio tracks available');
       }
 
       // Clean up test stream
-      stream.getTracks().forEach(track => {
+      stream.getTracks().forEach((track) => {
         track.stop();
       });
 
       // Small delay for iOS cleanup
       if (isIOS()) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       return true;
@@ -71,7 +73,7 @@ const requestMicrophonePermission = async (retries = 3) => {
       }
 
       // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
   return false;
@@ -119,42 +121,45 @@ export const VoiceConversationProvider = ({ children }) => {
   );
 
   // Handle client tool calls from the agent
-  const handleToolCall = useCallback(async (toolCall) => {
-    setToolCalls((prev) => {
-      const updated = [...prev, toolCall];
-      return updated;
-    });
+  const handleToolCall = useCallback(
+    async (toolCall) => {
+      setToolCalls((prev) => {
+        const updated = [...prev, toolCall];
+        return updated;
+      });
 
-    const { tool_call_id, function_name, parameters } = toolCall;
+      const { tool_call_id, function_name, parameters } = toolCall;
 
-    try {
-      let result;
+      try {
+        let result;
 
-      switch (function_name) {
-        case 'redirect':
-          result = await handleRedirect(parameters);
-          break;
-        default:
-          result = {
+        switch (function_name) {
+          case 'redirect':
+            result = await handleRedirect(parameters);
+            break;
+          default:
+            result = {
+              success: false,
+              error: `Unknown tool: ${function_name}`,
+            };
+        }
+
+        return {
+          tool_call_id,
+          result: JSON.stringify(result),
+        };
+      } catch (error) {
+        return {
+          tool_call_id,
+          result: JSON.stringify({
             success: false,
-            error: `Unknown tool: ${function_name}`,
-          };
+            error: error.message,
+          }),
+        };
       }
-
-      return {
-        tool_call_id,
-        result: JSON.stringify(result),
-      };
-    } catch (error) {
-      return {
-        tool_call_id,
-        result: JSON.stringify({
-          success: false,
-          error: error.message,
-        }),
-      };
-    }
-  }, [handleRedirect]);
+    },
+    [handleRedirect],
+  );
 
   // Enhanced conversation with comprehensive debugging
   const conversation = useConversation({
@@ -181,7 +186,9 @@ export const VoiceConversationProvider = ({ children }) => {
       console.log('🔌 [VoiceConversationProvider] Global onDisconnect - ElevenLabs disconnected');
       console.log('⏱️ [VoiceConversationProvider] Connection duration:', connectionDuration, 'ms');
       if (connectionDuration < 5000) {
-        console.warn('⚠️ [VoiceConversationProvider] Short connection duration detected - possible configuration issue');
+        console.warn(
+          '⚠️ [VoiceConversationProvider] Short connection duration detected - possible configuration issue',
+        );
       }
       setDisconnectionReason('ElevenLabs SDK disconnected');
       setConnectionStartTime(null);
@@ -193,7 +200,7 @@ export const VoiceConversationProvider = ({ children }) => {
       console.log('❌ [VoiceConversationProvider] Error message:', error?.message);
       console.log('❌ [VoiceConversationProvider] Error stack:', error?.stack);
       console.log('❌ [VoiceConversationProvider] Error details:', JSON.stringify(error, null, 2));
-      
+
       // Check for specific ElevenLabs error patterns
       if (error?.message?.includes('ping') || error?.message?.includes('pong')) {
         console.warn('⚠️ [VoiceConversationProvider] Ping/Pong error - connection keepalive issue');
@@ -204,14 +211,10 @@ export const VoiceConversationProvider = ({ children }) => {
       if (error?.message?.includes('agent')) {
         console.warn('⚠️ [VoiceConversationProvider] Agent error - check agent configuration');
       }
-      
+
       setDisconnectionReason(`Error: ${error.message}`);
     },
     onMessage: (message) => {
-      console.log('💬 [VoiceConversationProvider] Global onMessage:', message);
-      console.log('💬 [VoiceConversationProvider] Message type:', typeof message);
-      console.log('💬 [VoiceConversationProvider] Message details:', JSON.stringify(message, null, 2));
-      
       // Check for specific message types that might indicate issues
       if (message?.type === 'interruption') {
         console.warn('⚠️ [VoiceConversationProvider] Interruption message received:', message);
@@ -229,133 +232,152 @@ export const VoiceConversationProvider = ({ children }) => {
     },
     onStatusChange: (status) => {
       console.log('📊 [VoiceConversationProvider] Status change:', status);
-      console.log('📊 [VoiceConversationProvider] Status details:', JSON.stringify(status, null, 2));
+      console.log(
+        '📊 [VoiceConversationProvider] Status details:',
+        JSON.stringify(status, null, 2),
+      );
     },
   });
 
-  const startConversation = useCallback(async (options = {}) => {
-    const {
-      agentId = 'agent_01jy1hqg8jehq8v9zd7j9qxa2a',
-      overrides = {},
-      dynamicVariables = {},
-      onConnect,
-      onDisconnect,
-      onMessage,
-      onError,
-    } = options;
+  const startConversation = useCallback(
+    async (options = {}) => {
+      const {
+        agentId = 'agent_01jy1hqg8jehq8v9zd7j9qxa2a',
+        overrides = {},
+        dynamicVariables = {},
+        onConnect,
+        onDisconnect,
+        onMessage,
+        onError,
+      } = options;
 
-    if (!agentId) {
-      return false;
-    }
+      if (!agentId) {
+        return false;
+      }
 
-    try {
-      // iOS-specific microphone permission handling
-      if (isIOS() || isMobile()) {
-        await requestMicrophonePermission();
-      } else {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => {
-          track.stop();
+      try {
+        // iOS-specific microphone permission handling
+        if (isIOS() || isMobile()) {
+          await requestMicrophonePermission();
+        } else {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+        }
+
+        // Prepare session configuration with iOS-optimized settings
+        const sessionConfig = {
+          agentId,
+          ...(Object.keys(overrides).length > 0 && { overrides }),
+          ...(Object.keys(dynamicVariables).length > 0 && { dynamicVariables }),
+        };
+
+        // Add callbacks to session config with internal state management
+        const callbackConfig = {};
+        if (onConnect) {
+          callbackConfig.onConnect = () => {
+            console.log('🔗 [VoiceConversationProvider] Internal onConnect called');
+            setConnectionAttempts(0); // Reset attempts on successful connection
+            onConnect();
+          };
+        } else {
+          callbackConfig.onConnect = () => {
+            console.log(
+              '🔗 [VoiceConversationProvider] Internal onConnect called (no user callback)',
+            );
+            setConnectionAttempts(0); // Reset attempts on successful connection
+          };
+        }
+
+        if (onDisconnect) {
+          callbackConfig.onDisconnect = () => {
+            console.log('🔌 [VoiceConversationProvider] Internal onDisconnect called');
+            setToolCalls([]);
+            setNavigationPath('');
+            onDisconnect();
+          };
+        } else {
+          callbackConfig.onDisconnect = () => {
+            console.log(
+              '🔌 [VoiceConversationProvider] Internal onDisconnect called (no user callback)',
+            );
+            setToolCalls([]);
+            setNavigationPath('');
+          };
+        }
+
+        if (onMessage) callbackConfig.onMessage = onMessage;
+
+        if (onError) {
+          callbackConfig.onError = (error) => {
+            console.log('❌ [VoiceConversationProvider] Internal onError called:', error);
+            setConnectionAttempts((prev) => {
+              const newAttempts = prev + 1;
+              return newAttempts;
+            });
+            onError(error);
+          };
+        } else {
+          callbackConfig.onError = () => {
+            console.log(
+              '❌ [VoiceConversationProvider] Internal onError called (no user callback)',
+            );
+            setConnectionAttempts((prev) => {
+              const newAttempts = prev + 1;
+              return newAttempts;
+            });
+          };
+        }
+
+        // iOS-specific session configuration
+        if (isIOS() || isMobile()) {
+          sessionConfig.options = {
+            ...sessionConfig.options,
+            audioOptions: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 44100,
+              channelCount: 1,
+            },
+          };
+        }
+
+        await conversation.startSession({
+          ...sessionConfig,
+          ...callbackConfig,
         });
-      }
 
-      // Prepare session configuration with iOS-optimized settings
-      const sessionConfig = {
-        agentId,
-        ...(Object.keys(overrides).length > 0 && { overrides }),
-        ...(Object.keys(dynamicVariables).length > 0 && { dynamicVariables }),
-      };
-
-      // Add callbacks to session config with internal state management
-      const callbackConfig = {};
-      if (onConnect) {
-        callbackConfig.onConnect = () => {
-          console.log('🔗 [VoiceConversationProvider] Internal onConnect called');
-          setConnectionAttempts(0); // Reset attempts on successful connection
-          onConnect();
-        };
-      } else {
-        callbackConfig.onConnect = () => {
-          console.log('🔗 [VoiceConversationProvider] Internal onConnect called (no user callback)');
-          setConnectionAttempts(0); // Reset attempts on successful connection
-        };
-      }
-
-      if (onDisconnect) {
-        callbackConfig.onDisconnect = () => {
-          console.log('🔌 [VoiceConversationProvider] Internal onDisconnect called');
-          setToolCalls([]);
-          setNavigationPath('');
-          onDisconnect();
-        };
-      } else {
-        callbackConfig.onDisconnect = () => {
-          console.log('🔌 [VoiceConversationProvider] Internal onDisconnect called (no user callback)');
-          setToolCalls([]);
-          setNavigationPath('');
-        };
-      }
-
-      if (onMessage) callbackConfig.onMessage = onMessage;
-
-      if (onError) {
-        callbackConfig.onError = (error) => {
-          console.log('❌ [VoiceConversationProvider] Internal onError called:', error);
-          setConnectionAttempts(prev => {
-            const newAttempts = prev + 1;
-            return newAttempts;
-          });
-          onError(error);
-        };
-      } else {
-        callbackConfig.onError = () => {
-          console.log('❌ [VoiceConversationProvider] Internal onError called (no user callback)');
-          setConnectionAttempts(prev => {
-            const newAttempts = prev + 1;
-            return newAttempts;
-          });
-        };
-      }
-
-      // iOS-specific session configuration
-      if (isIOS() || isMobile()) {
-        sessionConfig.options = {
-          ...sessionConfig.options,
-          audioOptions: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 44100,
-            channelCount: 1,
-          },
-        };
-      }
-
-      await conversation.startSession({
-        ...sessionConfig,
-        ...callbackConfig,
-      });
-
-      return true;
-    } catch (error) {
-      // Enhanced error handling for iOS
-      if (isIOS() || isMobile()) {
-        if (error.name === 'NotAllowedError' || error.message?.includes('Permission denied')) {
-          const enhancedError = new Error('Microphone permission denied. Please enable microphone access in Safari settings.');
-          onError?.(enhancedError);
-        } else if (error.message?.includes('NotReadableError') || error.message?.includes('capture failure')) {
-          const enhancedError = new Error('Microphone is busy or not available. Please close other apps using the microphone and try again.');
-          onError?.(enhancedError);
+        return true;
+      } catch (error) {
+        // Enhanced error handling for iOS
+        if (isIOS() || isMobile()) {
+          if (error.name === 'NotAllowedError' || error.message?.includes('Permission denied')) {
+            const enhancedError = new Error(
+              'Microphone permission denied. Please enable microphone access in Safari settings.',
+            );
+            onError?.(enhancedError);
+          } else if (
+            error.message?.includes('NotReadableError') ||
+            error.message?.includes('capture failure')
+          ) {
+            const enhancedError = new Error(
+              'Microphone is busy or not available. Please close other apps using the microphone and try again.',
+            );
+            onError?.(enhancedError);
+          } else {
+            onError?.(error);
+          }
         } else {
           onError?.(error);
         }
-      } else {
-        onError?.(error);
-      }
 
-      return false;
-    }
-  }, [conversation]);
+        return false;
+      }
+    },
+    [conversation],
+  );
 
   const stopConversation = useCallback(async () => {
     try {
@@ -398,9 +420,7 @@ export const VoiceConversationProvider = ({ children }) => {
   };
 
   return (
-    <VoiceConversationContext.Provider value={value}>
-      {children}
-    </VoiceConversationContext.Provider>
+    <VoiceConversationContext.Provider value={value}>{children}</VoiceConversationContext.Provider>
   );
 };
 

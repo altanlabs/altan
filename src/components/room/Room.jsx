@@ -13,24 +13,6 @@ import {
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 
-// import AltanLogo from '../loaders/AltanLogo.jsx';
-
-// const AltanLogoFixed = (
-//   <AltanLogo
-//     wrapped
-//     fixed
-//   />
-// );
-
-// eslint-disable-next-line react/display-name
-// const Loadable = (Component) => (props) => (
-//   <Suspense fallback={AltanLogoFixed}>
-//     <Component {...props} />
-//   </Suspense>
-// );
-
-// const MobileRoom = Loadable(lazy(() => import('./MobileRoom.jsx')));
-// const DesktopRoom = Loadable(lazy(() => import('./DesktopRoom.jsx')));
 
 const selectInitializedRoom = selectRoomStateInitialized('room');
 const selectLoadingRoom = selectRoomStateLoading('room');
@@ -43,12 +25,10 @@ const Room = ({
   mobileActiveView = 'chat',
 }) => {
   const history = useHistory();
-  const { guest, user } = useAuthContext();
+  const { guest, user, authenticated } = useAuthContext();
   const location = useLocation();
-
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
-
   // Check if this is a guest access via URL parameter
   const searchParams = new URLSearchParams(location.search);
   const guestId = searchParams.get('guest_id');
@@ -61,8 +41,8 @@ const Room = ({
   }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
-    // For guest access, create a mock guest object to satisfy the fetchRoom function
-    const guestObj = isGuestAccess ? { id: guestId, member: { id: guestId } } : guest;
+    // Use the properly authenticated guest from context
+    const guestObj = guest;
 
     dispatch(fetchRoom({ roomId, user, guest: guestObj }))
       .then((response) => !response && history.replace('/404'))
@@ -70,9 +50,10 @@ const Room = ({
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
           case 401:
-            // For guest access, ignore 401 errors as auth is handled differently
-            if (!isGuestAccess) {
-              console.error('Authentication error for user:', error);
+            console.error('Authentication error:', error);
+            if (isGuestAccess) {
+              // Guest auth failed, redirect to error
+              history.replace('/404');
             }
             break;
           case 404:
@@ -82,16 +63,26 @@ const Room = ({
             history.push(`/room/${roomId}/access`);
             break;
           default:
-            console.error('Error fetching gate room:', error);
+            console.error('Error fetching room:', error);
         }
       });
-  }, [guest, guestId, history, isGuestAccess, roomId, user]);
+  }, [guest, history, isGuestAccess, roomId, user]);
 
   useEffect(() => {
-    if (!!roomId && !initialized && (!!(user || guest) || isGuestAccess)) {
-      handleFetchRoom();
+    if (!!roomId && !initialized) {
+      if (isGuestAccess) {
+        if (authenticated.guest && guest) {
+          handleFetchRoom();
+        } else {
+        }
+      } else if (!!(user || guest)) {
+        // For regular user/member access
+        handleFetchRoom();
+      } else {
+      }
+    } else {
     }
-  }, [roomId, initialized, handleFetchRoom]);
+  }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);
 
   if (!initialized || loading) {
     return null;

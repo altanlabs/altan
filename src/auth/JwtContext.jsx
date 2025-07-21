@@ -80,6 +80,30 @@ const reducer = (state, action) => {
           member: true,
         },
       };
+    case 'GUEST_LOGIN':
+      const newState = {
+        ...state,
+        isInitialized: true,
+        isAuthenticated: true, // 🔧 Guests ARE authenticated!
+        user: null, // Still no user object for guests
+        guest: action.payload.guest,
+        // Update room-style structure for guest
+        authenticated: {
+          user: false, // No user, but guest is authenticated
+          guest: true,
+          member: true, // Guest acts as member for room access
+        },
+        initialized: {
+          user: true,
+          guest: true,
+          member: true,
+        },
+        loading: {
+          user: false,
+          member: false,
+        },
+      };
+      return newState;
     case 'LOGOUT':
       return {
         ...initialState,
@@ -171,6 +195,15 @@ const getUserProfile = async () => {
   }
 };
 
+const getGuestProfile = async () => {
+  try {
+    const res = await optimai.get('/guest/me');
+    return res.data.guest;
+  } catch {
+    throw new Error('Failed to get guest profile');
+  }
+};
+
 const verifyEmail = async (code) => {
   try {
     const response = await optimai.post(`/user/verify-email?code=${code}`);
@@ -192,11 +225,65 @@ const resendVerification = async () => {
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  // Guest login function (defined before useEffect to avoid "used before defined" error)
+  const loginAsGuest = useCallback(async (guestId, agentId) => {
+    try {
+      // Step 1: Authenticate as guest using the /auth/login/guest endpoint
+      const response = await axios.post(
+        `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+        {},
+        { withCredentials: true },
+      );
+
+      if (response.data && response.data.guest) {
+        // Step 2: Get full guest profile using the /platform/guest/me endpoint
+        const guestProfile = await getGuestProfile();
+
+        const guestWithMember = {
+          ...guestProfile,
+          member: { id: guestProfile.id }, // Create member structure for room compatibility
+        };
+
+        dispatch({
+          type: 'GUEST_LOGIN',
+          payload: {
+            guest: guestWithMember,
+          },
+        });
+
+        return guestProfile;
+      } else {
+        throw new Error('Guest authentication failed');
+      }
+    } catch (error) {
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
     const initialize = async () => {
       try {
-        // No need to initialize GoogleAuth plugin for the new library
-        // GenericOAuth2 doesn't require initialization
+        // Check for guest_id in URL first
+        const urlParams = new URLSearchParams(window.location.search);
+        const guestId = urlParams.get('guest_id');
+        const agentId = urlParams.get('agent_id');
+
+        if (guestId && agentId) {
+          // For guest access, authenticate the guest immediately
+          try {
+            const guestProfile = await loginAsGuest(guestId, agentId);
+          } catch (error) {
+            // Still mark as initialized even if guest auth fails
+            dispatch({
+              type: 'INITIAL',
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+          }
+          return;
+        }
 
         // Try to get user profile (normal authentication)
         const userProfile = await getUserProfile();
@@ -215,7 +302,7 @@ export function AuthProvider({ children }) {
       }
     };
     initialize();
-  }, []);
+  }, [loginAsGuest]);
 
   const loginWithGoogle = useCallback(async (invitation_id, idea_id) => {
     const isMobile = Capacitor.isNativePlatform();
@@ -223,8 +310,6 @@ export function AuthProvider({ children }) {
     if (isMobile) {
       // Native mobile authentication using GenericOAuth2
       try {
-        console.log('🔍 Starting OAuth2 authentication with scopes:', 'openid email profile');
-
         const result = await GenericOAuth2.authenticate({
           authorizationBaseUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
           accessTokenEndpoint: 'https://oauth2.googleapis.com/token',
@@ -551,8 +636,8 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  const contextValue = useMemo(
-    () => ({
+  const contextValue = useMemo(() => {
+    const value = {
       // Legacy platform context (for backward compatibility)
       isInitialized: state.isInitialized,
       isAuthenticated: state.isAuthenticated,
@@ -566,6 +651,9 @@ export function AuthProvider({ children }) {
       verifyEmail,
       resendVerification,
 
+      // Guest authentication
+      loginAsGuest,
+
       // Mobile token management
       storeRefreshToken,
 
@@ -574,22 +662,24 @@ export function AuthProvider({ children }) {
       loading: state.loading,
       authenticated: state.authenticated,
       guest: state.guest,
-    }),
-    [
-      state.isAuthenticated,
-      state.isInitialized,
-      state.user,
-      state.initialized,
-      state.loading,
-      state.authenticated,
-      state.guest,
-      login,
-      loginWithGoogle,
-      logout,
-      register,
-      patchUser,
-    ],
-  );
+    };
+
+    return value;
+  }, [
+    state.isAuthenticated,
+    state.isInitialized,
+    state.user,
+    state.initialized,
+    state.loading,
+    state.authenticated,
+    state.guest,
+    login,
+    loginWithGoogle,
+    logout,
+    register,
+    patchUser,
+    loginAsGuest,
+  ]);
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

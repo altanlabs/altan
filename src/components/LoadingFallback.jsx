@@ -2,6 +2,7 @@ import { m } from 'framer-motion';
 import { memo } from 'react';
 
 const LoadingFallback = () => {
+  console.log("LoadingFallback")
   return (
     <div
       style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}

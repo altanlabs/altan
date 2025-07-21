@@ -1,20 +1,8 @@
 import { Suspense, lazy } from 'react';
 
-import AltanLogo from '../components/loaders/AltanLogo.jsx';
-
-// ----------------------------------------------------------------------
-
-const AltanLogoFixed = (
-  <AltanLogo
-    wrapped
-    fixed
-    showProgress
-  />
-);
-
 // eslint-disable-next-line react/display-name
 const Loadable = (Component) => (props) => (
-  <Suspense fallback={AltanLogoFixed}>
+  <Suspense>
     <Component {...props} />
   </Suspense>
 );

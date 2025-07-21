@@ -25,12 +25,12 @@ const RoomAuthGuard = ({ children }) => {
   const me = useSelector(selectMe);
 
   const { user, guest, authenticated } = useAuthContext();
-  
+
   // Check if this is guest access via URL parameter
   const searchParams = new URLSearchParams(location.search);
   const guestId = searchParams.get('guest_id');
   const isGuestAccess = !!guestId;
-  
+
   const member = useMemo(
     () =>
       !!((authenticated.user || authenticated.guest) && authenticated.member)
@@ -44,14 +44,16 @@ const RoomAuthGuard = ({ children }) => {
     if (!room) {
       return blockers;
     }
-    
+
     // Special handling for guest DM rooms
     if (isGuestAccess && room.is_dm) {
-      // For guest access to DM rooms, allow access without member checks
-      // The backend has already validated the guest has access to this room
-      return blockers; // No blockers for valid guest DM access
+      // For guest access to DM rooms, allow access if guest is authenticated
+      if (!authenticated.guest) {
+        blockers.guestNotAuthenticated = true;
+      }
+      return blockers;
     }
-    
+
     const isRoomMember = checkMemberIsRoomMember(room, member);
     if (isRoomMember) {
       return blockers;
@@ -63,7 +65,7 @@ const RoomAuthGuard = ({ children }) => {
 
     blockers.userKicked = me?.is_kicked;
     return blockers;
-  }, [room, member, me?.is_kicked, isGuestAccess]);
+  }, [room, member, me?.is_kicked, isGuestAccess, authenticated.guest]);
 
   const accessDenied = useMemo(
     () => Object.values(accessBlockers).some((blocker) => !!blocker),

@@ -10,7 +10,13 @@ import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
-import { selectRoomId, selectRoomState, setDrawerOpen, createNewThread, sendMessage } from '../../redux/slices/room';
+import {
+  selectRoomId,
+  selectRoomState,
+  setDrawerOpen,
+  createNewThread,
+  sendMessage,
+} from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
 const onCloseDrawer = () => dispatch(setDrawerOpen(false));
@@ -65,11 +71,13 @@ const DesktopRoom = ({
           .then((threadId) => {
             if (threadId) {
               // Send the message to the new thread
-              dispatch(sendMessage({
-                threadId,
-                content: decodeURIComponent(message),
-                attachments: [],
-              }));
+              dispatch(
+                sendMessage({
+                  threadId,
+                  content: decodeURIComponent(message),
+                  attachments: [],
+                }),
+              );
             }
           })
           .catch((error) => {

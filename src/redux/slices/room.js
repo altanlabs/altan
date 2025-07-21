@@ -45,9 +45,23 @@ const copy = (text) => {
 };
 
 export function fetchCurrentMember(memberId, members) {
-  return members.byId[
-    members.allIds.find((roomMemberId) => members.byId[roomMemberId].member?.id === memberId)
-  ];
+  const found =
+    members.byId[
+      members.allIds.find((roomMemberId) => {
+        const member = members.byId[roomMemberId];
+
+        // For guest members, compare with guest_id
+        // For user members, compare with member.id
+        const matches =
+          member?.member?.member_type === 'guest'
+            ? member?.member?.guest_id === memberId
+            : member?.member?.id === memberId;
+
+        return matches;
+      })
+    ];
+
+  return found;
 }
 
 const handleThread = (thread) => {
@@ -345,7 +359,11 @@ const slice = createSlice({
       state.account = account;
       state.members = paginateCollection(members);
       state.authorization_requests = roomObject.authorization_requests.items || [];
-      state.me = fetchCurrentMember(guest?.member.id || user?.member.id, state.members);
+
+      const memberId = guest?.member.id || user?.member.id;
+
+      state.me = fetchCurrentMember(memberId, state.members);
+
       if (threads?.items) {
         threads.items = threads.items.map(handleThread);
       }
@@ -908,7 +926,7 @@ const slice = createSlice({
       }
 
       // Find if there's already a tab for this thread
-      const existingTab = Object.values(state.tabs.byId).find(tab => tab.threadId === threadId);
+      const existingTab = Object.values(state.tabs.byId).find((tab) => tab.threadId === threadId);
 
       if (existingTab) {
         // Switch to existing tab
@@ -1467,10 +1485,7 @@ export const selectTabsArray = createSelector(
 );
 
 export const makeSelectTabById = () =>
-  createSelector(
-    [selectTabsById, (state, tabId) => tabId],
-    (tabsById, tabId) => tabsById[tabId],
-  );
+  createSelector([selectTabsById, (state, tabId) => tabId], (tabsById, tabId) => tabsById[tabId]);
 
 // Voice conversation selectors
 export const selectVoiceConversations = (state) => selectRoomState(state).voiceConversations;
@@ -1562,16 +1577,8 @@ export const searchUserRooms = (query) => async (dispatch) => {
 
     dispatch(slice.actions.setSearchRoomsQuery(query));
     dispatch(slice.actions.setSearchRoomsLoading(true));
-
-    console.log('Searching for:', query);
     const response = await optimai_room.get(`/?name=${encodeURIComponent(query)}&limit=50`);
     const { rooms } = response.data;
-    console.log('API returned rooms:', rooms?.length, 'for query:', query);
-    console.log(
-      'First few rooms:',
-      rooms?.slice(0, 3)?.map((r) => r.name),
-    );
-
     dispatch(slice.actions.setSearchRoomsResults(rooms || []));
     return rooms;
   } catch (e) {

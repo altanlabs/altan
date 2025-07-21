@@ -31,14 +31,6 @@ const AgentSelectionChip = ({
 
   // Auto-select agent with "always" interaction when available
   useEffect(() => {
-    console.log('🔍 Auto-selection useEffect triggered:', {
-      selectedAgent: selectedAgent?.name || null,
-      agentsLength: agents.length,
-      userHasCleared,
-      hasAutoSelected: hasAutoSelected.current,
-      membersCount: Object.keys(members.byId || {}).length,
-    });
-
     // Only auto-select once and only if user hasn't manually cleared
     if (!selectedAgent && agents.length > 1 && !userHasCleared && !hasAutoSelected.current) {
       const alwaysAgent = agents.find((agent) => {
@@ -72,18 +64,10 @@ const AgentSelectionChip = ({
   // Reset flags when entering a new room (when agents list changes significantly)
   useEffect(() => {
     const agentIds = agents.map(agent => agent.id).sort().join(',');
-
-    console.log('🔍 Agents change effect:', {
-      agentIds: agentIds || 'empty',
-      previousAgentIds: lastAgentIds.current || 'none',
-      agentsLength: agents.length,
-    });
-
     // Only reset if we have a completely different set of agents (new room)
     if (agentIds && agentIds !== lastAgentIds.current && agents.length > 0) {
       // Only reset if this is truly a different room, not just the first load
       if (lastAgentIds.current !== '') {
-        console.log('🔄 Resetting flags for new room');
         setUserHasCleared(false);
         hasAutoSelected.current = false;
       }

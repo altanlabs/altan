@@ -7,6 +7,7 @@ import { bgBlur } from '../../../utils/cssStyles';
 // import DNAStrand from './components/DNAStrand';
 
 const DNALoader = () => {
+  console.log("DNALoader")
   return (
     <Box
       className="loading-container"

@@ -93,7 +93,10 @@ const FloatingTextArea = ({
     .map((member) => getMemberDetails(member));
 
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
-  const isViewer = useMemo(() => !me || (!!me && ['viewer', 'listener'].includes(me.role)), [me]);
+  const isViewer = useMemo(() => {
+    const viewer = !me || (!!me && ['viewer', 'listener'].includes(me.role));
+    return viewer;
+  }, [me]);
   const sendContent = useCallback(
     (content) => {
       if (content.trim() || (attachments && attachments.length > 0)) {
