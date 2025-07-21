@@ -1,7 +1,6 @@
-import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
-
-import { optimai_root } from './axios';
+import { Browser } from '@capacitor/browser';
+import axios from 'axios';
 
 /**
  * Platform detection for Capacitor
@@ -141,11 +140,7 @@ export const refreshToken = async (axiosInstance) => {
       if (!refreshEndpoint) {
         throw new Error('Invalid Axios instance');
       }
-      console.debug('Using web token refresh endpoint:', refreshEndpoint);
-      
-      // Extract path from full URL to work with optimai_root baseURL
-      const refreshPath = refreshEndpoint.replace(API_BASE_URL, '');
-      const res = await optimai_root.get(refreshPath);
+      const res = await axios.get(refreshEndpoint, { withCredentials: true });
       const { user, token } = res.data;
 
       return Promise.resolve({ user, accessToken: token.access_token });
@@ -190,40 +185,4 @@ export const getAuthStatus = () => {
     hasStoredRefreshToken,
     refreshTokenKey: REFRESH_TOKEN_KEY,
   };
-};
-
-/**
- * Debug function to log comprehensive authentication status
- * Call this in the browser console to troubleshoot auth issues
- */
-export const debugAuthStatus = () => {
-  const status = getAuthStatus();
-  const storedRefreshToken = getStoredRefreshToken();
-
-  console.group('🔍 Authentication Debug Status');
-  console.log('Platform:', status.platform);
-  console.log('Is Mobile:', status.isMobile);
-  console.log('Has Stored Refresh Token:', status.hasStoredRefreshToken);
-  console.log('Refresh Token Key:', status.refreshTokenKey);
-
-  if (status.isMobile) {
-    console.log('Stored Refresh Token:', storedRefreshToken ? '***[PRESENT]***' : 'NOT FOUND');
-    console.log('Mobile Endpoints:', MOBILE_AUTH_API_ENDPOINTS);
-  } else {
-    console.log('Web Endpoints:', AUTH_API_ENDPOINTS);
-  }
-
-  // Check localStorage
-  console.log('localStorage keys:', Object.keys(localStorage));
-  console.log('All auth-related localStorage:',
-    Object.keys(localStorage)
-      .filter(key => key.includes('auth') || key.includes('token') || key.includes('altan'))
-      .reduce((authObj, key) => {
-        return { ...authObj, [key]: localStorage.getItem(key) };
-      }, {}),
-  );
-
-  console.groupEnd();
-
-  return status;
 };

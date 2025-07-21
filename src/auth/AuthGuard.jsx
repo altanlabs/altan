@@ -6,7 +6,6 @@ import { Redirect, useLocation, useHistory } from 'react-router-dom';
 
 // components
 import { useAuthContext } from './useAuthContext';
-import LoadingScreen from '../components/loading-screen';
 //
 import Login from '../pages/auth/LoginPage.jsx';
 import WebSocketProvider from '../providers/websocket/WebSocketProvider.jsx';
@@ -45,13 +44,13 @@ function AuthGuard({ children, requireAuth = false }) {
   const { isAuthenticated, isInitialized, user, logout } = useAuthContext();
 
   const { pathname } = location;
-  
+
   // Parse search params manually for React Router v5
   const searchParams = new URLSearchParams(location.search);
   const setSearchParams = (newParams) => {
     history.replace({
       pathname: location.pathname,
-      search: newParams.toString()
+      search: newParams.toString(),
     });
   };
 
