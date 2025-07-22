@@ -65,6 +65,11 @@ const MOBILE_AUTH_API_ENDPOINTS = {
 // Mobile refresh token storage
 const REFRESH_TOKEN_KEY = 'altan_refresh_token';
 
+export const iframeState = {
+  activated: false,
+};
+
+
 export const storeRefreshToken = (refreshToken) => {
   if (isCapacitorPlatform()) {
     try {
@@ -153,6 +158,36 @@ export const refreshToken = async (axiosInstance) => {
     }
     return Promise.reject(e);
   }
+};
+
+export const requestRefreshFromParent = (group) => {
+  return new Promise((resolve, reject) => {
+    // Listen for the parent's response
+    function handleParentMessage(event) {
+      const { data } = event;
+      // Validate the event origin if necessary
+      // if (event.origin !== window.location.origin) return;
+
+      if (data.type === 'new_access_token') {
+        window.removeEventListener('message', handleParentMessage);
+
+        if (data.token) {
+          // The parent might send back user, token, etc. Adjust as needed
+          resolve({ user: data.user, accessToken: data.token });
+        } else {
+          reject(new Error('No token in parent response'));
+        }
+      }
+    }
+
+    window.addEventListener('message', handleParentMessage);
+
+    // Send the refresh request to the parent
+    window.parent.postMessage(
+      { type: 'refresh_token', group },
+      '*', // or use a specific targetOrigin if you know the parent's origin
+    );
+  });
 };
 
 export const setSession = (accessToken, axiosInstance, request = null) => {

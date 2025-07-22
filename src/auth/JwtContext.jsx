@@ -5,11 +5,14 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 
+import useMessageListener from '@hooks/useMessageListener.ts';
+
 // utils
 import { AUTH_API } from './utils';
 import { trackSignUp, trackLogin } from '../utils/analytics';
-import { storeRefreshToken, clearStoredRefreshToken } from '../utils/auth';
+import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
 import { optimai, unauthorizeUser, authorizeUser } from '../utils/axios';
+
 
 // ----------------------------------------------------------------------
 
@@ -216,6 +219,15 @@ const resendVerification = async () => {
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  useMessageListener(['*'], (event) => {
+    const { data } = event;
+    if (data.type === 'activate_interface_parenthood') {
+      // Set the flag using the imported state object
+      iframeState.activated = true;
+      console.log('IframeChild activated by parent');
+    }
+  });
+
   // Guest login function (defined before useEffect to avoid "used before defined" error)
   const loginAsGuest = useCallback(async (guestId, agentId) => {
     try {
@@ -249,29 +261,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Check for guest_id in URL first
-        const urlParams = new URLSearchParams(window.location.search);
-        const guestId = urlParams.get('guest_id');
-        const agentId = urlParams.get('agent_id');
-
-        if (guestId && agentId) {
-          // For guest access, authenticate the guest immediately
-          try {
-            await loginAsGuest(guestId, agentId);
-          } catch {
-            // Still mark as initialized even if guest auth fails
-            dispatch({
-              type: 'INITIAL',
-              payload: {
-                isAuthenticated: false,
-                user: null,
-              },
-            });
-          }
-          return;
-        }
-
-        // Try to get user profile (normal authentication)
         const userProfile = await getUserProfile();
         dispatch({
           type: 'INITIAL',
