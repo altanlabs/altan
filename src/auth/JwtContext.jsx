@@ -195,15 +195,6 @@ const getUserProfile = async () => {
   }
 };
 
-const getGuestProfile = async () => {
-  try {
-    const res = await optimai.get('/guest/me');
-    return res.data.guest;
-  } catch {
-    throw new Error('Failed to get guest profile');
-  }
-};
-
 const verifyEmail = async (code) => {
   try {
     const response = await optimai.post(`/user/verify-email?code=${code}`);
@@ -236,22 +227,17 @@ export function AuthProvider({ children }) {
       );
 
       if (response.data && response.data.guest) {
-        // Step 2: Get full guest profile using the /platform/guest/me endpoint
-        const guestProfile = await getGuestProfile();
-
-        const guestWithMember = {
-          ...guestProfile,
-          member: { id: guestProfile.id }, // Create member structure for room compatibility
-        };
-
+        // Use the guest data from login response which has the proper member structure
+        const guestData = response.data.guest;
+        console.log('guestData', guestData);
         dispatch({
           type: 'GUEST_LOGIN',
           payload: {
-            guest: guestWithMember,
+            guest: guestData,
           },
         });
 
-        return guestProfile;
+        return guestData;
       } else {
         throw new Error('Guest authentication failed');
       }
@@ -271,8 +257,8 @@ export function AuthProvider({ children }) {
         if (guestId && agentId) {
           // For guest access, authenticate the guest immediately
           try {
-            const guestProfile = await loginAsGuest(guestId, agentId);
-          } catch (error) {
+            await loginAsGuest(guestId, agentId);
+          } catch {
             // Still mark as initialized even if guest auth fails
             dispatch({
               type: 'INITIAL',

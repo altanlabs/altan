@@ -12,7 +12,23 @@ import {
   sendAgentMessage,
 } from '../../../redux/slices/room';
 import { useSelector, dispatch } from '../../../redux/store';
+import { optimai_room } from '../../../utils/axios';
 import { useSnackbar } from '../../snackbar';
+
+// Utility function to update thread voice status
+const updateThreadVoiceStatus = async (threadId, voiceMode) => {
+  try {
+    console.log(`🎤 [updateThreadVoiceStatus] Setting voice mode to ${voiceMode} for thread ${threadId}`);
+    await optimai_room.patch(`/thread/${threadId}/voice-status`, {
+      voice_mode: voiceMode,
+      expires_in: 3600, // 1 hour expiration
+    });
+    console.log(`✅ [updateThreadVoiceStatus] Successfully updated voice status to ${voiceMode}`);
+  } catch (error) {
+    console.error('❌ [updateThreadVoiceStatus] Failed to update voice status:', error);
+    // Don't throw error to prevent blocking voice conversation flow
+  }
+};
 
 export const useVoiceConversationHandler = (threadId) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -215,10 +231,14 @@ export const useVoiceConversationHandler = (threadId) => {
                 elevenlabsId,
               }),
             );
+            // Update thread voice status to active
+            updateThreadVoiceStatus(threadId, true);
           },
           onDisconnect: () => {
             console.log('🎤 [useVoiceConversation] Voice conversation disconnected');
             dispatch(stopVoiceConversation({ threadId }));
+            // Update thread voice status to inactive
+            updateThreadVoiceStatus(threadId, false);
           },
                   onMessage: (message) => {
           console.log('🎤 [useVoiceConversation] Voice message received:', message);
@@ -264,6 +284,8 @@ export const useVoiceConversationHandler = (threadId) => {
     }
 
     dispatch(stopVoiceConversation({ threadId }));
+    // Update thread voice status to inactive
+    updateThreadVoiceStatus(threadId, false);
   }, [threadId, stopConversation]);
 
   return {

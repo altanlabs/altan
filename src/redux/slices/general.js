@@ -795,6 +795,8 @@ export const selectAccount = (state) => selectGeneralState(state).account;
 
 export const selectAccountId = (state) => selectGeneralState(state).account.id;
 
+export const selectAccountCreditBalance = (state) => selectGeneralState(state).account.credit_balance;
+
 export const selectAccountAssetsInitialized = (key) => (state) =>
   selectGeneralState(state).accountAssetsInitialized[key];
 
@@ -1273,6 +1275,7 @@ export const getAccount = (selectedAccountId) => async (dispatch, getState) => {
         slice.actions.setAccount({
           id: accountBody?.id,
           name: accountBody?.name,
+          credit_balance: accountBody?.credit_balance,
           stripe_id: accountBody?.stripe_id,
           room_id: accountBody.room_id,
           logo_url: accountBody?.logo_url,

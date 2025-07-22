@@ -4,7 +4,7 @@ import { memo, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
-import { selectAccountSubscriptions } from '../redux/slices/general';
+import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
 
 function formatCredits(credits) {
@@ -19,6 +19,7 @@ function formatCredits(credits) {
 const UpgradeButton = ({ large = false, prominent = false }) => {
   const history = useHistory();
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
+  const creditBalance = useSelector(selectAccountCreditBalance);
   const getCreditsInfo = useCallback(() => {
     if (!activeSubscriptions?.[0]) {
       return { used: 0, total: 0, remaining: 0, isLowCredits: false };
@@ -110,7 +111,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
                 color="text.primary"
                 sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
-                €{formatCredits(creditInfo.remaining)}
+                €{formatCredits(creditInfo.remaining + creditBalance/100)}
               </Typography>
               <Typography
                 variant="body2"

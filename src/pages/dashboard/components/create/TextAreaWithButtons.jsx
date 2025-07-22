@@ -3,6 +3,7 @@ import { m } from 'framer-motion';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import AutopilotUpgradeDialog from './AutopilotUpgradeDialog';
 import GitHubRepoDialog from './GitHubRepoDialog';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
 import { selectIsAccountFree } from '../../../../redux/slices/general';
@@ -29,7 +30,8 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(true); // Default to public
   const [visibilityMenuOpen, setVisibilityMenuOpen] = useState(false);
-  const [autopilotEnabled, setAutopilotEnabled] = useState(true);
+  const [autopilotEnabled, setAutopilotEnabled] = useState(!isAccountFree);
+  const [autopilotUpgradePopup, setAutopilotUpgradePopup] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -378,7 +380,13 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
             {/* Autopilot interactive button - always visible */}
             <div className="relative group">
               <button
-                onClick={() => setAutopilotEnabled(!autopilotEnabled)}
+                onClick={() => {
+                  if (!autopilotEnabled && isAccountFree) {
+                    setAutopilotUpgradePopup(true);
+                  } else {
+                    setAutopilotEnabled(!autopilotEnabled);
+                  }
+                }}
                 className={`relative w-32 h-7 cursor-pointer overflow-hidden rounded-full border transition-all duration-300 flex items-center justify-center ${
                   autopilotEnabled
                     ? 'bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 border-transparent text-white shadow-lg shadow-purple-500/25'
@@ -393,7 +401,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                 {/* Default text - only show when not enabled */}
                 {!autopilotEnabled && (
                   <span className="relative z-10 text-xs font-medium transition-all duration-300 group-hover:translate-x-8 group-hover:opacity-0 px-4">
-                    Manual
+                    Pilot
                   </span>
                 )}
 
@@ -414,7 +422,7 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                       autopilotEnabled ? 'text-white' : 'text-white'
                     }`}
                   >
-                    {autopilotEnabled ? 'Autopilot' : 'Manual'}
+                    Autopilot
                   </span>
                 </div>
 
@@ -524,6 +532,12 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
         open={githubDialogOpen}
         onClose={() => setGithubDialogOpen(false)}
         onAdd={handleAddRepository}
+      />
+
+      {/* Autopilot Upgrade Dialog */}
+      <AutopilotUpgradeDialog
+        open={autopilotUpgradePopup}
+        onClose={() => setAutopilotUpgradePopup(false)}
       />
     </div>
   );

@@ -14,6 +14,7 @@ import {
   ListItemText,
   useTheme,
   alpha,
+  CircularProgress,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
@@ -28,11 +29,11 @@ import { optimai, optimai_shop } from '../../utils/axios';
 // ----------------------------------------------------------------------
 
 const PRO_FEATURES = [
+  { text: 'Autopilot mode', available: true },
   { text: 'Private projects', available: true },
   { text: 'Custom domains', available: true },
   { text: 'Voice AI Agents', available: true },
   { text: 'Workflow Builder', available: true },
-  { text: '1 builder', available: true },
   { text: 'Community support', available: true },
   { text: 'Remove Altan branding', available: true },
 ];
@@ -103,6 +104,7 @@ function PricingCard({
   highlighted = false,
   children,
   onButtonClick,
+  loading = false,
   sx,
   ...other
 }) {
@@ -228,9 +230,11 @@ function PricingCard({
         variant="soft"
         color="inherit"
         onClick={onButtonClick}
+        disabled={loading}
         sx={{ py: 1.5, fontWeight: 600 }}
+        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
       >
-        {buttonText}
+        {loading ? 'Processing...' : buttonText}
       </Button>
     </Card>
   );
@@ -241,6 +245,11 @@ export default function NewPricing() {
   const [proPlan, setProPlan] = useState(null);
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({
+    pro: false,
+    growth: false,
+    enterprise: false,
+  });
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
@@ -324,28 +333,42 @@ export default function NewPricing() {
     }
   };
 
-  const handleProClick = () => {
-    const billingOption = getBillingOption(proPlan, 'monthly');
-    if (billingOption) {
-      // Track checkout event
-      trackCheckoutEvent(proPlan, billingOption, 'pro');
-      handleCheckout(billingOption.id);
+  const handleProClick = async () => {
+    setLoadingStates(prev => ({ ...prev, pro: true }));
+
+    try {
+      const billingOption = getBillingOption(proPlan, 'monthly');
+      if (billingOption) {
+        // Track checkout event
+        trackCheckoutEvent(proPlan, billingOption, 'pro');
+        await handleCheckout(billingOption.id);
+      }
+    } finally {
+      setLoadingStates(prev => ({ ...prev, pro: false }));
     }
   };
 
-  const handleGrowthClick = () => {
-    const selectedPlan = growthPlans[selectedGrowthTier];
-    const billingOption = getBillingOption(selectedPlan, 'monthly');
-    if (billingOption) {
-      // Track checkout event
-      trackCheckoutEvent(selectedPlan, billingOption, 'growth');
-      handleCheckout(billingOption.id);
+  const handleGrowthClick = async () => {
+    setLoadingStates(prev => ({ ...prev, growth: true }));
+
+    try {
+      const selectedPlan = growthPlans[selectedGrowthTier];
+      const billingOption = getBillingOption(selectedPlan, 'monthly');
+      if (billingOption) {
+        // Track checkout event
+        trackCheckoutEvent(selectedPlan, billingOption, 'growth');
+        await handleCheckout(billingOption.id);
+      }
+    } finally {
+      setLoadingStates(prev => ({ ...prev, growth: false }));
     }
   };
 
   const handleEnterpriseClick = () => {
-    // Track lead generation for enterprise plan
+    setLoadingStates(prev => ({ ...prev, enterprise: true }));
+
     try {
+      // Track lead generation for enterprise plan
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'generate_lead', {
           currency: 'EUR',
@@ -356,11 +379,13 @@ export default function NewPricing() {
         });
         console.log('📊 Lead generation tracked for enterprise plan');
       }
+
+      window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
     } catch (error) {
       console.error('Error tracking lead generation:', error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, enterprise: false }));
     }
-
-    window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
   };
 
   const currentGrowthPlan = growthPlans[selectedGrowthTier];
@@ -429,6 +454,7 @@ export default function NewPricing() {
           }
           features={PRO_FEATURES}
           buttonText="Choose Plan"
+          loading={loadingStates.pro}
           onButtonClick={handleProClick}
         />
 
@@ -458,6 +484,7 @@ export default function NewPricing() {
           features={GROWTH_FEATURES}
           buttonText="Choose Plan"
           highlighted={true}
+          loading={loadingStates.growth}
           onButtonClick={handleGrowthClick}
         >
           {!isAccountFree ? (
@@ -523,6 +550,7 @@ export default function NewPricing() {
           priceSubtext="Custom credit allocation"
           features={ENTERPRISE_FEATURES}
           buttonText="Book a Call"
+          loading={loadingStates.enterprise}
           onButtonClick={handleEnterpriseClick}
         />
       </Box>

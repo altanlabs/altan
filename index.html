@@ -96,11 +96,23 @@
         // Set theme colors immediately
         document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
         document.documentElement.style.backgroundColor = isDark ? '#161C24' : '#FFFFFF';
+        
+        // Update theme-color meta tag for mobile browsers
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) {
+          themeColorMeta.content = isDark ? '#161C24' : '#FFFFFF';
+        }
       } catch (error) {
-        // Fallback to dark theme
+        // Fallback to light theme
         document.documentElement.classList.add('light');
         document.documentElement.style.colorScheme = 'light';
-        document.documentElement.style.backgroundColor = '#fff';
+        document.documentElement.style.backgroundColor = '#FFFFFF';
+        
+        // Update theme-color meta tag for mobile browsers
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) {
+          themeColorMeta.content = '#FFFFFF';
+        }
       }
     })();
   </script>
@@ -188,7 +200,7 @@
 <body>
   <!-- <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TXMH838"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript> -->
-    <!-- <script src="/altan-agent-widget.js" altan-agent-id="10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11"></script> -->
+    <!-- <script src="/altan-agent-widget.js" altan-agent-id="2122ef3e-1ddc-4723-91d0-77f046909487"></script> -->
 
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>

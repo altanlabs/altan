@@ -13,7 +13,6 @@ import {
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 
-
 const selectInitializedRoom = selectRoomStateInitialized('room');
 const selectLoadingRoom = selectRoomStateLoading('room');
 
@@ -41,10 +40,11 @@ const Room = ({
   }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
-    // Use the properly authenticated guest from context
-    const guestObj = guest;
+    console.log('handleFetchRoom');
+    console.log("user", user);
+    console.log("guest", guest);
 
-    dispatch(fetchRoom({ roomId, user, guest: guestObj }))
+    dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => !response && history.replace('/404'))
       .catch((error) => {
         const statusCode = error.response?.status || error?.status;

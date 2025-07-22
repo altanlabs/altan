@@ -50,12 +50,8 @@ export function fetchCurrentMember(memberId, members) {
       members.allIds.find((roomMemberId) => {
         const member = members.byId[roomMemberId];
 
-        // For guest members, compare with guest_id
-        // For user members, compare with member.id
-        const matches =
-          member?.member?.member_type === 'guest'
-            ? member?.member?.guest_id === memberId
-            : member?.member?.id === memberId;
+        // Compare with member.id for both guests and users
+        const matches = member?.member?.id === memberId;
 
         return matches;
       })
@@ -361,8 +357,11 @@ const slice = createSlice({
       state.authorization_requests = roomObject.authorization_requests.items || [];
 
       const memberId = guest?.member.id || user?.member.id;
+      console.log('memberId', memberId);
+      console.log('guest', guest);
 
       state.me = fetchCurrentMember(memberId, state.members);
+      console.log('state.me', state.me);
 
       if (threads?.items) {
         threads.items = threads.items.map(handleThread);

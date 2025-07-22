@@ -92,12 +92,8 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
 
   const content = (
     <Box sx={{ p: 2 }}>
-      <Typography variant={compact ? 'h6' : 'h5'} sx={{ mb: 3, fontWeight: 600 }}>
+      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb:2 }}>
         {title}
-      </Typography>
-
-      <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-        Amount
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>

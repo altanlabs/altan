@@ -14,18 +14,15 @@ import {
   Select,
   MenuItem,
   FormControl,
-  useTheme,
-  alpha,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
 import Iconify from '../../components/iconify';
-import { selectAccountId, selectAccountSubscriptions } from '../../redux/slices/general';
-import { optimai, optimai_shop } from '../../utils/axios';
+import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
+import { selectAccountId, selectAccountSubscriptions, selectAccountCreditBalance } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
+import { optimai, optimai_shop } from '../../utils/axios';
 
 // Feature lists for different plans
 const GROWTH_FEATURES = [
@@ -53,8 +50,7 @@ export default function SubscribedPricing() {
   const [enterprisePlan, setEnterprisePlan] = useState(null);
   const accountId = useSelector(selectAccountId);
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
-  const history = useHistory();
-  const theme = useTheme();
+  const creditBalance = useSelector(selectAccountCreditBalance);
 
   // Helper functions
   const getBillingOption = (plan, frequency) => {
@@ -135,7 +131,7 @@ export default function SubscribedPricing() {
     try {
       const selectedPlan = filteredGrowthPlans[selectedGrowthTier];
       const billingOption = getBillingOption(selectedPlan, 'monthly');
-      
+
       if (!billingOption) {
         console.error('No billing option found for plan:', selectedPlan.name);
         return;
@@ -175,7 +171,7 @@ export default function SubscribedPricing() {
         >
           <Typography
             variant="h4"
-            sx={{ mb: 4, fontWeight: 700 }}
+            sx={{ mb: 2, fontWeight: 700 }}
           >
             Upgrade Your Plan
           </Typography>
@@ -430,7 +426,7 @@ export default function SubscribedPricing() {
             <Box sx={{ textAlign: 'center', mb: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ mb: 2, fontWeight: 600 }}
+                sx={{ fontWeight: 600 }}
               >
                 Your Current Plan
               </Typography>
@@ -444,7 +440,8 @@ export default function SubscribedPricing() {
 
             <Divider sx={{ my: 1 }} />
 
-            <Box sx={{ mb: 1 }}>
+            {/* Subscription Credits */}
+            <Box sx={{ mb: 2 }}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
@@ -454,7 +451,7 @@ export default function SubscribedPricing() {
                   variant="body2"
                   color="text.secondary"
                 >
-                  Credits Used
+                  Subscription credits
                 </Typography>
                 <Typography
                   variant="body2"
@@ -503,15 +500,37 @@ export default function SubscribedPricing() {
               </Stack>
             </Box>
 
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Iconify icon="eva:settings-2-fill" />}
-              onClick={() => history.push('/usage')}
-              sx={{ mb: 3 }}
-            >
-              View Usage Details
-            </Button>
+            {/* Additional Credits */}
+            {creditBalance > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Additional credits
+                  </Typography>
+                  <Chip
+                    label="Never expire"
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                </Stack>
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 600, color: 'success.main' }}
+                >
+                  €{Math.round(creditBalance / 100)} available
+                </Typography>
+              </Box>
+            )}
 
             <Divider sx={{ my: 1 }} />
 

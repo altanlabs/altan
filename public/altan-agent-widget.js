@@ -5,7 +5,7 @@
   // Widget configuration
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
-    ROOM_BASE_URL: 'https://www.altan.ai/r'
+    ROOM_BASE_URL: 'https://dev-local.altan.ai:5173/r'
   };
 
   let scriptTag = document.currentScript;
@@ -14,7 +14,7 @@
   let chatOpened = false;
   let messageBoxesCalled = false;
   let theme = 'light';
-  let brand_color = '#6989E9';
+  let brand_color = '#000';
   let avatar;
   let replyBox;
   let agentId = scriptTag?.getAttribute('altan-agent-id') || scriptTag?.id;
