@@ -14,6 +14,7 @@ import { useAuthContext } from '../../auth/useAuthContext';
 import { selectAccountId } from '../../redux/slices/general';
 import { selectRoomAccountId } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
+import { requestRefreshFromParent } from '../../utils/auth';
 import { authorizeUser } from '../../utils/axios';
 
 const WebSocketContext = createContext(null);
@@ -26,7 +27,7 @@ const WebSocketProvider = ({ children }) => {
   const accountId = generalAccountId || roomAccountId;
   const [isOpen, setIsOpen] = useState(false);
   const [securedWs, setSecuredWs] = useState(false);
-  const { isAuthenticated, logout, user } = useAuthContext();
+  const { isAuthenticated, logout, user, guest, authenticated } = useAuthContext();
 
   const user_id = user?.id;
 
@@ -162,11 +163,31 @@ const WebSocketProvider = ({ children }) => {
       ws.onopen = () => {
         setIsOpen(true);
         // console.log('ws connection established');
-        authorizeUser()
-          .then(({ accessToken }) => {
-            ws.send(JSON.stringify({ type: 'authenticate', token: accessToken }));
-          })
-          .catch(() => logout());
+
+        // Check if this is a guest session
+        const isGuestSession = authenticated.guest && guest;
+        if (isGuestSession) {
+          // For guest sessions, request token from parent widget
+          requestRefreshFromParent('guest')
+            .then(({ accessToken }) => {
+              if (accessToken) {
+                ws.send(JSON.stringify({ type: 'authenticate', token: accessToken }));
+              } else {
+                throw new Error('No guest token received');
+              }
+            })
+            .catch((error) => {
+              console.error('Guest WebSocket authentication failed:', error);
+              // Don't call logout for guest sessions, let the component handle it
+            });
+        } else {
+          // Regular user authentication
+          authorizeUser()
+            .then(({ accessToken }) => {
+              ws.send(JSON.stringify({ type: 'authenticate', token: accessToken }));
+            })
+            .catch(() => logout());
+        }
       };
 
       ws.onclose = () => {
