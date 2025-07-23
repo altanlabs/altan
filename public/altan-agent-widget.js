@@ -323,7 +323,7 @@
 
     console.log('🔄 Refreshing guest token...');
     
-    const response = await fetch('https://api.altan.ai/auth/token/refresh', {
+    const response = await fetch('https://api.altan.ai/auth/token/guest', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -331,31 +331,40 @@
         'Referer': window.location.href
       },
       body: JSON.stringify({
-        refresh_token: authState.refreshToken
+        refresh_token: authState.refreshToken,
+        jid: false
       })
     });
     
     if (!response.ok) {
-      console.log('⚠️ Token refresh failed:', response.status);
+      console.log('⚠️ Guest token refresh failed:', response.status);
       // Clear invalid tokens
       clearStoredTokens();
       authState.accessToken = null;
       authState.refreshToken = null;
       authState.isAuthenticated = false;
-      throw new Error(`Token refresh failed: ${response.status}`);
+      throw new Error(`Guest token refresh failed: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('🔄 Token refresh response:', data);
+    console.log('🔄 Guest token refresh response:', data);
     
     // Update tokens
     const newAccessToken = data.access_token;
+    const newRefreshToken = data.refresh_token;
+    
     if (newAccessToken) {
       authState.accessToken = newAccessToken;
       
-      // Update stored access token (keep existing refresh token)
+      // Update stored access token
       localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
-      console.log('✅ Access token refreshed and stored');
+      console.log('✅ Guest access token refreshed and stored');
+    }
+    
+    if (newRefreshToken) {
+      authState.refreshToken = newRefreshToken;
+      localStorage.setItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+      console.log('✅ Guest refresh token updated and stored');
     }
     
     return data;
@@ -591,16 +600,18 @@
     try {
       let accessToken = authState.accessToken;
 
-      // If we don't have an access token but have a refresh token, refresh it
-      if (!accessToken && authState.refreshToken) {
-        console.log('🔄 No access token available, attempting refresh...');
+      // Always try to refresh the token to ensure it's valid and not expired
+      if (authState.refreshToken) {
+        console.log('🔄 Attempting to refresh guest token...');
         
         try {
           const refreshResult = await refreshGuestToken();
-          accessToken = refreshResult.access_token;
+          accessToken = refreshResult.access_token || authState.accessToken;
           console.log('✅ Got new access token from refresh');
         } catch (refreshError) {
-          console.warn('⚠️ Token refresh failed:', refreshError);
+          console.warn('⚠️ Token refresh failed, using existing token:', refreshError);
+          // Fall back to existing token if refresh fails
+          accessToken = authState.accessToken;
         }
       }
 
