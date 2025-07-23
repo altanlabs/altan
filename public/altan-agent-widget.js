@@ -6,13 +6,8 @@
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
     AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
-    ROOM_BASE_URL: 'https://altan.ai/r'  // Ensure this is production URL
+    ROOM_BASE_URL: 'https://altan.ai/r'
   };
-
-  // Debug: Log configuration and environment
-  console.log('Widget configuration:', WIDGET_CONFIG);
-  console.log('Current origin:', window.location.origin);
-  console.log('Is in iframe:', window !== window.parent);
 
   const scriptTag = document.currentScript;
   let messageBoxes = [];
@@ -28,11 +23,73 @@
   let browserLanguage = "en";
 
   // Authentication state management
-  let authState = {
+  const authState = {
     guest: null,
     accountId: null,
     accessToken: null,
+    refreshToken: null,
     isAuthenticated: false
+  };
+
+  // Token storage keys
+  const TOKEN_STORAGE_KEYS = {
+    ACCESS_TOKEN: `altan_guest_access_${agentId}`,
+    REFRESH_TOKEN: `altan_guest_refresh_${agentId}`,
+    GUEST_DATA: `altan_guest_data_${agentId}`,
+  };
+
+  // Token management functions
+  const storeTokens = (accessToken, refreshToken, guestData) => {
+    try {
+      localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      localStorage.setItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      localStorage.setItem(TOKEN_STORAGE_KEYS.GUEST_DATA, JSON.stringify(guestData));
+      console.log('✅ Tokens stored in localStorage');
+    } catch (error) {
+      console.warn('⚠️ Failed to store tokens:', error);
+    }
+  };
+
+  const getStoredTokens = () => {
+    try {
+      const accessToken = localStorage.getItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
+      const refreshToken = localStorage.getItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
+      const guestData = localStorage.getItem(TOKEN_STORAGE_KEYS.GUEST_DATA);
+      
+      return {
+        accessToken,
+        refreshToken,
+        guestData: guestData ? JSON.parse(guestData) : null
+      };
+    } catch (error) {
+      console.warn('⚠️ Failed to retrieve stored tokens:', error);
+      return { accessToken: null, refreshToken: null, guestData: null };
+    }
+  };
+
+  const clearStoredTokens = () => {
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.GUEST_DATA);
+      console.log('🗑️ Tokens cleared from localStorage');
+    } catch (error) {
+      console.warn('⚠️ Failed to clear tokens:', error);
+    }
+  };
+
+  // Load stored tokens on widget initialization
+  const loadStoredTokens = () => {
+    const stored = getStoredTokens();
+    if (stored.accessToken && stored.refreshToken && stored.guestData) {
+      authState.accessToken = stored.accessToken;
+      authState.refreshToken = stored.refreshToken;
+      authState.guest = stored.guestData;
+      authState.isAuthenticated = true;
+      console.log('✅ Loaded stored tokens and guest data');
+      return true;
+    }
+    return false;
   };
 
   // Room persistence
@@ -409,74 +466,46 @@
     return await response.json();
   }
 
-  async function requestGuestAccessToken() {
-    // The guest token endpoint works with cookies, no query params needed
-    const tokenEndpoint = `https://api.altan.ai/auth/token/guest`;
-    
-    try {
-      console.log('🔐 Trying guest token endpoint (GET with cookies):', tokenEndpoint);
-      
-      const response = await fetch(tokenEndpoint, {
-        method: 'GET',
-        headers: {
-          'Origin': window.location.origin,
-          'Referer': window.location.href
-        },
-        credentials: 'include'  // This sends the cookies
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Got token from endpoint:', tokenEndpoint, data);
-        
-        // Extract the actual token string from the response
-        const token = data.token?.access_token || data.access_token || data.token || null;
-        console.log('🔑 Extracted token string:', token);
-        return token;
-      } else {
-        console.log(`⚠️ Token endpoint failed:`, response.status, await response.text());
-      }
-    } catch (error) {
-      console.log(`⚠️ Token endpoint error:`, error.message);
-    }
-    
-    return null;
-  }
-
   async function refreshGuestToken() {
-    if (!authState.guest || !authState.accountId) {
-      throw new Error('No guest authentication data available');
+    if (!authState.refreshToken) {
+      throw new Error('No refresh token available');
     }
 
-    // The guest token endpoint works with cookies, no query params needed
-    const url = `https://api.altan.ai/auth/token/guest`;
+    console.log('🔄 Refreshing guest token...');
     
-    console.log('🔄 Refreshing guest token via GET (cookies):', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
+    const response = await fetch('https://api.altan.ai/auth/token/refresh', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Origin': window.location.origin,
         'Referer': window.location.href
       },
-      credentials: 'include'  // This sends the cookies
+      body: JSON.stringify({
+        refresh_token: authState.refreshToken
+      })
     });
     
     if (!response.ok) {
-      console.log('⚠️ Guest token refresh failed:', response.status, await response.text());
+      console.log('⚠️ Token refresh failed:', response.status);
+      // Clear invalid tokens
+      clearStoredTokens();
+      authState.accessToken = null;
+      authState.refreshToken = null;
+      authState.isAuthenticated = false;
       throw new Error(`Token refresh failed: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('🔄 Guest token refresh response:', data);
+    console.log('🔄 Token refresh response:', data);
     
-    // Extract the actual token string from the response
-    const token = data.token?.access_token || data.access_token || data.token || null;
-    
-    // Update access token if provided
-    if (token) {
-      authState.accessToken = token;
-      console.log('🔑 Updated authState with token string:', token);
+    // Update tokens
+    const newAccessToken = data.access_token;
+    if (newAccessToken) {
+      authState.accessToken = newAccessToken;
+      
+      // Update stored access token (keep existing refresh token)
+      localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+      console.log('✅ Access token refreshed and stored');
     }
     
     return data;
@@ -494,7 +523,7 @@
         'Origin': window.location.origin,
         'Referer': window.location.href
       },
-      credentials: 'include' // Include cookies
+      credentials: 'include' // Include cookies (for backward compatibility)
     });
     
     if (!response.ok) {
@@ -503,48 +532,48 @@
     }
     
     const data = await response.json();
-    console.log('🔐 Guest authentication response:', data);
+    console.log('🔐 Guest authentication response:', JSON.stringify(data, null, 2));
     
-    // Update auth state with any access token from response
-    authState.guest = data.guest;
-    authState.accountId = accountId;
-    authState.accessToken = data.access_token || data.token || null; // Capture token if available
-    authState.isAuthenticated = true;
+    // Extract tokens from the new backend response
+    const accessToken = data.access_token;
+    const refreshToken = data.refresh_token;
+    const guestData = data.guest;
     
-    // If no token was returned, try multiple approaches to get one
-    if (!authState.accessToken && data.guest) {
-      console.log('🔐 No token in auth response, trying alternative methods...');
-      
-      // Try guest token endpoints
-      try {
-        authState.accessToken = await requestGuestAccessToken();
-        if (authState.accessToken) {
-          console.log('✅ Got access token from token endpoint');
-        }
-      } catch (tokenError) {
-        console.warn('⚠️ Guest token endpoint failed:', tokenError);
-      }
-      
-      // Try refresh endpoint as fallback
-      if (!authState.accessToken) {
-        try {
-          const refreshData = await refreshGuestToken();
-          authState.accessToken = refreshData.access_token || refreshData.token || null;
-          console.log('🔐 Refresh endpoint result:', { hasToken: !!authState.accessToken });
-        } catch (refreshError) {
-          console.warn('⚠️ Guest token refresh failed:', refreshError);
-        }
-      }
+    if (!accessToken || !refreshToken || !guestData) {
+      throw new Error('Backend did not return required tokens or guest data');
     }
     
-    console.log('🔐 Updated authState:', {
+    // Update auth state
+    authState.guest = guestData;
+    authState.accountId = accountId;
+    authState.accessToken = accessToken;
+    authState.refreshToken = refreshToken;
+    authState.isAuthenticated = true;
+    
+    // Store tokens for cross-domain persistence
+    storeTokens(accessToken, refreshToken, guestData);
+    
+    console.log('✅ Guest authentication successful with tokens');
+    console.log('🔐 Final authState:', {
       hasGuest: !!authState.guest,
       hasAccessToken: !!authState.accessToken,
-      accessToken: authState.accessToken
+      hasRefreshToken: !!authState.refreshToken,
+      crossDomainReady: true
     });
     
     return data;
   }
+
+  // Initialize widget with stored tokens if available
+  const initializeAuthState = () => {
+    const hasStoredTokens = loadStoredTokens();
+    if (hasStoredTokens) {
+      console.log('🔄 Initialized with stored guest tokens');
+    } else {
+      console.log('🔄 No stored tokens found, will need fresh authentication');
+    }
+    return hasStoredTokens;
+  };
 
   // Initialize Widget
   addAnimationStyle();
@@ -552,6 +581,9 @@
   const chatButtonIcon = createChatButtonIcon();
   chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
   chatButton.appendChild(chatButtonIcon);
+
+  // Initialize authentication state with stored tokens
+  initializeAuthState();
 
   window.addEventListener('resize', addAnimationStyle);
 
@@ -619,10 +651,15 @@
         console.log('Reusing existing room:', roomData.room_id);
       }
 
-      // Authenticate the guest (use stored or new guest data)
-      await authenticateGuest(guestData.id, guestData.account_id);
+      // Authenticate the guest only if we don't have valid tokens
+      if (!authState.isAuthenticated || !authState.accessToken) {
+        console.log('No valid tokens found, authenticating guest...');
+        await authenticateGuest(guestData.id, guestData.account_id);
+      } else {
+        console.log('Using existing authentication tokens');
+      }
 
-      // Update iframe with room data (no query params needed)
+      // Update iframe with room data
       const iframeElement = document.getElementById("widget-agent-bubble-window");
       if (iframeElement) {
         const iframeUrl = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}`;
@@ -646,6 +683,7 @@
       if (error.message.includes('404') || error.message.includes('401')) {
         console.log('Clearing stored data due to error and retrying...');
         clearStoredData();
+        clearStoredTokens();
         // Don't retry automatically to avoid infinite loops
       }
     }
@@ -723,56 +761,32 @@
     console.log('🔄 Token refresh requested by iframe, current auth state:', {
       isAuthenticated: authState.isAuthenticated,
       hasGuest: !!authState.guest,
-      hasAccessToken: !!authState.accessToken
+      hasAccessToken: !!authState.accessToken,
+      hasRefreshToken: !!authState.refreshToken
     });
 
     try {
       let accessToken = authState.accessToken;
 
-      // If we don't have a token but have a guest, try to get one
-      if (!accessToken && authState.guest) {
-        console.log('🔄 No token available, attempting to get guest access token...');
+      // If we don't have an access token but have a refresh token, refresh it
+      if (!accessToken && authState.refreshToken) {
+        console.log('🔄 No access token available, attempting refresh...');
         
-        // Try guest token endpoints first
         try {
-          accessToken = await requestGuestAccessToken();
-          if (accessToken) {
-            authState.accessToken = accessToken;
-            console.log('✅ Got guest token from token endpoint');
-          }
-        } catch (tokenError) {
-          console.warn('⚠️ Guest token endpoint failed:', tokenError);
+          const refreshResult = await refreshGuestToken();
+          accessToken = refreshResult.access_token;
+          console.log('✅ Got new access token from refresh');
+        } catch (refreshError) {
+          console.warn('⚠️ Token refresh failed:', refreshError);
         }
-        
-        // Try refresh endpoint as fallback
-        if (!accessToken) {
-          try {
-            const refreshResult = await refreshGuestToken();
-            accessToken = refreshResult.access_token || refreshResult.token || null;
-            
-            if (accessToken) {
-              authState.accessToken = accessToken;
-              console.log('✅ Got guest token from refresh endpoint');
-            }
-          } catch (refreshError) {
-            console.warn('⚠️ Guest token refresh failed:', refreshError);
-          }
-        }
-      }
-
-      // Ensure we send a token string, not an object
-      let tokenString = accessToken;
-      if (typeof accessToken === 'object' && accessToken !== null) {
-        tokenString = accessToken.access_token || accessToken.token || null;
-        console.log('🔑 Extracted token string for iframe:', tokenString);
       }
 
       // Send response to iframe
       const responseData = {
         type: 'new_access_token',
-        token: tokenString,  // Send the string token, not object
+        token: accessToken,
         guest: authState.guest,
-        success: !!tokenString
+        success: !!accessToken
       };
       
       console.log('📤 Sending token refresh response:', responseData);
@@ -796,7 +810,7 @@
       isAuthenticated: authState.isAuthenticated,
       hasGuest: !!authState.guest,
       hasAccessToken: !!authState.accessToken,
-      accessToken: authState.accessToken,
+      hasRefreshToken: !!authState.refreshToken,
       origin: event.origin
     });
     
@@ -804,17 +818,10 @@
       // Already authenticated, send current auth data
       console.log('Sending authenticated guest data to iframe');
       
-      // Ensure we send a token string, not an object
-      let tokenString = authState.accessToken;
-      if (typeof authState.accessToken === 'object' && authState.accessToken !== null) {
-        tokenString = authState.accessToken.access_token || authState.accessToken.token || null;
-        console.log('🔑 Extracted token string for guest auth response:', tokenString);
-      }
-      
       const responseData = {
         type: 'guest_auth_response',
         guest: authState.guest,
-        accessToken: tokenString,  // Send the string token, not object
+        accessToken: authState.accessToken,
         isAuthenticated: true
       };
       console.log('📤 Sending to iframe:', responseData);
