@@ -1,14 +1,20 @@
-import { Box, Typography, IconButton, Stack, Switch } from '@mui/material';
+import { Box, Typography, IconButton, Stack, Switch, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 
 import DistributionForm from './distribution/DistributionForm';
 import DistributionSetup from './distribution/DistributionSetup';
 import Iconify from '../../../../../components/iconify/Iconify';
 import useFeedbackDispatch from '../../../../../hooks/useFeedbackDispatch';
-import { createTemplate, updateTemplate } from '../../../../../redux/slices/general';
+import { createTemplate, updateTemplate, selectIsAccountFree } from '../../../../../redux/slices/general';
 
 const Distribution = ({ altaner }) => {
   const hasTemplate = !!altaner?.template;
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
+  const [openPaywallDialog, setOpenPaywallDialog] = useState(false);
+  const isAccountFree = useSelector(selectIsAccountFree);
+  const history = useHistory();
 
   const handleCreateTemplate = () => {
     if (!altaner?.id) return;
@@ -32,6 +38,28 @@ const Distribution = ({ altaner }) => {
       successMessage: 'Template updated successfully.',
       errorMessage: 'Could not update template: ',
     });
+  };
+
+  const handleToggleVisibility = () => {
+    if (isAccountFree) {
+      setOpenPaywallDialog(true);
+      return;
+    }
+
+    const updatedTemplate = {
+      ...altaner.template,
+      is_visible: !altaner.template.is_visible,
+    };
+    handleSave(updatedTemplate);
+  };
+
+  const handleClosePaywallDialog = () => {
+    setOpenPaywallDialog(false);
+  };
+
+  const handleGoToPricing = () => {
+    setOpenPaywallDialog(false);
+    history.push('/pricing');
   };
 
   return (
@@ -168,13 +196,7 @@ const Distribution = ({ altaner }) => {
               </Box>
               <Switch
                 checked={altaner.template.is_visible || false}
-                onChange={() => {
-                  const updatedTemplate = {
-                    ...altaner.template,
-                    is_visible: !altaner.template.is_visible,
-                  };
-                  handleSave(updatedTemplate);
-                }}
+                onChange={handleToggleVisibility}
                 sx={{ ml: 2 }}
               />
             </Stack>
@@ -194,6 +216,29 @@ const Distribution = ({ altaner }) => {
           isSubmitting={isSubmitting}
         />
       )}
+
+      <Dialog
+        open={openPaywallDialog}
+        onClose={handleClosePaywallDialog}
+        aria-labelledby="paywall-dialog-title"
+        aria-describedby="paywall-dialog-description"
+      >
+        <DialogTitle id="paywall-dialog-title">Upgrade Required</DialogTitle>
+        <DialogContent>
+          <Typography id="paywall-dialog-description">
+            To make your template visible in the marketplace, you need to upgrade your account.
+            Please visit the settings page to upgrade.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePaywallDialog} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleGoToPricing} color="primary" variant="contained">
+            Go to Pricing
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

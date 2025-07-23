@@ -6,7 +6,7 @@
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
     AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
-    ROOM_BASE_URL: 'https://dev-local.altan.ai:5173/r'
+    ROOM_BASE_URL: 'https://www.altan.ai/r'
   };
 
   let scriptTag = document.currentScript;

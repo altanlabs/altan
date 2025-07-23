@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
-import { useState, useEffect } from 'react';
+
+import CustomDialog from '../../../../components/dialogs/CustomDialog';
 
 export const MODE_LABELS = {
   manual: 'Interactive Mode',
@@ -28,18 +29,6 @@ const trackAutopilotUpgradeEvent = (action, additionalData = {}) => {
 };
 
 function AutopilotUpgradeDialog({ open, onClose }) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => setIsVisible(true), 50);
-    } else {
-      setIsVisible(false);
-    }
-  }, [open]);
-
-  if (!open) return null;
-
   const handleUpgrade = () => {
     // Track going to pricing page
     trackAutopilotUpgradeEvent('autopilot_click_pricing', {
@@ -79,17 +68,13 @@ function AutopilotUpgradeDialog({ open, onClose }) {
   ];
 
   return (
-    <div
-      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] transition-all duration-300 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <CustomDialog
+      dialogOpen={open}
+      onClose={onClose}
+      showCloseButton={false}
+      className="max-w-lg"
     >
-      <div
-        className={`relative bg-white dark:bg-gray-900 rounded-2xl max-w-lg mx-4 shadow-2xl overflow-hidden border border-gray-200/20 dark:border-gray-700/20 transform transition-all duration-300 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}
-      >
+      <div>
         {/* Gradient background overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-cyan-500/5 dark:from-purple-400/10 dark:via-blue-400/10 dark:to-cyan-400/10" />
 
@@ -207,7 +192,7 @@ function AutopilotUpgradeDialog({ open, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </CustomDialog>
   );
 }
 

@@ -11,13 +11,23 @@ import {
   Box,
   Typography,
   Divider,
+  Switch,
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 
 import { categoryOptions } from './categoryOptions';
 import { featureOptions } from './featureOptions';
 import { useCaseOptions } from './useCaseOptions';
 import { verticalOptions } from './verticalOptions';
+import { selectIsAccountFree } from '../../../../../../redux/slices/general';
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -31,6 +41,9 @@ const MenuProps = {
 };
 
 const DistributionForm = ({ template, onSave, isSubmitting }) => {
+  const history = useHistory();
+  const isAccountFree = useSelector(selectIsAccountFree);
+
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
@@ -40,9 +53,11 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
     useCases: template?.meta_data?.useCases || [],
     features: template?.meta_data?.features || [],
     department: template?.meta_data?.department || '',
+    isPrivate: template?.isPrivate || false,
   });
   const [priceDigits, setPriceDigits] = useState('');
   const [isDirty, setIsDirty] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   useEffect(() => {
     const initialPrice = template?.price;
@@ -92,6 +107,27 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
     }
   };
 
+  const handlePrivacyToggle = () => {
+    if (isAccountFree) {
+      setShowUpgradeDialog(true);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        isPrivate: !prev.isPrivate,
+      }));
+      setIsDirty(true);
+    }
+  };
+
+  const handleUpgradeDialogClose = () => {
+    setShowUpgradeDialog(false);
+  };
+
+  const handleGoToPricing = () => {
+            history.push('/pricing');
+    setShowUpgradeDialog(false);
+  };
+
   const formatPriceDisplay = (digits) => {
     if (!digits) return '0.00';
     const padded = digits.padStart(3, '0');
@@ -112,6 +148,7 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
         useCases: formData.useCases,
         features: formData.features,
         department: formData.department,
+        isPrivate: formData.isPrivate,
       },
     };
     onSave(formattedData);
@@ -192,6 +229,19 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
                 },
               }}
             />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isPrivate}
+                  onChange={handlePrivacyToggle}
+                  name="isPrivate"
+                />
+              }
+              label="Private Template"
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+              Private templates are only visible to you and can be priced for marketplace distribution
+            </Typography>
           </Stack>
         </Box>
 
@@ -389,6 +439,30 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
           Save Changes
         </LoadingButton>
       </Stack>
+
+      <Dialog
+        open={showUpgradeDialog}
+        onClose={handleUpgradeDialogClose}
+        aria-labelledby="upgrade-dialog-title"
+        aria-describedby="upgrade-dialog-description"
+      >
+        <DialogTitle id="upgrade-dialog-title">Upgrade Required</DialogTitle>
+        <DialogContent>
+          <Typography id="upgrade-dialog-description">
+            To make your template private, you need to upgrade your account.
+            This will allow you to set your own pricing and make your templates
+            available for purchase by other users.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleUpgradeDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleGoToPricing} color="primary" variant="contained">
+            Go to Pricing
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
