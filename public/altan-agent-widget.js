@@ -1,6 +1,16 @@
-/* global console, fetch, window, document, setTimeout, navigator, localStorage */
+/* global console, fetch, window, document, navigator, localStorage */
+/**
+ * Altan AI Widget
+ * Version: 2.0.1
+ * Last Updated: 2025-01-23
+ * Documentation: https://docs.altan.ai/widget
+ */
 (async function() {
   'use strict';
+
+  // Widget version for debugging and cache management
+  const WIDGET_VERSION = '2.0.1';
+  console.log(`🤖 Altan Widget v${WIDGET_VERSION} loaded`);
 
   // Widget configuration
   const WIDGET_CONFIG = {
@@ -10,13 +20,7 @@
   };
 
   const scriptTag = document.currentScript;
-  let messageBoxes = [];
-  let replyButtons = [];
-  let chatOpened = false;
-  let messageBoxesCalled = false;
   let brand_color = '#000';
-  let avatar;
-  let replyBox;
   const agentId = scriptTag?.getAttribute('altan-agent-id') || scriptTag?.id;
   const CHAT_BUTTON_SIZE = 50;
   const CHAT_BUTTON_RADIUS = 30;
@@ -150,13 +154,6 @@
     }
   };
 
-  const getSpaceTranslation = (space, lang) => {
-    const shortLang = lang.substring(0, 2).toUpperCase();
-    const translation = space.meta_data?.translations?.[shortLang];
-    const capTranslation = !!translation && (translation.charAt(0).toUpperCase() + translation.slice(1));
-    return capTranslation || space.name;
-  };
-
   const CHAT_CLOSE_ICON = () => `
   <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="24" height="24">
     <path d="M18.3 5.71a.996.996 0 00-1.41 0L12 10.59 7.11 5.7A.996.996 0 105.7 7.11L10.59 12 5.7 16.89a.996.996 0 101.41 1.41L12 13.41l4.89 4.89a.996.996 0 101.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>
@@ -225,68 +222,8 @@
     .chat-bubble.chat-open {
       background-color: #666 !important;
     }
-
-    @keyframes fadeIn {
-      0% {opacity: 0; transform: translateY(10px);}
-      100% {opacity: 1; transform: translateY(0);}
-    }
-
-    .message-bubble {
-      animation: fadeIn 0.3s ease-out;
-    }
     `;
     document.head.appendChild(style);
-  }
-
-  function createMessageWrapper() {
-    const messagesWrapper = document.createElement('div');
-    messagesWrapper.style.position = 'fixed';
-    messagesWrapper.style.bottom = `${CHAT_BUTTON_SIZE + 30}px`;
-    messagesWrapper.style.right = '25px';
-    messagesWrapper.style.width = '250px';
-    messagesWrapper.style.display = 'flex';
-    messagesWrapper.style.flexDirection = 'column';
-    messagesWrapper.style.gap = '3px';
-    messagesWrapper.style.zIndex = '999999996';
-    return messagesWrapper;
-  }
-
-  function createSendIcon() {
-    const sendIcon = document.createElement('svg');
-    sendIcon.style.margin = '0';
-    sendIcon.style.paddingTop = '5px';
-    sendIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    sendIcon.setAttribute('width', '24');
-    sendIcon.setAttribute('height', '24');
-    sendIcon.setAttribute('viewBox', '0 0 24 24');
-    sendIcon.innerHTML = '<path fill="currentColor" fill-rule="evenodd" d="M3.402 6.673c-.26-2.334 2.143-4.048 4.266-3.042l11.944 5.658c2.288 1.083 2.288 4.339 0 5.422L7.668 20.37c-2.123 1.006-4.525-.708-4.266-3.042L3.882 13H12a1 1 0 1 0 0-2H3.883l-.48-4.327Z" clip-rule="evenodd"/>';
-    return sendIcon;
-  }
-
-  function createMessageBox(message) {
-    const messageBox = document.createElement('div');
-    messageBox.style.flex = '1';
-    messageBox.style.borderRadius = '10px';
-    messageBox.style.border = 'none';
-    messageBox.style.padding = '10px 20px';
-    messageBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-    messageBox.style.fontSize = '13px';
-    messageBox.style.fontFamily = 'helvetica, sans-serif';
-    messageBox.style.color = 'black';
-    messageBox.style.cursor = 'pointer';
-    messageBox.style.transition = 'background-color 0.3s';
-    messageBox.textContent = message;
-    return messageBox;
-  }
-
-  function createMessageContainer() {
-    const messageContainer = document.createElement('div');
-    messageContainer.style.display = 'flex';
-    messageContainer.style.alignItems = 'center';
-    messageContainer.style.justifyContent = 'flex-end';
-    messageContainer.style.marginBottom = '10px';
-    messageContainer.style.animation = 'fadeIn 0.5s';
-    return messageContainer;
   }
 
   function updateChatButtonIcon(isOpen) {
@@ -353,93 +290,6 @@
     chatButtonIcon.style.height = "100%";
     chatButtonIcon.style.transition = "all 0.3s ease";
     return chatButtonIcon;
-  }
-
-  function createReplyButton(theme, text, isClicked, replyButtonColor, onClick) {
-    const replyButton = document.createElement('button');
-    replyButton.style.display = "inline-block";
-    replyButton.style.width = "fit-content";
-    replyButton.style.textTransform = "none";
-    replyButton.style.textAlign = "left";
-    replyButton.style.background = theme === 'light' ? 'rgb(229, 238, 255)' : '#212b36';
-    replyButton.style.color = replyButtonColor || "#3f87f5";
-    replyButton.style.lineHeight = "18px";
-    replyButton.style.padding = "11px";
-    replyButton.style.fontSize = "14px";
-    replyButton.style.border = "none";
-    replyButton.style.borderRadius = "10px";
-    replyButton.style.fontFamily = 'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
-    replyButton.style.textRendering = "optimizeLegibility";
-    replyButton.style.webkitFontSmoothing = "antialiased";
-    replyButton.style.willChange = "opacity, transform";
-    replyButton.style.transition = "all 0.3s cubic-bezier(0.25, 1, 0.5, 1)";
-    replyButton.style.transform = isClicked ? 'scale(1.05)' : 'scale(1)';
-    replyButton.style.zIndex = "99999";
-    replyButton.style.cursor = "pointer";
-    replyButton.textContent = text;
-
-    replyButton.addEventListener('mousedown', function () {
-      this.style.transform = 'scale(0.95)';
-    });
-
-    replyButton.addEventListener('mouseup', function () {
-      this.style.transform = 'scale(1)';
-    });
-
-    replyButton.addEventListener('mouseover', function () {
-      this.style.background = "rgb(204, 221, 255)";
-      this.style.outline = "none";
-      this.style.border = "none";
-    });
-
-    replyButton.addEventListener('mouseout', function () {
-      this.style.background = theme === 'light' ? 'rgb(229, 238, 255)' : '#212b36';
-    });
-
-    replyButton.addEventListener('focus', function () {
-      this.style.outline = "none";
-      this.style.border = "none";
-    });
-
-    replyButton.addEventListener('blur', function () {
-      this.style.outline = "none";
-      this.style.border = "none";
-    });
-
-    if (onClick) {
-      replyButton.addEventListener('click', onClick);
-    }
-
-    return replyButton;
-  }
-
-  function createReplyBox() {
-    const newReplyBox = document.createElement('div');
-    newReplyBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-    newReplyBox.style.display = 'flex';
-    newReplyBox.style.alignItems = 'center';
-    newReplyBox.style.justifyContent = 'space-between';
-    newReplyBox.style.color = 'black';
-    newReplyBox.style.padding = '10px 20px';
-    newReplyBox.style.borderRadius = '10px 10px 10px 10px';
-    newReplyBox.style.textAlign = 'left';
-    newReplyBox.style.fontSize = '15px';
-    newReplyBox.style.cursor = 'pointer';
-    newReplyBox.style.marginBottom = '10px';
-    newReplyBox.style.flex = '1';
-    newReplyBox.style.fontFamily = 'helvetica, sans-serif';
-    newReplyBox.textContent = 'Ask anything...';
-    return newReplyBox;
-  }
-
-  function createAvatar() {
-    const newAvatar = document.createElement('img');
-    newAvatar.src = 'https://storage.googleapis.com/logos-chatbot-optimai/Z.png';
-    newAvatar.alt = 'Altan Chatbot Icon';
-    newAvatar.height = 40;
-    newAvatar.width = 40;
-    newAvatar.style.marginRight = '10px';
-    return newAvatar;
   }
 
   // API Functions
@@ -604,23 +454,6 @@
   }
 
   async function openChat() {
-    messageBoxes.forEach(box => box.remove());
-    messageBoxes = [];
-
-    replyButtons.forEach(button => button.remove());
-    replyButtons = [];
-
-    if (avatar) {
-      avatar.remove();
-      avatar = null;
-    }
-    if (replyBox) {
-      replyBox.remove();
-      replyBox = null;
-    }
-
-    chatOpened = true;
-
     try {
       let roomData = getStoredRoomData();
       let guestData = getStoredGuestData();
@@ -695,14 +528,6 @@
     const chat = document.getElementById("chat-bubble-window");
     chat.classList.add("chat-hide-animation");
     chat.addEventListener("animationend", onAnimationEnd);
-    if (avatar) {
-      avatar.remove();
-      avatar = null;
-    }
-    if (replyBox) {
-      replyBox.remove();
-      replyBox = null;
-    }
   }
 
   chatButton.addEventListener("click", () => {
@@ -737,7 +562,7 @@
   }
 
   chat.innerHTML = `<iframe
-    allow="fullscreen 'self'; clipboard-write"
+    allow="clipboard-write; microphone; camera"
     id="widget-agent-bubble-window"
     name="Altan-App"
     src=""
@@ -753,8 +578,6 @@
   // Update chat size whenever the window size changes
   window.addEventListener("resize", handleChatWindowSizeChange);
   handleChatWindowSizeChange();
-
-
 
   // Helper functions for message handling
   const handleTokenRefreshRequest = async (event) => {
@@ -838,64 +661,7 @@
     }
   };
 
-  const handleReplyButtons = (data) => {
-    messageBoxesCalled = true;
-    const replyButtonsData = data.spaces;
-    const replyButtonColor = data.replyButtonColor;
-    const messagesWrapper = createMessageWrapper();
-    document.body.appendChild(messagesWrapper);
-    
-    replyButtonsData.forEach((space, i) => {
-      setTimeout(() => {
-        const messageContainer = createMessageContainer();
-        const messageBox = createReplyButton('light', getSpaceTranslation(space.child, browserLanguage), false, replyButtonColor, (e) => {
-          e.stopPropagation();
-          openChat();
-        });
-
-        messageContainer.appendChild(messageBox);
-        messagesWrapper.appendChild(messageContainer);
-        messageBoxes.push(messageBox);
-      }, 250 + 1500 * i);
-    });
-  };
-
-  const handleInitialMessages = (data) => {
-    const messages = data.messages;
-    const nonEmptyMessages = messages.filter((message) => message.trim().length > 0);
-    const messagesWrapper = createMessageWrapper();
-    document.body.appendChild(messagesWrapper);
-
-    nonEmptyMessages.forEach((message, i) => {
-      setTimeout(() => {
-        const messageContainer = createMessageContainer();
-        avatar = createAvatar();
-        const messageBox = createMessageBox(message);
-
-        messageBox.addEventListener('click', () => openChat());
-        messageContainer.appendChild(avatar);
-        messageContainer.appendChild(messageBox);
-        messagesWrapper.appendChild(messageContainer);
-        messageBoxes.push(messageBox);
-      }, 500 + 1500 * i);
-    });
-
-    if (nonEmptyMessages.length > 0) {
-      setTimeout(() => {
-        replyBox = createReplyBox();
-        replyBox.addEventListener('click', () => openChat());
-        const sendIcon = createSendIcon();
-        replyBox.appendChild(sendIcon);
-        messagesWrapper.appendChild(replyBox);
-      }, 1000 + 1500 * nonEmptyMessages.length + 100);
-    }
-  };
-
   const handleChatbotMetadata = (data) => {
-    const initialMessages = data?.meta_data?.initial_msg
-      ? data.meta_data.initial_msg.split(';')
-      : [];
-    const spaces = data?.meta_data?.space?.children?.spaces || [];
     const ui = data.meta_data?.meta_data?.ui;
     brand_color = ui?.brand_color || brand_color;
     
@@ -906,13 +672,6 @@
     }
     
     chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
-    
-    if (spaces && spaces.length > 0 && !chatOpened && !messageBoxesCalled) {
-      handleReplyButtons({ spaces: spaces, replyButtonColor: brand_color });
-    }
-    if (initialMessages && initialMessages.length > 0 && !chatOpened) {
-      handleInitialMessages({ messages: initialMessages });
-    }
   };
 
   // Event listeners and message handling
