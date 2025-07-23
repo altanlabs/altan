@@ -1,4 +1,4 @@
-import { refreshToken, setSession } from './auth';
+import { refreshToken, setSession, requestRefreshFromParent } from './auth';
 
 const HTTP_STATUS_UNAUTHORIZED = 401;
 const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
@@ -20,6 +20,13 @@ const addRequestToQueue = (originalRequest) => {
   });
 };
 
+// Check if this is a guest session (iframe context)
+const isGuestSession = () => {
+  const isInIframe = window !== window.parent;
+  const hasGuestInContext = window.authContext?.authenticated?.guest === true;
+  return isInIframe || hasGuestInContext;
+};
+
 const onRequestFailure = async (error, axiosInstance) => {
   const originalRequest = error.config;
 
@@ -29,6 +36,7 @@ const onRequestFailure = async (error, axiosInstance) => {
 
   if (error.response && error.response.status === HTTP_STATUS_UNAUTHORIZED) {
     if (originalRequest._retryCount >= MAX_RETRY_COUNT) {
+      console.error('❌ Max retry count reached for request:', originalRequest.url);
       return Promise.reject(error);
     }
 
@@ -41,11 +49,40 @@ const onRequestFailure = async (error, axiosInstance) => {
     isRefreshing = true;
 
     try {
-      const { accessToken } = await refreshToken(axiosInstance);
-      setSession(accessToken, axiosInstance, originalRequest);
-      processQueue(null, accessToken);
-      return axiosInstance(originalRequest);
+      // Check if this is a guest session
+      if (isGuestSession()) {
+        console.log('🔄 Guest session detected, requesting auth refresh from parent');
+        
+        try {
+          // For guest sessions, request new auth from parent widget
+          const { accessToken, guest } = await requestRefreshFromParent('guest');
+          
+          if (accessToken) {
+            console.log('✅ Received new guest token from parent');
+            setSession(accessToken, axiosInstance, originalRequest);
+            processQueue(null, accessToken);
+            return axiosInstance(originalRequest);
+          } else {
+            console.warn('⚠️ No access token received from parent');
+            throw new Error('No guest token received from parent');
+          }
+        } catch (guestAuthError) {
+          console.error('❌ Guest auth refresh failed:', guestAuthError);
+          // For guest auth failures, don't redirect to login - let the component handle it
+          processQueue(guestAuthError);
+          return Promise.reject(guestAuthError);
+        }
+      } else {
+        // Regular user session - use existing user token refresh logic
+        console.log('🔄 User session detected, refreshing user token');
+        const { accessToken } = await refreshToken(axiosInstance);
+        setSession(accessToken, axiosInstance, originalRequest);
+        processQueue(null, accessToken);
+        return axiosInstance(originalRequest);
+      }
     } catch (err) {
+      console.error('❌ Token refresh failed:', err);
+      
       if (err.response && err.response.status === HTTP_STATUS_UNAUTHORIZED) {
         setSession(null, axiosInstance);
       }

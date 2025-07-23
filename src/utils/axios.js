@@ -85,19 +85,36 @@ const authorizeUser = () => {
 const authorizeGuest = async (guestToken) => {
   return new Promise((resolve, reject) => {
     try {
+      console.log('🔑 authorizeGuest called with token:', guestToken);
+
       // For guest authentication, we rely on cookies set by the parent widget
       // The axios instances should use withCredentials: true to include cookies
       console.log('🔑 Setting up guest authentication for axios instances');
 
       // If a guest token is provided, set it as authorization header
       if (guestToken) {
-        setSession(guestToken, optimai_room);
-        setSession(guestToken, optimai);
-        setSession(guestToken, optimai_root);
+        // Extract actual token string if it's an object
+        let tokenString = guestToken;
+        if (typeof guestToken === 'object' && guestToken !== null) {
+          tokenString = guestToken.access_token || guestToken.token || null;
+          console.log('🔑 Extracted token string from object:', tokenString);
+        }
+
+        if (tokenString) {
+          console.log('✅ Setting authorization headers with guest token string');
+          setSession(tokenString, optimai_room);
+          setSession(tokenString, optimai);
+          setSession(tokenString, optimai_root);
+        } else {
+          console.warn('⚠️ Could not extract token string from:', guestToken);
+        }
+      } else {
+        console.warn('⚠️ No guest token provided, relying on cookies only');
       }
 
       resolve({ guestAuthenticated: true });
     } catch (error) {
+      console.error('❌ Error in authorizeGuest:', error);
       reject(error);
     }
   });

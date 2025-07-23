@@ -242,6 +242,8 @@ export function AuthProvider({ children }) {
           clearTimeout(timeout);
           window.removeEventListener('message', handleAuthResponse);
 
+          console.log('📥 Received guest auth response from parent:', data);
+
           if (data.isAuthenticated && data.guest) {
             resolve({
               guest: data.guest,
@@ -274,6 +276,7 @@ export function AuthProvider({ children }) {
 
         if (guestData && guestData.guest) {
           // Set up guest authentication for axios instances
+          console.log('🔑 Setting up guest auth with token:', guestData.accessToken);
           try {
             await authorizeGuest(guestData.accessToken);
             console.log('✅ Guest axios authentication set up successfully');
@@ -709,6 +712,9 @@ export function AuthProvider({ children }) {
       authenticated: state.authenticated,
       guest: state.guest,
     };
+
+    // Expose auth context globally for interceptors
+    window.authContext = value;
 
     return value;
   }, [
