@@ -13,7 +13,6 @@ import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
 import { optimai, unauthorizeUser, authorizeUser } from '../utils/axios';
 
-
 // ----------------------------------------------------------------------
 
 const initialState = {
@@ -228,35 +227,94 @@ export function AuthProvider({ children }) {
     }
   });
 
+  // Function to request guest authentication from parent window
+  const requestGuestAuthFromParent = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        window.removeEventListener('message', handleAuthResponse);
+        reject(new Error('Parent authentication request timeout'));
+      }, 10000); // 10 second timeout
+
+      function handleAuthResponse(event) {
+        const { data } = event;
+
+        if (data.type === 'guest_auth_response') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handleAuthResponse);
+
+          if (data.isAuthenticated && data.guest) {
+            resolve({
+              guest: data.guest,
+              accessToken: data.accessToken,
+            });
+          } else {
+            reject(new Error('Guest not authenticated in parent'));
+          }
+        }
+      }
+
+      window.addEventListener('message', handleAuthResponse);
+
+      // Request authentication from parent
+      window.parent.postMessage({
+        type: 'request_guest_auth',
+      }, '*');
+    });
+  }, []);
+
   // Guest login function (defined before useEffect to avoid "used before defined" error)
   const loginAsGuest = useCallback(async (guestId, agentId) => {
     try {
-      // Step 1: Authenticate as guest using the /auth/login/guest endpoint
-      const response = await axios.post(
-        `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
-        {},
-        { withCredentials: true },
-      );
+      // Check if we're in an iframe and should use parent authentication
+      const isInIframe = window !== window.parent;
 
-      if (response.data && response.data.guest) {
-        // Use the guest data from login response which has the proper member structure
-        const guestData = response.data.guest;
-        console.log('guestData', guestData);
-        dispatch({
-          type: 'GUEST_LOGIN',
-          payload: {
-            guest: guestData,
-          },
-        });
+      if (isInIframe) {
+        // Request authentication from parent window
+        const guestData = await requestGuestAuthFromParent();
 
-        return guestData;
+        if (guestData && guestData.guest) {
+          dispatch({
+            type: 'GUEST_LOGIN',
+            payload: {
+              guest: guestData.guest,
+            },
+          });
+
+          return guestData.guest;
+        } else {
+          throw new Error('Parent authentication failed or not available');
+        }
       } else {
-        throw new Error('Guest authentication failed');
+        // Fallback to direct API call if not in iframe (only if guestId/agentId provided)
+        if (!guestId || !agentId) {
+          throw new Error('Guest ID and Agent ID are required for direct authentication');
+        }
+
+        const response = await axios.post(
+          `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+          {},
+          { withCredentials: true },
+        );
+
+        if (response.data && response.data.guest) {
+          const guestData = response.data.guest;
+          console.log('guestData', guestData);
+          dispatch({
+            type: 'GUEST_LOGIN',
+            payload: {
+              guest: guestData,
+            },
+          });
+
+          return guestData;
+        } else {
+          throw new Error('Guest authentication failed');
+        }
       }
     } catch (error) {
       throw error;
     }
-  }, []);
+  }, [requestGuestAuthFromParent]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -328,10 +386,6 @@ export function AuthProvider({ children }) {
           result.access_token ||
           result.accessToken ||
           result.authentication?.access_token;
-        console.log('🔑 Extracted tokens:');
-        console.log('- ID Token:', idToken ? 'Found ✅' : 'Missing ❌');
-        console.log('- Access Token:', accessToken ? 'Found ✅' : 'Missing ❌');
-
         // Track Google sign-up BEFORE backend call
         trackSignUp('google');
 

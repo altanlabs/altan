@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useCallback } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
@@ -24,14 +24,12 @@ const Room = ({
   mobileActiveView = 'chat',
 }) => {
   const history = useHistory();
-  const { guest, user, authenticated } = useAuthContext();
-  const location = useLocation();
+  const { guest, user, authenticated, loginAsGuest } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
-  // Check if this is a guest access via URL parameter
-  const searchParams = new URLSearchParams(location.search);
-  const guestId = searchParams.get('guest_id');
-  const isGuestAccess = !!guestId;
+  // Check if this is a guest access by detecting iframe context
+  const isInIframe = window !== window.parent;
+  const isGuestAccess = isInIframe;
 
   useEffect(() => {
     return () => {
@@ -39,11 +37,23 @@ const Room = ({
     };
   }, [roomId]);
 
-  const handleFetchRoom = useCallback(() => {
-    console.log('handleFetchRoom');
-    console.log("user", user);
-    console.log("guest", guest);
+  // Auto-trigger guest authentication if in iframe and not authenticated
+  useEffect(() => {
+    if (isGuestAccess && !authenticated.guest && !guest) {
+      console.log('Auto-triggering guest authentication for iframe');
+      // For iframe guest access, we don't need guestId/agentId from URL anymore
+      // The loginAsGuest function will handle requesting auth from parent
+      loginAsGuest(null, null)
+        .then((guestData) => {
+          console.log('Guest authentication successful:', guestData);
+        })
+        .catch((error) => {
+          console.error('Guest authentication failed:', error);
+        });
+    }
+  }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
 
+  const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => !response && history.replace('/404'))
       .catch((error) => {
@@ -74,13 +84,16 @@ const Room = ({
         if (authenticated.guest && guest) {
           handleFetchRoom();
         } else {
+          console.log('Waiting for guest authentication...');
         }
       } else if (!!(user || guest)) {
         // For regular user/member access
         handleFetchRoom();
       } else {
+        console.log('Waiting for user authentication...');
       }
     } else {
+      console.log('Room already initialized or no roomId');
     }
   }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);
 

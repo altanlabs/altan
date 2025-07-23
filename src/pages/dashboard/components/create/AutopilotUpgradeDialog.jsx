@@ -6,6 +6,27 @@ export const MODE_LABELS = {
   autopilot: 'Autopilot (Max Mode)',
 };
 
+/**
+ * Track autopilot upgrade dialog events
+ */
+const trackAutopilotUpgradeEvent = (action, additionalData = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'autopilot_upgrade_dialog', {
+        action, // 'discard' or 'go_to_pricing'
+        dialog_type: 'autopilot_upgrade',
+        source: 'dashboard_create',
+        ...additionalData,
+      });
+      console.log('📊 Autopilot upgrade dialog event tracked:', { action, ...additionalData });
+    } else {
+      console.warn('❌ gtag not available - autopilot upgrade tracking skipped');
+    }
+  } catch (error) {
+    console.error('💥 Error tracking autopilot upgrade event:', error);
+  }
+};
+
 function AutopilotUpgradeDialog({ open, onClose }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -20,7 +41,17 @@ function AutopilotUpgradeDialog({ open, onClose }) {
   if (!open) return null;
 
   const handleUpgrade = () => {
+    // Track going to pricing page
+    trackAutopilotUpgradeEvent('autopilot_click_pricing', {
+      pricing_source: 'autopilot_upgrade_dialog',
+      upgrade_type: 'autopilot_max_mode',
+    });
+
     window.open('/pricing', '_blank');
+    onClose();
+  };
+
+  const handleDiscard = () => {
     onClose();
   };
 
@@ -161,7 +192,7 @@ function AutopilotUpgradeDialog({ open, onClose }) {
               </div>
             </button>
             <button
-              onClick={onClose}
+              onClick={handleDiscard}
               className="px-6 py-4 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200"
             >
               Maybe Later

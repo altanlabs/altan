@@ -1,10 +1,11 @@
-/* global console, fetch, window, document, setTimeout, navigator */
+/* global console, fetch, window, document, setTimeout, navigator, localStorage */
 (async function() {
   'use strict';
 
   // Widget configuration
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
+    AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
     ROOM_BASE_URL: 'https://dev-local.altan.ai:5173/r'
   };
 
@@ -13,16 +14,79 @@
   let replyButtons = [];
   let chatOpened = false;
   let messageBoxesCalled = false;
-  let theme = 'light';
   let brand_color = '#000';
   let avatar;
   let replyBox;
   let agentId = scriptTag?.getAttribute('altan-agent-id') || scriptTag?.id;
   let CHAT_BUTTON_SIZE = 50;
-  let TOOLBAR_BUTTON_SIZE = 30;
   let CHAT_BUTTON_RADIUS = 30;
-  let CHAT_BUTTON_BACKGROUND_COLOR = "transparent";
   let browserLanguage = "en";
+
+  // Authentication state management
+  let authState = {
+    guest: null,
+    accountId: null,
+    accessToken: null,
+    isAuthenticated: false
+  };
+
+  // Room persistence
+  const STORAGE_KEYS = {
+    ROOM_DATA: `altan_room_${agentId}`,
+    GUEST_DATA: `altan_guest_${agentId}`,
+    SESSION_ID: `altan_session_${agentId}`
+  };
+
+  // Get stored room data
+  const getStoredRoomData = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.ROOM_DATA);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.warn('Error reading stored room data:', error);
+      return null;
+    }
+  };
+
+  // Store room data
+  const storeRoomData = (roomData) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ROOM_DATA, JSON.stringify(roomData));
+    } catch (error) {
+      console.warn('Error storing room data:', error);
+    }
+  };
+
+  // Get stored guest data
+  const getStoredGuestData = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.GUEST_DATA);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.warn('Error reading stored guest data:', error);
+      return null;
+    }
+  };
+
+  // Store guest data
+  const storeGuestData = (guestData) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.GUEST_DATA, JSON.stringify(guestData));
+    } catch (error) {
+      console.warn('Error storing guest data:', error);
+    }
+  };
+
+  // Clear stored data (for testing or reset)
+  const clearStoredData = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ROOM_DATA);
+      localStorage.removeItem(STORAGE_KEYS.GUEST_DATA);
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+    } catch (error) {
+      console.warn('Error clearing stored data:', error);
+    }
+  };
 
   const getSpaceTranslation = (space, lang) => {
     const shortLang = lang.substring(0, 2).toUpperCase();
@@ -31,9 +95,9 @@
     return capTranslation || space.name;
   };
 
-  const CHAT_TOOLBAR_CLOSE_ICON = (theme) => `
-  <svg xmlns="http://www.w3.org/2000/svg" fill="${theme === 'light' ? '#363636' : '#fff'}" viewBox="0 0 24 24" width="24" height="24">
-    <path transform="translate(-0.5, -0.5) scale(1.02, 1.02)" stroke-linecap="round" stroke-linejoin="round" d="M18.3 5.71a.996.996 0 00-1.41 0L12 10.59 7.11 5.7A.996.996 0 105.7 7.11L10.59 12 5.7 16.89a.996.996 0 101.41 1.41L12 13.41l4.89 4.89a.996.996 0 101.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>
+  const CHAT_CLOSE_ICON = () => `
+  <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="24" height="24">
+    <path d="M18.3 5.71a.996.996 0 00-1.41 0L12 10.59 7.11 5.7A.996.996 0 105.7 7.11L10.59 12 5.7 16.89a.996.996 0 101.41 1.41L12 13.41l4.89 4.89a.996.996 0 101.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>
   </svg>
   `;
 
@@ -45,16 +109,6 @@
   <path fill-rule="evenodd" clip-rule="evenodd" d="M32.56 21.2904C33.2766 21.6497 33.6605 21.8421 33.6922 20.9919C33.7502 19.4388 31.9418 18.126 29.6532 18.0599C27.3646 17.9937 25.4623 19.1991 25.4043 20.7522C25.3702 21.6657 26.2132 21.4127 27.3789 21.0629C28.1953 20.8179 29.1698 20.5254 30.1124 20.5526C31.1481 20.5826 31.9677 20.9935 32.56 21.2904Z" fill="${brand_color}"/>
   </svg>`;
 
-  const scaleUp = (id) => {
-    const element = document.getElementById(id);
-    if (element) element.style.transform = "scale(1.1)";
-  };
-
-  const scaleDown = (id) => {
-    const element = document.getElementById(id);
-    if (element) element.style.transform = "scale(1)";
-  };
-
   function addAnimationStyle() {
     const oldStyle = document.getElementById("chatStyle");
     if (oldStyle) oldStyle.parentNode.removeChild(oldStyle);
@@ -62,66 +116,61 @@
     const style = document.createElement("style");
     style.id = "chatStyle";
     style.textContent = `
-    .chat {
+    .chat-widget {
       transform-origin: bottom right;
     }
 
     .chat-show-animation {
-      animation: chatShow 0.5s cubic-bezier(0.3, 0.1, 0.3, 1.3) forwards;
+      animation: chatShow 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
     .chat-hide-animation {
-      animation: chatHide 0.5s cubic-bezier(0.3, 0.1, 0.3, 1.3) forwards;
+      animation: chatHide 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     }
 
     @keyframes chatShow {
       0% {
         opacity: 0;
-        width: 0;
-        height: 0;
+        transform: scale(0.7) translateY(20px);
       }
       100% {
         opacity: 1;
-        height: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100dvh' : 'calc(100vh - 64px)'};
-        maxHeight: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100dvh' : '750px'};
-        width: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100vw' : '400px'};
-        transition: width 200ms ease 0s, height 200ms ease 0s, max-height 200ms ease 0s, transform 300ms cubic-bezier(0, 1.2, 1, 1) 0s;
+        transform: scale(1) translateY(0);
       }
     }
 
     @keyframes chatHide {
       0% {
         opacity: 1;
-        height: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100dvh' : 'calc(100vh - 64px)'};
-        maxHeight: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100dvh' : '750px'};
-        width: ${window.innerWidth >= 0 && window.innerWidth <= 500 ? '100vw' : '400px'};
-        transition: width 200ms ease 0s, height 200ms ease 0s, max-height 200ms ease 0s, transform 300ms cubic-bezier(0, 1.2, 1, 1) 0s;
-      }
-      10% {
-        opacity: 0.9;
+        transform: scale(1) translateY(0);
       }
       100% {
         opacity: 0;
-        width: 0;
-        height: 0;
+        transform: scale(0.7) translateY(20px);
       }
     }
 
-    @keyframes bubble-animation {
-      0% {
-        box-shadow: 0 0 0 rgba(0, 0, 0, 0.6);
-      }
-      50% {
-        box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
-      }
-      100% {
-        box-shadow: 0 0 0 rgba(0, 0, 0, 0.6);
-      }
+    .chat-bubble {
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .chat-bubble:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-bubble.chat-open {
+      background-color: #666 !important;
     }
 
     @keyframes fadeIn {
-      0% {opacity: 0;}
-      100% {opacity: 1;}
+      0% {opacity: 0; transform: translateY(10px);}
+      100% {opacity: 1; transform: translateY(0);}
+    }
+
+    .message-bubble {
+      animation: fadeIn 0.3s ease-out;
     }
     `;
     document.head.appendChild(style);
@@ -178,69 +227,37 @@
     return messageContainer;
   }
 
-  function createCloseButtonIcon() {
-    const closeButtonIcon = document.createElement("div");
-    closeButtonIcon.style.display = "flex";
-    closeButtonIcon.style.alignItems = "center";
-    closeButtonIcon.style.justifyContent = "center";
-    closeButtonIcon.style.width = "100%";
-    closeButtonIcon.style.height = "100%";
-    closeButtonIcon.innerHTML = CHAT_TOOLBAR_CLOSE_ICON(theme);
-    return closeButtonIcon;
-  }
-
-  function createCloseButton() {
-    const closeButton = document.createElement("button");
-    closeButton.setAttribute("id", "toolbar-close-button");
-    closeButton.setAttribute("onclick", "void(0)");
-    closeButton.style.touchAction = "manipulation";
-    closeButton.style.width = `${TOOLBAR_BUTTON_SIZE}px`;
-    closeButton.style.height = `${TOOLBAR_BUTTON_SIZE}px`;
-    closeButton.style.backgroundColor = "transparent";
-    closeButton.style.cursor = "pointer";
-    closeButton.style.transition = "all .2s ease-in-out";
-    closeButton.style.padding = "5px";
-    closeButton.style.border = "none";
-    closeButton.style.outline = "0";
-    closeButton.style.boxShadow = "none";
-    const closeButtonIcon = createCloseButtonIcon();
-    closeButton.appendChild(closeButtonIcon);
-    return closeButton;
-  }
-
-  function createToolbar() {
-    const toolbar = document.createElement("div");
-    toolbar.setAttribute("onclick", "void(0)");
-    toolbar.setAttribute("id", "chat-bubble-toolbar");
-    toolbar.style.touchAction = "manipulation";
-    toolbar.style.display = "flex";
-    toolbar.style.justifyContent = "flex-end";
-    toolbar.style.alignItems = "center";
-    toolbar.style.padding = "5px";
-    toolbar.style.position = "absolute";
-    toolbar.style.top = "0";
-    toolbar.style.right = "0";
-    toolbar.style.width = "65px";
-    toolbar.style.height = "55px";
-    toolbar.style.backgroundColor = "transparent";
-    return toolbar;
+  function updateChatButtonIcon(isOpen) {
+    const chatButtonIcon = document.getElementById("chat-bubble-icon");
+    if (chatButtonIcon) {
+      if (isOpen) {
+        chatButtonIcon.innerHTML = CHAT_CLOSE_ICON();
+        chatButtonIcon.parentElement.classList.add('chat-open');
+      } else {
+        chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
+        chatButtonIcon.parentElement.classList.remove('chat-open');
+      }
+    }
   }
 
   function createChat() {
     const chat = document.createElement("div");
     chat.setAttribute("id", "chat-bubble-window");
+    chat.className = "chat-widget";
     chat.style.position = "fixed";
     chat.style.flexDirection = "column";
     chat.style.justifyContent = "space-between";
-    chat.style.bottom = "25px";
+    chat.style.bottom = `${CHAT_BUTTON_SIZE + 35}px`; // Position above the bubble
     chat.style.right = "25px";
-    chat.style.width = "400px";
-    chat.style.height = "calc(100vh - 64px)";
+    chat.style.width = window.innerWidth <= 500 ? "calc(100vw - 20px)" : "400px";
+    chat.style.height = window.innerWidth <= 500 ? "calc(100vh - 120px)" : "600px";
+    chat.style.maxHeight = "600px";
     chat.style.display = "none";
     chat.style.borderRadius = "16px";
     chat.style.zIndex = "999999998";
     chat.style.overflow = "hidden";
-    chat.style.willChange = "opacity, height, width";
+    chat.style.willChange = "opacity, transform";
+    chat.style.boxShadow = "0 10px 40px rgba(0, 0, 0, 0.2)";
     document.body.appendChild(chat);
     return chat;
   }
@@ -248,36 +265,31 @@
   function createChatButton() {
     const chatButton = document.createElement("div");
     chatButton.setAttribute("id", "chat-bubble-button");
+    chatButton.className = "chat-bubble";
     chatButton.style.position = "fixed";
     chatButton.style.bottom = "25px";
     chatButton.style.right = "25px";
     chatButton.style.width = `${CHAT_BUTTON_SIZE}px`;
     chatButton.style.height = `${CHAT_BUTTON_SIZE}px`;
     chatButton.style.borderRadius = `${CHAT_BUTTON_RADIUS}px`;
-    chatButton.style.backgroundColor = CHAT_BUTTON_BACKGROUND_COLOR;
+    chatButton.style.backgroundColor = brand_color;
     chatButton.style.cursor = "pointer";
-    chatButton.style.zIndex = "999999997";
-    chatButton.style.transition = "all .2s ease-in-out";
-    chatButton.style.animation = "bubble-animation 4s steps(18,end)";
+    chatButton.style.zIndex = "999999999"; // Always on top
+    chatButton.style.border = "none";
+    chatButton.style.outline = "none";
     
-    chatButton.addEventListener("mouseenter", () => {
-      chatButton.style.transform = "scale(1.05)";
-    });
-
-    chatButton.addEventListener("mouseleave", () => {
-      chatButton.style.transform = "scale(1)";
-    });
     return chatButton;
   }
 
   function createChatButtonIcon() {
     const chatButtonIcon = document.createElement("div");
+    chatButtonIcon.setAttribute("id", "chat-bubble-icon");
     chatButtonIcon.style.display = "flex";
     chatButtonIcon.style.alignItems = "center";
     chatButtonIcon.style.justifyContent = "center";
     chatButtonIcon.style.width = "100%";
     chatButtonIcon.style.height = "100%";
-    chatButtonIcon.style.zIndex = "999999997";
+    chatButtonIcon.style.transition = "all 0.3s ease";
     return chatButtonIcon;
   }
 
@@ -392,6 +404,72 @@
     return await response.json();
   }
 
+  async function authenticateGuest(guestId, accountId) {
+    const url = `${WIDGET_CONFIG.AUTH_BASE_URL}?guest_id=${guestId}&account_id=${accountId}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin,
+        'Referer': window.location.href
+      },
+      credentials: 'include' // Include cookies
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Update auth state
+    authState.guest = data.guest;
+    authState.accountId = accountId;
+    authState.isAuthenticated = true;
+    
+    return data;
+  }
+
+  async function refreshGuestToken() {
+    if (!authState.guest || !authState.accountId) {
+      throw new Error('No guest authentication data available');
+    }
+
+    const url = `${WIDGET_CONFIG.AUTH_BASE_URL}/guest/refresh`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin,
+        'Referer': window.location.href
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      // If refresh fails, clear auth state
+      authState = {
+        guest: null,
+        accountId: null,
+        accessToken: null,
+        isAuthenticated: false
+      };
+      throw new Error('Token refresh failed');
+    }
+    
+    const data = await response.json();
+    
+    // Update access token if provided
+    if (data.access_token) {
+      authState.accessToken = data.access_token;
+    }
+    
+    return data;
+  }
+
   // Initialize Widget
   addAnimationStyle();
   const chatButton = createChatButton();
@@ -402,6 +480,7 @@
   window.addEventListener('resize', addAnimationStyle);
 
   function onAnimationEnd() {
+    const chat = document.getElementById("chat-bubble-window");
     chat.classList.remove("chat-show-animation");
     chat.classList.remove("chat-hide-animation");
     chat.removeEventListener("animationend", onAnimationEnd);
@@ -409,12 +488,14 @@
     if (chat.style.display === "none") {
       chat.style.display = "flex";
       chat.classList.add("chat-show-animation");
+      updateChatButtonIcon(true);
     } else {
       chat.style.display = "none";
+      updateChatButtonIcon(false);
     }
   }
 
-  async function openChat(fromReplyButton) {
+  async function openChat() {
     messageBoxes.forEach(box => box.remove());
     messageBoxes = [];
 
@@ -433,29 +514,58 @@
     chatOpened = true;
 
     try {
-      // Create guest room
-      const roomData = await createGuestRoom({
-        external_id: generateExternalId(),
-        guest_id: '',
-        first_name: 'Anonymous',
-        last_name: 'Visitor',
-        email: `visitor_${Date.now()}@anonymous.com`,
-        phone: ''
-      });
+      let roomData = getStoredRoomData();
+      let guestData = getStoredGuestData();
+      
+      // Only create new room/guest if we don't have existing ones
+      if (!roomData || !guestData) {
+        console.log('Creating new guest room...');
+        
+        // Create guest room
+        roomData = await createGuestRoom({
+          external_id: generateExternalId(),
+          guest_id: '',
+          first_name: 'Anonymous',
+          last_name: 'Visitor',
+          email: `visitor_${Date.now()}@anonymous.com`,
+          phone: ''
+        });
 
-      // Update iframe with room data
+        // Store the room data for future use
+        storeRoomData(roomData);
+        
+        // Extract and store guest data
+        guestData = roomData.guest;
+        storeGuestData(guestData);
+        
+        console.log('New room created and stored:', roomData.room_id);
+      } else {
+        console.log('Reusing existing room:', roomData.room_id);
+      }
+
+      // Authenticate the guest (use stored or new guest data)
+      await authenticateGuest(guestData.id, guestData.account_id);
+
+      // Update iframe with room data (no query params needed)
       const iframeElement = document.getElementById("widget-agent-bubble-window");
       if (iframeElement) {
-        iframeElement.src = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}?guest_id=${roomData.guest.id}&agent_id=${agentId}`;
+        iframeElement.src = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}`;
       }
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('Error creating room or authenticating guest:', error);
+      // If there's an error with stored data, clear it and try again
+      if (error.message.includes('404') || error.message.includes('401')) {
+        console.log('Clearing stored data due to error and retrying...');
+        clearStoredData();
+        // Don't retry automatically to avoid infinite loops
+      }
     }
 
     onAnimationEnd();
   }
 
   function closeChat() {
+    const chat = document.getElementById("chat-bubble-window");
     chat.classList.add("chat-hide-animation");
     chat.addEventListener("animationend", onAnimationEnd);
     if (avatar) {
@@ -469,6 +579,7 @@
   }
 
   chatButton.addEventListener("click", () => {
+    const chat = document.getElementById("chat-bubble-window");
     if (chat.style.display === "none") {
       openChat();
     } else {
@@ -477,46 +588,28 @@
   });
 
   const chat = createChat();
-  const toolbar = createToolbar();
-  const closeButton = createCloseButton();
 
   function handleChatWindowSizeChange() {
     const windowWidth = window.innerWidth;
     const chatDiv = document.getElementById("chat-bubble-window");
     if (!chatDiv) return;
     
-    let styleSettings;
-
-    if (windowWidth >= 0 && windowWidth <= 600) {
-      styleSettings = {
-        width: '100%',
-        height: '100%',
-        bottom: "0",
-        right: "0",
-        borderRadius: "0",
-        overflow: "hidden",
-        zIndex: "2147483001"
-      };
+    if (windowWidth <= 600) {
+      chatDiv.style.width = "calc(100vw - 20px)";
+      chatDiv.style.height = "calc(100vh - 120px)";
+      chatDiv.style.bottom = `${CHAT_BUTTON_SIZE + 20}px`;
+      chatDiv.style.right = "10px";
+      chatDiv.style.left = "10px";
     } else {
-      styleSettings = {
-        width: "400px",
-        height: "calc(100vh - 64px)",
-        maxHeight: "780px",
-        bottom: "25px",
-        right: "25px",
-        borderRadius: "1.25rem"
-      };
+      chatDiv.style.width = "400px";
+      chatDiv.style.height = "600px";
+      chatDiv.style.bottom = `${CHAT_BUTTON_SIZE + 35}px`;
+      chatDiv.style.right = "25px";
+      chatDiv.style.left = "auto";
     }
-
-    Object.keys(styleSettings).forEach((key) => {
-      chatDiv.style[key] = styleSettings[key];
-    });
   }
 
-  toolbar.appendChild(closeButton);
-  chat.appendChild(toolbar);
-
-  chat.innerHTML += `<iframe
+  chat.innerHTML = `<iframe
     allow="fullscreen 'self'; clipboard-write"
     id="widget-agent-bubble-window"
     name="Altan-App"
@@ -524,8 +617,8 @@
     width="100%"
     height="100%"
     frameborder="0"
-  ></iframe>
-  `;
+    style="border-radius: 16px;"
+  ></iframe>`;
 
   document.body.appendChild(chat);
   document.body.appendChild(chatButton);
@@ -534,130 +627,177 @@
   window.addEventListener("resize", handleChatWindowSizeChange);
   handleChatWindowSizeChange();
 
-  function handleCloseButtonClick(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    closeChat();
-  }
+
+
+  // Helper functions for message handling
+  const handleTokenRefreshRequest = async (event) => {
+    try {
+      const refreshResult = await refreshGuestToken();
+      
+      event.source.postMessage({
+        type: 'new_access_token',
+        token: authState.accessToken || refreshResult.access_token,
+        guest: authState.guest,
+        success: true
+      }, event.origin);
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      
+      event.source.postMessage({
+        type: 'new_access_token',
+        token: null,
+        guest: null,
+        success: false,
+        error: error.message
+      }, event.origin);
+    }
+  };
+
+  const handleGuestAuthRequest = async (event) => {
+    if (authState.isAuthenticated && authState.guest) {
+      // Already authenticated, send current auth data
+      event.source.postMessage({
+        type: 'guest_auth_response',
+        guest: authState.guest,
+        accessToken: authState.accessToken,
+        isAuthenticated: true
+      }, event.origin);
+    } else {
+      // Not authenticated
+      event.source.postMessage({
+        type: 'guest_auth_response',
+        guest: null,
+        accessToken: null,
+        isAuthenticated: false
+      }, event.origin);
+    }
+  };
+
+  const handleReplyButtons = (data) => {
+    messageBoxesCalled = true;
+    const replyButtonsData = data.spaces;
+    const replyButtonColor = data.replyButtonColor;
+    const messagesWrapper = createMessageWrapper();
+    document.body.appendChild(messagesWrapper);
+    
+    replyButtonsData.forEach((space, i) => {
+      setTimeout(() => {
+        const messageContainer = createMessageContainer();
+        const messageBox = createReplyButton('light', getSpaceTranslation(space.child, browserLanguage), false, replyButtonColor, (e) => {
+          e.stopPropagation();
+          openChat();
+        });
+
+        messageContainer.appendChild(messageBox);
+        messagesWrapper.appendChild(messageContainer);
+        messageBoxes.push(messageBox);
+      }, 250 + 1500 * i);
+    });
+  };
+
+  const handleInitialMessages = (data) => {
+    const messages = data.messages;
+    const nonEmptyMessages = messages.filter((message) => message.trim().length > 0);
+    const messagesWrapper = createMessageWrapper();
+    document.body.appendChild(messagesWrapper);
+
+    nonEmptyMessages.forEach((message, i) => {
+      setTimeout(() => {
+        const messageContainer = createMessageContainer();
+        avatar = createAvatar();
+        const messageBox = createMessageBox(message);
+
+        messageBox.addEventListener('click', () => openChat());
+        messageContainer.appendChild(avatar);
+        messageContainer.appendChild(messageBox);
+        messagesWrapper.appendChild(messageContainer);
+        messageBoxes.push(messageBox);
+      }, 500 + 1500 * i);
+    });
+
+    if (nonEmptyMessages.length > 0) {
+      setTimeout(() => {
+        replyBox = createReplyBox();
+        replyBox.addEventListener('click', () => openChat());
+        const sendIcon = createSendIcon();
+        replyBox.appendChild(sendIcon);
+        messagesWrapper.appendChild(replyBox);
+      }, 1000 + 1500 * nonEmptyMessages.length + 100);
+    }
+  };
+
+  const handleChatbotMetadata = (data) => {
+    const initialMessages = data?.meta_data?.initial_msg
+      ? data.meta_data.initial_msg.split(';')
+      : [];
+    const spaces = data?.meta_data?.space?.children?.spaces || [];
+    const ui = data.meta_data?.meta_data?.ui;
+    brand_color = ui?.brand_color || brand_color;
+    
+    // Update button color
+    const button = document.getElementById("chat-bubble-button");
+    if (button) {
+      button.style.backgroundColor = brand_color;
+    }
+    
+    chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
+    
+    if (spaces && spaces.length > 0 && !chatOpened && !messageBoxesCalled) {
+      handleReplyButtons({ spaces: spaces, replyButtonColor: brand_color });
+    }
+    if (initialMessages && initialMessages.length > 0 && !chatOpened) {
+      handleInitialMessages({ messages: initialMessages });
+    }
+  };
 
   // Event listeners and message handling
-  (function () {
-    const closeButton = document.getElementById("toolbar-close-button");
-    if (closeButton) {
-      closeButton.addEventListener("click", handleCloseButtonClick);
-      closeButton.addEventListener("touchstart", () => scaleUp("toolbar-close-button"), { passive: true });
-      closeButton.addEventListener("touchend", () => scaleDown("toolbar-close-button"), { passive: true });
-      closeButton.addEventListener("mouseenter", () => scaleUp("toolbar-close-button"), { passive: true });
-      closeButton.addEventListener("mouseleave", () => scaleDown("toolbar-close-button"), { passive: true });
-      closeButton.addEventListener("pointerenter", () => scaleUp("toolbar-close-button"), { passive: true });
-      closeButton.addEventListener("pointerleave", () => scaleDown("toolbar-close-button"), { passive: true });
+  const handleEvent = (event) => {
+    const userAgent = navigator.userAgent;
+    const screenWidth = window.screen.width;
+    const screenHeight = window.screen.height;
+    browserLanguage = navigator.language || navigator.userLanguage;
+
+    switch (event.data.type) {
+      case 'close_bubble':
+        closeChat();
+        break;
+
+      case 'requestParentUrl':
+        event.source.postMessage({
+          type: 'parentUrl',
+          url: window.location.href,
+          userAgent,
+          width: screenWidth,
+          height: screenHeight,
+          language: browserLanguage
+        }, event.origin);
+        break;
+
+      case 'refresh_token':
+        handleTokenRefreshRequest(event);
+        break;
+
+      case 'request_guest_auth':
+        handleGuestAuthRequest(event);
+        break;
+
+      case 'COPY_TO_CLIPBOARD':
+        navigator.clipboard.writeText(event.data.text);
+        break;
+
+      case 'chatbotMetaData':
+        handleChatbotMetadata(event.data);
+        break;
     }
+  };
 
-    const handleEvent = (event) => {
-      const userAgent = navigator.userAgent;
-      const screenWidth = window.screen.width;
-      const screenHeight = window.screen.height;
-      browserLanguage = navigator.language || navigator.userLanguage;
+  window.addEventListener('message', handleEvent);
 
-      switch (event.data.type) {
-        case 'close_bubble':
-          closeChat();
-          break;
-
-        case 'requestParentUrl':
-          event.source.postMessage({
-            type: 'parentUrl',
-            url: window.location.href,
-            userAgent,
-            width: screenWidth,
-            height: screenHeight,
-            language: browserLanguage
-          }, event.origin);
-          break;
-
-        case 'COPY_TO_CLIPBOARD':
-          navigator.clipboard.writeText(event.data.text);
-          break;
-
-        case 'chatbotMetaData':
-          handleChatbotMetadata(event.data);
-          break;
-      }
-    };
-
-    const handleChatbotMetadata = (data) => {
-      const initialMessages = data?.meta_data?.initial_msg
-        ? data.meta_data.initial_msg.split(';')
-        : [];
-      const spaces = data?.meta_data?.space?.children?.spaces || [];
-      const ui = data.meta_data?.meta_data?.ui;
-      theme = ui?.theme ? ui.theme.toLowerCase() : 'light';
-      brand_color = ui?.brand_color || brand_color;
-      chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
-      
-      if (spaces && spaces.length > 0 && !chatOpened && !messageBoxesCalled) {
-        handleReplyButtons({ spaces: spaces, replyButtonColor: brand_color });
-      }
-      if (initialMessages && initialMessages.length > 0 && !chatOpened) {
-        handleInitialMessages({ messages: initialMessages });
-      }
-    };
-
-    const handleReplyButtons = (data) => {
-      messageBoxesCalled = true;
-      const replyButtonsData = data.spaces;
-      const replyButtonColor = data.replyButtonColor;
-      const messagesWrapper = createMessageWrapper();
-      document.body.appendChild(messagesWrapper);
-      
-      replyButtonsData.forEach((space, i) => {
-        let index = i;
-        setTimeout(() => {
-          const messageContainer = createMessageContainer();
-          const messageBox = createReplyButton(theme, getSpaceTranslation(space.child, browserLanguage), false, replyButtonColor, (e) => {
-            e.stopPropagation();
-            openChat(true);
-          });
-
-          messageContainer.appendChild(messageBox);
-          messagesWrapper.appendChild(messageContainer);
-          messageBoxes.push(messageBox);
-        }, 250 + 1500 * index);
-      });
-    };
-
-    const handleInitialMessages = (data) => {
-      const messages = data.messages;
-      const nonEmptyMessages = messages.filter((message) => message.trim().length > 0);
-      const messagesWrapper = createMessageWrapper();
-      document.body.appendChild(messagesWrapper);
-
-      nonEmptyMessages.forEach((message, i) => {
-        setTimeout(() => {
-          const messageContainer = createMessageContainer();
-          avatar = createAvatar();
-          const messageBox = createMessageBox(message);
-
-          messageBox.addEventListener('click', () => openChat());
-          messageContainer.appendChild(avatar);
-          messageContainer.appendChild(messageBox);
-          messagesWrapper.appendChild(messageContainer);
-          messageBoxes.push(messageBox);
-        }, 500 + 1500 * i);
-      });
-
-      if (nonEmptyMessages.length > 0) {
-        setTimeout(() => {
-          replyBox = createReplyBox();
-          replyBox.addEventListener('click', () => openChat());
-          const sendIcon = createSendIcon();
-          replyBox.appendChild(sendIcon);
-          messagesWrapper.appendChild(replyBox);
-        }, 1000 + 1500 * nonEmptyMessages.length + 100);
-      }
-    };
-
-    window.addEventListener('message', handleEvent);
-  })();
+  // Expose useful functions for debugging
+  window.altanWidget = {
+    clearStoredData: clearStoredData,
+    getStoredRoomData: getStoredRoomData,
+    getStoredGuestData: getStoredGuestData
+  };
 
 })(); 

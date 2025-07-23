@@ -162,6 +162,11 @@ export const refreshToken = async (axiosInstance) => {
 
 export const requestRefreshFromParent = (group) => {
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      window.removeEventListener('message', handleParentMessage);
+      reject(new Error('Token refresh request timeout'));
+    }, 10000); // 10 second timeout
+
     // Listen for the parent's response
     function handleParentMessage(event) {
       const { data } = event;
@@ -169,13 +174,18 @@ export const requestRefreshFromParent = (group) => {
       // if (event.origin !== window.location.origin) return;
 
       if (data.type === 'new_access_token') {
+        clearTimeout(timeout);
         window.removeEventListener('message', handleParentMessage);
 
-        if (data.token) {
-          // The parent might send back user, token, etc. Adjust as needed
-          resolve({ user: data.user, accessToken: data.token });
+        if (data.success && data.token) {
+          // The parent might send back user, token, guest, etc. Adjust as needed
+          resolve({ 
+            user: data.user, 
+            guest: data.guest,
+            accessToken: data.token 
+          });
         } else {
-          reject(new Error('No token in parent response'));
+          reject(new Error(data.error || 'No token in parent response'));
         }
       }
     }
