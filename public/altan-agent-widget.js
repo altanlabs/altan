@@ -6,10 +6,15 @@
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
     AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
-    ROOM_BASE_URL: 'https://www.altan.ai/r'
+    ROOM_BASE_URL: 'https://altan.ai/r'
   };
 
-  let scriptTag = document.currentScript;
+  // Debug: Log configuration and environment
+  console.log('Widget configuration:', WIDGET_CONFIG);
+  console.log('Current origin:', window.location.origin);
+  console.log('Is in iframe:', window !== window.parent);
+
+  const scriptTag = document.currentScript;
   let messageBoxes = [];
   let replyButtons = [];
   let chatOpened = false;
@@ -17,9 +22,9 @@
   let brand_color = '#000';
   let avatar;
   let replyBox;
-  let agentId = scriptTag?.getAttribute('altan-agent-id') || scriptTag?.id;
-  let CHAT_BUTTON_SIZE = 50;
-  let CHAT_BUTTON_RADIUS = 30;
+  const agentId = scriptTag?.getAttribute('altan-agent-id') || scriptTag?.id;
+  const CHAT_BUTTON_SIZE = 50;
+  const CHAT_BUTTON_RADIUS = 30;
   let browserLanguage = "en";
 
   // Authentication state management
@@ -549,7 +554,20 @@
       // Update iframe with room data (no query params needed)
       const iframeElement = document.getElementById("widget-agent-bubble-window");
       if (iframeElement) {
-        iframeElement.src = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}`;
+        const iframeUrl = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}`;
+        console.log('Setting iframe URL:', iframeUrl);
+        iframeElement.src = iframeUrl;
+        
+        // Add error handling for iframe loading
+        iframeElement.onload = () => {
+          console.log('Iframe loaded successfully:', iframeUrl);
+        };
+        
+        iframeElement.onerror = (error) => {
+          console.error('Iframe failed to load:', error, iframeUrl);
+        };
+      } else {
+        console.error('Iframe element not found');
       }
     } catch (error) {
       console.error('Error creating room or authenticating guest:', error);
@@ -654,8 +672,15 @@
   };
 
   const handleGuestAuthRequest = async (event) => {
+    console.log('Guest auth request received, current state:', {
+      isAuthenticated: authState.isAuthenticated,
+      hasGuest: !!authState.guest,
+      origin: event.origin
+    });
+    
     if (authState.isAuthenticated && authState.guest) {
       // Already authenticated, send current auth data
+      console.log('Sending authenticated guest data to iframe');
       event.source.postMessage({
         type: 'guest_auth_response',
         guest: authState.guest,
@@ -664,6 +689,7 @@
       }, event.origin);
     } else {
       // Not authenticated
+      console.log('Sending unauthenticated response to iframe');
       event.source.postMessage({
         type: 'guest_auth_response',
         guest: null,
@@ -752,6 +778,13 @@
 
   // Event listeners and message handling
   const handleEvent = (event) => {
+    // Debug: Log all incoming messages
+    console.log('Received message from iframe:', {
+      type: event.data.type,
+      origin: event.origin,
+      data: event.data
+    });
+    
     const userAgent = navigator.userAgent;
     const screenWidth = window.screen.width;
     const screenHeight = window.screen.height;

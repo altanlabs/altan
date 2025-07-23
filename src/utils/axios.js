@@ -82,6 +82,27 @@ const authorizeUser = () => {
   });
 };
 
+const authorizeGuest = async (guestToken) => {
+  return new Promise((resolve, reject) => {
+    try {
+      // For guest authentication, we rely on cookies set by the parent widget
+      // The axios instances should use withCredentials: true to include cookies
+      console.log('🔑 Setting up guest authentication for axios instances');
+
+      // If a guest token is provided, set it as authorization header
+      if (guestToken) {
+        setSession(guestToken, optimai_room);
+        setSession(guestToken, optimai);
+        setSession(guestToken, optimai_root);
+      }
+
+      resolve({ guestAuthenticated: true });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 const unauthorizeUser = () => {
   setSession(null, optimai);
   setSession(null, optimai_root);
@@ -125,6 +146,7 @@ export {
   optimai_agent,
   optimai_tables_legacy,
   authorizeUser,
+  authorizeGuest,
   unauthorizeUser,
 };
 

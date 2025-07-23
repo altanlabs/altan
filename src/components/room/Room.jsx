@@ -25,6 +25,9 @@ const Room = ({
 }) => {
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
+  console.log("guest", guest);
+  console.log("user", user);
+  console.log("authenticated", authenticated);
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
   // Check if this is a guest access by detecting iframe context
@@ -54,15 +57,39 @@ const Room = ({
   }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
 
   const handleFetchRoom = useCallback(() => {
+    console.log('📡 Attempting to fetch room:', {
+      roomId,
+      hasUser: !!user,
+      hasGuest: !!guest,
+      isGuestAccess,
+      authenticatedUser: authenticated.user,
+      authenticatedGuest: authenticated.guest,
+      authenticatedMember: authenticated.member,
+    });
+
     dispatch(fetchRoom({ roomId, user, guest }))
-      .then((response) => !response && history.replace('/404'))
+      .then((response) => {
+        if (!response) {
+          console.error('❌ No response from fetchRoom, redirecting to 404');
+          history.replace('/404');
+        } else {
+          console.log('✅ Room fetched successfully:', response);
+        }
+      })
       .catch((error) => {
+        console.error('❌ Room fetch error:', {
+          error,
+          status: error.response?.status || error?.status,
+          message: error.message,
+          responseData: error.response?.data,
+        });
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
           case 401:
             console.error('Authentication error:', error);
             if (isGuestAccess) {
               // Guest auth failed, redirect to error
+              console.error('Guest authentication failed, redirecting to 404');
               history.replace('/404');
             }
             break;
@@ -76,7 +103,7 @@ const Room = ({
             console.error('Error fetching room:', error);
         }
       });
-  }, [guest, history, isGuestAccess, roomId, user]);
+  }, [guest, history, isGuestAccess, roomId, user, authenticated]);
 
   useEffect(() => {
     if (!!roomId && !initialized) {

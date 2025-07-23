@@ -11,7 +11,7 @@ import useMessageListener from '@hooks/useMessageListener.ts';
 import { AUTH_API } from './utils';
 import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
-import { optimai, unauthorizeUser, authorizeUser } from '../utils/axios';
+import { optimai, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -273,6 +273,14 @@ export function AuthProvider({ children }) {
         const guestData = await requestGuestAuthFromParent();
 
         if (guestData && guestData.guest) {
+          // Set up guest authentication for axios instances
+          try {
+            await authorizeGuest(guestData.accessToken);
+            console.log('✅ Guest axios authentication set up successfully');
+          } catch (authError) {
+            console.warn('⚠️ Failed to set up guest axios authentication:', authError);
+          }
+
           dispatch({
             type: 'GUEST_LOGIN',
             payload: {
@@ -299,6 +307,15 @@ export function AuthProvider({ children }) {
         if (response.data && response.data.guest) {
           const guestData = response.data.guest;
           console.log('guestData', guestData);
+
+          // Set up guest authentication for axios instances
+          try {
+            await authorizeGuest(response.data.access_token);
+            console.log('✅ Direct guest axios authentication set up successfully');
+          } catch (authError) {
+            console.warn('⚠️ Failed to set up direct guest axios authentication:', authError);
+          }
+
           dispatch({
             type: 'GUEST_LOGIN',
             payload: {

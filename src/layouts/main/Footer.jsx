@@ -113,7 +113,7 @@ export default function Footer() {
               variant="body2"
               sx={{ pr: { md: 5 } }}
             >
-              Altan was founded in 2023 with the vision to create autonomous companies.
+              Altan was founded in 2023 with the vision to create autonomous software.
             </Typography>
 
             <Stack
