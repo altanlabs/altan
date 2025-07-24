@@ -366,10 +366,10 @@ const SuggestionGroup = ({ children }) => {
           />
         </svg>
         <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Suggestions
+          Next steps
         </span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {children}
       </div>
     </div>
@@ -395,14 +395,45 @@ const CustomMarkdown = ({
   return (
     <div
       className={cn(
-        'markdown font-light text-black dark:text-white leading-relaxed w-full',
+        'markdown font-light text-slate-800 dark:text-slate-100 leading-relaxed w-full prose prose-slate dark:prose-invert max-w-none',
         center && 'text-center',
         noWrap && 'overflow-hidden whitespace-nowrap',
-        minified && 'text-sm',
+        minified && 'text-sm prose-sm',
       )}
+      style={{
+        '--tw-prose-body': 'rgb(51 65 85)',
+        '--tw-prose-headings': 'rgb(15 23 42)',
+        '--tw-prose-links': 'rgb(59 130 246)',
+        '--tw-prose-bold': 'rgb(15 23 42)',
+        '--tw-prose-counters': 'rgb(107 114 128)',
+        '--tw-prose-bullets': 'rgb(107 114 128)',
+        '--tw-prose-hr': 'rgb(226 232 240)',
+        '--tw-prose-quotes': 'rgb(71 85 105)',
+        '--tw-prose-quote-borders': 'rgb(226 232 240)',
+        '--tw-prose-captions': 'rgb(107 114 128)',
+        '--tw-prose-code': 'rgb(51 65 85)',
+        '--tw-prose-pre-code': 'rgb(226 232 240)',
+        '--tw-prose-pre-bg': 'rgb(51 65 85)',
+        '--tw-prose-th-borders': 'rgb(226 232 240)',
+        '--tw-prose-td-borders': 'rgb(226 232 240)',
+        '--tw-prose-invert-body': 'rgb(203 213 225)',
+        '--tw-prose-invert-headings': 'rgb(248 250 252)',
+        '--tw-prose-invert-links': 'rgb(96 165 250)',
+        '--tw-prose-invert-bold': 'rgb(248 250 252)',
+        '--tw-prose-invert-counters': 'rgb(148 163 184)',
+        '--tw-prose-invert-bullets': 'rgb(148 163 184)',
+        '--tw-prose-invert-hr': 'rgb(51 65 85)',
+        '--tw-prose-invert-quotes': 'rgb(148 163 184)',
+        '--tw-prose-invert-quote-borders': 'rgb(51 65 85)',
+        '--tw-prose-invert-captions': 'rgb(148 163 184)',
+        '--tw-prose-invert-code': 'rgb(226 232 240)',
+        '--tw-prose-invert-pre-code': 'rgb(226 232 240)',
+        '--tw-prose-invert-pre-bg': 'rgb(0 0 0 / 50%)',
+        '--tw-prose-invert-th-borders': 'rgb(51 65 85)',
+        '--tw-prose-invert-td-borders': 'rgb(51 65 85)',
+      }}
     >
       <MarkdownErrorBoundary content={content}>
-
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[
@@ -411,6 +442,81 @@ const CustomMarkdown = ({
             [rehypeExternalLinks, { target: '_blank', rel: ['nofollow'] }],
           ]}
           components={{
+            // Enhanced headings with better hierarchy
+            h1: ({ children }) => (
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6 mt-8 pb-3 border-b-2 border-gradient-to-r from-blue-500 to-purple-500 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-5 mt-7 pb-2 border-b border-slate-200 dark:border-slate-700">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-4 mt-6">
+                {children}
+              </h3>
+            ),
+            h4: ({ children }) => (
+              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-3 mt-5">
+                {children}
+              </h4>
+            ),
+            h5: ({ children }) => (
+              <h5 className="text-base font-medium text-slate-700 dark:text-slate-300 mb-3 mt-4">
+                {children}
+              </h5>
+            ),
+            h6: ({ children }) => (
+              <h6 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 mt-4 uppercase tracking-wide">
+                {children}
+              </h6>
+            ),
+            // Enhanced blockquotes
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-4 border-blue-500 pl-6 pr-4 py-3 my-6 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/20 dark:to-transparent rounded-r-lg italic text-slate-700 dark:text-slate-300 relative">
+                <div className="absolute -left-2 top-3 w-4 h-4 bg-blue-500 rounded-full opacity-30"></div>
+                {children}
+              </blockquote>
+            ),
+            // Enhanced horizontal rules
+            hr: () => (
+              <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent" />
+            ),
+            // Enhanced tables
+            table: ({ children }) => (
+              <div className="my-6 overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm">
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className="bg-slate-50 dark:bg-slate-800">
+                {children}
+              </thead>
+            ),
+            tbody: ({ children }) => (
+              <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
+                {children}
+              </tbody>
+            ),
+            tr: ({ children }) => (
+              <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                {children}
+              </tr>
+            ),
+            th: ({ children }) => (
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                {children}
+              </td>
+            ),
             // Code blocks
             ...!!codeActive && {
               code({ node, inline, className, children, ...props }) {
@@ -421,21 +527,25 @@ const CustomMarkdown = ({
                 // Handle mermaid diagrams
                 if (!inline && language === 'mermaid') {
                   return (
-                    <MermaidDiagram
-                      chart={codeValue}
-                      className="my-4"
-                    />
+                    <div className="my-6 rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                      <MermaidDiagram
+                        chart={codeValue}
+                        className="bg-white dark:bg-slate-900"
+                      />
+                    </div>
                   );
                 }
                 return !inline && match ? (
-                  <CodeBlock
-                    language={language}
-                    value={codeValue}
-                    className={className}
-                    {...props}
-                  />
+                  <div className="my-6">
+                    <CodeBlock
+                      language={language}
+                      value={codeValue}
+                      className={cn(className, 'rounded-lg shadow-sm border border-slate-200 dark:border-slate-700')}
+                      {...props}
+                    />
+                  </div>
                 ) : (
-                  <code className="  bg-gray-100 dark:bg-[#3E3E3E] rounded-md text-gray-800 dark:text-gray-200 text-[0.875em] font-normal px-1.5 py-0.5">
+                  <code className="bg-slate-100 dark:bg-slate-800 rounded-md text-slate-800 dark:text-slate-200 text-[0.875em] font-mono px-2 py-0.5 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                     {(() => {
                       try {
                         if (typeof children === 'string') {
@@ -456,38 +566,41 @@ const CustomMarkdown = ({
                 );
               },
             },
-            // Paragraph styling
+            // Enhanced paragraph styling
             p: ({ children }) => (
               <p
                 className={cn(
-                  ' ',
+                  'mb-4 leading-7 text-slate-700 dark:text-slate-300',
                   noWrap ? 'overflow-hidden text-ellipsis whitespace-nowrap' : 'whitespace-pre-line',
                 )}
               >
                 {children}
               </p>
             ),
-            // Bold text
+            // Enhanced emphasis and strong text
+            em: ({ children }) => (
+              <em className="italic text-slate-700 dark:text-slate-300">{children}</em>
+            ),
             strong: ({ children }) => (
-              <strong className="font-bold">{children}</strong>
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{children}</strong>
             ),
-            // List items
+            // Enhanced list styling
             li: ({ children }) => (
-              <li className="list-outside   relative">{children}</li>
+              <li className="mb-2 leading-7 text-slate-700 dark:text-slate-300">{children}</li>
             ),
-            // Ordered list with proper numbering and margin
+            // Enhanced ordered list
             ol: ({ children, ...props }) => (
-              <ol className="list-decimal ml-6" {...props}>
+              <ol className="list-decimal ml-6 mb-6 space-y-1" {...props}>
                 {children}
               </ol>
             ),
-            // Unordered list with proper bullet style and margin
+            // Enhanced unordered list
             ul: ({ children, ...props }) => (
-              <ul className="list-disc ml-6" {...props}>
+              <ul className="list-disc ml-6 mb-6 space-y-1" {...props}>
                 {children}
               </ul>
             ),
-            // Custom Link (assumes CustomLink is defined/imported)
+            // Enhanced links
             a: (props) => <CustomLink {...props} threadId={threadId} />,
             // Custom suggestion component
             suggestion: ({ children }) => {
@@ -511,25 +624,24 @@ const CustomMarkdown = ({
             hide: () => {
               return null;
             },
-            // Superscript
-            sup: ({ children }) => <sup>{children}</sup>,
-            // Collapsible sections
-            details: ({ children, ...props }) => {
-              // console.log('details props', props);
-              return (
-                <details className="bg-gray-50 dark:bg-gray-800 p-4 rounded my-2" {...props}>
+            // Enhanced superscript
+            sup: ({ children }) => <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>,
+            // Enhanced collapsible sections
+            details: ({ children, ...props }) => (
+              <details className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg my-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-200" {...props}>
+                {children}
+              </details>
+            ),
+            summary: ({ children, ...props }) => (
+              <summary className="cursor-pointer font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 select-none" {...props}>
+                <span className="inline-flex items-center gap-2">
+                  <svg className="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                   {children}
-                </details>
-              );
-            },
-            summary: ({ children, ...props }) => {
-              // console.log('summary props', props);
-              return (
-                <summary className="cursor-pointer font-semibold" {...props}>
-                  {children}
-                </summary>
-              );
-            },
+                </span>
+              </summary>
+            ),
           }}
         >
           {content}

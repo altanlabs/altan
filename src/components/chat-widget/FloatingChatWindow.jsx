@@ -5,6 +5,7 @@ import React, { memo, useState, useEffect, useCallback } from 'react';
 import useMessageListener from '../../hooks/useMessageListener.js';
 import { optimai_room } from '../../utils/axios.js';
 import FloatingWindow from '../floating/FloatingWindow.jsx';
+import Room from '../room/Room.jsx';
 
 export const FloatingChatWindow = (props) => {
   const theme = useTheme();
@@ -29,7 +30,7 @@ export const FloatingChatWindow = (props) => {
     [handleCopy],
   );
 
-  useMessageListener(['https://app.altan.ai'], handleMessage);
+  useMessageListener(['https://altan.ai'], handleMessage);
 
   // Calculate initial position at bottom right
   const defaultPosition = {
@@ -75,17 +76,11 @@ export const FloatingChatWindow = (props) => {
       defaultPosition="bottomRight"
       // additionalClasses="floating-chat-window"
       onExternalOpen={() =>
-        window.open(`https://app.altan.ai/${props.mode || 'room'}/${actualRoomId}`, '_blank')}
+        window.open(`https://altan.ai/${props.mode || 'r'}/${actualRoomId}`, '_blank')}
       enableExpand={props.enableExpand}
       usePortal={true}
     >
-      <iframe
-        src={`https://app.altan.ai/${props.mode || 'room'}/${actualRoomId}?header=false&theme=${theme.palette.mode || 'light'}`}
-        allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
-        title="Floating Chat"
-        className="relative w-full h-full border-none"
-      >
-      </iframe>
+      <Room roomId={actualRoomId} header={false} />
     </FloatingWindow>
   );
 };

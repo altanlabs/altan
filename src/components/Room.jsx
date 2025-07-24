@@ -22,13 +22,13 @@ const Room = ({ roomId, header = false }) => {
     [handleCopy],
   );
 
-  useMessageListener(['https://app.altan.ai', 'https://app.altan.ai'], handleMessage);
+  useMessageListener(['https://altan.ai', 'https://altan.ai'], handleMessage);
 
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
       <iframe
         title="Master Room"
-        src={`https://app.altan.ai/room/${roomId}?header=${header}&theme=${themeMode}`}
+        src={`https://altan.ai/r/${roomId}?header=${header}&theme=${themeMode}`}
         allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
         style={{
           width: '100%',

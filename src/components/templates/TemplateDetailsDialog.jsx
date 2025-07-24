@@ -160,10 +160,12 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             <Box
               sx={{
                 p: 3,
-                pb: 1,
+                pb: 2,
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
+                borderBottom: '1px solid',
+                borderColor: 'grey.200',
               }}
             >
               <Box
@@ -215,22 +217,43 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                   </Box>
                 </Box>
               </Box>
+
+              {/* Clone Button in Header */}
+              <Box sx={{ ml: 2 }}>
+                <InteractiveHoverButton
+                  text={
+                    loading
+                      ? 'Loading...'
+                      : `${price === 0 ? 'Clone Free' : `Purchase ${formatPrice(price)}`}`
+                  }
+                  onClick={handleClone}
+                  disabled={loading}
+                  sx={{
+                    minWidth: { xs: 150, sm: 200, md: 250 },
+                    height: { xs: 40, md: 48 },
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                />
+              </Box>
             </Box>
 
             {/* Preview Section */}
             {template?.meta_data?.video_url ? (
-              <Box sx={{ px: 2 }}>
+              <Box
+                sx={{
+                  p: 3,
+                  height: 'calc(100vh - 140px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 'calc(100vh - 200px)', // Use viewport height minus space for header and footer
+                    flex: 1,
                     backgroundColor: 'grey.50',
-                    borderRadius: 2,
+                    borderRadius: 3,
                     overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   }}
                 >
                   <ReactPlayer
@@ -252,15 +275,22 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 </Box>
               </Box>
             ) : template?.preview_url ? (
-              <Box sx={{ px: 2 }}>
+              <Box
+                sx={{
+                  px: 2,
+                  pt: 2,
+                  height: 'calc(100vh - 140px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 'calc(100vh - 150px)', // Use viewport height minus space for header and footer
+                    flex: 1,
                     backgroundColor: 'grey.50',
-                    borderRadius: 2,
+                    borderRadius: 3,
                     overflow: 'hidden',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   }}
                 >
                   <iframe
@@ -277,7 +307,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ px: 3, pb: 2 }}>
+              <Box sx={{ p: 3, pb: 2 }}>
                 <Box
                   sx={{
                     display: 'flex',
@@ -314,21 +344,6 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
           </>
         )}
       </DialogContent>
-
-      <Box sx={{ p: 3, pt: 1, borderTop: '1px solid', borderColor: 'grey.200' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          <InteractiveHoverButton
-            text={
-              loading
-                ? 'Loading...'
-                : `${price === 0 ? 'Clone Free' : `Purchase Template · ${formatPrice(price)}`}`
-            }
-            onClick={handleClone}
-            disabled={loading}
-            sx={{ width: '100%', maxWidth: 500 }}
-          />
-        </Box>
-      </Box>
     </CustomDialog>
   );
 };

@@ -229,19 +229,6 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
                 },
               }}
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isPrivate}
-                  onChange={handlePrivacyToggle}
-                  name="isPrivate"
-                />
-              }
-              label="Private Template"
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-              Private templates are only visible to you and can be priced for marketplace distribution
-            </Typography>
           </Stack>
         </Box>
 

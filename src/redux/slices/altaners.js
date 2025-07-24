@@ -274,7 +274,7 @@ export const createAltaner =
 
     dispatch(slice.actions.startLoading());
     try {
-      let url = `/account/${accountId}/altaner`;
+      let url = `/account/v2/${accountId}/project`;
       if (idea) {
         url += `?idea=${encodeURIComponent(idea)}`;
       }
