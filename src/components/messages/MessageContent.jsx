@@ -99,7 +99,7 @@ const MessageContent = ({ message, threadId }) => {
 
   // Remove both commits and database versions from text content
   const textContentWithoutWidgets = useMemo(() => {
-    let cleanedContent = messageContent;
+    let cleanedContent = messageContent || '';
     allWidgetResources.forEach(widget => {
       cleanedContent = cleanedContent.replace(widget.fullMatch, '');
     });
@@ -109,7 +109,7 @@ const MessageContent = ({ message, threadId }) => {
   // Create markdown with all widgets
   const widgetOnlyContent = useMemo(() => {
     return allWidgetResources.map((widget) =>
-      `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`
+      `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`,
     ).join('\n\n');
   }, [allWidgetResources]);
 
