@@ -14,7 +14,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 
@@ -23,6 +23,8 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import { fetchAgentDetails, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
+// sections
+import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
 // utils
 import { uploadMedia } from '../../../utils/media';
 // components
@@ -34,15 +36,10 @@ import TemplateDialog from '../../templates/TemplateDialog';
 import { UploadAvatar } from '../../upload';
 // local components
 import AvatarSelectionModal from './components/AvatarSelectionModal';
-import ChatPreview from './components/ChatPreview';
-import VoicePreview from './components/VoicePreview';
-import WidgetPreview from './components/WidgetPreview';
 import AgentTab from './tabs/AgentTab';
+import SecurityTab from './tabs/SecurityTab';
 import VoiceTab from './tabs/VoiceTab';
 import WidgetTab from './tabs/WidgetTab';
-import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
-
-// Tab Components
 
 // Debounce utility to prevent excessive API calls
 const debounce = (func, delay) => {
@@ -58,9 +55,7 @@ const versionsSelector = (template) => template?.versions;
 const TABS = [
   { id: 'agent', label: 'Agent', icon: 'eva:settings-2-outline', component: AgentTab },
   { id: 'voice', label: 'Voice', icon: 'eva:mic-outline', component: VoiceTab },
-  // { id: 'analysis', label: 'Analysis', icon: 'eva:bar-chart-outline', component: null },
-  // { id: 'security', label: 'Security', icon: 'eva:shield-outline', component: null },
-  // { id: 'advanced', label: 'Advanced', icon: 'eva:code-outline', component: null },
+  { id: 'security', label: 'Security', icon: 'eva:shield-outline', component: SecurityTab },
   { id: 'widget', label: 'Widget', icon: 'eva:cube-outline', component: WidgetTab },
 ];
 
@@ -88,8 +83,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
-
-  // Voice conversation is now handled by the VoiceConversation component
+  const widgetScriptRef = useRef(null);
 
   // Handle tab change with URL update
   const handleTabChange = useCallback(
@@ -132,6 +126,50 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       setActiveTab(urlTab);
     }
   }, [location.search, activeTab]);
+
+  // Load widget script for agent testing
+  useEffect(() => {
+    if (!agentData?.id) return;
+
+    // Clean up any existing widget
+    if (widgetScriptRef.current) {
+      document.body.removeChild(widgetScriptRef.current);
+      widgetScriptRef.current = null;
+    }
+
+    // Remove any existing widget elements
+    const existingWidget = document.getElementById('chat-bubble-button');
+    const existingChat = document.getElementById('chat-bubble-window');
+    if (existingWidget) existingWidget.remove();
+    if (existingChat) existingChat.remove();
+
+    // Create and load widget script
+    const script = document.createElement('script');
+    script.src = 'https://altan.ai/altan-agent-widget.js';
+    script.setAttribute('altan-agent-id', agentData.id);
+    script.async = true;
+
+    widgetScriptRef.current = script;
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup on unmount or agent change
+      if (widgetScriptRef.current) {
+        try {
+          document.body.removeChild(widgetScriptRef.current);
+        } catch {
+          // Script might already be removed
+        }
+        widgetScriptRef.current = null;
+      }
+
+      // Remove widget elements
+      const widget = document.getElementById('chat-bubble-button');
+      const chat = document.getElementById('chat-bubble-window');
+      if (widget) widget.remove();
+      if (chat) chat.remove();
+    };
+  }, [agentData?.id]);
 
   const debouncedUpdateAgent = useCallback(
     debounce((id, data) => {
@@ -179,7 +217,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   };
 
   const handleGoBack = useCallback(async () => {
-    // Voice conversation cleanup is handled by the VoiceConversation component
     onGoBack();
   }, [onGoBack]);
 
@@ -219,6 +256,13 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     }
   };
 
+  const handleTestAgent = useCallback(() => {
+    if (currentAgentDmRoomId) {
+      const roomUrl = `${window.location.origin}/r/${currentAgentDmRoomId}`;
+      window.open(roomUrl, '_blank');
+    }
+  }, [currentAgentDmRoomId]);
+
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
 
@@ -256,53 +300,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     );
   };
 
-  const renderCommunicationPanel = () => {
-    return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Preview description (only on mobile) */}
-        {isMobile && (
-          <Box
-            sx={{
-              borderBottom: 1,
-              borderColor: theme.palette.divider,
-              bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-              px: 2,
-              py: 1,
-            }}
-          >
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              {activeTab === 'voice'
-                ? 'Test your agent with voice conversations'
-                : activeTab === 'widget'
-                  ? 'See how your widget will look and behave'
-                  : 'Chat with your agent to test its responses'}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Preview Content */}
-        <Box sx={{ flex: 1, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50' }}>
-          {activeTab === 'voice' ? (
-            <VoicePreview
-              agentData={agentData}
-              onConfigureVoice={() => handleTabChange('voice')}
-            />
-          ) : activeTab === 'widget' ? (
-            <WidgetPreview
-              agentData={agentData}
-              onConfigureWidget={() => handleTabChange('widget')}
-            />
-          ) : (
-            <ChatPreview currentAgentDmRoomId={currentAgentDmRoomId} />
-          )}
-        </Box>
-      </Box>
-    );
-  };
-
   const renderTabNavigation = () => (
     <Box
       sx={{
@@ -311,90 +308,54 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
         overflow: 'auto',
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
+        px: 4,
+        py: { xs: 0.5, sm: 0.75 },
       }}
     >
-      {/* Left side - Edit label and Tabs */}
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 4, py: { xs: 0.5, sm: 0.75 } }}>
-        <Typography
-          variant="h6"
+      {TABS.map((tab) => (
+        <Button
+          key={tab.id}
+          onClick={() => handleTabChange(tab.id)}
+          startIcon={
+            <Iconify
+              icon={tab.icon}
+              color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
+              sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+            />
+          }
           sx={{
-            fontWeight: 600,
-            color: 'text.primary',
-            fontSize: '1rem',
-            mr: 2,
-            display: { xs: 'none', sm: 'block' },
-          }}
-        >
-          Edit
-        </Typography>
-        {TABS.map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            startIcon={
-              <Iconify
-                icon={tab.icon}
-                color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
-                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-              />
-            }
-            sx={{
-              minWidth: 0,
-              py: { xs: 0.5, sm: 0.75 },
-              px: { xs: 0.75, sm: 1 },
-              fontSize: { xs: '0.7rem', sm: '0.8rem' },
-              fontWeight: 'medium',
-              color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
+            minWidth: 0,
+            py: { xs: 0.5, sm: 0.75 },
+            px: { xs: 0.75, sm: 1 },
+            fontSize: { xs: '0.7rem', sm: '0.8rem' },
+            fontWeight: 'medium',
+            color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
+            bgcolor:
+              activeTab === tab.id
+                ? theme.palette.mode === 'dark'
+                  ? 'grey.800'
+                  : 'grey.100'
+                : 'transparent',
+            borderRadius: 1,
+            mx: 0.125,
+            '&:hover': {
               bgcolor:
                 activeTab === tab.id
                   ? theme.palette.mode === 'dark'
+                    ? 'grey.700'
+                    : 'grey.200'
+                  : theme.palette.mode === 'dark'
                     ? 'grey.800'
-                    : 'grey.100'
-                  : 'transparent',
-              borderRadius: 1,
-              mx: 0.125,
-              '&:hover': {
-                bgcolor:
-                  activeTab === tab.id
-                    ? theme.palette.mode === 'dark'
-                      ? 'grey.700'
-                      : 'grey.200'
-                    : theme.palette.mode === 'dark'
-                      ? 'grey.800'
-                      : 'grey.100',
-                color: 'text.primary',
-              },
-            }}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </Box>
-
-      {/* Right side - Preview label (only on desktop) */}
-      {!isMobile && (
-        <Box sx={{ px: 2, py: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
+                    : 'grey.100',
               color: 'text.primary',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              fontSize: '1rem',
-            }}
-          >
-            <Iconify
-              icon="eva:eye-outline"
-              sx={{ fontSize: '1.25rem' }}
-            />
-            Preview
-          </Typography>
-        </Box>
-      )}
+            },
+          }}
+        >
+          {tab.label}
+        </Button>
+      ))}
     </Box>
   );
 
@@ -518,6 +479,16 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+            <Button
+              onClick={handleTestAgent}
+              variant="contained"
+              color="primary"
+              size={isMobile ? 'small' : 'medium'}
+              startIcon={<Iconify icon="eva:play-circle-outline" />}
+              disabled={!currentAgentDmRoomId}
+            >
+              Test
+            </Button>
             <Tooltip title="Delete Agent">
               <IconButton
                 onClick={() => setDeleteDialog(true)}
@@ -568,40 +539,26 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       {/* Tab Navigation */}
       {renderTabNavigation()}
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Centered */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
-          overflow: { xs: 'auto', md: 'hidden' },
-          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'center',
+          overflow: 'auto',
+          px: { xs: 1, sm: 2, md: 4 },
+          py: 1,
         }}
       >
-        {/* Configuration Panel */}
         <Box
           sx={{
-            width: { xs: '100%', md: '60%' },
-            display: 'flex',
-            borderRight: { md: 1 },
-            borderColor: theme.palette.divider,
-            flex: 1,
+            width: '100%',
+            maxWidth: '800px',
+            overflow: 'auto',
           }}
         >
-          {/* Tab Content */}
-          <Box sx={{ flex: 1, overflow: { xs: 'auto', md: 'hidden' } }}>{renderTabContent()}</Box>
+          {renderTabContent()}
         </Box>
-
-        {/* Communication Panel: Only show on desktop */}
-        {!isMobile && (
-          <Box
-            sx={{
-              width: { md: '40%' },
-              display: 'block',
-            }}
-          >
-            {renderCommunicationPanel()}
-          </Box>
-        )}
       </Box>
 
       {/* Dialogs */}
@@ -689,9 +646,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   readOnly: true,
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
-                      onClick={() =>
-                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
-                      }
+                      onClick={() => handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >

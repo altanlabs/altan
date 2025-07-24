@@ -248,8 +248,8 @@
     chat.style.justifyContent = "space-between";
     chat.style.bottom = `${CHAT_BUTTON_SIZE + 35}px`; // Position above the bubble
     chat.style.right = "25px";
-    chat.style.width = window.innerWidth <= 500 ? "calc(100vw - 20px)" : "500px";
-    chat.style.height = window.innerWidth <= 500 ? "calc(100vh - 120px)" : "800px";
+    chat.style.width = window.innerWidth <= 500 ? "calc(100vw - 20px)" : "450px";
+    chat.style.height = window.innerWidth <= 500 ? "calc(100vh - 120px)" : "700px";
     chat.style.maxHeight = "800px";
     chat.style.display = "none";
     chat.style.borderRadius = "16px";
@@ -562,8 +562,8 @@
       chatDiv.style.right = "10px";
       chatDiv.style.left = "10px";
     } else {
-      chatDiv.style.width = "500px";
-      chatDiv.style.height = "800px";
+      chatDiv.style.width = "450px";
+      chatDiv.style.height = "700px";
       chatDiv.style.bottom = `${CHAT_BUTTON_SIZE + 35}px`;
       chatDiv.style.right = "25px";
       chatDiv.style.left = "auto";

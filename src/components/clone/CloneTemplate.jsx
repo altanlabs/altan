@@ -14,7 +14,7 @@ import { optimai_shop, optimai_integration } from '../../utils/axios';
 import Iconify from '../iconify';
 
 // Simple capitalize function to replace lodash
-const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+const capitalize = (str) => str && str.charAt(0).toUpperCase() + str.slice(1);
 
 export const fetchClonedTemplate = async (clonedTemplateId) => {
   try {
@@ -338,7 +338,7 @@ function CloneTemplate({ clonedTemplateId }) {
               !clonedTemplate?.version ? (
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                   <p className="text-red-600 dark:text-red-400">
-                    Invalid or non-existing {capitalize(mode)} Template.
+                    Invalid or non-existing {capitalize(mode) || 'Template'}.
                   </p>
                 </div>
               ) : (
