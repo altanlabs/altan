@@ -4,10 +4,7 @@ import { optimai_tables, optimai_tables_legacy } from '../../utils/axios';
 
 // Helper function to determine which API to use based on metadata
 const getTablesApi = (base) => {
-  if (base?.meta_data?.v2 === true) {
-    return optimai_tables;
-  }
-  return optimai_tables_legacy;
+  return optimai_tables;
 };
 
 const initialState = {

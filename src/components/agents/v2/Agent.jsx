@@ -67,7 +67,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, currentAgentDmRoomId, isLoading } = useSelector((state) => state.agents);
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
-  console.log('altanerComponentId', altanerComponentId);
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -479,16 +478,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
-            <Button
-              onClick={handleTestAgent}
-              variant="contained"
-              color="primary"
-              size={isMobile ? 'small' : 'medium'}
-              startIcon={<Iconify icon="eva:play-circle-outline" />}
-              disabled={!currentAgentDmRoomId}
-            >
-              Test
-            </Button>
             <Tooltip title="Delete Agent">
               <IconButton
                 onClick={() => setDeleteDialog(true)}
@@ -524,6 +513,20 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               </Tooltip>
             )}
             <Button
+              onClick={handleTestAgent}
+              variant="soft"
+              color="inherit"
+              size={isMobile ? 'small' : 'medium'}
+              startIcon={
+                <>
+                  <Iconify icon="bxs:chat" sx={{ ml: 0.5 }} />
+                </>
+              }
+              disabled={!currentAgentDmRoomId}
+            >
+              Test
+            </Button>
+            {/* <Button
               onClick={() => setShareDialogOpen(true)}
               variant="soft"
               color="inherit"
@@ -531,7 +534,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               startIcon={<Iconify icon="eva:share-fill" />}
             >
               {isMobile ? 'Share' : 'Share Agent'}
-            </Button>
+            </Button> */}
           </Box>
         </Box>
       </Box>
@@ -646,7 +649,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   readOnly: true,
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
-                      onClick={() => handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
+                      onClick={() =>
+                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
+                      }
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >
