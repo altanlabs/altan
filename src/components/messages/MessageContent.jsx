@@ -41,24 +41,26 @@ function extractCommitResources(message) {
   return commitResources;
 }
 
-// Function to create a markdown with only commit widgets
-function createCommitOnlyMarkdown(messageContent, commitResources) {
-  if (!commitResources.length) return '';
+// Function to extract database version resources from message content
+function extractDatabaseVersionResources(message) {
+  if (!message) return [];
 
-  return commitResources.map(commit => `[${commit.name}](${commit.resourceName}${commit.id ? `/${commit.id}` : ''})`).join('\n\n');
-}
+  const pattern = /\[(.*?)\]\((?:\/)?([^/]+)(?:\/([^/)]+))?\)/g;
+  let match;
+  const databaseVersionResources = [];
 
-// Function to remove commit resources from message content
-function removeCommitResources(messageContent, commitResources) {
-  if (!commitResources.length) return messageContent;
-
-  let cleanedContent = messageContent;
-  commitResources.forEach(commit => {
-    cleanedContent = cleanedContent.replace(commit.fullMatch, '');
-  });
-
-  // Clean up extra whitespace and newlines
-  return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+  while ((match = pattern.exec(message))) {
+    const [, name, resourceType, resourceId] = match;
+    if (name && resourceType && resourceType.toLowerCase() === 'database-version') {
+      databaseVersionResources.push({
+        id: resourceId || resourceType,
+        name,
+        resourceName: resourceType,
+        fullMatch: match[0], // Store the full match for removal
+      });
+    }
+  }
+  return databaseVersionResources;
 }
 
 const MessageContent = ({ message, threadId }) => {
@@ -86,8 +88,30 @@ const MessageContent = ({ message, threadId }) => {
   // Check if message contains commits
   const commitResources = useMemo(() => extractCommitResources(messageContent), [messageContent]);
   const hasCommits = commitResources.length > 0;
-  const textContentWithoutCommits = useMemo(() => removeCommitResources(messageContent, commitResources), [messageContent, commitResources]);
-  const commitOnlyContent = useMemo(() => createCommitOnlyMarkdown(messageContent, commitResources), [messageContent, commitResources]);
+
+  // Check if message contains database versions
+  const databaseVersionResources = useMemo(() => extractDatabaseVersionResources(messageContent), [messageContent]);
+  const hasDatabaseVersions = databaseVersionResources.length > 0;
+
+  // Combined logic for both commits and database versions
+  const hasAnyWidgets = hasCommits || hasDatabaseVersions;
+  const allWidgetResources = useMemo(() => [...commitResources, ...databaseVersionResources], [commitResources, databaseVersionResources]);
+
+  // Remove both commits and database versions from text content
+  const textContentWithoutWidgets = useMemo(() => {
+    let cleanedContent = messageContent;
+    allWidgetResources.forEach(widget => {
+      cleanedContent = cleanedContent.replace(widget.fullMatch, '');
+    });
+    return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+  }, [messageContent, allWidgetResources]);
+
+  // Create markdown with all widgets
+  const widgetOnlyContent = useMemo(() => {
+    return allWidgetResources.map((widget) =>
+      `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`
+    ).join('\n\n');
+  }, [allWidgetResources]);
 
   const handleMessageClick = () => {
     console.log('TODO');
@@ -158,7 +182,7 @@ const MessageContent = ({ message, threadId }) => {
       width="100%"
     >
       {/* Show accordion with thought process when commits are detected */}
-      {hasCommits && (textContentWithoutCommits || (message?.thread_id === threadId)) && (
+      {hasAnyWidgets && (textContentWithoutWidgets || (message?.thread_id === threadId)) && (
         <Accordion
           expanded={thoughtAccordionOpen}
           onChange={() => setThoughtAccordionOpen(!thoughtAccordionOpen)}
@@ -199,7 +223,7 @@ const MessageContent = ({ message, threadId }) => {
           <AccordionDetails sx={{ padding: '0 16px 16px 16px' }}>
             <Stack spacing={1}>
               {/* Show text content without commits */}
-              {textContentWithoutCommits && (
+              {textContentWithoutWidgets && (
                 <div onClick={handleMessageClick}>
                   {isEditing ? (
                     <div
@@ -235,7 +259,7 @@ const MessageContent = ({ message, threadId }) => {
                   ) : (
                     <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
                       <CustomMarkdown
-                        text={textContentWithoutCommits}
+                        text={textContentWithoutWidgets}
                         threadId={threadId}
                       />
                     </div>
@@ -257,7 +281,7 @@ const MessageContent = ({ message, threadId }) => {
 
       {/* Main content area */}
       <div onClick={handleMessageClick}>
-        {isEditing && !hasCommits ? (
+        {isEditing && !hasAnyWidgets ? (
           <div
             onClick={(e) => e.stopPropagation()}
             className="relative flex w-full mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-2 max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-gray-900/95 hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-gray-900/95 focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50"
@@ -290,10 +314,10 @@ const MessageContent = ({ message, threadId }) => {
           </div>
         ) : (
           <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
-            {hasCommits ? (
+            {hasAnyWidgets ? (
               // Show only commit widgets as main content
               <CustomMarkdown
-                text={commitOnlyContent}
+                text={widgetOnlyContent}
                 threadId={threadId}
               />
             ) : (
@@ -350,7 +374,7 @@ const MessageContent = ({ message, threadId }) => {
       )}
       <MessageMedia messageId={message.id} />
       {/* Only show task executions here if no commits detected */}
-      {!hasCommits && message?.thread_id === threadId && (
+      {!hasAnyWidgets && message?.thread_id === threadId && (
         <MessageTaskExecutions
           messageId={message.id}
           date_creation={message.date_creation}

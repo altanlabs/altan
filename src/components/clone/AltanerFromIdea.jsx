@@ -109,7 +109,6 @@ function AltanerFromIdea({ idea, onClose }) {
   const [progress, setProgress] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [progressValue, setProgressValue] = useState(0);
 
   useEffect(() => {
     if (!idea || isCreating) return;
@@ -126,7 +125,6 @@ function AltanerFromIdea({ idea, onClose }) {
     setProgress(steps);
     setIsCreating(true);
     setCurrentStep(0);
-    setProgressValue(0);
 
     let isSubscribed = true;
 
@@ -143,10 +141,8 @@ function AltanerFromIdea({ idea, onClose }) {
       if (step < steps.length - 1) {
         step++;
         setCurrentStep(step);
-        setProgressValue((step + 1) * (100 / steps.length));
       } else {
         clearInterval(interval);
-        setProgressValue(100);
       }
     }, stepDuration);
 
@@ -215,8 +211,7 @@ function AltanerFromIdea({ idea, onClose }) {
                   className="flex justify-center w-full pt-8"
                 >
                   <StyledLinearProgress
-                    variant="determinate"
-                    value={progressValue}
+                    variant="indeterminate"
                   />
                 </m.div>
               </div>

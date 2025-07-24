@@ -20,6 +20,7 @@ import MermaidDiagram from '../MermaidDiagram.jsx';
 import MentionComponent from '../room/members/MentionComponent.tsx';
 import AuthorizationWidget from '../widgets/AuthorizationWidget.jsx';
 import CommitWidget from '../widgets/components/CommitWidget.jsx';
+import DatabaseVersionWidget from '../widgets/components/DatabaseVersionWidget.jsx';
 import NoCredits from '../widgets/components/NoCredits.jsx';
 import VersionWidget from '../widgets/components/VersionWidget.jsx';
 
@@ -119,6 +120,13 @@ const CustomLink = ({ href, children, threadId }) => {
   if (resources.length > 0) {
     return resources.map((resource) => {
       switch (resource.resourceName.toLowerCase()) {
+        case 'database-version':
+          return (
+            <DatabaseVersionWidget
+              key={resource.id}
+              id={resource.id}
+            />
+          );
         case 'authorize':
           return (
             <AuthorizationWidget
