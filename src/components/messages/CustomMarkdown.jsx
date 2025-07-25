@@ -403,7 +403,7 @@ const CustomMarkdown = ({
   return (
     <div
       className={cn(
-        'markdown font-light text-slate-800 dark:text-slate-100 leading-relaxed w-full prose prose-slate dark:prose-invert max-w-none',
+        'markdown font-light text-slate-800 dark:text-slate-100 leading-relaxed w-full prose prose-slate dark:prose-invert max-w-none pb-0',
         center && 'text-center',
         noWrap && 'overflow-hidden whitespace-nowrap',
         minified && 'text-sm prose-sm',
@@ -578,7 +578,7 @@ const CustomMarkdown = ({
             p: ({ children }) => (
               <p
                 className={cn(
-                  'mb-4 leading-7 text-slate-700 dark:text-slate-300',
+                  'mb-0 leading-7 text-slate-700 dark:text-slate-300',
                   noWrap ? 'overflow-hidden text-ellipsis whitespace-nowrap' : 'whitespace-pre-line',
                 )}
               >

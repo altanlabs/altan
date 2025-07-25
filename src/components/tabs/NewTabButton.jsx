@@ -22,14 +22,14 @@ const NewTabButton = ({ onNewTab, disabled = false }) => {
 
   return (
     <Tooltip
-      title="New thread"
+      title="New Chat"
       placement="bottom"
     >
       <div
         className="flex items-center justify-center px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
         onClick={handleNewTab}
         role="button"
-        aria-label="New thread"
+        aria-label="New Chat"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

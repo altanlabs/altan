@@ -1,20 +1,35 @@
 /* global console, fetch, window, document, navigator, localStorage */
 /**
  * Altan AI Widget
- * Version: 2.0.1
+ * Version: 2.1.0
  * Last Updated: 2025-01-23
  * Documentation: https://docs.altan.ai/widget
+ * 
+ * FEATURES:
+ * - Account-scoped guest authentication (2.0.x)
+ * - Real user integration via window.altanWidgetUserData (2.1.0)
+ * 
+ * USAGE:
+ * Set window.altanWidgetUserData before loading widget to use authenticated user data:
+ * window.altanWidgetUserData = {
+ *   external_id: "user123",
+ *   first_name: "John",
+ *   last_name: "Doe", 
+ *   email: "john@example.com",
+ *   avatar_url: "https://..."
+ * };
  */
 (async function() {
   'use strict';
 
   // Widget version for debugging and cache management
-  const WIDGET_VERSION = '2.0.1';
+  const WIDGET_VERSION = '2.1.0';
   console.log(`🤖 Altan Widget v${WIDGET_VERSION} loaded`);
 
   // Widget configuration
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
+    AGENT_API_BASE_URL: 'https://api.altan.ai/platform/agent',
     AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
     ROOM_BASE_URL: 'https://altan.ai/r'
   };
@@ -26,6 +41,10 @@
   const CHAT_BUTTON_RADIUS = 30;
   let browserLanguage = "en";
 
+  // Agent and Account data
+  let agentData = null;
+  let accountId = null;
+
   // Authentication state management
   const authState = {
     guest: null,
@@ -35,30 +54,38 @@
     isAuthenticated: false
   };
 
-  // Token storage keys
-  const TOKEN_STORAGE_KEYS = {
-    ACCESS_TOKEN: `altan_guest_access_${agentId}`,
-    REFRESH_TOKEN: `altan_guest_refresh_${agentId}`,
-    GUEST_DATA: `altan_guest_data_${agentId}`,
+  // Token storage keys - now account-scoped instead of agent-scoped
+  const getTokenStorageKeys = (accountId) => ({
+    ACCESS_TOKEN: `altan_guest_access_${accountId}`,
+    REFRESH_TOKEN: `altan_guest_refresh_${accountId}`,
+    GUEST_DATA: `altan_guest_data_${accountId}`,
+  });
+
+  // Room storage keys - still agent-scoped since we want separate rooms per agent
+  const ROOM_STORAGE_KEYS = {
+    ROOM_DATA: `altan_room_${agentId}`,
+    SESSION_ID: `altan_session_${agentId}`
   };
 
   // Token management functions
-  const storeTokens = (accessToken, refreshToken, guestData) => {
+  const storeTokens = (accessToken, refreshToken, guestData, accountId) => {
     try {
-      localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-      localStorage.setItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-      localStorage.setItem(TOKEN_STORAGE_KEYS.GUEST_DATA, JSON.stringify(guestData));
-      console.log('✅ Tokens stored in localStorage');
+      const keys = getTokenStorageKeys(accountId);
+      localStorage.setItem(keys.ACCESS_TOKEN, accessToken);
+      localStorage.setItem(keys.REFRESH_TOKEN, refreshToken);
+      localStorage.setItem(keys.GUEST_DATA, JSON.stringify(guestData));
+      console.log('✅ Tokens stored in localStorage for account:', accountId);
     } catch (error) {
       console.warn('⚠️ Failed to store tokens:', error);
     }
   };
 
-  const getStoredTokens = () => {
+  const getStoredTokens = (accountId) => {
     try {
-      const accessToken = localStorage.getItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
-      const refreshToken = localStorage.getItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
-      const guestData = localStorage.getItem(TOKEN_STORAGE_KEYS.GUEST_DATA);
+      const keys = getTokenStorageKeys(accountId);
+      const accessToken = localStorage.getItem(keys.ACCESS_TOKEN);
+      const refreshToken = localStorage.getItem(keys.REFRESH_TOKEN);
+      const guestData = localStorage.getItem(keys.GUEST_DATA);
       
       return {
         accessToken,
@@ -71,42 +98,37 @@
     }
   };
 
-  const clearStoredTokens = () => {
+  const clearStoredTokens = (accountId) => {
     try {
-      localStorage.removeItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
-      localStorage.removeItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
-      localStorage.removeItem(TOKEN_STORAGE_KEYS.GUEST_DATA);
-      console.log('🗑️ Tokens cleared from localStorage');
+      const keys = getTokenStorageKeys(accountId);
+      localStorage.removeItem(keys.ACCESS_TOKEN);
+      localStorage.removeItem(keys.REFRESH_TOKEN);
+      localStorage.removeItem(keys.GUEST_DATA);
+      console.log('🗑️ Tokens cleared from localStorage for account:', accountId);
     } catch (error) {
       console.warn('⚠️ Failed to clear tokens:', error);
     }
   };
 
   // Load stored tokens on widget initialization
-  const loadStoredTokens = () => {
-    const stored = getStoredTokens();
+  const loadStoredTokens = (accountId) => {
+    const stored = getStoredTokens(accountId);
     if (stored.accessToken && stored.refreshToken && stored.guestData) {
       authState.accessToken = stored.accessToken;
       authState.refreshToken = stored.refreshToken;
       authState.guest = stored.guestData;
+      authState.accountId = accountId;
       authState.isAuthenticated = true;
-      console.log('✅ Loaded stored tokens and guest data');
+      console.log('✅ Loaded stored tokens and guest data for account:', accountId);
       return true;
     }
     return false;
   };
 
-  // Room persistence
-  const STORAGE_KEYS = {
-    ROOM_DATA: `altan_room_${agentId}`,
-    GUEST_DATA: `altan_guest_${agentId}`,
-    SESSION_ID: `altan_session_${agentId}`
-  };
-
   // Get stored room data
   const getStoredRoomData = () => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.ROOM_DATA);
+      const stored = localStorage.getItem(ROOM_STORAGE_KEYS.ROOM_DATA);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
       console.warn('Error reading stored room data:', error);
@@ -117,38 +139,22 @@
   // Store room data
   const storeRoomData = (roomData) => {
     try {
-      localStorage.setItem(STORAGE_KEYS.ROOM_DATA, JSON.stringify(roomData));
+      localStorage.setItem(ROOM_STORAGE_KEYS.ROOM_DATA, JSON.stringify(roomData));
     } catch (error) {
       console.warn('Error storing room data:', error);
     }
   };
 
-  // Get stored guest data
-  const getStoredGuestData = () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.GUEST_DATA);
-      return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-      console.warn('Error reading stored guest data:', error);
-      return null;
-    }
-  };
 
-  // Store guest data
-  const storeGuestData = (guestData) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.GUEST_DATA, JSON.stringify(guestData));
-    } catch (error) {
-      console.warn('Error storing guest data:', error);
-    }
-  };
 
   // Clear stored data (for testing or reset)
   const clearStoredData = () => {
     try {
-      localStorage.removeItem(STORAGE_KEYS.ROOM_DATA);
-      localStorage.removeItem(STORAGE_KEYS.GUEST_DATA);
-      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+      localStorage.removeItem(ROOM_STORAGE_KEYS.ROOM_DATA);
+      localStorage.removeItem(ROOM_STORAGE_KEYS.SESSION_ID);
+      if (accountId) {
+        clearStoredTokens(accountId);
+      }
     } catch (error) {
       console.warn('Error clearing stored data:', error);
     }
@@ -297,6 +303,59 @@
     return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
 
+  async function fetchAgentMetadata() {
+    const url = `${WIDGET_CONFIG.AGENT_API_BASE_URL}/${agentId}/public`;
+    
+    console.log('🔍 Fetching agent metadata from:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('🔍 Agent metadata received:', data);
+    
+    agentData = data.agent;
+    accountId = agentData.account_id;
+    
+    // Update brand color from agent metadata if available
+    const ui = agentData.meta_data?.ui;
+    if (ui?.brand_color) {
+      brand_color = ui.brand_color;
+      
+      // Update button color immediately
+      const button = document.getElementById("chat-bubble-button");
+      if (button) {
+        button.style.backgroundColor = brand_color;
+      }
+      
+      // Update icon
+      const icon = document.getElementById("chat-bubble-icon");
+      if (icon) {
+        icon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
+      }
+      
+      console.log('🎨 Brand color set from agent metadata:', brand_color);
+    }
+    
+    console.log('✅ Agent loaded:', {
+      agentId: agentData.id,
+      accountId: accountId,
+      name: agentData.name,
+      brandColor: brand_color
+    });
+    
+    return data;
+  }
+
   async function createGuestRoom(guestData) {
     const url = `${WIDGET_CONFIG.API_BASE_URL}/room?agent_id=${agentId}`;
     
@@ -339,7 +398,7 @@
     if (!response.ok) {
       console.log('⚠️ Guest token refresh failed:', response.status);
       // Clear invalid tokens
-      clearStoredTokens();
+      clearStoredTokens(accountId);
       authState.accessToken = null;
       authState.refreshToken = null;
       authState.isAuthenticated = false;
@@ -353,17 +412,19 @@
     const newAccessToken = data.access_token;
     const newRefreshToken = data.refresh_token;
     
-    if (newAccessToken) {
+    if (newAccessToken && accountId) {
       authState.accessToken = newAccessToken;
       
       // Update stored access token
-      localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+      const keys = getTokenStorageKeys(accountId);
+      localStorage.setItem(keys.ACCESS_TOKEN, newAccessToken);
       console.log('✅ Guest access token refreshed and stored');
     }
     
-    if (newRefreshToken) {
+    if (newRefreshToken && accountId) {
       authState.refreshToken = newRefreshToken;
-      localStorage.setItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+      const keys = getTokenStorageKeys(accountId);
+      localStorage.setItem(keys.REFRESH_TOKEN, newRefreshToken);
       console.log('✅ Guest refresh token updated and stored');
     }
     
@@ -410,7 +471,7 @@
     authState.isAuthenticated = true;
     
     // Store tokens for cross-domain persistence
-    storeTokens(accessToken, refreshToken, guestData);
+    storeTokens(accessToken, refreshToken, guestData, accountId);
     
     console.log('✅ Guest authentication successful with tokens');
     console.log('🔐 Final authState:', {
@@ -423,16 +484,7 @@
     return data;
   }
 
-  // Initialize widget with stored tokens if available
-  const initializeAuthState = () => {
-    const hasStoredTokens = loadStoredTokens();
-    if (hasStoredTokens) {
-      console.log('🔄 Initialized with stored guest tokens');
-    } else {
-      console.log('🔄 No stored tokens found, will need fresh authentication');
-    }
-    return hasStoredTokens;
-  };
+
 
   // Initialize Widget
   addAnimationStyle();
@@ -442,7 +494,10 @@
   chatButton.appendChild(chatButtonIcon);
 
   // Initialize authentication state with stored tokens
-  initializeAuthState();
+  // This function will now be called with the accountId
+  // The accountId will be determined by the agent metadata fetch
+  // For now, we'll pass a placeholder or assume it will be set later
+  // await initializeAuthState(accountId); // This line will be uncommented when accountId is available
 
   window.addEventListener('resize', addAnimationStyle);
 
@@ -464,41 +519,79 @@
 
   async function openChat() {
     try {
+      // First, fetch agent metadata to get account_id
+      if (!agentData || !accountId) {
+        console.log('🔍 Fetching agent metadata...');
+        await fetchAgentMetadata();
+      }
+
+      // Initialize authentication state with the account_id
+      const hasStoredTokens = loadStoredTokens(accountId);
+      if (hasStoredTokens) {
+        console.log('🔄 Using stored guest tokens for account:', accountId);
+      } else {
+        console.log('🔄 No stored tokens found for account:', accountId);
+      }
+
       let roomData = getStoredRoomData();
-      let guestData = getStoredGuestData();
       
-      // Only create new room/guest if we don't have existing ones
-      if (!roomData || !guestData) {
-        console.log('Creating new guest room...');
+      // Check if we need to create or reuse guest
+      if (!authState.isAuthenticated || !authState.guest) {
+        console.log('Creating new guest for account:', accountId);
         
-        // Create guest room
-        roomData = await createGuestRoom({
+        // Check for user data passed from parent app
+        const userData = window.altanWidgetUserData;
+        
+        // Create guest room - use real user data if available, otherwise anonymous
+        const guestPayload = userData ? {
+          external_id: userData.external_id,
+          guest_id: '',
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          email: userData.email,
+          phone: '',
+          avatar_url: userData.avatar_url
+        } : {
           external_id: generateExternalId(),
           guest_id: '',
           first_name: 'Anonymous',
           last_name: 'Visitor',
           email: `visitor_${Date.now()}@anonymous.com`,
           phone: ''
-        });
+        };
+        
+        console.log('🔑 Guest payload:', userData ? 'Using authenticated user data' : 'Using anonymous visitor data', guestPayload);
+        
+        roomData = await createGuestRoom(guestPayload);
 
         // Store the room data for future use
         storeRoomData(roomData);
         
-        // Extract and store guest data
-        guestData = roomData.guest;
-        storeGuestData(guestData);
-        
-        console.log('New room created and stored:', roomData.room_id);
+        // Authenticate the new guest
+        console.log('Authenticating new guest...');
+        await authenticateGuest(roomData.guest.id, accountId);
       } else {
-        console.log('Reusing existing room:', roomData.room_id);
-      }
+        // We have a guest but may need a new room for this agent
+        if (!roomData) {
+          console.log('Creating new room for existing guest:', authState.guest.id);
+          
+          // Check for updated user data from parent app
+          const userData = window.altanWidgetUserData;
+          
+          roomData = await createGuestRoom({
+            external_id: userData?.external_id || authState.guest.external_id || generateExternalId(),
+            guest_id: authState.guest.id, // Use existing guest
+            first_name: userData?.first_name || authState.guest.first_name || 'Anonymous',
+            last_name: userData?.last_name || authState.guest.last_name || 'Visitor',
+            email: userData?.email || authState.guest.email || `visitor_${Date.now()}@anonymous.com`,
+            phone: authState.guest.phone || '',
+            avatar_url: userData?.avatar_url || authState.guest.avatar_url || ''
+          });
 
-      // Authenticate the guest only if we don't have valid tokens
-      if (!authState.isAuthenticated || !authState.accessToken) {
-        console.log('No valid tokens found, authenticating guest...');
-        await authenticateGuest(guestData.id, guestData.account_id);
-      } else {
-        console.log('Using existing authentication tokens');
+          storeRoomData(roomData);
+        } else {
+          console.log('Reusing existing room:', roomData.room_id);
+        }
       }
 
       // Update iframe with room data
@@ -525,7 +618,6 @@
       if (error.message.includes('404') || error.message.includes('401')) {
         console.log('Clearing stored data due to error and retrying...');
         clearStoredData();
-        clearStoredTokens();
         // Don't retry automatically to avoid infinite loops
       }
     }
@@ -674,15 +766,25 @@
 
   const handleChatbotMetadata = (data) => {
     const ui = data.meta_data?.meta_data?.ui;
-    brand_color = ui?.brand_color || brand_color;
+    const newBrandColor = ui?.brand_color || brand_color;
     
-    // Update button color
-    const button = document.getElementById("chat-bubble-button");
-    if (button) {
-      button.style.backgroundColor = brand_color;
+    if (newBrandColor !== brand_color) {
+      brand_color = newBrandColor;
+      
+      // Update button color
+      const button = document.getElementById("chat-bubble-button");
+      if (button) {
+        button.style.backgroundColor = brand_color;
+      }
+      
+      // Update icon
+      const icon = document.getElementById("chat-bubble-icon");
+      if (icon) {
+        icon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
+      }
+      
+      console.log('🎨 Brand color updated to:', brand_color);
     }
-    
-    chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
   };
 
   // Event listeners and message handling
@@ -739,7 +841,9 @@
   window.altanWidget = {
     clearStoredData: clearStoredData,
     getStoredRoomData: getStoredRoomData,
-    getStoredGuestData: getStoredGuestData
+    getStoredTokens: (accountId) => getStoredTokens(accountId),
+    agentData: () => agentData,
+    accountId: () => accountId
   };
 
 })(); 

@@ -151,3 +151,6 @@ export const DemoTextVoicePage = Loadable(
 export const AdvancedEditorPage = Loadable(
   lazy(() => import('../pages/testing/AdvancedEditorPage.jsx')),
 );
+export const SDKTestPage = Loadable(
+  lazy(() => import('../pages/SDKTestPage.jsx')),
+);

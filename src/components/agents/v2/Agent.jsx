@@ -19,7 +19,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 
 // hooks
+import { useAuthContext } from '../../../auth/useAuthContext';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
+// auth
 // redux
 import { fetchAgentDetails, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
@@ -66,6 +68,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const history = useHistory();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, currentAgentDmRoomId, isLoading } = useSelector((state) => state.agents);
+  const { user } = useAuthContext();
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -128,7 +131,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
   // Load widget script for agent testing
   useEffect(() => {
-    if (!agentData?.id) return;
+    if (!agentData?.id || !user?.id) return;
 
     // Clean up any existing widget
     if (widgetScriptRef.current) {
@@ -141,6 +144,15 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     const existingChat = document.getElementById('chat-bubble-window');
     if (existingWidget) existingWidget.remove();
     if (existingChat) existingChat.remove();
+
+    // Set user data globally for widget to access
+    window.altanWidgetUserData = {
+      external_id: user.id.toString(),
+      first_name: user.first_name || 'User',
+      last_name: user.last_name || '',
+      email: user.email || '',
+      avatar_url: user.avatar_url || '',
+    };
 
     // Create and load widget script
     const script = document.createElement('script');
@@ -167,8 +179,11 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       const chat = document.getElementById('chat-bubble-window');
       if (widget) widget.remove();
       if (chat) chat.remove();
+
+      // Clean up global user data
+      delete window.altanWidgetUserData;
     };
-  }, [agentData?.id]);
+  }, [agentData?.id, user?.id]);
 
   const debouncedUpdateAgent = useCallback(
     debounce((id, data) => {
@@ -650,8 +665,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
                       onClick={() =>
-                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
-                      }
+                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >

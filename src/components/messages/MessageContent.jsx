@@ -373,7 +373,7 @@ const MessageContent = ({ message, threadId }) => {
         </div>
       )}
       <MessageMedia messageId={message.id} />
-      {/* Only show task executions here if no commits detected */}
+
       {!hasAnyWidgets && message?.thread_id === threadId && (
         <MessageTaskExecutions
           messageId={message.id}
