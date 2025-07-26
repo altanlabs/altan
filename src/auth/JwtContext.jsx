@@ -276,12 +276,17 @@ export function AuthProvider({ children }) {
 
         if (guestData && guestData.guest) {
           // Set up guest authentication for axios instances
-          console.log('🔑 Setting up guest auth with token:', guestData.accessToken);
+          console.log('🔑 === SETTING UP GUEST AUTHENTICATION ===');
+          console.log('🔑 Guest data:', guestData.guest);
+          console.log('🔑 Access token present:', !!guestData.accessToken);
+          
           try {
             await authorizeGuest(guestData.accessToken);
             console.log('✅ Guest axios authentication set up successfully');
+            console.log('✅ Bearer token should now be available for API calls');
           } catch (authError) {
-            console.warn('⚠️ Failed to set up guest axios authentication:', authError);
+            console.error('❌ Failed to set up guest axios authentication:', authError);
+            throw authError;
           }
 
           dispatch({
@@ -291,6 +296,7 @@ export function AuthProvider({ children }) {
             },
           });
 
+          console.log('✅ Guest login dispatch completed - authentication ready');
           return guestData.guest;
         } else {
           throw new Error('Parent authentication failed or not available');
@@ -339,6 +345,24 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Check if we're in an iframe (guest mode)
+        const isInIframe = window !== window.parent;
+        
+        if (isInIframe) {
+          console.log('🔄 In iframe mode - waiting for guest authentication before making API calls');
+          // In iframe mode, don't make immediate API calls
+          // Wait for guest authentication to be set up first
+          dispatch({
+            type: 'INITIAL',
+            payload: {
+              isAuthenticated: false,
+              user: null,
+            },
+          });
+          return;
+        }
+        
+        // Only make API calls for regular (non-iframe) users
         const userProfile = await getUserProfile();
         dispatch({
           type: 'INITIAL',

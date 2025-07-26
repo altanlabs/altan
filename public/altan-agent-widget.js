@@ -380,7 +380,14 @@
       throw new Error('No refresh token available');
     }
 
-    console.log('🔄 Refreshing guest token...');
+    console.log('🔄 === REFRESHING GUEST TOKEN ===');
+    console.log('🔄 Current accountId:', accountId);
+    console.log('🔄 Auth state before refresh:', {
+      hasRefreshToken: !!authState.refreshToken,
+      hasAccessToken: !!authState.accessToken,
+      accountId: authState.accountId,
+      guestId: authState.guest?.id
+    });
     
     const response = await fetch('https://api.altan.ai/auth/token/guest', {
       method: 'POST',
@@ -395,8 +402,11 @@
       })
     });
     
+    console.log('🔄 Refresh response status:', response.status);
+    
     if (!response.ok) {
       console.log('⚠️ Guest token refresh failed:', response.status);
+      console.log('⚠️ Clearing invalid tokens for accountId:', accountId);
       // Clear invalid tokens
       clearStoredTokens(accountId);
       authState.accessToken = null;
@@ -418,15 +428,22 @@
       // Update stored access token
       const keys = getTokenStorageKeys(accountId);
       localStorage.setItem(keys.ACCESS_TOKEN, newAccessToken);
-      console.log('✅ Guest access token refreshed and stored');
+      console.log('✅ Guest access token refreshed and stored for account:', accountId);
     }
     
     if (newRefreshToken && accountId) {
       authState.refreshToken = newRefreshToken;
       const keys = getTokenStorageKeys(accountId);
       localStorage.setItem(keys.REFRESH_TOKEN, newRefreshToken);
-      console.log('✅ Guest refresh token updated and stored');
+      console.log('✅ Guest refresh token updated and stored for account:', accountId);
     }
+    
+    console.log('🔄 Auth state after refresh:', {
+      hasRefreshToken: !!authState.refreshToken,
+      hasAccessToken: !!authState.accessToken,
+      accountId: authState.accountId,
+      isAuthenticated: authState.isAuthenticated
+    });
     
     return data;
   }
@@ -519,25 +536,67 @@
 
   async function openChat() {
     try {
+      console.log('🎯 === OPENING CHAT DEBUG ===');
+      console.log('🎯 Current agentId:', agentId);
+      console.log('🎯 Current accountId:', accountId);
+      console.log('🎯 Current agentData:', agentData);
+      console.log('🎯 Current authState:', {
+        isAuthenticated: authState.isAuthenticated,
+        hasGuest: !!authState.guest,
+        hasAccessToken: !!authState.accessToken,
+        hasRefreshToken: !!authState.refreshToken,
+        accountId: authState.accountId
+      });
+
       // First, fetch agent metadata to get account_id
       if (!agentData || !accountId) {
         console.log('🔍 Fetching agent metadata...');
         await fetchAgentMetadata();
+        console.log('🔍 Agent metadata fetched - accountId:', accountId, 'agentId:', agentId);
+      }
+
+      // Check if we're switching to a different account - if so, clear auth state
+      if (authState.accountId && authState.accountId !== accountId) {
+        console.log('⚠️ ACCOUNT SWITCH DETECTED!');
+        console.log('⚠️ Previous accountId:', authState.accountId);
+        console.log('⚠️ New accountId:', accountId);
+        console.log('⚠️ Clearing auth state for account switch...');
+        
+        // Clear auth state for account switch
+        authState.guest = null;
+        authState.accountId = null;
+        authState.accessToken = null;
+        authState.refreshToken = null;
+        authState.isAuthenticated = false;
+        
+        // IMPORTANT: Also clear room data when switching accounts
+        // This prevents using room data from a different account
+        console.log('⚠️ Clearing room data due to account switch...');
+        try {
+          localStorage.removeItem(ROOM_STORAGE_KEYS.ROOM_DATA);
+          localStorage.removeItem(ROOM_STORAGE_KEYS.SESSION_ID);
+          console.log('⚠️ Room data cleared for account switch');
+        } catch (error) {
+          console.warn('⚠️ Failed to clear room data:', error);
+        }
       }
 
       // Initialize authentication state with the account_id
       const hasStoredTokens = loadStoredTokens(accountId);
       if (hasStoredTokens) {
         console.log('🔄 Using stored guest tokens for account:', accountId);
+        console.log('🔄 Loaded guest data:', authState.guest);
       } else {
         console.log('🔄 No stored tokens found for account:', accountId);
       }
 
       let roomData = getStoredRoomData();
+      console.log('🏠 Stored room data for agent:', agentId, roomData);
       
       // Check if we need to create or reuse guest
       if (!authState.isAuthenticated || !authState.guest) {
-        console.log('Creating new guest for account:', accountId);
+        console.log('🆕 Creating new guest for account:', accountId);
+        console.log('🆕 Auth state not ready - isAuthenticated:', authState.isAuthenticated, 'hasGuest:', !!authState.guest);
         
         // Check for user data passed from parent app
         const userData = window.altanWidgetUserData;
@@ -563,22 +622,26 @@
         console.log('🔑 Guest payload:', userData ? 'Using authenticated user data' : 'Using anonymous visitor data', guestPayload);
         
         roomData = await createGuestRoom(guestPayload);
+        console.log('🏠 Created new room:', roomData);
 
         // Store the room data for future use
         storeRoomData(roomData);
+        console.log('💾 Stored room data for agent:', agentId);
         
         // Authenticate the new guest
-        console.log('Authenticating new guest...');
+        console.log('🔐 Authenticating new guest...', roomData.guest.id);
         await authenticateGuest(roomData.guest.id, accountId);
+        console.log('✅ Guest authentication completed');
       } else {
+        console.log('🔄 Have existing authenticated guest:', authState.guest.id);
         // We have a guest but may need a new room for this agent
         if (!roomData) {
-          console.log('Creating new room for existing guest:', authState.guest.id);
+          console.log('🏠 No room data found - creating new room for existing guest:', authState.guest.id);
           
           // Check for updated user data from parent app
           const userData = window.altanWidgetUserData;
           
-          roomData = await createGuestRoom({
+          const roomPayload = {
             external_id: userData?.external_id || authState.guest.external_id || generateExternalId(),
             guest_id: authState.guest.id, // Use existing guest
             first_name: userData?.first_name || authState.guest.first_name || 'Anonymous',
@@ -586,11 +649,16 @@
             email: userData?.email || authState.guest.email || `visitor_${Date.now()}@anonymous.com`,
             phone: authState.guest.phone || '',
             avatar_url: userData?.avatar_url || authState.guest.avatar_url || ''
-          });
+          };
+          
+          console.log('🏠 Room payload for existing guest:', roomPayload);
+          roomData = await createGuestRoom(roomPayload);
+          console.log('🏠 Created room for existing guest:', roomData);
 
           storeRoomData(roomData);
+          console.log('💾 Stored new room data for agent:', agentId);
         } else {
-          console.log('Reusing existing room:', roomData.room_id);
+          console.log('🔄 Reusing existing room:', roomData.room_id, 'for agent:', agentId);
         }
       }
 
@@ -598,25 +666,70 @@
       const iframeElement = document.getElementById("widget-agent-bubble-window");
       if (iframeElement) {
         const iframeUrl = `${WIDGET_CONFIG.ROOM_BASE_URL}/${roomData.room_id}`;
-        console.log('Setting iframe URL:', iframeUrl);
+        console.log('🖼️ Setting iframe URL:', iframeUrl);
+        console.log('🖼️ Room data being used:', {
+          room_id: roomData.room_id,
+          guest_id: roomData.guest?.id,
+          agent_id: agentId,
+          account_id: accountId
+        });
+        
+        const previousUrl = iframeElement.src;
+        if (previousUrl !== iframeUrl) {
+          console.log('🖼️ URL changed from:', previousUrl, 'to:', iframeUrl);
+        } else {
+          console.log('🖼️ URL unchanged, reusing same room');
+        }
+        
+        // Set a flag to track if we're changing the iframe URL
+        const isUrlChange = previousUrl !== iframeUrl;
+        if (isUrlChange) {
+          console.log('🖼️ URL CHANGE DETECTED - iframe will reload with new auth context');
+          console.log('🖼️ Previous URL:', previousUrl);
+          console.log('🖼️ New URL:', iframeUrl);
+          console.log('🖼️ Current auth tokens available:', {
+            hasAccessToken: !!authState.accessToken,
+            hasRefreshToken: !!authState.refreshToken,
+            guestId: authState.guest?.id,
+            accountId: authState.accountId
+          });
+        }
+        
         iframeElement.src = iframeUrl;
         
         // Add error handling for iframe loading
         iframeElement.onload = () => {
-          console.log('Iframe loaded successfully:', iframeUrl);
+          console.log('✅ Iframe loaded successfully:', iframeUrl);
+          console.log('✅ Auth state when iframe loaded:', {
+            isAuthenticated: authState.isAuthenticated,
+            hasAccessToken: !!authState.accessToken,
+            hasRefreshToken: !!authState.refreshToken,
+            guestId: authState.guest?.id,
+            accountId: authState.accountId
+          });
         };
         
         iframeElement.onerror = (error) => {
-          console.error('Iframe failed to load:', error, iframeUrl);
+          console.error('❌ Iframe failed to load:', error, iframeUrl);
         };
       } else {
-        console.error('Iframe element not found');
+        console.error('❌ Iframe element not found');
       }
+      
+      console.log('🎯 === CHAT OPENING COMPLETED ===');
     } catch (error) {
-      console.error('Error creating room or authenticating guest:', error);
+      console.error('❌ Error creating room or authenticating guest:', error);
+      console.error('❌ Full error details:', {
+        message: error.message,
+        stack: error.stack,
+        agentId: agentId,
+        accountId: accountId,
+        authState: authState
+      });
+      
       // If there's an error with stored data, clear it and try again
       if (error.message.includes('404') || error.message.includes('401')) {
-        console.log('Clearing stored data due to error and retrying...');
+        console.log('🗑️ Clearing stored data due to error and retrying...');
         clearStoredData();
         // Don't retry automatically to avoid infinite loops
       }
@@ -682,14 +795,32 @@
 
   // Helper functions for message handling
   const handleTokenRefreshRequest = async (event) => {
-    console.log('🔄 Token refresh requested by iframe, current auth state:', {
+    console.log('🔄 === TOKEN REFRESH REQUEST ===');
+    console.log('🔄 Requested by iframe from origin:', event.origin);
+    console.log('🔄 Current auth state:', {
       isAuthenticated: authState.isAuthenticated,
       hasGuest: !!authState.guest,
       hasAccessToken: !!authState.accessToken,
-      hasRefreshToken: !!authState.refreshToken
+      hasRefreshToken: !!authState.refreshToken,
+      accountId: authState.accountId,
+      guestId: authState.guest?.id
     });
+    console.log('🔄 Current agentId:', agentId, 'accountId:', accountId);
 
     try {
+      // Validate that we have valid auth for the current account
+      const hasValidAuthForAccount = authState.accountId === accountId && 
+                                   authState.isAuthenticated && 
+                                   authState.accessToken;
+      
+      console.log('🔄 Valid auth for current account?', hasValidAuthForAccount);
+      console.log('🔄 Auth accountId:', authState.accountId, 'Current accountId:', accountId);
+      
+      if (!hasValidAuthForAccount) {
+        console.log('⚠️ No valid auth for current account - sending failure response');
+        throw new Error(`No valid authentication for account ${accountId}`);
+      }
+      
       let accessToken = authState.accessToken;
 
       // Always try to refresh the token to ensure it's valid and not expired
@@ -705,6 +836,8 @@
           // Fall back to existing token if refresh fails
           accessToken = authState.accessToken;
         }
+      } else {
+        console.warn('⚠️ No refresh token available for refresh attempt');
       }
 
       // Send response to iframe
@@ -715,34 +848,52 @@
         success: !!accessToken
       };
       
-      console.log('📤 Sending token refresh response:', responseData);
+      console.log('📤 Sending token refresh response:', {
+        ...responseData,
+        token: accessToken ? '[TOKEN_PRESENT]' : null
+      });
       event.source.postMessage(responseData, event.origin);
       
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
       
-      event.source.postMessage({
+      const errorResponse = {
         type: 'new_access_token',
         token: null,
         guest: null,
         success: false,
         error: error.message
-      }, event.origin);
+      };
+      
+      console.log('📤 Sending error response:', errorResponse);
+      event.source.postMessage(errorResponse, event.origin);
     }
   };
 
   const handleGuestAuthRequest = async (event) => {
-    console.log('Guest auth request received, current state:', {
+    console.log('🔐 === GUEST AUTH REQUEST ===');
+    console.log('🔐 Request from origin:', event.origin);
+    console.log('🔐 Current state:', {
       isAuthenticated: authState.isAuthenticated,
       hasGuest: !!authState.guest,
       hasAccessToken: !!authState.accessToken,
       hasRefreshToken: !!authState.refreshToken,
-      origin: event.origin
+      accountId: authState.accountId,
+      guestId: authState.guest?.id,
+      agentId: agentId
     });
     
-    if (authState.isAuthenticated && authState.guest) {
-      // Already authenticated, send current auth data
-      console.log('Sending authenticated guest data to iframe');
+    // Check if we have valid auth for the current account
+    const hasValidAuth = authState.isAuthenticated && 
+                        authState.guest && 
+                        authState.accessToken && 
+                        authState.accountId === accountId;
+    
+    console.log('🔐 Has valid auth for current account?', hasValidAuth);
+    
+    if (hasValidAuth) {
+      // Already authenticated for current account, send current auth data
+      console.log('✅ Sending authenticated guest data to iframe');
       
       const responseData = {
         type: 'guest_auth_response',
@@ -750,17 +901,27 @@
         accessToken: authState.accessToken,
         isAuthenticated: true
       };
-      console.log('📤 Sending to iframe:', responseData);
+      console.log('📤 Sending auth response to iframe:', {
+        ...responseData,
+        accessToken: responseData.accessToken ? '[TOKEN_PRESENT]' : null
+      });
       event.source.postMessage(responseData, event.origin);
     } else {
-      // Not authenticated
-      console.log('Sending unauthenticated response to iframe');
-      event.source.postMessage({
+      // Not authenticated or auth is for wrong account
+      if (authState.accountId && authState.accountId !== accountId) {
+        console.log('⚠️ Auth state is for different account!');
+        console.log('⚠️ Auth accountId:', authState.accountId, 'Current accountId:', accountId);
+      }
+      
+      console.log('❌ Sending unauthenticated response to iframe - iframe should trigger fresh auth flow');
+      const unauthResponse = {
         type: 'guest_auth_response',
         guest: null,
         accessToken: null,
         isAuthenticated: false
-      }, event.origin);
+      };
+      console.log('📤 Sending unauth response:', unauthResponse);
+      event.source.postMessage(unauthResponse, event.origin);
     }
   };
 
@@ -790,10 +951,19 @@
   // Event listeners and message handling
   const handleEvent = (event) => {
     // Debug: Log all incoming messages
-    console.log('Received message from iframe:', {
-      type: event.data.type,
-      origin: event.origin,
-      data: event.data
+    console.log('📥 === IFRAME MESSAGE ===');
+    console.log('📥 Type:', event.data.type);
+    console.log('📥 Origin:', event.origin);
+    console.log('📥 Full data:', event.data);
+    console.log('📥 Current widget state:', {
+      agentId: agentId,
+      accountId: accountId,
+      authState: {
+        isAuthenticated: authState.isAuthenticated,
+        hasGuest: !!authState.guest,
+        hasAccessToken: !!authState.accessToken,
+        accountId: authState.accountId
+      }
     });
     
     const userAgent = navigator.userAgent;
@@ -803,34 +973,46 @@
 
     switch (event.data.type) {
       case 'close_bubble':
+        console.log('🔒 Closing chat bubble');
         closeChat();
         break;
 
       case 'requestParentUrl':
-        event.source.postMessage({
+        console.log('🌐 Parent URL requested');
+        const parentResponse = {
           type: 'parentUrl',
           url: window.location.href,
           userAgent,
           width: screenWidth,
           height: screenHeight,
           language: browserLanguage
-        }, event.origin);
+        };
+        console.log('📤 Sending parent URL response:', parentResponse);
+        event.source.postMessage(parentResponse, event.origin);
         break;
 
       case 'refresh_token':
+        console.log('🔄 Token refresh request received');
         handleTokenRefreshRequest(event);
         break;
 
       case 'request_guest_auth':
+        console.log('🔐 Guest auth request received');
         handleGuestAuthRequest(event);
         break;
 
       case 'COPY_TO_CLIPBOARD':
+        console.log('📋 Clipboard copy request:', event.data.text);
         navigator.clipboard.writeText(event.data.text);
         break;
 
       case 'chatbotMetaData':
+        console.log('🤖 Chatbot metadata received');
         handleChatbotMetadata(event.data);
+        break;
+        
+      default:
+        console.log('❓ Unknown message type received:', event.data.type);
         break;
     }
   };

@@ -42,17 +42,25 @@ const Room = ({
 
   // Auto-trigger guest authentication if in iframe and not authenticated
   useEffect(() => {
+    console.log('🔐 === GUEST AUTH TRIGGER EFFECT ===');
+    console.log('🔐 IsGuestAccess:', isGuestAccess);
+    console.log('🔐 Authenticated guest:', !!authenticated.guest);
+    console.log('🔐 Guest prop:', !!guest);
+    console.log('🔐 Should trigger auth?', isGuestAccess && !authenticated.guest && !guest);
+    
     if (isGuestAccess && !authenticated.guest && !guest) {
-      console.log('Auto-triggering guest authentication for iframe');
+      console.log('🔐 ✅ Auto-triggering guest authentication for iframe');
       // For iframe guest access, we don't need guestId/agentId from URL anymore
       // The loginAsGuest function will handle requesting auth from parent
       loginAsGuest(null, null)
         .then((guestData) => {
-          console.log('Guest authentication successful:', guestData);
+          console.log('🔐 ✅ Guest authentication successful:', guestData);
         })
         .catch((error) => {
-          console.error('Guest authentication failed:', error);
+          console.error('🔐 ❌ Guest authentication failed:', error);
         });
+    } else {
+      console.log('🔐 ⏳ Guest authentication not triggered - waiting for conditions');
     }
   }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
 
@@ -106,21 +114,36 @@ const Room = ({
   }, [guest, history, isGuestAccess, roomId, user, authenticated]);
 
   useEffect(() => {
+    console.log('🏠 === ROOM FETCH EFFECT ===');
+    console.log('🏠 RoomId:', roomId);
+    console.log('🏠 Initialized:', initialized);
+    console.log('🏠 IsGuestAccess:', isGuestAccess);
+    console.log('🏠 Authenticated guest:', !!authenticated.guest);
+    console.log('🏠 Guest prop:', !!guest);
+    console.log('🏠 User:', !!user);
+    
     if (!!roomId && !initialized) {
       if (isGuestAccess) {
         if (authenticated.guest && guest) {
+          console.log('🏠 ✅ Guest authentication ready - fetching room');
           handleFetchRoom();
         } else {
-          console.log('Waiting for guest authentication...');
+          console.log('🏠 ⏳ Waiting for guest authentication...');
+          console.log('🏠 ⏳ Has authenticated.guest:', !!authenticated.guest);
+          console.log('🏠 ⏳ Has guest prop:', !!guest);
         }
       } else if (!!(user || guest)) {
         // For regular user/member access
+        console.log('🏠 ✅ User authentication ready - fetching room');
         handleFetchRoom();
       } else {
-        console.log('Waiting for user authentication...');
+        console.log('🏠 ⏳ Waiting for user authentication...');
       }
     } else {
-      console.log('Room already initialized or no roomId');
+      console.log('🏠 ❌ Conditions not met for room fetch:', {
+        hasRoomId: !!roomId,
+        notInitialized: !initialized
+      });
     }
   }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);
 

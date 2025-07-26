@@ -1,20 +1,24 @@
 /**
  * Altan AI SDK
- * Main entry point for the SDK
+ * Account-centric SDK for integrating with Altan AI
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @author Altan AI
  */
+
+// ============================================================================
+// CORE SDK EXPORTS
+// ============================================================================
 
 // Core SDK exports
 export {
   AltanSDK,
   createAltanSDK,
-  type AltanConfig,
+  type AltanSDKConfig,
   type GuestData,
+  type CreateGuestRequest,
   type RoomData,
   type AuthTokens,
-  type ChatMessage,
   type AltanEventMap,
   type AltanEventListener,
 } from './altan-sdk';
@@ -22,10 +26,10 @@ export {
 // React hooks exports
 export {
   useAltanSDK,
+  useAltanGuest,
   useAltanAuth,
   useAltanRoom,
   useAltanEvent,
-  useAltanConnection,
   useAltan,
 } from './react-hooks';
 
@@ -39,8 +43,12 @@ export {
   AuthStatus,
 } from './components';
 
+// ============================================================================
+// VERSION INFO & DEFAULTS
+// ============================================================================
+
 // Version information
-export const SDK_VERSION = '1.0.0';
+export const SDK_VERSION = '2.0.0';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {

@@ -1,35 +1,45 @@
 /**
  * Altan AI SDK
- * A TypeScript SDK for integrating Altan AI agents and chat rooms
+ * Account-centric SDK for integrating with the modular Altan backend
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @author Altan AI
  */
 
-export interface AltanConfig {
-  agentId: string;
+export interface AltanSDKConfig {
+  accountId: string; // Primary entity - the tenant
   apiBaseUrl?: string;
   authBaseUrl?: string;
   roomBaseUrl?: string;
   enableStorage?: boolean;
   debug?: boolean;
-  requestTimeout?: number; // timeout in milliseconds, default 30000 (30s)
+  requestTimeout?: number;
 }
 
 export interface GuestData {
   id: string;
-  external_id: string;
+  external_id?: string;
   first_name: string;
   last_name: string;
-  email: string;
+  email?: string;
   phone?: string;
   account_id: string;
 }
 
+export interface CreateGuestRequest {
+  external_id?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface RoomData {
   room_id: string;
+  agent?: any;
   guest: GuestData;
-  url: string;
+  account_id: string;
+  url?: string;
 }
 
 export interface AuthTokens {
@@ -38,21 +48,14 @@ export interface AuthTokens {
   expiresAt?: number;
 }
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  sender: 'user' | 'agent';
-  timestamp: Date;
-  metadata?: Record<string, any>;
-}
-
 export interface AltanEventMap {
+  'guest:created': { guest: GuestData };
+  'guest:updated': { guest: GuestData };
   'room:created': { room: RoomData };
+  'room:joined': { roomId: string; guestId: string };
   'auth:success': { guest: GuestData; tokens: AuthTokens };
   'auth:refresh': { tokens: AuthTokens };
   'auth:error': { error: Error };
-  'message:received': { message: ChatMessage };
-  'connection:status': { connected: boolean };
   'error': { error: Error };
 }
 
@@ -61,21 +64,15 @@ export type AltanEventListener<T extends keyof AltanEventMap> = (
 ) => void;
 
 export class AltanSDK {
-  private config: Required<AltanConfig>;
-  private authState: {
-    guest: GuestData | null;
-    tokens: AuthTokens | null;
-    isAuthenticated: boolean;
-  };
+  private config: Required<AltanSDKConfig>;
   private eventListeners: Map<keyof AltanEventMap, Set<Function>>;
   private storageKeys: {
     ACCESS_TOKEN: string;
     REFRESH_TOKEN: string;
     GUEST_DATA: string;
-    ROOM_DATA: string;
   };
 
-  constructor(config: AltanConfig) {
+  constructor(config: AltanSDKConfig) {
     this.config = {
       apiBaseUrl: 'https://api.altan.ai/platform/guest',
       authBaseUrl: 'https://api.altan.ai/auth/login/guest',
@@ -86,23 +83,16 @@ export class AltanSDK {
       ...config,
     };
 
-    this.authState = {
-      guest: null,
-      tokens: null,
-      isAuthenticated: false,
-    };
-
     this.eventListeners = new Map();
     
+    // Account-scoped storage keys
     this.storageKeys = {
-      ACCESS_TOKEN: `altan_guest_access_${this.config.agentId}`,
-      REFRESH_TOKEN: `altan_guest_refresh_${this.config.agentId}`,
-      GUEST_DATA: `altan_guest_data_${this.config.agentId}`,
-      ROOM_DATA: `altan_room_${this.config.agentId}`,
+      ACCESS_TOKEN: `altan_guest_access_${this.config.accountId}`,
+      REFRESH_TOKEN: `altan_guest_refresh_${this.config.accountId}`,
+      GUEST_DATA: `altan_guest_data_${this.config.accountId}`,
     };
 
-    this.debug('Altan SDK initialized', this.config);
-    this.loadStoredAuth();
+    this.debug('Altan SDK initialized', { accountId: this.config.accountId });
   }
 
   /**
@@ -145,25 +135,166 @@ export class AltanSDK {
   }
 
   /**
-   * Authentication methods
+   * Guest Management
    */
-  async createGuestSession(guestInfo?: Partial<GuestData>): Promise<RoomData> {
+  async createGuest(guestInfo: CreateGuestRequest = {}): Promise<GuestData> {
     try {
-      const guestData = {
-        external_id: guestInfo?.external_id || this.generateExternalId(),
-        guest_id: guestInfo?.id || '',
-        first_name: guestInfo?.first_name || 'Anonymous',
-        last_name: guestInfo?.last_name || 'Visitor',
-        email: guestInfo?.email || `visitor_${Date.now()}@anonymous.com`,
-        phone: guestInfo?.phone || '',
+      this.debug('Creating guest', { accountId: this.config.accountId, guestInfo });
+      
+      const requestData = {
+        account_id: this.config.accountId,
+        external_id: guestInfo.external_id,
+        first_name: guestInfo.first_name || 'Anonymous',
+        last_name: guestInfo.last_name || 'Visitor',
+        email: guestInfo.email,
+        phone: guestInfo.phone,
+      };
+
+      const response = await this.fetchWithTimeout(`${this.config.apiBaseUrl}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const guest: GuestData = data.guest;
+
+      // Store guest data
+      if (this.config.enableStorage) {
+        this.storeData(this.storageKeys.GUEST_DATA, guest);
+      }
+
+      this.emit('guest:created', { guest });
+      this.debug('Guest created successfully', guest);
+      
+      return guest;
+    } catch (error) {
+      this.debug('Guest creation failed', error);
+      this.emit('error', { error: error as Error });
+      throw error;
+    }
+  }
+
+  async updateGuest(guestId: string, updates: Partial<CreateGuestRequest>): Promise<GuestData> {
+    try {
+      this.debug('Updating guest', { guestId, updates });
+
+      const response = await this.fetchWithTimeout(`${this.config.apiBaseUrl}/${guestId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const guest: GuestData = data.guest;
+
+      // Update stored guest data
+      if (this.config.enableStorage) {
+        this.storeData(this.storageKeys.GUEST_DATA, guest);
+      }
+
+      this.emit('guest:updated', { guest });
+      this.debug('Guest updated successfully', guest);
+      
+      return guest;
+    } catch (error) {
+      this.debug('Guest update failed', error);
+      this.emit('error', { error: error as Error });
+      throw error;
+    }
+  }
+
+  async getGuestByExternalId(externalId: string): Promise<GuestData> {
+    try {
+      this.debug('Getting guest by external ID', { externalId });
+
+      const response = await this.fetchWithTimeout(
+        `${this.config.apiBaseUrl}/?external_id=${externalId}&account_id=${this.config.accountId}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.guest;
+    } catch (error) {
+      this.debug('Get guest by external ID failed', error);
+      this.emit('error', { error: error as Error });
+      throw error;
+    }
+  }
+
+  /**
+   * Room Management
+   */
+  async createRoom(guestId: string, agentId: string): Promise<RoomData> {
+    try {
+      this.debug('Creating room', { guestId, agentId, accountId: this.config.accountId });
+
+      const requestData = {
+        account_id: this.config.accountId,
+        guest_id: guestId,
+        agent_id: agentId,
+      };
+
+      const response = await this.fetchWithTimeout(`${this.config.apiBaseUrl}/room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const roomData: RoomData = {
+        room_id: data.room_id,
+        agent: data.agent,
+        guest: data.guest,
+        account_id: data.account_id,
+        url: this.getRoomUrl(data.room_id),
+      };
+
+      this.emit('room:created', { room: roomData });
+      this.debug('Room created successfully', roomData);
+      
+      return roomData;
+    } catch (error) {
+      this.debug('Room creation failed', error);
+      this.emit('error', { error: error as Error });
+      throw error;
+    }
+  }
+
+  async joinRoom(roomId: string, guestId: string): Promise<void> {
+    try {
+      this.debug('Joining room', { roomId, guestId, accountId: this.config.accountId });
+
+      const requestData = {
+        account_id: this.config.accountId,
+        guest_id: guestId,
       };
 
       const response = await this.fetchWithTimeout(
-        `${this.config.apiBaseUrl}/room?agent_id=${this.config.agentId}`,
+        `${this.config.apiBaseUrl}/room/${roomId}/members`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(guestData),
+          body: JSON.stringify(requestData),
         }
       );
 
@@ -172,25 +303,27 @@ export class AltanSDK {
         throw new Error(error.detail || `HTTP ${response.status}`);
       }
 
-      const roomData: RoomData = await response.json();
-      
-      // Store room data if storage is enabled
-      if (this.config.enableStorage) {
-        this.storeData(this.storageKeys.ROOM_DATA, roomData);
-        this.storeData(this.storageKeys.GUEST_DATA, roomData.guest);
-      }
-
-      this.emit('room:created', { room: roomData });
-      return roomData;
+      this.emit('room:joined', { roomId, guestId });
+      this.debug('Successfully joined room', { roomId, guestId });
     } catch (error) {
+      this.debug('Join room failed', error);
       this.emit('error', { error: error as Error });
       throw error;
     }
   }
 
-  async authenticateGuest(guestId: string, accountId: string): Promise<AuthTokens> {
+  getRoomUrl(roomId: string): string {
+    return `${this.config.roomBaseUrl}/${roomId}`;
+  }
+
+  /**
+   * Authentication
+   */
+  async authenticateGuest(guestId: string): Promise<AuthTokens> {
     try {
-      const url = `${this.config.authBaseUrl}?guest_id=${guestId}&account_id=${accountId}`;
+      this.debug('Authenticating guest', { guestId, accountId: this.config.accountId });
+
+      const url = `${this.config.authBaseUrl}?guest_id=${guestId}&account_id=${this.config.accountId}`;
       
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
@@ -209,40 +342,41 @@ export class AltanSDK {
 
       const data = await response.json();
       
+      // Extract tokens from response
+      const tokenData = data.token || data;
       const tokens: AuthTokens = {
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        expiresAt: data.expires_at ? new Date(data.expires_at).getTime() : undefined,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        ...(tokenData.expires_at && { expiresAt: new Date(tokenData.expires_at).getTime() }),
       };
 
       const guest: GuestData = data.guest;
 
-      // Update auth state
-      this.authState = {
-        guest,
-        tokens,
-        isAuthenticated: true,
-      };
-
-      // Store tokens if storage is enabled
+      // Store tokens
       if (this.config.enableStorage) {
         this.storeTokens(tokens, guest);
       }
 
       this.emit('auth:success', { guest, tokens });
+      this.debug('Guest authentication successful', { hasTokens: !!tokens.accessToken });
+      
       return tokens;
     } catch (error) {
+      this.debug('Guest authentication failed', error);
       this.emit('auth:error', { error: error as Error });
       throw error;
     }
   }
 
   async refreshTokens(): Promise<AuthTokens> {
-    if (!this.authState.tokens?.refreshToken) {
+    const storedRefreshToken = this.getStoredRefreshToken();
+    if (!storedRefreshToken) {
       throw new Error('No refresh token available');
     }
 
     try {
+      this.debug('Refreshing tokens');
+      
       const response = await this.fetchWithTimeout('https://api.altan.ai/auth/token/guest', {
         method: 'POST',
         headers: {
@@ -251,7 +385,7 @@ export class AltanSDK {
           'Referer': window.location.href,
         },
         body: JSON.stringify({
-          refresh_token: this.authState.tokens.refreshToken,
+          refresh_token: storedRefreshToken,
           jid: false,
         }),
       });
@@ -261,23 +395,28 @@ export class AltanSDK {
       }
 
       const data = await response.json();
+      const tokenData = data.token || data;
       
       const newTokens: AuthTokens = {
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token || this.authState.tokens.refreshToken,
-        expiresAt: data.expires_at ? new Date(data.expires_at).getTime() : undefined,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || storedRefreshToken,
+        ...(tokenData.expires_at && { expiresAt: new Date(tokenData.expires_at).getTime() }),
       };
 
-      this.authState.tokens = newTokens;
-
-      if (this.config.enableStorage && this.authState.guest) {
-        this.storeTokens(newTokens, this.authState.guest);
+      // Update stored tokens
+      if (this.config.enableStorage) {
+        localStorage.setItem(this.storageKeys.ACCESS_TOKEN, newTokens.accessToken);
+        if (newTokens.refreshToken) {
+          localStorage.setItem(this.storageKeys.REFRESH_TOKEN, newTokens.refreshToken);
+        }
       }
 
       this.emit('auth:refresh', { tokens: newTokens });
+      this.debug('Token refresh successful');
+      
       return newTokens;
     } catch (error) {
-      // Clear invalid tokens
+      this.debug('Token refresh failed', error);
       this.clearAuth();
       this.emit('auth:error', { error: error as Error });
       throw error;
@@ -285,80 +424,97 @@ export class AltanSDK {
   }
 
   /**
-   * Room management
+   * Convenience Methods
    */
-  async createRoom(guestInfo?: Partial<GuestData>): Promise<{ room: RoomData; tokens: AuthTokens }> {
-    const room = await this.createGuestSession(guestInfo);
-    const tokens = await this.authenticateGuest(room.guest.id, room.guest.account_id);
-    
-    return { room, tokens };
-  }
-
-  getRoomUrl(roomId: string): string {
-    return `${this.config.roomBaseUrl}/${roomId}`;
-  }
-
-  /**
-   * State management
-   */
-  getAuthState() {
-    return { ...this.authState };
-  }
-
-  isAuthenticated(): boolean {
-    return this.authState.isAuthenticated && !!this.authState.tokens?.accessToken;
-  }
-
-  getStoredRoom(): RoomData | null {
-    if (!this.config.enableStorage) return null;
-    return this.getData(this.storageKeys.ROOM_DATA);
-  }
-
-  /**
-   * Utility methods
-   */
-  clearAuth(): void {
-    this.authState = {
-      guest: null,
-      tokens: null,
-      isAuthenticated: false,
-    };
-
-    if (this.config.enableStorage) {
-      this.clearStoredData();
-    }
-  }
-
-  private generateExternalId(): string {
-    return `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private loadStoredAuth(): void {
-    if (!this.config.enableStorage) return;
-
+  async createSession(agentId: string, guestInfo: CreateGuestRequest = {}): Promise<{
+    guest: GuestData;
+    room: RoomData;
+    tokens: AuthTokens;
+  }> {
     try {
-      const accessToken = localStorage.getItem(this.storageKeys.ACCESS_TOKEN);
-      const refreshToken = localStorage.getItem(this.storageKeys.REFRESH_TOKEN);
-      const guestData = this.getData(this.storageKeys.GUEST_DATA);
+      this.debug('Creating complete session', { agentId, guestInfo });
 
-      if (accessToken && refreshToken && guestData) {
-        this.authState = {
-          guest: guestData,
-          tokens: { accessToken, refreshToken },
-          isAuthenticated: true,
-        };
-        this.debug('Loaded stored authentication');
+      // 1. Create or get guest
+      let guest: GuestData;
+      if (guestInfo.external_id) {
+        try {
+          guest = await this.getGuestByExternalId(guestInfo.external_id);
+          this.debug('Found existing guest', guest);
+        } catch {
+          guest = await this.createGuest(guestInfo);
+          this.debug('Created new guest', guest);
+        }
+      } else {
+        guest = await this.createGuest(guestInfo);
       }
+
+      // 2. Create room
+      const room = await this.createRoom(guest.id, agentId);
+
+      // 3. Authenticate guest
+      const tokens = await this.authenticateGuest(guest.id);
+
+      this.debug('Session created successfully', {
+        guestId: guest.id,
+        roomId: room.room_id,
+        hasTokens: !!tokens.accessToken,
+      });
+
+      return { guest, room, tokens };
     } catch (error) {
-      this.debug('Failed to load stored auth:', error);
+      this.debug('Session creation failed', error);
+      throw error;
     }
   }
 
+  /**
+   * Storage Management
+   */
+  getStoredGuest(): GuestData | null {
+    if (!this.config.enableStorage) return null;
+    return this.getData(this.storageKeys.GUEST_DATA);
+  }
+
+  getStoredTokens(): { accessToken: string; refreshToken: string } | null {
+    if (!this.config.enableStorage) return null;
+    
+    const accessToken = localStorage.getItem(this.storageKeys.ACCESS_TOKEN);
+    const refreshToken = localStorage.getItem(this.storageKeys.REFRESH_TOKEN);
+    
+    if (accessToken && refreshToken) {
+      return { accessToken, refreshToken };
+    }
+    
+    return null;
+  }
+
+  private getStoredRefreshToken(): string | null {
+    if (!this.config.enableStorage) return null;
+    return localStorage.getItem(this.storageKeys.REFRESH_TOKEN);
+  }
+
+  clearAuth(): void {
+    if (this.config.enableStorage) {
+      Object.values(this.storageKeys).forEach((key) => {
+        localStorage.removeItem(key);
+      });
+    }
+    this.debug('Authentication cleared');
+  }
+
+  /**
+   * Utility Methods
+   */
   private storeTokens(tokens: AuthTokens, guest: GuestData): void {
     try {
-      localStorage.setItem(this.storageKeys.ACCESS_TOKEN, tokens.accessToken);
-      localStorage.setItem(this.storageKeys.REFRESH_TOKEN, tokens.refreshToken);
+      if (tokens.accessToken) {
+        localStorage.setItem(this.storageKeys.ACCESS_TOKEN, tokens.accessToken);
+      }
+      if (tokens.refreshToken) {
+        localStorage.setItem(this.storageKeys.REFRESH_TOKEN, tokens.refreshToken);
+      }
       localStorage.setItem(this.storageKeys.GUEST_DATA, JSON.stringify(guest));
+      this.debug('Tokens stored successfully');
     } catch (error) {
       this.debug('Failed to store tokens:', error);
     }
@@ -382,25 +538,12 @@ export class AltanSDK {
     }
   }
 
-  private clearStoredData(): void {
-    try {
-      Object.values(this.storageKeys).forEach((key) => {
-        localStorage.removeItem(key);
-      });
-    } catch (error) {
-      this.debug('Failed to clear stored data:', error);
-    }
-  }
-
   private debug(...args: any[]): void {
     if (this.config.debug) {
       console.log('[Altan SDK]', ...args);
     }
   }
 
-  /**
-   * Fetch with timeout support
-   */
   private async fetchWithTimeout(
     url: string, 
     options: RequestInit = {}
@@ -427,7 +570,7 @@ export class AltanSDK {
   }
 }
 
-// Factory function for easier usage
-export function createAltanSDK(config: AltanConfig): AltanSDK {
+// Factory function
+export function createAltanSDK(config: AltanSDKConfig): AltanSDK {
   return new AltanSDK(config);
 } 

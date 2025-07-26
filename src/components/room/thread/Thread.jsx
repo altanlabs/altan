@@ -58,10 +58,21 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
+  // Debug logging for Thread component state
+  console.log('🧵 === THREAD COMPONENT DEBUG ===');
+  console.log('🧵 Mode:', mode);
+  console.log('🧵 ThreadId:', threadId);
+  console.log('🧵 LastThreadId:', lastThreadId);
+  console.log('🧵 HasLoaded:', hasLoaded);
+  console.log('🧵 IsCreation:', isCreation);
+  console.log('🧵 WebSocket isOpen:', isOpen);
+  console.log('🧵 Room:', room?.id);
+  console.log('🧵 Thread object:', thread);
+
   const manageSubscription = useCallback(
     (threadId) => {
       if (threadId) {
-        subscribe(`thread:${threadId}`); // , () => dispatch(readThread({ threadId })));
+        subscribe(`thread:${threadId}`);
       }
     },
     [subscribe],
@@ -69,35 +80,69 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
 
   // INITIALIZATION LOGIC
   useEffect(() => {
+    console.log('🧵 === THREAD INITIALIZATION EFFECT ===');
+    console.log('🧵 ThreadId:', threadId);
+    console.log('🧵 LastThreadId:', lastThreadId);
+    console.log('🧵 IsCreation:', isCreation);
+    console.log('🧵 WebSocket isOpen:', isOpen);
+    console.log(
+      '🧵 Should fetch thread?',
+      !!threadId && threadId !== lastThreadId && !isCreation && !!isOpen,
+    );
+
     if (!!threadId && threadId !== lastThreadId && !isCreation && !!isOpen) {
+      console.log('🧵 Fetching thread:', threadId);
       setLastThreadId(threadId);
+      setHasLoaded(false); // Reset loading state
 
       dispatch(fetchThread({ threadId }))
         .then((response) => {
+          console.log('🧵 fetchThread response:', response);
           if (!response) {
+            console.log('🧵 No response, redirecting to 404');
             history.replace('/404');
           } else {
+            console.log('🧵 Thread fetched successfully, managing subscription');
             manageSubscription(threadId);
-            setTimeout(() => setHasLoaded(true), 1500);
+            console.log('🧵 Setting hasLoaded to true in 1.5s');
+            setTimeout(() => {
+              console.log('🧵 Setting hasLoaded to true NOW');
+              setHasLoaded(true);
+            }, 1500);
           }
         })
         .catch((error) => {
-          console.error('error: fetching thread:', error);
+          console.error('🧵 Error fetching thread:', error);
           history.replace('/404');
         });
     } else if (!threadId || isCreation) {
+      console.log('🧵 No threadId or in creation mode, setting hasLoaded to true immediately');
       // If no threadId or in creation mode, mark as loaded immediately
       // so empty state can show
       setHasLoaded(true);
+    } else {
+      console.log('🧵 Conditions not met for thread fetch, current state:', {
+        hasThreadId: !!threadId,
+        isDifferentThread: threadId !== lastThreadId,
+        notCreation: !isCreation,
+        websocketOpen: !!isOpen,
+      });
     }
   }, [threadId, isCreation, isOpen]);
 
   useEffect(() => {
+    console.log('🧵 === WEBSOCKET SUBSCRIPTION EFFECT ===');
+    console.log('🧵 WebSocket isOpen:', isOpen);
+    console.log('🧵 ThreadId:', threadId);
     if (isOpen && threadId) {
+      console.log('🧵 Managing subscription for thread:', threadId);
       manageSubscription(threadId);
       return () => {
+        console.log('🧵 Unsubscribing from thread:', threadId);
         unsubscribe(`thread:${threadId}`, () => dispatch(readThread({ threadId })));
       };
+    } else {
+      console.log('🧵 Not managing subscription - isOpen:', isOpen, 'threadId:', threadId);
     }
   }, [isOpen, threadId]);
 

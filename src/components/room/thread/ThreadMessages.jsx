@@ -1,13 +1,6 @@
 import { IconButton } from '@mui/material';
 import { throttle } from 'lodash';
-import React, {
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-  memo,
-} from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect, memo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import Message from './Message.jsx';
@@ -46,24 +39,30 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(() => (<div className="h-[170px]" />));
+const Footer = memo(() => <div className="h-[170px]" />);
 Footer.displayName = 'Footer';
 
 const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
   <div
     style={{
       paddingTop: isCreation ? '275px' : '85px',
-      ...(!moreMessages || isCreation) && {
+      ...((!moreMessages || isCreation) && {
         height: 1,
-      },
+      }),
       paddingLeft: 15,
       paddingRight: 15,
     }}
   >
     {moreMessages && !isCreation && hasLoaded && (
       <>
-        <ScrollSeekPlaceholder disableImage lines={lines[0]} />
-        <ScrollSeekPlaceholder disableImage lines={lines[1]} />
+        <ScrollSeekPlaceholder
+          disableImage
+          lines={lines[0]}
+        />
+        <ScrollSeekPlaceholder
+          disableImage
+          lines={lines[1]}
+        />
       </>
     )}
   </div>
@@ -74,17 +73,18 @@ ThreadHeader.displayName = 'ThreadHeader';
  * Optional: A separate memoized button to jump to bottom
  * so that only IT re-renders when `showButton` changes
  */
-const ScrollToBottomButton = memo(({
-  showButton,
-  onClick,
-}) => {
+const ScrollToBottomButton = memo(({ showButton, onClick }) => {
   if (!showButton) return null;
   return (
     <IconButton
       sx={{ position: 'absolute', bottom: 100, right: 15, zIndex: 999 }}
       onClick={onClick}
     >
-      <Iconify icon="mdi:arrow-down" className="text-black dark:text-white" width={25} />
+      <Iconify
+        icon="mdi:arrow-down"
+        className="text-black dark:text-white"
+        width={25}
+      />
     </IconButton>
   );
 });
@@ -217,37 +217,41 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null }) 
     isCreationRef.current = isCreation;
   }, [isCreation]);
 
-  const handleScroll = useMemo(() => throttle((e) => {
-    // If we're in "creation" mode, we skip the scroll logic
-    if (isCreationRef.current) return;
+  const handleScroll = useMemo(
+    () =>
+      throttle((e) => {
+        // If we're in "creation" mode, we skip the scroll logic
+        if (isCreationRef.current) return;
 
-    const { scrollTop, clientHeight, scrollHeight } = e.target;
-    const isTop = scrollTop <= 300;
-    const isBottom = scrollHeight - scrollTop - clientHeight < 300;
-    const isSemiBottom = scrollHeight - scrollTop - clientHeight < 1500;
+        const { scrollTop, clientHeight, scrollHeight } = e.target;
+        const isTop = scrollTop <= 300;
+        const isBottom = scrollHeight - scrollTop - clientHeight < 300;
+        const isSemiBottom = scrollHeight - scrollTop - clientHeight < 1500;
 
-    // Update our internal ref
-    scrollStateRef.current = { top: isTop, bottom: isBottom, semiBottom: isSemiBottom };
+        // Update our internal ref
+        scrollStateRef.current = { top: isTop, bottom: isBottom, semiBottom: isSemiBottom };
 
-    // If near top, fetch more messages
-    if (isTop && !isFetching && hasLoadedRef.current) {
-      fetchMessages()
-        .then(() => {
-          // If fetch is successful, scroll to the desired index
-          scrollToIndex(25, 'instant');
-        })
-        .catch(() => {
-          // Handle rejection here
-        })
-        .finally(() => {
-          setTimeout(() => setIsFetching(false), 500);
-        });
-    }
+        // If near top, fetch more messages
+        if (isTop && !isFetching && hasLoadedRef.current) {
+          fetchMessages()
+            .then(() => {
+              // If fetch is successful, scroll to the desired index
+              scrollToIndex(25, 'instant');
+            })
+            .catch(() => {
+              // Handle rejection here
+            })
+            .finally(() => {
+              setTimeout(() => setIsFetching(false), 500);
+            });
+        }
 
-    // If near bottom, hide the scroll-down button
-    // If not near bottom, show it
-    setShowScrollDown(!isBottom);
-  }, 1000), [fetchMessages, isFetching, scrollToIndex]);
+        // If near bottom, hide the scroll-down button
+        // If not near bottom, show it
+        setShowScrollDown(!isBottom);
+      }, 1000),
+    [fetchMessages, isFetching, scrollToIndex],
+  );
 
   // ----------------------------------------------
   // 4d) followOutput logic

@@ -4,22 +4,23 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-
-import { AltanConfig, GuestData, RoomData, AuthTokens } from './altan-sdk';
+import { AltanSDKConfig, GuestData, RoomData, AuthTokens, CreateGuestRequest } from './altan-sdk';
 import { useAltan } from './react-hooks';
 
 // Context for sharing SDK instance across components
 interface AltanContextValue {
   sdk: ReturnType<typeof useAltan>['sdk'];
   auth: ReturnType<typeof useAltan>['auth'];
+  guest: ReturnType<typeof useAltan>['guest'];
   room: ReturnType<typeof useAltan>['room'];
-  isConnected: boolean;
-  initialize: (guestInfo?: Partial<GuestData>) => Promise<{ room: RoomData; tokens: AuthTokens }>;
+  createSession: ReturnType<typeof useAltan>['createSession'];
+  initializeExistingGuest: ReturnType<typeof useAltan>['initializeExistingGuest'];
+  joinExistingRoom: ReturnType<typeof useAltan>['joinExistingRoom'];
 }
 
 const AltanContext = createContext<AltanContextValue | null>(null);
 
-export function useAltanContext() {
+export function useAltanContext(): AltanContextValue {
   const context = useContext(AltanContext);
   if (!context) {
     throw new Error('useAltanContext must be used within AltanProvider');
@@ -29,11 +30,11 @@ export function useAltanContext() {
 
 // Provider component
 interface AltanProviderProps {
-  config: AltanConfig;
+  config: AltanSDKConfig;
   children: React.ReactNode;
 }
 
-export function AltanProvider({ config, children }: AltanProviderProps) {
+export function AltanProvider({ config, children }: AltanProviderProps): JSX.Element {
   const altanState = useAltan(config);
 
   return (
@@ -45,9 +46,10 @@ export function AltanProvider({ config, children }: AltanProviderProps) {
 
 // Chat Widget Component
 interface ChatWidgetProps {
+  accountId: string;
   agentId: string;
-  config?: Partial<AltanConfig>;
-  guestInfo?: Partial<GuestData>;
+  config?: Partial<AltanSDKConfig>;
+  guestInfo?: CreateGuestRequest;
   position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
   buttonColor?: string;
   buttonIcon?: React.ReactNode;
@@ -60,6 +62,7 @@ interface ChatWidgetProps {
 }
 
 export function ChatWidget({
+  accountId,
   agentId,
   config = {},
   guestInfo,
@@ -72,150 +75,142 @@ export function ChatWidget({
   onRoomCreated,
   onAuthSuccess,
   onError,
-}: ChatWidgetProps) {
+}: ChatWidgetProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const fullConfig: AltanConfig = {
-    agentId,
+  const fullConfig: AltanSDKConfig = {
+    accountId,
     debug: false,
     ...config,
   };
 
-  const { auth, room, initialize } = useAltan(fullConfig);
+  const { auth, room, createSession } = useAltan(fullConfig);
 
-  const toggleChat = () => setIsOpen(!isOpen);
+  const toggleChat = (): void => setIsOpen(!isOpen);
 
   // Auto-initialize on first open
   useEffect(() => {
     if (isOpen && !isInitialized) {
-      initialize(guestInfo)
-        .then(({ room: createdRoom, tokens }) => {
+      createSession(agentId, guestInfo)
+        .then(({ room: createdRoom, tokens, guest }) => {
           setIsInitialized(true);
           onRoomCreated?.(createdRoom);
-          onAuthSuccess?.(auth.guest!, tokens);
+          onAuthSuccess?.(guest, tokens);
         })
-        .catch((error) => {
+        .catch((error: Error) => {
           onError?.(error);
         });
     }
-  }, [isOpen, isInitialized, initialize, guestInfo, onRoomCreated, onAuthSuccess, onError, auth.guest]);
+  }, [isOpen, isInitialized, createSession, agentId, guestInfo, onRoomCreated, onAuthSuccess, onError]);
 
-  // Position styles
-  const getPositionStyles = () => {
-    const base = { position: 'fixed', zIndex: 1000 } as const;
-    switch (position) {
-      case 'bottom-left':
-        return { ...base, bottom: '20px', left: '20px' };
-      case 'bottom-right':
-        return { ...base, bottom: '20px', right: '20px' };
-      case 'top-left':
-        return { ...base, top: '20px', left: '20px' };
-      case 'top-right':
-        return { ...base, top: '20px', right: '20px' };
-      default:
-        return { ...base, bottom: '20px', right: '20px' };
+  // Auto-refresh tokens on auth events
+  useEffect(() => {
+    if (auth.authenticatedGuest && room.currentRoom && iframeRef.current) {
+      const iframe = iframeRef.current;
+      const roomWindow = iframe.contentWindow;
+      
+      if (roomWindow && auth.tokens) {
+        roomWindow.postMessage({
+          type: 'auth_update',
+          accessToken: auth.tokens.accessToken,
+          guest: auth.authenticatedGuest,
+        }, '*');
+      }
     }
-  };
+  }, [auth.authenticatedGuest, auth.tokens, room.currentRoom]);
 
-  // Button styles
-  const buttonStyles: React.CSSProperties = {
-    width: '60px',
-    height: '60px',
-    borderRadius: '50%',
-    backgroundColor: buttonColor,
-    border: 'none',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontSize: '24px',
-    transition: 'all 0.3s ease',
-  };
-
-  // Chat window positioning
-  const chatPosition = (() => {
-    const baseStyle = {
+  const getPositionStyles = (): React.CSSProperties => {
+    const baseStyles: React.CSSProperties = {
       position: 'fixed',
-      zIndex: 999,
-      width: '400px',
-      height: '600px',
-      borderRadius: '16px',
-      overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-      transform: isOpen ? 'scale(1)' : 'scale(0)',
-      opacity: isOpen ? 1 : 0,
-      transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      pointerEvents: isOpen ? 'auto' : 'none',
-      transformOrigin: 'bottom right',
+      zIndex: 1000,
     };
 
-    const positionStyles = getPositionStyles();
-    
-    if (positionStyles.bottom) {
-      return { ...baseStyle, bottom: `${parseInt(positionStyles.bottom) + 70}px`, right: positionStyles.right };
-    } else if (positionStyles.top) {
-      return { ...baseStyle, top: `${parseInt(positionStyles.top) + 70}px`, right: positionStyles.right };
+    switch (position) {
+      case 'bottom-left':
+        return { ...baseStyles, bottom: '20px', left: '20px' };
+      case 'bottom-right':
+        return { ...baseStyles, bottom: '20px', right: '20px' };
+      case 'top-left':
+        return { ...baseStyles, top: '20px', left: '20px' };
+      case 'top-right':
+        return { ...baseStyles, top: '20px', right: '20px' };
+      default:
+        return { ...baseStyles, bottom: '20px', right: '20px' };
     }
-    
-    return { ...baseStyle, bottom: '90px', right: '20px' };
-  })();
-
-  const chatWindowStyles: React.CSSProperties = {
-    backgroundColor: 'white',
-    border: '1px solid #e1e5e9',
   };
-
-  // Default button icon
-  const defaultButtonIcon = (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-    </svg>
-  );
 
   return (
     <>
-      {/* Chat Button */}
-      {CustomButton ? (
-        <div style={getPositionStyles()}>
+      {/* Chat Toggle Button */}
+      <div style={{ ...getPositionStyles(), ...style }} className={className}>
+        {CustomButton ? (
           <CustomButton isOpen={isOpen} onClick={toggleChat} />
-        </div>
-      ) : (
-        <button
-          style={{ ...getPositionStyles(), ...buttonStyles }}
-          onClick={toggleChat}
-          aria-label={isOpen ? 'Close chat' : 'Open chat'}
-        >
-          {buttonIcon || defaultButtonIcon}
-        </button>
-      )}
+        ) : (
+          <button
+            onClick={toggleChat}
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: buttonColor,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              transition: 'all 0.3s ease',
+              transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+            }}
+          >
+            {buttonIcon || (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+              </svg>
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Chat Window */}
       {isOpen && (
-        <div style={{ ...chatWindowStyles, ...chatPosition }}>
-          {room.currentRoom ? (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: position.includes('bottom') ? '90px' : undefined,
+            top: position.includes('top') ? '90px' : undefined,
+            right: position.includes('right') ? '20px' : undefined,
+            left: position.includes('left') ? '20px' : undefined,
+            width: '400px',
+            height: '600px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+            zIndex: 999,
+            overflow: 'hidden',
+          }}
+        >
+          {isInitialized && room.currentRoom ? (
             <iframe
               ref={iframeRef}
-              src={room.getRoomUrl() || ''}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allow="clipboard-write; microphone; camera"
-              style={{ borderRadius: '16px' }}
-              title="Altan AI Chat"
+              src={room.currentRoom.url}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '12px',
+              }}
+              title="Altan Chat"
             />
           ) : (
             <div
               style={{
-                width: '100%',
-                height: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5',
+                height: '100%',
                 color: '#666',
                 fontSize: '14px',
               }}
@@ -231,9 +226,10 @@ export function ChatWidget({
 
 // Room Component (for embedding in existing layouts)
 interface RoomProps {
+  accountId: string;
   agentId: string;
-  config?: Partial<AltanConfig>;
-  guestInfo?: Partial<GuestData>;
+  config?: Partial<AltanSDKConfig>;
+  guestInfo?: CreateGuestRequest;
   width?: number | string;
   height?: number | string;
   className?: string;
@@ -244,6 +240,7 @@ interface RoomProps {
 }
 
 export function Room({
+  accountId,
   agentId,
   config = {},
   guestInfo,
@@ -254,410 +251,257 @@ export function Room({
   onRoomCreated,
   onAuthSuccess,
   onError,
-}: RoomProps) {
+}: RoomProps): JSX.Element {
   const [isInitialized, setIsInitialized] = useState(false);
   const [authData, setAuthData] = useState<{ guest: GuestData; tokens: AuthTokens } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const fullConfig: AltanConfig = {
-    agentId,
+  const fullConfig: AltanSDKConfig = {
+    accountId,
     debug: false,
     ...config,
   };
 
-  const { auth, room, initialize } = useAltan(fullConfig);
+  const { auth, room, createSession } = useAltan(fullConfig);
 
   // Auto-initialize on mount
   useEffect(() => {
     if (!isInitialized) {
-      initialize(guestInfo)
-        .then(({ room: createdRoom, tokens }) => {
-          setIsInitialized(true);
-          setAuthData({ guest: auth.guest!, tokens });
-          
+      if (fullConfig.debug) {
+        console.log('🚀 === SDK INITIALIZATION STARTING ===');
+        console.log('🚀 AccountId:', accountId);
+        console.log('🚀 AgentId:', agentId);
+        console.log('🚀 Config:', fullConfig);
+        console.log('🚀 GuestInfo:', guestInfo);
+      }
+      
+      createSession(agentId, guestInfo)
+        .then(({ room: createdRoom, tokens, guest }) => {
           if (fullConfig.debug) {
-            console.log('🎯 Initial tokens received:', {
+            console.log('🎯 === SDK INITIALIZATION SUCCESS ===');
+            console.log('🎯 Created room:', createdRoom);
+            console.log('🎯 Auth guest:', guest);
+            console.log('🎯 Tokens received:', {
               hasAccessToken: !!tokens.accessToken,
               hasRefreshToken: !!tokens.refreshToken,
+              accessToken: tokens.accessToken ? 'Present' : 'Missing',
+              refreshToken: tokens.refreshToken ? 'Present' : 'Missing',
               note: 'Will refresh reactively on 401 errors (no expiry time from backend)'
             });
           }
           
+          setIsInitialized(true);
+          setAuthData({ guest, tokens });
+          
           onRoomCreated?.(createdRoom);
-          onAuthSuccess?.(auth.guest!, tokens);
+          onAuthSuccess?.(guest, tokens);
         })
-        .catch((error) => {
+        .catch((error: Error) => {
           if (fullConfig.debug) {
-            console.error('❌ Failed to initialize:', error);
+            console.error('❌ === SDK INITIALIZATION FAILED ===');
+            console.error('❌ Error details:', error);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error stack:', error.stack);
           }
           onError?.(error);
         });
     }
-  }, [isInitialized, initialize, guestInfo, onRoomCreated, onAuthSuccess, onError, auth.guest, fullConfig.debug]);
+  }, [isInitialized, createSession, agentId, guestInfo, onRoomCreated, onAuthSuccess, onError, accountId, fullConfig.debug]);
 
   // Debug: Listen to ALL messages
   useEffect(() => {
     if (!fullConfig.debug) return;
 
-    const handleAllMessages = (event: MessageEvent) => {
+    const handleAllMessages = (event: MessageEvent): void => {
       console.log('🌍 ALL MESSAGES:', {
         type: event.data?.type,
         origin: event.origin,
-        source: event.source === window ? 'window' : event.source === iframeRef.current?.contentWindow ? 'our-iframe' : 'other',
-        data: event.data
+        data: event.data,
+        timestamp: new Date().toISOString(),
       });
     };
 
-    console.log('🔧 Setting up global message listener for debugging');
     window.addEventListener('message', handleAllMessages);
-    return () => {
-      console.log('🧹 Removing global message listener');
-      window.removeEventListener('message', handleAllMessages);
-    };
+    return () => window.removeEventListener('message', handleAllMessages);
   }, [fullConfig.debug]);
 
-  // Handle authentication requests from iframe
+  // Handle authentication iframe messages
   useEffect(() => {
-    const handleIframeMessage = (event: MessageEvent) => {
-      // Handle ALL auth-related messages regardless of origin
-      if (event.data?.type && (
-        event.data.type === 'request_guest_auth' || 
-        event.data.type === 'refresh_token' || 
-        event.data.type === 'auth_401_error'
-      )) {
-        
-        if (fullConfig.debug) {
-          console.log('🎯 Handling auth message:', {
-            type: event.data?.type,
-            origin: event.origin,
-            data: event.data
-          });
-        }
-
-        const { data } = event;
-
-        if (data.type === 'request_guest_auth') {
-          if (fullConfig.debug) {
-            console.log('📨 Received guest auth request from iframe');
-          }
-
-          if (authData) {
-            // Send new format (for our SDK)
-            const guestAuthResponse = {
-              type: 'guest_auth_response',
-              isAuthenticated: true,
-              guest: authData.guest,
-              accessToken: authData.tokens.accessToken,
-            };
-
-            // Also send in the format the interceptor expects
-            const tokenResponse = {
-              type: 'new_access_token',
-              token: authData.tokens.accessToken,
-              guest: authData.guest,
-              user: null, // Explicitly null for guest mode
-              success: true
-            };
-
-            if (fullConfig.debug) {
-              console.log('📤 Sending initial guest auth response to iframe (both formats):', {
-                guestAuth: guestAuthResponse,
-                tokenRefresh: tokenResponse
-              });
-            }
-
-            // Send to specific iframe if available, otherwise broadcast
-            const target = iframeRef.current?.contentWindow || event.source;
-            if (target) {
-              (target as Window).postMessage(guestAuthResponse, '*');
-              (target as Window).postMessage(tokenResponse, '*');
-            }
-          } else {
-            // Send failure response
-            const failureResponse = {
-              type: 'guest_auth_response',
-              isAuthenticated: false,
-              error: 'Guest authentication not available',
-            };
-            
-            const tokenFailureResponse = {
-              type: 'new_access_token',
-              token: null,
-              guest: null,
-              user: null,
-              success: false,
-              error: 'Guest authentication not available'
-            };
-
-            const target = iframeRef.current?.contentWindow || event.source;
-            if (target) {
-              (target as Window).postMessage(failureResponse, '*');
-              (target as Window).postMessage(tokenFailureResponse, '*');
-            }
-          }
-        } else if (data.type === 'auth_401_error' || data.type === 'refresh_token') {
-          // Handle 401 errors from iframe by refreshing tokens
-          if (fullConfig.debug) {
-            console.log(`🚨 Received ${data.type} from iframe, refreshing tokens...`);
-          }
-          refreshTokens();
-        }
-      }
-    };
-
-    if (fullConfig.debug) {
-      console.log('🔧 Setting up iframe message listener');
-    }
-
-    window.addEventListener('message', handleIframeMessage);
-    return () => {
-      if (fullConfig.debug) {
-        console.log('🧹 Removing iframe message listener');
-      }
-      window.removeEventListener('message', handleIframeMessage);
-    };
-  }, [authData, fullConfig.debug]);
-
-  // Handle 401-based token refresh (reactive approach)
-  useEffect(() => {
-    if (!authData?.tokens) {
-      if (fullConfig.debug) {
-        console.log('⚠️ No auth data available for token refresh');
-      }
-      return;
-    }
-
-    if (fullConfig.debug) {
-      console.log('🔧 Set up reactive token refresh (will refresh on 401 errors)');
-    }
-  }, [authData?.tokens, fullConfig.debug]);
-
-  const refreshTokens = async () => {
-    if (!authData) {
-      if (fullConfig.debug) {
-        console.error('❌ Cannot refresh tokens: no auth data available');
-      }
-      return;
-    }
-
-    try {
-      if (fullConfig.debug) {
-        console.log('🔄 Starting token refresh process...');
-        console.log('Current auth state:', {
-          hasRefreshToken: !!authData.tokens.refreshToken,
-          hasAccessToken: !!authData.tokens.accessToken,
-          tokenExpiresAt: authData.tokens.expiresAt
-        });
-      }
-
-      await auth.refreshTokens();
+    const handleMessage = (event: MessageEvent): void => {
+      const { data } = event;
       
-      // Get the updated tokens from auth state
-      if (auth.tokens) {
-        const updatedAuthData = {
-          guest: authData.guest,
-          tokens: auth.tokens,
-        };
-
-        setAuthData(updatedAuthData);
-
-        // Send updated tokens to iframe (support both message formats)
-        if (iframeRef.current?.contentWindow) {
-          // Send new format (for our SDK)
-          const guestAuthResponse = {
+      // Handle the actual message type that the iframe sends
+      if (data?.type === 'request_guest_auth' && authData) {
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+          if (fullConfig.debug) {
+            console.log('📡 Received guest auth request from iframe');
+            console.log('📡 Sending auth data to iframe:', {
+              type: 'guest_auth_response',
+              accessToken: authData.tokens.accessToken ? 'Present' : 'Missing',
+              refreshToken: authData.tokens.refreshToken ? 'Present' : 'Missing',
+              guest: authData.guest,
+            });
+          }
+          
+          // Send the response in the format the iframe expects
+          iframe.contentWindow.postMessage({
             type: 'guest_auth_response',
             isAuthenticated: true,
-            guest: updatedAuthData.guest,
-            accessToken: auth.tokens.accessToken,
-          };
-
-          // Send legacy format (for existing widget compatibility) - matching expected format
-          const tokenResponse = {
-            type: 'new_access_token',
-            token: auth.tokens.accessToken,
-            guest: updatedAuthData.guest,
-            user: null, // Explicitly null for guest mode
-            success: true
-          };
-
-          if (fullConfig.debug) {
-            console.log('📤 Sending refreshed auth tokens to iframe (both formats):', {
-              guestAuth: guestAuthResponse,
-              tokenRefresh: tokenResponse
-            });
-          }
-
-          iframeRef.current.contentWindow.postMessage(guestAuthResponse, '*');
-          iframeRef.current.contentWindow.postMessage(tokenResponse, '*');
-        }
-
-        if (fullConfig.debug) {
-          console.log('✅ Token refresh completed successfully');
-          console.log('New token details:', {
-            hasNewAccessToken: !!auth.tokens.accessToken,
-            hasNewRefreshToken: !!auth.tokens.refreshToken,
-            newExpiresAt: auth.tokens.expiresAt
-          });
-        }
-      } else {
-        if (fullConfig.debug) {
-          console.error('❌ Token refresh completed but no new tokens available');
-        }
-      }
-    } catch (error) {
-      if (fullConfig.debug) {
-        console.error('❌ Token refresh failed with error:', error);
-      }
-      onError?.(error as Error);
-    }
-  };
-
-  // Expose manual refresh function for debugging
-  useEffect(() => {
-    if (fullConfig.debug && authData) {
-      (window as any).manualRefreshTokens = () => {
-        console.log('🚀 Manual token refresh triggered');
-        refreshTokens();
-      };
-      console.log('🔧 Debug mode: Run `manualRefreshTokens()` in console to test token refresh');
-    }
-    
-    return () => {
-      if (fullConfig.debug) {
-        delete (window as any).manualRefreshTokens;
-      }
-    };
-  }, [fullConfig.debug, authData]);
-
-  // Update iframe URL when room is available and send activation message
-  useEffect(() => {
-    if (iframeRef.current && room.currentRoom) {
-      iframeRef.current.src = room.getRoomUrl() || '';
-      
-      // Send activation message to iframe after it loads
-      const handleIframeLoad = () => {
-        if (iframeRef.current?.contentWindow) {
-          if (fullConfig.debug) {
-            console.log('🚀 Iframe loaded, sending initialization messages...');
-          }
-
-          // Send activation message
-          iframeRef.current.contentWindow.postMessage({
-            type: 'activate_interface_parenthood'
+            guest: authData.guest,
+            accessToken: authData.tokens.accessToken,
           }, '*');
           
-          // Send guest mode initialization to prevent user profile fetching
-          if (authData) {
-            // Send multiple formats to ensure compatibility
-            const messages = [
-              {
-                type: 'init_guest_mode',
-                guest: authData.guest,
-                accessToken: authData.tokens.accessToken,
-              },
-              {
-                type: 'guest_auth_response',
-                isAuthenticated: true,
-                guest: authData.guest,
-                accessToken: authData.tokens.accessToken,
-              },
-              {
-                type: 'new_access_token',
-                token: authData.tokens.accessToken,
-                guest: authData.guest,
-                user: null,
-                success: true
-              }
-            ];
-
-            messages.forEach((msg, idx) => {
-              setTimeout(() => {
-                iframeRef.current?.contentWindow?.postMessage(msg, '*');
-                if (fullConfig.debug) {
-                  console.log(`📤 Sent message ${idx + 1}/${messages.length}:`, msg);
-                }
-              }, idx * 100); // Stagger messages
-            });
-          }
-          
-          if (fullConfig.debug) {
-            console.log('✅ All initialization messages sent to iframe');
-          }
+          // Also send in the token refresh format
+          iframe.contentWindow.postMessage({
+            type: 'new_access_token',
+            token: authData.tokens.accessToken,
+            guest: authData.guest,
+            user: null,
+            success: true
+          }, '*');
         }
-      };
+      }
+    };
 
-      iframeRef.current.addEventListener('load', handleIframeLoad);
-      return () => iframeRef.current?.removeEventListener('load', handleIframeLoad);
-    }
-  }, [room.currentRoom, room, fullConfig.debug, authData]);
-
-  const containerStyle: React.CSSProperties = {
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
-    borderRadius: '8px',
-    overflow: 'hidden',
-    ...style,
-  };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [authData, fullConfig.debug]);
 
   return (
-    <div className={className} style={containerStyle}>
-      {room.currentRoom ? (
+    <div 
+      className={className} 
+      style={{ 
+        width, 
+        height, 
+        position: 'relative',
+        overflow: 'hidden',
+        ...style 
+      }}
+    >
+      {isInitialized && room.currentRoom ? (
         <iframe
           ref={iframeRef}
-          src={room.getRoomUrl() || ''}
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          allow="clipboard-write; microphone; camera"
-          title="Altan AI Chat"
+          src={room.currentRoom.url}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+          }}
+                     title="Altan Room"
+           onLoad={() => {
+             if (fullConfig.debug) {
+               console.log('🎬 Iframe loaded, room URL:', room.currentRoom?.url);
+             }
+             
+             // Send auth data immediately when iframe loads
+             if (authData && iframeRef.current?.contentWindow) {
+               setTimeout(() => {
+                 if (fullConfig.debug) {
+                   console.log('📡 Sending initial auth data to newly loaded iframe');
+                 }
+                 
+                 iframeRef.current?.contentWindow?.postMessage({
+                   type: 'guest_auth_response',
+                   isAuthenticated: true,
+                   guest: authData.guest,
+                   accessToken: authData.tokens.accessToken,
+                 }, '*');
+                 
+                 iframeRef.current?.contentWindow?.postMessage({
+                   type: 'new_access_token',
+                   token: authData.tokens.accessToken,
+                   guest: authData.guest,
+                   user: null,
+                   success: true
+                 }, '*');
+               }, 100); // Small delay to ensure iframe is ready
+             }
+           }}
         />
       ) : (
         <div
           style={{
-            width: '100%',
-            height: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f5f5f5',
-            color: '#666',
+            height: '100%',
+            backgroundColor: '#f8f9fa',
+            color: '#6c757d',
             fontSize: '14px',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
-          {room.isCreating ? 'Initializing chat...' : 'Loading...'}
+          {room.isCreating ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ marginBottom: '8px' }}>🔄</div>
+              <div>Creating room...</div>
+            </div>
+          ) : auth.isLoading ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ marginBottom: '8px' }}>🔐</div>
+              <div>Authenticating...</div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ marginBottom: '8px' }}>⏳</div>
+              <div>Initializing...</div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// Auth Status Component
+// Inline Chat Component (alias for Room for backward compatibility)
+export const InlineChat = Room;
+
+// Auth Status Component (for debugging)
 interface AuthStatusProps {
+  accountId: string;
+  config?: Partial<AltanSDKConfig>;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export function AuthStatus({ className, style }: AuthStatusProps) {
-  const { auth } = useAltanContext();
-
-  const statusStyle: React.CSSProperties = {
-    padding: '8px 12px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 500,
-    backgroundColor: auth.isAuthenticated ? '#e8f5e8' : '#ffeaa7',
-    color: auth.isAuthenticated ? '#2d7d2d' : '#d63031',
-    ...style,
+export function AuthStatus({ 
+  accountId, 
+  config = {}, 
+  className, 
+  style 
+}: AuthStatusProps): JSX.Element {
+  const fullConfig: AltanSDKConfig = {
+    accountId,
+    debug: true,
+    ...config,
   };
 
+  const { auth, guest } = useAltan(fullConfig);
+
   return (
-    <div className={className} style={statusStyle}>
-      {auth.isAuthenticated
-        ? `Authenticated as ${auth.guest?.first_name} ${auth.guest?.last_name}`
-        : 'Not authenticated'}
+    <div className={className} style={style}>
+      <h3>Auth Status</h3>
+      <div>
+        <strong>Account ID:</strong> {accountId}
+      </div>
+      <div>
+        <strong>Authenticated:</strong> {auth.isAuthenticated ? '✅' : '❌'}
+      </div>
+      <div>
+        <strong>Current Guest:</strong> {guest.currentGuest ? guest.currentGuest.first_name + ' ' + guest.currentGuest.last_name : 'None'}
+      </div>
+      <div>
+        <strong>Loading:</strong> {auth.isLoading ? 'Yes' : 'No'}
+      </div>
+      <div>
+        <strong>Tokens:</strong> {auth.tokens ? '✅' : '❌'}
+      </div>
+      {auth.error && (
+        <div>
+          <strong>Error:</strong> {auth.error.message}
+        </div>
+      )}
     </div>
   );
 }
-
-// Backward compatibility alias
-export const InlineChat = Room;
