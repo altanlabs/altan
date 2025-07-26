@@ -225,6 +225,58 @@ export function AuthProvider({ children }) {
       iframeState.activated = true;
       console.log('IframeChild activated by parent');
     }
+
+    // Handle guest authentication response from parent
+    if (data.type === 'guest_auth_response' && data.isAuthenticated && data.guest) {
+      console.log('📥 Received guest auth response, auto-authenticating:', data);
+
+      // Set up guest authentication for axios instances
+      if (data.accessToken) {
+        authorizeGuest(data.accessToken)
+          .then(() => {
+            console.log('✅ Auto guest axios authentication set up successfully');
+
+            dispatch({
+              type: 'GUEST_LOGIN',
+              payload: {
+                guest: data.guest,
+              },
+            });
+
+            console.log('✅ Auto guest login dispatch completed - authentication ready');
+          })
+          .catch((authError) => {
+            console.error('❌ Failed to set up auto guest axios authentication:', authError);
+          });
+      }
+    }
+
+    // Handle new access token from parent
+    if (data.type === 'new_access_token' && data.token && data.guest) {
+      console.log('📥 Received new access token, auto-authenticating:', data);
+
+      authorizeGuest(data.token)
+        .then(() => {
+          console.log('✅ Auto guest axios authentication with new token set up successfully');
+
+          dispatch({
+            type: 'GUEST_LOGIN',
+            payload: {
+              guest: data.guest,
+            },
+          });
+
+          console.log(
+            '✅ Auto guest login with new token dispatch completed - authentication ready',
+          );
+        })
+        .catch((authError) => {
+          console.error(
+            '❌ Failed to set up auto guest axios authentication with new token:',
+            authError,
+          );
+        });
+    }
   });
 
   // Function to request guest authentication from parent window
@@ -258,98 +310,106 @@ export function AuthProvider({ children }) {
       window.addEventListener('message', handleAuthResponse);
 
       // Request authentication from parent
-      window.parent.postMessage({
-        type: 'request_guest_auth',
-      }, '*');
+      window.parent.postMessage(
+        {
+          type: 'request_guest_auth',
+        },
+        '*',
+      );
     });
   }, []);
 
   // Guest login function (defined before useEffect to avoid "used before defined" error)
-  const loginAsGuest = useCallback(async (guestId, agentId) => {
-    try {
-      // Check if we're in an iframe and should use parent authentication
-      const isInIframe = window !== window.parent;
+  const loginAsGuest = useCallback(
+    async (guestId, agentId) => {
+      try {
+        // Check if we're in an iframe and should use parent authentication
+        const isInIframe = window !== window.parent;
 
-      if (isInIframe) {
-        // Request authentication from parent window
-        const guestData = await requestGuestAuthFromParent();
+        if (isInIframe) {
+          // Request authentication from parent window
+          const guestData = await requestGuestAuthFromParent();
 
-        if (guestData && guestData.guest) {
-          // Set up guest authentication for axios instances
-          console.log('🔑 === SETTING UP GUEST AUTHENTICATION ===');
-          console.log('🔑 Guest data:', guestData.guest);
-          console.log('🔑 Access token present:', !!guestData.accessToken);
-          
-          try {
-            await authorizeGuest(guestData.accessToken);
-            console.log('✅ Guest axios authentication set up successfully');
-            console.log('✅ Bearer token should now be available for API calls');
-          } catch (authError) {
-            console.error('❌ Failed to set up guest axios authentication:', authError);
-            throw authError;
+          if (guestData && guestData.guest) {
+            // Set up guest authentication for axios instances
+            console.log('🔑 === SETTING UP GUEST AUTHENTICATION ===');
+            console.log('🔑 Guest data:', guestData.guest);
+            console.log('🔑 Access token present:', !!guestData.accessToken);
+
+            try {
+              await authorizeGuest(guestData.accessToken);
+              console.log('✅ Guest axios authentication set up successfully');
+              console.log('✅ Bearer token should now be available for API calls');
+            } catch (authError) {
+              console.error('❌ Failed to set up guest axios authentication:', authError);
+              throw authError;
+            }
+
+            dispatch({
+              type: 'GUEST_LOGIN',
+              payload: {
+                guest: guestData.guest,
+              },
+            });
+
+            console.log('✅ Guest login dispatch completed - authentication ready');
+            return guestData.guest;
+          } else {
+            throw new Error('Parent authentication failed or not available');
+          }
+        } else {
+          // Fallback to direct API call if not in iframe (only if guestId/agentId provided)
+          if (!guestId || !agentId) {
+            throw new Error('Guest ID and Agent ID are required for direct authentication');
           }
 
-          dispatch({
-            type: 'GUEST_LOGIN',
-            payload: {
-              guest: guestData.guest,
-            },
-          });
+          const response = await axios.post(
+            `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+            {},
+            { withCredentials: true },
+          );
 
-          console.log('✅ Guest login dispatch completed - authentication ready');
-          return guestData.guest;
-        } else {
-          throw new Error('Parent authentication failed or not available');
-        }
-      } else {
-        // Fallback to direct API call if not in iframe (only if guestId/agentId provided)
-        if (!guestId || !agentId) {
-          throw new Error('Guest ID and Agent ID are required for direct authentication');
-        }
+          if (response.data && response.data.guest) {
+            const guestData = response.data.guest;
+            console.log('guestData', guestData);
 
-        const response = await axios.post(
-          `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
-          {},
-          { withCredentials: true },
-        );
+            // Set up guest authentication for axios instances
+            try {
+              await authorizeGuest(response.data.access_token);
+              console.log('✅ Direct guest axios authentication set up successfully');
+            } catch (authError) {
+              console.warn('⚠️ Failed to set up direct guest axios authentication:', authError);
+            }
 
-        if (response.data && response.data.guest) {
-          const guestData = response.data.guest;
-          console.log('guestData', guestData);
+            dispatch({
+              type: 'GUEST_LOGIN',
+              payload: {
+                guest: guestData,
+              },
+            });
 
-          // Set up guest authentication for axios instances
-          try {
-            await authorizeGuest(response.data.access_token);
-            console.log('✅ Direct guest axios authentication set up successfully');
-          } catch (authError) {
-            console.warn('⚠️ Failed to set up direct guest axios authentication:', authError);
+            return guestData;
+          } else {
+            throw new Error('Guest authentication failed');
           }
-
-          dispatch({
-            type: 'GUEST_LOGIN',
-            payload: {
-              guest: guestData,
-            },
-          });
-
-          return guestData;
-        } else {
-          throw new Error('Guest authentication failed');
         }
+      } catch (error) {
+        throw error;
       }
-    } catch (error) {
-      throw error;
-    }
-  }, [requestGuestAuthFromParent]);
+    },
+    [requestGuestAuthFromParent],
+  );
 
   useEffect(() => {
     const initialize = async () => {
       try {
         // Check if we're in an iframe (guest mode)
         const isInIframe = window !== window.parent;
-        
+
         if (isInIframe) {
-          console.log('🔄 In iframe mode - waiting for guest authentication before making API calls');
+          console.log(
+            '🔄 In iframe mode - waiting for guest authentication before making API calls',
+          );
           // In iframe mode, don't make immediate API calls
           // Wait for guest authentication to be set up first
           dispatch({
@@ -361,7 +421,7 @@ export function AuthProvider({ children }) {
           });
           return;
         }
-        
+
         // Only make API calls for regular (non-iframe) users
         const userProfile = await getUserProfile();
         dispatch({

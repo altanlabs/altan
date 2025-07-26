@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+
 import { AltanSDKConfig, GuestData, RoomData, AuthTokens, CreateGuestRequest } from './altan-sdk';
 import { useAltan } from './react-hooks';
 
@@ -34,7 +35,7 @@ interface AltanProviderProps {
   children: React.ReactNode;
 }
 
-export function AltanProvider({ config, children }: AltanProviderProps): JSX.Element {
+export function AltanProvider({ config, children }: AltanProviderProps): React.JSX.Element {
   const altanState = useAltan(config);
 
   return (
@@ -75,7 +76,7 @@ export function ChatWidget({
   onRoomCreated,
   onAuthSuccess,
   onError,
-}: ChatWidgetProps): JSX.Element {
+}: ChatWidgetProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -114,7 +115,7 @@ export function ChatWidget({
       if (roomWindow && auth.tokens) {
         roomWindow.postMessage({
           type: 'auth_update',
-          accessToken: auth.tokens.accessToken,
+          accessToken: auth.tokens?.accessToken,
           guest: auth.authenticatedGuest,
         }, '*');
       }
@@ -195,7 +196,7 @@ export function ChatWidget({
           {isInitialized && room.currentRoom ? (
             <iframe
               ref={iframeRef}
-              src={room.currentRoom.url}
+              src={room.currentRoom?.url}
               style={{
                 width: '100%',
                 height: '100%',
@@ -251,7 +252,7 @@ export function Room({
   onRoomCreated,
   onAuthSuccess,
   onError,
-}: RoomProps): JSX.Element {
+}: RoomProps): React.JSX.Element {
   const [isInitialized, setIsInitialized] = useState(false);
   const [authData, setAuthData] = useState<{ guest: GuestData; tokens: AuthTokens } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -379,43 +380,52 @@ export function Room({
         ...style 
       }}
     >
-      {isInitialized && room.currentRoom ? (
+             {isInitialized && room.currentRoom && authData && room.currentRoom.url ? (
         <iframe
           ref={iframeRef}
-          src={room.currentRoom.url}
+          src={`${room.currentRoom.url}${room.currentRoom.url.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}`}
           style={{
             width: '100%',
             height: '100%',
             border: 'none',
           }}
-                     title="Altan Room"
+          title="Altan Room"
            onLoad={() => {
              if (fullConfig.debug) {
                console.log('🎬 Iframe loaded, room URL:', room.currentRoom?.url);
              }
              
-             // Send auth data immediately when iframe loads
+             // Send activation and auth data when iframe loads
              if (authData && iframeRef.current?.contentWindow) {
                setTimeout(() => {
                  if (fullConfig.debug) {
-                   console.log('📡 Sending initial auth data to newly loaded iframe');
+                   console.log('📡 Sending activation and auth data to newly loaded iframe');
                  }
                  
-                 iframeRef.current?.contentWindow?.postMessage({
-                   type: 'guest_auth_response',
-                   isAuthenticated: true,
-                   guest: authData.guest,
-                   accessToken: authData.tokens.accessToken,
-                 }, '*');
-                 
-                 iframeRef.current?.contentWindow?.postMessage({
-                   type: 'new_access_token',
-                   token: authData.tokens.accessToken,
-                   guest: authData.guest,
-                   user: null,
-                   success: true
-                 }, '*');
-               }, 100); // Small delay to ensure iframe is ready
+                 const iframe = iframeRef.current?.contentWindow;
+                 if (iframe) {
+                   // Send activation message first
+                   iframe.postMessage({
+                     type: 'activate_interface_parenthood'
+                   }, '*');
+                   
+                   // Then send auth data
+                   iframe.postMessage({
+                     type: 'guest_auth_response',
+                     isAuthenticated: true,
+                     guest: authData.guest,
+                     accessToken: authData.tokens.accessToken,
+                   }, '*');
+                   
+                   iframe.postMessage({
+                     type: 'new_access_token',
+                     token: authData.tokens.accessToken,
+                     guest: authData.guest,
+                     user: null,
+                     success: true
+                   }, '*');
+                 }
+               }, 500); // Longer delay to ensure iframe is fully ready
              }
            }}
         />
@@ -470,7 +480,7 @@ export function AuthStatus({
   config = {}, 
   className, 
   style 
-}: AuthStatusProps): JSX.Element {
+}: AuthStatusProps): React.JSX.Element {
   const fullConfig: AltanSDKConfig = {
     accountId,
     debug: true,

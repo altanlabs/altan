@@ -312,8 +312,12 @@ export class AltanSDK {
     }
   }
 
-  getRoomUrl(roomId: string): string {
-    return `${this.config.roomBaseUrl}/${roomId}`;
+  getRoomUrl(roomId: string, accessToken?: string): string {
+    const baseUrl = `${this.config.roomBaseUrl}/${roomId}`;
+    if (accessToken) {
+      return `${baseUrl}?token=${accessToken}`;
+    }
+    return baseUrl;
   }
 
   /**

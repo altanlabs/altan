@@ -9,7 +9,7 @@ const TEST_CONFIG = {
   agentId: '10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11', // Agent to chat with
   apiBaseUrl: 'https://api.altan.ai/platform/guest',
   authBaseUrl: 'https://api.altan.ai/auth/login/guest',
-  roomBaseUrl: 'https:/altan.ai/r', // Use local dev server
+  roomBaseUrl: 'https://altan.ai/r', // Use production room server
   debug: true,
   requestTimeout: 15000, // 15 second timeout
 };
