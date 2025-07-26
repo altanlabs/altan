@@ -2,7 +2,7 @@
  * Altan AI SDK
  * Account-centric SDK for integrating with Altan AI
  * 
- * @version 2.0.0
+ * @version 2.1.0
  * @author Altan AI
  */
 
@@ -37,9 +37,7 @@ export {
 export {
   AltanProvider,
   useAltanContext,
-  ChatWidget,
   Room,
-  InlineChat, // Backward compatibility alias
   AuthStatus,
 } from './components';
 
@@ -48,7 +46,7 @@ export {
 // ============================================================================
 
 // Version information
-export const SDK_VERSION = '2.0.0';
+export const SDK_VERSION = '2.1.0';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {

@@ -1,6 +1,6 @@
 {
   "name": "@altanlabs/sdk",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Official JavaScript/TypeScript SDK for integrating with Altan AI's conversational platform",
   "author": "Altan AI <support@altan.ai>",
   "license": "PROPRIETARY",
