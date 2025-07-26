@@ -138,7 +138,7 @@ function AccountSettings() {
                   {/* Workspace ID */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Workspace ID
+                      Workspace/Account ID
                     </label>
                     <div className="relative">
                       <input

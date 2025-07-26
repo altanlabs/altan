@@ -1,13 +1,14 @@
 /* global console, fetch, window, document, navigator, localStorage */
 /**
  * Altan AI Widget
- * Version: 2.1.0
- * Last Updated: 2025-01-23
+ * Version: 2.2.0
+ * Last Updated: 2025-01-26
  * Documentation: https://docs.altan.ai/widget
  * 
  * FEATURES:
  * - Account-scoped guest authentication (2.0.x)
  * - Real user integration via window.altanWidgetUserData (2.1.0)
+ * - Updated backend API integration (2.2.0)
  * 
  * USAGE:
  * Set window.altanWidgetUserData before loading widget to use authenticated user data:
@@ -23,7 +24,7 @@
   'use strict';
 
   // Widget version for debugging and cache management
-  const WIDGET_VERSION = '2.1.0';
+  const WIDGET_VERSION = '2.2.0';
   console.log(`🤖 Altan Widget v${WIDGET_VERSION} loaded`);
 
   // Widget configuration
@@ -356,15 +357,26 @@
     return data;
   }
 
-  async function createGuestRoom(guestData) {
-    const url = `${WIDGET_CONFIG.API_BASE_URL}/room?agent_id=${agentId}`;
+  async function createGuest(guestInfo) {
+    const url = `${WIDGET_CONFIG.API_BASE_URL}/`;
+    
+    const requestData = {
+      account_id: accountId,
+      external_id: guestInfo.external_id,
+      first_name: guestInfo.first_name || 'Anonymous',
+      last_name: guestInfo.last_name || 'Visitor',
+      email: guestInfo.email,
+      phone: guestInfo.phone,
+    };
+
+    console.log('👤 Creating guest with data:', requestData);
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(guestData)
+      body: JSON.stringify(requestData)
     });
     
     if (!response.ok) {
@@ -372,7 +384,74 @@
       throw new Error(errorData.detail || `HTTP ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('👤 Guest created:', data.guest);
+    return data.guest;
+  }
+
+  async function createRoom(guestId, agentId) {
+    const url = `${WIDGET_CONFIG.API_BASE_URL}/room`;
+    
+    const requestData = {
+      account_id: accountId,
+      guest_id: guestId,
+      agent_id: agentId,
+    };
+
+    console.log('🏠 Creating room with data:', requestData);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('🏠 Room created:', data);
+    
+    // Format room data to match SDK structure
+    const roomData = {
+      room_id: data.room_id,
+      agent: data.agent,
+      guest: data.guest,
+      account_id: data.account_id,
+      url: `${WIDGET_CONFIG.ROOM_BASE_URL}/${data.room_id}`,
+    };
+    
+    return roomData;
+  }
+
+  async function getGuestByExternalId(externalId) {
+    const url = `${WIDGET_CONFIG.API_BASE_URL}/?external_id=${externalId}&account_id=${accountId}`;
+    
+    console.log('🔍 Looking for existing guest with external_id:', externalId);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('🔍 Guest not found with external_id:', externalId);
+        return null;
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('🔍 Found existing guest:', data.guest);
+    return data.guest;
   }
 
   async function refreshGuestToken() {
@@ -418,9 +497,10 @@
     const data = await response.json();
     console.log('🔄 Guest token refresh response:', data);
     
-    // Update tokens
-    const newAccessToken = data.access_token;
-    const newRefreshToken = data.refresh_token;
+    // Handle both direct and nested token formats
+    const tokenData = data.token || data;
+    const newAccessToken = tokenData.access_token || data.access_token;
+    const newRefreshToken = tokenData.refresh_token || data.refresh_token;
     
     if (newAccessToken && accountId) {
       authState.accessToken = newAccessToken;
@@ -471,12 +551,19 @@
     const data = await response.json();
     console.log('🔐 Guest authentication response:', JSON.stringify(data, null, 2));
     
-    // Extract tokens from the new backend response
-    const accessToken = data.access_token;
-    const refreshToken = data.refresh_token;
+    // Extract tokens from backend response (handle both direct and nested formats)
+    const tokenData = data.token || data;
+    const accessToken = tokenData.access_token || data.access_token;
+    const refreshToken = tokenData.refresh_token || data.refresh_token;
     const guestData = data.guest;
     
     if (!accessToken || !refreshToken || !guestData) {
+      console.error('❌ Missing required data from backend:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        hasGuestData: !!guestData,
+        rawResponse: data
+      });
       throw new Error('Backend did not return required tokens or guest data');
     }
     
@@ -601,18 +688,17 @@
         // Check for user data passed from parent app
         const userData = window.altanWidgetUserData;
         
-        // Create guest room - use real user data if available, otherwise anonymous
+        // Step 1: Create or find guest
+        let guest;
         const guestPayload = userData ? {
           external_id: userData.external_id,
-          guest_id: '',
           first_name: userData.first_name,
           last_name: userData.last_name,
           email: userData.email,
-          phone: '',
+          phone: userData.phone || '',
           avatar_url: userData.avatar_url
         } : {
           external_id: generateExternalId(),
-          guest_id: '',
           first_name: 'Anonymous',
           last_name: 'Visitor',
           email: `visitor_${Date.now()}@anonymous.com`,
@@ -621,16 +707,31 @@
         
         console.log('🔑 Guest payload:', userData ? 'Using authenticated user data' : 'Using anonymous visitor data', guestPayload);
         
-        roomData = await createGuestRoom(guestPayload);
+        // Try to find existing guest by external_id if provided
+        if (guestPayload.external_id && userData) {
+          try {
+            guest = await getGuestByExternalId(guestPayload.external_id);
+          } catch (error) {
+            console.log('🔍 Guest lookup failed, will create new:', error.message);
+          }
+        }
+        
+        // Create guest if not found
+        if (!guest) {
+          guest = await createGuest(guestPayload);
+        }
+        
+        // Step 2: Create room
+        roomData = await createRoom(guest.id, agentId);
         console.log('🏠 Created new room:', roomData);
 
         // Store the room data for future use
         storeRoomData(roomData);
         console.log('💾 Stored room data for agent:', agentId);
         
-        // Authenticate the new guest
-        console.log('🔐 Authenticating new guest...', roomData.guest.id);
-        await authenticateGuest(roomData.guest.id, accountId);
+        // Step 3: Authenticate the guest
+        console.log('🔐 Authenticating guest...', guest.id);
+        await authenticateGuest(guest.id, accountId);
         console.log('✅ Guest authentication completed');
       } else {
         console.log('🔄 Have existing authenticated guest:', authState.guest.id);
@@ -638,21 +739,8 @@
         if (!roomData) {
           console.log('🏠 No room data found - creating new room for existing guest:', authState.guest.id);
           
-          // Check for updated user data from parent app
-          const userData = window.altanWidgetUserData;
-          
-          const roomPayload = {
-            external_id: userData?.external_id || authState.guest.external_id || generateExternalId(),
-            guest_id: authState.guest.id, // Use existing guest
-            first_name: userData?.first_name || authState.guest.first_name || 'Anonymous',
-            last_name: userData?.last_name || authState.guest.last_name || 'Visitor',
-            email: userData?.email || authState.guest.email || `visitor_${Date.now()}@anonymous.com`,
-            phone: authState.guest.phone || '',
-            avatar_url: userData?.avatar_url || authState.guest.avatar_url || ''
-          };
-          
-          console.log('🏠 Room payload for existing guest:', roomPayload);
-          roomData = await createGuestRoom(roomPayload);
+          // Create room for existing guest
+          roomData = await createRoom(authState.guest.id, agentId);
           console.log('🏠 Created room for existing guest:', roomData);
 
           storeRoomData(roomData);
@@ -829,7 +917,8 @@
         
         try {
           const refreshResult = await refreshGuestToken();
-          accessToken = refreshResult.access_token || authState.accessToken;
+          const tokenData = refreshResult.token || refreshResult;
+          accessToken = tokenData.access_token || refreshResult.access_token || authState.accessToken;
           console.log('✅ Got new access token from refresh');
         } catch (refreshError) {
           console.warn('⚠️ Token refresh failed, using existing token:', refreshError);

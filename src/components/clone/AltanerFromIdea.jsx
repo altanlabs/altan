@@ -8,92 +8,52 @@ import { useHistory } from 'react-router';
 import { createAltaner } from '../../redux/slices/altaners.js';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
+import Iconify from '../iconify';
 
 const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
   width: '300px',
   height: '2px',
   borderRadius: '1px',
   marginTop: '2rem',
-  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  backgroundColor:
+    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
   '& .MuiLinearProgress-bar': {
-    background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : theme.palette.primary.main,
+    background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
     transition: 'transform 0.8s ease',
   },
 }));
 
-const LoaderStep = ({ step, isActive, isCompleted }) => {
+const LoaderStep = ({ step, icon, opacity, scale, yOffset }) => {
   const theme = useTheme();
-  const textColor = theme.palette.mode === 'dark' ? 'white' : 'black';
   return (
     <m.div
-      className="flex items-center justify-center gap-3 w-full"
-      initial={{ opacity: 0, x: -10 }}
+      className="flex items-center justify-center gap-3 w-full absolute inset-0"
+      initial={{ opacity: 0, y: 50 }}
       animate={{
-        opacity: isActive ? 1 : isCompleted ? 0.7 : 0.2,
-        x: 0,
+        opacity,
+        y: yOffset,
+        scale,
       }}
       transition={{
-        duration: 0.5,
-        type: 'spring',
-        stiffness: 100,
+        duration: 0.8,
+        ease: 'easeInOut',
       }}
     >
-      <m.div
-        animate={
-          isActive
-            ? {
-                scale: [1, 1.1, 1],
-              }
-            : {}
-        }
-        transition={{
-          duration: 1.5,
-          repeat: isActive ? Infinity : 0,
-          ease: 'easeInOut',
-        }}
-        className="flex-shrink-0"
-      >
-        {isCompleted ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className={`w-5 h-5 ${isActive ? `text-${textColor}` : `text-${textColor}/70`}`}
-          >
-            <path
-              fillRule="evenodd"
-              d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
-              clipRule="evenodd"
-            />
-          </svg>
-        ) : (
-          <m.div
-            initial={{ rotate: 0 }}
-            animate={isActive ? { rotate: 360 } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className={`w-5 h-5 text-${theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main}`}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-              />
-            </svg>
-          </m.div>
-        )}
-      </m.div>
+      <div className="flex-shrink-0">
+        <Iconify
+          icon={icon}
+          width={20}
+          sx={{
+            color: theme.palette.mode === 'dark' ? 'white' : 'black',
+          }}
+        />
+      </div>
       <div
         style={{
-          color: theme.palette.mode === 'dark'
-            ? isActive ? 'rgba(255, 255, 255, 1)' : isCompleted ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.2)'
-            : isActive ? theme.palette.text.primary : isCompleted ? theme.palette.text.secondary : theme.palette.text.disabled,
+          color:
+            theme.palette.mode === 'dark'
+              ? `rgba(255, 255, 255, ${opacity})`
+              : `rgba(0, 0, 0, ${opacity})`,
         }}
         className="font-medium text-sm flex-1 text-center"
       >
@@ -106,46 +66,53 @@ const LoaderStep = ({ step, isActive, isCompleted }) => {
 function AltanerFromIdea({ idea, onClose }) {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const [progress, setProgress] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [cycleIndex, setCycleIndex] = useState(0);
+
+  const steps = [
+    {
+      text: 'Finding a computer',
+      icon: 'heroicons:computer-desktop',
+    },
+    {
+      text: 'Assembling your AI team',
+      icon: 'heroicons:users',
+    },
+    {
+      text: 'Creating main components',
+      icon: 'heroicons:code-bracket',
+    },
+    {
+      text: 'Creating repository',
+      icon: 'heroicons:folder',
+    },
+    {
+      text: 'Creating database',
+      icon: 'heroicons:circle-stack',
+    },
+    {
+      text: 'Preparing your project',
+      icon: 'heroicons:rocket-launch',
+    },
+  ];
 
   useEffect(() => {
     if (!idea || isCreating) return;
 
-    const steps = [
-      'Finding a computer',
-      'Assembling your AI team',
-      'Creating main components',
-      'Creating repository',
-      'Creating database',
-      'Redirecting to your project',
-    ];
-
-    setProgress(steps);
     setIsCreating(true);
-    setCurrentStep(0);
 
     let isSubscribed = true;
 
-    const totalDuration = 17000;
-    const stepDuration = totalDuration / steps.length;
-    let step = 0;
-
-    const interval = setInterval(() => {
+    // Start the continuous cycling animation
+    const cycleInterval = setInterval(() => {
       if (!isSubscribed) {
-        clearInterval(interval);
+        clearInterval(cycleInterval);
         return;
       }
+      setCycleIndex((prev) => (prev + 1) % (steps.length * 2)); // Cycle through steps
+    }, 1500); // Change step every 1.5 seconds
 
-      if (step < steps.length - 1) {
-        step++;
-        setCurrentStep(step);
-      } else {
-        clearInterval(interval);
-      }
-    }, stepDuration);
-
+    // Start the actual creation process
     dispatch(createAltaner({ name: 'My First App' }, idea))
       .then((response) => {
         if (!isSubscribed || !response || !response.id) return;
@@ -158,9 +125,42 @@ function AltanerFromIdea({ idea, onClose }) {
 
     return () => {
       isSubscribed = false;
-      clearInterval(interval); // ✅ Always clean up the interval
+      clearInterval(cycleInterval);
     };
   }, [idea]);
+
+  // Calculate positions and opacities for the sliding effect
+  const getStepProps = (stepIndex) => {
+    const currentPosition = cycleIndex % steps.length;
+    const relativePosition = (stepIndex - currentPosition + steps.length) % steps.length;
+    let opacity = 0;
+    let yOffset = 0;
+    let scale = 0.9;
+
+    if (relativePosition === 0) {
+      // Current active step
+      opacity = 1;
+      yOffset = 0;
+      scale = 1;
+    } else if (relativePosition === 1) {
+      // Next step coming in
+      opacity = 0.6;
+      yOffset = 30;
+      scale = 0.95;
+    } else if (relativePosition === steps.length - 1) {
+      // Previous step going out
+      opacity = 0.3;
+      yOffset = -30;
+      scale = 0.95;
+    } else if (relativePosition === 2) {
+      // Step after next
+      opacity = 0.2;
+      yOffset = 60;
+      scale = 0.9;
+    }
+
+    return { opacity, yOffset, scale };
+  };
 
   if (!idea) return null;
 
@@ -178,9 +178,8 @@ function AltanerFromIdea({ idea, onClose }) {
           exit={{ opacity: 0 }}
           className="w-full h-full fixed inset-0 z-[100] flex items-center justify-center"
           style={{
-            background: theme.palette.mode === 'dark'
-              ? 'rgba(0, 0, 0, 0.97)'
-              : 'rgba(245, 245, 245, 0.97)',
+            background:
+              theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.97)' : 'rgba(245, 245, 245, 0.97)',
           }}
         >
           <div className="absolute inset-0 flex items-center justify-center">
@@ -194,27 +193,29 @@ function AltanerFromIdea({ idea, onClose }) {
                 </TextShimmer>
               </div>
 
-              <div className="flex flex-col items-stretch space-y-3">
-                {progress.map((step, index) => (
-                  <LoaderStep
-                    key={step}
-                    step={step}
-                    isActive={index === currentStep}
-                    isCompleted={index <= currentStep}
-                  />
-                ))}
-
-                <m.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex justify-center w-full pt-8"
-                >
-                  <StyledLinearProgress
-                    variant="indeterminate"
-                  />
-                </m.div>
+              {/* Steps container with relative positioning for sliding effect */}
+              <div className="relative h-40 flex items-center justify-center overflow-hidden">
+                {steps.map((step, index) => {
+                  const stepProps = getStepProps(index);
+                  return (
+                    <LoaderStep
+                      key={step.text}
+                      step={step.text}
+                      icon={step.icon}
+                      {...stepProps}
+                    />
+                  );
+                })}
               </div>
+
+              <m.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="flex justify-center w-full pt-8"
+              >
+                <StyledLinearProgress variant="indeterminate" />
+              </m.div>
             </div>
           </div>
         </m.div>
