@@ -28,7 +28,7 @@ Transform user requirements into actionable development tasks through intelligen
 - Keep node IDs simple (alphanumeric): `A`, `B1`, `step1` - avoid special characters in IDs
 - Test complex diagrams: if a diagram has many special characters, break it into simpler parts
 - Example of proper syntax:
-  ```
+  ```mermaid
   graph TD
     A["App Shell"] --> B["Navigation<br/>top positioned"]
     A --> C["Main Content<br/>fullscreen"]

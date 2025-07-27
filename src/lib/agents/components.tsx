@@ -296,8 +296,6 @@ export function Room({
             </div>
           ) : (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ marginBottom: '8px' }}>⏳</div>
-              <div>Initializing...</div>
             </div>
           )}
         </div>

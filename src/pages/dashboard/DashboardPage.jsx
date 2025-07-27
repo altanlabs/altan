@@ -142,13 +142,13 @@ const DashboardPage = () => {
       <CompactLayout title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} · Altan`}>
         <div>
           <m.div
-            className="grid grid-cols-1 mt-12 gap-4"
+            className="grid grid-cols-1 mt-4 sm:mt-12 gap-4"
             initial="hidden"
             animate="visible"
             variants={fadeIn}
           >
             <m.div
-              className="flex flex-col py-20"
+              className="flex flex-col py-8 sm:py-20"
               variants={fadeIn}
             >
               {/* VOICE WIDGET */}
