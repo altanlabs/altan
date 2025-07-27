@@ -4,7 +4,7 @@ import { cn } from '@lib/utils';
 
 const getMessageBoxClasses = (type: string, isMe: boolean): string => {
   const baseClasses = isMe
-    ? 'relative justify-start text-left text-[15px] opacity-100 rounded-3xl inline-block max-w-fit'
+    ? 'relative justify-start text-left text-[15px] opacity-100 rounded-3xl w-full'
     : 'relative justify-start text-left text-[15px] opacity-100 rounded-3xl w-full';
 
   const themeClasses =

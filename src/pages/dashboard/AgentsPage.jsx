@@ -258,7 +258,7 @@ function AgentsPage() {
                       src={`https://app.altan.ai/room/${roomId}?header=false${ideaMode && ideaText ? `&idea=${encodeURIComponent(ideaText)}` : ''}`}
                       className="w-full h-full border-0"
                       title="Agent Chat Room"
-                      allow="microphone; camera; autoplay; encrypted-media; fullscreen"
+                      allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
                       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
                     />
                   ) : (

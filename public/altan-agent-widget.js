@@ -864,7 +864,7 @@
   }
 
   chat.innerHTML = `<iframe
-    allow="clipboard-write; microphone; camera"
+    allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
     id="widget-agent-bubble-window"
     name="Altan-App"
     src=""
