@@ -578,7 +578,7 @@ export function Room(props: RoomProps): React.JSX.Element {
               : background_color,
             backdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
             WebkitBackdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
-            border: background_blur ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(0, 0, 0, 0.1)',
+            border: 'none',
             transformOrigin: position === 'bottom-right' 
               ? 'bottom right'
               : position === 'bottom-left' 

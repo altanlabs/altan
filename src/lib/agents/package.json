@@ -1,6 +1,6 @@
 {
   "name": "@altan/sdk",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Altan AI SDK - Ultra-simple AI chat integration with beautiful glassmorphism styling",
   "main": "index.ts",
   "types": "index.ts",

@@ -17,6 +17,14 @@ const TEST_CONFIG = {
 export default function SDKTestPage() {
   const location = useLocation();
 
+  // Helper function to parse string parameters that might be "null"
+  const parseStringParam = (value) => {
+    if (value === null || value === 'null' || value === '') {
+      return undefined;
+    }
+    return value;
+  };
+
   // Parse query parameters for room configuration
   const queryParams = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -25,9 +33,9 @@ export default function SDKTestPage() {
       conversation_history: params.get('conversation_history') !== null ? params.get('conversation_history') === 'true' : undefined,
       members: params.get('members') !== null ? params.get('members') === 'true' : undefined,
       settings: params.get('settings') !== null ? params.get('settings') === 'true' : undefined,
-      theme: params.get('theme') || undefined,
-      title: params.get('title') || undefined,
-      description: params.get('description') || undefined,
+      theme: parseStringParam(params.get('theme')),
+      title: parseStringParam(params.get('title')),
+      description: parseStringParam(params.get('description')),
       suggestions: params.get('suggestions') ? JSON.parse(decodeURIComponent(params.get('suggestions'))) : undefined,
       voice_enabled: params.get('voice_enabled') !== null ? params.get('voice_enabled') === 'true' : undefined,
     };

@@ -44,6 +44,14 @@ class AltanWidget {
     }
   }
 
+  // Helper function to parse string attributes that might be "null"
+  parseStringAttribute(value) {
+    if (value === null || value === undefined || value === 'null' || value === '') {
+      return undefined;
+    }
+    return value;
+  }
+
   // Initialize from script tag data attributes
   initFromScript() {
     const script = document.currentScript || this.findAltanScript();
@@ -71,17 +79,17 @@ class AltanWidget {
       conversation_history: this.parseBooleanAttribute(script.getAttribute('data-conversation-history')),
       members: this.parseBooleanAttribute(script.getAttribute('data-members')),
       settings: this.parseBooleanAttribute(script.getAttribute('data-settings')),
-      theme: script.getAttribute('data-theme'),
-      title: script.getAttribute('data-title'),
-      description: script.getAttribute('data-description'),
+      theme: this.parseStringAttribute(script.getAttribute('data-theme')),
+      title: this.parseStringAttribute(script.getAttribute('data-title')),
+      description: this.parseStringAttribute(script.getAttribute('data-description')),
       suggestions: this.parseJsonAttribute(script.getAttribute('data-suggestions')),
       voice_enabled: this.parseBooleanAttribute(script.getAttribute('data-voice-enabled')),
       
       // Styling props
-      primary_color: script.getAttribute('data-primary-color'),
-      background_color: script.getAttribute('data-background-color'),
+      primary_color: this.parseStringAttribute(script.getAttribute('data-primary-color')),
+      background_color: this.parseStringAttribute(script.getAttribute('data-background-color')),
       background_blur: this.parseBooleanAttribute(script.getAttribute('data-background-blur')),
-      position: script.getAttribute('data-position'),
+      position: this.parseStringAttribute(script.getAttribute('data-position')),
       widget_width: script.getAttribute('data-width') ? parseInt(script.getAttribute('data-width')) : undefined,
       room_width: script.getAttribute('data-room-width') ? parseInt(script.getAttribute('data-room-width')) : undefined,
       room_height: script.getAttribute('data-room-height') ? parseInt(script.getAttribute('data-room-height')) : undefined,
