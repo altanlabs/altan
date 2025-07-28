@@ -10,6 +10,7 @@ import Iconify from './iconify/Iconify.jsx';
 import FileUpload from './room/thread/FileUpload.jsx';
 import MessageMinified from './room/thread/MessageMinified.jsx';
 import { useSnackbar } from './snackbar';
+import useLocales from '../locales/useLocales';
 import { useVoiceConversation } from '../providers/voice/VoiceConversationProvider';
 import { checkObjectsEqual } from '../redux/helpers/memoize';
 import {
@@ -78,6 +79,7 @@ const FloatingTextArea = ({
   const [selectedAgent, setSelectedAgent] = useState(null);
 
   const { enqueueSnackbar } = useSnackbar();
+  const { translate } = useLocales();
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [attachments, setAttachments] = useState([]);
   const editorRef = useRef({});
@@ -376,7 +378,7 @@ const FloatingTextArea = ({
                       <div className="absolute inset-0 bg-transparent group-hover:bg-black/50 transition-colors"></div>
 
                       {/* Remove Button (hover) */}
-                      <Tooltip title="Remove file">
+                      <Tooltip title={translate('room.removeFile')}>
                         <IconButton
                           aria-label="delete"
                           onClick={() => handleRemoveAttachment(index)}
@@ -419,7 +421,7 @@ const FloatingTextArea = ({
                   threadId={threadId}
                   disabled={isViewer}
                   editorRef={editorRef}
-                  placeholder="Ask anything..."
+                  placeholder={translate('room.askAnything')}
                   setEditorEmpty={setEditorEmpty}
                   setAttachments={setAttachments}
                   autoFocus={false}

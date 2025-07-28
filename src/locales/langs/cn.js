@@ -19,6 +19,13 @@ const cn = {
     endConversation: '结束对话',
     switchToText: '切换到文本模式',
     switchToVoice: '切换到语音模式',
+    startCall: '开始语音',
+  },
+  room: {
+    howCanIHelp: '我可以如何帮助您？',
+    askAnything: '询问任何事情...',
+    removeFile: '删除文件',
+    startTalking: '开始说话...',
   },
 };
 

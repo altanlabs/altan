@@ -2,7 +2,7 @@
  * Altan AI SDK
  * Account-centric SDK for integrating with Altan AI
  * 
- * @version 2.1.0
+ * @version 2.3.0
  * @author Altan AI
  */
 
@@ -36,6 +36,7 @@ export {
   AltanProvider,
   useAltanContext,
   Room,
+  type RoomConfigProps,
 } from './components';
 
 // ============================================================================
@@ -43,7 +44,7 @@ export {
 // ============================================================================
 
 // Version information
-export const SDK_VERSION = '2.1.0';
+export const SDK_VERSION = '2.5.0';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {

@@ -5,6 +5,7 @@ import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
+
 import {
   fetchRoom,
   clearRoomState,
@@ -18,10 +19,20 @@ const selectLoadingRoom = selectRoomStateLoading('room');
 
 const Room = ({
   roomId,
+  // Deprecated: header prop is replaced by granular options
   header = true,
   previewComponent = null,
   isMobile = false,
   mobileActiveView = 'chat',
+  // New personalization options
+  tabs = true,
+  conversation_history = true,
+  members = true,
+  settings = true,
+  title = null, // Custom title to override 'room.howCanIHelp'
+  description = null, // Description to show below title
+  suggestions = [], // Array of suggestion strings
+  voice_enabled = null, // Boolean to override room.policy.voice_enabled
 }) => {
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
@@ -97,7 +108,6 @@ const Room = ({
     if (!!roomId && !initialized) {
       if (isGuestAccess) {
         if (authenticated.guest && guest) {
-          console.log('🏠 ✅ Guest authentication ready - fetching room');
           handleFetchRoom();
         } else {
           console.log('🏠 ⏳ Waiting for guest authentication...');
@@ -105,8 +115,6 @@ const Room = ({
           console.log('🏠 ⏳ Has guest prop:', !!guest);
         }
       } else if (!!(user || guest)) {
-        // For regular user/member access
-        console.log('🏠 ✅ User authentication ready - fetching room');
         handleFetchRoom();
       } else {
         console.log('🏠 ⏳ Waiting for user authentication...');
@@ -125,12 +133,19 @@ const Room = ({
 
   return (
     <RoomAuthGuard>
-      <VoiceConversationProvider>
+      <VoiceConversationProvider voiceEnabled={voice_enabled}>
         <DesktopRoom
           header={header}
           previewComponent={previewComponent}
           isMobile={isMobile}
           mobileActiveView={mobileActiveView}
+          tabs={tabs}
+          conversation_history={conversation_history}
+          members={members}
+          settings={settings}
+          title={title}
+          description={description}
+          suggestions={suggestions}
         />
       </VoiceConversationProvider>
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}

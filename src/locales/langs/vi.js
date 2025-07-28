@@ -19,6 +19,13 @@ const vi = {
     endConversation: 'Kết thúc cuộc trò chuyện',
     switchToText: 'Chuyển sang chế độ văn bản',
     switchToVoice: 'Chuyển sang chế độ giọng nói',
+    startCall: 'Bắt Đầu Giọng Nói',
+  },
+  room: {
+    howCanIHelp: 'Tôi có thể giúp gì cho bạn?',
+    askAnything: 'Hỏi bất cứ điều gì...',
+    removeFile: 'Xóa tệp',
+    startTalking: 'Bắt đầu nói...',
   },
 };
 

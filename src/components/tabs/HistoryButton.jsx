@@ -42,7 +42,6 @@ const HistoryButton = ({ disabled = false, size = 'small' }) => {
           size={size}
           onClick={handleClick}
           disabled={disabled}
-          color="inherit"
         >
           <Iconify
             icon="solar:history-linear"

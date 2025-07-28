@@ -48,13 +48,14 @@ const DetailRow = ({ label, value, copyable = false }) => (
   </Box>
 );
 
-const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, picture }) => {
+const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, roomMember, memberName, picture }) => {
+  const member = roomMember.member;
   const me = useSelector(selectMe);
 
   if (!member) return null;
 
-  const isAgent = member.member?.member_type === 'agent' || member.member_type === 'agent';
-  const memberType = member.member?.member_type || member.member_type || 'member';
+  const isAgent = member.member_type === 'agent';
+  const memberType = member.member_type || 'guest';
 
   // Fix: Default to mention_only when undefined
   const agentInteraction = member?.agent_interaction || 'mention_only';
@@ -334,6 +335,12 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, member, memberName, p
                 value={memberId}
                 copyable
               />
+              <DetailRow
+                label="Room Member ID"
+                value={roomMember?.id}
+                copyable
+              />
+
               <DetailRow
                 label="Created"
                 value={formatDate(dateCreation)}

@@ -8,6 +8,44 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { AltanSDKConfig, GuestData, RoomData, AuthTokens, CreateGuestRequest } from './altan-sdk';
 import { useAltan } from './react-hooks';
 
+// Room configuration interface for personalizing room behavior
+export interface RoomConfigProps {
+  /** Show/hide tabs in room interface */
+  tabs?: boolean;
+  /** Show/hide conversation history */
+  conversation_history?: boolean;
+  /** Show/hide members panel */
+  members?: boolean;
+  /** Show/hide settings panel */
+  settings?: boolean;
+  /** Theme mode (light, dark, or system) */
+  theme?: string;
+  /** Custom room title */
+  title?: string;
+  /** Custom room description */
+  description?: string;
+  /** Predefined message suggestions */
+  suggestions?: string[];
+  /** Enable/disable voice functionality */
+  voice_enabled?: boolean;
+  /** Primary color for the widget (hex color) */
+  primary_color?: string;
+  /** Background color for the widget (hex color) */
+  background_color?: string;
+  /** Background blur effect for glassmorphism */
+  background_blur?: boolean;
+  /** Widget position: 'bottom-right', 'bottom-left', 'bottom-center' */
+  position?: string;
+  /** Widget width in pixels */
+  width?: number;
+  /** Room width in pixels when expanded */
+  room_width?: number;
+  /** Room height in pixels when expanded */
+  room_height?: number;
+  /** Border radius for rounded corners */
+  border_radius?: number;
+}
+
 // Context for sharing SDK instance across components
 interface AltanContextValue {
   sdk: ReturnType<typeof useAltan>['sdk'];
@@ -41,7 +79,7 @@ export function AltanProvider({ config, children }: AltanProviderProps): React.J
   return <AltanContext.Provider value={altanState}>{children}</AltanContext.Provider>;
 }
 
-interface BaseRoomProps {
+interface BaseRoomProps extends Omit<RoomConfigProps, 'width'> {
   /** Your Altan account ID */
   accountId: string;
   /** SDK configuration (optional - defaults work for most cases) */
@@ -60,6 +98,12 @@ interface BaseRoomProps {
   onAuthSuccess?: (guest: GuestData, tokens: AuthTokens) => void;
   /** Called on any error */
   onError?: (error: Error) => void;
+  /** Widget width in pixels for compact mode */
+  widget_width?: number;
+  /** Room width in pixels when expanded */
+  room_width?: number;
+  /** Room height in pixels when expanded */
+  room_height?: number;
 }
 
 interface AgentModeProps extends BaseRoomProps {
@@ -103,6 +147,25 @@ export function Room(props: RoomProps): React.JSX.Element {
     style,
     onAuthSuccess,
     onError,
+    // Room configuration props
+    tabs,
+    conversation_history,
+    members,
+    settings,
+    theme,
+    title,
+    description,
+    suggestions,
+    voice_enabled,
+    // Styling props
+    primary_color = '#007bff',
+    background_color = '#ffffff',
+    background_blur = true,
+    position = 'bottom-center',
+    widget_width = 350,
+    room_width = 450,
+    room_height = 600,
+    border_radius = 16,
   } = props;
 
   const [isInitialized, setIsInitialized] = useState(false);
@@ -122,6 +185,36 @@ export function Room(props: RoomProps): React.JSX.Element {
   };
 
   const { auth, createSession, joinExistingRoom } = useAltan(fullConfig);
+
+  // Build query parameters from room configuration props
+  const buildRoomConfigParams = (): string => {
+    const params = new URLSearchParams();
+    
+    if (tabs !== undefined) params.set('tabs', tabs.toString());
+    if (conversation_history !== undefined) params.set('conversation_history', conversation_history.toString());
+    if (members !== undefined) params.set('members', members.toString());
+    if (settings !== undefined) params.set('settings', settings.toString());
+    if (theme !== undefined) params.set('theme', theme);
+    if (title !== undefined) params.set('title', title);
+    if (description !== undefined) params.set('description', description);
+    if (suggestions !== undefined && suggestions.length > 0) {
+      params.set('suggestions', encodeURIComponent(JSON.stringify(suggestions)));
+    }
+    if (voice_enabled !== undefined) params.set('voice_enabled', voice_enabled.toString());
+    
+    // Styling parameters
+    if (primary_color !== undefined) params.set('primary_color', primary_color);
+    if (background_color !== undefined) params.set('background_color', background_color);
+    if (background_blur !== undefined) params.set('background_blur', background_blur.toString());
+    if (position !== undefined) params.set('position', position);
+    if (widget_width !== undefined) params.set('widget_width', widget_width.toString());
+    if (room_width !== undefined) params.set('room_width', room_width.toString());
+    if (room_height !== undefined) params.set('room_height', room_height.toString());
+    if (border_radius !== undefined) params.set('border_radius', border_radius.toString());
+
+    const paramString = params.toString();
+    return paramString ? `&${paramString}` : '';
+  };
 
   // Background pre-loading: ALWAYS start immediately (even in compact mode)
   useEffect(() => {
@@ -293,8 +386,59 @@ export function Room(props: RoomProps): React.JSX.Element {
     return () => window.removeEventListener('message', handleMessage);
   }, [authData]);
 
+  // Helper function to get position styles
+  const getPositionStyles = () => {
+    const baseSpacing = 20;
+    switch (position) {
+      case 'bottom-right':
+        return {
+          bottom: `${baseSpacing}px`,
+          right: `${baseSpacing}px`,
+          left: 'auto',
+          transform: 'none',
+        };
+      case 'bottom-left':
+        return {
+          bottom: `${baseSpacing}px`,
+          left: `${baseSpacing}px`,
+          right: 'auto',
+          transform: 'none',
+        };
+      case 'bottom-center':
+      default:
+        return {
+          bottom: `${baseSpacing}px`,
+          left: '50%',
+          right: 'auto',
+          transform: 'translateX(-50%)',
+        };
+    }
+  };
+
+  // Helper function to get widget dimensions based on width
+  const getWidgetDimensions = () => {
+    const inputWidth = widget_width || 350;
+    const maxInputWidth = Math.min(inputWidth, window.innerWidth - 40);
+    
+    const expandedWidth = room_width || 450;
+    const maxRoomWidth = Math.min(expandedWidth, window.innerWidth - 40);
+    
+    const expandedHeight = room_height || 600;
+    const maxRoomHeight = Math.min(expandedHeight, window.innerHeight - 100);
+    
+    return {
+      textFieldWidth: `${maxInputWidth}px`,
+      textFieldMinWidth: `${Math.min(maxInputWidth, 280)}px`,
+      roomWidth: `${maxRoomWidth}px`,
+      roomHeight: `${maxRoomHeight}px`,
+    };
+  };
+
   // Compact mode rendering
   if (props.mode === 'compact') {
+    const positionStyles = getPositionStyles();
+    const widgetDimensions = getWidgetDimensions();
+    
     return (
       <>
         {/* Text field overlay (always visible when closed) */}
@@ -302,24 +446,32 @@ export function Room(props: RoomProps): React.JSX.Element {
           <div
             style={{
               position: 'fixed',
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              ...positionStyles,
               zIndex: 1001,
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: 'white',
-              border: '1px solid #e0e0e0',
-              borderRadius: '24px',
-              padding: '12px 20px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              background: background_blur 
+                ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.75) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 100%)` 
+                : background_color,
+              backdropFilter: background_blur ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)' : 'none',
+              WebkitBackdropFilter: background_blur ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)' : 'none',
+              border: background_blur ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(0, 0, 0, 0.1)',
+              borderRadius: `${border_radius}px`,
+              padding: '10px 16px',
+              boxShadow: background_blur 
+                ? '0 8px 32px rgba(0, 0, 0, 0.12), ' +
+                  '0 1px 3px rgba(0, 0, 0, 0.08), ' +
+                  'inset 0 1px 0 rgba(255, 255, 255, 0.6), ' +
+                  'inset 0 -1px 0 rgba(255, 255, 255, 0.2), ' +
+                  '0 0 0 1px rgba(255, 255, 255, 0.05)'
+                : '0 4px 20px rgba(0, 0, 0, 0.15)',
               cursor: 'text',
-              minWidth: '320px',
-              maxWidth: 'calc(100vw - 40px)',
-              transition: 'all 0.2s ease',
+              width: widgetDimensions.textFieldWidth,
+              minWidth: widgetDimensions.textFieldMinWidth,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
-                         <input
+            <input
                type="text"
                placeholder={props.placeholder || 'Type a message...'}
                value={message}
@@ -336,57 +488,61 @@ export function Room(props: RoomProps): React.JSX.Element {
                  background: 'transparent',
                  flex: 1,
                  fontSize: '14px',
-                 fontFamily: 'system-ui, -apple-system, sans-serif',
-                 color: '#333',
+                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                 color: 'rgba(0, 0, 0, 0.85)',
                  cursor: 'pointer',
+                 fontWeight: '400',
                }}
              />
 
             <div
               style={{
-                marginLeft: '12px',
+                marginLeft: '10px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
               }}
             >
               {/* Show subtle loading indicator while preloading */}
               {isPreloading && (
                 <div
                   style={{
-                    width: '8px',
-                    height: '8px',
+                    width: '6px',
+                    height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: '#007bff',
-                    opacity: 0.6,
+                    backgroundColor: primary_color,
+                    opacity: 0.7,
                     animation: 'altanPulse 1.5s ease-in-out infinite',
                   }}
                 />
               )}
 
-              {/* Simple expand button */}
+              {/* Elegant expand button */}
               <button
                 onClick={() => setIsOpen(true)}
                 title="Open chat"
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '24px',
+                  height: '24px',
                   borderRadius: '50%',
                   border: 'none',
-                  backgroundColor: '#6b7280',
+                  backgroundColor: primary_color,
                   color: 'white',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '14px',
-                  transition: 'all 0.2s ease',
+                  fontSize: '12px',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4b5563';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#6b7280';
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
                 }}
               >
                 <svg
@@ -410,44 +566,75 @@ export function Room(props: RoomProps): React.JSX.Element {
         <div
           style={{
             position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: `translateX(-50%) ${isOpen ? 'scale(1)' : 'scale(0)'}`,
-            width: 'min(450px, calc(100vw - 40px))',
-            height: 'min(600px, calc(100vh - 100px))',
-            borderRadius: '12px',
-            backgroundColor: 'white',
-            transformOrigin: 'bottom center',
+            ...positionStyles,
+            transform: position === 'bottom-center' 
+              ? `translateX(-50%) ${isOpen ? 'scale(1)' : 'scale(0)'}` 
+              : `${isOpen ? 'scale(1)' : 'scale(0)'}`,
+            width: widgetDimensions.roomWidth,
+            height: widgetDimensions.roomHeight,
+            borderRadius: `${border_radius}px`,
+            background: background_blur 
+              ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.95) 100%)` 
+              : background_color,
+            backdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
+            WebkitBackdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
+            border: background_blur ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(0, 0, 0, 0.1)',
+            transformOrigin: position === 'bottom-right' 
+              ? 'bottom right'
+              : position === 'bottom-left' 
+                ? 'bottom left' 
+                : 'bottom center',
             opacity: isOpen ? 1 : 0,
-            boxShadow: isOpen ? '0 10px 40px rgba(0, 0, 0, 0.2)' : '0 10px 40px rgba(0, 0, 0, 0)',
-            transition: isOpen 
-              ? 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out, box-shadow 0.3s ease-out'
-              : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease-in, box-shadow 0.2s ease-in',
+            boxShadow: isOpen 
+              ? background_blur
+                ? '0 25px 50px rgba(0, 0, 0, 0.18), ' +
+                  '0 8px 16px rgba(0, 0, 0, 0.12), ' +
+                  '0 2px 4px rgba(0, 0, 0, 0.1), ' +
+                  'inset 0 1px 0 rgba(255, 255, 255, 0.7), ' +
+                  'inset 0 -1px 0 rgba(255, 255, 255, 0.3), ' +
+                  '0 0 0 1px rgba(255, 255, 255, 0.1)'
+                : '0 20px 40px rgba(0, 0, 0, 0.2)' 
+              : '0 10px 40px rgba(0, 0, 0, 0)',
+                          transition: isOpen 
+                ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease-out, box-shadow 0.25s ease-out'
+                : 'transform 0.2s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.15s ease-in, box-shadow 0.2s ease-in',
             overflow: 'hidden',
             pointerEvents: isOpen ? 'auto' : 'none',
             zIndex: 1000,
           }}
         >
-           {/* Close button when expanded */}
+           {/* Elegant close button when expanded */}
            {isOpen && (
              <div
                style={{
                  position: 'absolute',
-                 top: '12px',
-                 right: '12px',
+                 top: '10px',
+                 right: '10px',
                  zIndex: 1002,
-                 background: 'rgba(0, 0, 0, 0.1)',
+                 background: 'rgba(0, 0, 0, 0.05)',
+                 backdropFilter: 'blur(10px)',
+                 WebkitBackdropFilter: 'blur(10px)',
                  borderRadius: '50%',
-                 width: '28px',
-                 height: '28px',
+                 width: '24px',
+                 height: '24px',
                  display: 'flex',
                  alignItems: 'center',
                  justifyContent: 'center',
                  cursor: 'pointer',
-                 fontSize: '16px',
-                 color: '#666',
+                 fontSize: '14px',
+                 color: 'rgba(0, 0, 0, 0.6)',
+                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                 border: '1px solid rgba(255, 255, 255, 0.3)',
                }}
                onClick={() => setIsOpen(false)}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+                 e.currentTarget.style.transform = 'scale(1.05)';
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                 e.currentTarget.style.transform = 'scale(1)';
+               }}
              >
                ✕
              </div>
@@ -459,7 +646,8 @@ export function Room(props: RoomProps): React.JSX.Element {
                ref={iframeRef}
                src={(() => {
                  const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
-                 const fullUrl = `${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}`;
+                 const configParams = buildRoomConfigParams();
+                 const fullUrl = `${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${configParams}`;
                  console.log(`🔗 [${context}] Iframe URL:`, fullUrl);
                  console.log(`🔗 [${context}] Token length:`, authData.tokens.accessToken?.length || 0);
                  return fullUrl;
@@ -573,7 +761,7 @@ export function Room(props: RoomProps): React.JSX.Element {
       {isInitialized && roomUrl && authData ? (
         <iframe
           ref={iframeRef}
-          src={`${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}`}
+          src={`${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${buildRoomConfigParams()}`}
           allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
           style={{
             width: '100%',

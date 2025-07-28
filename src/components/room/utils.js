@@ -4,7 +4,6 @@ export const baseUrl = 'https://storage.googleapis.com/logos-chatbot-optimai/use
 
 export function getMemberName(roomMember) {
   const member = roomMember?.member;
-  console.log('member', member);
   if (!member) {
     return 'Anonymous';
   }

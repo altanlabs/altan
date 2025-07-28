@@ -79,7 +79,7 @@ const requestMicrophonePermission = async (retries = 3) => {
   return false;
 };
 
-export const VoiceConversationProvider = ({ children }) => {
+export const VoiceConversationProvider = ({ children, voiceEnabled = null }) => {
   const [toolCalls, setToolCalls] = useState([]);
   const [navigationPath, setNavigationPath] = useState('');
   const [connectionAttempts, setConnectionAttempts] = useState(0);

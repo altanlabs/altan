@@ -9,6 +9,9 @@
  *   data-agent-id="your-agent-id"
  *   data-mode="compact"
  *   data-placeholder="Ask me anything..."
+ *   data-tabs="true"
+ *   data-theme="dark"
+ *   data-voice-enabled="true"
  * ></script>
  */
 
@@ -24,6 +27,23 @@ class AltanWidget {
     this.config = null;
   }
 
+  // Helper function to parse boolean data attributes
+  parseBooleanAttribute(value) {
+    if (value === null || value === undefined) return undefined;
+    return value.toLowerCase() === 'true';
+  }
+
+  // Helper function to parse JSON data attributes
+  parseJsonAttribute(value) {
+    if (!value) return undefined;
+    try {
+      return JSON.parse(decodeURIComponent(value));
+    } catch (e) {
+      console.warn('Altan Widget: Failed to parse JSON attribute:', value);
+      return undefined;
+    }
+  }
+
   // Initialize from script tag data attributes
   initFromScript() {
     const script = document.currentScript || this.findAltanScript();
@@ -33,6 +53,7 @@ class AltanWidget {
     }
 
     const config = {
+      // Core configuration
       accountId: script.getAttribute('data-account-id'),
       agentId: script.getAttribute('data-agent-id'),
       roomId: script.getAttribute('data-room-id'),
@@ -44,6 +65,27 @@ class AltanWidget {
       guestName: script.getAttribute('data-guest-name') || 'Website Visitor',
       guestEmail: script.getAttribute('data-guest-email'),
       externalId: script.getAttribute('data-external-id') || this.generateExternalId(),
+      
+      // Room configuration props
+      tabs: this.parseBooleanAttribute(script.getAttribute('data-tabs')),
+      conversation_history: this.parseBooleanAttribute(script.getAttribute('data-conversation-history')),
+      members: this.parseBooleanAttribute(script.getAttribute('data-members')),
+      settings: this.parseBooleanAttribute(script.getAttribute('data-settings')),
+      theme: script.getAttribute('data-theme'),
+      title: script.getAttribute('data-title'),
+      description: script.getAttribute('data-description'),
+      suggestions: this.parseJsonAttribute(script.getAttribute('data-suggestions')),
+      voice_enabled: this.parseBooleanAttribute(script.getAttribute('data-voice-enabled')),
+      
+      // Styling props
+      primary_color: script.getAttribute('data-primary-color'),
+      background_color: script.getAttribute('data-background-color'),
+      background_blur: this.parseBooleanAttribute(script.getAttribute('data-background-blur')),
+      position: script.getAttribute('data-position'),
+      widget_width: script.getAttribute('data-width') ? parseInt(script.getAttribute('data-width')) : undefined,
+      room_width: script.getAttribute('data-room-width') ? parseInt(script.getAttribute('data-room-width')) : undefined,
+      room_height: script.getAttribute('data-room-height') ? parseInt(script.getAttribute('data-room-height')) : undefined,
+      border_radius: script.getAttribute('data-border-radius') ? parseInt(script.getAttribute('data-border-radius')) : undefined,
     };
 
     if (!config.accountId) {
@@ -74,6 +116,25 @@ class AltanWidget {
       roomBaseUrl: 'https://altan.ai/r',
       guestName: 'Website Visitor',
       externalId: this.generateExternalId(),
+      // Room configuration defaults
+      tabs: undefined,
+      conversation_history: undefined,
+      members: undefined,
+      settings: undefined,
+      theme: undefined,
+      title: undefined,
+      description: undefined,
+      suggestions: undefined,
+      voice_enabled: undefined,
+              // Styling defaults
+        primary_color: undefined,
+        background_color: undefined,
+        background_blur: undefined,
+        position: undefined,
+        widget_width: undefined,
+        room_width: undefined,
+        room_height: undefined,
+        border_radius: undefined,
       ...config
     };
 
@@ -111,6 +172,26 @@ class AltanWidget {
         email: this.config.guestEmail,
         external_id: this.config.externalId,
       },
+      // Room configuration props
+      tabs: this.config.tabs,
+      conversation_history: this.config.conversation_history,
+      members: this.config.members,
+      settings: this.config.settings,
+      theme: this.config.theme,
+      title: this.config.title,
+      description: this.config.description,
+      suggestions: this.config.suggestions,
+      voice_enabled: this.config.voice_enabled,
+              // Styling props
+        primary_color: this.config.primary_color,
+        background_color: this.config.background_color,
+        background_blur: this.config.background_blur,
+        position: this.config.position,
+        widget_width: this.config.widget_width,
+        room_width: this.config.room_width,
+        room_height: this.config.room_height,
+        border_radius: this.config.border_radius,
+      // Event handlers
       onAuthSuccess: (guest, tokens) => {
         console.log('✅ Widget: Authentication successful', guest);
         console.log('🔐 Widget: Tokens received:', tokens ? 'Present' : 'Missing');

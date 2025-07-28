@@ -19,6 +19,13 @@ const de = {
     endConversation: 'Gespräch beenden',
     switchToText: 'Zu Textmodus wechseln',
     switchToVoice: 'Zu Sprachmodus wechseln',
+    startCall: 'Sprache Starten',
+  },
+  room: {
+    howCanIHelp: 'Wie kann ich Ihnen helfen?',
+    askAnything: 'Fragen Sie alles...',
+    removeFile: 'Datei entfernen',
+    startTalking: 'Anfangen zu sprechen...',
   },
 };
 

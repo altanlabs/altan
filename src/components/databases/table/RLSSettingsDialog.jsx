@@ -168,7 +168,6 @@ const RLSSettingsDialog = ({ baseId, table, open, onClose }) => {
       <DialogContent sx={{ p: 2 }}>
         <Stack
           direction="row"
-          justifyContent="space-between"
           alignItems="center"
           sx={{ mb: 2 }}
         >

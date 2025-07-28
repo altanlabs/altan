@@ -652,7 +652,12 @@ const slice = createSlice({
         return;
       }
       if (message.member_id !== state.me?.id) {
-        SOUND_IN.play();
+        // Don't play sound if voice is active for this thread
+        const isVoiceActiveForThread =
+          !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
+        if (!isVoiceActiveForThread) {
+          SOUND_IN.play();
+        }
       }
       extractMessagesFromThread(state, {
         messages: { byId: { [message.id]: message }, allIds: [message.id] },
@@ -810,6 +815,27 @@ const slice = createSlice({
     // Add tab management actions
     createTab: (state, action) => {
       const { threadId, threadName, isMainThread = false } = action.payload;
+
+      // Check if a tab with this threadId already exists
+      const existingTabId = state.tabs.allIds.find(
+        (tabId) => state.tabs.byId[tabId]?.threadId === threadId,
+      );
+
+      // If tab with same threadId exists, switch to it instead of creating a new one
+      if (existingTabId) {
+        // Deactivate current active tab
+        if (state.tabs.activeTabId && state.tabs.byId[state.tabs.activeTabId]) {
+          state.tabs.byId[state.tabs.activeTabId].isActive = false;
+        }
+
+        // Activate existing tab
+        state.tabs.activeTabId = existingTabId;
+        state.tabs.byId[existingTabId].isActive = true;
+        state.thread.main.current = threadId;
+        return;
+      }
+
+      // Create new tab only if no tab with this threadId exists
       const tabId = `tab-${state.tabs.nextTabId}`;
 
       state.tabs.byId[tabId] = {
@@ -1868,7 +1894,13 @@ export const sendMessage =
         { content, attachments, replied_id: respond[threadId] },
         config,
       );
-      SOUND_OUT.play();
+
+      // Don't play sound if voice is active for this thread
+      const state = getState();
+      const isVoiceActiveForThread = !!state.room.voiceConversations.byThreadId[threadId]?.isActive;
+      if (!isVoiceActiveForThread) {
+        SOUND_OUT.play();
+      }
       if (!!respond) {
         dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
       }
@@ -1901,7 +1933,13 @@ export const sendAgentMessage =
         { content, attachments, replied_id: respond[threadId] },
         config,
       );
-      SOUND_OUT.play();
+
+      // Don't play sound if voice is active for this thread
+      const state = getState();
+      const isVoiceActiveForThread = !!state.room.voiceConversations.byThreadId[threadId]?.isActive;
+      if (!isVoiceActiveForThread) {
+        SOUND_OUT.play();
+      }
       if (!!respond) {
         dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
       }
@@ -1930,28 +1968,28 @@ export const createThread =
       const { thread } = response.data;
 
       // Check if tabs are enabled
-      const state = getState();
-      const tabsEnabled = state.room.tabs.allIds.length > 0;
+      // const state = getState();
+      // const tabsEnabled = state.room.tabs.allIds.length > 0;
 
-      if (tabsEnabled) {
-        // Create a tab for the new thread and switch to it
-        dispatch(
-          switchToThread({
-            threadId: thread.id,
-            threadName: thread.name || drawer?.threadName || 'New Thread',
-          }),
-        );
-      } else {
-        // Fallback to traditional drawer system
-        dispatch(
-          slice.actions.setThreadDrawer({
-            current: thread.id,
-            threadName: null,
-            isCreation: false,
-            messageId: null,
-          }),
-        );
-      }
+      // if (tabsEnabled) {
+      //   // Create a tab for the new thread and switch to it
+      //   dispatch(
+      //     switchToThread({
+      //       threadId: thread.id,
+      //       threadName: thread.name || drawer?.threadName || 'New Thread',
+      //     }),
+      //   );
+      // } else {
+      //   // Fallback to traditional drawer system
+      //   dispatch(
+      //     slice.actions.setThreadDrawer({
+      //       current: thread.id,
+      //       threadName: null,
+      //       isCreation: false,
+      //       messageId: null,
+      //     }),
+      //   );
+      // }
 
       dispatch(
         sendMessage({
@@ -2169,7 +2207,7 @@ export const createMessageContextMenu =
       !!message?.member_id &&
       (me.id === message.member_id || // Users can always delete their own messages
         (['owner', 'admin'].includes(me.role) &&
-         members.byId[message.member_id]?.member?.member_type === 'agent'));
+          members.byId[message.member_id]?.member?.member_type === 'agent'));
 
     const enableThreadOnlyActions =
       !!message &&

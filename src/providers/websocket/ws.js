@@ -171,7 +171,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('data', data);
+  // console.log('data', data);
   // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':

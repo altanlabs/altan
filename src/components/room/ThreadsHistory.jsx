@@ -39,7 +39,12 @@ const selectRoomHistory = createSelector(
   },
 );
 
-const ThreadsHistory = ({ hideInput = false }) => {
+const ThreadsHistory = ({
+  hideInput = false,
+  title = null,
+  description = null,
+  suggestions = [],
+}) => {
   const containerRef = useRef(null);
   const mainThread = useSelector(selectMainThread);
   const fullHistory = useSelector(selectRoomHistory);
@@ -79,6 +84,9 @@ const ThreadsHistory = ({ hideInput = false }) => {
             key={`thread-${currentThreadId}-main`}
             containerRef={containerRef}
             hideInput={hideInput}
+            title={title}
+            description={description}
+            suggestions={suggestions}
           />
         </div>
       )}

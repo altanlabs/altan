@@ -19,6 +19,13 @@ const ru = {
     endConversation: 'Завершить разговор',
     switchToText: 'Переключиться на текстовый режим',
     switchToVoice: 'Переключиться на голосовой режим',
+    startCall: 'Начать Голос',
+  },
+  room: {
+    howCanIHelp: 'Как я могу помочь?',
+    askAnything: 'Спросите что угодно...',
+    removeFile: 'Удалить файл',
+    startTalking: 'Начните говорить...',
   },
 };
 

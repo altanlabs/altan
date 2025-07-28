@@ -12,7 +12,13 @@ import {
 } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 
-const GeneralToolbar = ({ className }) => {
+const GeneralToolbar = ({
+  className,
+  tabs = true,
+  conversation_history = true,
+  members = true,
+  settings = true
+}) => {
   const mainThread = useSelector(selectMainThread);
   const tabsCount = useSelector(selectTabsCount);
 
@@ -34,12 +40,17 @@ const GeneralToolbar = ({ className }) => {
   return (
     <div
       className={cn(
-        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md bg-[#FFFFFF]/95 dark:bg-[#121212]/95 px-1',
+        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md px-1',
         className,
       )}
     >
       {/* Tab Bar */}
-      <TabBar />
+      <TabBar
+        showTabs={tabs}
+        showHistoryButton={conversation_history}
+        showMembersButton={members}
+        showSettingsButton={settings}
+      />
 
       {/* Additional toolbar content can be added here if needed */}
       <div style={{ flexGrow: 1 }} />

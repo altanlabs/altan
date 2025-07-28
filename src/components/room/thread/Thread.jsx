@@ -1,3 +1,4 @@
+import { IconButton, Menu, MenuItem, Typography, Button, Box } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -5,6 +6,7 @@ import { useHistory, useParams } from 'react-router-dom';
 
 import ThreadMessages from './ThreadMessages.jsx';
 import useResponsive from '../../../hooks/useResponsive';
+import useLocales from '../../../locales/useLocales';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import { selectGate } from '../../../redux/slices/gate';
@@ -15,9 +17,16 @@ import {
   selectRoom,
   selectThreadDrawerDetails,
   makeSelectSortedThreadMessageIds,
+  sendMessage,
+  selectMembers,
+  selectIsVoiceActive,
+  selectIsVoiceConnecting,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
+import { useVoiceConversationHandler } from '../../attachment/hooks/useVoiceConversation.js';
 import FloatingTextArea from '../../FloatingTextArea.jsx';
+import Iconify from '../../iconify/Iconify.jsx';
+import { getMemberDetails } from '../utils.js';
 
 const makeSelectThreadById = () =>
   createSelector(
@@ -39,15 +48,37 @@ const makeSelectThreadById = () =>
     },
   );
 
-const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = false }) => {
+const Thread = ({
+  mode = 'main',
+  tId = null,
+  containerRef = null,
+  hideInput = false,
+  title = null,
+  description = null,
+  suggestions = [],
+}) => {
   const { gateId } = useParams();
   const history = useHistory();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
+
   const room = useSelector(selectRoom);
   const drawer = useSelector(selectThreadDrawerDetails);
   const isMobile = useResponsive('down', 'md');
+  const { translate, currentLang, allLangs, onChangeLang } = useLocales();
+
+  // Voice-related selectors and hooks
+  const members = useSelector(selectMembers);
+  const isVoiceActive = useSelector((state) => selectIsVoiceActive(tId || drawer.current)(state));
+  const isVoiceConnecting = useSelector(selectIsVoiceConnecting);
+  const { startVoiceCall, stopVoiceCall } = useVoiceConversationHandler(tId || drawer.current);
+
+  // Get agents from room members for voice functionality
+  const agents = Object.values(members.byId || {})
+    .filter((member) => member?.member?.member_type === 'agent')
+    .map((member) => getMemberDetails(member));
 
   const threadSelector = useMemo(makeSelectThreadById, []);
   const thread = useSelector((state) =>
@@ -58,16 +89,43 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
-  // Debug logging for Thread component state
-  console.log('🧵 === THREAD COMPONENT DEBUG ===');
-  console.log('🧵 Mode:', mode);
-  console.log('🧵 ThreadId:', threadId);
-  console.log('🧵 LastThreadId:', lastThreadId);
-  console.log('🧵 HasLoaded:', hasLoaded);
-  console.log('🧵 IsCreation:', isCreation);
-  console.log('🧵 WebSocket isOpen:', isOpen);
-  console.log('🧵 Room:', room?.id);
-  console.log('🧵 Thread object:', thread);
+  // Check if voice is enabled
+  const isVoiceEnabled = room?.policy?.voice_enabled;
+
+  // Language menu handlers
+  const handleLanguageMenuOpen = useCallback((event) => {
+    setLanguageMenuAnchor(event.currentTarget);
+  }, []);
+
+  const handleLanguageMenuClose = useCallback(() => {
+    setLanguageMenuAnchor(null);
+  }, []);
+
+  const handleLanguageChange = useCallback(
+    (langValue) => {
+          onChangeLang(langValue);
+    handleLanguageMenuClose();
+
+    // If voice is currently active, restart the call with the new language
+      if (isVoiceActive && agents.length > 0) {
+        console.log('🔄 [Thread] Language changed during active voice call, restarting with new language:', langValue);
+        // Stop current call and restart with new language
+        stopVoiceCall();
+        // Add a small delay to ensure cleanup is complete before restarting
+        setTimeout(() => {
+          startVoiceCall(agents, agents[0]);
+        }, 1000);
+      }
+    },
+    [onChangeLang, handleLanguageMenuClose, isVoiceActive, agents, stopVoiceCall, startVoiceCall],
+  );
+
+  // Voice call handler
+  const handleStartVoiceCall = useCallback(() => {
+    if (agents.length > 0) {
+      startVoiceCall(agents, agents[0]); // Use first available agent
+    }
+  }, [agents, startVoiceCall]);
 
   const manageSubscription = useCallback(
     (threadId) => {
@@ -80,18 +138,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
 
   // INITIALIZATION LOGIC
   useEffect(() => {
-    console.log('🧵 === THREAD INITIALIZATION EFFECT ===');
-    console.log('🧵 ThreadId:', threadId);
-    console.log('🧵 LastThreadId:', lastThreadId);
-    console.log('🧵 IsCreation:', isCreation);
-    console.log('🧵 WebSocket isOpen:', isOpen);
-    console.log(
-      '🧵 Should fetch thread?',
-      !!threadId && threadId !== lastThreadId && !isCreation && !!isOpen,
-    );
-
     if (!!threadId && threadId !== lastThreadId && !isCreation && !!isOpen) {
-      console.log('🧵 Fetching thread:', threadId);
       setLastThreadId(threadId);
       setHasLoaded(false); // Reset loading state
 
@@ -131,9 +178,6 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   }, [threadId, isCreation, isOpen]);
 
   useEffect(() => {
-    console.log('🧵 === WEBSOCKET SUBSCRIPTION EFFECT ===');
-    console.log('🧵 WebSocket isOpen:', isOpen);
-    console.log('🧵 ThreadId:', threadId);
     if (isOpen && threadId) {
       console.log('🧵 Managing subscription for thread:', threadId);
       manageSubscription(threadId);
@@ -154,6 +198,31 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
   const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
   const hasMessages = messageIds && messageIds.length > 0;
+
+  // Handle suggestion click
+  const handleSuggestionClick = useCallback(
+    (suggestion) => {
+      if (threadId) {
+        dispatch(
+          sendMessage({
+            threadId,
+            content: suggestion,
+            attachments: [],
+          }),
+        );
+      }
+    },
+    [threadId],
+  );
+
+  // Determine empty state message based on voice status
+  const getEmptyStateTitle = () => {
+    if (isVoiceConnecting) {
+      return translate('room.startTalking') || 'Start talking...';
+    }
+    return title || translate('room.howCanIHelp');
+  };
+
   return (
     <>
       <Helmet>
@@ -169,7 +238,7 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
-          ...(!hasMessages && mode !== 'drawer'
+          ...(!hasMessages
             ? {
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -184,10 +253,10 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
             overflowY: 'auto',
             position: 'relative',
             width: '100%',
-            // Add bottom padding for mobile to account for floating text area
-            paddingBottom: isMobile && hideInput ? '120px' : '0px',
+            // Add bottom padding: always on mobile (fixed FloatingTextArea), or on desktop when input shown
+            paddingBottom: isMobile ? '120px' : (!hideInput ? '120px' : '0px'),
             // Only hide if we're certain there are no messages AND not in drawer mode
-            ...(!hasMessages && mode !== 'drawer' ? { display: 'none' } : {}),
+            ...(!hasMessages ? { display: 'none' } : {}),
           }}
           className="no-scrollbar"
         >
@@ -199,32 +268,144 @@ const Thread = ({ mode = 'main', tId = null, containerRef = null, hideInput = fa
           />
         </div>
 
-        {/* Input container - positioned at bottom or centered in empty state */}
-        <div
-          style={{
-            position: 'relative',
-            width: '100%',
-            ...(mode === 'drawer' ? { marginTop: 'auto' } : {}),
-          }}
-        >
-          <div className="absolute bottom-0 left-0 right-0 flex items-center flex-col overflow-hidden z-0 transition-all duration-300 px-2 py-2">
-            {!hasMessages && mode !== 'drawer' && (
-              <div className="text-center mb-8 flex-shrink-0">
-                <h1 className="text-3xl font-normal text-gray-800 dark:text-gray-200">
-                  {room?.meta_data?.title || 'How can I help?'}
-                </h1>
+        {/* Centered content for empty state (mobile and desktop) */}
+        {!hasMessages && (
+          <div className="text-center mb-8 flex-shrink-0 max-w-2xl mx-auto px-4">
+            <h1 className="text-3xl font-normal text-gray-800 dark:text-gray-200 mb-4">
+              {getEmptyStateTitle()}
+            </h1>
+            {description && !isVoiceConnecting && (
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                {description}
+              </p>
+            )}
+
+            {/* Voice Mode UI - Language Selector and Voice Shortcut */}
+            {isVoiceEnabled && !isVoiceConnecting && (
+              <div className="flex items-center justify-center gap-4 mb-6">
+                {/* Language Selector */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    onClick={handleLanguageMenuOpen}
+                    sx={{
+                      bgcolor: 'background.paper',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      p: 1,
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                      },
+                    }}
+                  >
+                    <Iconify icon={currentLang.icon} sx={{ width: 20, height: 20 }} />
+                  </IconButton>
+
+                  <Menu
+                    anchorEl={languageMenuAnchor}
+                    open={Boolean(languageMenuAnchor)}
+                    onClose={handleLanguageMenuClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+                  >
+                    {allLangs.map((option) => (
+                      <MenuItem
+                        key={option.value}
+                        selected={option.value === currentLang.value}
+                        onClick={() => handleLanguageChange(option.value)}
+                        sx={{
+                          py: 1,
+                          px: 2.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <Iconify
+                          icon={option.icon}
+                          sx={{ borderRadius: 0.65, width: 24, height: 24 }}
+                        />
+                        <Typography variant="body2">{option.label}</Typography>
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
+
+                {/* Voice Call Shortcut */}
+                {!isVoiceActive && (
+                  <Button
+                    onClick={handleStartVoiceCall}
+                    variant="soft"
+                    color="inherit"
+                    startIcon={<Iconify icon="mdi:microphone" />}
+                    sx={{
+                      borderRadius: 3,
+                      px: 2,
+                      py: 1,
+                    }}
+                  >
+                    {translate('voice.startCall') || 'Start Voice'}
+                  </Button>
+                )}
               </div>
             )}
-            {!hideInput && (
-              <FloatingTextArea
-                threadId={threadId}
-                messageId={isCreation ? messageId || 'orphan_thread' : null}
-                containerRef={containerRef}
-                roomId={room?.id}
-                mode="standard"
-              />
+
+            {/* Connecting State */}
+            {isVoiceConnecting && (
+              <div className="flex justify-center mb-6">
+                <Button
+                  variant="outlined"
+                  disabled
+                  startIcon={<div className="animate-spin">⟳</div>}
+                  sx={{
+                    borderRadius: 3,
+                    px: 3,
+                    py: 1.5,
+                  }}
+                >
+                  {translate('voice.connecting') || 'Connecting...'}
+                </Button>
+              </div>
+            )}
+
+            {suggestions && suggestions.length > 0 && !isVoiceConnecting && (
+              <div className="flex flex-wrap gap-2 justify-center">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
+        )}
+
+        {/* Input container - always at bottom of viewport */}
+        <div
+          className={`${
+            isMobile
+              ? 'fixed bottom-0 left-0 right-0 z-50'
+              : 'absolute bottom-0 left-0 right-0'
+          } flex items-center flex-col overflow-hidden transition-all duration-300${
+            !isMobile ? ' px-2 py-2' : ''
+          }`}
+          style={{
+            ...(isMobile ? { backgroundColor: 'transparent' } : {}),
+          }}
+        >
+          {!hideInput && (
+            <FloatingTextArea
+              threadId={threadId}
+              messageId={isCreation ? messageId || 'orphan_thread' : null}
+              containerRef={containerRef}
+              roomId={room?.id}
+              mode={isMobile ? 'mobile' : 'standard'}
+            />
+          )}
         </div>
       </div>
     </>

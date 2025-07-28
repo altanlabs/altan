@@ -243,7 +243,6 @@ const SettingsDialog = ({ open = false, onClose }) => {
       dialogOpen={open}
       onClose={onClose}
       aria-labelledby="settings-dialog"
-      className="relative max-h-[90vh] overflow-y-auto"
     >
       <Stack
         spacing={2}

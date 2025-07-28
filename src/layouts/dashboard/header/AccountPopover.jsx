@@ -24,7 +24,6 @@ import MenuPopover from '../../../components/menu-popover';
 import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
 import UpgradeButton from '../../../components/UpgradeButton.jsx';
-import StatusBadge from '../../../components/user/StatusBadge.jsx';
 import { useLocales } from '../../../locales';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import NavAccount from '../nav/NavAccount.jsx';

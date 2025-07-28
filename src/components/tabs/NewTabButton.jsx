@@ -9,12 +9,7 @@ const NewTabButton = ({ onNewTab, disabled = false }) => {
     if (disabled) return;
 
     try {
-      if (onNewTab) {
-        await onNewTab();
-      } else {
-        // Create a new thread without affecting existing ones
-        await dispatch(createNewThread());
-      }
+      await dispatch(createNewThread());
     } catch (error) {
       console.error('Error creating new tab:', error);
     }

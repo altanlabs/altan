@@ -41,6 +41,14 @@ const DesktopRoom = ({
   previewComponent = null,
   isMobile = false,
   mobileActiveView = 'chat',
+  // New personalization options
+  tabs = true,
+  conversation_history = true,
+  members = true,
+  settings = true,
+  title = null,
+  description = null,
+  suggestions = [],
 }) => {
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const isSmallScreen = useResponsive('down', 'sm');
@@ -112,7 +120,12 @@ const DesktopRoom = ({
         {/* Main content area - remove padding, let absolutely positioned FloatingTextArea handle spacing */}
         <div className="flex-1 relative overflow-hidden">
           {mobileActiveView === 'chat' ? (
-            <Threads hideInput />
+            <Threads
+              hideInput
+              title={title}
+              description={description}
+              suggestions={suggestions}
+            />
           ) : (
             <div
               className="h-full w-full overflow-auto"
@@ -175,8 +188,16 @@ const DesktopRoom = ({
           <GeneralToolbar
             isLoading={isLoading || !initialized.room}
             header={header}
+            tabs={tabs}
+            conversation_history={conversation_history}
+            members={members}
+            settings={settings}
           />
-          <Threads />
+          <Threads
+            title={title}
+            description={description}
+            suggestions={suggestions}
+          />
         </div>
       </Panel>
     </PanelGroup>

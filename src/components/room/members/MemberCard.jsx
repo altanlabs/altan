@@ -105,7 +105,11 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
   return (
     <Stack padding={1.5}>
       {/* Header */}
-      <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ mb: 1 }}
+      >
         {badge}
         <Stack>
           <CustomTypography bold="true">{name}</CustomTypography>
@@ -129,12 +133,18 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
       </Stack>
 
       {/* Member Info */}
-      <Stack spacing={0.5} sx={{ mt: 1 }}>
+      <Stack
+        spacing={0.5}
+        sx={{ mt: 1 }}
+      >
         {/* IDs Section with smaller display */}
         <IdContainer>
           <IdLabel>Room ID:</IdLabel>
           <IdValue>{cropId(member.id)}</IdValue>
-          <Tooltip title={copyTooltip.roomMemberId ? 'Copied!' : 'Copy ID'} placement="top">
+          <Tooltip
+            title={copyTooltip.roomMemberId ? 'Copied!' : 'Copy ID'}
+            placement="top"
+          >
             <IconButton
               size="small"
               onClick={() => copyToClipboard(member.id, 'roomMemberId')}
@@ -148,7 +158,10 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
         <IdContainer>
           <IdLabel>Member ID:</IdLabel>
           <IdValue>{cropId(member.member?.id)}</IdValue>
-          <Tooltip title={copyTooltip.memberId ? 'Copied!' : 'Copy ID'} placement="top">
+          <Tooltip
+            title={copyTooltip.memberId ? 'Copied!' : 'Copy ID'}
+            placement="top"
+          >
             <IconButton
               size="small"
               onClick={() => copyToClipboard(member.member?.id, 'memberId')}
@@ -159,7 +172,28 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
           </Tooltip>
         </IdContainer>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 0.5, fontSize: '0.75rem', color: '#666' }}>
+        <IdContainer>
+          <IdLabel>Room Member ID:</IdLabel>
+          <IdValue>{cropId(member?.id)}</IdValue>
+          <Tooltip
+            title={copyTooltip.roomMemberId ? 'Copied!' : 'Copy ID'}
+            placement="top"
+          >
+            <IconButton
+              size="small"
+              onClick={() => copyToClipboard(member?.id, 'roomMemberId')}
+              sx={{ ml: 'auto', p: 0.3 }}
+            >
+              <ContentCopyIcon sx={{ fontSize: '0.9rem' }} />
+            </IconButton>
+          </Tooltip>
+        </IdContainer>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mt: 0.5, fontSize: '0.75rem', color: '#666' }}
+        >
           <span>Since: {since}</span>
           {email && <span>• {email}</span>}
         </Stack>

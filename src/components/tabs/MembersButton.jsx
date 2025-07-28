@@ -36,7 +36,6 @@ const MembersButton = ({ disabled = false, size = 'small' }) => {
           size={size}
           onClick={handleClick}
           disabled={disabled}
-          color="inherit"
         >
           <Iconify
             icon="mdi:account-group"

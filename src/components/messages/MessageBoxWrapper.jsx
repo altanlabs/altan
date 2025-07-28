@@ -225,7 +225,7 @@ const MessageBoxWrapper = ({
         isOpen={popoverOpen}
         anchorEl={popoverAnchorEl}
         onClose={handlePopoverClose}
-        member={sender.member}
+        roomMember={sender}
         memberName={is_me ? 'You' : senderName}
         picture={picture}
       />

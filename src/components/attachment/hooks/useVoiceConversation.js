@@ -14,6 +14,7 @@
   import { useSelector, dispatch } from '../../../redux/store';
   import { optimai_room } from '../../../utils/axios';
   import { useSnackbar } from '../../snackbar';
+  import useLocales from '../../../locales/useLocales';
 
   // Utility function to update thread voice status
   const updateThreadVoiceStatus = async (threadId, voiceMode) => {
@@ -32,6 +33,7 @@
 
   export const useVoiceConversationHandler = (threadId) => {
     const { enqueueSnackbar } = useSnackbar();
+    const { currentLang } = useLocales();
     const members = useSelector(selectMembers);
     const isVoiceActive = useSelector((state) => selectIsVoiceActive(threadId)(state));
     const isVoiceConnecting = useSelector(selectIsVoiceConnecting);
@@ -185,9 +187,38 @@
         try {
           dispatch(setVoiceConversationConnecting({ threadId, isConnecting: true }));
 
-          // Start ElevenLabs conversation
+          // Prepare language overrides for elevenlabs
+          const languageOverrides = {};
+          const agentVoiceConfig = originalMember?.member?.agent?.voice;
+          
+          // Use current UI language for the conversation
+          const uiLanguage = currentLang.value;
+          console.log('🌍 [useVoiceConversation] Setting voice language to:', uiLanguage);
+          
+          // Check if agent has language-specific presets
+          const languagePresets = agentVoiceConfig?.meta_data?.language_presets;
+          if (languagePresets && languagePresets[uiLanguage]) {
+            console.log('🔧 [useVoiceConversation] Found language preset for:', uiLanguage);
+            languageOverrides.overrides = languagePresets[uiLanguage].overrides;
+          } else {
+            // Fallback to setting language in agent overrides
+            languageOverrides.overrides = {
+              agent: {
+                language: uiLanguage,
+              },
+              tts: {
+                meta_data: {
+                  language: uiLanguage,
+                },
+              },
+            };
+            console.log('🔧 [useVoiceConversation] Using fallback language override for:', uiLanguage);
+          }
+
+          // Start ElevenLabs conversation with language overrides
           await startConversation({
             agentId: elevenlabsId,
+            ...languageOverrides,
             onConnect: () => {
               dispatch(
                 startVoiceConversation({
@@ -205,8 +236,8 @@
               updateThreadVoiceStatus(threadId, false);
             },
             onMessage: (message) => {
-            handleVoiceMessage(message, targetAgent);
-          },
+              handleVoiceMessage(message, targetAgent);
+            },
             onError: (error) => {
               enqueueSnackbar(`Voice conversation error: ${error.message}`, { variant: 'error' });
               dispatch(stopVoiceConversation({ threadId }));
@@ -226,6 +257,7 @@
         enqueueSnackbar,
         members,
         handleVoiceMessage,
+        currentLang,
       ],
     );
 
