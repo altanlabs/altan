@@ -107,6 +107,7 @@ import {
   deleteRunningResponse,
   updateAuthorizationRequest,
   addAuthorizationRequest,
+  createTab,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -170,7 +171,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log("data", data)
+  console.log('data', data);
   // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':
@@ -610,7 +611,14 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(roomMemberUpdate(data.data));
       break;
     case 'ThreadOpened':
-      dispatch(addThread(data.data.attributes));
+      const thread = data.data.attributes;
+      dispatch(addThread(thread));
+      // Create a new tab for the thread without switching to it
+      dispatch(createTab({
+        threadId: thread.id,
+        threadName: thread.name,
+        isMainThread: false,
+      }));
       break;
     case 'ThreadUpdate':
       dispatch(threadUpdate(data.data));

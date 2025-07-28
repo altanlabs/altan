@@ -72,7 +72,15 @@ const AttachmentHandler = ({
       // Send regular message (text-to-voice handled in FloatingTextArea)
       onSendMessage();
     }
-  }, [isSendEnabled, isVoiceActive, startVoiceCall, stopVoiceCall, onSendMessage, agents, selectedAgent]);
+  }, [
+    isSendEnabled,
+    isVoiceActive,
+    startVoiceCall,
+    stopVoiceCall,
+    onSendMessage,
+    agents,
+    selectedAgent,
+  ]);
 
   // Handle file input click for different types
   const handleFileInputClick = useCallback(

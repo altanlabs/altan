@@ -5,7 +5,7 @@ Ultra-simple React SDK for embedding AI chat. One component, two modes.
 ## Installation
 
 ```bash
-npm install @altan/sdk
+npm install @altanlabs/sdk
 ```
 
 ## Usage

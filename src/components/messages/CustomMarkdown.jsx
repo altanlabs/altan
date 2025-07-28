@@ -26,6 +26,47 @@ import VersionWidget from '../widgets/components/VersionWidget.jsx';
 
 const isComponentTarget = (href) => /\[selected_component\]\(.*\)/.test(href);
 
+// YouTube URL detection and processing
+const isYouTubeUrl = (url) => {
+  const youtubePattern = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  return youtubePattern.test(url);
+};
+
+const extractYouTubeVideoId = (url) => {
+  const patterns = [
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+    /youtube\.com\/watch\?v=([^&\n?#]+)/,
+    /youtube\.com\/embed\/([^&\n?#]+)/,
+    /youtu\.be\/([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return null;
+};
+
+// YouTube Embed Component
+const YouTubeEmbed = ({ videoId, title = "YouTube video" }) => {
+  return (
+    <div className="relative w-full max-w-4xl mx-auto my-2 rounded-lg overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="relative pb-[56.25%] h-0"> {/* 16:9 aspect ratio */}
+        <iframe
+          className="absolute top-0 left-0 w-full h-full"
+          src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={title}
+        />
+      </div>
+    </div>
+  );
+};
+
 // const isTwitterTweetLink = (url) => {
 //   const twitterTweetPattern = /(?:twitter\.com|x\.com)\/i\/web\/status\/(\d+)/;
 //   return twitterTweetPattern.test(url);
@@ -105,6 +146,14 @@ function extractResources(message) {
 }
 
 const CustomLink = ({ href, children, threadId }) => {
+  // Check for YouTube URLs first
+  if (isYouTubeUrl(href)) {
+    const videoId = extractYouTubeVideoId(href);
+    if (videoId) {
+      return <YouTubeEmbed videoId={videoId} title="YouTube Video" />;
+    }
+  }
+
   // Construct a markdown-style message from children and href
   const message = Array.isArray(children)
     ? `[${children.join('')}](${href})`
@@ -609,7 +658,16 @@ const CustomMarkdown = ({
               </ul>
             ),
             // Enhanced links
-            a: (props) => <CustomLink {...props} threadId={threadId} />,
+            a: (props) => {
+              const href = props.href;
+              if (isYouTubeUrl(href)) {
+                const videoId = extractYouTubeVideoId(href);
+                if (videoId) {
+                  return <YouTubeEmbed videoId={videoId} title={props.title || 'YouTube Video'} />;
+                }
+              }
+              return <CustomLink {...props} threadId={threadId} />;
+            },
             // Custom suggestion component
             suggestion: ({ children }) => {
               return (
