@@ -1,8 +1,43 @@
 # Altan AI SDK
 
-Ultra-simple React SDK for embedding AI chat. One component, two modes.
+Ultra-simple AI chat integration for any website.
 
-## Installation
+## 🚀 One-Line Integration (No Coding Required!)
+
+Perfect for **Wix, Shopify, WordPress, or any website**. Just add this single line:
+
+```html
+<script 
+  src="https://cdn.altan.ai/sdk/altan-widget.js"
+  data-account-id="your-account-id"
+  data-agent-id="your-agent-id"
+></script>
+```
+
+**That's it!** A beautiful floating chat appears at the bottom of your page with:
+- ⚡ **Instant loading** - Pre-loads in background
+- 📱 **Mobile responsive** - Adapts to all screen sizes  
+- 🎨 **Smooth animations** - GPU-accelerated transforms
+- 🔒 **Secure** - Generates unique visitor IDs
+
+### Widget Configuration
+
+```html
+<script 
+  src="https://cdn.altan.ai/sdk/altan-widget.js"
+  data-account-id="your-account-id"
+  data-agent-id="your-agent-id"
+  data-placeholder="Ask me anything..."
+  data-guest-name="Website Visitor"
+  data-guest-email="user@example.com"
+></script>
+```
+
+---
+
+## 💻 React Integration
+
+For React/Next.js applications, install the npm package:
 
 ```bash
 npm install @altanlabs/sdk
@@ -40,14 +75,31 @@ import { Room } from '@altan/sdk';
 />
 ```
 
+### Compact Mode (Floating Widget)
+
+Shows a floating text field that expands to full chat on click.
+
+```jsx
+import { Room } from '@altan/sdk';
+
+<Room
+  mode="compact"
+  accountId="your-account-id"
+  agentId="agent-123"  // OR roomId="room-456"
+  placeholder="Ask me anything..."
+  guestInfo={{ first_name: "John", external_id: "user-123" }}
+/>
+```
+
 ## Props
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| `mode` | `"agent"` \| `"room"` | ✅ | Chat with agent or join room |
+| `mode` | `"agent"` \| `"room"` \| `"compact"` | ✅ | Chat mode type |
 | `accountId` | string | ✅ | Your Altan account ID |
-| `agentId` | string | ✅* | Agent ID (required for agent mode) |
-| `roomId` | string | ✅* | Room ID (required for room mode) |
+| `agentId` | string | ✅* | Agent ID (required for agent/compact mode) |
+| `roomId` | string | ✅* | Room ID (required for room mode, optional for compact) |
+| `placeholder` | string | ❌ | Text field placeholder (compact mode only) |
 | `guestInfo` | object | ❌ | User info (name, external_id, email) |
 
 *Required based on mode

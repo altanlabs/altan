@@ -597,11 +597,23 @@
   chatButtonIcon.innerHTML = CHAT_BUBBLE_PRO(brand_color);
   chatButton.appendChild(chatButtonIcon);
 
-  // Initialize authentication state with stored tokens
-  // This function will now be called with the accountId
-  // The accountId will be determined by the agent metadata fetch
-  // For now, we'll pass a placeholder or assume it will be set later
-  // await initializeAuthState(accountId); // This line will be uncommented when accountId is available
+  // Initialize agent metadata and authentication immediately
+  (async function initializeWidget() {
+    try {
+      console.log('🚀 Initializing widget with agent metadata...');
+      await fetchAgentMetadata();
+      console.log('✅ Widget initialized with accountId:', accountId);
+      
+      // Load stored tokens now that we have accountId
+      const hasStoredTokens = loadStoredTokens(accountId);
+      if (hasStoredTokens) {
+        console.log('✅ Loaded stored authentication for account:', accountId);
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize widget:', error);
+      // Widget can still work, but authentication might fail
+    }
+  })();
 
   window.addEventListener('resize', addAnimationStyle);
 
@@ -635,11 +647,13 @@
         accountId: authState.accountId
       });
 
-      // First, fetch agent metadata to get account_id
+      // Ensure we have agent metadata (should already be loaded during initialization)
       if (!agentData || !accountId) {
-        console.log('🔍 Fetching agent metadata...');
+        console.log('🔍 Agent metadata missing, fetching now...');
         await fetchAgentMetadata();
         console.log('🔍 Agent metadata fetched - accountId:', accountId, 'agentId:', agentId);
+      } else {
+        console.log('🔍 Using cached agent metadata - accountId:', accountId, 'agentId:', agentId);
       }
 
       // Check if we're switching to a different account - if so, clear auth state

@@ -1,4 +1,4 @@
-import { Container, Typography, Box, Alert, Tab, Tabs } from '@mui/material';
+import { Container, Typography, Box, Alert } from '@mui/material';
 import React from 'react';
 
 import { Room } from '../lib/agents';
@@ -14,7 +14,6 @@ const TEST_CONFIG = {
 };
 
 export default function SDKTestPage() {
-  const [tabValue, setTabValue] = React.useState(0);
 
   return (
     <Container
@@ -29,102 +28,65 @@ export default function SDKTestPage() {
       </Typography>
 
       <Alert
-        severity="info"
+        severity="success"
         sx={{ mb: 3 }}
       >
         <div>
-          <strong>Ultra-clean Room component with two modes:</strong>
-          <br />• <code>mode="agent"</code> - Chat with an agent (finds existing DM or creates new)
-          <br />• <code>mode="room"</code> - Join a specific room (perfect for group chat)
+          <strong>🚀 NEW: Compact Mode with Mobile-First Design!</strong>
+          <br />• <code>mode=&quot;compact&quot;</code> - GPU-accelerated scale transforms
+          <br />• Mobile responsive: 450px desktop, adapts to viewport on mobile
+          <br />• Click text field for smooth scale animation with bounce effect
+          <br />• Room pre-loads hidden with background authentication
         </div>
       </Alert>
 
-      <Tabs 
-        value={tabValue} 
-        onChange={(e, newValue) => setTabValue(newValue)}
-        sx={{ mb: 3 }}
-      >
-        <Tab label="Agent Mode" />
-        <Tab label="Room Mode" />
-      </Tabs>
+              <Alert severity="info" sx={{ mb: 2 }}>
+          <strong>How it works:</strong> Text field appears instantly while room pre-loads hidden (scale: 0).
+          Click anywhere for buttery smooth scale animation from bottom-center origin.
+        </Alert>
 
-      {tabValue === 0 && (
-        <>
-          <Alert severity="success" sx={{ mb: 2 }}>
-            <strong>Agent Mode:</strong> Start/continue conversation with an agent
-          </Alert>
-          <Box
-            sx={{
-              height: '70vh',
-              border: '1px solid #ddd',
-              borderRadius: 1,
-              overflow: 'hidden',
-            }}
-          >
-            <Room
-              mode="agent"
-              accountId={TEST_CONFIG.accountId}
-              agentId={TEST_CONFIG.agentId}
-              config={{
-                apiBaseUrl: TEST_CONFIG.apiBaseUrl,
-                authBaseUrl: TEST_CONFIG.authBaseUrl,
-                roomBaseUrl: TEST_CONFIG.roomBaseUrl,
-              }}
-              guestInfo={{
-                first_name: 'Test',
-                last_name: 'User',
-                email: 'test@example.com',
-                external_id: 'sdk-test-user-123',
-              }}
-              onConversationReady={(room) => {
-                console.log('💬 Conversation ready:', room);
-              }}
-              onAuthSuccess={(guest, tokens) => {
-                console.log('🔐 Authentication successful:', guest);
-              }}
-            />
-          </Box>
-        </>
-      )}
+      <Typography variant="body1" sx={{ mb: 2 }}>
+        Look for the floating text field at bottom center. Notice the subtle blue dot while it&apos;s loading in background.
+      </Typography>
 
-      {tabValue === 1 && (
-        <>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Room Mode:</strong> Join a specific room by ID (replace with real room ID to test)
-          </Alert>
-          <Box
-            sx={{
-              height: '70vh',
-              border: '1px solid #ddd',
-              borderRadius: 1,
-              overflow: 'hidden',
-            }}
-          >
-            <Room
-              mode="room"
-              accountId={TEST_CONFIG.accountId}
-              roomId={TEST_CONFIG.roomId}
-              config={{
-                apiBaseUrl: TEST_CONFIG.apiBaseUrl,
-                authBaseUrl: TEST_CONFIG.authBaseUrl,
-                roomBaseUrl: TEST_CONFIG.roomBaseUrl,
-              }}
-              guestInfo={{
-                first_name: 'Community',
-                last_name: 'Member',
-                email: 'community@example.com',
-                external_id: 'community-member-456',
-              }}
-              onRoomJoined={(guest, tokens) => {
-                console.log('🎉 Joined room:', guest);
-              }}
-              onAuthSuccess={(guest, tokens) => {
-                console.log('🔐 Authentication successful:', guest);
-              }}
-            />
-          </Box>
-        </>
-      )}
+      {/* Demo content */}
+      <Box sx={{ height: '80vh', backgroundColor: '#f5f5f5', p: 3, borderRadius: 1 }}>
+        <Typography variant="h6" gutterBottom>
+          Background Pre-loading Demo
+        </Typography>
+        <Typography variant="body1" paragraph>
+          The room is already loaded invisibly at scale 0.
+          Click the text field for GPU-accelerated smooth scaling animation.
+        </Typography>
+        <Typography variant="body1" paragraph>
+          Once expanded, use the room&apos;s native interface for messaging and voice chat!
+        </Typography>
+      </Box>
+
+      {/* Compact Room Component with Background Pre-loading */}
+      <Room
+        mode="compact"
+        accountId={TEST_CONFIG.accountId}
+        agentId={TEST_CONFIG.agentId}
+        placeholder="How can I help you?"
+        config={{
+          apiBaseUrl: TEST_CONFIG.apiBaseUrl,
+          authBaseUrl: TEST_CONFIG.authBaseUrl,
+          roomBaseUrl: TEST_CONFIG.roomBaseUrl,
+        }}
+        guestInfo={{
+          first_name: 'Test',
+          last_name: 'User',
+          email: 'test@example.com',
+          external_id: 'sdk-test-preload',
+        }}
+        onConversationReady={(room) => {
+          console.log('✅ Background pre-loading complete:', room);
+        }}
+        onAuthSuccess={(guest) => {
+          console.log('✅ Auth ready:', guest);
+        }}
+      />
     </Container>
   );
 }

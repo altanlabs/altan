@@ -25,9 +25,6 @@ const Room = ({
 }) => {
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
-  console.log("guest", guest);
-  console.log("user", user);
-  console.log("authenticated", authenticated);
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
   // Check if this is a guest access by detecting iframe context
@@ -42,14 +39,7 @@ const Room = ({
 
   // Auto-trigger guest authentication if in iframe and not authenticated
   useEffect(() => {
-    console.log('🔐 === GUEST AUTH TRIGGER EFFECT ===');
-    console.log('🔐 IsGuestAccess:', isGuestAccess);
-    console.log('🔐 Authenticated guest:', !!authenticated.guest);
-    console.log('🔐 Guest prop:', !!guest);
-    console.log('🔐 Should trigger auth?', isGuestAccess && !authenticated.guest && !guest);
-    
     if (isGuestAccess && !authenticated.guest && !guest) {
-      console.log('🔐 ✅ Auto-triggering guest authentication for iframe');
       // For iframe guest access, we don't need guestId/agentId from URL anymore
       // The loginAsGuest function will handle requesting auth from parent
       loginAsGuest(null, null)
@@ -65,16 +55,6 @@ const Room = ({
   }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
 
   const handleFetchRoom = useCallback(() => {
-    console.log('📡 Attempting to fetch room:', {
-      roomId,
-      hasUser: !!user,
-      hasGuest: !!guest,
-      isGuestAccess,
-      authenticatedUser: authenticated.user,
-      authenticatedGuest: authenticated.guest,
-      authenticatedMember: authenticated.member,
-    });
-
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => {
         if (!response) {
@@ -114,14 +94,6 @@ const Room = ({
   }, [guest, history, isGuestAccess, roomId, user, authenticated]);
 
   useEffect(() => {
-    console.log('🏠 === ROOM FETCH EFFECT ===');
-    console.log('🏠 RoomId:', roomId);
-    console.log('🏠 Initialized:', initialized);
-    console.log('🏠 IsGuestAccess:', isGuestAccess);
-    console.log('🏠 Authenticated guest:', !!authenticated.guest);
-    console.log('🏠 Guest prop:', !!guest);
-    console.log('🏠 User:', !!user);
-    
     if (!!roomId && !initialized) {
       if (isGuestAccess) {
         if (authenticated.guest && guest) {
@@ -142,7 +114,7 @@ const Room = ({
     } else {
       console.log('🏠 ❌ Conditions not met for room fetch:', {
         hasRoomId: !!roomId,
-        notInitialized: !initialized
+        notInitialized: !initialized,
       });
     }
   }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);

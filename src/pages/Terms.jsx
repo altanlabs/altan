@@ -107,10 +107,10 @@ export default function Terms() {
             <h2 className="text-2xl font-bold mt-8 mb-4">Governing Law</h2>
             <p>
               These Terms shall be governed and construed in accordance with the laws of the State
-              of [Your State], without regard to its conflict of law provisions. Any legal suit,
+              of Delaware, without regard to its conflict of law provisions. Any legal suit,
               action, or proceeding arising out of, or related to, these Terms or the Services shall
               be instituted exclusively in the federal courts of the United States or the courts of
-              the State of [Your State].
+              the State of Delaware.
             </p>
 
             <h2 className="text-2xl font-bold mt-8 mb-4">Changes to Terms</h2>
