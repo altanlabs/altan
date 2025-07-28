@@ -41,37 +41,66 @@ export function AltanProvider({ config, children }: AltanProviderProps): React.J
   return <AltanContext.Provider value={altanState}>{children}</AltanContext.Provider>;
 }
 
-// Room Component (for embedding in existing layouts)
-interface RoomProps {
+interface BaseRoomProps {
+  /** Your Altan account ID */
   accountId: string;
-  agentId: string;
+  /** SDK configuration (optional - defaults work for most cases) */
   config?: Partial<AltanSDKConfig>;
+  /** Guest information (name, email, external_id for returning users) */
   guestInfo?: CreateGuestRequest;
+  /** Component width (default: 100%) */
   width?: number | string;
+  /** Component height (default: 100%) */
   height?: number | string;
+  /** CSS class name */
   className?: string;
+  /** Inline styles */
   style?: React.CSSProperties;
-  onRoomCreated?: (room: RoomData) => void;
+  /** Called when guest is authenticated successfully */
   onAuthSuccess?: (guest: GuestData, tokens: AuthTokens) => void;
+  /** Called on any error */
   onError?: (error: Error) => void;
 }
 
-export function Room({
-  accountId,
-  agentId,
-  config = {},
-  guestInfo,
-  width = '100%',
-  height = '100%',
-  className,
-  style,
-  onRoomCreated,
-  onAuthSuccess,
-  onError,
-}: RoomProps): React.JSX.Element {
+interface AgentModeProps extends BaseRoomProps {
+  /** Agent mode: finds existing DM with agent or creates new one */
+  mode: 'agent';
+  /** ID of the agent to chat with */
+  agentId: string;
+  /** Called when conversation is ready (DM found/created) */
+  onConversationReady?: (room: RoomData) => void;
+}
+
+interface RoomModeProps extends BaseRoomProps {
+  /** Room mode: joins an existing room by ID */
+  mode: 'room';
+  /** ID of the room to join */
+  roomId: string;
+  /** Called when successfully joined the room */
+  onRoomJoined?: (guest: GuestData, tokens: AuthTokens) => void;
+}
+
+type RoomProps = AgentModeProps | RoomModeProps;
+
+export function Room(props: RoomProps): React.JSX.Element {
+  const {
+    accountId,
+    config = {},
+    guestInfo,
+    width = '100%',
+    height = '100%',
+    className,
+    style,
+    onAuthSuccess,
+    onError,
+  } = props;
+
   const [isInitialized, setIsInitialized] = useState(false);
   const [authData, setAuthData] = useState<{ guest: GuestData; tokens: AuthTokens } | null>(null);
+  const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const initAttemptedRef = useRef(false);
 
   const fullConfig: AltanSDKConfig = {
     accountId,
@@ -79,99 +108,65 @@ export function Room({
     ...config,
   };
 
-  const { auth, room, createSession } = useAltan(fullConfig);
+  const { auth, createSession, joinExistingRoom } = useAltan(fullConfig);
 
-  // Auto-initialize on mount
+  // Auto-initialize on mount with infinite loop protection
   useEffect(() => {
-    if (!isInitialized) {
-      if (fullConfig.debug) {
-        console.log('🚀 === SDK INITIALIZATION STARTING ===');
-        console.log('🚀 AccountId:', accountId);
-        console.log('🚀 AgentId:', agentId);
-        console.log('🚀 Config:', fullConfig);
-        console.log('🚀 GuestInfo:', guestInfo);
-      }
+    // CRITICAL: Prevent infinite loops with multiple safeguards
+    if (isInitialized || hasError || initAttemptedRef.current) {
+      return;
+    }
 
-      createSession(agentId, guestInfo)
+    initAttemptedRef.current = true;
+
+    if (props.mode === 'agent') {
+      // Agent mode: find/create DM with agent
+      createSession(props.agentId, guestInfo)
         .then(({ room: createdRoom, tokens, guest }) => {
-          if (fullConfig.debug) {
-            console.log('🎯 === SDK INITIALIZATION SUCCESS ===');
-            console.log('🎯 Created room:', createdRoom);
-            console.log('🎯 Auth guest:', guest);
-            console.log('🎯 Tokens received:', {
-              hasAccessToken: !!tokens.accessToken,
-              hasRefreshToken: !!tokens.refreshToken,
-              accessToken: tokens.accessToken ? 'Present' : 'Missing',
-              refreshToken: tokens.refreshToken ? 'Present' : 'Missing',
-              note: 'Will refresh reactively on 401 errors (no expiry time from backend)',
-            });
-          }
-
           setIsInitialized(true);
           setAuthData({ guest, tokens });
-
-          onRoomCreated?.(createdRoom);
+          setRoomUrl(createdRoom.url || null);
+          props.onConversationReady?.(createdRoom);
           onAuthSuccess?.(guest, tokens);
         })
         .catch((error: Error) => {
-          if (fullConfig.debug) {
-            console.error('❌ === SDK INITIALIZATION FAILED ===');
-            console.error('❌ Error details:', error);
-            console.error('❌ Error message:', error.message);
-            console.error('❌ Error stack:', error.stack);
-          }
+          console.error('❌ Agent session failed:', error);
+          setHasError(true);
+          setIsInitialized(true); // Prevent re-runs
           onError?.(error);
         });
+    } else if (props.mode === 'room') {
+      // Room mode: join existing room
+      joinExistingRoom(props.roomId, guestInfo)
+        .then(({ guest, tokens, roomUrl: url }) => {
+          setIsInitialized(true);
+          setAuthData({ guest, tokens });
+          setRoomUrl(url);
+          props.onRoomJoined?.(guest, tokens);
+          onAuthSuccess?.(guest, tokens);
+        })
+        .catch((error: Error) => {
+          console.error('❌ Room join failed:', error);
+          setHasError(true);
+          setIsInitialized(true); // Prevent re-runs
+          onError?.(error);
+        });
+    } else {
+      console.error('❌ Unknown mode:', (props as any).mode);
+      setHasError(true);
+      setIsInitialized(true); // Prevent re-runs
+      onError?.(new Error(`Unknown mode: ${(props as any).mode}`));
     }
-  }, [
-    isInitialized,
-    createSession,
-    agentId,
-    guestInfo,
-    onRoomCreated,
-    onAuthSuccess,
-    onError,
-    accountId,
-    fullConfig.debug,
-  ]);
-
-  // Debug: Listen to ALL messages
-  useEffect(() => {
-    if (!fullConfig.debug) return;
-
-    const handleAllMessages = (event: MessageEvent): void => {
-      console.log('🌍 ALL MESSAGES:', {
-        type: event.data?.type,
-        origin: event.origin,
-        data: event.data,
-        timestamp: new Date().toISOString(),
-      });
-    };
-
-    window.addEventListener('message', handleAllMessages);
-    return () => window.removeEventListener('message', handleAllMessages);
-  }, [fullConfig.debug]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle authentication iframe messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent): void => {
       const { data } = event;
 
-      // Handle the actual message type that the iframe sends
       if (data?.type === 'request_guest_auth' && authData) {
         const iframe = iframeRef.current;
         if (iframe?.contentWindow) {
-          if (fullConfig.debug) {
-            console.log('📡 Received guest auth request from iframe');
-            console.log('📡 Sending auth data to iframe:', {
-              type: 'guest_auth_response',
-              accessToken: authData.tokens.accessToken ? 'Present' : 'Missing',
-              refreshToken: authData.tokens.refreshToken ? 'Present' : 'Missing',
-              guest: authData.guest,
-            });
-          }
-
-          // Send the response in the format the iframe expects
           iframe.contentWindow.postMessage(
             {
               type: 'guest_auth_response',
@@ -182,7 +177,6 @@ export function Room({
             '*',
           );
 
-          // Also send in the token refresh format
           iframe.contentWindow.postMessage(
             {
               type: 'new_access_token',
@@ -199,7 +193,7 @@ export function Room({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [authData, fullConfig.debug]);
+  }, [authData]);
 
   return (
     <div
@@ -212,10 +206,10 @@ export function Room({
         ...style,
       }}
     >
-      {isInitialized && room.currentRoom && authData && room.currentRoom.url ? (
+      {isInitialized && roomUrl && authData ? (
         <iframe
           ref={iframeRef}
-          src={`${room.currentRoom.url}${room.currentRoom.url.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}`}
+          src={`${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}`}
           allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
           style={{
             width: '100%',
@@ -224,20 +218,10 @@ export function Room({
           }}
           title="Altan Room"
           onLoad={() => {
-            if (fullConfig.debug) {
-              console.log('🎬 Iframe loaded, room URL:', room.currentRoom?.url);
-            }
-
-            // Send activation and auth data when iframe loads
             if (authData && iframeRef.current?.contentWindow) {
               setTimeout(() => {
-                if (fullConfig.debug) {
-                  console.log('📡 Sending activation and auth data to newly loaded iframe');
-                }
-
                 const iframe = iframeRef.current?.contentWindow;
                 if (iframe) {
-                  // Send activation message first
                   iframe.postMessage(
                     {
                       type: 'activate_interface_parenthood',
@@ -245,7 +229,6 @@ export function Room({
                     '*',
                   );
 
-                  // Then send auth data
                   iframe.postMessage(
                     {
                       type: 'guest_auth_response',
@@ -267,7 +250,7 @@ export function Room({
                     '*',
                   );
                 }
-              }, 500); // Longer delay to ensure iframe is fully ready
+              }, 500);
             }
           }}
         />
@@ -284,75 +267,10 @@ export function Room({
             fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
-          {room.isCreating ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ marginBottom: '8px' }}>🔄</div>
-              <div>Creating room...</div>
-            </div>
-          ) : auth.isLoading ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ marginBottom: '8px' }}>🔐</div>
-              <div>Authenticating...</div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center' }}>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Auth Status Component (for debugging)
-interface AuthStatusProps {
-  accountId: string;
-  config?: Partial<AltanSDKConfig>;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-export function AuthStatus({
-  accountId,
-  config = {},
-  className,
-  style,
-}: AuthStatusProps): React.JSX.Element {
-  const fullConfig: AltanSDKConfig = {
-    accountId,
-    debug: true,
-    ...config,
-  };
-
-  const { auth, guest } = useAltan(fullConfig);
-
-  return (
-    <div
-      className={className}
-      style={style}
-    >
-      <h3>Auth Status</h3>
-      <div>
-        <strong>Account ID:</strong> {accountId}
-      </div>
-      <div>
-        <strong>Authenticated:</strong> {auth.isAuthenticated ? '✅' : '❌'}
-      </div>
-      <div>
-        <strong>Current Guest:</strong>{' '}
-        {guest.currentGuest
-          ? guest.currentGuest.first_name + ' ' + guest.currentGuest.last_name
-          : 'None'}
-      </div>
-      <div>
-        <strong>Loading:</strong> {auth.isLoading ? 'Yes' : 'No'}
-      </div>
-      <div>
-        <strong>Tokens:</strong> {auth.tokens ? '✅' : '❌'}
-      </div>
-      {auth.error && (
-        <div>
-          <strong>Error:</strong> {auth.error.message}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: '8px' }}>⏳</div>
+            <div>Loading...</div>
+          </div>
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ export const baseUrl = 'https://storage.googleapis.com/logos-chatbot-optimai/use
 
 export function getMemberName(roomMember) {
   const member = roomMember?.member;
+  console.log('member', member);
   if (!member) {
     return 'Anonymous';
   }
@@ -17,8 +18,11 @@ export function getMemberName(roomMember) {
       }
       return 'Anonymous';
     default:
-      const guest = member.guest;
-      return guest?.nickname || `Guest ${guest?.id?.slice(0, 5)}`;
+      if (member.guest) {
+        const { first_name, last_name } = member.guest;
+        return `${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous User';
+      }
+      return 'Anonymous';
   }
 }
 
@@ -59,6 +63,7 @@ export function getMemberDetails(member, me = null) {
       return {
         src: guest?.avatar_url,
         status: member.id === me?.id ? 'online' : 'offline',
+        email: member?.member?.guest?.email,
         ...common,
       };
   }

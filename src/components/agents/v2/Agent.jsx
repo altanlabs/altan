@@ -590,6 +590,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               }}
             >
               <Room
+                mode="agent"
                 accountId={agentData.account_id}
                 agentId={agentData.id}
                 guestInfo={{

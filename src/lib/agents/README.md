@@ -1,215 +1,97 @@
-# Altan AI SDK - Room Component
+# Altan AI SDK
 
-The official JavaScript/TypeScript SDK for integrating with Altan AI's conversational platform. This simplified version provides the Room component for embedding chat interfaces.
+Ultra-simple React SDK for embedding AI chat. One component, two modes.
 
 ## Installation
 
 ```bash
-npm install @altanlabs/sdk
-# or
-yarn add @altanlabs/sdk
+npm install @altan/sdk
 ```
 
-## Room Component
+## Usage
 
-The Room component provides a complete chat interface that can be embedded in your React application.
+### Agent Mode (1-on-1 Chat)
 
-### Basic Usage
+Chat with an AI agent. Automatically finds existing conversation or creates new one.
 
 ```jsx
-import { Room } from '@altanlabs/sdk';
+import { Room } from '@altan/sdk';
+
+<Room
+  mode="agent"
+  accountId="your-account-id"
+  agentId="agent-123"
+  guestInfo={{ first_name: "John", external_id: "user-123" }}
+/>
+```
+
+### Room Mode (Group Chat)
+
+Join a specific room by ID. Perfect for community chat, support channels, etc.
+
+```jsx
+import { Room } from '@altan/sdk';
+
+<Room
+  mode="room"
+  accountId="your-account-id"
+  roomId="room-456"
+  guestInfo={{ first_name: "John", external_id: "user-123" }}
+/>
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `mode` | `"agent"` \| `"room"` | ✅ | Chat with agent or join room |
+| `accountId` | string | ✅ | Your Altan account ID |
+| `agentId` | string | ✅* | Agent ID (required for agent mode) |
+| `roomId` | string | ✅* | Room ID (required for room mode) |
+| `guestInfo` | object | ❌ | User info (name, external_id, email) |
+
+*Required based on mode
+
+## Requirements
+
+- **Agents must be public** for agent mode to work
+- **Rooms must be public** for room mode to work  
+- **Allowlist your domains** in Altan dashboard for better security
+
+## Guest Info
+
+```jsx
+guestInfo={{
+  external_id: 'user-123',    // Your user ID (enables conversation history)
+  first_name: 'John',         // User's first name
+  last_name: 'Doe',          // User's last name  
+  email: 'john@example.com'   // User's email
+}}
+```
+
+## Complete Example
+
+```jsx
+import React from 'react';
+import { Room } from '@altan/sdk';
 
 function App() {
   return (
     <div style={{ height: '600px' }}>
       <Room
+        mode="agent"
         accountId="your-account-id"
-        agentId="your-agent-id"
+        agentId="support-agent"
         guestInfo={{
-          first_name: 'John',
+          first_name: 'Jane',
           last_name: 'Doe',
-          email: 'john@example.com'
+          email: 'jane@example.com',
+          external_id: 'user-456'
         }}
-        onRoomCreated={(room) => console.log('Room created:', room)}
+        onConversationReady={(room) => console.log('Chat ready!')}
+        onAuthSuccess={(guest) => console.log('User authenticated:', guest.id)}
       />
     </div>
   );
 }
 ```
-
-### Props
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `accountId` | string | ✅ | Your Altan account ID |
-| `agentId` | string | ✅ | The agent ID to create a room with |
-| `config` | object | ❌ | Additional SDK configuration |
-| `guestInfo` | object | ❌ | Guest user information |
-| `width` | string/number | ❌ | Component width (default: '100%') |
-| `height` | string/number | ❌ | Component height (default: '100%') |
-| `className` | string | ❌ | CSS class name |
-| `style` | object | ❌ | Inline styles |
-| `onRoomCreated` | function | ❌ | Callback when room is created |
-| `onAuthSuccess` | function | ❌ | Callback when authentication succeeds |
-| `onError` | function | ❌ | Callback for error handling |
-
-### Guest Information
-
-The `guestInfo` prop accepts the following optional fields:
-
-```typescript
-{
-  external_id?: string;     // Your internal user ID
-  first_name?: string;      // Guest's first name
-  last_name?: string;       // Guest's last name
-  email?: string;           // Guest's email
-  phone?: string;           // Guest's phone number
-}
-```
-
-### Configuration
-
-The `config` prop allows you to customize SDK behavior:
-
-```typescript
-{
-  debug?: boolean;           // Enable debug logging (default: false)
-  apiBaseUrl?: string;       // Custom API endpoint
-  authBaseUrl?: string;      // Custom auth endpoint
-  roomBaseUrl?: string;      // Custom room URL base
-  enableStorage?: boolean;   // Enable local storage (default: true)
-  requestTimeout?: number;   // Request timeout in ms (default: 30000)
-}
-```
-
-### Complete Example
-
-```jsx
-import React from 'react';
-import { Room } from '@altanlabs/sdk';
-
-function ChatPage() {
-  const handleRoomCreated = (room) => {
-    console.log('Chat room created:', room.room_id);
-    // Track room creation in analytics
-  };
-
-  const handleAuthSuccess = (guest, tokens) => {
-    console.log('User authenticated:', guest.id);
-    // Store user session if needed
-  };
-
-  const handleError = (error) => {
-    console.error('Chat error:', error);
-    // Handle error (show notification, etc.)
-  };
-
-  return (
-    <div style={{ height: '100vh', padding: '20px' }}>
-      <h1>Customer Support</h1>
-      <div style={{ height: '600px', border: '1px solid #ccc', borderRadius: '8px' }}>
-        <Room
-          accountId="your-account-id"
-          agentId="support-agent-id"
-          config={{
-            debug: process.env.NODE_ENV === 'development'
-          }}
-          guestInfo={{
-            external_id: 'user-123',
-            first_name: 'Jane',
-            last_name: 'Smith',
-            email: 'jane.smith@example.com'
-          }}
-          width="100%"
-          height="100%"
-          onRoomCreated={handleRoomCreated}
-          onAuthSuccess={handleAuthSuccess}
-          onError={handleError}
-        />
-      </div>
-    </div>
-  );
-}
-
-export default ChatPage;
-```
-
-## Environment Variables
-
-For security, store your account ID in environment variables:
-
-```bash
-# .env
-REACT_APP_ALTAN_ACCOUNT_ID=your-account-id
-REACT_APP_ALTAN_AGENT_ID=your-agent-id
-```
-
-Then use in your component:
-
-```jsx
-<Room
-  accountId={process.env.REACT_APP_ALTAN_ACCOUNT_ID}
-  agentId={process.env.REACT_APP_ALTAN_AGENT_ID}
-  // ... other props
-/>
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Room not loading**
-- Verify your `accountId` and `agentId` are correct
-- Check browser console for error messages
-- Ensure you have a stable internet connection
-
-**Authentication errors**
-- Check that guest information is properly formatted
-- Verify your account has proper permissions
-
-### Debug Mode
-
-Enable debug logging to see detailed information:
-
-```jsx
-<Room
-  // ... other props
-  config={{ debug: true }}
-/>
-```
-
-This will log detailed information about:
-- SDK initialization
-- Room creation process
-- Authentication flow
-- Message passing between iframe and parent
-
-## TypeScript Support
-
-The SDK includes full TypeScript definitions:
-
-```typescript
-import { Room, RoomProps, GuestData, RoomData } from '@altanlabs/sdk';
-
-const MyRoom: React.FC = () => {
-  const handleRoomCreated = (room: RoomData) => {
-    console.log('Room created:', room.room_id);
-  };
-
-  return (
-    <Room
-      accountId="your-account-id"
-      agentId="your-agent-id"
-      onRoomCreated={handleRoomCreated}
-    />
-  );
-};
-```
-
-## License
-
-This SDK is proprietary software. See LICENSE file for details.
-
-## Support
-
-For support and questions, contact: support@altan.ai 

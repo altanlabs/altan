@@ -12,8 +12,6 @@
 
 // Core SDK exports
 export {
-  AltanSDK,
-  createAltanSDK,
   type AltanSDKConfig,
   type GuestData,
   type CreateGuestRequest,
@@ -38,7 +36,6 @@ export {
   AltanProvider,
   useAltanContext,
   Room,
-  AuthStatus,
 } from './components';
 
 // ============================================================================

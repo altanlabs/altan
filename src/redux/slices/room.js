@@ -1522,7 +1522,6 @@ export const fetchUserRooms = () => async (dispatch) => {
   try {
     dispatch(slice.actions.setLoading('userRooms'));
     const response = await optimai_room.get('/');
-    console.log('response', response.data);
     const { rooms, has_next_page, next_cursor } = response.data;
     dispatch(
       slice.actions.setUserRooms({
@@ -1596,21 +1595,6 @@ export const fetchRoom =
       const room = response.data;
       dispatch(slice.actions.setRoom({ room, guest, user }));
       return room;
-    } catch (e) {
-      console.error('error fetching room', e);
-      return Promise.reject(e);
-    }
-  };
-
-export const connectGateRoom =
-  ({ gateId, roomId }) =>
-  async () => {
-    try {
-      console.log('Connecting gate room...');
-      const response = await optimai.get(`/gate/${gateId}/room/${roomId}`);
-      const room_member = response.data;
-      // console.log('room_member', room_member);
-      return Promise.resolve('success');
     } catch (e) {
       console.error('error fetching room', e);
       return Promise.reject(e);
@@ -2183,9 +2167,9 @@ export const createMessageContextMenu =
     const canDeleteMessage =
       !!me &&
       !!message?.member_id &&
-      ['owner', 'admin'].includes(me.role) &&
-      (me.id === message.member_id ||
-        members.byId[message.member_id]?.member?.member_type === 'agent');
+      (me.id === message.member_id || // Users can always delete their own messages
+        (['owner', 'admin'].includes(me.role) &&
+         members.byId[message.member_id]?.member?.member_type === 'agent'));
 
     const enableThreadOnlyActions =
       !!message &&

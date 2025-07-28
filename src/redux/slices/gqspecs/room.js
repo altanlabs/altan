@@ -34,7 +34,7 @@ const ROOM_GENERAL_GQ = {
         '@fields': ['id', 'first_name', 'last_name', 'avatar_url'],
       },
       guest: {
-        '@fields': ['id', 'nickname', 'avatar_url'],
+        '@fields': ['id', 'first_name', 'last_name', 'avatar_url'],
       },
       agent: {
         '@fields': '@all',

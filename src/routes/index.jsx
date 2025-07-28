@@ -54,6 +54,7 @@ import {
   AccountPage,
   AccountsPage,
   RoomPage,
+  ChatPage,
   Terms,
   Privacy,
   ContactPage,
@@ -137,6 +138,18 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <RoomPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Chat Route */}
+        <Route
+          path="/chat"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <ChatPage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

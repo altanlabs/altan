@@ -186,16 +186,12 @@ const MessageBoxWrapper = ({
                     opacity: 1,
                   },
                   transition: 'opacity 200ms ease-out',
-                  backgroundColor: is_me
-                    ? 'rgba(0, 0, 0, 0.1)'
-                    : (theme) => (theme.palette.mode === 'light' ? '#e5e7eb' : '#555'),
+                  backgroundColor: (theme) => (theme.palette.mode === 'light' ? '#e5e7eb' : '#555'),
                   borderRadius: 1,
                   px: 0.5,
                   '& span': {
                     fontSize: '0.75rem',
-                    color: is_me
-                      ? '#666'
-                      : (theme) => (theme.palette.mode === 'light' ? '#555' : '#fff'),
+                    color: (theme) => (theme.palette.mode === 'light' ? '#555' : '#fff'),
                   },
                 }}
               >
