@@ -267,9 +267,26 @@ export function Room(props: RoomProps): React.JSX.Element {
             fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ marginBottom: '8px' }}>⏳</div>
-            <div>Loading...</div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            height: '100%' 
+          }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              border: '3px solid #f0f0f0',
+              borderTop: '3px solid #007bff',
+              borderRadius: '50%',
+              animation: 'altanSpin 1s linear infinite'
+            }}></div>
+            <style>{`
+              @keyframes altanSpin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
           </div>
         </div>
       )}
