@@ -17,7 +17,8 @@ import {
   Tooltip,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { memo, useState } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
+
 import Iconify from '../../../iconify';
 
 const WIDGET_POSITIONS = [
@@ -65,11 +66,40 @@ function WidgetTab({ agentData, onFieldChange }) {
     border_radius: widgetConfig.border_radius || 16,
   });
 
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
+
+  // Immediate update for switches, selects, etc.
   const handleSettingChange = (field, value) => {
     const newSettings = { ...widgetSettings, [field]: value };
     setWidgetSettings(newSettings);
     onFieldChange('widget', newSettings);
   };
+
+  // Debounced update for text fields and other inputs that can change rapidly
+  const handleDebouncedSettingChange = useCallback((field, value) => {
+    const newSettings = { ...widgetSettings, [field]: value };
+    setWidgetSettings(newSettings);
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer to update parent after 500ms of no changes
+    debounceTimerRef.current = setTimeout(() => {
+      onFieldChange('widget', newSettings);
+    }, 500);
+  }, [widgetSettings, onFieldChange]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Generate embed code with all configured parameters
   const generateEmbedCode = () => {
@@ -329,7 +359,7 @@ function WidgetTab({ agentData, onFieldChange }) {
               fullWidth
               label="Placeholder Text"
               value={widgetSettings.placeholder}
-              onChange={(e) => handleSettingChange('placeholder', e.target.value)}
+              onChange={(e) => handleDebouncedSettingChange('placeholder', e.target.value)}
               sx={{ mb: 2 }}
             />
 
@@ -400,7 +430,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   label="Widget Width"
                   type="number"
                   value={widgetSettings.width}
-                  onChange={(e) => handleSettingChange('width', parseInt(e.target.value) || 350)}
+                  onChange={(e) => handleDebouncedSettingChange('width', parseInt(e.target.value) || 350)}
                   helperText="Width in pixels"
                 />
               </Grid>
@@ -416,7 +446,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   type="number"
                   value={widgetSettings.room_width}
                   onChange={(e) =>
-                    handleSettingChange('room_width', parseInt(e.target.value) || 450)
+                    handleDebouncedSettingChange('room_width', parseInt(e.target.value) || 450)
                   }
                   helperText="Expanded width in pixels"
                 />
@@ -433,7 +463,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   type="number"
                   value={widgetSettings.room_height}
                   onChange={(e) =>
-                    handleSettingChange('room_height', parseInt(e.target.value) || 600)
+                    handleDebouncedSettingChange('room_height', parseInt(e.target.value) || 600)
                   }
                   helperText="Expanded height in pixels"
                 />
@@ -490,7 +520,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                     <input
                       type="color"
                       value={widgetSettings.primary_color}
-                      onChange={(e) => handleSettingChange('primary_color', e.target.value)}
+                      onChange={(e) => handleDebouncedSettingChange('primary_color', e.target.value)}
                       style={{
                         position: 'absolute',
                         width: '100%',
@@ -503,7 +533,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   <TextField
                     size="small"
                     value={widgetSettings.primary_color}
-                    onChange={(e) => handleSettingChange('primary_color', e.target.value)}
+                    onChange={(e) => handleDebouncedSettingChange('primary_color', e.target.value)}
                     label="Primary Color"
                     sx={{ flex: 1 }}
                   />
@@ -532,7 +562,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                     <input
                       type="color"
                       value={widgetSettings.background_color}
-                      onChange={(e) => handleSettingChange('background_color', e.target.value)}
+                      onChange={(e) => handleDebouncedSettingChange('background_color', e.target.value)}
                       style={{
                         position: 'absolute',
                         width: '100%',
@@ -545,7 +575,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   <TextField
                     size="small"
                     value={widgetSettings.background_color}
-                    onChange={(e) => handleSettingChange('background_color', e.target.value)}
+                    onChange={(e) => handleDebouncedSettingChange('background_color', e.target.value)}
                     label="Background Color"
                     sx={{ flex: 1 }}
                   />
@@ -563,7 +593,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                   type="number"
                   value={widgetSettings.border_radius}
                   onChange={(e) =>
-                    handleSettingChange('border_radius', parseInt(e.target.value) || 16)
+                    handleDebouncedSettingChange('border_radius', parseInt(e.target.value) || 16)
                   }
                   helperText="Corner roundness in pixels"
                 />
@@ -778,7 +808,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                 fullWidth
                 label="Room Title"
                 value={widgetSettings.title}
-                onChange={(e) => handleSettingChange('title', e.target.value)}
+                onChange={(e) => handleDebouncedSettingChange('title', e.target.value)}
                 helperText="Custom title for the chat room (optional)"
                 sx={{ mb: 2 }}
               />
@@ -787,7 +817,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                 fullWidth
                 label="Room Description"
                 value={widgetSettings.description}
-                onChange={(e) => handleSettingChange('description', e.target.value)}
+                onChange={(e) => handleDebouncedSettingChange('description', e.target.value)}
                 helperText="Custom description for the chat room (optional)"
                 sx={{ mb: 2 }}
               />
@@ -803,7 +833,7 @@ function WidgetTab({ agentData, onFieldChange }) {
                         .map((s) => s.trim())
                         .filter((s) => s)
                     : [];
-                  handleSettingChange('suggestions', suggestions);
+                  handleDebouncedSettingChange('suggestions', suggestions);
                 }}
                 helperText="Comma-separated list of suggested messages (e.g., 'Hello, How can I help?, Support')"
               />
@@ -860,7 +890,7 @@ function WidgetTab({ agentData, onFieldChange }) {
           >
             The script tag should be placed in the head section of your HTML file. The div with id
             "altan-widget-container" is where the widget will be rendered. You can customize the
-            widget's appearance and behavior using data attributes on the script tag.
+            widget&apos;s appearance and behavior using data attributes on the script tag.
           </Typography>
 
           {/* Console Command for Current Settings */}
@@ -875,7 +905,7 @@ function WidgetTab({ agentData, onFieldChange }) {
             sx={{ mb: 2 }}
           >
             Or use this command with your current configuration. Copy and paste this into your
-            browser's console:
+            browser&apos;s console:
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <Button

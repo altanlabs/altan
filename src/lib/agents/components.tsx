@@ -164,7 +164,7 @@ export function Room(props: RoomProps): React.JSX.Element {
     position = 'bottom-center',
     widget_width = 350,
     room_width = 450,
-    room_height = 600,
+    room_height = 700,
     border_radius = 16,
   } = props;
 
