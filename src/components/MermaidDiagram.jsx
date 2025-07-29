@@ -76,6 +76,11 @@ const MermaidDiagram = ({ chart, className = '' }) => {
     renderDiagram();
   }, [renderDiagram]);
 
+  // Return null if loading or error
+  if (isLoading || error) {
+    return null;
+  }
+
   const handleFullscreenToggle = () => setIsFullscreen((v) => !v);
 
   const handleDownload = () => {

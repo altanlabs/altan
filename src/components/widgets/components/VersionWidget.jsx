@@ -40,21 +40,11 @@ const VersionWidget = memo(({ id }) => {
   };
 
   if (loading) {
-    return (
-      <Card sx={{ p: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 80 }}>
-        <CircularProgress size={20} />
-      </Card>
-    );
+    return null;
   }
 
   if (error) {
-    return (
-      <Card sx={{ p: 1.5 }}>
-        <Alert severity="error" sx={{ fontSize: '0.75rem' }}>
-          {error}
-        </Alert>
-      </Card>
-    );
+    return null;
   }
 
   if (!templateVersion) {
