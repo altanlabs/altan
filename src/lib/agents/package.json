@@ -1,6 +1,6 @@
 {
-  "name": "@altan/sdk",
-  "version": "2.5.1",
+  "name": "@altanlabs/sdk",
+  "version": "2.5.2",
   "description": "Altan AI SDK - Ultra-simple AI chat integration with beautiful glassmorphism styling",
   "main": "index.ts",
   "types": "index.ts",
@@ -31,4 +31,4 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0"
   }
-} 
+}

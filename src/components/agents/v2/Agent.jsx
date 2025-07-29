@@ -87,7 +87,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
 
   // Handle tab change with URL update
   const handleTabChange = useCallback(
@@ -215,10 +214,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       setTemplateDialogOpen(true);
     }
   };
-
-  const handleTestAgent = useCallback(() => {
-    setChatOpen(true);
-  }, []);
 
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
@@ -471,20 +466,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               </Tooltip>
             )}
             <Button
-              onClick={handleTestAgent}
-              variant="soft"
-              color="inherit"
-              size={isMobile ? 'small' : 'medium'}
-              startIcon={
-                <>
-                  <Iconify icon="bxs:chat" sx={{ ml: 0.5 }} />
-                </>
-              }
-              disabled={!agentData?.id}
-            >
-              Test
-            </Button>
-            {/* <Button
               onClick={() => setShareDialogOpen(true)}
               variant="soft"
               color="inherit"
@@ -492,7 +473,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               startIcon={<Iconify icon="eva:share-fill" />}
             >
               {isMobile ? 'Share' : 'Share Agent'}
-            </Button> */}
+            </Button>
           </Box>
         </Box>
       </Box>
@@ -522,93 +503,51 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         </Box>
       </Box>
 
-      {/* Chat Bubble */}
-      {agentData?.id && agentData?.account_id && user?.id && (
-        <>
-          {/* Chat Button */}
-          <Box
-            onClick={() => setChatOpen(!chatOpen)}
-            sx={{
-              position: 'fixed',
-              bottom: 25,
-              right: 25,
-              width: 50,
-              height: 50,
-              borderRadius: '25px',
-              backgroundColor: '#000000',
-              cursor: 'pointer',
-              zIndex: 999999999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              '&:hover': {
-                transform: 'scale(1.05)',
-                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
-              },
-            }}
-          >
-            {chatOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="32" height="32">
-                <path d="M18.3 5.71a.996.996 0 00-1.41 0L12 10.59 7.11 5.7A.996.996 0 105.7 7.11L10.59 12 5.7 16.89a.996.996 0 101.41 1.41L12 13.41l4.89 4.89a.996.996 0 101.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z" />
-              </svg>
-            ) : (
-              <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" clipRule="evenodd" d="M36 35.6967C36 35.8403 35.8548 35.9385 35.7221 35.8837C34.828 35.5145 31.9134 34.3491 28.9961 33.5988H15.8234C14.2638 33.5988 13 32.4254 13 30.9786V15.6195C13 14.1735 14.2638 13 15.8234 13H33.1749C34.7346 13 35.9992 14.1735 35.9992 15.6195L36 35.6967Z" fill="white" />
-                <path fillRule="evenodd" clipRule="evenodd" d="M16.1336 21.2332C15.417 21.5924 15.0331 21.7849 15.0014 20.9346C14.9434 19.3815 16.7518 18.0688 19.0404 18.0026C21.3291 17.9364 23.2313 19.1418 23.2893 20.695C23.3234 21.6084 22.4804 21.3555 21.3147 21.0056C20.4984 20.7606 19.5238 20.4681 18.5812 20.4954C17.5455 20.5254 16.7259 20.9362 16.1336 21.2332Z" fill="#000000" />
-                <path fillRule="evenodd" clipRule="evenodd" d="M32.56 21.2904C33.2766 21.6497 33.6605 21.8421 33.6922 20.9919C33.7502 19.4388 31.9418 18.126 29.6532 18.0599C27.3646 17.9937 25.4623 19.1991 25.4043 20.7522C25.3702 21.6657 26.2132 21.4127 27.3789 21.0629C28.1953 20.8179 29.1698 20.5254 30.1124 20.5526C31.1481 20.5826 31.9677 20.9935 32.56 21.2904Z" fill="#000000" />
-              </svg>
-            )}
-          </Box>
-
-          {/* Chat Window */}
-          {chatOpen && (
-            <Box
-              sx={{
-                position: 'fixed',
-                bottom: 100,
-                right: 25,
-                width: isMobile ? 'calc(100vw - 20px)' : '450px',
-                height: isMobile ? 'calc(100vh - 120px)' : '700px',
-                maxHeight: '800px',
-                borderRadius: '16px',
-                zIndex: 999999998,
-                overflow: 'hidden',
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                animation: 'chatShow 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-                '@keyframes chatShow': {
-                  '0%': {
-                    opacity: 0,
-                    transform: 'scale(0.7) translateY(20px)',
-                  },
-                  '100%': {
-                    opacity: 1,
-                    transform: 'scale(1) translateY(0)',
-                  },
-                },
-              }}
-            >
-              <Room
-                mode="agent"
-                accountId={agentData.account_id}
-                agentId={agentData.id}
-                guestInfo={{
-                  external_id: user.id.toString(),
-                  first_name: user.first_name || 'User',
-                  last_name: user.last_name || '',
-                  email: user.email || '',
-                }}
-                config={{
-                  debug: true,
-                }}
-                style={{
-                  borderRadius: '16px',
-                }}
-              />
-            </Box>
-          )}
-        </>
+      {/* New Widget Preview - Always Visible on All Tabs */}
+      {agentData?.id && agentData?.account_id && (
+        <Room
+          key={`widget-preview-${agentData.id}-${activeTab}-${JSON.stringify(agentData.widget || {})}`}
+          mode="compact"
+          accountId={agentData.account_id}
+          agentId={agentData.id}
+          placeholder={agentData.widget?.placeholder || 'How can I help you?'}
+          guestInfo={{
+            external_id: user?.id?.toString() || 'preview-user',
+            first_name: user?.first_name || 'Preview',
+            last_name: user?.last_name || 'User',
+            email: user?.email || 'preview@example.com',
+          }}
+          // Use actual widget configuration from database
+          tabs={agentData.widget?.tabs ?? true}
+          conversation_history={agentData.widget?.conversation_history ?? true}
+          members={agentData.widget?.members ?? true}
+          settings={agentData.widget?.settings ?? true}
+          theme={agentData.widget?.theme || undefined}
+          title={agentData.widget?.title || undefined}
+          description={agentData.widget?.description || undefined}
+          voice_enabled={agentData.widget?.voice_enabled ?? true}
+          suggestions={agentData.widget?.suggestions || undefined}
+          primary_color={agentData.widget?.primary_color || '#007bff'}
+          background_color={agentData.widget?.background_color || '#ffffff'}
+          background_blur={agentData.widget?.background_blur ?? true}
+          position={agentData.widget?.position || 'bottom-right'}
+          widget_width={agentData.widget?.width || 350}
+          room_width={agentData.widget?.room_width || 450}
+          room_height={agentData.widget?.room_height || 600}
+          border_radius={agentData.widget?.border_radius || 16}
+          config={{
+            debug: false,
+          }}
+          onError={(error) => {
+            console.warn('Widget preview error:', error);
+          }}
+          onAuthSuccess={(guest) => {
+            console.log('🎯 Widget Preview: Auth successful', guest);
+          }}
+          onConversationReady={(room) => {
+            console.log('🎯 Widget Preview: Conversation ready', room);
+          }}
+        />
       )}
 
       {/* Dialogs */}

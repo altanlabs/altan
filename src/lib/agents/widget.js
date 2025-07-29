@@ -1,9 +1,9 @@
 /**
  * Altan AI - Standalone Widget
  * One-line HTML integration for any website
- * 
+ *
  * Usage:
- * <script 
+ * <script
  *   src="https://cdn.altan.ai/sdk/widget.js"
  *   data-account-id="your-account-id"
  *   data-agent-id="your-agent-id"
@@ -68,15 +68,18 @@ class AltanWidget {
       mode: script.getAttribute('data-mode') || 'compact',
       placeholder: script.getAttribute('data-placeholder') || 'How can I help you?',
       apiBaseUrl: script.getAttribute('data-api-base-url') || 'https://api.altan.ai/platform/guest',
-      authBaseUrl: script.getAttribute('data-auth-base-url') || 'https://api.altan.ai/auth/login/guest',
+      authBaseUrl:
+        script.getAttribute('data-auth-base-url') || 'https://api.altan.ai/auth/login/guest',
       roomBaseUrl: script.getAttribute('data-room-base-url') || 'https://altan.ai/r',
       guestName: script.getAttribute('data-guest-name') || 'Website Visitor',
       guestEmail: script.getAttribute('data-guest-email'),
       externalId: script.getAttribute('data-external-id') || this.generateExternalId(),
-      
+
       // Room configuration props
       tabs: this.parseBooleanAttribute(script.getAttribute('data-tabs')),
-      conversation_history: this.parseBooleanAttribute(script.getAttribute('data-conversation-history')),
+      conversation_history: this.parseBooleanAttribute(
+        script.getAttribute('data-conversation-history'),
+      ),
       members: this.parseBooleanAttribute(script.getAttribute('data-members')),
       settings: this.parseBooleanAttribute(script.getAttribute('data-settings')),
       theme: this.parseStringAttribute(script.getAttribute('data-theme')),
@@ -84,16 +87,24 @@ class AltanWidget {
       description: this.parseStringAttribute(script.getAttribute('data-description')),
       suggestions: this.parseJsonAttribute(script.getAttribute('data-suggestions')),
       voice_enabled: this.parseBooleanAttribute(script.getAttribute('data-voice-enabled')),
-      
+
       // Styling props
       primary_color: this.parseStringAttribute(script.getAttribute('data-primary-color')),
       background_color: this.parseStringAttribute(script.getAttribute('data-background-color')),
       background_blur: this.parseBooleanAttribute(script.getAttribute('data-background-blur')),
       position: this.parseStringAttribute(script.getAttribute('data-position')),
-      widget_width: script.getAttribute('data-width') ? parseInt(script.getAttribute('data-width')) : undefined,
-      room_width: script.getAttribute('data-room-width') ? parseInt(script.getAttribute('data-room-width')) : undefined,
-      room_height: script.getAttribute('data-room-height') ? parseInt(script.getAttribute('data-room-height')) : undefined,
-      border_radius: script.getAttribute('data-border-radius') ? parseInt(script.getAttribute('data-border-radius')) : undefined,
+      widget_width: script.getAttribute('data-width')
+        ? parseInt(script.getAttribute('data-width'))
+        : undefined,
+      room_width: script.getAttribute('data-room-width')
+        ? parseInt(script.getAttribute('data-room-width'))
+        : undefined,
+      room_height: script.getAttribute('data-room-height')
+        ? parseInt(script.getAttribute('data-room-height'))
+        : undefined,
+      border_radius: script.getAttribute('data-border-radius')
+        ? parseInt(script.getAttribute('data-border-radius'))
+        : undefined,
     };
 
     if (!config.accountId) {
@@ -134,16 +145,16 @@ class AltanWidget {
       description: undefined,
       suggestions: undefined,
       voice_enabled: undefined,
-              // Styling defaults
-        primary_color: undefined,
-        background_color: undefined,
-        background_blur: undefined,
-        position: undefined,
-        widget_width: undefined,
-        room_width: undefined,
-        room_height: undefined,
-        border_radius: undefined,
-      ...config
+      // Styling defaults
+      primary_color: undefined,
+      background_color: undefined,
+      background_blur: undefined,
+      position: undefined,
+      widget_width: undefined,
+      room_width: undefined,
+      room_height: undefined,
+      border_radius: undefined,
+      ...config,
     };
 
     this.render();
@@ -154,7 +165,7 @@ class AltanWidget {
   render() {
     console.log('🚀 Widget: Starting render process...');
     console.log('🔧 Widget: Config:', this.config);
-    
+
     // Create container if it doesn't exist
     let container = document.getElementById('altan-widget-container');
     if (!container) {
@@ -190,15 +201,15 @@ class AltanWidget {
       description: this.config.description,
       suggestions: this.config.suggestions,
       voice_enabled: this.config.voice_enabled,
-              // Styling props
-        primary_color: this.config.primary_color,
-        background_color: this.config.background_color,
-        background_blur: this.config.background_blur,
-        position: this.config.position,
-        widget_width: this.config.widget_width,
-        room_width: this.config.room_width,
-        room_height: this.config.room_height,
-        border_radius: this.config.border_radius,
+      // Styling props
+      primary_color: this.config.primary_color,
+      background_color: this.config.background_color,
+      background_blur: this.config.background_blur,
+      position: this.config.position,
+      widget_width: this.config.widget_width,
+      room_width: this.config.room_width,
+      room_height: this.config.room_height,
+      border_radius: this.config.border_radius,
       // Event handlers
       onAuthSuccess: (guest, tokens) => {
         console.log('✅ Widget: Authentication successful', guest);
@@ -309,4 +320,4 @@ if (typeof document !== 'undefined') {
 }
 
 // Export for module systems
-export default altanWidgetInstance; 
+export default altanWidgetInstance;

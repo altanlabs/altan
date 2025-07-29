@@ -189,9 +189,10 @@ export function Room(props: RoomProps): React.JSX.Element {
   // Build query parameters from room configuration props
   const buildRoomConfigParams = (): string => {
     const params = new URLSearchParams();
-    
+
     if (tabs !== undefined) params.set('tabs', tabs.toString());
-    if (conversation_history !== undefined) params.set('conversation_history', conversation_history.toString());
+    if (conversation_history !== undefined)
+      params.set('conversation_history', conversation_history.toString());
     if (members !== undefined) params.set('members', members.toString());
     if (settings !== undefined) params.set('settings', settings.toString());
     if (theme !== undefined) params.set('theme', theme);
@@ -201,7 +202,7 @@ export function Room(props: RoomProps): React.JSX.Element {
       params.set('suggestions', encodeURIComponent(JSON.stringify(suggestions)));
     }
     if (voice_enabled !== undefined) params.set('voice_enabled', voice_enabled.toString());
-    
+
     // Styling parameters
     if (primary_color !== undefined) params.set('primary_color', primary_color);
     if (background_color !== undefined) params.set('background_color', background_color);
@@ -231,9 +232,15 @@ export function Room(props: RoomProps): React.JSX.Element {
     console.log(`🏗️ [${context}] Props:`, {
       mode: props.mode,
       accountId: props.accountId,
-      agentId: props.mode === 'agent' || (props.mode === 'compact' && props.agentId) ? props.agentId : undefined,
-      roomId: props.mode === 'room' || (props.mode === 'compact' && props.roomId) ? props.roomId : undefined,
-      guestInfo: props.guestInfo
+      agentId:
+        props.mode === 'agent' || (props.mode === 'compact' && props.agentId)
+          ? props.agentId
+          : undefined,
+      roomId:
+        props.mode === 'room' || (props.mode === 'compact' && props.roomId)
+          ? props.roomId
+          : undefined,
+      guestInfo: props.guestInfo,
     });
 
     // For compact mode, show loading indicator while preloading
@@ -246,14 +253,9 @@ export function Room(props: RoomProps): React.JSX.Element {
       const agentId = props.mode === 'agent' ? props.agentId : props.agentId!;
       const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
       console.log(`🤖 [${context}] Creating agent session for:`, agentId);
-      
+
       createSession(agentId, guestInfo)
         .then(({ room: createdRoom, tokens, guest }) => {
-          console.log(`✅ [${context}] Agent session created successfully`);
-          console.log(`🔐 [${context}] Access token:`, tokens.accessToken ? 'Present' : 'Missing');
-          console.log(`🏠 [${context}] Room URL:`, createdRoom.url);
-          console.log(`👤 [${context}] Guest ID:`, guest.id);
-          
           setIsInitialized(true);
           setAuthData({ guest, tokens });
           setRoomUrl(createdRoom.url || null);
@@ -278,14 +280,14 @@ export function Room(props: RoomProps): React.JSX.Element {
       // Room mode: join existing room
       const roomId = props.mode === 'room' ? props.roomId : props.roomId!;
       console.log('🏠 SDK: Joining existing room:', roomId);
-      
+
       joinExistingRoom(roomId, guestInfo)
         .then(({ guest, tokens, roomUrl: url }) => {
           console.log('✅ SDK: Room joined successfully');
           console.log('🔐 SDK: Access token:', tokens.accessToken ? 'Present' : 'Missing');
           console.log('🏠 SDK: Room URL:', url);
           console.log('👤 SDK: Guest ID:', guest.id);
-          
+
           setIsInitialized(true);
           setAuthData({ guest, tokens });
           setRoomUrl(url);
@@ -346,7 +348,7 @@ export function Room(props: RoomProps): React.JSX.Element {
             },
             '*',
           );
-          
+
           console.log(`✅ [${context}] Responded to auth request`);
         }
       }
@@ -366,7 +368,7 @@ export function Room(props: RoomProps): React.JSX.Element {
             },
             '*',
           );
-          
+
           console.log(`✅ [${context}] Token refresh sent`);
         }
       }
@@ -419,13 +421,13 @@ export function Room(props: RoomProps): React.JSX.Element {
   const getWidgetDimensions = () => {
     const inputWidth = widget_width || 350;
     const maxInputWidth = Math.min(inputWidth, window.innerWidth - 40);
-    
+
     const expandedWidth = room_width || 450;
     const maxRoomWidth = Math.min(expandedWidth, window.innerWidth - 40);
-    
+
     const expandedHeight = room_height || 600;
     const maxRoomHeight = Math.min(expandedHeight, window.innerHeight - 100);
-    
+
     return {
       textFieldWidth: `${maxInputWidth}px`,
       textFieldMinWidth: `${Math.min(maxInputWidth, 280)}px`,
@@ -438,7 +440,7 @@ export function Room(props: RoomProps): React.JSX.Element {
   if (props.mode === 'compact') {
     const positionStyles = getPositionStyles();
     const widgetDimensions = getWidgetDimensions();
-    
+
     return (
       <>
         {/* Text field overlay (always visible when closed) */}
@@ -450,15 +452,21 @@ export function Room(props: RoomProps): React.JSX.Element {
               zIndex: 1001,
               display: 'flex',
               alignItems: 'center',
-              background: background_blur 
-                ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.75) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 100%)` 
+              background: background_blur
+                ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.75) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 100%)`
                 : background_color,
-              backdropFilter: background_blur ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)' : 'none',
-              WebkitBackdropFilter: background_blur ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)' : 'none',
-              border: background_blur ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(0, 0, 0, 0.1)',
+              backdropFilter: background_blur
+                ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)'
+                : 'none',
+              WebkitBackdropFilter: background_blur
+                ? 'blur(20px) saturate(200%) brightness(1.05) contrast(1.1)'
+                : 'none',
+              border: background_blur
+                ? '1px solid rgba(255, 255, 255, 0.25)'
+                : '1px solid rgba(0, 0, 0, 0.1)',
               borderRadius: `${border_radius}px`,
               padding: '10px 16px',
-              boxShadow: background_blur 
+              boxShadow: background_blur
                 ? '0 8px 32px rgba(0, 0, 0, 0.12), ' +
                   '0 1px 3px rgba(0, 0, 0, 0.08), ' +
                   'inset 0 1px 0 rgba(255, 255, 255, 0.6), ' +
@@ -472,28 +480,28 @@ export function Room(props: RoomProps): React.JSX.Element {
             }}
           >
             <input
-               type="text"
-               placeholder={props.placeholder || 'Type a message...'}
-               value={message}
-               onChange={(e) => setMessage(e.target.value)}
-               onClick={() => setIsOpen(true)}
-               onKeyDown={(e) => {
-                 if (e.key === 'Enter') {
-                   setIsOpen(true);
-                 }
-               }}
-               style={{
-                 border: 'none',
-                 outline: 'none',
-                 background: 'transparent',
-                 flex: 1,
-                 fontSize: '14px',
-                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                 color: 'rgba(0, 0, 0, 0.85)',
-                 cursor: 'pointer',
-                 fontWeight: '400',
-               }}
-             />
+              type="text"
+              placeholder={props.placeholder || 'Type a message...'}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onClick={() => setIsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsOpen(true);
+                }
+              }}
+              style={{
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                flex: 1,
+                fontSize: '14px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                color: 'rgba(0, 0, 0, 0.85)',
+                cursor: 'pointer',
+                fontWeight: '400',
+              }}
+            />
 
             <div
               style={{
@@ -560,32 +568,38 @@ export function Room(props: RoomProps): React.JSX.Element {
               </button>
             </div>
           </div>
-                  )}
+        )}
 
         {/* Pre-loaded room container (always pre-loading, only visible when open) */}
         <div
           style={{
             position: 'fixed',
             ...positionStyles,
-            transform: position === 'bottom-center' 
-              ? `translateX(-50%) ${isOpen ? 'scale(1)' : 'scale(0)'}` 
-              : `${isOpen ? 'scale(1)' : 'scale(0)'}`,
+            transform:
+              position === 'bottom-center'
+                ? `translateX(-50%) ${isOpen ? 'scale(1)' : 'scale(0)'}`
+                : `${isOpen ? 'scale(1)' : 'scale(0)'}`,
             width: widgetDimensions.roomWidth,
             height: widgetDimensions.roomHeight,
             borderRadius: `${border_radius}px`,
-            background: background_blur 
-              ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.95) 100%)` 
+            background: background_blur
+              ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.95) 100%)`
               : background_color,
-            backdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
-            WebkitBackdropFilter: background_blur ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)' : 'none',
+            backdropFilter: background_blur
+              ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)'
+              : 'none',
+            WebkitBackdropFilter: background_blur
+              ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)'
+              : 'none',
             border: 'none',
-            transformOrigin: position === 'bottom-right' 
-              ? 'bottom right'
-              : position === 'bottom-left' 
-                ? 'bottom left' 
-                : 'bottom center',
+            transformOrigin:
+              position === 'bottom-right'
+                ? 'bottom right'
+                : position === 'bottom-left'
+                  ? 'bottom left'
+                  : 'bottom center',
             opacity: isOpen ? 1 : 0,
-            boxShadow: isOpen 
+            boxShadow: isOpen
               ? background_blur
                 ? '0 25px 50px rgba(0, 0, 0, 0.18), ' +
                   '0 8px 16px rgba(0, 0, 0, 0.12), ' +
@@ -593,147 +607,144 @@ export function Room(props: RoomProps): React.JSX.Element {
                   'inset 0 1px 0 rgba(255, 255, 255, 0.7), ' +
                   'inset 0 -1px 0 rgba(255, 255, 255, 0.3), ' +
                   '0 0 0 1px rgba(255, 255, 255, 0.1)'
-                : '0 20px 40px rgba(0, 0, 0, 0.2)' 
+                : '0 20px 40px rgba(0, 0, 0, 0.2)'
               : '0 10px 40px rgba(0, 0, 0, 0)',
-                          transition: isOpen 
-                ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease-out, box-shadow 0.25s ease-out'
-                : 'transform 0.2s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.15s ease-in, box-shadow 0.2s ease-in',
+            transition: isOpen
+              ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease-out, box-shadow 0.25s ease-out'
+              : 'transform 0.2s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.15s ease-in, box-shadow 0.2s ease-in',
             overflow: 'hidden',
             pointerEvents: isOpen ? 'auto' : 'none',
             zIndex: 1000,
           }}
         >
-           {/* Elegant close button when expanded */}
-           {isOpen && (
-             <div
-               style={{
-                 position: 'absolute',
-                 top: '10px',
-                 right: '10px',
-                 zIndex: 1002,
-                 background: 'rgba(0, 0, 0, 0.05)',
-                 backdropFilter: 'blur(10px)',
-                 WebkitBackdropFilter: 'blur(10px)',
-                 borderRadius: '50%',
-                 width: '24px',
-                 height: '24px',
-                 display: 'flex',
-                 alignItems: 'center',
-                 justifyContent: 'center',
-                 cursor: 'pointer',
-                 fontSize: '14px',
-                 color: 'rgba(0, 0, 0, 0.6)',
-                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                 border: '1px solid rgba(255, 255, 255, 0.3)',
-               }}
-               onClick={() => setIsOpen(false)}
-               onMouseEnter={(e) => {
-                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-                 e.currentTarget.style.transform = 'scale(1.05)';
-               }}
-               onMouseLeave={(e) => {
-                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                 e.currentTarget.style.transform = 'scale(1)';
-               }}
-             >
-               ✕
-             </div>
-           )}
+          {/* Elegant close button when expanded */}
+          {isOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 1002,
+                background: 'rgba(0, 0, 0, 0.05)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                borderRadius: '50%',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: 'rgba(0, 0, 0, 0.6)',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              onClick={() => setIsOpen(false)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              ✕
+            </div>
+          )}
 
-           {/* Pre-loaded iframe (always loads in background) */}
-           {isInitialized && roomUrl && authData ? (
-             <iframe
-               ref={iframeRef}
-               src={(() => {
-                 const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
-                 const configParams = buildRoomConfigParams();
-                 const fullUrl = `${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${configParams}`;
-                 console.log(`🔗 [${context}] Iframe URL:`, fullUrl);
-                 console.log(`🔗 [${context}] Token length:`, authData.tokens.accessToken?.length || 0);
-                 return fullUrl;
-               })()}
-               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
-               style={{
-                 width: '100%',
-                 height: '100%',
-                 border: 'none',
-                 borderRadius: '12px',
-               }}
-               title="Altan Room"
-               onLoad={() => {
-                 if (authData && iframeRef.current?.contentWindow) {
-                   setTimeout(() => {
-                     const iframe = iframeRef.current?.contentWindow;
-                     if (iframe) {
-                       iframe.postMessage(
-                         {
-                           type: 'activate_interface_parenthood',
-                         },
-                         '*',
-                       );
+          {/* Pre-loaded iframe (always loads in background) */}
+          {isInitialized && roomUrl && authData ? (
+            <iframe
+              ref={iframeRef}
+              src={(() => {
+                const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
+                const configParams = buildRoomConfigParams();
+                const fullUrl = `${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${configParams}`;
+                return fullUrl;
+              })()}
+              allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '12px',
+              }}
+              title="Altan Room"
+              onLoad={() => {
+                if (authData && iframeRef.current?.contentWindow) {
+                  setTimeout(() => {
+                    const iframe = iframeRef.current?.contentWindow;
+                    if (iframe) {
+                      iframe.postMessage(
+                        {
+                          type: 'activate_interface_parenthood',
+                        },
+                        '*',
+                      );
 
-                       iframe.postMessage(
-                         {
-                           type: 'guest_auth_response',
-                           isAuthenticated: true,
-                           guest: authData.guest,
-                           accessToken: authData.tokens.accessToken,
-                         },
-                         '*',
-                       );
+                      iframe.postMessage(
+                        {
+                          type: 'guest_auth_response',
+                          isAuthenticated: true,
+                          guest: authData.guest,
+                          accessToken: authData.tokens.accessToken,
+                        },
+                        '*',
+                      );
 
-                       iframe.postMessage(
-                         {
-                           type: 'new_access_token',
-                           token: authData.tokens.accessToken,
-                           guest: authData.guest,
-                           user: null,
-                           success: true,
-                         },
-                         '*',
-                       );
-                     }
-                   }, 500);
-                 }
-               }}
-             />
-           ) : (
-             <div
-               style={{
-                 display: 'flex',
-                 alignItems: 'center',
-                 justifyContent: 'center',
-                 height: '100%',
-                 backgroundColor: '#f8f9fa',
-                 color: '#6c757d',
-                 fontSize: '14px',
-                 fontFamily: 'system-ui, -apple-system, sans-serif',
-               }}
-             >
-               <div
-                 style={{
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   height: '100%',
-                 }}
-               >
-                 <div
-                   style={{
-                     width: '32px',
-                     height: '32px',
-                     border: '3px solid #f0f0f0',
-                     borderTop: '3px solid #007bff',
-                     borderRadius: '50%',
-                     animation: 'altanSpin 1s linear infinite',
-                   }}
-                 ></div>
-               </div>
-             </div>
-           )}
-                  </div>
+                      iframe.postMessage(
+                        {
+                          type: 'new_access_token',
+                          token: authData.tokens.accessToken,
+                          guest: authData.guest,
+                          user: null,
+                          success: true,
+                        },
+                        '*',
+                      );
+                    }
+                  }, 500);
+                }
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                backgroundColor: '#f8f9fa',
+                color: '#6c757d',
+                fontSize: '14px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid #f0f0f0',
+                    borderTop: '3px solid #007bff',
+                    borderRadius: '50%',
+                    animation: 'altanSpin 1s linear infinite',
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
 
-         <style>{`
+        <style>{`
            @keyframes altanPulse {
              0%, 100% { opacity: 0.6; }
              50% { opacity: 1; }
@@ -743,11 +754,11 @@ export function Room(props: RoomProps): React.JSX.Element {
              100% { transform: rotate(360deg); }
            }
          `}</style>
-       </>
-     );
-   }
+      </>
+    );
+  }
 
-    return (
+  return (
     <div
       className={className}
       style={{
@@ -770,78 +781,81 @@ export function Room(props: RoomProps): React.JSX.Element {
           }}
           title="Altan Room"
           onLoad={() => {
-                            if (authData && iframeRef.current?.contentWindow) {
-                  // Longer initial delay to allow iframe to fully load
-                  setTimeout(() => {
-                    const iframe = iframeRef.current?.contentWindow;
-                    if (iframe) {
-                      const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
-                      console.log(`🚀 [${context}] Iframe loaded, initializing communication...`);
-                      
+            if (authData && iframeRef.current?.contentWindow) {
+              // Longer initial delay to allow iframe to fully load
+              setTimeout(() => {
+                const iframe = iframeRef.current?.contentWindow;
+                if (iframe) {
+                  const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
+                  console.log(`🚀 [${context}] Iframe loaded, initializing communication...`);
+
+                  iframe.postMessage(
+                    {
+                      type: 'activate_interface_parenthood',
+                    },
+                    '*',
+                  );
+
+                  // Send authentication data with retry logic
+                  const sendAuthData = () => {
+                    console.log(`🔐 [${context}] Sending authentication data to iframe...`);
+                    console.log(`🔐 [${context}] Guest ID:`, authData.guest.id);
+                    console.log(
+                      `🔐 [${context}] Token preview:`,
+                      authData.tokens.accessToken?.substring(0, 20) + '...',
+                    );
+
+                    iframe.postMessage(
+                      {
+                        type: 'guest_auth_response',
+                        isAuthenticated: true,
+                        guest: authData.guest,
+                        accessToken: authData.tokens.accessToken,
+                      },
+                      '*',
+                    );
+
+                    iframe.postMessage(
+                      {
+                        type: 'new_access_token',
+                        token: authData.tokens.accessToken,
+                        guest: authData.guest,
+                        user: null,
+                        success: true,
+                      },
+                      '*',
+                    );
+
+                    console.log(`✅ [${context}] Authentication data sent successfully`);
+                  };
+
+                  // Send immediately
+                  sendAuthData();
+
+                  // Retry after 2 seconds in case the first attempt failed
+                  setTimeout(sendAuthData, 2000);
+
+                  // Periodic token refresh every 30 seconds to prevent timeouts
+                  const tokenRefreshInterval = setInterval(() => {
+                    if (authData && iframeRef.current?.contentWindow) {
+                      console.log(`🔄 [${context}] Periodic token refresh...`);
                       iframe.postMessage(
                         {
-                          type: 'activate_interface_parenthood',
+                          type: 'new_access_token',
+                          token: authData.tokens.accessToken,
+                          guest: authData.guest,
+                          user: null,
+                          success: true,
                         },
                         '*',
                       );
-
-                      // Send authentication data with retry logic
-                      const sendAuthData = () => {
-                        console.log(`🔐 [${context}] Sending authentication data to iframe...`);
-                        console.log(`🔐 [${context}] Guest ID:`, authData.guest.id);
-                        console.log(`🔐 [${context}] Token preview:`, authData.tokens.accessToken?.substring(0, 20) + '...');
-                        
-                        iframe.postMessage(
-                          {
-                            type: 'guest_auth_response',
-                            isAuthenticated: true,
-                            guest: authData.guest,
-                            accessToken: authData.tokens.accessToken,
-                          },
-                          '*',
-                        );
-
-                        iframe.postMessage(
-                          {
-                            type: 'new_access_token',
-                            token: authData.tokens.accessToken,
-                            guest: authData.guest,
-                            user: null,
-                            success: true,
-                          },
-                          '*',
-                        );
-                        
-                        console.log(`✅ [${context}] Authentication data sent successfully`);
-                      };
-
-                      // Send immediately
-                      sendAuthData();
-                      
-                      // Retry after 2 seconds in case the first attempt failed
-                      setTimeout(sendAuthData, 2000);
-                      
-                      // Periodic token refresh every 30 seconds to prevent timeouts
-                      const tokenRefreshInterval = setInterval(() => {
-                        if (authData && iframeRef.current?.contentWindow) {
-                          console.log(`🔄 [${context}] Periodic token refresh...`);
-                          iframe.postMessage(
-                            {
-                              type: 'new_access_token',
-                              token: authData.tokens.accessToken,
-                              guest: authData.guest,
-                              user: null,
-                              success: true,
-                            },
-                            '*',
-                          );
-                        } else {
-                          clearInterval(tokenRefreshInterval);
-                        }
-                      }, 30000);
+                    } else {
+                      clearInterval(tokenRefreshInterval);
                     }
-                  }, 1000); // Increased from 500ms to 1000ms
+                  }, 30000);
                 }
+              }, 1000); // Increased from 500ms to 1000ms
+            }
           }}
         />
       ) : (
