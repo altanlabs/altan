@@ -20,7 +20,15 @@ const getFileIcon = (type) => {
   return 'mdi:file-document';
 };
 
-function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading, handleVoice }) {
+function TextAreaWithButtons({ 
+  inputValue, 
+  setInputValue, 
+  handleCreate, 
+  loading, 
+  handleVoice,
+  showPlusButton = true,
+  showAutopilotButton = true 
+}) {
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
 
@@ -232,18 +240,19 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             {/* Plus button */}
-            <div className="relative">
-              <button
-                ref={plusButtonRef}
-                onClick={() => setPlusMenuOpen(!plusMenuOpen)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Add content"
-              >
-                <Icon
-                  icon="mdi:plus"
-                  className="w-5 h-5 text-slate-700 dark:text-white"
-                />
-              </button>
+            {showPlusButton && (
+              <div className="relative">
+                <button
+                  ref={plusButtonRef}
+                  onClick={() => setPlusMenuOpen(!plusMenuOpen)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                  title="Add content"
+                >
+                  <Icon
+                    icon="mdi:plus"
+                    className="w-5 h-5 text-slate-700 dark:text-white"
+                  />
+                </button>
 
               {/* Plus menu popup */}
               {plusMenuOpen && (
@@ -284,7 +293,8 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
             {/* Public/Private selection */}
             <div className="relative">
@@ -377,8 +387,9 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
               )}
             </div>
 
-            {/* Autopilot interactive button - always visible */}
-            <div className="relative group">
+            {/* Autopilot interactive button */}
+            {showAutopilotButton && (
+              <div className="relative group">
               <button
                 onClick={() => {
                   if (!autopilotEnabled && isAccountFree) {
@@ -438,7 +449,8 @@ function TextAreaWithButtons({ inputValue, setInputValue, handleCreate, loading,
                 background
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
               </div>
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

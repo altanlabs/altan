@@ -459,7 +459,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
   return (
     <div className="w-full">
       {/* Back button - only show when authenticated */}
-      {isAuthenticated && (
+      {/* {isAuthenticated && (
         <div className="flex items-center mb-4">
           <button
             onClick={onGoBack}
@@ -473,7 +473,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
             Back to chat
           </button>
         </div>
-      )}
+      )} */}
 
       <AgentFormWithButtons
         formData={formData}
@@ -554,7 +554,11 @@ function CreateAgentDashboard({ handleVoice }) {
           data-aos-delay="200"
         >
           <div className="relative flex flex-col mt-2">
-            {mode === 'chat' ? (
+            <CreateMode
+              handleVoice={handleVoice}
+              onGoBack={() => updateMode('chat')}
+            />
+            {/* {mode === 'chat' ? (
               <ChatMode
                 agents={agents}
                 isAuthenticated={isAuthenticated}
@@ -567,7 +571,7 @@ function CreateAgentDashboard({ handleVoice }) {
                 handleVoice={handleVoice}
                 onGoBack={() => updateMode('chat')}
               />
-            )}
+            )} */}
           </div>
         </div>
       </div>

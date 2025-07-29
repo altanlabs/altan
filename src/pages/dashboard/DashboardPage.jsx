@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import AltanersWidget from './components/AltanersWidget';
 import CreateAgentDashboard from './components/CreateAgentDashboard.jsx';
 import CreateAnything from './components/CreateAnything.jsx';
+import CreateFlowDashboard from './components/CreateFlowDashboard.jsx';
 import VoiceConversation from './components/VoiceConversation.jsx';
 import VoiceConversationWithAgentSelection from './components/VoiceConversationWithAgentSelection.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
@@ -207,6 +208,8 @@ const DashboardPage = () => {
                     )
                   ) : mode === 'agents' ? (
                     <CreateAgentDashboard handleVoice={() => setIsVoice(!isVoice)} />
+                  ) : mode === 'flows' ? (
+                    <CreateFlowDashboard handleVoice={() => setIsVoice(!isVoice)} />
                   ) : (
                     <CreateAnything handleVoice={() => setIsVoice(!isVoice)} />
                   )}
