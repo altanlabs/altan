@@ -21,11 +21,6 @@ import { memo, useState } from 'react';
 import Iconify from '../../../iconify';
 
 const WIDGET_POSITIONS = [
-  { id: 'top-left', name: 'Top Left' },
-  { id: 'top-center', name: 'Top Center' },
-  { id: 'top-right', name: 'Top Right' },
-  { id: 'center-left', name: 'Center Left' },
-  { id: 'center-right', name: 'Center Right' },
   { id: 'bottom-left', name: 'Bottom Left' },
   { id: 'bottom-center', name: 'Bottom Center' },
   { id: 'bottom-right', name: 'Bottom Right' },
@@ -49,10 +44,10 @@ function WidgetTab({ agentData, onFieldChange }) {
     placeholder: widgetConfig.placeholder || 'How can I help you?',
 
     // Room configuration (match widget.js data attributes)
-    tabs: widgetConfig.tabs ?? true,
+    tabs: widgetConfig.tabs ?? false,
     conversation_history: widgetConfig.conversation_history ?? true,
-    members: widgetConfig.members ?? true,
-    settings: widgetConfig.settings ?? true,
+    members: widgetConfig.members ?? false,
+    settings: widgetConfig.settings ?? false,
     theme: widgetConfig.theme || '',
     title: widgetConfig.title || '',
     description: widgetConfig.description || '',
@@ -66,7 +61,7 @@ function WidgetTab({ agentData, onFieldChange }) {
     position: widgetConfig.position || 'bottom-right',
     width: widgetConfig.width || 350,
     room_width: widgetConfig.room_width || 450,
-    room_height: widgetConfig.room_height || 600,
+    room_height: widgetConfig.room_height || 800,
     border_radius: widgetConfig.border_radius || 16,
   });
 

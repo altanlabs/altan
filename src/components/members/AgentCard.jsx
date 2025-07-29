@@ -240,10 +240,10 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
           <Iconify icon={agent.is_pinned ? 'mdi:pin-off' : 'mdi:pin'} />
           {agent.is_pinned ? 'Unpin agent' : 'Pin agent'}
         </MenuItem>
-        <MenuItem onClick={() => setShareDialog(true)}>
+        {/* <MenuItem onClick={() => setShareDialog(true)}>
           <Iconify icon="mdi:share" />
           Share agent
-        </MenuItem>
+        </MenuItem> */}
         <MenuItem
           onClick={() => setDeleteDialog(true)}
           sx={{ color: 'error.main' }}

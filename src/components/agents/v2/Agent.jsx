@@ -465,7 +465,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 </IconButton>
               </Tooltip>
             )}
-            <Button
+            {/* <Button
               onClick={() => setShareDialogOpen(true)}
               variant="soft"
               color="inherit"
@@ -473,7 +473,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               startIcon={<Iconify icon="eva:share-fill" />}
             >
               {isMobile ? 'Share' : 'Share Agent'}
-            </Button>
+            </Button> */}
           </Box>
         </Box>
       </Box>

@@ -18,21 +18,8 @@ const NavDropdown = memo(
     const theme = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const timeoutRef = useRef(null);
-
-    const handleMouseEnter = () => {
-      clearTimeout(timeoutRef.current);
-      setIsOpen(true);
-    };
-
-    const handleMouseLeave = () => {
-      timeoutRef.current = setTimeout(() => {
-        setIsOpen(false);
-      }, 300); // 300ms delay before closing
-    };
 
     const handleClick = () => {
-      clearTimeout(timeoutRef.current);
       setIsOpen(!isOpen);
     };
 
@@ -50,15 +37,6 @@ const NavDropdown = memo(
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         document.removeEventListener('touchstart', handleClickOutside);
-      };
-    }, []);
-
-    useEffect(() => {
-      // Clean up timeout on unmount
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
       };
     }, []);
 
@@ -86,8 +64,6 @@ const NavDropdown = memo(
       <div
         className="relative"
         ref={dropdownRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         style={{ cursor: 'pointer' }}
       >
