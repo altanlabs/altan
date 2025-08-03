@@ -156,7 +156,7 @@ const Router = () => {
 
         {/* Public Agent Routes */}
         <Route
-          path="/agents/:agentId/share"
+          path="/agent/:agentId/share"
           exact
         >
           <AgentSharePage />

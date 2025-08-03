@@ -428,7 +428,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
           ? {
               name: formData.voice.name,
               voice_id: formData.voice.voice_id,
-              model_id: 'eleven_flash_v2',
+              model_id: 'eleven_flash_v2_5',
               agent_output_audio_format: 'pcm_16000',
               optimize_streaming_latency: 4,
               stability: 0.5,

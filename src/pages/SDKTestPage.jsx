@@ -1,8 +1,25 @@
-import { Container, Typography, Box, Alert } from '@mui/material';
-import React, { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import {
+  Container,
+  Typography,
+  Paper,
+  Grid,
+  Switch,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Button,
+  Divider,
+  Chip,
+  Stack,
+  Box,
+  InputAdornment,
+} from '@mui/material';
+import React, { useState } from 'react';
 
-import { Room } from '../lib/agents';
+import { Room } from '../lib/agents/components';
 
 // Test configuration - accountId is now required
 const TEST_CONFIG = {
@@ -15,145 +32,362 @@ const TEST_CONFIG = {
 };
 
 export default function SDKTestPage() {
-  const location = useLocation();
-
-  // Helper function to parse string parameters that might be "null"
-  const parseStringParam = (value) => {
-    if (value === null || value === 'null' || value === '') {
-      return undefined;
-    }
-    return value;
-  };
-
-  // Parse query parameters for room configuration
-  const queryParams = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return {
-      tabs: params.get('tabs') !== null ? params.get('tabs') === 'true' : undefined,
-      conversation_history: params.get('conversation_history') !== null ? params.get('conversation_history') === 'true' : undefined,
-      members: params.get('members') !== null ? params.get('members') === 'true' : undefined,
-      settings: params.get('settings') !== null ? params.get('settings') === 'true' : undefined,
-      theme: parseStringParam(params.get('theme')),
-      title: parseStringParam(params.get('title')),
-      description: parseStringParam(params.get('description')),
-      suggestions: params.get('suggestions') ? JSON.parse(decodeURIComponent(params.get('suggestions'))) : undefined,
-      voice_enabled: params.get('voice_enabled') !== null ? params.get('voice_enabled') === 'true' : undefined,
-    };
-  }, [location.search]);
-
-  // Default room configuration (can be overridden by query params)
-  const defaultRoomConfig = {
-    tabs: true,
-    conversation_history: true,
-    members: true,
-    settings: true,
-    theme: undefined,
-    title: undefined,
-    description: undefined,
-    suggestions: ['How can I help you?', 'Tell me about your services', 'I need support'],
+  console.log("new log sdk page")
+  // Configuration state for the form
+  const [config, setConfig] = useState({
+    mode: 'compact',
+    tabs: false,
+    conversation_history: false,
+    members: false,
+    settings: false,
+    theme: 'system',
+    title: '',
+    description: '',
+    placeholder: 'How can I help you?',
     voice_enabled: true,
+    primary_color: '#007bff',
+    background_color: '#ffffff',
+    background_blur: true,
+    position: 'bottom-center',
+    widget_width: 350,
+    room_width: 450,
+    room_height: 600,
+    border_radius: 16,
+    suggestions: ['How can I help you?', 'Tell me about your services', 'I need support'],
+  });
+
+  const [newSuggestion, setNewSuggestion] = useState('');
+
+  const handleConfigChange = (field) => (event) => {
+    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    setConfig(prev => ({ ...prev, [field]: value }));
   };
 
-  // Merge default config with query parameters (query params take precedence)
-  const roomConfig = useMemo(() => {
-    const merged = { ...defaultRoomConfig };
-    Object.keys(queryParams).forEach(key => {
-      if (queryParams[key] !== undefined) {
-        merged[key] = queryParams[key];
-      }
+  const addSuggestion = () => {
+    if (newSuggestion.trim() && !config.suggestions.includes(newSuggestion.trim())) {
+      setConfig(prev => ({
+        ...prev,
+        suggestions: [...prev.suggestions, newSuggestion.trim()],
+      }));
+      setNewSuggestion('');
+    }
+  };
+
+  const removeSuggestion = (index) => {
+    setConfig(prev => ({
+      ...prev,
+      suggestions: prev.suggestions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const resetToDefaults = () => {
+    setConfig({
+      mode: 'compact',
+      tabs: true,
+      conversation_history: true,
+      members: true,
+      settings: true,
+      theme: 'system',
+      title: '',
+      description: '',
+      placeholder: 'How can I help you?',
+      voice_enabled: true,
+      primary_color: '#007bff',
+      background_color: '#ffffff',
+      background_blur: true,
+      position: 'bottom-center',
+      widget_width: 350,
+      room_width: 450,
+      room_height: 600,
+      border_radius: 16,
+      suggestions: ['How can I help you?', 'Tell me about your services', 'I need support'],
     });
-    return merged;
-  }, [queryParams]);
+  };
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: 4 }}
-    >
-      <Typography
-        variant="h4"
-        gutterBottom
-      >
-        Altan SDK - Room Component with Configuration
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Altan SDK - Compact Mode Configuration
       </Typography>
 
-      <Alert
-        severity="success"
-        sx={{ mb: 3 }}
+      <Paper
+        sx={{
+          p: 3,
+          mb: 3,
+          maxHeight: '70vh',
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: '#555',
+          },
+        }}
       >
-        <div>
-          <strong>🚀 NEW: Room Configuration Support!</strong>
-          <br />• <code>RoomConfigProps</code> - Full room personalization interface
-          <br />• Theme, UI panels, voice controls, suggestions, and more
-          <br />• TypeScript support with proper type exports
-          <br />• Query parameter integration for easy testing
-        </div>
-      </Alert>
-
-      <Alert severity="info" sx={{ mb: 2 }}>
-        <strong>How it works:</strong> SDK now accepts room configuration props that are passed as query parameters to the room iframe.
-        All personalization options from StandaloneRoomPage are now available in the SDK.
-      </Alert>
-
-      <Alert severity="warning" sx={{ mb: 2 }}>
-        <strong>🛠️ Test Configuration via Query Parameters:</strong>
-        <br />Add query parameters to test different room configurations:
-        <br />• <code>?tabs=false&voice_enabled=false&theme=dark</code>
-        <br />• <code>?title=Custom%20Title&suggestions=[&quot;Hello&quot;,&quot;Help&quot;]</code>
-        <br />• Available params: tabs, conversation_history, members, settings, theme, title, description, suggestions, voice_enabled
-      </Alert>
-
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        The room component now supports full configuration. Test with different query parameters!
-        <br />
-        <strong>Active config:</strong>
-      </Typography>
-
-      <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-        <pre style={{ fontSize: '12px', margin: 0 }}>
-          {JSON.stringify(roomConfig, null, 2)}
-        </pre>
-      </Box>
-
-      {/* Demo content */}
-      <Box sx={{ height: '80vh', backgroundColor: '#f5f5f5', p: 3, borderRadius: 1 }}>
         <Typography variant="h6" gutterBottom>
-          SDK Room Configuration Demo
+          Compact Mode Configuration
         </Typography>
-        <Typography variant="body1" paragraph>
-          The compact room below uses the configuration object above.
-          All props are passed to the iframe as query parameters.
-        </Typography>
-        <Typography variant="body1" paragraph>
-          Try adding <code>?theme=dark&tabs=false</code> to the URL to see the configuration in action!
-        </Typography>
-      </Box>
 
-      {/* Room Component with Full Configuration Support */}
+        {/* Basic Settings */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.tabs} onChange={handleConfigChange('tabs')} />}
+              label="Show Tabs"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.conversation_history} onChange={handleConfigChange('conversation_history')} />}
+              label="Conversation History"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.members} onChange={handleConfigChange('members')} />}
+              label="Show Members"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.settings} onChange={handleConfigChange('settings')} />}
+              label="Show Settings"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.voice_enabled} onChange={handleConfigChange('voice_enabled')} />}
+              label="Voice Enabled"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <FormControlLabel
+              control={<Switch checked={config.background_blur} onChange={handleConfigChange('background_blur')} />}
+              label="Background Blur"
+            />
+          </Grid>
+        </Grid>
+
+        {/* Theme Selection */}
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Theme</InputLabel>
+          <Select
+            value={config.theme}
+            onChange={handleConfigChange('theme')}
+            label="Theme"
+          >
+            <MenuItem value="light">Light</MenuItem>
+            <MenuItem value="dark">Dark</MenuItem>
+            <MenuItem value="system">System</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Text Fields */}
+        <TextField
+          fullWidth
+          label="Title"
+          value={config.title}
+          onChange={handleConfigChange('title')}
+          sx={{ mb: 2 }}
+          placeholder="Custom room title"
+        />
+
+        <TextField
+          fullWidth
+          label="Description"
+          value={config.description}
+          onChange={handleConfigChange('description')}
+          sx={{ mb: 2 }}
+          placeholder="Custom room description"
+        />
+
+        <TextField
+          fullWidth
+          label="Placeholder"
+          value={config.placeholder}
+          onChange={handleConfigChange('placeholder')}
+          sx={{ mb: 2 }}
+          placeholder="Message placeholder text"
+        />
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Styling Options */}
+        <Typography variant="subtitle1" gutterBottom>
+          Styling Options
+        </Typography>
+
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={6}>
+            <TextField
+              fullWidth
+              label="Primary Color"
+              value={config.primary_color}
+              onChange={handleConfigChange('primary_color')}
+              type="color"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              fullWidth
+              label="Background Color"
+              value={config.background_color}
+              onChange={handleConfigChange('background_color')}
+              type="color"
+            />
+          </Grid>
+        </Grid>
+
+        {/* Position Selection */}
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Position</InputLabel>
+          <Select
+            value={config.position}
+            onChange={handleConfigChange('position')}
+            label="Position"
+          >
+            <MenuItem value="bottom-right">Bottom Right</MenuItem>
+            <MenuItem value="bottom-left">Bottom Left</MenuItem>
+            <MenuItem value="bottom-center">Bottom Center</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Dimension Controls */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Widget Width"
+              type="number"
+              value={config.widget_width}
+              onChange={handleConfigChange('widget_width')}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">px</InputAdornment>,
+              }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Room Width"
+              type="number"
+              value={config.room_width}
+              onChange={handleConfigChange('room_width')}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">px</InputAdornment>,
+              }}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField
+              fullWidth
+              label="Room Height"
+              type="number"
+              value={config.room_height}
+              onChange={handleConfigChange('room_height')}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">px</InputAdornment>,
+              }}
+            />
+          </Grid>
+        </Grid>
+
+        <TextField
+          fullWidth
+          label="Border Radius"
+          type="number"
+          value={config.border_radius}
+          onChange={handleConfigChange('border_radius')}
+          sx={{ mb: 2 }}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">px</InputAdornment>,
+          }}
+        />
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Suggestions */}
+        <Typography variant="subtitle1" gutterBottom>
+          Message Suggestions
+        </Typography>
+
+        <Box sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+            <TextField
+              size="small"
+              label="Add suggestion"
+              value={newSuggestion}
+              onChange={(e) => setNewSuggestion(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addSuggestion()}
+              sx={{ flexGrow: 1 }}
+            />
+            <Button onClick={addSuggestion} variant="outlined">
+              Add
+            </Button>
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+            {config.suggestions.map((suggestion, index) => (
+              <Chip
+                key={index}
+                label={suggestion}
+                onDelete={() => removeSuggestion(index)}
+                size="small"
+              />
+            ))}
+          </Stack>
+        </Box>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={resetToDefaults}
+          sx={{ mt: 2 }}
+        >
+          Reset to Defaults
+        </Button>
+      </Paper>
+
+      {/* Compact Mode Widget */}
       <Room
+        key={JSON.stringify(config)} // Force re-render when config changes
         mode="compact"
         accountId={TEST_CONFIG.accountId}
         agentId={TEST_CONFIG.agentId}
-        placeholder={roomConfig.title || 'How can I help you?'}
-        config={{
-          apiBaseUrl: TEST_CONFIG.apiBaseUrl,
-          authBaseUrl: TEST_CONFIG.authBaseUrl,
-          roomBaseUrl: TEST_CONFIG.roomBaseUrl,
-        }}
+        placeholder={config.placeholder}
+        // Room behavior configuration
+        tabs={config.tabs}
+        conversation_history={config.conversation_history}
+        members={config.members}
+        settings={config.settings}
+        theme={config.theme}
+        title={config.title}
+        description={config.description}
+        voice_enabled={config.voice_enabled}
+        suggestions={config.suggestions}
+        // Widget styling configuration
+        primary_color={config.primary_color}
+        background_color={config.background_color}
+        background_blur={config.background_blur}
+        position={config.position}
+        widget_width={config.widget_width}
+        room_width={config.room_width}
+        room_height={config.room_height}
+        border_radius={config.border_radius}
         guestInfo={{
           first_name: 'Test',
           last_name: 'User',
           email: 'test@example.com',
           external_id: 'sdk-test-config',
         }}
-        onConversationReady={(room) => {
-          console.log('✅ Room ready with configuration:', roomConfig, room);
-        }}
-        onAuthSuccess={(guest) => {
-          console.log('✅ Auth ready:', guest);
-        }}
-        // Pass all room configuration props
-        {...roomConfig}
       />
     </Container>
   );

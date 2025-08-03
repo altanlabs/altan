@@ -19,7 +19,14 @@ import {
 
 const selectIsCreation = (state) => selectThreadDrawerDetails(state)?.isCreation;
 
-const MobileRoom = () => {
+const MobileRoom = ({
+  // New personalization options
+  tabs = true,
+  conversation_history = true,
+  members = true,
+  settings = true,
+  show_close_button = false,
+} = {}) => {
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const theme = useTheme();
   const isCreation = useSelector(selectIsCreation);
@@ -136,6 +143,11 @@ const MobileRoom = () => {
           <GeneralToolbar
             left={0}
             right={0}
+            tabs={tabs}
+            conversation_history={conversation_history}
+            members={members}
+            settings={settings}
+            show_close_button={show_close_button}
           />
           <Threads />
           {renderDrawerToggle(false)}

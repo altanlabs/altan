@@ -155,6 +155,11 @@ https://shorturl.at/wvWye
         prompt:
           'Create a docs and support website for my business. I should be able to add new docs and support articles and manage the website. Finally, we should be able to add an agent that can answer questions about the docs and support articles.',
       },
+      {
+        title: 'OKRs & KPIs Tracker',
+        prompt:
+          'Create an internal app to track and manage company OKRs and KPIs. The app should let us: Define and edit Objectives and Key Results per quarter, assign owners to each Objective and each Key Result, track progress (% completion or metric value), view KPIs in a dashboard with filters by area (Users, Revenue, Product, Tech, etc.), add weekly/monthly updates or comments per KR or KPI, and show visual indicators (on track / at risk / off track). The app should include: A database with Objectives, Key Results, KPIs, and Updates, a form to create/edit Objectives and KRs, a dashboard to visualize KPI trends, a table view to review and filter OKRs by owner or status, and support for multiple quarters',
+      },
     ],
   },
   {

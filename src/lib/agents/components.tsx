@@ -18,6 +18,8 @@ export interface RoomConfigProps {
   members?: boolean;
   /** Show/hide settings panel */
   settings?: boolean;
+  /** Show/hide close button in tab bar */
+  show_close_button?: boolean;
   /** Theme mode (light, dark, or system) */
   theme?: string;
   /** Custom room title */
@@ -147,11 +149,14 @@ export function Room(props: RoomProps): React.JSX.Element {
     style,
     onAuthSuccess,
     onError,
+    // Mode-specific props
+    mode,
     // Room configuration props
     tabs,
     conversation_history,
     members,
     settings,
+    show_close_button,
     theme,
     title,
     description,
@@ -168,13 +173,20 @@ export function Room(props: RoomProps): React.JSX.Element {
     border_radius = 16,
   } = props;
 
+  // Extract mode-specific props safely
+  const agentId = 'agentId' in props ? props.agentId : undefined;
+  const roomId = 'roomId' in props ? props.roomId : undefined;
+  const placeholder = 'placeholder' in props ? props.placeholder : undefined;
+  const onConversationReady = 'onConversationReady' in props ? props.onConversationReady : undefined;
+  const onRoomJoined = 'onRoomJoined' in props ? props.onRoomJoined : undefined;
+
   const [isInitialized, setIsInitialized] = useState(false);
   const [authData, setAuthData] = useState<{ guest: GuestData; tokens: AuthTokens } | null>(null);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [isOpen, setIsOpen] = useState(props.mode !== 'compact');
+  const [isOpen, setIsOpen] = useState(mode !== 'compact');
   const [message, setMessage] = useState('');
-  const [isPreloading, setIsPreloading] = useState(props.mode === 'compact');
+  const [isPreloading, setIsPreloading] = useState(mode === 'compact');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const initAttemptedRef = useRef(false);
 
@@ -195,6 +207,11 @@ export function Room(props: RoomProps): React.JSX.Element {
       params.set('conversation_history', conversation_history.toString());
     if (members !== undefined) params.set('members', members.toString());
     if (settings !== undefined) params.set('settings', settings.toString());
+    
+    // For compact mode, always show close button to enable widget closing
+    const shouldShowCloseButton = mode === 'compact' ? true : show_close_button;
+    if (shouldShowCloseButton !== undefined) params.set('show_close_button', shouldShowCloseButton.toString());
+    
     if (theme !== undefined) params.set('theme', theme);
     if (title !== undefined) params.set('title', title);
     if (description !== undefined) params.set('description', description);
@@ -230,40 +247,46 @@ export function Room(props: RoomProps): React.JSX.Element {
     const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
     console.log(`🏗️ [${context}] Room component initializing...`);
     console.log(`🏗️ [${context}] Props:`, {
-      mode: props.mode,
-      accountId: props.accountId,
+      mode: mode,
+      accountId: accountId,
       agentId:
-        props.mode === 'agent' || (props.mode === 'compact' && props.agentId)
-          ? props.agentId
+        mode === 'agent' || (mode === 'compact' && agentId)
+          ? agentId
           : undefined,
       roomId:
-        props.mode === 'room' || (props.mode === 'compact' && props.roomId)
-          ? props.roomId
+        mode === 'room' || (mode === 'compact' && roomId)
+          ? roomId
           : undefined,
-      guestInfo: props.guestInfo,
+      guestInfo: guestInfo,
     });
 
     // For compact mode, show loading indicator while preloading
-    if (props.mode === 'compact') {
+    if (mode === 'compact') {
       console.log(`🚀 [${context}] Starting background pre-loading for compact mode...`);
     }
 
-    if (props.mode === 'agent' || (props.mode === 'compact' && props.agentId)) {
+    if (mode === 'agent' || (mode === 'compact' && agentId)) {
       // Agent mode: find/create DM with agent
-      const agentId = props.mode === 'agent' ? props.agentId : props.agentId!;
+      const currentAgentId = mode === 'agent' ? agentId : agentId;
+      if (!currentAgentId) {
+        console.error('❌ Agent ID is required for agent mode');
+        setHasError(true);
+        setIsInitialized(true);
+        return;
+      }
       const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
-      console.log(`🤖 [${context}] Creating agent session for:`, agentId);
+      console.log(`🤖 [${context}] Creating agent session for:`, currentAgentId);
 
-      createSession(agentId, guestInfo)
+      createSession(currentAgentId, guestInfo)
         .then(({ room: createdRoom, tokens, guest }) => {
           setIsInitialized(true);
           setAuthData({ guest, tokens });
           setRoomUrl(createdRoom.url || null);
           setIsPreloading(false); // Pre-loading complete
-          if (props.mode === 'agent') {
-            props.onConversationReady?.(createdRoom);
-          } else if (props.mode === 'compact') {
-            props.onConversationReady?.(createdRoom);
+          if (mode === 'agent') {
+            onConversationReady?.(createdRoom);
+          } else if (mode === 'compact') {
+            onConversationReady?.(createdRoom);
           }
           onAuthSuccess?.(guest, tokens);
           console.log('✅ Background pre-loading complete!');
@@ -276,12 +299,18 @@ export function Room(props: RoomProps): React.JSX.Element {
           setIsPreloading(false);
           onError?.(error);
         });
-    } else if (props.mode === 'room' || (props.mode === 'compact' && props.roomId)) {
+    } else if (mode === 'room' || (mode === 'compact' && roomId)) {
       // Room mode: join existing room
-      const roomId = props.mode === 'room' ? props.roomId : props.roomId!;
-      console.log('🏠 SDK: Joining existing room:', roomId);
+      const currentRoomId = mode === 'room' ? roomId : roomId;
+      if (!currentRoomId) {
+        console.error('❌ Room ID is required for room mode');
+        setHasError(true);
+        setIsInitialized(true);
+        return;
+      }
+      console.log('🏠 SDK: Joining existing room:', currentRoomId);
 
-      joinExistingRoom(roomId, guestInfo)
+      joinExistingRoom(currentRoomId, guestInfo)
         .then(({ guest, tokens, roomUrl: url }) => {
           console.log('✅ SDK: Room joined successfully');
           console.log('🔐 SDK: Access token:', tokens.accessToken ? 'Present' : 'Missing');
@@ -292,10 +321,10 @@ export function Room(props: RoomProps): React.JSX.Element {
           setAuthData({ guest, tokens });
           setRoomUrl(url);
           setIsPreloading(false); // Pre-loading complete
-          if (props.mode === 'room') {
-            props.onRoomJoined?.(guest, tokens);
-          } else if (props.mode === 'compact') {
-            props.onRoomJoined?.(guest, tokens);
+          if (mode === 'room') {
+            onRoomJoined?.(guest, tokens);
+          } else if (mode === 'compact') {
+            onRoomJoined?.(guest, tokens);
           }
           onAuthSuccess?.(guest, tokens);
           console.log('✅ Background pre-loading complete!');
@@ -382,11 +411,17 @@ export function Room(props: RoomProps): React.JSX.Element {
       if (data?.type === 'auth_error') {
         console.error(`❌ [${context}] Authentication error from iframe:`, data.error);
       }
+
+      // Handle widget close requests from TabBar
+      if (data?.type === 'widget_close_request' && mode === 'compact') {
+        console.log(`🔄 [${context}] Widget close requested from TabBar`);
+        setIsOpen(false);
+      }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [authData]);
+  }, [authData, mode]);
 
   // Helper function to get position styles
   const getPositionStyles = () => {
@@ -437,7 +472,7 @@ export function Room(props: RoomProps): React.JSX.Element {
   };
 
   // Compact mode rendering
-  if (props.mode === 'compact') {
+  if (mode === 'compact') {
     const positionStyles = getPositionStyles();
     const widgetDimensions = getWidgetDimensions();
 
@@ -481,7 +516,7 @@ export function Room(props: RoomProps): React.JSX.Element {
           >
             <input
               type="text"
-              placeholder={props.placeholder || 'Type a message...'}
+              placeholder={placeholder || 'Type a message...'}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onClick={() => setIsOpen(true)}
@@ -617,51 +652,16 @@ export function Room(props: RoomProps): React.JSX.Element {
             zIndex: 1000,
           }}
         >
-          {/* Elegant close button when expanded */}
-          {isOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                zIndex: 1002,
-                background: 'rgba(0, 0, 0, 0.05)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                borderRadius: '50%',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: 'rgba(0, 0, 0, 0.6)',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-              onClick={() => setIsOpen(false)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              ✕
-            </div>
-          )}
+          {/* Close functionality now handled by native TabBar close button */}
 
           {/* Pre-loaded iframe (always loads in background) */}
           {isInitialized && roomUrl && authData ? (
             <iframe
               ref={iframeRef}
               src={(() => {
-                const context = (window as any).AltanWidget ? 'WIDGET' : 'SDK';
                 const configParams = buildRoomConfigParams();
-                const fullUrl = `${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${configParams}`;
-                return fullUrl;
+                // Security: No token in URL - authentication handled via secure postMessage
+                return configParams ? `${roomUrl}?${configParams.substring(1)}` : roomUrl;
               })()}
               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
               style={{
@@ -772,7 +772,11 @@ export function Room(props: RoomProps): React.JSX.Element {
       {isInitialized && roomUrl && authData ? (
         <iframe
           ref={iframeRef}
-          src={`${roomUrl}${roomUrl.includes('?') ? '&' : '?'}token=${authData.tokens.accessToken}${buildRoomConfigParams()}`}
+          src={(() => {
+            const configParams = buildRoomConfigParams();
+            // Security: No token in URL - authentication handled via secure postMessage
+            return configParams ? `${roomUrl}?${configParams.substring(1)}` : roomUrl;
+          })()}
           allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
           style={{
             width: '100%',

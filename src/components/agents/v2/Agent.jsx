@@ -22,7 +22,7 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // sdk
-import { Room } from '../../../lib/agents';
+import { Room } from '../../../lib/agents/components';
 // auth
 // redux
 import { fetchAgentDetails, updateAgent } from '../../../redux/slices/agents';

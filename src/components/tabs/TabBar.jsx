@@ -31,9 +31,11 @@ const TabBar = ({
   showHistoryButton = true,
   showMembersButton = true,
   showSettingsButton = true,
+  showCloseButton = false,
   onTabSwitch,
   onTabClose,
   onNewTab,
+  onClose,
 }) => {
   const tabs = useSelector(selectTabsArray);
   const activeTabId = useSelector(selectActiveTabId);
@@ -109,7 +111,11 @@ const TabBar = ({
 
   // Handle new tab creation
   const handleNewTab = useCallback(async () => {
-    await dispatch(createNewThread());
+    if (onNewTab) {
+      onNewTab();
+    } else {
+      await dispatch(createNewThread());
+    }
   }, [onNewTab]);
 
   // Handle settings dialog
@@ -127,6 +133,24 @@ const TabBar = ({
     }
   }, [mainThread]);
 
+  // Handle close button click
+  const handleCloseClick = useCallback(() => {
+    if (onClose) {
+      onClose();
+    } else {
+      // Post message to parent window (for widget mode)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: 'widget_close_request',
+            source: 'altan-widget',
+          },
+          '*',
+        );
+      }
+    }
+  }, [onClose]);
+
   // Calculate tab width based on available space
   const calculateTabWidth = useCallback(() => {
     if (!tabs.length) return maxTabWidth;
@@ -136,7 +160,10 @@ const TabBar = ({
 
     // Account for all buttons in the right area
     const buttonSpace =
-      (showHistoryButton ? 40 : 0) + (showMembersButton ? 40 : 0) + (showSettingsButton ? 40 : 0);
+      (showHistoryButton ? 40 : 0) +
+      (showMembersButton ? 40 : 0) +
+      (showSettingsButton ? 40 : 0) +
+      (showCloseButton ? 40 : 0);
     // Reserve space for the new tab button in the scrollable area
     const newTabButtonSpace = showNewTabButton ? 40 : 0;
     const availableWidth = container.clientWidth - buttonSpace - newTabButtonSpace;
@@ -151,6 +178,7 @@ const TabBar = ({
     showHistoryButton,
     showMembersButton,
     showSettingsButton,
+    showCloseButton,
   ]);
 
   // Scroll functions
@@ -171,7 +199,7 @@ const TabBar = ({
   const tabWidth = calculateTabWidth();
 
   // If no tabs and no action buttons are enabled, don't render anything
-  if (tabs.length === 0 && !showHistoryButton && !showMembersButton && !showSettingsButton) {
+  if (tabs.length === 0 && !showHistoryButton && !showMembersButton && !showSettingsButton && !showCloseButton) {
     return null;
   }
 
@@ -328,6 +356,28 @@ const TabBar = ({
               >
                 <Iconify
                   icon="mdi:dots-vertical"
+                  width={16}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Close button */}
+          {showCloseButton && (
+            <Tooltip
+              title="Close"
+              placement="top"
+            >
+              <IconButton
+                size="small"
+                onClick={handleCloseClick}
+                sx={{
+                  width: 32,
+                  height: 32,
+                }}
+              >
+                <Iconify
+                  icon="mdi:close"
                   width={16}
                 />
               </IconButton>

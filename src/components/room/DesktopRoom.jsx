@@ -46,6 +46,7 @@ const DesktopRoom = ({
   conversation_history = true,
   members = true,
   settings = true,
+  show_close_button = false,
   title = null,
   description = null,
   suggestions = [],
@@ -114,6 +115,11 @@ const DesktopRoom = ({
           <GeneralToolbar
             isLoading={isLoading || !initialized.room}
             header={header}
+            tabs={tabs}
+            conversation_history={conversation_history}
+            members={members}
+            settings={settings}
+            show_close_button={show_close_button}
           />
         )}
 
@@ -192,6 +198,7 @@ const DesktopRoom = ({
             conversation_history={conversation_history}
             members={members}
             settings={settings}
+            show_close_button={show_close_button}
           />
           <Threads
             title={title}

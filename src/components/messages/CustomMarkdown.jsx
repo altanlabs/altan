@@ -23,6 +23,7 @@ import CommitWidget from '../widgets/components/CommitWidget.jsx';
 import DatabaseVersionWidget from '../widgets/components/DatabaseVersionWidget.jsx';
 import NoCredits from '../widgets/components/NoCredits.jsx';
 import VersionWidget from '../widgets/components/VersionWidget.jsx';
+import MediaWidget from '../widgets/components/MediaWidget.jsx';
 
 const isComponentTarget = (href) => /\[selected_component\]\(.*\)/.test(href);
 
@@ -169,6 +170,13 @@ const CustomLink = ({ href, children, threadId }) => {
   if (resources.length > 0) {
     return resources.map((resource) => {
       switch (resource.resourceName.toLowerCase()) {
+        case 'media':
+          return (
+            <MediaWidget
+              key={resource.id}
+              id={resource.id}
+            />
+          );
         case 'database-version':
           return (
             <DatabaseVersionWidget

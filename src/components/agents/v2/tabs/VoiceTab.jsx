@@ -27,7 +27,8 @@ const AUDIO_FORMATS = [
 
 const VOICE_MODELS = [
   { id: 'eleven_turbo_v2', name: 'Turbo v2' },
-  { id: 'eleven_flash_v2', name: 'Flash v2 (Recommended)' },
+  { id: 'eleven_flash_v2', name: 'Flash v2' },
+  { id: 'eleven_flash_v2_5', name: 'Flash v2.5' },
 ];
 
 const LANGUAGES = [

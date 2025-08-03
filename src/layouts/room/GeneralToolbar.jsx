@@ -17,7 +17,8 @@ const GeneralToolbar = ({
   tabs = true,
   conversation_history = true,
   members = true,
-  settings = true
+  settings = true,
+  show_close_button = false,
 }) => {
   const mainThread = useSelector(selectMainThread);
   const tabsCount = useSelector(selectTabsCount);
@@ -50,6 +51,7 @@ const GeneralToolbar = ({
         showHistoryButton={conversation_history}
         showMembersButton={members}
         showSettingsButton={settings}
+        showCloseButton={show_close_button}
       />
 
       {/* Additional toolbar content can be added here if needed */}
