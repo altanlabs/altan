@@ -383,23 +383,50 @@ export function Room(props: RoomProps): React.JSX.Element {
         }
       }
 
-      // Handle token refresh requests
-      if (data?.type === 'token_refresh_request' && authData) {
+      // Handle token refresh requests (both message types for compatibility)
+      if ((data?.type === 'token_refresh_request' || data?.type === 'refresh_token') && authData) {
         console.log(`🔄 [${context}] Iframe requesting token refresh...`);
         const iframe = iframeRef.current;
         if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage(
-            {
-              type: 'new_access_token',
-              token: authData.tokens.accessToken,
-              guest: authData.guest,
-              user: null,
-              success: true,
-            },
-            '*',
-          );
+          // Use async IIFE to handle the refresh
+          (async () => {
+            try {
+              // Actually refresh the token instead of sending the existing one
+              const newTokens = await auth.refreshTokens();
+              
+              if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage(
+                  {
+                    type: 'new_access_token',
+                    token: newTokens.accessToken,
+                    guest: authData.guest,
+                    user: null,
+                    success: true,
+                  },
+                  '*',
+                );
+              }
 
-          console.log(`✅ [${context}] Token refresh sent`);
+              console.log(`✅ [${context}] Fresh token sent after refresh`);
+            } catch (error) {
+              console.error(`❌ [${context}] Token refresh failed:`, error);
+              
+              // Send error response to iframe
+              if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage(
+                  {
+                    type: 'new_access_token',
+                    token: null,
+                    guest: authData.guest,
+                    user: null,
+                    success: false,
+                    error: (error as Error).message || 'Token refresh failed',
+                  },
+                  '*',
+                );
+              }
+            }
+          })();
         }
       }
 
