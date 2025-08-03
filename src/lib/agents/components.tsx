@@ -187,6 +187,7 @@ export function Room(props: RoomProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(mode !== 'compact');
   const [message, setMessage] = useState('');
   const [isPreloading, setIsPreloading] = useState(mode === 'compact');
+  const [, forceUpdate] = useState({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const initAttemptedRef = useRef(false);
 
@@ -423,8 +424,34 @@ export function Room(props: RoomProps): React.JSX.Element {
     return () => window.removeEventListener('message', handleMessage);
   }, [authData, mode]);
 
+  // Handle window resize to update mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Helper function to detect mobile/small screens
+  const isMobile = () => {
+    return window.innerWidth <= 768 || window.innerHeight <= 600;
+  };
+
   // Helper function to get position styles
   const getPositionStyles = () => {
+    // On mobile, always use fullscreen positioning
+    if (isMobile()) {
+      return {
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        transform: 'none',
+      };
+    }
+
     const baseSpacing = 20;
     switch (position) {
       case 'bottom-right':
@@ -454,6 +481,16 @@ export function Room(props: RoomProps): React.JSX.Element {
 
   // Helper function to get widget dimensions based on width
   const getWidgetDimensions = () => {
+    // On mobile, use fullscreen dimensions
+    if (isMobile()) {
+      return {
+        textFieldWidth: 'calc(100vw - 40px)',
+        textFieldMinWidth: '280px',
+        roomWidth: '100vw',
+        roomHeight: '100vh',
+      };
+    }
+
     const inputWidth = widget_width || 350;
     const maxInputWidth = Math.min(inputWidth, window.innerWidth - 40);
 
@@ -478,12 +515,36 @@ export function Room(props: RoomProps): React.JSX.Element {
 
     return (
       <>
+        {/* Mobile backdrop when open */}
+        {isMobile() && isOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              zIndex: 999,
+              opacity: isOpen ? 1 : 0,
+              transition: 'opacity 0.2s ease-in-out',
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+
         {/* Text field overlay (always visible when closed) */}
         {!isOpen && (
           <div
             style={{
               position: 'fixed',
-              ...positionStyles,
+              ...(isMobile() ? {
+                bottom: '20px',
+                left: '20px',
+                right: '20px',
+                top: 'auto',
+                transform: 'none',
+              } : positionStyles),
               zIndex: 1001,
               display: 'flex',
               alignItems: 'center',
@@ -610,13 +671,14 @@ export function Room(props: RoomProps): React.JSX.Element {
           style={{
             position: 'fixed',
             ...positionStyles,
-            transform:
-              position === 'bottom-center'
+            transform: isMobile() 
+              ? `${isOpen ? 'scale(1)' : 'scale(0.95) translateY(100%)'}`
+              : position === 'bottom-center'
                 ? `translateX(-50%) ${isOpen ? 'scale(1)' : 'scale(0)'}`
                 : `${isOpen ? 'scale(1)' : 'scale(0)'}`,
             width: widgetDimensions.roomWidth,
             height: widgetDimensions.roomHeight,
-            borderRadius: `${border_radius}px`,
+            borderRadius: isMobile() ? '0' : `${border_radius}px`,
             background: background_blur
               ? `linear-gradient(135deg, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.85) 0%, rgba(${parseInt(background_color.slice(1, 3), 16)}, ${parseInt(background_color.slice(3, 5), 16)}, ${parseInt(background_color.slice(5, 7), 16)}, 0.95) 100%)`
               : background_color,
@@ -627,8 +689,9 @@ export function Room(props: RoomProps): React.JSX.Element {
               ? 'blur(28px) saturate(200%) brightness(1.08) contrast(1.15)'
               : 'none',
             border: 'none',
-            transformOrigin:
-              position === 'bottom-right'
+            transformOrigin: isMobile() 
+              ? 'bottom center'
+              : position === 'bottom-right'
                 ? 'bottom right'
                 : position === 'bottom-left'
                   ? 'bottom left'
@@ -668,7 +731,7 @@ export function Room(props: RoomProps): React.JSX.Element {
                 width: '100%',
                 height: '100%',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: isMobile() ? '0' : '12px',
               }}
               title="Altan Room"
               onLoad={() => {

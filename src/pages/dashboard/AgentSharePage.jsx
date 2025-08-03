@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
-import { Room } from '../../lib/agents';
+import { Room } from '../../lib/agents/components';
 
 // ----------------------------------------------------------------------
 
@@ -91,6 +91,8 @@ export default function AgentSharePage() {
             mode="agent"
             accountId={agent.account_id}
             agentId={agentId}
+            members={false}
+            settings={false}
             guestInfo={{
               first_name: user?.first_name || 'Guest',
               last_name: user?.last_name || null,

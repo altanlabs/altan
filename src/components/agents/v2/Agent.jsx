@@ -12,9 +12,13 @@ import {
   Snackbar,
   Alert,
   useMediaQuery,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 
@@ -44,15 +48,6 @@ import AgentTab from './tabs/AgentTab';
 import SecurityTab from './tabs/SecurityTab';
 import VoiceTab from './tabs/VoiceTab';
 import WidgetTab from './tabs/WidgetTab';
-
-// Debounce utility to prevent excessive API calls
-const debounce = (func, delay) => {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(this, args), delay);
-  };
-};
 
 const versionsSelector = (template) => template?.versions;
 
@@ -87,6 +82,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
 
   // Handle tab change with URL update
   const handleTabChange = useCallback(
@@ -105,7 +101,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
       history.push(newPath, { replace: true });
     },
-    [location.pathname, location.search, history.push],
+    [location.pathname, location.search, history],
   );
 
   useEffect(() => {
@@ -130,10 +126,14 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     }
   }, [location.search, activeTab]);
 
+  const timeoutRef = useRef();
   const debouncedUpdateAgent = useCallback(
-    debounce((id, data) => {
-      dispatch(updateAgent(id, data));
-    }, 500),
+    (id, data) => {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        dispatch(updateAgent(id, data));
+      }, 500);
+    },
     [dispatch],
   );
 
@@ -213,6 +213,19 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       // Agent has a template, show the template dialog
       setTemplateDialogOpen(true);
     }
+  };
+
+  const handleTestAgent = () => {
+    const url = `/agent/${agentData?.id}/share`;
+    window.open(url, '_blank');
+  };
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const renderTabContent = () => {
@@ -430,50 +443,132 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
-            <Tooltip title="Delete Agent">
-              <IconButton
-                onClick={() => setDeleteDialog(true)}
-                sx={{
-                  color: 'error.main',
-                  '&:hover': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'error.dark' : 'error.lighter',
-                  },
-                }}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                <Iconify icon="eva:trash-2-outline" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Agent Information">
-              <IconButton
-                onClick={() => setInfoDialogOpen(true)}
-                sx={{ color: 'text.secondary' }}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                <Iconify icon="eva:info-outline" />
-              </IconButton>
-            </Tooltip>
-            {!currentAgent?.cloned_template_id && (
-              <Tooltip title="Version History">
-                <IconButton
-                  onClick={handleVersionHistory}
-                  sx={{ color: 'text.secondary' }}
-                  size={isMobile ? 'small' : 'medium'}
-                >
-                  <Iconify icon="mdi:history" />
-                </IconButton>
-              </Tooltip>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {/* Test Agent Button - Always visible */}
+
+            {/* Desktop: Show all action buttons */}
+            {!isMobile && (
+              <>
+                <Tooltip title="Delete Agent">
+                  <IconButton
+                    onClick={() => setDeleteDialog(true)}
+                    sx={{
+                      color: 'error.main',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'error.dark' : 'error.lighter',
+                      },
+                    }}
+                  >
+                    <Iconify icon="eva:trash-2-outline" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Agent Information">
+                  <IconButton
+                    onClick={() => setInfoDialogOpen(true)}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <Iconify icon="eva:info-outline" />
+                  </IconButton>
+                </Tooltip>
+                {!currentAgent?.cloned_template_id && (
+                  <Tooltip title="Version History">
+                    <IconButton
+                      onClick={handleVersionHistory}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <Iconify icon="mdi:history" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </>
             )}
-            {/* <Button
-              onClick={() => setShareDialogOpen(true)}
+
+            {/* Mobile: Show popup menu for other actions */}
+            {isMobile && (
+              <>
+                <Tooltip title="More actions">
+                  <IconButton
+                    onClick={handleMenuOpen}
+                    sx={{ color: 'text.secondary' }}
+                    size="small"
+                  >
+                    <Iconify icon="eva:more-vertical-fill" />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setInfoDialogOpen(true);
+                      handleMenuClose();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Iconify
+                        icon="eva:info-outline"
+                        sx={{ color: 'text.secondary' }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText>Agent Information</ListItemText>
+                  </MenuItem>
+                  {!currentAgent?.cloned_template_id && (
+                    <MenuItem
+                      onClick={() => {
+                        handleVersionHistory();
+                        handleMenuClose();
+                      }}
+                    >
+                      <ListItemIcon>
+                        <Iconify
+                          icon="mdi:history"
+                          sx={{ color: 'text.secondary' }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText>Version History</ListItemText>
+                    </MenuItem>
+                  )}
+                  <MenuItem
+                    onClick={() => {
+                      setDeleteDialog(true);
+                      handleMenuClose();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Iconify
+                        icon="eva:trash-2-outline"
+                        sx={{ color: 'error.main' }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText sx={{ color: 'error.main' }}>Delete Agent</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </>
+            )}
+
+            <Button
+              onClick={handleTestAgent}
               variant="soft"
               color="inherit"
               size={isMobile ? 'small' : 'medium'}
-              startIcon={<Iconify icon="eva:share-fill" />}
+              startIcon={<Iconify icon="eva:play-circle-outline" />}
+              sx={{
+                minWidth: 'auto',
+                px: isMobile ? 1 : 2,
+              }}
             >
-              {isMobile ? 'Share' : 'Share Agent'}
-            </Button> */}
+              {isMobile ? 'Test' : 'Test Agent'}
+            </Button>
           </Box>
         </Box>
       </Box>
@@ -636,7 +731,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
                       onClick={() =>
-                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
+                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
+                      }
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >
