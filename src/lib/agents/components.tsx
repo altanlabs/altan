@@ -441,7 +441,7 @@ export function Room(props: RoomProps): React.JSX.Element {
 
   // Helper function to get position styles
   const getPositionStyles = () => {
-    // On mobile, always use fullscreen positioning
+    // On mobile, always use fullscreen positioning with dynamic viewport height
     if (isMobile()) {
       return {
         top: '0',
@@ -481,13 +481,13 @@ export function Room(props: RoomProps): React.JSX.Element {
 
   // Helper function to get widget dimensions based on width
   const getWidgetDimensions = () => {
-    // On mobile, use fullscreen dimensions
+    // On mobile, use fullscreen dimensions with dynamic viewport height
     if (isMobile()) {
       return {
         textFieldWidth: 'calc(100vw - 40px)',
         textFieldMinWidth: '280px',
         roomWidth: '100vw',
-        roomHeight: '100vh',
+        roomHeight: '100dvh', // Dynamic viewport height automatically handles browser UI
       };
     }
 
@@ -540,10 +540,12 @@ export function Room(props: RoomProps): React.JSX.Element {
               position: 'fixed',
               ...(isMobile() ? {
                 bottom: '20px',
-                left: '20px',
-                right: '20px',
+                left: '50%',
+                right: 'auto',
                 top: 'auto',
-                transform: 'none',
+                transform: 'translateX(-50%)',
+                width: 'calc(100vw - 40px)',
+                maxWidth: '350px',
               } : positionStyles),
               zIndex: 1001,
               display: 'flex',
@@ -763,6 +765,16 @@ export function Room(props: RoomProps): React.JSX.Element {
                           guest: authData.guest,
                           user: null,
                           success: true,
+                        },
+                        '*',
+                      );
+
+                      // Inform iframe about mobile mode for internal UI adjustments
+                      iframe.postMessage(
+                        {
+                          type: 'mobile_mode_status',
+                          isMobile: isMobile(),
+                          viewportHeight: window.innerHeight,
                         },
                         '*',
                       );
