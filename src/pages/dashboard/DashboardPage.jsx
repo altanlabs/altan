@@ -163,15 +163,13 @@ const DashboardPage = () => {
                       mb: 1,
                     }}
                   >
-                    {mode === 'agents' && isAuthenticated && user?.first_name && user?.last_name
-                      ? 'What can I do for you?'
-                      : translate(
-                          mode === 'agents'
-                            ? 'dashboard.agents.title'
-                            : mode === 'flows'
-                              ? 'dashboard.flows.title'
-                              : 'dashboard.createAnything.title',
-                        )}
+                    {translate(
+                      mode === 'agents'
+                        ? 'dashboard.agents.title'
+                        : mode === 'flows'
+                          ? 'dashboard.flows.title'
+                          : 'dashboard.createAnything.title'
+                    )}
                   </Typography>
                   <Typography
                     variant="h6"
@@ -182,15 +180,13 @@ const DashboardPage = () => {
                       mb: 2,
                     }}
                   >
-                    {mode === 'agents' && isAuthenticated && user?.first_name && user?.last_name
-                      ? 'Chat with your agents to get the job done'
-                      : translate(
-                          mode === 'agents'
-                            ? 'dashboard.agents.subtitle'
-                            : mode === 'flows'
-                              ? 'dashboard.flows.subtitle'
-                              : 'dashboard.createAnything.subtitle',
-                        )}
+                    {translate(
+                      mode === 'agents'
+                        ? 'dashboard.agents.subtitle'
+                        : mode === 'flows'
+                          ? 'dashboard.flows.subtitle'
+                          : 'dashboard.createAnything.subtitle'
+                    )}
                   </Typography>
                   {/* Only show original voice component when not floating or when not in voice mode */}
                   {isVoice ? (
