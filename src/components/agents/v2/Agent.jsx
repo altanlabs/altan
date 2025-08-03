@@ -391,52 +391,68 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 }}
               />
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <input
-                  type="text"
-                  style={{
-                    fontSize: isMobile ? '1rem' : '1.25rem',
-                    fontWeight: 'bold',
-                    color: theme.palette.text.primary,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    borderBottom: '2px solid transparent',
-                    minWidth: 0,
-                    width: '100%',
-                  }}
+                <TextField
+                  variant="standard"
                   value={agentData.name || ''}
                   onChange={(e) => handleFieldChange('name', e.target.value)}
                   placeholder="Agent Name"
-                  onFocus={(e) => {
-                    e.target.style.borderBottomColor = theme.palette.primary.main;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderBottomColor = 'transparent';
+                  fullWidth
+                  InputProps={{
+                    disableUnderline: true,
+                    sx: {
+                      fontSize: isMobile ? '1rem' : '1.25rem',
+                      fontWeight: 'bold',
+                      color: theme.palette.text.primary,
+                      '&:before, &:after': {
+                        display: 'none',
+                      },
+                      '& input': {
+                        padding: isMobile ? '8px 4px' : '4px 0px',
+                        fontSize: isMobile ? '1rem' : '1.25rem',
+                        fontWeight: 'bold',
+                        color: theme.palette.text.primary,
+                        borderBottom: '2px solid transparent',
+                        '&:focus': {
+                          borderBottomColor: theme.palette.primary.main,
+                        },
+                        '&::placeholder': {
+                          color: theme.palette.text.disabled,
+                          opacity: 0.8,
+                        },
+                      },
+                    },
                   }}
                 />
-                <input
-                  type="text"
-                  style={{
-                    fontSize: isMobile ? '0.75rem' : '0.875rem',
-                    color: theme.palette.text.secondary,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    borderBottom: '1px solid transparent',
-                    marginTop: '4px',
-                    minWidth: 0,
-                    width: '100%',
-                  }}
+                <TextField
+                  variant="standard"
                   value={agentData.description || ''}
                   onChange={(e) => handleFieldChange('description', e.target.value)}
                   placeholder="Agent description"
-                  onFocus={(e) => {
-                    e.target.style.borderBottomColor = theme.palette.primary.main;
-                    e.target.style.color = theme.palette.text.primary;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderBottomColor = 'transparent';
-                    e.target.style.color = theme.palette.text.secondary;
+                  fullWidth
+                  InputProps={{
+                    disableUnderline: true,
+                    sx: {
+                      fontSize: isMobile ? '0.875rem' : '0.875rem',
+                      color: theme.palette.text.secondary,
+                      '&:before, &:after': {
+                        display: 'none',
+                      },
+                      '& input': {
+                        padding: isMobile ? '8px 4px' : '4px 0px',
+                        fontSize: isMobile ? '0.875rem' : '0.875rem',
+                        color: theme.palette.text.secondary,
+                        borderBottom: '1px solid transparent',
+                        marginTop: '4px',
+                        '&:focus': {
+                          borderBottomColor: theme.palette.primary.main,
+                          color: theme.palette.text.primary,
+                        },
+                        '&::placeholder': {
+                          color: theme.palette.text.disabled,
+                          opacity: 0.7,
+                        },
+                      },
+                    },
                   }}
                 />
               </Box>
@@ -730,9 +746,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   readOnly: true,
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
-                      onClick={() =>
-                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
-                      }
+                      onClick={() => handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >
