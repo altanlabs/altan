@@ -39,7 +39,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(() => <div className="h-[170px]" />);
+const Footer = memo(() => <div className="h-[20px]" />);
 Footer.displayName = 'Footer';
 
 const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
