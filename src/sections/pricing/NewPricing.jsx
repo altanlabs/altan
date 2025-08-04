@@ -29,6 +29,7 @@ import { optimai, optimai_shop } from '../../utils/axios';
 // ----------------------------------------------------------------------
 
 const PRO_FEATURES = [
+  { text: '25€ in credits included', available: true },
   { text: 'Autopilot mode', available: true },
   { text: 'Private projects', available: true },
   { text: 'Custom domains', available: true },
@@ -389,7 +390,6 @@ export default function NewPricing() {
   };
 
   const currentGrowthPlan = growthPlans[selectedGrowthTier];
-  const proBillingOption = getBillingOption(proPlan, 'monthly');
   const growthBillingOption = getBillingOption(currentGrowthPlan, 'monthly');
 
   if (!proPlan || growthPlans.length === 0 || !enterprisePlan) {
@@ -435,22 +435,34 @@ export default function NewPricing() {
         {/* Pro Plan */}
         <PricingCard
           title="Pro"
-          price={proBillingOption ? formatPrice(proBillingOption.price, 'monthly') : 0}
+          price={1}
           description={proPlan?.description}
           priceSubtext={
-            proBillingOption ? (
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'success.main',
-                  fontWeight: 600,
-                }}
-              >
-                + €
-                {Math.round(proPlan.credits / 100 - formatPrice(proBillingOption.price, 'monthly'))}{' '}
-                free credits
-              </Typography>
-            ) : null
+            <Stack spacing={1}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    textDecoration: 'line-through',
+                  }}
+                >
+                  €25/mo
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: 'primary.lighter',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                  }}
+                >
+                  First month offer
+                </Typography>
+              </Stack>
+            </Stack>
           }
           features={PRO_FEATURES}
           buttonText="Choose Plan"

@@ -110,9 +110,7 @@ export const fetchAgentDetails = (agentId) => async (dispatch, getState) => {
 
     if (agent) {
       const { account } = getState().general;
-      const dmResponse = await optimai.get(
-        `/agent/${agent.id}/dm?account_id=${account.id}`,
-      );
+      const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
 
       dispatch(
         slice.actions.setAgent({
@@ -170,33 +168,37 @@ export const deleteAgent = (agentId) => async (dispatch) => {
   }
 };
 
-export const fetchVoices = (search = '', loadMore = false) => async (dispatch, getState) => {
-  const { voices } = getState().agents;
+export const fetchVoices =
+  (search = '', loadMore = false) =>
+  async (dispatch, getState) => {
+    const { voices } = getState().agents;
 
-  if (!loadMore) {
-    dispatch(slice.actions.startLoadingVoices());
-  }
-
-  try {
-    const params = {};
-    if (search) params.search = search;
-    if (loadMore && voices.nextPageToken) {
-      params.next_page_token = voices.nextPageToken;
+    if (!loadMore) {
+      dispatch(slice.actions.startLoadingVoices());
     }
 
-    const response = await optimai.get('/agent/list-voices', { params });
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (loadMore && voices.nextPageToken) {
+        params.next_page_token = voices.nextPageToken;
+      }
 
-    dispatch(slice.actions.loadVoicesSuccess({
-      items: response.data.voices,
-      hasMore: response.data.has_more,
-      nextPageToken: response.data.next_page_token || null,
-      searchQuery: search,
-    }));
-  } catch (error) {
-    const errorMessage = error.response?.data?.detail || error.message;
-    dispatch(slice.actions.loadVoicesError(errorMessage));
-    throw errorMessage;
-  }
-};
+      const response = await optimai.get('/agent/list-voices', { params });
+
+      dispatch(
+        slice.actions.loadVoicesSuccess({
+          items: response.data.voices,
+          hasMore: response.data.has_more,
+          nextPageToken: response.data.next_page_token || null,
+          searchQuery: search,
+        }),
+      );
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.message;
+      dispatch(slice.actions.loadVoicesError(errorMessage));
+      throw errorMessage;
+    }
+  };
 
 export const { setAgents, resetVoices } = slice.actions;

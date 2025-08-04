@@ -199,7 +199,13 @@ const TabBar = ({
   const tabWidth = calculateTabWidth();
 
   // If no tabs and no action buttons are enabled, don't render anything
-  if (tabs.length === 0 && !showHistoryButton && !showMembersButton && !showSettingsButton && !showCloseButton) {
+  if (
+    tabs.length === 0 &&
+    !showHistoryButton &&
+    !showMembersButton &&
+    !showSettingsButton &&
+    !showCloseButton
+  ) {
     return null;
   }
 

@@ -475,7 +475,7 @@ function ProjectHeader() {
                     onUpgrade={() => history.push('/pricing')}
                   />
 
-                  <Button
+                  {/* <Button
                     size="small"
                     color="inherit"
                     variant="soft"
@@ -483,7 +483,7 @@ function ProjectHeader() {
                     onClick={() => history.push('/pricing')}
                   >
                     Upgrade
-                  </Button>
+                  </Button> */}
 
                   <Button
                     size="small"

@@ -1,5 +1,5 @@
 import { Box, Skeleton } from '@mui/material';
-import { memo, useMemo, useState, useCallback, useEffect } from 'react';
+import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 
 import AltanerSection from './AltanerSection';
 import TemplateDetailsDialog from './TemplateDetailsDialog';
@@ -30,177 +30,228 @@ function getCoverUrl(template) {
   return template.parent?.cover_url || '/assets/placeholder.svg';
 }
 
-const AltanerSectionCategory = memo(({ category, title, initialExpanded = false, onTemplateClick }) => {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+const AltanerSectionCategory = memo(
+  ({ category, title, initialExpanded = false, onTemplateClick }) => {
+    const [isExpanded, setIsExpanded] = useState(initialExpanded);
+    const [templates, setTemplates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [hasMore, setHasMore] = useState(false);
+    const offsetRef = useRef(0);
 
-  const handleToggleExpanded = useCallback(() => {
-    setIsExpanded((prev) => !prev);
-  }, []);
+    const handleToggleExpanded = useCallback(() => {
+      setIsExpanded((prev) => !prev);
+    }, []);
 
-  const handleCloseDialog = useCallback(() => {
-    setDialogOpen(false);
-    setSelectedTemplate(null);
-  }, []);
+    const handleCloseDialog = useCallback(() => {
+      setDialogOpen(false);
+      setSelectedTemplate(null);
+    }, []);
 
-  const handleTemplateClick = useCallback(
-    (templateId) => {
-      // If external onTemplateClick handler is provided, use it instead
-      if (onTemplateClick) {
-        onTemplateClick(templateId);
-        return;
-      }
+    const handleTemplateClick = useCallback(
+      (templateId) => {
+        // If external onTemplateClick handler is provided, use it instead
+        if (onTemplateClick) {
+          onTemplateClick(templateId);
+          return;
+        }
 
-      // Fallback to local dialog handling for backward compatibility
-      const template = templates.find((t) => t.id === templateId);
-      if (template) {
-        const transformedTemplate = transformTemplateForDisplay(template);
-        setSelectedTemplate(transformedTemplate);
-        setDialogOpen(true);
-      }
-    },
-    [templates, onTemplateClick],
-  );
-
-  // Fetch templates for this specific category
-  const fetchCategoryTemplates = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        limit: '50',
-        offset: '0',
-        template_type: 'altaner',
-      });
-
-      // Add category filter for specific categories
-      if (category && category !== 'uncategorized') {
-        params.append('category', category);
-      }
-
-      const response = await optimai_shop.get(`/v2/templates/list?${params}`);
-      const fetchedTemplates = response?.data?.templates || [];
-
-      // For uncategorized, we need to filter out templates that have categories
-      let filteredTemplates = fetchedTemplates;
-      if (category === 'uncategorized') {
-        filteredTemplates = fetchedTemplates.filter((template) => {
-          const templateCategory = template.meta_data?.category?.toLowerCase();
-          return !templateCategory || templateCategory === '';
-        });
-      }
-
-      // Filter templates that have cover_url for better display
-      const templatesWithCovers = filteredTemplates.filter((template) => {
-        return getCoverUrl(template) !== '/assets/placeholder.svg';
-      });
-
-      setTemplates(templatesWithCovers);
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        setTemplates([]);
-      } else {
-        setError('Failed to load templates');
-        setTemplates([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [category]);
-
-  useEffect(() => {
-    fetchCategoryTemplates();
-  }, [fetchCategoryTemplates]);
-
-  // Transform templates for display
-  const categoryTemplates = useMemo(() => {
-    return templates.map(transformTemplateForDisplay);
-  }, [templates]);
-
-  // Loading skeleton
-  if (loading) {
-    return (
-      <Box sx={{ width: '100%' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Skeleton
-            variant="text"
-            width={150}
-            height={32}
-          />
-          <Skeleton
-            variant="text"
-            width={100}
-            height={24}
-          />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
-          {[...Array(3)].map((_, i) => ( // Reduced from 4 to 3 cards since they're bigger
-            <Box
-              key={i}
-              sx={{ minWidth: 280, flexShrink: 0 }} // Updated to match new card size
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', p: 2 }}>
-                <Skeleton
-                  variant="rectangular"
-                  width="100%"
-                  height={150} // Increased height for bigger cards
-                  sx={{ mb: 2, borderRadius: 1 }}
-                />
-                <Skeleton
-                  variant="text"
-                  width="80%"
-                  height={20}
-                  sx={{ mb: 1 }}
-                />
-                <Skeleton
-                  variant="text"
-                  width="60%"
-                  height={16}
-                />
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      </Box>
+        // Fallback to local dialog handling for backward compatibility
+        const template = templates.find((t) => t.id === templateId);
+        if (template) {
+          const transformedTemplate = transformTemplateForDisplay(template);
+          setSelectedTemplate(transformedTemplate);
+          setDialogOpen(true);
+        }
+      },
+      [templates, onTemplateClick],
     );
-  }
 
-  // Handle error state
-  if (error) {
-    return null; // Silently fail for now - could show error message if needed
-  }
+    // Fetch templates for this specific category
+    const fetchCategoryTemplates = useCallback(
+      async (loadMore = false) => {
+        if (loadMore) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+          offsetRef.current = 0;
+        }
+        setError(null);
 
-  // Don't render if no templates in this category
-  if (!loading && categoryTemplates.length === 0) {
-    return null;
-  }
+        try {
+          const currentOffset = loadMore ? offsetRef.current : 0;
+          const params = new URLSearchParams({
+            limit: '50',
+            offset: currentOffset.toString(),
+            template_type: 'altaner',
+          });
 
-  // Use the provided title or capitalize the category name
-  const sectionTitle = title || category.charAt(0).toUpperCase() + category.slice(1);
+          // Add category filter for specific categories
+          if (category && category !== 'uncategorized') {
+            params.append('category', category);
+          }
 
-  return (
-    <>
-      <AltanerSection
-        title={sectionTitle}
-        templates={categoryTemplates}
-        isExpanded={isExpanded}
-        onToggleExpanded={handleToggleExpanded}
-        onTemplateClick={handleTemplateClick}
-      />
+          const response = await optimai_shop.get(`/v2/templates/list?${params}`);
+          const fetchedTemplates = response?.data?.templates || [];
+          const totalCount = response?.data?.total_count || 0;
 
-      <TemplateDetailsDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        templateData={selectedTemplate}
-      />
-    </>
-  );
-});
+          // For uncategorized, we need to filter out templates that have categories
+          let filteredTemplates = fetchedTemplates;
+          if (category === 'uncategorized') {
+            filteredTemplates = fetchedTemplates.filter((template) => {
+              const templateCategory = template.meta_data?.category?.toLowerCase();
+              return !templateCategory || templateCategory === '';
+            });
+          }
+
+          // Filter templates that have cover_url for better display
+          // For uncategorized, be more lenient with cover images
+          const templatesWithCovers = filteredTemplates.filter((template) => {
+            if (category === 'uncategorized') {
+              return true; // Show all uncategorized templates regardless of cover
+            }
+            return getCoverUrl(template) !== '/assets/placeholder.svg';
+          });
+
+          if (loadMore) {
+            setTemplates((prev) => [...prev, ...templatesWithCovers]);
+            offsetRef.current += 50; // Always increment by API page size
+          } else {
+            setTemplates(templatesWithCovers);
+            offsetRef.current = 50; // Next page starts at 50
+          }
+
+          // Check if there are more templates to load
+          // We have more if we got a full batch of 50 from the API (indicating more pages exist)
+          setHasMore(fetchedTemplates.length === 50);
+        } catch (err) {
+          if (err.response && err.response.status === 404) {
+            if (!loadMore) setTemplates([]);
+            setHasMore(false);
+          } else {
+            setError('Failed to load templates');
+            if (!loadMore) setTemplates([]);
+            setHasMore(false);
+          }
+        } finally {
+          if (loadMore) {
+            setLoadingMore(false);
+          } else {
+            setLoading(false);
+          }
+        }
+      },
+      [category],
+    );
+
+    const handleLoadMore = useCallback(() => {
+      if (!loadingMore && hasMore && category === 'uncategorized') {
+        fetchCategoryTemplates(true);
+      }
+    }, [loadingMore, hasMore, category, fetchCategoryTemplates]);
+
+    useEffect(() => {
+      fetchCategoryTemplates(false);
+    }, [fetchCategoryTemplates]); // Include fetchCategoryTemplates to satisfy linter
+
+    // Transform templates for display
+    const categoryTemplates = useMemo(() => {
+      return templates.map(transformTemplateForDisplay);
+    }, [templates]);
+
+    // Loading skeleton
+    if (loading) {
+      return (
+        <Box sx={{ width: '100%' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+          >
+            <Skeleton
+              variant="text"
+              width={150}
+              height={32}
+            />
+            <Skeleton
+              variant="text"
+              width={100}
+              height={24}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
+            {[...Array(3)].map(
+              (
+                _,
+                i, // Reduced from 4 to 3 cards since they're bigger
+              ) => (
+                <Box
+                  key={i}
+                  sx={{ minWidth: 280, flexShrink: 0 }} // Updated to match new card size
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', p: 2 }}>
+                    <Skeleton
+                      variant="rectangular"
+                      width="100%"
+                      height={150} // Increased height for bigger cards
+                      sx={{ mb: 2, borderRadius: 1 }}
+                    />
+                    <Skeleton
+                      variant="text"
+                      width="80%"
+                      height={20}
+                      sx={{ mb: 1 }}
+                    />
+                    <Skeleton
+                      variant="text"
+                      width="60%"
+                      height={16}
+                    />
+                  </Box>
+                </Box>
+              ),
+            )}
+          </Box>
+        </Box>
+      );
+    }
+
+    // Handle error state
+    if (error) {
+      return null; // Silently fail for now - could show error message if needed
+    }
+
+    // Don't render if no templates in this category (except for uncategorized - always show it)
+    if (!loading && categoryTemplates.length === 0 && category !== 'uncategorized') {
+      return null;
+    }
+
+    // Use the provided title or capitalize the category name
+    const sectionTitle = title || category.charAt(0).toUpperCase() + category.slice(1);
+
+    return (
+      <>
+        <AltanerSection
+          title={sectionTitle}
+          templates={categoryTemplates}
+          isExpanded={isExpanded}
+          onToggleExpanded={handleToggleExpanded}
+          onTemplateClick={handleTemplateClick}
+          showLoadMore={category === 'uncategorized' && hasMore}
+          onLoadMore={handleLoadMore}
+          loadingMore={loadingMore}
+        />
+
+        <TemplateDetailsDialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          templateData={selectedTemplate}
+        />
+      </>
+    );
+  },
+);
 
 AltanerSectionCategory.displayName = 'AltanerSectionCategory';
 

@@ -268,4 +268,4 @@ The example above will create an error:
 [@Interface](/member/your-name-id)
 ```
 
-Be excellent.
+Be excellent and create responsive, functional and sleek frontend!

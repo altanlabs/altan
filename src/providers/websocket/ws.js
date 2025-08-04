@@ -171,7 +171,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('data', data);
+  // console.log('data', data.type);
   // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':
@@ -337,6 +337,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addSubscription(data.data.attributes));
       break;
     case 'SubscriptionUpdate':
+      console.log('SubscriptionUpdate', data);
       dispatch(
         updateSubscription({
           id: data.data.ids[0],

@@ -27,6 +27,10 @@ const ar = {
     removeFile: 'إزالة الملف',
     startTalking: 'ابدأ بالحديث...',
   },
+  creditWallet: {
+    upgradeText: 'انتقل إلى Pro مقابل 1$ واحصل على 25$ رصيد.',
+    upgradeButton: 'الانتقال إلى Pro',
+  },
 };
 
 export default ar;

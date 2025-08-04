@@ -27,6 +27,10 @@ const vi = {
     removeFile: 'Xóa tệp',
     startTalking: 'Bắt đầu nói...',
   },
+  creditWallet: {
+    upgradeText: 'Nâng cấp lên Pro chỉ với $1 và nhận $25 tín dụng.',
+    upgradeButton: 'Nâng cấp lên Pro',
+  },
 };
 
 export default vi;

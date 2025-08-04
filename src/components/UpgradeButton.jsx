@@ -2,6 +2,7 @@ import { Box, Stack, Tooltip, Typography, LinearProgress, Button, Chip } from '@
 import { PieChart } from '@mui/x-charts';
 import { memo, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
+
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
 import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
@@ -111,7 +112,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
                 color="text.primary"
                 sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
-                €{formatCredits(creditInfo.remaining + creditBalance/100)}
+                €{(creditInfo.remaining + creditBalance / 100).toFixed(2)}
               </Typography>
               <Typography
                 variant="body2"

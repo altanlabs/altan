@@ -5,11 +5,7 @@ import { cn } from '@lib/utils';
 
 import { TabBar } from '../../components/tabs';
 import { useTabPersistence } from '../../hooks/useTabPersistence';
-import {
-  selectTabsCount,
-  selectMainThread,
-  createTab,
-} from '../../redux/slices/room';
+import { selectTabsCount, selectMainThread, createTab } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 
 const GeneralToolbar = ({
@@ -30,11 +26,13 @@ const GeneralToolbar = ({
   useEffect(() => {
     if (mainThread && tabsCount === 0) {
       // Create initial tab for main thread
-      dispatch(createTab({
-        threadId: mainThread,
-        threadName: 'Main',
-        isMainThread: true,
-      }));
+      dispatch(
+        createTab({
+          threadId: mainThread,
+          threadName: 'Main',
+          isMainThread: true,
+        }),
+      );
     }
   }, [mainThread, tabsCount]);
 

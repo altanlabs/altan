@@ -4,6 +4,7 @@ import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
 
 import AttachmentHandler from './attachment/AttachmentHandler.jsx';
 import AuthorizationRequests from './AuthorizationRequests.jsx';
+import CreditWallet from './CreditWallet.jsx';
 // import AssistantInputMenu from './AssistantInputMenu';
 import Editor from './editor/Editor.tsx';
 import Iconify from './iconify/Iconify.jsx';
@@ -267,13 +268,7 @@ const FloatingTextArea = ({
       ) : (
         <>
           <AuthorizationRequests />
-          {/* <AcceptChanges
-            stats={{
-              files: 2,
-              additions: 111,
-              deletions: 61,
-            }}
-          /> */}
+          
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
@@ -297,6 +292,7 @@ const FloatingTextArea = ({
                 : undefined
             }
           >
+            <CreditWallet />
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3 px-4">
                 {attachments.map((attachment, index) => {

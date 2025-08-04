@@ -27,6 +27,10 @@ const cn = {
     removeFile: '删除文件',
     startTalking: '开始说话...',
   },
+  creditWallet: {
+    upgradeText: '升级到专业版仅需1美元，获得25美元积分。',
+    upgradeButton: '升级到专业版',
+  },
 };
 
 export default cn;

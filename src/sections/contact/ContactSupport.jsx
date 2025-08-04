@@ -17,9 +17,16 @@ export default function ContactSupport() {
     {
       icon: 'ri:discord-fill',
       title: 'Discord Community',
-      description: 'Join our Discord and get 5€ in credits',
+      description: 'Join our Discord community',
       href: 'https://discord.com/invite/2zPbKuukgx',
       iconColor: '#5865f2', // Discord brand color
+    },
+    {
+      icon: 'ri:whatsapp-fill',
+      title: 'Chat on WhatsApp',
+      description: 'Get quick support via WhatsApp',
+      href: 'https://chat.whatsapp.com/Jx3X3vP9A6i5pZerCq8xUl?mode=ac_t',
+      iconColor: '#25d366', // WhatsApp green
     },
     {
       icon: 'mdi:book-open-page-variant',
@@ -32,15 +39,8 @@ export default function ContactSupport() {
       icon: 'mdi:calendar-clock',
       title: 'Book a Call',
       description: 'Schedule a free strategy call with our experts',
-      href: 'https://calendly.com/david-altan/15-min-enterprise-call-clone',
+      href: 'https://calendar.app.google/WAMez8wYG6sHXQRD9',
       iconColor: '#2196f3', // Blue
-    },
-    {
-      icon: 'ri:whatsapp-fill',
-      title: 'Chat on WhatsApp',
-      description: 'Get quick support via WhatsApp',
-      href: 'https://chat.whatsapp.com/Jx3X3vP9A6i5pZerCq8xUl?mode=ac_t',
-      iconColor: '#25d366', // WhatsApp green
     },
   ];
 
@@ -136,13 +136,22 @@ export default function ContactSupport() {
             Direct Contact
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary' }}
+            >
               <strong>Email:</strong> contact@altan.ai
             </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary' }}
+            >
               <strong>Address:</strong> 2055 Limestone Rd, Wilmington, Delaware 19808
             </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary' }}
+            >
               <strong>Company:</strong> Altan Labs Inc.
             </Typography>
           </Box>
@@ -150,4 +159,4 @@ export default function ContactSupport() {
       </Container>
     </StyledRoot>
   );
-} 
+}

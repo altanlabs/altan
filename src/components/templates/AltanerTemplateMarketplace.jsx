@@ -66,19 +66,22 @@ const AltanerTemplateMarketplace = () => {
   }, [location.search, selectedTemplateId]);
 
   // Handle template click - append query parameter
-  const handleTemplateClick = useCallback((templateId) => {
-    // Update URL with template parameter
-    const newSearchParams = new URLSearchParams(location.search);
-    newSearchParams.set('template', templateId);
+  const handleTemplateClick = useCallback(
+    (templateId) => {
+      // Update URL with template parameter
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.set('template', templateId);
 
-    // Navigate to URL with template parameter
-    history.push({
-      pathname: location.pathname,
-      search: newSearchParams.toString(),
-    });
+      // Navigate to URL with template parameter
+      history.push({
+        pathname: location.pathname,
+        search: newSearchParams.toString(),
+      });
 
-    // The useEffect will handle opening the dialog
-  }, [history, location.pathname, location.search]);
+      // The useEffect will handle opening the dialog
+    },
+    [history, location.pathname, location.search],
+  );
 
   // Handle dialog close - remove query parameter
   const handleCloseDialog = useCallback(() => {
@@ -136,14 +139,15 @@ const AltanerTemplateMarketplace = () => {
           ))}
 
           {/* Uncategorized section - for templates without a specific category */}
-          <Box>
+
+          {/* <Box>
             <AltanerSectionCategory
               category="uncategorized"
               title="From the community"
               initialExpanded={false}
               onTemplateClick={handleTemplateClick}
             />
-          </Box>
+          </Box> */}
         </Stack>
       </Box>
 

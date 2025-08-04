@@ -8,6 +8,7 @@ import GitHubRepoDialog from './GitHubRepoDialog';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
 import { selectIsAccountFree } from '../../../../redux/slices/general';
 import { useSelector } from '../../../../redux/store';
+import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
 
 // Helper function to get the appropriate icon based on file type
 const getFileIcon = (type) => {
@@ -547,7 +548,7 @@ function TextAreaWithButtons({
       />
 
       {/* Autopilot Upgrade Dialog */}
-      <AutopilotUpgradeDialog
+      <UpgradeDialog
         open={autopilotUpgradePopup}
         onClose={() => setAutopilotUpgradePopup(false)}
       />

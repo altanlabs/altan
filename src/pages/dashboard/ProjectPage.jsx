@@ -224,7 +224,7 @@ export default function ProjectPage() {
             className="absolute bottom-0 left-0 right-0"
             style={{
               zIndex: 1000,
-              transform: 'translate3d(0, 0, 0)', // Hardware acceleration
+              transform: 'translate3d(0, 0, 0)', 
               WebkitTransform: 'translate3d(0, 0, 0)',
             }}
           >
@@ -262,7 +262,7 @@ export default function ProjectPage() {
             >
               {/* Chat Panel */}
               <Panel
-                defaultSize={35}
+                defaultSize={40}
                 minSize={20}
                 maxSize={65}
                 className="overflow-hidden"

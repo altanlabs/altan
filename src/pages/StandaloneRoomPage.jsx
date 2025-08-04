@@ -31,15 +31,24 @@ export default function StandaloneRoomPage() {
     const params = new URLSearchParams(location.search);
     return {
       tabs: params.get('tabs') !== null ? params.get('tabs') === 'true' : undefined,
-      conversation_history: params.get('conversation_history') !== null ? params.get('conversation_history') === 'true' : undefined,
+      conversation_history:
+        params.get('conversation_history') !== null
+          ? params.get('conversation_history') === 'true'
+          : undefined,
       members: params.get('members') !== null ? params.get('members') === 'true' : undefined,
       settings: params.get('settings') !== null ? params.get('settings') === 'true' : undefined,
-      show_close_button: params.get('show_close_button') !== null ? params.get('show_close_button') === 'true' : undefined,
+      show_close_button:
+        params.get('show_close_button') !== null
+          ? params.get('show_close_button') === 'true'
+          : undefined,
       theme: parseStringParam(params.get('theme')),
       title: parseStringParam(params.get('title')),
       description: parseStringParam(params.get('description')),
-      suggestions: params.get('suggestions') ? JSON.parse(decodeURIComponent(params.get('suggestions'))) : undefined,
-      voice_enabled: params.get('voice_enabled') !== null ? params.get('voice_enabled') === 'true' : undefined,
+      suggestions: params.get('suggestions')
+        ? JSON.parse(decodeURIComponent(params.get('suggestions')))
+        : undefined,
+      voice_enabled:
+        params.get('voice_enabled') !== null ? params.get('voice_enabled') === 'true' : undefined,
     };
   }, [location.search]);
 
@@ -60,7 +69,7 @@ export default function StandaloneRoomPage() {
   // Merge default config with query parameters (query params take precedence)
   const config = useMemo(() => {
     const merged = { ...defaultConfig };
-    Object.keys(queryParams).forEach(key => {
+    Object.keys(queryParams).forEach((key) => {
       if (queryParams[key] !== undefined) {
         merged[key] = queryParams[key];
       }
@@ -87,7 +96,11 @@ export default function StandaloneRoomPage() {
 
     // Cleanup function to restore original theme when component unmounts
     return () => {
-      if (hasAppliedThemeRef.current && originalThemeRef.current && originalThemeRef.current !== globalThemeMode) {
+      if (
+        hasAppliedThemeRef.current &&
+        originalThemeRef.current &&
+        originalThemeRef.current !== globalThemeMode
+      ) {
         onChangeMode(originalThemeRef.current);
       }
     };

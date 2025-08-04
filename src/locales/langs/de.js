@@ -27,6 +27,10 @@ const de = {
     removeFile: 'Datei entfernen',
     startTalking: 'Anfangen zu sprechen...',
   },
+  creditWallet: {
+    upgradeText: 'Wechseln Sie zu Pro für 1$ und erhalten Sie 25$ Guthaben.',
+    upgradeButton: 'Zu Pro wechseln',
+  },
 };
 
 export default de;

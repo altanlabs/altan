@@ -27,6 +27,10 @@ const ru = {
     removeFile: 'Удалить файл',
     startTalking: 'Начните говорить...',
   },
+  creditWallet: {
+    upgradeText: 'Перейдите на Pro за $1 и получите $25 кредитов.',
+    upgradeButton: 'Перейти на Pro',
+  },
 };
 
 export default ru; 

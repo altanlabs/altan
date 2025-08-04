@@ -27,6 +27,10 @@ const fr = {
     removeFile: 'Supprimer le fichier',
     startTalking: 'Commencez à parler...',
   },
+  creditWallet: {
+    upgradeText: 'Passez à Pro pour 1$ et obtenez 25$ de crédits.',
+    upgradeButton: 'Passer à Pro',
+  },
 };
 
 export default fr;

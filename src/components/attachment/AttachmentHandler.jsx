@@ -1,3 +1,4 @@
+import { useMediaQuery, useTheme } from '@mui/material';
 import { memo, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -28,6 +29,10 @@ const AttachmentHandler = ({
   setSelectedAgent = null,
   agents = [],
 }) => {
+  // Mobile detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // Voice conversation hooks
   const { enqueueSnackbar } = useSnackbar();
   const { isVoiceActive, isVoiceConnecting, startVoiceCall, stopVoiceCall } =
@@ -170,13 +175,15 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
             onFileInputClick={handleFileInputClick}
           />
 
-          <AgentSelectionChip
-            agents={agents}
-            selectedAgent={selectedAgent}
-            onAgentSelect={handleAgentSelect}
-            onAgentClear={handleAgentClear}
-            isVoiceActive={isVoiceActive}
-          />
+          {!isMobile && (
+            <AgentSelectionChip
+              agents={agents}
+              selectedAgent={selectedAgent}
+              onAgentSelect={handleAgentSelect}
+              onAgentClear={handleAgentClear}
+              isVoiceActive={isVoiceActive}
+            />
+          )}
         </div>
 
         {/* CENTER: Mobile toggle buttons */}

@@ -36,23 +36,6 @@ export default function PricingPage() {
               ? 'Access pro features and get monthly credits to spend across AI agents, database and tasks.'
               : 'Upgrade your plan or purchase additional credits for your AI agents and workflows.'}
           </Typography>
-          {/* Early Bird Discount Banner - Only show for free accounts */}
-          {isAccountFree && (
-            <Box sx={{ mb: 4, textAlign: 'center' }}>
-              <Chip
-                label="🎉 Early Bird 20% Lifetime Discount on All Plans"
-                color="primary"
-                variant="filled"
-                sx={{
-                  py: 2,
-                  px: 3,
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                }}
-              />
-            </Box>
-          )}
         </Stack>
 
         {/* Conditionally render based on account type */}
@@ -67,13 +50,13 @@ export default function PricingPage() {
             variant="body1"
             sx={{ color: 'text.secondary', mb: 2 }}
           >
-            All plans include our wallet system for transparent usage tracking
+            All plans include a credit wallet for transparent usage
           </Typography>
           <Typography
             variant="body2"
             sx={{ color: 'text.secondary' }}
           >
-            Auto-recharge available • 24h grace period • Soft-stop protection
+            Auto-recharge available • Cancel anytime • Soft-stop protection
           </Typography>
         </Box>
       </Container>

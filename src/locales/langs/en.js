@@ -27,6 +27,10 @@ const en = {
     removeFile: 'Remove file',
     startTalking: 'Start talking...',
   },
+  creditWallet: {
+    upgradeText: 'Upgrade for $1 and get $25 credits.',
+    upgradeButton: 'Upgrade',
+  },
 };
 
 export default en;

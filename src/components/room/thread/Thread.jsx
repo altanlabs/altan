@@ -103,12 +103,15 @@ const Thread = ({
 
   const handleLanguageChange = useCallback(
     (langValue) => {
-          onChangeLang(langValue);
-    handleLanguageMenuClose();
+      onChangeLang(langValue);
+      handleLanguageMenuClose();
 
-    // If voice is currently active, restart the call with the new language
+      // If voice is currently active, restart the call with the new language
       if (isVoiceActive && agents.length > 0) {
-        console.log('🔄 [Thread] Language changed during active voice call, restarting with new language:', langValue);
+        console.log(
+          '🔄 [Thread] Language changed during active voice call, restarting with new language:',
+          langValue,
+        );
         // Stop current call and restart with new language
         stopVoiceCall();
         // Add a small delay to ensure cleanup is complete before restarting
@@ -254,7 +257,7 @@ const Thread = ({
             position: 'relative',
             width: '100%',
             // Add bottom padding: always on mobile (fixed FloatingTextArea), or on desktop when input shown
-            paddingBottom: isMobile ? '120px' : (!hideInput ? '120px' : '0px'),
+            paddingBottom: isMobile ? '120px' : !hideInput ? '120px' : '0px',
             // Only hide if we're certain there are no messages AND not in drawer mode
             ...(!hasMessages ? { display: 'none' } : {}),
           }}
@@ -275,9 +278,7 @@ const Thread = ({
               {getEmptyStateTitle()}
             </h1>
             {description && !isVoiceConnecting && (
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                {description}
-              </p>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">{description}</p>
             )}
 
             {/* Voice Mode UI - Language Selector and Voice Shortcut */}
@@ -298,7 +299,10 @@ const Thread = ({
                       },
                     }}
                   >
-                    <Iconify icon={currentLang.icon} sx={{ width: 20, height: 20 }} />
+                    <Iconify
+                      icon={currentLang.icon}
+                      sx={{ width: 20, height: 20 }}
+                    />
                   </IconButton>
 
                   <Menu
@@ -387,9 +391,7 @@ const Thread = ({
         {/* Input container - always at bottom of viewport */}
         <div
           className={`${
-            isMobile
-              ? 'fixed bottom-0 left-0 right-0 z-50'
-              : 'absolute bottom-0 left-0 right-0'
+            isMobile ? 'fixed bottom-0 left-0 right-0 z-50' : 'absolute bottom-0 left-0 right-0'
           } flex items-center flex-col overflow-hidden transition-all duration-300${
             !isMobile ? ' px-2 py-2' : ''
           }`}

@@ -32,7 +32,6 @@ const TEST_CONFIG = {
 };
 
 export default function SDKTestPage() {
-  console.log("new log sdk page")
   // Configuration state for the form
   const [config, setConfig] = useState({
     mode: 'compact',
@@ -60,12 +59,12 @@ export default function SDKTestPage() {
 
   const handleConfigChange = (field) => (event) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setConfig(prev => ({ ...prev, [field]: value }));
+    setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   const addSuggestion = () => {
     if (newSuggestion.trim() && !config.suggestions.includes(newSuggestion.trim())) {
-      setConfig(prev => ({
+      setConfig((prev) => ({
         ...prev,
         suggestions: [...prev.suggestions, newSuggestion.trim()],
       }));
@@ -74,7 +73,7 @@ export default function SDKTestPage() {
   };
 
   const removeSuggestion = (index) => {
-    setConfig(prev => ({
+    setConfig((prev) => ({
       ...prev,
       suggestions: prev.suggestions.filter((_, i) => i !== index),
     }));
@@ -105,8 +104,14 @@ export default function SDKTestPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container
+      maxWidth="lg"
+      sx={{ py: 4 }}
+    >
+      <Typography
+        variant="h4"
+        gutterBottom
+      >
         Altan SDK - Compact Mode Configuration
       </Typography>
 
@@ -132,52 +137,110 @@ export default function SDKTestPage() {
           },
         }}
       >
-        <Typography variant="h6" gutterBottom>
+        <Typography
+          variant="h6"
+          gutterBottom
+        >
           Compact Mode Configuration
         </Typography>
 
         {/* Basic Settings */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={6}>
+        <Grid
+          container
+          spacing={2}
+          sx={{ mb: 2 }}
+        >
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.tabs} onChange={handleConfigChange('tabs')} />}
+              control={
+                <Switch
+                  checked={config.tabs}
+                  onChange={handleConfigChange('tabs')}
+                />
+              }
               label="Show Tabs"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.conversation_history} onChange={handleConfigChange('conversation_history')} />}
+              control={
+                <Switch
+                  checked={config.conversation_history}
+                  onChange={handleConfigChange('conversation_history')}
+                />
+              }
               label="Conversation History"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.members} onChange={handleConfigChange('members')} />}
+              control={
+                <Switch
+                  checked={config.members}
+                  onChange={handleConfigChange('members')}
+                />
+              }
               label="Show Members"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.settings} onChange={handleConfigChange('settings')} />}
+              control={
+                <Switch
+                  checked={config.settings}
+                  onChange={handleConfigChange('settings')}
+                />
+              }
               label="Show Settings"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.voice_enabled} onChange={handleConfigChange('voice_enabled')} />}
+              control={
+                <Switch
+                  checked={config.voice_enabled}
+                  onChange={handleConfigChange('voice_enabled')}
+                />
+              }
               label="Voice Enabled"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <FormControlLabel
-              control={<Switch checked={config.background_blur} onChange={handleConfigChange('background_blur')} />}
+              control={
+                <Switch
+                  checked={config.background_blur}
+                  onChange={handleConfigChange('background_blur')}
+                />
+              }
               label="Background Blur"
             />
           </Grid>
         </Grid>
 
         {/* Theme Selection */}
-        <FormControl fullWidth sx={{ mb: 2 }}>
+        <FormControl
+          fullWidth
+          sx={{ mb: 2 }}
+        >
           <InputLabel>Theme</InputLabel>
           <Select
             value={config.theme}
@@ -221,12 +284,22 @@ export default function SDKTestPage() {
         <Divider sx={{ my: 2 }} />
 
         {/* Styling Options */}
-        <Typography variant="subtitle1" gutterBottom>
+        <Typography
+          variant="subtitle1"
+          gutterBottom
+        >
           Styling Options
         </Typography>
 
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={6}>
+        <Grid
+          container
+          spacing={2}
+          sx={{ mb: 2 }}
+        >
+          <Grid
+            item
+            xs={6}
+          >
             <TextField
               fullWidth
               label="Primary Color"
@@ -235,7 +308,10 @@ export default function SDKTestPage() {
               type="color"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+          >
             <TextField
               fullWidth
               label="Background Color"
@@ -247,7 +323,10 @@ export default function SDKTestPage() {
         </Grid>
 
         {/* Position Selection */}
-        <FormControl fullWidth sx={{ mb: 2 }}>
+        <FormControl
+          fullWidth
+          sx={{ mb: 2 }}
+        >
           <InputLabel>Position</InputLabel>
           <Select
             value={config.position}
@@ -261,8 +340,15 @@ export default function SDKTestPage() {
         </FormControl>
 
         {/* Dimension Controls */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={4}>
+        <Grid
+          container
+          spacing={2}
+          sx={{ mb: 2 }}
+        >
+          <Grid
+            item
+            xs={4}
+          >
             <TextField
               fullWidth
               label="Widget Width"
@@ -274,7 +360,10 @@ export default function SDKTestPage() {
               }}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid
+            item
+            xs={4}
+          >
             <TextField
               fullWidth
               label="Room Width"
@@ -286,7 +375,10 @@ export default function SDKTestPage() {
               }}
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid
+            item
+            xs={4}
+          >
             <TextField
               fullWidth
               label="Room Height"
@@ -315,12 +407,19 @@ export default function SDKTestPage() {
         <Divider sx={{ my: 2 }} />
 
         {/* Suggestions */}
-        <Typography variant="subtitle1" gutterBottom>
+        <Typography
+          variant="subtitle1"
+          gutterBottom
+        >
           Message Suggestions
         </Typography>
 
         <Box sx={{ mb: 2 }}>
-          <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ mb: 1 }}
+          >
             <TextField
               size="small"
               label="Add suggestion"
@@ -329,12 +428,20 @@ export default function SDKTestPage() {
               onKeyPress={(e) => e.key === 'Enter' && addSuggestion()}
               sx={{ flexGrow: 1 }}
             />
-            <Button onClick={addSuggestion} variant="outlined">
+            <Button
+              onClick={addSuggestion}
+              variant="outlined"
+            >
               Add
             </Button>
           </Stack>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+            gap={1}
+          >
             {config.suggestions.map((suggestion, index) => (
               <Chip
                 key={index}
