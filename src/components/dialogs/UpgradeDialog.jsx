@@ -95,7 +95,6 @@ const UpgradeDialog = ({ open, onClose }) => {
           >
             Get €25 in credits + full access to all Pro features
           </Typography>
-
         </Box>
 
         {/* Features Section */}

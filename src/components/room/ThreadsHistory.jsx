@@ -44,6 +44,7 @@ const ThreadsHistory = ({
   title = null,
   description = null,
   suggestions = [],
+  renderCredits = false,
 }) => {
   const containerRef = useRef(null);
   const mainThread = useSelector(selectMainThread);
@@ -87,6 +88,7 @@ const ThreadsHistory = ({
             title={title}
             description={description}
             suggestions={suggestions}
+            renderCredits={renderCredits}
           />
         </div>
       )}

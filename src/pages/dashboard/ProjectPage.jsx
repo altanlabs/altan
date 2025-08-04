@@ -219,12 +219,13 @@ export default function ProjectPage() {
             previewComponent={previewComponent}
             isMobile={true}
             mobileActiveView={mobileActiveView}
+            renderCredits={true}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
             style={{
               zIndex: 1000,
-              transform: 'translate3d(0, 0, 0)', 
+              transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
             }}
           >
@@ -235,6 +236,7 @@ export default function ProjectPage() {
               containerRef={mobileContainerRef}
               mobileActiveView={mobileActiveView}
               onMobileToggle={handleMobileToggle}
+              renderCredits={true}
             />
           </div>
         </div>
@@ -280,6 +282,7 @@ export default function ProjectPage() {
                       key={altaner?.room_id}
                       roomId={altaner?.room_id}
                       header={false}
+                      renderCredits={true}
                     />
                   </Box>
                 )}
@@ -307,6 +310,7 @@ export default function ProjectPage() {
                   key={altaner?.room_id}
                   roomId={altaner?.room_id}
                   header={false}
+                  renderCredits={true}
                 />
               </Box>
             )

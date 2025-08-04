@@ -100,7 +100,7 @@ function PricingModal({ open, onClose }) {
         style={{
           width: '100vw',
           height: '100vh',
-          overflowY: 'auto', // Makes it scrollable on Y-axis when content exceeds
+          overflowY: 'auto',
           position: 'relative',
           marginTop: '100px',
           borderRadius: '2rem',
@@ -485,7 +485,8 @@ export default function Onboarding() {
                   {...getTagProps({ index })}
                   onClick={(e) => e.stopPropagation()}
                 />
-              ))}
+              ))
+            }
           />
         );
 

@@ -68,7 +68,9 @@ const FloatingTextArea = ({
   roomId = null,
   mobileActiveView = 'chat',
   onMobileToggle = null,
+  renderCredits = false,
 }) => {
+  console.log('renderCredits', renderCredits);
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
@@ -175,7 +177,6 @@ const FloatingTextArea = ({
       if (window.visualViewport) {
         const viewportHeight = window.visualViewport.height;
         const windowHeight = window.innerHeight;
-        // Consider keyboard open if viewport is significantly smaller than window
         setIsKeyboardOpen(viewportHeight < windowHeight * 0.8);
       }
     };
@@ -268,7 +269,7 @@ const FloatingTextArea = ({
       ) : (
         <>
           <AuthorizationRequests />
-          
+
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
@@ -292,7 +293,7 @@ const FloatingTextArea = ({
                 : undefined
             }
           >
-            <CreditWallet />
+            {renderCredits && <CreditWallet />}
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3 px-4">
                 {attachments.map((attachment, index) => {

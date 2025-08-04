@@ -56,6 +56,7 @@ const Thread = ({
   title = null,
   description = null,
   suggestions = [],
+  renderCredits = false,
 }) => {
   const { gateId } = useParams();
   const history = useHistory();
@@ -406,6 +407,7 @@ const Thread = ({
               containerRef={containerRef}
               roomId={room?.id}
               mode={isMobile ? 'mobile' : 'standard'}
+              renderCredits={renderCredits}
             />
           )}
         </div>

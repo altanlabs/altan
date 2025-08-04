@@ -36,28 +36,14 @@ const AgentSelectionChip = ({
       const alwaysAgent = agents.find((agent) => {
         const originalMember = members.byId[agent.id];
         const interaction = originalMember?.agent_interaction;
-        console.log(`🔍 Checking agent ${agent.name}:`, {
-          agentId: agent.id,
-          originalMember: !!originalMember,
-          agentInteraction: interaction,
-        });
         return interaction === 'always';
       });
 
-      console.log('🔍 Always agent found:', alwaysAgent?.name || 'none');
-
       if (alwaysAgent) {
-        console.log('🎯 Auto-selecting "always" agent:', alwaysAgent.name);
         onAgentSelect(alwaysAgent);
         hasAutoSelected.current = true;
       }
     } else {
-      console.log('🔍 Auto-selection blocked because:', {
-        hasSelectedAgent: !!selectedAgent,
-        notEnoughAgents: agents.length <= 1,
-        userHasCleared,
-        alreadyAutoSelected: hasAutoSelected.current,
-      });
     }
   }, [agents, selectedAgent, members, onAgentSelect, userHasCleared]);
 
@@ -85,11 +71,6 @@ const AgentSelectionChip = ({
   };
 
   const handleAgentSelect = (agent) => {
-    console.log('🎯 Agent manually selected:', agent.name);
-    console.log('🔍 State before selection:', {
-      userHasCleared,
-      hasAutoSelected: hasAutoSelected.current,
-    });
     setUserHasCleared(false); // Reset flag when user selects an agent
     hasAutoSelected.current = true; // Mark as having a selection
     onAgentSelect(agent);
@@ -97,16 +78,7 @@ const AgentSelectionChip = ({
   };
 
   const handleAgentClear = () => {
-    console.log('❌ Agent manually cleared');
-    console.log('🔍 State before clearing:', {
-      userHasCleared,
-      hasAutoSelected: hasAutoSelected.current,
-    });
     setUserHasCleared(true); // Mark that user has manually cleared
-    console.log('🔍 State after clearing:', {
-      userHasCleared: true,
-      hasAutoSelected: hasAutoSelected.current,
-    });
     onAgentClear();
   };
 
