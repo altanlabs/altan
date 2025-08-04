@@ -57,9 +57,6 @@ const CommitWidget = memo(({ hash }) => {
         borderColor: 'divider',
         borderRadius: 2,
         bgcolor: 'background.paper',
-        '&:hover': {
-          bgcolor: 'background.neutral',
-        },
       }}
     >
       <Box
@@ -68,7 +65,7 @@ const CommitWidget = memo(({ hash }) => {
         justifyContent="space-between"
         mb={details ? 2 : 0}
       >
-        <Typography variant="subtitle2">
+        <Typography variant="h6">
           Checkpoint
         </Typography>
         <Tooltip title="Restore to this checkpoint">
@@ -109,7 +106,7 @@ const CommitWidget = memo(({ hash }) => {
       {details && (
         <Box>
           <Typography
-            variant="h6"
+            variant="subtitle"
             color="text.secondary"
             sx={{ mb: 1 }}
           >
