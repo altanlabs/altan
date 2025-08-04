@@ -65,11 +65,11 @@ import { Room } from '@altanlabs/sdk';
   mode="agent"
   accountId="your-account-id"
   agentId="agent-123"
-  // Room personalization options
-  tabs={false}                    // Hide/show tabs
-  members={false}                 // Hide/show members panel
+  // Room personalization options (tabs, members, settings are false by default)
+  tabs={true}                     // Show tabs (default: false)
+  members={true}                  // Show members panel (default: false)
   conversation_history={true}     // Show conversation history
-  settings={true}                 // Show settings panel
+  settings={true}                 // Show settings panel (default: false)
   theme="dark"                    // Theme: 'light', 'dark', or 'system'
   title="Custom Support Chat"     // Custom room title
   description="Get help here"     // Custom room description
@@ -86,10 +86,10 @@ import { Room } from '@altanlabs/sdk';
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `tabs` | boolean | `true` | Show/hide tab navigation |
+| `tabs` | boolean | `false` | Show/hide tab navigation |
 | `conversation_history` | boolean | `true` | Show/hide conversation history |
-| `members` | boolean | `true` | Show/hide members panel |
-| `settings` | boolean | `true` | Show/hide settings panel |
+| `members` | boolean | `false` | Show/hide members panel |
+| `settings` | boolean | `false` | Show/hide settings panel |
 | `theme` | string | `undefined` | Theme mode: 'light', 'dark', or 'system' |
 | `title` | string | `undefined` | Custom room title |
 | `description` | string | `undefined` | Custom room description |

@@ -203,11 +203,17 @@ export function Room(props: RoomProps): React.JSX.Element {
   const buildRoomConfigParams = (): string => {
     const params = new URLSearchParams();
 
-    if (tabs !== undefined) params.set('tabs', tabs.toString());
+    // Set defaults: tabs, members, and settings are false by default
+    const defaultTabs = tabs !== undefined ? tabs : false;
+    const defaultMembers = members !== undefined ? members : false;
+    const defaultSettings = settings !== undefined ? settings : false;
+    
+    params.set('tabs', defaultTabs.toString());
+    params.set('members', defaultMembers.toString());
+    params.set('settings', defaultSettings.toString());
+    
     if (conversation_history !== undefined)
       params.set('conversation_history', conversation_history.toString());
-    if (members !== undefined) params.set('members', members.toString());
-    if (settings !== undefined) params.set('settings', settings.toString());
     
     // For compact mode, always show close button to enable widget closing
     const shouldShowCloseButton = mode === 'compact' ? true : show_close_button;

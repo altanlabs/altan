@@ -1,13 +1,13 @@
 {
   "name": "@altanlabs/sdk",
-  "version": "2.5.9",
+  "version": "2.6.3",
   "description": "Altan AI SDK - Ultra-simple AI chat integration with beautiful glassmorphism styling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
+      "import": "./dist/index.js",
       "require": "./dist/index.js"
     }
   },

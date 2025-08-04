@@ -44,7 +44,7 @@ export {
 // ============================================================================
 
 // Version information
-export const SDK_VERSION = '2.5.9';
+export const SDK_VERSION = '2.6.2';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {
