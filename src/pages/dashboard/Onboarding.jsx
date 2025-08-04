@@ -30,7 +30,6 @@ import { useDispatch } from 'react-redux';
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { onboardAccount } from '../../redux/slices/general';
-import Pricing from '../../sections/pricing/Pricing.jsx';
 
 function Calendly({ open, onClose }) {
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
@@ -109,7 +108,6 @@ function PricingModal({ open, onClose }) {
         }}
       >
         <Typography variant="h4">Get started absolutely free</Typography>
-        <Pricing />
       </Paper>
     </Modal>
   );
