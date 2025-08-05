@@ -20,12 +20,6 @@ const ALTANER_CATEGORIES = [
     initialExpanded: false,
   },
   {
-    key: 'games',
-    title: 'Games',
-    description: 'Interactive games and entertainment apps',
-    initialExpanded: false,
-  },
-  {
     key: 'saas',
     title: 'SaaS',
     description: 'Software as a Service applications',
@@ -38,11 +32,17 @@ const ALTANER_CATEGORIES = [
     initialExpanded: false,
   },
   {
-    key: 'clones',
-    title: 'Clones',
-    description: 'Clones of popular apps',
+    key: 'games',
+    title: 'Games',
+    description: 'Interactive games and entertainment apps',
     initialExpanded: false,
   },
+  // {
+  //   key: 'clones',
+  //   title: 'Clones',
+  //   description: 'Clones of popular apps',
+  //   initialExpanded: false,
+  // },
 ];
 
 const AltanerTemplateMarketplace = () => {
