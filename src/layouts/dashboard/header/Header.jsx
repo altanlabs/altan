@@ -111,7 +111,7 @@ function Header() {
           <Stack
             direction="row"
             alignItems="center"
-            spacing={1}
+            className="pl-4"
           >
             {/* {user && (
               <IconButton
@@ -126,8 +126,8 @@ function Header() {
               </IconButton>
             )} */}
 
-              <Logo minimal />
-              {/* <img
+            <Logo minimal />
+            {/* <img
                 alt="Altan Logo Header"
                 onClick={() => history.replace('/')}
                 style={{ cursor: 'pointer' }}

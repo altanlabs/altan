@@ -128,6 +128,8 @@ const CustomDialog = ({
         }}
         PaperProps={{
           sx: {
+            padding: 0,
+            margin: 0,
             ...(blur && {
               backgroundColor: 'transparent',
             }),
@@ -138,14 +140,21 @@ const CustomDialog = ({
             }),
           },
           className: cn(
-            shouldUseFullWidth
-              ? 'overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2'
-              : 'w-fit overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2',
+            'overflow-hidden relative h-fit max-h-full rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg before:backdrop-blur-xl before:backdrop-hack gap-2',
             className,
           ),
         }}
         sx={{
           zIndex: 9999,
+          '& .MuiDialog-container': {
+            padding: 0,
+            margin: 0,
+          },
+          '& .MuiDialog-paper': {
+            padding: 0,
+            margin: 0,
+            maxWidth: 'none',
+          },
           '& .MuiBackdrop-root': {
             backdropFilter: 'blur(10px)',
             backgroundColor:

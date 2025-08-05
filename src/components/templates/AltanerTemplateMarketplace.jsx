@@ -31,12 +31,12 @@ const ALTANER_CATEGORIES = [
     description: 'AI-powered applications and tools',
     initialExpanded: false,
   },
-  {
-    key: 'games',
-    title: 'Games',
-    description: 'Interactive games and entertainment apps',
-    initialExpanded: false,
-  },
+  // {
+  //   key: 'games',
+  //   title: 'Games',
+  //   description: 'Interactive games and entertainment apps',
+  //   initialExpanded: false,
+  // },
   // {
   //   key: 'clones',
   //   title: 'Clones',
