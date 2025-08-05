@@ -173,7 +173,9 @@ const MermaidDiagram = ({ chart, className = '' }) => {
           justifyContent: 'center',
           p: 2,
           overflow: 'auto',
+          cursor: fullscreen ? 'default' : 'pointer',
         }}
+        onClick={!fullscreen ? handleFullscreenToggle : undefined}
       >
         {isLoading && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>

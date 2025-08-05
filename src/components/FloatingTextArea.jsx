@@ -70,7 +70,6 @@ const FloatingTextArea = ({
   onMobileToggle = null,
   renderCredits = false,
 }) => {
-  console.log('renderCredits', renderCredits);
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));

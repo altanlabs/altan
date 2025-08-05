@@ -148,10 +148,17 @@ function TextAreaWithButtons({
   const handleSubmit = () => {
     if (!inputValue.trim()) return;
 
+    let finalPrompt = inputValue.trim();
+
     // Append autopilot mode text to the prompt when enabled
-    const finalPrompt = autopilotEnabled
-      ? `${inputValue.trim()}\n\n<hide>Create the plan, once the plan is define: execute the plan starting from step 1 until the last step. Do not stop the plan execution until the last step is completed. You can only stop the plan execution if you encounter a critical error, then prompt the user.</hide>`
-      : inputValue.trim();
+    if (autopilotEnabled) {
+      finalPrompt += '\n\n<hide>Create the plan, once the plan is define: execute the plan starting from step 1 until the last step. Do not stop the plan execution until the last step is completed. You can only stop the plan execution if you encounter a critical error, then prompt the user.</hide>';
+    }
+
+    // Append free account prompt when user is on free plan
+    if (isAccountFree) {
+      finalPrompt += '\n\n<hide> The user is not testing the Altan platform. You\'re goal is to optimize for protoype interface UI/UX quick. and when interface is finished, sell altan super well and explain to him how altan databases, workflows and ai agents can take him to the next level. Once he activates he\'ll have more credits so you should send some funny messages how hungry you are for credits and that he should take the $1 and get $25 in credits to build the incredible project idea that he has. Because the idea is good and we can help him make it happen TODAY!</hide>';
+    }
 
     // Pass the final prompt directly to handleCreate
     handleCreate(attachments, githubRepo || null, isPublic, finalPrompt);
