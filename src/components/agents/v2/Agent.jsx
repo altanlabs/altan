@@ -593,22 +593,24 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       {/* Tab Navigation */}
       {renderTabNavigation()}
 
-      {/* Main Content Area - Centered */}
+      {/* Main Content Area - Responsive */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
           justifyContent: 'center',
           overflow: 'auto',
-          px: { xs: 1, sm: 2, md: 4 },
-          py: 1,
+          px: isMobile ? 1 : { xs: 1, sm: 2, md: 4 },
+          py: isMobile ? 0.5 : 1,
+          minHeight: 0, // Important for proper flex sizing
         }}
       >
         <Box
           sx={{
             width: '100%',
-            maxWidth: '800px',
+            maxWidth: isMobile ? '100%' : '800px',
             overflow: 'auto',
+            minHeight: 0, // Important for proper flex sizing
           }}
         >
           {renderTabContent()}

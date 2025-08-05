@@ -230,7 +230,7 @@ const DashboardPage = () => {
               className="flex flex-col pt-6"
               variants={fadeIn}
             >
-              <div className="px-6 py-2 w-full sm:rounded-t-2xl sm:shadow-md sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
+              <div className="w-full py-2 sm:px-6 sm:rounded-t-2xl sm:shadow-md sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
                 {renderContentBasedOnMode(mode)}
                 <Footer />
               </div>

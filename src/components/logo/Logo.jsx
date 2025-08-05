@@ -18,8 +18,8 @@ const Logo = forwardRef(
         ref={ref}
         component="div"
         sx={{
-          width: minimal ? { xs: 20, sm: 24 } : { xs: 36, sm: 52 },
-          height: minimal ? { xs: 20, sm: 24 } : { xs: 36, sm: 52 },
+          width: minimal ? { xs: 24, sm: 24 } : { xs: 36, sm: 52 },
+          height: minimal ? { xs: 24, sm: 24 } : { xs: 36, sm: 52 },
           display: 'inline-flex',
           ...sx,
         }}

@@ -111,7 +111,7 @@ function Header() {
           <Stack
             direction="row"
             alignItems="center"
-            className="pl-4"
+            className="pl-2"
           >
             {/* {user && (
               <IconButton
