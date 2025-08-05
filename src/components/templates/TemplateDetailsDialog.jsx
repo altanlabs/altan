@@ -159,13 +159,12 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             {/* Header with close button */}
             <Box
               sx={{
-                p: 3,
-                pb: 2,
+                pl: 1.5,
+                pr: 6,
+                py: 1.25,
                 display: 'flex',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: '1px solid',
-                borderColor: 'grey.200',
               }}
             >
               <Box
@@ -194,32 +193,26 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                   <CustomAvatar
                     src={template?.account?.logo_url || coverUrl}
                     name={template?.account?.name || 'Unknown'}
+                    sx={{ width: 24, height: 24 }}
                   />
-                  <Box sx={{ flex: 1, minWidth: 0, ml: 2 }}>
+                  <Box sx={{ flex: 1, minWidth: 0, ml: 0.75 }}>
                     <Typography
-                      variant="h5"
+                      variant="h6"
                       sx={{
-                        fontWeight: 700,
-                        mb: 0.5,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        lineHeight: 1,
                       }}
                     >
                       {name}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      By {template?.account?.name || 'Unknown'}
                     </Typography>
                   </Box>
                 </Box>
               </Box>
 
               {/* Clone Button in Header */}
-              <Box sx={{ ml: 2 }}>
+              <Box sx={{ ml: 0.5 }}>
                 <InteractiveHoverButton
                   text={
                     loading
@@ -229,9 +222,9 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                   onClick={handleClone}
                   disabled={loading}
                   sx={{
-                    minWidth: { xs: 150, sm: 200, md: 250 },
-                    height: { xs: 40, md: 48 },
-                    fontSize: { xs: '0.875rem', md: '1rem' },
+                    minWidth: { xs: 80, sm: 100, md: 120 },
+                    height: 28,
+                    fontSize: '0.75rem',
                   }}
                 />
               </Box>
@@ -241,8 +234,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             {template?.meta_data?.video_url ? (
               <Box
                 sx={{
-                  p: 3,
-                  height: 'calc(100vh - 140px)',
+                  height: 'calc(100vh - 45px)',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -250,10 +242,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 <Box
                   sx={{
                     flex: 1,
-                    backgroundColor: 'grey.50',
-                    borderRadius: 3,
                     overflow: 'hidden',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   }}
                 >
                   <ReactPlayer
@@ -277,9 +266,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
             ) : template?.preview_url ? (
               <Box
                 sx={{
-                  px: 2,
-                  pt: 2,
-                  height: 'calc(100vh - 140px)',
+                  height: 'calc(100vh - 45px)',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -287,10 +274,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 <Box
                   sx={{
                     flex: 1,
-                    backgroundColor: 'grey.50',
-                    borderRadius: 3,
                     overflow: 'hidden',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   }}
                 >
                   <iframe
@@ -307,26 +291,35 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ p: 3, pb: 2 }}>
+              <Box
+                sx={{
+                  height: 'calc(100vh - 45px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 2,
+                }}
+              >
                 <Box
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    height: 200,
+                    maxHeight: 300,
                     backgroundColor: 'grey.50',
                     borderRadius: 2,
                     border: '1px solid',
                     borderColor: 'grey.200',
+                    p: 3,
                   }}
                 >
                   <img
                     src={coverUrl}
                     alt={name}
                     style={{
-                      maxWidth: '80%',
-                      maxHeight: '60%',
+                      maxWidth: '100%',
+                      maxHeight: '200px',
                       objectFit: 'contain',
                       borderRadius: 8,
                       marginBottom: 16,

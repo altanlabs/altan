@@ -10,18 +10,10 @@ const TemplateDialog = ({
   templateSelector,
   versionsSelector = null,
 }) => {
-  
   return (
     <CustomDialog
       dialogOpen={open}
       onClose={onClose}
-      className="max-w-md"
-      // PaperProps={{
-      //   style: {
-      //     height: '80vh',
-      //     padding: '20px'
-      //   }
-      // }}
     >
       <TemplateManager
         mode={mode}

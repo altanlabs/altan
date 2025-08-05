@@ -14,6 +14,7 @@ import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
 import { useSelector } from '../../../redux/store';
+import Logo from '../../../components/logo/Logo';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -112,7 +113,7 @@ function Header() {
             alignItems="center"
             spacing={1}
           >
-            {user && (
+            {/* {user && (
               <IconButton
                 onClick={handleChatDrawerToggle}
                 sx={{
@@ -123,10 +124,10 @@ function Header() {
               >
                 <Iconify icon="ph:sidebar-duotone" />
               </IconButton>
-            )}
+            )} */}
 
-            <Stack maxWidth={100}>
-              <img
+              <Logo minimal />
+              {/* <img
                 alt="Altan Logo Header"
                 onClick={() => history.replace('/')}
                 style={{ cursor: 'pointer' }}
@@ -136,8 +137,7 @@ function Header() {
                     : '/logos/horizontalBlack.png'
                 }
                 height={17}
-              />
-            </Stack>
+              /> */}
           </Stack>
 
           <StyledChart />
