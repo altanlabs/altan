@@ -219,25 +219,37 @@ function Base({
 
   const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
 
+  // Subscribe to base updates
   useEffect(() => {
     if (!!baseId && ws?.isOpen) {
+      console.log('🔔 Base: Subscribing to base updates:', {
+        baseId,
+        wsReadyState: ws.websocket?.readyState,
+        isOpen: ws.isOpen,
+      });
       ws.subscribe(`bases:${baseId}`);
     }
-  }, [ws, baseId]);
+  }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
 
+  // Cleanup subscriptions and state
   useEffect(() => {
     return () => {
+      console.log('🔔 Base: Cleaning up subscriptions:', {
+        baseId,
+        wsReadyState: ws?.websocket?.readyState,
+        isOpen: ws?.isOpen,
+      });
       setState({
         activeTab: null,
         createTableOpen: false,
         createBaseOpen: false,
         isTableSwitching: false,
       });
-      if (!!ws) {
+      if (!!ws?.isOpen && !!baseId) {
         ws.unsubscribe(`bases:${baseId}`);
       }
     };
-  }, [baseId, ws]);
+  }, [baseId]); // Only depend on baseId for cleanup
 
   if (isBaseLoading) {
     return <LoadingFallback />;
