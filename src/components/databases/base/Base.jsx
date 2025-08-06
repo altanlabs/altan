@@ -3,7 +3,7 @@ import { useParams, useHistory } from 'react-router';
 
 import BaseLayout from './BaseLayout.jsx';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import HermesWebSocketProvider, { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   deleteTableById,
   getBaseById,
@@ -31,8 +31,8 @@ function Base({
   //  ...props
 }) {
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
-  const history = useHistory();;
-  const ws = useWebSocket();
+  const history = useHistory();
+  const ws = useHermesWebSocket();
 
   const baseId = explicitBaseId || routeBaseId || ids[0];
 
@@ -144,7 +144,9 @@ function Base({
             }
           }
         })
-        .catch((error) => console.error('Error deleting table:', error));
+        .catch(() => {
+          // console.error('Error deleting table:', error);
+        });
     },
     [
       baseId,
@@ -198,8 +200,8 @@ function Base({
       if (!tableId) return;
       try {
         dispatch(updateTableById(baseId, tableId, { name: newName }));
-      } catch (error) {
-        console.error('Error renaming table:', error);
+      } catch {
+        // console.error('Error renaming table:', error);
       }
     },
     [baseId],
@@ -221,7 +223,7 @@ function Base({
     if (!!baseId && ws?.isOpen) {
       ws.subscribe(`bases:${baseId}`);
     }
-  }, [ws?.isOpen, baseId]);
+  }, [ws, baseId]);
 
   useEffect(() => {
     return () => {
@@ -235,7 +237,7 @@ function Base({
         ws.unsubscribe(`bases:${baseId}`);
       }
     };
-  }, []);
+  }, [baseId, ws]);
 
   if (isBaseLoading) {
     return <LoadingFallback />;
@@ -293,6 +295,15 @@ function Base({
   );
 }
 
-export default memo(Base, (prevProps, nextProps) => {
+// Create a wrapper component that provides the HermesWebSocket
+const BaseWithHermesWebSocket = memo(function BaseWithHermesWebSocket(props) {
+  return (
+    <HermesWebSocketProvider>
+      <Base {...props} />
+    </HermesWebSocketProvider>
+  );
+}, (prevProps, nextProps) => {
   return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
 });
+
+export default BaseWithHermesWebSocket;
