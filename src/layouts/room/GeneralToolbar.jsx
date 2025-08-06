@@ -15,6 +15,11 @@ const GeneralToolbar = ({
   members = true,
   settings = true,
   show_close_button = false,
+  show_fullscreen_button = false,
+  show_sidebar_button = false,
+  onFullscreen,
+  onSidebar,
+  onClose,
 }) => {
   const mainThread = useSelector(selectMainThread);
   const tabsCount = useSelector(selectTabsCount);
@@ -50,6 +55,11 @@ const GeneralToolbar = ({
         showMembersButton={members}
         showSettingsButton={settings}
         showCloseButton={show_close_button}
+        showFullscreenButton={show_fullscreen_button}
+        showSidebarButton={show_sidebar_button}
+        onFullscreen={onFullscreen}
+        onSidebar={onSidebar}
+        onClose={onClose}
       />
 
       {/* Additional toolbar content can be added here if needed */}

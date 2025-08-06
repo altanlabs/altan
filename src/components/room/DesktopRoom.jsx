@@ -47,6 +47,11 @@ const DesktopRoom = ({
   members = true,
   settings = true,
   show_close_button = false,
+  show_fullscreen_button = false,
+  show_sidebar_button = false,
+  onFullscreen,
+  onSidebar,
+  onClose,
   title = null,
   description = null,
   suggestions = [],
@@ -122,6 +127,11 @@ const DesktopRoom = ({
             members={members}
             settings={settings}
             show_close_button={show_close_button}
+            show_fullscreen_button={show_fullscreen_button}
+            show_sidebar_button={show_sidebar_button}
+            onFullscreen={onFullscreen}
+            onSidebar={onSidebar}
+            onClose={onClose}
           />
         )}
 
@@ -201,6 +211,11 @@ const DesktopRoom = ({
             members={members}
             settings={settings}
             show_close_button={show_close_button}
+            show_fullscreen_button={show_fullscreen_button}
+            show_sidebar_button={show_sidebar_button}
+            onFullscreen={onFullscreen}
+            onSidebar={onSidebar}
+            onClose={onClose}
           />
           <Threads
             title={title}

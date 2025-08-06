@@ -49,6 +49,8 @@ function WidgetTab({ agentData, onFieldChange }) {
     conversation_history: widgetConfig.conversation_history ?? true,
     members: widgetConfig.members ?? false,
     settings: widgetConfig.settings ?? false,
+    show_fullscreen_button: widgetConfig.show_fullscreen_button ?? false,
+    show_sidebar_button: widgetConfig.show_sidebar_button ?? false,
     theme: widgetConfig.theme || '',
     title: widgetConfig.title || '',
     description: widgetConfig.description || '',
@@ -797,6 +799,62 @@ function WidgetTab({ agentData, onFieldChange }) {
                   <Switch
                     checked={widgetSettings.voice_enabled}
                     onChange={(e) => handleSettingChange('voice_enabled', e.target.checked)}
+                  />
+                </Box>
+              </Grid>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+              >
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.primary', fontWeight: 'medium' }}
+                    >
+                      Show Fullscreen Button
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                    >
+                      Allow users to go fullscreen
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={widgetSettings.show_fullscreen_button}
+                    onChange={(e) => handleSettingChange('show_fullscreen_button', e.target.checked)}
+                  />
+                </Box>
+              </Grid>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+              >
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.primary', fontWeight: 'medium' }}
+                    >
+                      Show Sidebar Button
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                    >
+                      Allow transform to sidebar mode
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={widgetSettings.show_sidebar_button}
+                    onChange={(e) => handleSettingChange('show_sidebar_button', e.target.checked)}
                   />
                 </Box>
               </Grid>

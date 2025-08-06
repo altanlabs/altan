@@ -41,28 +41,28 @@ const MessageMinified = ({ message }) => {
   }
 
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={0.5}
-      width="100%"
-    >
-      <Tooltip title={name || ''}>
-        <span>
-          <CustomAvatar
-            alt={name || ''}
-            sx={{ width: 12, height: 12 }}
-            src={src || ''}
-            name={name || ''}
-          />
+    <div className="flex flex-col w-full min-w-0">
+      <div className="flex items-center gap-1 mb-0.5">
+        <Tooltip title={name || ''}>
+          <span>
+            <CustomAvatar
+              alt={name || ''}
+              sx={{ width: 14, height: 14 }}
+              src={src || ''}
+              name={name || ''}
+            />
+          </span>
+        </Tooltip>
+        <span className="text-xs font-medium text-blue-600 dark:text-blue-400 truncate">
+          {name}
         </span>
-      </Tooltip>
+      </div>
       {content && (
-        <span className="text-xs font-italic opacity-90 truncate w-full">
+        <span className="text-xs text-gray-600 dark:text-gray-300 opacity-90 truncate">
           {content}
         </span>
       )}
-    </Stack>
+    </div>
   );
 };
 

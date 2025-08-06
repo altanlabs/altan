@@ -15,14 +15,18 @@ const MessageReply = ({ message }) => {
     items-start
     cursor-pointer
     justify-start
-    px-1
-    ml-5
-    -mb-1.5
-    rounded-lg
-    w-min
-    border
-    border-gray-500/40
-    dark:border-gray-500/40
+    px-3
+    py-2
+    ml-2
+    mb-1
+    rounded-md
+    max-w-full
+    w-fit
+    bg-gray-100/50
+    dark:bg-gray-800/50
+    border-l-4
+    border-l-slate-500
+    backdrop-blur-sm
   "
     >
       <MessageMinified message={message.replied} />

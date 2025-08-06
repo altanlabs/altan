@@ -26,6 +26,11 @@ const MobileRoom = ({
   members = true,
   settings = true,
   show_close_button = false,
+  show_fullscreen_button = false,
+  show_sidebar_button = false,
+  onFullscreen,
+  onSidebar,
+  onClose,
 } = {}) => {
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const theme = useTheme();
@@ -148,6 +153,11 @@ const MobileRoom = ({
             members={members}
             settings={settings}
             show_close_button={show_close_button}
+            show_fullscreen_button={show_fullscreen_button}
+            show_sidebar_button={show_sidebar_button}
+            onFullscreen={onFullscreen}
+            onSidebar={onSidebar}
+            onClose={onClose}
           />
           <Threads />
           {renderDrawerToggle(false)}

@@ -94,6 +94,9 @@ export default function AgentSharePage() {
             tabs={agent.widget?.tabs || false}
             conversation_history={agent.widget?.conversation_history || true}
             show_close_button={true}
+            show_fullscreen_button={agent.widget?.show_fullscreen_button || true}
+            show_sidebar_button={agent.widget?.show_sidebar_button || false}
+            open_mode="sidebar_left"
             theme={agent.widget?.theme || 'dark'}
             title={agent.widget?.title || 'Chat'}
             description={agent.widget?.description || ''}

@@ -5,7 +5,6 @@ import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
-
 import {
   fetchRoom,
   clearRoomState,
@@ -30,6 +29,11 @@ const Room = ({
   members = true,
   settings = true,
   show_close_button = false,
+  show_fullscreen_button = false,
+  show_sidebar_button = false,
+  onFullscreen,
+  onSidebar,
+  onClose,
   title = null, // Custom title to override 'room.howCanIHelp'
   description = null, // Description to show below title
   suggestions = [], // Array of suggestion strings
@@ -147,6 +151,11 @@ const Room = ({
           members={members}
           settings={settings}
           show_close_button={show_close_button}
+          show_fullscreen_button={show_fullscreen_button}
+          show_sidebar_button={show_sidebar_button}
+          onFullscreen={onFullscreen}
+          onSidebar={onSidebar}
+          onClose={onClose}
           title={title}
           description={description}
           suggestions={suggestions}
