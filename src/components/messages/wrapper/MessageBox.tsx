@@ -14,7 +14,7 @@ const getMessageBoxClasses = (type: string, isMe: boolean): string => {
         ? 'text-red-500 dark:text-red-400'
         : 'text-gray-900 dark:text-gray-100';
 
-  const backgroundClasses = isMe ? 'bg-gray-100 dark:bg-gray-700' : 'bg-transparent';
+  const backgroundClasses = isMe ? 'bg-gray-100 dark:bg-[#1c1c1c]' : 'bg-transparent';
 
   return cn(baseClasses, themeClasses, backgroundClasses);
 };
@@ -33,7 +33,7 @@ const MessageBox = ({ type = '', isMe, children, className }: MessageBoxProps) =
       <div
         className={cn(
           'text-left',
-          'px-4 pt-1 pb-1',
+          isMe ? 'px-2 py-0.5' : 'py-0.5',
           'leading-snug',
           'will-change-transform opacity-100',
           'subpixel-antialiased',
