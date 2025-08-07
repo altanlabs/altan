@@ -32,10 +32,14 @@ const TabBar = ({
   showMembersButton = true,
   showSettingsButton = true,
   showCloseButton = false,
+  showFullscreenButton = false,
+  showSidebarButton = false,
   onTabSwitch,
   onTabClose,
   onNewTab,
   onClose,
+  onFullscreen,
+  onSidebar,
 }) => {
   const tabs = useSelector(selectTabsArray);
   const activeTabId = useSelector(selectActiveTabId);
@@ -151,6 +155,42 @@ const TabBar = ({
     }
   }, [onClose]);
 
+  // Handle fullscreen button click
+  const handleFullscreenClick = useCallback(() => {
+    if (onFullscreen) {
+      onFullscreen();
+    } else {
+      // Post message to parent window (for widget mode)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: 'widget_fullscreen_request',
+            source: 'altan-widget',
+          },
+          '*',
+        );
+      }
+    }
+  }, [onFullscreen]);
+
+  // Handle sidebar button click
+  const handleSidebarClick = useCallback(() => {
+    if (onSidebar) {
+      onSidebar();
+    } else {
+      // Post message to parent window (for widget mode)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: 'widget_sidebar_request',
+            source: 'altan-widget',
+          },
+          '*',
+        );
+      }
+    }
+  }, [onSidebar]);
+
   // Calculate tab width based on available space
   const calculateTabWidth = useCallback(() => {
     if (!tabs.length) return maxTabWidth;
@@ -163,6 +203,8 @@ const TabBar = ({
       (showHistoryButton ? 40 : 0) +
       (showMembersButton ? 40 : 0) +
       (showSettingsButton ? 40 : 0) +
+      (showFullscreenButton ? 40 : 0) +
+      (showSidebarButton ? 40 : 0) +
       (showCloseButton ? 40 : 0);
     // Reserve space for the new tab button in the scrollable area
     const newTabButtonSpace = showNewTabButton ? 40 : 0;
@@ -178,6 +220,8 @@ const TabBar = ({
     showHistoryButton,
     showMembersButton,
     showSettingsButton,
+    showFullscreenButton,
+    showSidebarButton,
     showCloseButton,
   ]);
 
@@ -204,6 +248,8 @@ const TabBar = ({
     !showHistoryButton &&
     !showMembersButton &&
     !showSettingsButton &&
+    !showFullscreenButton &&
+    !showSidebarButton &&
     !showCloseButton
   ) {
     return null;
@@ -368,6 +414,50 @@ const TabBar = ({
             </Tooltip>
           )}
 
+          {/* Fullscreen button */}
+          {showFullscreenButton && (
+            <Tooltip
+              title="Fullscreen"
+              placement="top"
+            >
+              <IconButton
+                size="small"
+                onClick={handleFullscreenClick}
+                sx={{
+                  width: 36,
+                  height: 36,
+                }}
+              >
+                <Iconify
+                  icon="mdi:fullscreen"
+                  width={32}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Sidebar button */}
+          {!showSidebarButton && (
+            <Tooltip
+              title="Transform to sidebar"
+              placement="top"
+            >
+              <IconButton
+                size="small"
+                onClick={handleSidebarClick}
+                sx={{
+                  width: 30,
+                  height: 30,
+                }}
+              >
+                <Iconify
+                  icon="mynaui:sidebar-solid"
+                  width={30}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+
           {/* Close button */}
           {showCloseButton && (
             <Tooltip
@@ -378,13 +468,13 @@ const TabBar = ({
                 size="small"
                 onClick={handleCloseClick}
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                 }}
               >
                 <Iconify
                   icon="mdi:close"
-                  width={16}
+                  width={34}
                 />
               </IconButton>
             </Tooltip>

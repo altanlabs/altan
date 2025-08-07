@@ -148,7 +148,7 @@ const MessageBoxWrapper = ({
               direction="row"
               alignItems="center"
               spacing={1}
-              paddingBottom={0.5}
+              // paddingBottom={0.5}
             >
               {!is_me && renderAvatar}
               <Stack

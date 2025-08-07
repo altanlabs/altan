@@ -41,6 +41,14 @@ export default function StandaloneRoomPage() {
         params.get('show_close_button') !== null
           ? params.get('show_close_button') === 'true'
           : undefined,
+      show_fullscreen_button:
+        params.get('show_fullscreen_button') !== null
+          ? params.get('show_fullscreen_button') === 'true'
+          : undefined,
+      show_sidebar_button:
+        params.get('show_sidebar_button') !== null
+          ? params.get('show_sidebar_button') === 'true'
+          : undefined,
       theme: parseStringParam(params.get('theme')),
       title: parseStringParam(params.get('title')),
       description: parseStringParam(params.get('description')),
@@ -59,6 +67,8 @@ export default function StandaloneRoomPage() {
     members: true,
     settings: true,
     show_close_button: false,
+    show_fullscreen_button: false,
+    show_sidebar_button: false,
     theme: null,
     title: null,
     description: null,

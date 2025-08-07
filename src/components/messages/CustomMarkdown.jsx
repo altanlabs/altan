@@ -29,7 +29,8 @@ const isComponentTarget = (href) => /\[selected_component\]\(.*\)/.test(href);
 
 // YouTube URL detection and processing
 const isYouTubeUrl = (url) => {
-  const youtubePattern = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const youtubePattern =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
   return youtubePattern.test(url);
 };
 
@@ -118,7 +119,7 @@ const CustomIframe = ({ src, title = 'Embedded content', style, ...props }) => {
 
   // Check if custom height is provided
   const hasCustomHeight = !!(style?.height || props.height);
-  const customHeight = hasCustomHeight ? (style?.height || props.height) : null;
+  const customHeight = hasCustomHeight ? style?.height || props.height : null;
 
   return (
     <>
@@ -157,80 +158,119 @@ const CustomIframe = ({ src, title = 'Embedded content', style, ...props }) => {
       <div
         ref={containerRef}
         className={`relative w-full mx-auto my-4 rounded-xl overflow-hidden shadow-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm ${
-          isFullscreen 
-            ? '!fixed !inset-0 !z-50 !m-0 !rounded-none !h-screen !w-screen !border-none !shadow-none' 
+          isFullscreen
+            ? '!fixed !inset-0 !z-50 !m-0 !rounded-none !h-screen !w-screen !border-none !shadow-none'
             : ''
         }`}
-        style={isFullscreen ? { 
-          width: '100vw', 
-          height: '100vh', 
-          margin: 0, 
-          padding: 0,
-          borderRadius: 0,
-          background: '#000'
-        } : {}}
-      >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50">
-        {/* URL Display */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <svg className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          <span className="text-xs text-gray-600 dark:text-gray-300 truncate font-mono">
-            {getDomain(src)}
-          </span>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleOpenInNewTab}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
-            title="Open in new tab"
-          >
-            <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </button>
-          <button
-            onClick={handleFullscreen}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
-            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          >
-            <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isFullscreen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              )}
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Iframe Content */}
-      <div
-        className={`relative ${isFullscreen ? 'h-[calc(100vh-60px)]' : 'h-[250px]'}`}
         style={
-          isFullscreen 
-            ? {} 
-            : hasCustomHeight 
-              ? { height: customHeight } 
-              : { height: '250px', minHeight: '250px', maxHeight: '400px' }
+          isFullscreen
+            ? {
+                width: '100vw',
+                height: '100vh',
+                margin: 0,
+                padding: 0,
+                borderRadius: 0,
+                background: '#000',
+              }
+            : {}
         }
       >
-        <iframe
-          ref={iframeRef}
-          src={src}
-          title={title}
-          className="w-full h-full border-none"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          {...props}
-        />
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50">
+          {/* URL Display */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <svg
+              className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            <span className="text-xs text-gray-600 dark:text-gray-300 truncate font-mono">
+              {getDomain(src)}
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleOpenInNewTab}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
+              title="Open in new tab"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleFullscreen}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              <svg
+                className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {isFullscreen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Iframe Content */}
+        <div
+          className={`relative ${isFullscreen ? 'h-[calc(100vh-60px)]' : 'h-[250px]'}`}
+          style={
+            isFullscreen
+              ? {}
+              : hasCustomHeight
+                ? { height: customHeight }
+                : { height: '250px', minHeight: '250px', maxHeight: '400px' }
+          }
+        >
+          <iframe
+            ref={iframeRef}
+            src={src}
+            title={title}
+            className="w-full h-full border-none"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            {...props}
+          />
+        </div>
       </div>
-    </div>
     </>
   );
 };
@@ -328,7 +368,12 @@ const CustomLink = ({ href, children, threadId }) => {
   if (isYouTubeUrl(href)) {
     const videoId = extractYouTubeVideoId(href);
     if (videoId) {
-      return <YouTubeEmbed videoId={videoId} title="YouTube Video" />;
+      return (
+        <YouTubeEmbed
+          videoId={videoId}
+          title="YouTube Video"
+        />
+      );
     }
   }
 
@@ -341,7 +386,10 @@ const CustomLink = ({ href, children, threadId }) => {
   const resources = extractResources(message);
   if (mention !== null) {
     return (
-      <MentionComponent mentionName={mention.name} mentionId={mention.id} />
+      <MentionComponent
+        mentionName={mention.name}
+        mentionId={mention.id}
+      />
     );
   }
   if (resources.length > 0) {
@@ -462,16 +510,18 @@ const CustomLink = ({ href, children, threadId }) => {
 
   if (isComponentTarget(href)) {
     const details = parseDetailsFromText(href);
-    return (
-      <ComponentTarget details={details} />
-    );
+    return <ComponentTarget details={details} />;
   }
 
   // If the text of the link is exactly the URL, render a native <a> tag.
   const textContent = Array.isArray(children) ? children.join('') : children;
   if (textContent && typeof textContent === 'string' && textContent.trim() === href) {
     return (
-      <a href={href} target="_blank" rel="nofollow noreferrer">
+      <a
+        href={href}
+        target="_blank"
+        rel="nofollow noreferrer"
+      >
         {children}
       </a>
     );
@@ -479,7 +529,12 @@ const CustomLink = ({ href, children, threadId }) => {
 
   // Fallback: render a regular link
   return (
-    <a href={href} target="_blank" rel="nofollow noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+    <a
+      href={href}
+      target="_blank"
+      rel="nofollow noreferrer"
+      className="text-blue-600 hover:text-blue-800 underline"
+    >
       {children}
     </a>
   );
@@ -542,10 +597,15 @@ const SuggestionButton = ({ children, threadId }) => {
       } else if (Array.isArray(children)) {
         // Handle array of children - filter out non-string elements
         textContent = children
-          .filter(child => typeof child === 'string' || typeof child === 'number')
+          .filter((child) => typeof child === 'string' || typeof child === 'number')
           .join('')
           .trim();
-      } else if (children && typeof children === 'object' && children.props && children.props.children) {
+      } else if (
+        children &&
+        typeof children === 'object' &&
+        children.props &&
+        children.props.children
+      ) {
         // Handle React element with text content
         textContent = String(children.props.children || '').trim();
       } else {
@@ -557,10 +617,12 @@ const SuggestionButton = ({ children, threadId }) => {
     }
 
     if (threadId && textContent) {
-      dispatch(sendMessage({
-        content: textContent,
-        threadId,
-      }));
+      dispatch(
+        sendMessage({
+          content: textContent,
+          threadId,
+        }),
+      );
     }
   };
 
@@ -607,13 +669,9 @@ const SuggestionGroup = ({ children }) => {
             d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
           />
         </svg>
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Next steps
-        </span>
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Next steps</span>
       </div>
-      <div className="flex flex-wrap gap-3">
-        {children}
-      </div>
+      <div className="flex flex-wrap gap-3">{children}</div>
     </div>
   );
 };
@@ -735,9 +793,7 @@ const CustomMarkdown = ({
               </div>
             ),
             thead: ({ children }) => (
-              <thead className="bg-slate-50 dark:bg-slate-800">
-                {children}
-              </thead>
+              <thead className="bg-slate-50 dark:bg-slate-800">{children}</thead>
             ),
             tbody: ({ children }) => (
               <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
@@ -755,12 +811,10 @@ const CustomMarkdown = ({
               </th>
             ),
             td: ({ children }) => (
-              <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                {children}
-              </td>
+              <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{children}</td>
             ),
             // Code blocks
-            ...!!codeActive && {
+            ...(!!codeActive && {
               code({ node, inline, className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
                 const language = match ? match[1] : '';
@@ -782,7 +836,10 @@ const CustomMarkdown = ({
                     <CodeBlock
                       language={language}
                       value={codeValue}
-                      className={cn(className, 'rounded-lg shadow-sm border border-slate-200 dark:border-slate-700')}
+                      className={cn(
+                        className,
+                        'rounded-lg shadow-sm border border-slate-200 dark:border-slate-700',
+                      )}
                       {...props}
                     />
                   </div>
@@ -807,13 +864,15 @@ const CustomMarkdown = ({
                   </code>
                 );
               },
-            },
+            }),
             // Enhanced paragraph styling
             p: ({ children }) => (
               <p
                 className={cn(
                   'mb-0 leading-7 text-slate-700 dark:text-slate-300',
-                  noWrap ? 'overflow-hidden text-ellipsis whitespace-nowrap' : 'whitespace-pre-line',
+                  noWrap
+                    ? 'overflow-hidden text-ellipsis whitespace-nowrap'
+                    : 'whitespace-pre-line',
                 )}
               >
                 {children}
@@ -824,7 +883,9 @@ const CustomMarkdown = ({
               <em className="italic text-slate-700 dark:text-slate-300">{children}</em>
             ),
             strong: ({ children }) => (
-              <strong className="font-semibold text-slate-900 dark:text-slate-100">{children}</strong>
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">
+                {children}
+              </strong>
             ),
             // Enhanced list styling
             li: ({ children }) => (
@@ -832,13 +893,19 @@ const CustomMarkdown = ({
             ),
             // Enhanced ordered list
             ol: ({ children, ...props }) => (
-              <ol className="list-decimal ml-6 mb-6 space-y-1" {...props}>
+              <ol
+                className="list-decimal ml-6 mb-6 space-y-1"
+                {...props}
+              >
                 {children}
               </ol>
             ),
             // Enhanced unordered list
             ul: ({ children, ...props }) => (
-              <ul className="list-disc ml-6 mb-6 space-y-1" {...props}>
+              <ul
+                className="list-disc ml-6 mb-6 space-y-1"
+                {...props}
+              >
                 {children}
               </ul>
             ),
@@ -848,25 +915,27 @@ const CustomMarkdown = ({
               if (isYouTubeUrl(href)) {
                 const videoId = extractYouTubeVideoId(href);
                 if (videoId) {
-                  return <YouTubeEmbed videoId={videoId} title={props.title || 'YouTube Video'} />;
+                  return (
+                    <YouTubeEmbed
+                      videoId={videoId}
+                      title={props.title || 'YouTube Video'}
+                    />
+                  );
                 }
               }
-              return <CustomLink {...props} threadId={threadId} />;
+              return (
+                <CustomLink
+                  {...props}
+                  threadId={threadId}
+                />
+              );
             },
             // Custom suggestion component
             suggestion: ({ children }) => {
-              return (
-                <SuggestionButton threadId={threadId}>
-                  {children}
-                </SuggestionButton>
-              );
+              return <SuggestionButton threadId={threadId}>{children}</SuggestionButton>;
             },
             // Custom suggestion group component
-            'suggestion-group': ({ children }) => (
-              <SuggestionGroup>
-                {children}
-              </SuggestionGroup>
-            ),
+            'suggestion-group': ({ children }) => <SuggestionGroup>{children}</SuggestionGroup>,
             // Custom stripe component
             stripe: () => {
               return <StripeConnect />;
@@ -876,7 +945,7 @@ const CustomMarkdown = ({
               // Remove any height-related styles to prevent conflicts
               const { height, ...cleanStyle } = style || {};
               const { height: propsHeight, ...cleanProps } = props;
-              
+
               return (
                 <CustomIframe
                   src={src}
@@ -891,18 +960,36 @@ const CustomMarkdown = ({
               return null;
             },
             // Enhanced superscript
-            sup: ({ children }) => <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>,
+            sup: ({ children }) => (
+              <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>
+            ),
             // Enhanced collapsible sections
             details: ({ children, ...props }) => (
-              <details className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg my-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-200" {...props}>
+              <details
+                className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg my-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-200"
+                {...props}
+              >
                 {children}
               </details>
             ),
             summary: ({ children, ...props }) => (
-              <summary className="cursor-pointer font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 select-none" {...props}>
+              <summary
+                className="cursor-pointer font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 select-none"
+                {...props}
+              >
                 <span className="inline-flex items-center gap-2">
-                  <svg className="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    className="w-4 h-4 transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                   {children}
                 </span>

@@ -20,6 +20,12 @@ export interface RoomConfigProps {
   settings?: boolean;
   /** Show/hide close button in tab bar */
   show_close_button?: boolean;
+  /** Show/hide fullscreen button in tab bar */
+  show_fullscreen_button?: boolean;
+  /** Show/hide sidebar transformation button in tab bar */
+  show_sidebar_button?: boolean;
+  /** Initial open mode for the widget */
+  open_mode?: 'widget' | 'sidebar_left' | 'sidebar_right' | 'fullscreen';
   /** Theme mode (light, dark, or system) */
   theme?: string;
   /** Custom room title */
@@ -157,6 +163,9 @@ export function Room(props: RoomProps): React.JSX.Element {
     members,
     settings,
     show_close_button,
+    show_fullscreen_button,
+    show_sidebar_button,
+    open_mode = 'widget',
     theme,
     title,
     description,
@@ -190,6 +199,7 @@ export function Room(props: RoomProps): React.JSX.Element {
   const [, forceUpdate] = useState({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const initAttemptedRef = useRef(false);
+  const initialOpenModeAppliedRef = useRef(false);
 
   const fullConfig: AltanSDKConfig = {
     accountId,
@@ -218,6 +228,10 @@ export function Room(props: RoomProps): React.JSX.Element {
     // For compact mode, always show close button to enable widget closing
     const shouldShowCloseButton = mode === 'compact' ? true : show_close_button;
     if (shouldShowCloseButton !== undefined) params.set('show_close_button', shouldShowCloseButton.toString());
+    
+    // Add fullscreen and sidebar button parameters
+    if (show_fullscreen_button !== undefined) params.set('show_fullscreen_button', show_fullscreen_button.toString());
+    if (show_sidebar_button !== undefined) params.set('show_sidebar_button', show_sidebar_button.toString());
     
     if (theme !== undefined) params.set('theme', theme);
     if (title !== undefined) params.set('title', title);
@@ -449,13 +463,430 @@ export function Room(props: RoomProps): React.JSX.Element {
       // Handle widget close requests from TabBar
       if (data?.type === 'widget_close_request' && mode === 'compact') {
         console.log(`🔄 [${context}] Widget close requested from TabBar`);
+        
+        // Find widget container
+        let widgetContainer = document.getElementById('altan-widget-container');
+        
+        if (!widgetContainer && iframeRef.current) {
+          let parent = iframeRef.current.parentElement;
+          while (parent && parent !== document.body) {
+            const computedStyle = window.getComputedStyle(parent);
+            if (computedStyle.position === 'fixed' || computedStyle.position === 'absolute' || 
+                computedStyle.position === 'relative' || parent.tagName === 'DIV') {
+              widgetContainer = parent;
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          
+          if (!widgetContainer) {
+            widgetContainer = iframeRef.current.parentElement;
+          }
+        }
+        
+        if (widgetContainer) {
+          const sidebarState = widgetContainer.getAttribute('data-sidebar-state');
+          if (sidebarState === 'left' || sidebarState === 'right' || sidebarState === 'fullscreen') {
+            // Restore body margins
+            document.body.style.marginLeft = '';
+            document.body.style.marginRight = '';
+            document.body.style.paddingLeft = '';
+            document.body.style.paddingRight = '';
+            
+            // Clean up data attributes
+            widgetContainer.removeAttribute('data-sidebar-state');
+            
+            console.log(`🔄 [${context}] Restored body styles before closing`);
+          }
+        }
+        
         setIsOpen(false);
+      }
+
+      // Handle widget fullscreen requests from TabBar
+      if (data?.type === 'widget_fullscreen_request' && mode === 'compact') {
+        console.log(`🔄 [${context}] Widget fullscreen requested from TabBar`);
+        // Try to find the widget container - could be altan-widget-container or closest positioned parent
+        let widgetContainer = document.getElementById('altan-widget-container');
+        
+        // If no altan-widget-container, find the Room component's container
+        if (!widgetContainer && iframeRef.current) {
+          // Walk up the DOM to find a suitable container
+          let parent = iframeRef.current.parentElement;
+          while (parent && parent !== document.body) {
+            const computedStyle = window.getComputedStyle(parent);
+            if (computedStyle.position === 'fixed' || computedStyle.position === 'absolute' || 
+                computedStyle.position === 'relative' || parent.tagName === 'DIV') {
+              widgetContainer = parent;
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          
+          // Fallback to the direct parent of the iframe
+          if (!widgetContainer) {
+            widgetContainer = iframeRef.current.parentElement;
+          }
+        }
+        
+        console.log(`🔍 [${context}] Widget container found:`, widgetContainer);
+        console.log(`🔍 [${context}] Current container styles:`, widgetContainer?.style.cssText);
+        if (widgetContainer) {
+          const isCurrentlyFullscreen = widgetContainer.style.position === 'fixed' && 
+                                      widgetContainer.style.top === '0px' && 
+                                      widgetContainer.style.left === '0px';
+          
+          console.log(`🔍 [${context}] Is currently fullscreen:`, isCurrentlyFullscreen);
+          console.log(`🔍 [${context}] Position:`, widgetContainer.style.position);
+          console.log(`🔍 [${context}] Top:`, widgetContainer.style.top);
+          console.log(`🔍 [${context}] Left:`, widgetContainer.style.left);
+          
+          if (!isCurrentlyFullscreen) {
+            console.log(`🚀 [${context}] Entering fullscreen mode`);
+            // Enter fullscreen mode
+            widgetContainer.style.position = 'fixed';
+            widgetContainer.style.top = '0px';
+            widgetContainer.style.left = '0px';
+            widgetContainer.style.right = '0px';
+            widgetContainer.style.bottom = '0px';
+            widgetContainer.style.width = '100vw';
+            widgetContainer.style.height = '100vh';
+            widgetContainer.style.zIndex = '10000';
+            widgetContainer.style.transform = 'none';
+            console.log(`✅ [${context}] Fullscreen styles applied:`, widgetContainer.style.cssText);
+          } else {
+            // Exit fullscreen mode - restore original positioning
+            const positionStyles = getPositionStyles();
+            const { roomWidth, roomHeight } = getWidgetDimensions();
+            
+            widgetContainer.style.position = 'fixed';
+            widgetContainer.style.top = positionStyles.top || 'auto';
+            widgetContainer.style.left = positionStyles.left || 'auto';
+            widgetContainer.style.right = positionStyles.right || 'auto';
+            widgetContainer.style.bottom = positionStyles.bottom || 'auto';
+            widgetContainer.style.width = roomWidth;
+            widgetContainer.style.height = roomHeight;
+            widgetContainer.style.zIndex = '9999';
+            widgetContainer.style.transform = positionStyles.transform || 'none';
+          }
+        }
+      }
+
+      // Handle widget sidebar requests from TabBar
+      if (data?.type === 'widget_sidebar_request' && mode === 'compact') {
+        console.log(`🔄 [${context}] Widget sidebar requested from TabBar`);
+        // Try to find the widget container - could be altan-widget-container or closest positioned parent
+        let widgetContainer = document.getElementById('altan-widget-container');
+        
+        // If no altan-widget-container, find the Room component's container
+        if (!widgetContainer && iframeRef.current) {
+          // Walk up the DOM to find a suitable container
+          let parent = iframeRef.current.parentElement;
+          while (parent && parent !== document.body) {
+            const computedStyle = window.getComputedStyle(parent);
+            if (computedStyle.position === 'fixed' || computedStyle.position === 'absolute' || 
+                computedStyle.position === 'relative' || parent.tagName === 'DIV') {
+              widgetContainer = parent;
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          
+          // Fallback to the direct parent of the iframe
+          if (!widgetContainer) {
+            widgetContainer = iframeRef.current.parentElement;
+          }
+        }
+        
+        console.log(`🔍 [${context}] Sidebar container found:`, widgetContainer);
+        if (widgetContainer) {
+          // Check current sidebar state using data attributes for reliability
+          const sidebarState = widgetContainer.getAttribute('data-sidebar-state');
+          const isLeftSidebar = sidebarState === 'left';
+          const isRightSidebar = sidebarState === 'right';
+          
+          console.log(`🔍 [${context}] Current state - Left:`, isLeftSidebar, 'Right:', isRightSidebar);
+          
+          // Find the parent container to adjust its layout
+          const parentContainer = widgetContainer.parentElement;
+          console.log(`🔍 [${context}] Parent container:`, parentContainer);
+          console.log(`🔍 [${context}] Parent container tag:`, parentContainer?.tagName);
+          console.log(`🔍 [${context}] Parent container styles:`, parentContainer?.style.cssText);
+          console.log(`🔍 [${context}] Parent container children:`, parentContainer?.children.length);
+          
+          if (!isLeftSidebar && !isRightSidebar) {
+            // Enter left sidebar mode
+            console.log(`🚀 [${context}] Entering left sidebar mode`);
+            
+            // Set widget as left sidebar using fixed positioning
+            widgetContainer.style.position = 'fixed';
+            widgetContainer.style.top = '0px';
+            widgetContainer.style.left = '0px';
+            widgetContainer.style.bottom = '0px';
+            widgetContainer.style.right = 'auto';
+            widgetContainer.style.width = `${room_width}px`;
+            widgetContainer.style.height = '100vh';
+            widgetContainer.style.zIndex = '10000';
+            widgetContainer.style.transform = 'none';
+            widgetContainer.style.margin = '0px';
+            widgetContainer.style.padding = '0px';
+            
+            // Try to detect and compensate for any gap
+            setTimeout(() => {
+              const rect = widgetContainer.getBoundingClientRect();
+              console.log(`🔍 [${context}] Dynamic sidebar position check:`, {
+                left: rect.left,
+                width: rect.width,
+                containerStyle: widgetContainer.style.left
+              });
+              
+              if (rect.left > 2) { // Small tolerance for rounding
+                console.log(`🔧 [${context}] Detected gap of ${rect.left}px, adjusting position`);
+                widgetContainer.style.left = `-${rect.left}px`;
+                
+                // Update body margin accordingly
+                const currentMargin = parseInt(document.body.style.marginLeft) || room_width;
+                const newMargin = currentMargin - rect.left;
+                document.body.style.marginLeft = `${Math.max(0, newMargin)}px`;
+                
+                console.log(`✅ [${context}] Adjusted: widget left = -${rect.left}px, body margin = ${Math.max(0, newMargin)}px`);
+              }
+            }, 150);
+            
+            widgetContainer.setAttribute('data-sidebar-state', 'left');
+            
+            // Try a different approach - instead of exact room_width, account for any gaps
+            const actualWidgetRect = widgetContainer.getBoundingClientRect();
+            const adjustedMargin = actualWidgetRect.right; // Use the actual right edge of the widget
+            
+            console.log(`🔍 [${context}] Widget rect:`, {
+              left: actualWidgetRect.left,
+              right: actualWidgetRect.right,
+              width: actualWidgetRect.width,
+              room_width: room_width
+            });
+            
+            // Add margin to the body to make space for the sidebar
+            document.body.style.marginLeft = `${adjustedMargin}px`;
+            document.body.style.transition = 'margin-left 0.3s ease';
+            document.body.style.paddingLeft = '0px';
+            
+            // Remove any potential conflicting styles on html and body
+            document.documentElement.style.paddingLeft = '0px';
+            document.documentElement.style.marginLeft = '0px';
+            
+            // Try to also override any container styles that might be causing gaps
+            const allElements = document.querySelectorAll('*');
+            allElements.forEach(el => {
+              const computedStyle = window.getComputedStyle(el);
+              if (computedStyle.marginLeft && computedStyle.marginLeft !== '0px') {
+                console.log(`🔍 [${context}] Found element with marginLeft:`, el, computedStyle.marginLeft);
+              }
+            });
+            
+            // Debug: check for any conflicting styles
+            const bodyComputedStyle = window.getComputedStyle(document.body);
+            console.log(`🔍 [${context}] Body computed styles:`, {
+              marginLeft: bodyComputedStyle.marginLeft,
+              paddingLeft: bodyComputedStyle.paddingLeft,
+              left: bodyComputedStyle.left,
+              position: bodyComputedStyle.position
+            });
+            
+            console.log(`✅ [${context}] Left sidebar applied with body margin:`, document.body.style.marginLeft);
+            
+          } else if (isLeftSidebar) {
+            // Switch to right sidebar mode
+            console.log(`🚀 [${context}] Switching to right sidebar mode`);
+            
+            // Set widget as right sidebar using fixed positioning
+            widgetContainer.style.position = 'fixed';
+            widgetContainer.style.top = '0px';
+            widgetContainer.style.left = 'auto';
+            widgetContainer.style.bottom = '0px';
+            widgetContainer.style.right = '0px';
+            widgetContainer.style.width = `${room_width}px`;
+            widgetContainer.style.height = '100vh';
+            widgetContainer.style.zIndex = '10000';
+            widgetContainer.style.transform = 'none';
+            widgetContainer.setAttribute('data-sidebar-state', 'right');
+            
+            // Switch body margin from left to right
+            document.body.style.marginLeft = '0px';
+            document.body.style.paddingLeft = ''; // Restore padding
+            document.body.style.marginRight = `${room_width}px`;
+            document.body.style.paddingRight = '0px';
+            document.body.style.transition = 'margin 0.3s ease';
+            
+            console.log(`✅ [${context}] Right sidebar applied with body margin:`, document.body.style.marginRight);
+            
+          } else {
+            // Exit sidebar mode - restore original positioning
+            console.log(`🚀 [${context}] Exiting sidebar mode`);
+            
+            const positionStyles = getPositionStyles();
+            const { roomWidth, roomHeight } = getWidgetDimensions();
+            
+            // Restore body and html margins and padding
+            document.body.style.marginLeft = '';
+            document.body.style.marginRight = '';
+            document.body.style.paddingLeft = '';
+            document.body.style.paddingRight = '';
+            document.body.style.transition = 'margin 0.3s ease';
+            
+            // Also restore html element styles
+            document.documentElement.style.paddingLeft = '';
+            document.documentElement.style.marginLeft = '';
+            document.documentElement.style.paddingRight = '';
+            document.documentElement.style.marginRight = '';
+            
+            console.log(`🔄 [${context}] Body and HTML margins and padding restored`);
+            
+            // Restore widget positioning
+            widgetContainer.style.position = 'fixed';
+            widgetContainer.style.top = positionStyles.top || 'auto';
+            widgetContainer.style.left = positionStyles.left || 'auto';
+            widgetContainer.style.right = positionStyles.right || 'auto';
+            widgetContainer.style.bottom = positionStyles.bottom || 'auto';
+            widgetContainer.style.width = roomWidth;
+            widgetContainer.style.height = roomHeight;
+            widgetContainer.style.zIndex = '9999';
+            widgetContainer.style.transform = positionStyles.transform || 'none';
+            
+            // Clean up data attributes
+            widgetContainer.removeAttribute('data-sidebar-state');
+            
+            console.log(`✅ [${context}] Widget positioning restored`);
+          }
+        }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [authData, mode]);
+
+  // Apply initial open mode
+  useEffect(() => {
+    if (mode === 'compact' && open_mode !== 'widget' && !initialOpenModeAppliedRef.current && isOpen) {
+      initialOpenModeAppliedRef.current = true;
+      
+      // Find the widget container
+      let widgetContainer = document.getElementById('altan-widget-container');
+      
+      // If no altan-widget-container, find the Room component's container
+      if (!widgetContainer && iframeRef.current) {
+        let parent = iframeRef.current.parentElement;
+        while (parent && parent !== document.body) {
+          const computedStyle = window.getComputedStyle(parent);
+          if (computedStyle.position === 'fixed' || computedStyle.position === 'absolute' || 
+              computedStyle.position === 'relative' || parent.tagName === 'DIV') {
+            widgetContainer = parent;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+        
+        if (!widgetContainer) {
+          widgetContainer = iframeRef.current.parentElement;
+        }
+      }
+
+      if (widgetContainer) {
+        console.log(`🚀 [SDK] Applying initial open mode: ${open_mode}`);
+        
+        if (open_mode === 'fullscreen') {
+          // Apply fullscreen mode
+          widgetContainer.style.position = 'fixed';
+          widgetContainer.style.top = '0px';
+          widgetContainer.style.left = '0px';
+          widgetContainer.style.right = '0px';
+          widgetContainer.style.bottom = '0px';
+          widgetContainer.style.width = '100vw';
+          widgetContainer.style.height = '100vh';
+          widgetContainer.style.zIndex = '10000';
+          widgetContainer.style.transform = 'none';
+          widgetContainer.setAttribute('data-sidebar-state', 'fullscreen');
+          
+        } else if (open_mode === 'sidebar_left') {
+          // First reset any previous state
+          document.body.style.marginLeft = '';
+          document.body.style.marginRight = '';
+          document.body.style.paddingLeft = '';
+          document.body.style.paddingRight = '';
+          widgetContainer.removeAttribute('data-sidebar-state');
+          
+          console.log(`🔄 [SDK] Reset body styles before applying sidebar_left`);
+          
+          // Apply left sidebar mode
+          widgetContainer.style.position = 'fixed';
+          widgetContainer.style.top = '0px';
+          widgetContainer.style.left = '0px';
+          widgetContainer.style.bottom = '0px';
+          widgetContainer.style.right = 'auto';
+          widgetContainer.style.width = `${room_width}px`;
+          widgetContainer.style.height = '100vh';
+          widgetContainer.style.zIndex = '10000';
+          widgetContainer.style.transform = 'none';
+          widgetContainer.style.margin = '0px';
+          widgetContainer.style.padding = '0px';
+          
+          // Try to detect and compensate for any gap after layout settles
+          setTimeout(() => {
+            const rect = widgetContainer.getBoundingClientRect();
+            console.log(`🔍 [SDK] Initial sidebar position check:`, {
+              left: rect.left,
+              width: rect.width,
+              containerStyle: widgetContainer.style.left,
+              bodyMargin: document.body.style.marginLeft
+            });
+            
+            if (rect.left > 2) { // Small tolerance for rounding
+              console.log(`🔧 [SDK] Initial sidebar - detected gap of ${rect.left}px, adjusting position`);
+              widgetContainer.style.left = `-${rect.left}px`;
+              
+              // Update body margin to account for the adjustment
+              const newMargin = room_width - rect.left;
+              document.body.style.marginLeft = `${Math.max(0, newMargin)}px`;
+              
+              console.log(`✅ [SDK] Adjusted: widget left = -${rect.left}px, body margin = ${Math.max(0, newMargin)}px`);
+            } else {
+              console.log(`✅ [SDK] Initial sidebar positioning looks good`);
+            }
+          }, 150);
+          
+          widgetContainer.setAttribute('data-sidebar-state', 'left');
+          
+          // Add margin to body and ensure no conflicting styles
+          document.body.style.marginLeft = `${room_width}px`;
+          document.body.style.paddingLeft = '0px';
+          document.body.style.transition = 'margin-left 0.3s ease';
+          
+          // Remove any potential conflicting styles on html and body
+          document.documentElement.style.paddingLeft = '0px';
+          document.documentElement.style.marginLeft = '0px';
+          
+        } else if (open_mode === 'sidebar_right') {
+          // Apply right sidebar mode
+          widgetContainer.style.position = 'fixed';
+          widgetContainer.style.top = '0px';
+          widgetContainer.style.left = 'auto';
+          widgetContainer.style.bottom = '0px';
+          widgetContainer.style.right = '0px';
+          widgetContainer.style.width = `${room_width}px`;
+          widgetContainer.style.height = '100vh';
+          widgetContainer.style.zIndex = '10000';
+          widgetContainer.style.transform = 'none';
+          widgetContainer.setAttribute('data-sidebar-state', 'right');
+          
+          // Add margin to body
+          document.body.style.marginRight = `${room_width}px`;
+          document.body.style.paddingRight = '0px';
+          document.body.style.transition = 'margin-right 0.3s ease';
+        }
+      }
+    }
+  }, [mode, open_mode, isOpen, room_width]);
 
   // Handle window resize to update mobile detection
   useEffect(() => {
