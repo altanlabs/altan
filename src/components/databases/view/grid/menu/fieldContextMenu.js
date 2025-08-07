@@ -1,7 +1,7 @@
 import { deleteFieldThunk } from '../../../../../redux/slices/bases';
 import { dispatch } from '../../../../../redux/store';
 
-const createFieldContextMenuItems = (field, params, setEditField) => {
+const createFieldContextMenuItems = (field, params, setEditField, tableId) => {
   return [
     {
       name: 'Edit field',
@@ -46,7 +46,7 @@ const createFieldContextMenuItems = (field, params, setEditField) => {
       icon: '<span class="ag-icon ag-icon-cross"></span>',
       cssClasses: ['text-red-600'],
       action: () => {
-        dispatch(deleteFieldThunk(field.table_id, field.id));
+        dispatch(deleteFieldThunk(tableId, field.id));
       },
     },
   ];

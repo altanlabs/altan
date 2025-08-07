@@ -227,18 +227,13 @@ function Base({
         wsReadyState: ws.websocket?.readyState,
         isOpen: ws.isOpen,
       });
-      ws.subscribe(`bases:${baseId}`);
+      ws.subscribe(`base:${baseId}`);
     }
   }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
 
   // Cleanup subscriptions and state
   useEffect(() => {
     return () => {
-      console.log('🔔 Base: Cleaning up subscriptions:', {
-        baseId,
-        wsReadyState: ws?.websocket?.readyState,
-        isOpen: ws?.isOpen,
-      });
       setState({
         activeTab: null,
         createTableOpen: false,
@@ -246,7 +241,7 @@ function Base({
         isTableSwitching: false,
       });
       if (!!ws?.isOpen && !!baseId) {
-        ws.unsubscribe(`bases:${baseId}`);
+        ws.unsubscribe(`base:${baseId}`);
       }
     };
   }, [baseId]); // Only depend on baseId for cleanup

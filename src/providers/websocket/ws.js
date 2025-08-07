@@ -171,7 +171,11 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('data', data.type);
+  console.log('handleWebSocketEvent:', {
+    data,
+    userId: user_id,
+    timestamp: new Date().toISOString(),
+  });
   // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':
@@ -417,6 +421,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteBase(data.data.ids[0]));
       break;
     case 'TableNew':
+      console.log('TABLE NEW', {
+        data,
+        userId: user_id,
+        timestamp: new Date().toISOString(),
+      });
       dispatch(
         addTable({
           baseId: data.base_id,

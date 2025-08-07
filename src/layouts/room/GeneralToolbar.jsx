@@ -44,7 +44,7 @@ const GeneralToolbar = ({
   return (
     <div
       className={cn(
-        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 backdrop-blur-md px-1',
+        'relative left-0 right-0 z-10 top-0 flex flex-col transition-all duration-500 px-1',
         className,
       )}
     >

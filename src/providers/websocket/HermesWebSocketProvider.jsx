@@ -50,8 +50,8 @@ const HermesWebSocketProvider = ({ children }) => {
         securedWs
       ) {
         // Only unsubscribe from channels that are actually subscribed
-        const channelsToUnsubscribe = filteredChannels.filter(channel => 
-          activeSubscriptions.includes(channel)
+        const channelsToUnsubscribe = filteredChannels.filter((channel) =>
+          activeSubscriptions.includes(channel),
         );
 
         if (channelsToUnsubscribe.length > 0) {
@@ -73,7 +73,7 @@ const HermesWebSocketProvider = ({ children }) => {
           });
           return newSubscriptions;
         });
-        
+
         if (!!callback) {
           callback();
         }
@@ -87,7 +87,7 @@ const HermesWebSocketProvider = ({ children }) => {
     const logSubscriptionStatus = () => {
       console.log('📊 WS: Current subscription status:', {
         activeSubscriptions,
-        subscriptionQueue: subscriptionQueue.map(item => item.channel),
+        subscriptionQueue: subscriptionQueue.map((item) => item.channel),
         totalSubscriptions: activeSubscriptions.length + subscriptionQueue.length,
         wsReadyState: wsRef.current?.readyState,
         isSecured: securedWs,
@@ -98,7 +98,7 @@ const HermesWebSocketProvider = ({ children }) => {
 
     // Log every 30 seconds instead of 10
     const interval = setInterval(logSubscriptionStatus, 30000);
-    
+
     // Also log immediately
     logSubscriptionStatus();
 
@@ -108,18 +108,19 @@ const HermesWebSocketProvider = ({ children }) => {
   const subscribe = useCallback(
     (channel, callback) => {
       const channels = Array.isArray(channel) ? channel : [channel];
-      
+
       // Filter out channels that are already subscribed or in queue
-      const newChannels = channels.filter(ch => 
-        !activeSubscriptions.includes(ch) && 
-        !subscriptionQueue.some(item => item.channel === ch)
+      const newChannels = channels.filter(
+        (ch) =>
+          !activeSubscriptions.includes(ch) &&
+          !subscriptionQueue.some((item) => item.channel === ch),
       );
 
       if (newChannels.length === 0) {
         console.log('🔔 WS: Skipping subscription - all channels already subscribed:', {
           requested: channels,
-          alreadySubscribed: channels.filter(ch => activeSubscriptions.includes(ch)),
-          inQueue: channels.filter(ch => subscriptionQueue.some(item => item.channel === ch)),
+          alreadySubscribed: channels.filter((ch) => activeSubscriptions.includes(ch)),
+          inQueue: channels.filter((ch) => subscriptionQueue.some((item) => item.channel === ch)),
         });
         return;
       }
@@ -128,15 +129,15 @@ const HermesWebSocketProvider = ({ children }) => {
       const subscriptionKey = newChannels.sort().join(',');
       const now = Date.now();
       const lastSubscription = subscriptionTimestamps.current.get(subscriptionKey);
-      
-      if (lastSubscription && (now - lastSubscription) < 100) {
+
+      if (lastSubscription && now - lastSubscription < 100) {
         console.log('🔔 WS: Skipping rapid subscription (throttled):', {
           channels: newChannels,
           timeSinceLast: now - lastSubscription,
         });
         return;
       }
-      
+
       subscriptionTimestamps.current.set(subscriptionKey, now);
 
       console.log('🔔 WS: Attempting to subscribe to channels:', {
@@ -165,7 +166,7 @@ const HermesWebSocketProvider = ({ children }) => {
         });
         setSubscriptionQueue((current) => [
           ...current,
-          ...newChannels.map(ch => ({ channel: ch, callback, type: 'l' }))
+          ...newChannels.map((ch) => ({ channel: ch, callback, type: 'l' })),
         ]);
         return;
       }
@@ -220,7 +221,7 @@ const HermesWebSocketProvider = ({ children }) => {
     if (securedWs && subscriptionQueue.length > 0 && !!wsRef.current) {
       console.log('📋 WS: Processing subscription queue:', {
         queueLength: subscriptionQueue.length,
-        queueItems: subscriptionQueue.map(item => item.channel),
+        queueItems: subscriptionQueue.map((item) => item.channel),
         timestamp: new Date().toISOString(),
       });
 
@@ -233,20 +234,20 @@ const HermesWebSocketProvider = ({ children }) => {
             hasCallback: !!callback,
             timestamp: new Date().toISOString(),
           });
-          
+
           wsRef.current.send(
             JSON.stringify({
               type: 'subscription',
               subscription: { type: type || 'l', mode: 's', elements: [channel] },
             }),
           );
-          
+
           console.log('✅ WS: Queued subscription sent:', {
             channel,
             activeSubscriptions: [...activeSubscriptions, channel],
             timestamp: new Date().toISOString(),
           });
-          
+
           setActiveSubscriptions((current) => [...current, channel]);
           if (callback) {
             callback();
@@ -258,7 +259,7 @@ const HermesWebSocketProvider = ({ children }) => {
           });
         }
       });
-      
+
       console.log('🎯 WS: All queued subscriptions processed');
       setSubscriptionQueue([]);
     }
@@ -294,7 +295,9 @@ const HermesWebSocketProvider = ({ children }) => {
           }
 
           // Create WebSocket with real token
-          const ws = new WebSocket(`wss://hermes.altan.ai/ws?account_id=${accountId}&user_id=${accountId}&token=${accessToken}`);
+          const ws = new WebSocket(
+            `wss://hermes.altan.ai/ws?account_id=${accountId}&user_id=${accountId}&token=${accessToken}`,
+          );
           console.log('🔗 WS: Connecting to hermes.altan.ai with real token');
           wsRef.current = ws;
 
@@ -304,28 +307,29 @@ const HermesWebSocketProvider = ({ children }) => {
             setIsOpen(true);
             console.log('🔗 WS: Connection established');
             console.log('🔍 WS: Waiting for server response...');
-            
+
             // With hermes, the token is in the URL, so we can mark as secured immediately
             console.log('🔐 WS: Marking connection as secured (token in URL)');
             setSecuredWs(true);
-            
+
             // Send authentication message
             console.log('🔐 WS: Sending authentication message:', {
               hasToken: !!accessToken,
               tokenLength: accessToken?.length,
               timestamp: new Date().toISOString(),
             });
-            
+
             const authMessage = JSON.stringify({ type: 'authenticate', token: accessToken });
-            console.log('📤 WS: Raw authentication message:', authMessage);
-            
+
             ws.send(authMessage);
             console.log('✅ WS: Authentication message sent');
-            
+
             // Set a timeout to check if we receive ACK
             setTimeout(() => {
               if (!securedWs) {
-                console.warn('⚠️ WS: No ACK received after 5 seconds, connection may not be secured');
+                console.warn(
+                  '⚠️ WS: No ACK received after 5 seconds, connection may not be secured',
+                );
               }
             }, 5000);
           };
@@ -337,7 +341,7 @@ const HermesWebSocketProvider = ({ children }) => {
               wasClean: event.wasClean,
               timestamp: new Date().toISOString(),
             });
-            
+
             if (wsRef.current) {
               console.log('🔗 WS: Closed by server');
             }
@@ -426,14 +430,14 @@ const HermesWebSocketProvider = ({ children }) => {
             } else if (data.type === 'ack') {
               console.log('🔐 WS: Received ACK, connection secured');
               setSecuredWs(true);
-              
+
               // Process the subscription queue now that the connection is secured
               console.log('📋 WS: Processing subscription queue:', {
                 queueLength: subscriptionQueue.length,
-                queueItems: subscriptionQueue.map(item => item.channel),
+                queueItems: subscriptionQueue.map((item) => item.channel),
                 timestamp: new Date().toISOString(),
               });
-              
+
               subscriptionQueue.forEach(({ channel, callback, type }) => {
                 console.log('📡 WS: Processing queued subscription:', {
                   channel,
@@ -441,33 +445,37 @@ const HermesWebSocketProvider = ({ children }) => {
                   hasCallback: !!callback,
                   timestamp: new Date().toISOString(),
                 });
-                
+
                 ws.send(
                   JSON.stringify({
                     type: 'subscription',
-                    subscription: { type: type || 'l', mode: 's', elements: Array.isArray(channel) ? channel : [channel] },
+                    subscription: {
+                      type: type || 'l',
+                      mode: 's',
+                      elements: Array.isArray(channel) ? channel : [channel],
+                    },
                   }),
                 );
-                
+
                 console.log('✅ WS: Queued subscription sent:', {
                   channel,
                   activeSubscriptions: [...activeSubscriptions, channel],
                   timestamp: new Date().toISOString(),
                 });
-                
-                setActiveSubscriptions((current) => 
-                  Array.isArray(channel) ? [...current, ...channel] : [...current, channel]
+
+                setActiveSubscriptions((current) =>
+                  Array.isArray(channel) ? [...current, ...channel] : [...current, channel],
                 );
                 if (callback) {
                   callback();
                 }
               });
-              
+
               console.log('🎯 WS: All queued subscriptions processed:', {
                 totalActiveSubscriptions: activeSubscriptions.length + subscriptionQueue.length,
                 timestamp: new Date().toISOString(),
               });
-              
+
               setSubscriptionQueue([]);
             } else {
               // Log all other events
@@ -478,7 +486,7 @@ const HermesWebSocketProvider = ({ children }) => {
                 payload: data.payload,
                 timestamp: new Date().toISOString(),
               });
-              
+
               console.log('🔄 WS Event Handled by handleWebSocketEvent:', {
                 data,
                 userId: user_id,
@@ -503,7 +511,16 @@ const HermesWebSocketProvider = ({ children }) => {
 
       initializeWebSocket();
     }
-  }, [isAuthenticated, waitingToReconnect, isOpen, accountId, guest, authorizeUser, logout, user_id]);
+  }, [
+    isAuthenticated,
+    waitingToReconnect,
+    isOpen,
+    accountId,
+    guest,
+    authorizeUser,
+    logout,
+    user_id,
+  ]);
 
   const memoizedValue = useMemo(
     () => ({
@@ -518,7 +535,11 @@ const HermesWebSocketProvider = ({ children }) => {
     [activeSubscriptions, securedWs, sendCommand, subscribe, unsubscribe],
   );
 
-  return <HermesWebSocketContext.Provider value={memoizedValue}>{children}</HermesWebSocketContext.Provider>;
+  return (
+    <HermesWebSocketContext.Provider value={memoizedValue}>
+      {children}
+    </HermesWebSocketContext.Provider>
+  );
 };
 
 export default memo(HermesWebSocketProvider);

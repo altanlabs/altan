@@ -17,6 +17,7 @@ import {
   AgentCardPage,
   BasePage,
   ProjectPage,
+  ProjectPageMobileTest,
   BasesPage,
   ExecutionsPage,
   DashboardPage,
@@ -288,6 +289,40 @@ const Router = () => {
           <AuthGuard requireAuth={true}>
             <ProjectLayout>
               <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Mobile Test Routes */}
+        <Route
+          path="/mobile-test/:altanerId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPageMobileTest />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/mobile-test/:altanerId/c/:componentId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPageMobileTest />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/mobile-test/:altanerId/c/:componentId/i/:itemId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPageMobileTest />
             </ProjectLayout>
           </AuthGuard>
         </Route>

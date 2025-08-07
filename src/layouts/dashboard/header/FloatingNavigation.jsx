@@ -192,23 +192,21 @@ const FloatingNavigation = () => {
     }
   };
 
+  // Don't render on mobile - only show on desktop
+  if (!isDesktop) {
+    return null;
+  }
+
   return (
     <div className={getPositioningClasses()}>
       <menu
-        className={`${getContainerStyles()} flex origin-center transform justify-center ${
-          isDesktop ? 'rounded-2xl' : 'rounded-t-none'
-        } backdrop-blur-2xl transition-all duration-500 ease-out select-none ${
-          isDesktop ? '' : 'w-full'
-        }`}
+        className={`${getContainerStyles()} flex origin-center transform justify-center rounded-2xl backdrop-blur-2xl transition-all duration-500 ease-out select-none`}
       >
         {navigationItems.map((item, index) => {
           const isActive = isActivePath(item.path);
 
           return (
-            <li
-              key={item.path}
-              className={isDesktop ? '' : 'flex-1'}
-            >
+            <li key={item.path}>
               <a
                 href="#"
                 onClick={(e) => {
@@ -218,24 +216,19 @@ const FloatingNavigation = () => {
                 className={getButtonStyles(item.path, index)}
               >
                 {/* Icon */}
-                <div className={isDesktop ? '' : 'mb-1'}>{item.icon}</div>
-
-                {/* Label - only show on mobile */}
-                {!isDesktop && <span className="text-xs font-medium">{item.label}</span>}
+                <div>{item.icon}</div>
 
                 {/* Tooltip - only show on desktop */}
-                {isDesktop && (
-                  <span
-                    role="tooltip"
-                    className={`pointer-events-none absolute top-12 left-1/2 z-10 block origin-top -translate-x-1/2 scale-90 rounded-lg text-xs leading-none font-medium opacity-0 transition-all duration-75 ease-out group-hover:scale-100 group-hover:opacity-100 whitespace-nowrap ${
-                      theme.palette.mode === 'dark'
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                )}
+                <span
+                  role="tooltip"
+                  className={`pointer-events-none absolute top-12 left-1/2 z-10 block origin-top -translate-x-1/2 scale-90 rounded-lg text-xs leading-none font-medium opacity-0 transition-all duration-75 ease-out group-hover:scale-100 group-hover:opacity-100 whitespace-nowrap ${
+                    theme.palette.mode === 'dark'
+                      ? 'bg-gray-700 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  {item.label}
+                </span>
 
                 {/* Active state background */}
                 <AnimatePresence>
@@ -243,16 +236,10 @@ const FloatingNavigation = () => {
                     <m.div
                       key="activeNavTab"
                       layoutId="activeNavTab"
-                      className={`absolute inset-0 z-[-1] ${
-                        isDesktop ? 'rounded-xl' : 'rounded-none'
-                      } ${
-                        isDesktop
-                          ? theme.palette.mode === 'dark'
-                            ? 'bg-white shadow-none'
-                            : 'bg-white shadow-[0_1px_4px_0px_rgba(0,0,0,0.075)]'
-                          : theme.palette.mode === 'dark'
-                            ? 'bg-gray-800'
-                            : 'bg-gray-50'
+                      className={`absolute inset-0 z-[-1] rounded-xl ${
+                        theme.palette.mode === 'dark'
+                          ? 'bg-white shadow-none'
+                          : 'bg-white shadow-[0_1px_4px_0px_rgba(0,0,0,0.075)]'
                       }`}
                       initial={false}
                       transition={{

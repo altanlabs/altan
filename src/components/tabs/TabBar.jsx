@@ -437,7 +437,7 @@ const TabBar = ({
           )}
 
           {/* Sidebar button */}
-          {!showSidebarButton && (
+          {showSidebarButton && (
             <Tooltip
               title="Transform to sidebar"
               placement="top"
