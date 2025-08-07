@@ -3,18 +3,18 @@ import { Capacitor } from '@capacitor/core';
 import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
 
 import ChatDrawer from './ChatDrawer';
 import HeaderActions from './HeaderActions';
+import MobileNavSidebar from './MobileNavSidebar';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { StyledChart } from '../../../components/chart';
 import Iconify from '../../../components/iconify';
+import Logo from '../../../components/logo/Logo';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
 import { useSelector } from '../../../redux/store';
-import Logo from '../../../components/logo/Logo';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -33,7 +33,6 @@ function Header() {
   const theme = useTheme();
   const { user } = useAuthContext();
   const isDesktop = useResponsive('up', 'md');
-  const history = useHistory();
   const headerVisible = useSelector(selectHeaderVisible);
   const isIOS = isIOSCapacitor();
 
@@ -43,6 +42,9 @@ function Header() {
     const savedState = localStorage.getItem('chatDrawerOpen');
     return savedState ? JSON.parse(savedState) : false;
   });
+
+  // Mobile navigation sidebar state
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Update localStorage whenever drawer state changes
   useEffect(() => {
@@ -59,8 +61,8 @@ function Header() {
     }
   }, [user]);
 
-  const handleChatDrawerToggle = () => {
-    setChatDrawerOpen(!chatDrawerOpen);
+  const handleMobileNavToggle = () => {
+    setMobileNavOpen(!mobileNavOpen);
   };
 
   if (!headerVisible) {
@@ -111,20 +113,22 @@ function Header() {
           <Stack
             direction="row"
             alignItems="center"
-            className="pl-2"
           >
-            {/* {user && (
+            {/* Mobile navigation button - only show on mobile */}
+            {!isDesktop && user && (
               <IconButton
-                onClick={handleChatDrawerToggle}
+                onClick={handleMobileNavToggle}
                 sx={{
+                  mr: 1,
+                  color: theme.palette.text.secondary,
                   '&:hover': {
                     backgroundColor: theme.palette.action.hover,
                   },
                 }}
               >
-                <Iconify icon="ph:sidebar-duotone" />
+                <Iconify icon="mynaui:sidebar-solid" width={24} />
               </IconButton>
-            )} */}
+            )}
 
             <Logo minimal />
             {/* <img
@@ -154,6 +158,12 @@ function Header() {
           persistent={true}
         />
       )}
+
+      {/* Mobile Navigation Sidebar */}
+      <MobileNavSidebar
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      />
     </>
   );
 }

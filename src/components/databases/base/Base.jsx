@@ -3,7 +3,7 @@ import { useParams, useHistory } from 'react-router';
 
 import BaseLayout from './BaseLayout.jsx';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import HermesWebSocketProvider, { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   deleteTableById,
   getBaseById,
@@ -31,8 +31,8 @@ function Base({
   //  ...props
 }) {
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
-  const history = useHistory();;
-  const ws = useWebSocket();
+  const history = useHistory();
+  const ws = useHermesWebSocket();
 
   const baseId = explicitBaseId || routeBaseId || ids[0];
 
@@ -102,13 +102,13 @@ function Base({
         const tables = response?.base?.tables?.items || [];
         if (tables.length > 0) {
           const firstTable = tables[0];
-          const firstView = firstTable.views?.items?.[0]?.id;
+          const firstView = firstTable.views?.items?.[0]?.id || 'default';
 
           if (!tableId) {
             navigateToPath(firstTable.id, firstView);
           } else if (!viewId) {
             const currentTable = tables.find((table) => table.id === tableId);
-            const defaultView = currentTable?.views?.items?.[0]?.id;
+            const defaultView = currentTable?.views?.items?.[0]?.id || 'default';
             navigateToPath(tableId, defaultView);
           }
         }
@@ -133,7 +133,7 @@ function Base({
             const remainingTables = base?.tables?.items?.filter((t) => t.id !== tableId);
             if (remainingTables?.length > 0) {
               const nextTable = remainingTables[0];
-              const nextView = nextTable.views?.items?.[0]?.id;
+              const nextView = nextTable.views?.items?.[0]?.id || 'default';
               navigateToPath(nextTable.id, nextView);
             } else {
               if (altanerId) {
@@ -144,7 +144,9 @@ function Base({
             }
           }
         })
-        .catch((error) => console.error('Error deleting table:', error));
+        .catch(() => {
+          // console.error('Error deleting table:', error);
+        });
     },
     [
       baseId,
@@ -169,7 +171,7 @@ function Base({
       if (newTableId === tableId) return; // Don't history.push if already on this tab
 
       const targetTable = base?.tables?.items?.find((table) => table.id === newTableId);
-      const defaultView = targetTable?.views?.items?.[0]?.id || viewId;
+      const defaultView = targetTable?.views?.items?.[0]?.id || viewId || 'default';
 
       setState((prev) => ({
         ...prev,
@@ -198,8 +200,8 @@ function Base({
       if (!tableId) return;
       try {
         dispatch(updateTableById(baseId, tableId, { name: newName }));
-      } catch (error) {
-        console.error('Error renaming table:', error);
+      } catch {
+        // console.error('Error renaming table:', error);
       }
     },
     [baseId],
@@ -217,12 +219,19 @@ function Base({
 
   const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
 
+  // Subscribe to base updates
   useEffect(() => {
     if (!!baseId && ws?.isOpen) {
-      ws.subscribe(`bases:${baseId}`);
+      console.log('🔔 Base: Subscribing to base updates:', {
+        baseId,
+        wsReadyState: ws.websocket?.readyState,
+        isOpen: ws.isOpen,
+      });
+      ws.subscribe(`base:${baseId}`);
     }
-  }, [ws?.isOpen, baseId]);
+  }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
 
+  // Cleanup subscriptions and state
   useEffect(() => {
     return () => {
       setState({
@@ -231,11 +240,11 @@ function Base({
         createBaseOpen: false,
         isTableSwitching: false,
       });
-      if (!!ws) {
-        ws.unsubscribe(`bases:${baseId}`);
+      if (!!ws?.isOpen && !!baseId) {
+        ws.unsubscribe(`base:${baseId}`);
       }
     };
-  }, []);
+  }, [baseId]); // Only depend on baseId for cleanup
 
   if (isBaseLoading) {
     return <LoadingFallback />;
@@ -293,6 +302,15 @@ function Base({
   );
 }
 
-export default memo(Base, (prevProps, nextProps) => {
+// Create a wrapper component that provides the HermesWebSocket
+const BaseWithHermesWebSocket = memo(function BaseWithHermesWebSocket(props) {
+  return (
+    <HermesWebSocketProvider>
+      <Base {...props} />
+    </HermesWebSocketProvider>
+  );
+}, (prevProps, nextProps) => {
   return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
 });
+
+export default BaseWithHermesWebSocket;

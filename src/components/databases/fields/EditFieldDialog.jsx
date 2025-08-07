@@ -18,7 +18,7 @@ import { updateFieldThunk } from '../../../redux/slices/bases';
 import { dispatch } from '../../../redux/store.js';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 
-export default function EditFieldDialog({ field, baseId, open, onClose }) {
+export default function EditFieldDialog({ field, baseId, tableId, open, onClose }) {
   const [fieldName, setFieldName] = useState('');
   const [fieldConfig, setFieldConfig] = useState({});
   const [fieldNameError, setFieldNameError] = useState('');
@@ -45,7 +45,7 @@ export default function EditFieldDialog({ field, baseId, open, onClose }) {
 
     try {
       dispatch(
-        updateFieldThunk(field.table_id, field.id, {
+        updateFieldThunk(tableId, field.id, {
           name: fieldName.trim(),
           options: fieldConfig,
         }),

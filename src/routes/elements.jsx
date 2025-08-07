@@ -40,6 +40,7 @@ export const APIKeys = Loadable(lazy(() => import('../pages/dashboard/APIKeys.js
 export const ReferralsPage = Loadable(lazy(() => import('../pages/dashboard/ReferralsPage.jsx')));
 
 export const ProjectPage = Loadable(lazy(() => import('../pages/dashboard/ProjectPage.jsx')));
+export const ProjectPageMobileTest = Loadable(lazy(() => import('../pages/dashboard/ProjectPageMobileTest.jsx')));
 
 export const NewAltanerPage = Loadable(
   lazy(() => import('../pages/dashboard/altaners/NewAltanerPage.jsx')),

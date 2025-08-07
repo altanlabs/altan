@@ -6,7 +6,6 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
-import NavVertical from './nav/NavVertical.jsx';
 import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import useResponsive from '../../hooks/useResponsive';
@@ -187,10 +186,6 @@ const DashboardLayout = ({ children }) => {
           minHeight: { lg: 1 },
         }}
       >
-        <NavVertical
-          openNav={open}
-          onCloseNav={handleCloseNav}
-        />
         <Main>{children}</Main>
       </Box>
     </VoiceConversationProvider>

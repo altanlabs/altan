@@ -159,7 +159,6 @@ const ProjectLayout = ({ children }) => {
 
   return (
     <VoiceConversationProvider>
-      {/* The ProjectHeader is only for account-related functionality, not for component navigation */}
       <ProjectHeader />
 
       <Box
@@ -170,26 +169,6 @@ const ProjectLayout = ({ children }) => {
       >
         <Main>{children}</Main>
       </Box>
-
-      {/* Fixed Voice Conversation Widget */}
-      {/* <Box
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <VoiceConversation
-          altanAgentId="60118b1a-8072-4149-ad36-7c7508135e6f"
-          displayAvatar={false}
-          showLanguageSelector={false}
-          dynamicVariables={dynamicVariables}
-        />
-      </Box> */}
     </VoiceConversationProvider>
   );
 };

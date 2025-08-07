@@ -31,8 +31,16 @@ function InterfaceLayout({
 
   // Main content: Toolbar and then either Preview or Codebase.
   const mainContent = (
-    <Box className="w-full h-full relative overflow-hidden pb-2 px-2">
-      <Box className="flex flex-col h-full border border-divider rounded-xl overflow-hidden">
+    <Box
+      className={`w-full h-full relative overflow-hidden ${
+        isMobile ? '' : 'pb-2 px-2'
+      }`}
+    >
+      <Box
+        className={`flex flex-col h-full overflow-hidden ${
+          isMobile ? '' : 'border border-divider rounded-xl'
+        }`}
+      >
         {viewType === 'preview' ? (
           <>
             <IframeControls

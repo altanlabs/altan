@@ -1,11 +1,6 @@
 import { createSlice, createSelector } from '@reduxjs/toolkit';
 
-import { optimai_tables, optimai_tables_legacy } from '../../utils/axios';
-
-// Helper function to determine which API to use based on metadata
-const getTablesApi = (base) => {
-  return optimai_tables;
-};
+import { optimai_tables } from '../../utils/axios';
 
 const initialState = {
   isLoading: false,
@@ -51,9 +46,13 @@ const slice = createSlice({
     // Table reducers
     addTable(state, action) {
       const { baseId, table } = action.payload;
+      console.log('[bases slice] addTable called:', { baseId, table });
       if (state.bases[baseId]) {
         state.bases[baseId].tables = state.bases[baseId].tables || { items: [] };
         state.bases[baseId].tables.items.push(table);
+        console.log(`[bases slice] Table added to base ${baseId}:`, table);
+      } else {
+        console.warn(`[bases slice] Tried to add table to non-existent base: ${baseId}`, table);
       }
     },
     updateTable(state, action) {
@@ -295,7 +294,7 @@ export const getBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     // Use legacy API first to check if this is a v2 base
-    const response = await optimai_tables_legacy.get(`/base/${baseId}`);
+    const response = await optimai_tables.get(`/base/${baseId}`);
     const base = response.data;
     dispatch(slice.actions.addBase(base.base));
     return Promise.resolve(base);
@@ -308,6 +307,24 @@ export const getBaseById = (baseId) => async (dispatch) => {
 };
 
 // Thunk actions for bases
+export const getBasesByAccountID = (accountId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_tables.get(`/base/list/${accountId}`);
+    // La estructura parece ser response.data.data.bases
+    const bases = response.data?.data?.bases || response.data?.bases || [];
+    bases.forEach((base) => {
+      dispatch(slice.actions.addBase(base));
+    });
+    return Promise.resolve(bases);
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
 export const createBase = (baseData, altanerComponentId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   const accountId = getState().general.account.id;
@@ -353,12 +370,7 @@ export const fetchBaseById = (baseId) => async (dispatch) => {
 export const updateBaseById = (baseId, baseData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.patch(`/base/${baseId}`, baseData);
+    const response = await optimai_tables.patch(`/base/${baseId}`, baseData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -371,13 +383,7 @@ export const updateBaseById = (baseId, baseData) => async (dispatch, getState) =
 export const duplicateBase = (duplicateData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const baseId = duplicateData.base_id;
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.post('/base/duplicate', duplicateData);
+    const response = await optimai_tables.post('/base/duplicate', duplicateData);
     return Promise.resolve(response.data.base);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -390,12 +396,7 @@ export const duplicateBase = (duplicateData) => async (dispatch, getState) => {
 export const deleteBaseById = (baseId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    await api.delete(`/base/${baseId}/permanent`);
+    await optimai_tables.delete(`/base/${baseId}/permanent`);
     return Promise.resolve();
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -409,12 +410,7 @@ export const deleteBaseById = (baseId) => async (dispatch, getState) => {
 export const createTable = (baseId, tableData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.post(`/base/${baseId}/table`, tableData);
+    const response = await optimai_tables.post(`/base/${baseId}/table`, tableData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -428,12 +424,7 @@ export const updateTableById = (baseId, tableId, changes) => async (dispatch, ge
   dispatch(slice.actions.startLoading());
   try {
     console.log('updating table...', changes);
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.patch(`/table/${tableId}`, changes);
+    const response = await optimai_tables.patch(`/table/${tableId}`, changes);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -446,12 +437,7 @@ export const updateTableById = (baseId, tableId, changes) => async (dispatch, ge
 export const deleteTableById = (baseId, tableId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    await api.delete(`/table/${tableId}`);
+    await optimai_tables.delete(`/table/${tableId}`);
     return Promise.resolve();
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -465,12 +451,7 @@ export const deleteTableById = (baseId, tableId) => async (dispatch, getState) =
 export const createField = (table, fieldData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[table.base_id];
-    const api = getTablesApi(base);
-
-    const response = await api.post(`/table/${table.id}/field`, fieldData);
+    const response = await optimai_tables.post(`/table/${table.id}/field`, fieldData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -483,15 +464,7 @@ export const createField = (table, fieldData) => async (dispatch, getState) => {
 export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    const response = await api.patch(`/table/${tableId}/field/${fieldId}`, changes);
+    const response = await optimai_tables.patch(`/table/${tableId}/field/${fieldId}`, changes);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -504,15 +477,7 @@ export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, 
 export const deleteFieldThunk = (tableId, fieldId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    await api.delete(`/table/${tableId}/field/${fieldId}`);
+    await optimai_tables.delete(`/table/${tableId}/field/${fieldId}`);
     dispatch(slice.actions.deleteField({ tableId, fieldId }));
     return Promise.resolve();
   } catch (e) {
@@ -527,12 +492,7 @@ export const deleteFieldThunk = (tableId, fieldId) => async (dispatch, getState)
 export const createViewThunk = (baseId, tableId, viewData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.post(`/base/${baseId}/table/${tableId}/view`, viewData);
+    const response = await optimai_tables.post(`/base/${baseId}/table/${tableId}/view`, viewData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -545,12 +505,10 @@ export const createViewThunk = (baseId, tableId, viewData) => async (dispatch, g
 export const updateViewThunk = (baseId, tableId, viewId, changes) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    const response = await api.patch(`/base/${baseId}/table/${tableId}/view/${viewId}`, changes);
+    const response = await optimai_tables.patch(
+      `/base/${baseId}/table/${tableId}/view/${viewId}`,
+      changes,
+    );
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -563,12 +521,7 @@ export const updateViewThunk = (baseId, tableId, viewId, changes) => async (disp
 export const deleteViewThunk = (baseId, tableId, viewId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Get the current base to determine which API to use
-    const state = getState();
-    const base = state.bases.bases[baseId];
-    const api = getTablesApi(base);
-
-    await api.delete(`/base/${baseId}/table/${tableId}/view/${viewId}`);
+    await optimai_tables.delete(`/base/${baseId}/table/${tableId}/view/${viewId}`);
     return Promise.resolve();
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -626,15 +579,7 @@ export const queryTableRecords =
 export const getTableRecord = (tableId, recordId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    const response = await api.get(`/table/${tableId}/record/${recordId}`);
+    const response = await optimai_tables.get(`/table/${tableId}/record/${recordId}`);
     return Promise.resolve(response.data.record);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -647,15 +592,7 @@ export const getTableRecord = (tableId, recordId) => async (dispatch, getState) 
 export const createTableRecords = (tableId, recordData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    const response = await api.post(`/table/${tableId}/record`, recordData);
+    const response = await optimai_tables.post(`/table/${tableId}/record`, recordData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -669,15 +606,7 @@ export const updateTableRecordThunk =
   (tableId, recordId, changes) => async (dispatch, getState) => {
     dispatch(slice.actions.startLoading());
     try {
-      // Find the base that contains this table to determine which API to use
-      const state = getState();
-      const baseId = Object.keys(state.bases.bases).find((baseId) =>
-        state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-      );
-      const base = baseId ? state.bases.bases[baseId] : null;
-      const api = getTablesApi(base);
-
-      const response = await api.patch(`/table/${tableId}/record/${recordId}`, {
+      const response = await optimai_tables.patch(`/table/${tableId}/record/${recordId}`, {
         fields: changes,
       });
       return Promise.resolve(response.data.record);
@@ -694,15 +623,9 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
   try {
     // Find the base that contains this table to determine which API to use
     const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
     // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
-    await api.delete(`/table/${tableId}/record`, {
+    await optimai_tables.delete(`/table/${tableId}/record`, {
       data: { ids },
     });
 
@@ -724,15 +647,7 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
 export const searchTableRecords = (tableId, query) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    const response = await api.get(`/table/${tableId}/record/search`, {
+    const response = await optimai_tables.get(`/table/${tableId}/record/search`, {
       params: { query },
     });
 
@@ -756,103 +671,98 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
   }
 };
 
-export const loadAllTableRecords = (tableId, forceReload = false) => async (dispatch, getState) => {
-  const BATCH_SIZE = 3000;
-  const DELAY_BETWEEN_BATCHES = 500;
+export const loadAllTableRecords =
+  (tableId, forceReload = false) =>
+  async (dispatch, getState) => {
+    const BATCH_SIZE = 3000;
+    const DELAY_BETWEEN_BATCHES = 500;
 
-  const state = getState();
-  const recordsState = state.bases.recordsState[tableId];
-  const records = state.bases.records[tableId];
+    const state = getState();
+    const recordsState = state.bases.recordsState[tableId];
+    const records = state.bases.records[tableId];
 
-  // If we already have fully loaded records for this table, don't reload them
-  if (recordsState?.cached && records?.items?.length > 0 && !forceReload) {
-    return Promise.resolve(records);
-  }
-
-  // If loading is already in progress, don't start another load
-  if (recordsState?.loading) {
-    return;
-  }
-
-  dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: true }));
-
-  try {
-    // Find the base that contains this table to determine which API to use
-    const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
-    );
-    const base = baseId ? state.bases.bases[baseId] : null;
-    const api = getTablesApi(base);
-
-    // Resume from where we left off if we have a page token
-    let pageToken = recordsState?.next_page_token;
-    let hasMore = true;
-
-    // Initial load if needed
-    if (!pageToken && (!records || records.items.length === 0)) {
-      const response = await api.post(`/table/${tableId}/record/query`, {
-        limit: BATCH_SIZE,
-      });
-
-      dispatch(
-        slice.actions.setTableRecords({
-          tableId,
-          records: response.data.records,
-          total: response.data.total,
-          next_page_token: response.data.next_page_token,
-          isPagination: false,
-        }),
-      );
-
-      pageToken = response.data.next_page_token;
-      hasMore = !!pageToken;
+    // If we already have fully loaded records for this table, don't reload them
+    if (recordsState?.cached && records?.items?.length > 0 && !forceReload) {
+      return Promise.resolve(records);
     }
 
-    // Load remaining records if we have more
-    while (hasMore) {
-      const response = await api.post(`/table/${tableId}/record/query`, {
-        limit: BATCH_SIZE,
-        page_token: pageToken,
-      });
+    // If loading is already in progress, don't start another load
+    if (recordsState?.loading) {
+      return;
+    }
 
-      dispatch(
-        slice.actions.setTableRecords({
-          tableId,
-          records: response.data.records,
-          total: response.data.total,
-          next_page_token: response.data.next_page_token,
-          isPagination: true,
-        }),
-      );
+    dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: true }));
 
-      pageToken = response.data.next_page_token;
-      hasMore = !!pageToken;
+    try {
+      // Resume from where we left off if we have a page token
+      let pageToken = recordsState?.next_page_token;
+      let hasMore = true;
 
-      if (hasMore) {
-        await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+      // Initial load if needed
+      if (!pageToken && (!records || records.items.length === 0)) {
+        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+          limit: BATCH_SIZE,
+        });
+
+        dispatch(
+          slice.actions.setTableRecords({
+            tableId,
+            records: response.data.records,
+            total: response.data.total,
+            next_page_token: response.data.next_page_token,
+            isPagination: false,
+          }),
+        );
+
+        pageToken = response.data.next_page_token;
+        hasMore = !!pageToken;
       }
-    }
 
-    // Mark this table's records as fully cached when all are loaded
-    if (!hasMore) {
-      dispatch(
-        slice.actions.setTableRecordsState({
-          tableId,
-          loading: false,
-          lastFetched: Date.now(),
-          cached: true,
-        }),
-      );
-    }
+      // Load remaining records if we have more
+      while (hasMore) {
+        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+          limit: BATCH_SIZE,
+          page_token: pageToken,
+        });
 
-    return getState().bases.records[tableId];
-  } catch (error) {
-    dispatch(slice.actions.hasError(error.message));
-    throw error;
-  } finally {
-    dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
-  }
-};
+        dispatch(
+          slice.actions.setTableRecords({
+            tableId,
+            records: response.data.records,
+            total: response.data.total,
+            next_page_token: response.data.next_page_token,
+            isPagination: true,
+          }),
+        );
+
+        pageToken = response.data.next_page_token;
+        hasMore = !!pageToken;
+
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        }
+      }
+
+      // Mark this table's records as fully cached when all are loaded
+      if (!hasMore) {
+        dispatch(
+          slice.actions.setTableRecordsState({
+            tableId,
+            loading: false,
+            lastFetched: Date.now(),
+            cached: true,
+          }),
+        );
+      }
+
+      return getState().bases.records[tableId];
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+      throw error;
+    } finally {
+      dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
+    }
+  };
 
 // Base selectors
 export const selectBaseState = (state) => state.bases;
@@ -886,7 +796,20 @@ export const selectViewsByTableId = createSelector(
 
 export const selectCurrentView = createSelector(
   [selectViewsByTableId, (_, __, ___, viewId) => viewId],
-  (views, viewId) => views.find((v) => v.id === viewId) || views[0],
+  (views, viewId) => {
+    // Si no hay vistas, crear una vista por defecto
+    if (!views || views.length === 0) {
+      return {
+        id: 'default',
+        name: 'Default View',
+        type: 'grid',
+        is_default: true,
+      };
+    }
+
+    // Buscar la vista por ID o usar la primera disponible
+    return views.find((v) => v.id === viewId) || views[0];
+  },
 );
 
 // Records selectors

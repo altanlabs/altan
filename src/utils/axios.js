@@ -7,12 +7,12 @@ const OPTIMAI_BASE_URL = 'https://api.altan.ai';
 
 const optimai_tables = axios.create({
   name: 'optimai_tables',
-  baseURL: `${OPTIMAI_BASE_URL}/tables/v2`,
+  baseURL: 'https://database-api.altan.ai/v3',
 });
 
 const optimai_tables_legacy = axios.create({
   name: 'optimai_tables_legacy',
-  baseURL: `${OPTIMAI_BASE_URL}/tables`,
+  baseURL: 'https://database-api.altan.ai/v3',
 });
 
 const optimai_root = axios.create({
@@ -105,6 +105,12 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_room);
           setSession(tokenString, optimai);
           setSession(tokenString, optimai_root);
+          setSession(tokenString, optimai_tables);
+          setSession(tokenString, optimai_tables_legacy);
+          setSession(tokenString, optimai_galaxia);
+          setSession(tokenString, optimai_shop);
+          setSession(tokenString, optimai_integration);
+          setSession(tokenString, optimai_agent);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
         }
@@ -120,16 +126,21 @@ const authorizeGuest = async (guestToken) => {
   });
 };
 
+// Helper function to set session for all axios instances
+export const setSessionForAllInstances = (accessToken, originalRequest = null) => {
+  setSession(accessToken, optimai, originalRequest);
+  setSession(accessToken, optimai_root, originalRequest);
+  setSession(accessToken, optimai_galaxia, originalRequest);
+  setSession(accessToken, optimai_shop, originalRequest);
+  setSession(accessToken, optimai_integration, originalRequest);
+  setSession(accessToken, optimai_room, originalRequest);
+  setSession(accessToken, optimai_tables, originalRequest);
+  setSession(accessToken, optimai_tables_legacy, originalRequest);
+  setSession(accessToken, optimai_agent, originalRequest);
+};
+
 const unauthorizeUser = () => {
-  setSession(null, optimai);
-  setSession(null, optimai_root);
-  setSession(null, optimai_galaxia);
-  setSession(null, optimai_shop);
-  setSession(null, optimai_integration);
-  setSession(null, optimai_room);
-  setSession(null, optimai_tables);
-  setSession(null, optimai_tables_legacy);
-  setSession(null, optimai_agent);
+  setSessionForAllInstances(null);
 };
 
 const axiosInstances = {

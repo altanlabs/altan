@@ -239,7 +239,7 @@ export const GridView = memo(
     );
 
     const getCommonFieldMenuItems = useCallback((field, params) => {
-      return createFieldContextMenuItems(field, params, setEditField);
+      return createFieldContextMenuItems(field, params, setEditField, table.id);
     }, []);
 
     const onGridReady = useCallback((params) => {
@@ -700,6 +700,7 @@ export const GridView = memo(
         <EditFieldDialog
           field={editField}
           baseId={table.base_id}
+          tableId={table.id}
           open={!!editField}
           onClose={() => setEditField(null)}
         />

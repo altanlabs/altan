@@ -90,6 +90,8 @@ import { Room } from '@altanlabs/sdk';
 | `conversation_history` | boolean | `true` | Show/hide conversation history |
 | `members` | boolean | `false` | Show/hide members panel |
 | `settings` | boolean | `false` | Show/hide settings panel |
+| `show_fullscreen_button` | boolean | `false` | Show/hide fullscreen button in tab bar |
+| `show_sidebar_button` | boolean | `false` | Show/hide sidebar transformation button |
 | `theme` | string | `undefined` | Theme mode: 'light', 'dark', or 'system' |
 | `title` | string | `undefined` | Custom room title |
 | `description` | string | `undefined` | Custom room description |
@@ -206,3 +208,39 @@ function App() {
   );
 }
 ```
+
+## HTML Widget Integration
+
+For direct HTML integration, you can use data attributes to configure the widget:
+
+```html
+<script
+  src="https://altan.ai/sdk/altan-widget.js"
+  data-account-id="your-account-id"
+  data-agent-id="agent-123"
+  data-placeholder="How can I help you?"
+  data-tabs="false"
+  data-conversation-history="true"
+  data-members="false"
+  data-settings="false"
+  data-show-fullscreen-button="false"
+  data-show-sidebar-button="false"
+  data-voice-enabled="true"
+  data-primary-color="#6366f1"
+  data-background-color="#ffffff"
+  data-position="bottom-right"
+  data-width="400"
+  data-room-width="550"
+  data-room-height="700"
+></script>
+```
+
+### New Widget Controls
+
+- **Fullscreen Button**: Add `data-show-fullscreen-button="true"` to show a fullscreen button that expands the widget to full screen (like mobile view)
+- **Sidebar Button**: Add `data-show-sidebar-button="true"` to show a sidebar transformation button that converts the widget to a left sidebar layout
+
+These buttons automatically send messages to the parent window for handling:
+- `widget_fullscreen_request` - When fullscreen button is clicked
+- `widget_sidebar_request` - When sidebar button is clicked
+- `widget_close_request` - When close button is clicked (existing feature)

@@ -41,6 +41,7 @@ const MessageBoxWrapper = ({
   mode,
   // scrollToMessage,
   children,
+  showMessageReply = false,
 }) => {
   const me = useSelector(selectMe);
   const members = useSelector(selectMembers);
@@ -98,8 +99,8 @@ const MessageBoxWrapper = ({
         <CustomAvatar
           alt={sender?.id}
           sx={{
-            width: 28,
-            height: 28,
+            width: 20,
+            height: 20,
             cursor: 'pointer',
             '&:hover': {
               opacity: 0.8,
@@ -127,8 +128,10 @@ const MessageBoxWrapper = ({
           </div>
         </Divider>
       )}
-      <div className={`relative flex flex-col w-full space-y-2 ${is_me ? 'items-end' : 'items-start'}`}>
-        <MessageReply message={message} />
+      <div
+        className={`relative flex flex-col w-full space-y-2 ${is_me ? 'items-end' : 'items-start'}`}
+      >
+        {showMessageReply && <MessageReply message={message} />}
         <div className={`${is_me ? 'ml-auto max-w-[80%]' : 'w-full'} min-w-0`}>
           <MessageBox
             isMe={is_me}
@@ -145,6 +148,7 @@ const MessageBoxWrapper = ({
               direction="row"
               alignItems="center"
               spacing={1}
+              // paddingBottom={0.5}
             >
               {!is_me && renderAvatar}
               <Stack
@@ -155,7 +159,7 @@ const MessageBoxWrapper = ({
               >
                 {!!shouldShowMember && !is_me && (
                   <div className="group relative inline-flex items-baseline gap-2">
-                    <Typography className="text-sm font-medium">
+                    <Typography className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       {senderName}
                     </Typography>
                     <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#555] dark:text-[#99aab5]">
@@ -204,9 +208,9 @@ const MessageBoxWrapper = ({
               direction="row"
               alignItems="center"
               spacing={1}
-              paddingLeft={is_me ? 0 : 4.5}
               paddingRight={0}
               paddingBottom={0}
+              paddingTop={0.2}
             >
               {children}
             </Stack>
