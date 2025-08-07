@@ -7,12 +7,12 @@ const OPTIMAI_BASE_URL = 'https://api.altan.ai';
 
 const optimai_tables = axios.create({
   name: 'optimai_tables',
-  baseURL: `${OPTIMAI_BASE_URL}/tables/v2`,
+  baseURL: "https://database-api.altan.ai/v3",
 });
 
 const optimai_tables_legacy = axios.create({
   name: 'optimai_tables_legacy',
-  baseURL: `${OPTIMAI_BASE_URL}/tables`,
+  baseURL: "https://database-api.altan.ai/v3",
 });
 
 const optimai_root = axios.create({

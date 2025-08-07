@@ -1,5 +1,5 @@
 import { Card, CardContent, Typography, Grid, Button, Menu, MenuItem } from '@mui/material';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import CreateBaseDialog from '../../../components/databases/base/CreateBaseDialog';
@@ -10,16 +10,19 @@ import { DynamicIsland } from '../../../components/dynamic-island/DynamicIsland'
 import Iconify from '../../../components/iconify/Iconify';
 import AltanLogo from '../../../components/loaders/AltanLogo';
 import { CompactLayout } from '../../../layouts/dashboard';
-import { deleteBaseById } from '../../../redux/slices/bases';
-import { selectAccount } from '../../../redux/slices/general';
+import { deleteBaseById, getBasesByAccountID } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
 
-const selectBases = (state) => selectAccount(state)?.bases;
+// Selector que convierte el objeto de bases en un array
+const selectBasesArray = (state) => {
+  const basesObject = state.bases.bases;
+  return Object.values(basesObject || {});
+};
 const getBasesInitialized = (state) => state.general.accountAssetsInitialized.bases;
 // const getBasesLoading = (state) => state.general.accountAssetsLoading.bases;
 
 function BasesPage() {
-  const databases = useSelector(selectBases);
+  const databases = useSelector(selectBasesArray);
   const basesInitialized = useSelector(getBasesInitialized);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -29,7 +32,15 @@ function BasesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const history = useHistory();;
+  const history = useHistory();
+
+  const accountId = useSelector((state) => state.general?.account?.id);
+
+  useEffect(() => {
+    if (accountId) {
+      dispatch(getBasesByAccountID(accountId));
+    }
+  }, [accountId]);
 
   const handleCardClick = useCallback(
     (id) => {

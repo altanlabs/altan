@@ -102,13 +102,13 @@ function Base({
         const tables = response?.base?.tables?.items || [];
         if (tables.length > 0) {
           const firstTable = tables[0];
-          const firstView = firstTable.views?.items?.[0]?.id;
+          const firstView = firstTable.views?.items?.[0]?.id || 'default';
 
           if (!tableId) {
             navigateToPath(firstTable.id, firstView);
           } else if (!viewId) {
             const currentTable = tables.find((table) => table.id === tableId);
-            const defaultView = currentTable?.views?.items?.[0]?.id;
+            const defaultView = currentTable?.views?.items?.[0]?.id || 'default';
             navigateToPath(tableId, defaultView);
           }
         }
@@ -133,7 +133,7 @@ function Base({
             const remainingTables = base?.tables?.items?.filter((t) => t.id !== tableId);
             if (remainingTables?.length > 0) {
               const nextTable = remainingTables[0];
-              const nextView = nextTable.views?.items?.[0]?.id;
+              const nextView = nextTable.views?.items?.[0]?.id || 'default';
               navigateToPath(nextTable.id, nextView);
             } else {
               if (altanerId) {
@@ -171,7 +171,7 @@ function Base({
       if (newTableId === tableId) return; // Don't history.push if already on this tab
 
       const targetTable = base?.tables?.items?.find((table) => table.id === newTableId);
-      const defaultView = targetTable?.views?.items?.[0]?.id || viewId;
+      const defaultView = targetTable?.views?.items?.[0]?.id || viewId || 'default';
 
       setState((prev) => ({
         ...prev,

@@ -3,7 +3,7 @@ import { createSlice, createSelector } from '@reduxjs/toolkit';
 import { optimai_tables, optimai_tables_legacy } from '../../utils/axios';
 
 // Helper function to determine which API to use based on metadata
-const getTablesApi = (base) => {
+const getTablesApi = () => {
   return optimai_tables;
 };
 
@@ -308,6 +308,26 @@ export const getBaseById = (baseId) => async (dispatch) => {
 };
 
 // Thunk actions for bases
+export const getBasesByAccountID = (accountId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_tables.get(`/base/list/${accountId}`, {
+      params: { account_id: accountId },
+    });
+    // La estructura parece ser response.data.data.bases
+    const bases = response.data?.data?.bases || response.data?.bases || [];
+    bases.forEach((base) => {
+      dispatch(slice.actions.addBase(base));
+    });
+    return Promise.resolve(bases);
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
 export const createBase = (baseData, altanerComponentId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   const accountId = getState().general.account.id;
@@ -886,7 +906,20 @@ export const selectViewsByTableId = createSelector(
 
 export const selectCurrentView = createSelector(
   [selectViewsByTableId, (_, __, ___, viewId) => viewId],
-  (views, viewId) => views.find((v) => v.id === viewId) || views[0],
+  (views, viewId) => {
+    // Si no hay vistas, crear una vista por defecto
+    if (!views || views.length === 0) {
+      return {
+        id: 'default',
+        name: 'Default View',
+        type: 'grid',
+        is_default: true,
+      };
+    }
+    
+    // Buscar la vista por ID o usar la primera disponible
+    return views.find((v) => v.id === viewId) || views[0];
+  },
 );
 
 // Records selectors
