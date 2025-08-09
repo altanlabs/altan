@@ -3,12 +3,9 @@ import {
   Typography,
   TextField,
   Button,
-  Divider,
   FormControl,
   Paper,
   MenuItem,
-  ButtonGroup,
-  IconButton,
   FormControlLabel,
   Switch,
 } from '@mui/material';
@@ -17,14 +14,10 @@ import React, { useState, useMemo, useCallback, memo } from 'react';
 import CustomDialog from './CustomDialog.jsx';
 import {
   updateRoom,
-  deleteRoom,
-  updateRoomStatus,
-  exitRoom,
   selectRoom,
   selectMe,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
-import Iconify from '../iconify/Iconify.jsx';
 
 export const PRIVACY_ENUM = [
   {
@@ -229,12 +222,12 @@ const SettingsDialog = ({ open = false, onClose }) => {
       });
   }, [formState, onClose]);
 
-  const actionHandler = useCallback((action) => {
-    setLoading(true);
-    dispatch(action())
-      .then(() => window.location.reload())
-      .catch((err) => console.error('Action failed', err));
-  }, []);
+  // const actionHandler = useCallback((action) => {
+  //   setLoading(true);
+  //   dispatch(action())
+  //     .then(() => window.location.reload())
+  //     .catch((err) => console.error('Action failed', err));
+  // }, []);
 
   if (!room) return null;
 
@@ -372,7 +365,7 @@ const SettingsDialog = ({ open = false, onClose }) => {
           </>
         )}
 
-        <Button
+        {/* <Button
           variant="soft"
           color="error"
           fullWidth
@@ -381,7 +374,7 @@ const SettingsDialog = ({ open = false, onClose }) => {
           startIcon={<Iconify icon="solar:exit-bold-duotone" />}
         >
           Exit room
-        </Button>
+        </Button> */}
       </Stack>
     </CustomDialog>
   );

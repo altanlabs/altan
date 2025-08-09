@@ -99,11 +99,13 @@ const MembersList = ({
     // Admin/Owner actions only
     if (['admin', 'owner'].includes(role)) {
       // Kick/Readmit - most important action
-      items.push({
-        label: selectedMember.is_kicked ? 'Readmit Member' : 'Kick Member',
-        icon: selectedMember.is_kicked ? 'mdi:account-plus' : 'mdi:account-minus',
-        action: selectedMember.is_kicked ? 'readmit' : 'kick',
-      });
+      if (selectedMember.role !== 'owner') {
+        items.push({
+          label: selectedMember.is_kicked ? 'Readmit Member' : 'Kick Member',
+          icon: selectedMember.is_kicked ? 'mdi:account-plus' : 'mdi:account-minus',
+          action: selectedMember.is_kicked ? 'readmit' : 'kick',
+        });
+      }
 
       // Role management (only show if member is not owner, or if I'm owner)
       if (selectedMember.role !== 'owner' || role === 'owner') {
