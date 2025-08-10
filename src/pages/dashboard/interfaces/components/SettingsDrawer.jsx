@@ -424,6 +424,16 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                           }
 
                           console.log('Altan branding removed successfully');
+                          
+                          // Commit the changes with the specified message
+                          try {
+                            await optimai.post(`/interfaces/dev/${ui.id}/repo/commit`, {
+                              message: 'Removed Altan Branding',
+                            });
+                            console.log('Changes committed successfully');
+                          } catch (commitError) {
+                            console.error('Failed to commit changes:', commitError);
+                          }
                         } catch (error) {
                           console.error('Failed to remove Altan branding:', error);
                         }
