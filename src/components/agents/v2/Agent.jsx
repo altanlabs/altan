@@ -1,3 +1,4 @@
+import { Room } from '@altanlabs/sdk';
 import {
   Box,
   Button,
@@ -21,13 +22,12 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
-
+// sdk
 // hooks
 import { useAuthContext } from '../../../auth/useAuthContext';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // sdk
 // import { Room } from '../../../lib/agents/components';
-import { Room } from '@altanlabs/sdk';
 // auth
 // redux
 import { fetchAgentDetails, updateAgent } from '../../../redux/slices/agents';
@@ -347,13 +347,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <Box
         sx={{
@@ -778,7 +772,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           {copySuccess}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 }
 
