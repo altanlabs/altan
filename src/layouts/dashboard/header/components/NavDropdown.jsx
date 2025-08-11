@@ -56,6 +56,8 @@ const NavDropdown = memo(
       display: 'flex',
       flexDirection: 'column',
       gap: '0.125rem',
+      maxHeight: '20rem', // Limit height to enable scrolling
+      overflow: 'hidden', // Hide overflow on container
     };
 
     const mergedDropdownStyle = { ...defaultDropdownStyle, ...customDropdownStyle };
@@ -81,21 +83,31 @@ const NavDropdown = memo(
               {/* Custom header (like search input) */}
               {customHeader && customHeader()}
 
-              {items.map((item, index) => (
-                <m.div
-                  key={item.id || index}
-                  initial={{ opacity: 0, x: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                  transition={{
-                    duration: 0.25,
-                    delay: index * 0.03,
-                    ease: 'easeInOut',
-                  }}
-                >
-                  {renderItem(item, closeDropdown)}
-                </m.div>
-              ))}
+              {/* Scrollable container for items */}
+              <div
+                style={{
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  maxHeight: customHeader ? '16rem' : '18rem', // Adjust height based on header presence
+                }}
+                className="dropdown-scrollable"
+              >
+                {items.map((item, index) => (
+                  <m.div
+                    key={item.id || index}
+                    initial={{ opacity: 0, x: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{
+                      duration: 0.25,
+                      delay: index * 0.03,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    {renderItem(item, closeDropdown)}
+                  </m.div>
+                ))}
+              </div>
 
               {addOption && items.length > 0 && (
                 <div className="mt-1 pt-1 border-t border-gray-200 dark:border-gray-700" />

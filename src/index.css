@@ -289,3 +289,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar styles for dropdown components */
+.dropdown-scrollable {
+  /* For Webkit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5); /* gray-400 with opacity */
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8); /* gray-400 more opaque */
+  }
+  
+  /* For dark mode */
+  .dark &::-webkit-scrollbar-thumb {
+    background-color: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
+  }
+  
+  .dark &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(75, 85, 99, 0.8); /* gray-600 more opaque */
+  }
+  
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.dark .dropdown-scrollable {
+  scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+}
