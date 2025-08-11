@@ -412,23 +412,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'BaseUpdate':
       dispatch(
         updateBase({
-          id: data.data.ids[0],
+          id: data.data.ids ? data.data.ids[0] : data.data.id,
           ...data.data.changes,
         }),
       );
       break;
     case 'BaseDelete':
-      dispatch(deleteBase(data.data.ids[0]));
+      const baseIdToDelete = data.data.ids ? data.data.ids[0] : data.data.id;
+      dispatch(deleteBase(baseIdToDelete));
       break;
     case 'TableNew':
-      console.log('TABLE NEW', {
-        data,
-        userId: user_id,
-        timestamp: new Date().toISOString(),
-      });
+      const tableBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
       dispatch(
         addTable({
-          baseId: data.base_id,
+          baseId: tableBaseId,
           table: data.data.attributes,
         }),
       );
@@ -443,18 +440,22 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'TableDelete':
+      const deleteTableBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
+      const deleteTableId = data.data.ids ? data.data.ids[0] : data.data.id;
       dispatch(
         deleteTable({
-          baseId: data.base_id,
-          tableId: data.data.ids[0],
+          baseId: deleteTableBaseId,
+          tableId: deleteTableId,
         }),
       );
       break;
     case 'FieldNew':
+      const fieldBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
+      const fieldTableId = data.table_id || data.data.table_id || data.data.attributes.table_id;
       dispatch(
         addField({
-          baseId: data.base_id,
-          tableId: data.table_id,
+          baseId: fieldBaseId,
+          tableId: fieldTableId,
           field: data.data.attributes,
         }),
       );
