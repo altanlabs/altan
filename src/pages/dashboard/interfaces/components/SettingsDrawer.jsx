@@ -422,9 +422,6 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                               file_patterns: ['index.html'],
                             });
                           }
-
-                          console.log('Altan branding removed successfully');
-                          
                           // Commit the changes with the specified message
                           try {
                             await optimai.post(`/interfaces/dev/${ui.id}/repo/commit`, {
