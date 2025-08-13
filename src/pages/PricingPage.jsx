@@ -47,12 +47,6 @@ export default function PricingPage() {
 
         <Box sx={{ mt: 8, textAlign: 'center' }}>
           <Typography
-            variant="body1"
-            sx={{ color: 'text.secondary', mb: 2 }}
-          >
-            All plans include a credit wallet for transparent usage
-          </Typography>
-          <Typography
             variant="body2"
             sx={{ color: 'text.secondary' }}
           >

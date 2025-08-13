@@ -15,10 +15,13 @@ import {
   useTheme,
   alpha,
   CircularProgress,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
 import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
@@ -246,6 +249,7 @@ export default function NewPricing() {
   const [proPlan, setProPlan] = useState(null);
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
+  const [isYearlyBilling, setIsYearlyBilling] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
     pro: false,
     growth: false,
@@ -253,6 +257,7 @@ export default function NewPricing() {
   });
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
+  const { isAuthenticated } = useAuthContext();
   const history = useHistory();
 
   useEffect(() => {
@@ -338,7 +343,8 @@ export default function NewPricing() {
     setLoadingStates(prev => ({ ...prev, pro: true }));
 
     try {
-      const billingOption = getBillingOption(proPlan, 'monthly');
+      const billingFrequency = isYearlyBilling ? 'yearly' : 'monthly';
+      const billingOption = getBillingOption(proPlan, billingFrequency);
       if (billingOption) {
         // Track checkout event
         trackCheckoutEvent(proPlan, billingOption, 'pro');
@@ -354,7 +360,8 @@ export default function NewPricing() {
 
     try {
       const selectedPlan = growthPlans[selectedGrowthTier];
-      const billingOption = getBillingOption(selectedPlan, 'monthly');
+      const billingFrequency = isYearlyBilling ? 'yearly' : 'monthly';
+      const billingOption = getBillingOption(selectedPlan, billingFrequency);
       if (billingOption) {
         // Track checkout event
         trackCheckoutEvent(selectedPlan, billingOption, 'growth');
@@ -378,9 +385,7 @@ export default function NewPricing() {
           lead_source: 'pricing_page',
           action: 'book_call',
         });
-        console.log('📊 Lead generation tracked for enterprise plan');
       }
-
       window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
     } catch (error) {
       console.error('Error tracking lead generation:', error);
@@ -390,7 +395,9 @@ export default function NewPricing() {
   };
 
   const currentGrowthPlan = growthPlans[selectedGrowthTier];
-  const growthBillingOption = getBillingOption(currentGrowthPlan, 'monthly');
+  const billingFrequency = isYearlyBilling ? 'yearly' : 'monthly';
+  const proBillingOption = getBillingOption(proPlan, billingFrequency);
+  const growthBillingOption = getBillingOption(currentGrowthPlan, billingFrequency);
 
   if (!proPlan || growthPlans.length === 0 || !enterprisePlan) {
     return (
@@ -418,7 +425,48 @@ export default function NewPricing() {
   }
 
   return (
-    <Box sx={{ pt: 4 }}>
+    <Box>
+      {/* Billing Toggle - Only show for authenticated users */}
+      {isAuthenticated && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isYearlyBilling}
+                onChange={(e) => setIsYearlyBilling(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="body2" sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}>
+                  Monthly
+                </Typography>
+                <Typography variant="body2" sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}>
+                  Yearly
+                </Typography>
+                {isYearlyBilling && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      backgroundColor: 'success.lighter',
+                      color: 'success.main',
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                    }}
+                  >
+                    Save ~17%
+                  </Typography>
+                )}
+              </Stack>
+            }
+            sx={{ m: 0 }}
+          />
+        </Box>
+      )}
+
       {/* Pricing Cards */}
       <Box
         sx={{
@@ -435,34 +483,76 @@ export default function NewPricing() {
         {/* Pro Plan */}
         <PricingCard
           title="Pro"
-          price={1}
+          price={
+            isAuthenticated && proBillingOption && isYearlyBilling
+              ? formatPrice(proBillingOption.price, billingFrequency)
+              : 1
+          }
           description={proPlan?.description}
           priceSubtext={
-            <Stack spacing={1}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    textDecoration: 'line-through',
-                  }}
-                >
-                  €25/mo
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: 'primary.lighter',
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                  }}
-                >
-                  First month offer
-                </Typography>
+            isAuthenticated && proBillingOption ? (
+              <Stack spacing={1}>
+                {isYearlyBilling && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    €{Math.round(proBillingOption.price / 100 / 12)}/mo billed yearly
+                  </Typography>
+                )}
+                {!isYearlyBilling && (
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      €25/mo
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        backgroundColor: 'primary.lighter',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                      }}
+                    >
+                      First month offer
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
-            </Stack>
+            ) : (
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                      textDecoration: 'line-through',
+                    }}
+                  >
+                    €25/mo
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      backgroundColor: 'primary.lighter',
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                    }}
+                  >
+                    First month offer
+                  </Typography>
+                </Stack>
+              </Stack>
+            )
           }
           features={PRO_FEATURES}
           buttonText="Choose Plan"
@@ -473,33 +563,47 @@ export default function NewPricing() {
         {/* Growth Plan */}
         <PricingCard
           title="Growth"
-          price={growthBillingOption ? formatPrice(growthBillingOption.price, 'monthly') : 0}
+          price={
+            isAuthenticated && growthBillingOption
+              ? formatPrice(growthBillingOption.price, billingFrequency)
+              : 'Contact us'
+          }
           description={currentGrowthPlan?.description}
           priceSubtext={
-            growthBillingOption ? (
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'success.main',
-                  fontWeight: 600,
-                }}
-              >
-                + €
-                {Math.round(
-                  currentGrowthPlan.credits / 100 -
-                    formatPrice(growthBillingOption.price, 'monthly'),
-                )}{' '}
-                free credits
-              </Typography>
+            isAuthenticated && growthBillingOption ? (
+              <Stack spacing={1}>
+                {isYearlyBilling && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    €{Math.round(growthBillingOption.price / 100 / 12)}/mo billed yearly
+                  </Typography>
+                )}
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'success.main',
+                    fontWeight: 600,
+                  }}
+                >
+                  + €
+                  {Math.round(
+                    currentGrowthPlan.credits / 100 -
+                      formatPrice(growthBillingOption.price, billingFrequency),
+                  )}{' '}
+                  free credits
+                </Typography>
+              </Stack>
             ) : null
           }
           features={GROWTH_FEATURES}
-          buttonText="Choose Plan"
+          buttonText={isAuthenticated ? 'Choose Plan' : 'Sign in to see pricing'}
           highlighted={true}
           loading={loadingStates.growth}
-          onButtonClick={handleGrowthClick}
+          onButtonClick={isAuthenticated ? handleGrowthClick : () => history.push('/auth/login')}
         >
-          {!isAccountFree ? (
+          {isAuthenticated ? (
             <Box sx={{ mb: 3 }}>
               <Typography
                 variant="subtitle2"
@@ -518,8 +622,8 @@ export default function NewPricing() {
                   }}
                 >
                   {growthPlans.map((plan, index) => {
-                    const billingOption = getBillingOption(plan, 'monthly');
-                    const price = billingOption ? formatPrice(billingOption.price, 'monthly') : 0;
+                    const billingOption = getBillingOption(plan, billingFrequency);
+                    const price = billingOption ? formatPrice(billingOption.price, billingFrequency) : 0;
 
                     return (
                       <MenuItem
@@ -542,7 +646,7 @@ export default function NewPricing() {
                             color="success.main"
                             fontWeight={600}
                           >
-                            €{price}/mo
+                            €{price}/{isYearlyBilling ? 'yr' : 'mo'}
                           </Typography>
                         </Stack>
                       </MenuItem>
