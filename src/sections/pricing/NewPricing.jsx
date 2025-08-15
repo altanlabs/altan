@@ -564,15 +564,15 @@ export default function NewPricing() {
         <PricingCard
           title="Growth"
           price={
-            isAuthenticated && growthBillingOption
-              ? formatPrice(growthBillingOption.price, billingFrequency)
+            growthBillingOption
+              ? formatPrice(growthBillingOption.price, isAuthenticated ? billingFrequency : 'monthly')
               : 'Contact us'
           }
           description={currentGrowthPlan?.description}
           priceSubtext={
-            isAuthenticated && growthBillingOption ? (
+            growthBillingOption ? (
               <Stack spacing={1}>
-                {isYearlyBilling && (
+                {isAuthenticated && isYearlyBilling && (
                   <Typography
                     variant="caption"
                     sx={{ color: 'text.secondary' }}
@@ -590,7 +590,7 @@ export default function NewPricing() {
                   + €
                   {Math.round(
                     currentGrowthPlan.credits / 100 -
-                      formatPrice(growthBillingOption.price, billingFrequency),
+                      formatPrice(growthBillingOption.price, isAuthenticated ? billingFrequency : 'monthly'),
                   )}{' '}
                   free credits
                 </Typography>
@@ -598,7 +598,7 @@ export default function NewPricing() {
             ) : null
           }
           features={GROWTH_FEATURES}
-          buttonText={isAuthenticated ? 'Choose Plan' : 'Sign in to see pricing'}
+          buttonText={isAuthenticated ? 'Choose Plan' : 'Sign in to choose plan'}
           highlighted={true}
           loading={loadingStates.growth}
           onButtonClick={isAuthenticated ? handleGrowthClick : () => history.push('/auth/login')}
