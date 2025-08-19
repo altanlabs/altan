@@ -21,14 +21,14 @@ const getFileIcon = (type) => {
   return 'mdi:file-document';
 };
 
-function TextAreaWithButtons({ 
-  inputValue, 
-  setInputValue, 
-  handleCreate, 
-  loading, 
+function TextAreaWithButtons({
+  inputValue,
+  setInputValue,
+  handleCreate,
+  loading,
   handleVoice,
   showPlusButton = true,
-  showAutopilotButton = true 
+  showAutopilotButton = false,
 }) {
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
@@ -152,12 +152,14 @@ function TextAreaWithButtons({
 
     // Append autopilot mode text to the prompt when enabled
     if (autopilotEnabled) {
-      finalPrompt += '\n\n<hide>Create the plan, once the plan is define: execute the plan starting from step 1 until the last step. Do not stop the plan execution until the last step is completed. You can only stop the plan execution if you encounter a critical error, then prompt the user.</hide>';
+      finalPrompt +=
+        '\n\n<hide>Create the plan, once the plan is define: execute the plan starting from step 1 until the last step. Do not stop the plan execution until the last step is completed. You can only stop the plan execution if you encounter a critical error, then prompt the user.</hide>';
     }
 
     // Append free account prompt when user is on free plan
     if (isAccountFree) {
-      finalPrompt += '\n\n<hide> The user is not testing the Altan platform. You\'re goal is to optimize for protoype interface UI/UX quick. and when interface is finished, sell altan super well and explain to him how altan databases, workflows and ai agents can take him to the next level. Once he activates he\'ll have more credits so you should send some funny messages how hungry you are for credits and that he should take the $1 and get $25 in credits to build the incredible project idea that he has. Because the idea is good and we can help him make it happen TODAY!</hide>';
+      finalPrompt +=
+        "\n\n<hide> The user is not testing the Altan platform. You're goal is to optimize for protoype interface UI/UX quick. and when interface is finished, sell altan super well and explain to him how altan databases, workflows and ai agents can take him to the next level. Once he activates he'll have more credits so you should send some funny messages how hungry you are for credits and that he should take the $1 and get $25 in credits to build the incredible project idea that he has. Because the idea is good and we can help him make it happen TODAY!</hide>";
     }
 
     // Pass the final prompt directly to handleCreate
@@ -262,45 +264,45 @@ function TextAreaWithButtons({
                   />
                 </button>
 
-              {/* Plus menu popup */}
-              {plusMenuOpen && (
-                <div
-                  ref={plusMenuRef}
-                  className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-                >
-                  <div className="p-2 flex flex-col gap-1">
-                    <button
-                      onClick={() => {
-                        setGithubDialogOpen(true);
-                        setPlusMenuOpen(false);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left w-full"
-                    >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <Icon
-                          icon="mdi:github"
-                          className="w-4 h-4"
-                        />
-                      </div>
-                      <div>GitHub Repository</div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        fileInputRef.current?.click();
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-left w-full"
-                    >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <Icon
-                          icon="mdi:file-upload-outline"
-                          className="w-4 h-4"
-                        />
-                      </div>
-                      <div>Upload files and images</div>
-                    </button>
+                {/* Plus menu popup */}
+                {plusMenuOpen && (
+                  <div
+                    ref={plusMenuRef}
+                    className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                  >
+                    <div className="p-2 flex flex-col gap-1">
+                      <button
+                        onClick={() => {
+                          setGithubDialogOpen(true);
+                          setPlusMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left w-full"
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Icon
+                            icon="mdi:github"
+                            className="w-4 h-4"
+                          />
+                        </div>
+                        <div>GitHub Repository</div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-left w-full"
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Icon
+                            icon="mdi:file-upload-outline"
+                            className="w-4 h-4"
+                          />
+                        </div>
+                        <div>Upload files and images</div>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             )}
 
@@ -398,65 +400,65 @@ function TextAreaWithButtons({
             {/* Autopilot interactive button */}
             {showAutopilotButton && (
               <div className="relative group">
-              <button
-                onClick={() => {
-                  if (!autopilotEnabled && isAccountFree) {
-                    setAutopilotUpgradePopup(true);
-                  } else {
-                    setAutopilotEnabled(!autopilotEnabled);
-                  }
-                }}
-                className={`relative w-32 h-7 cursor-pointer overflow-hidden rounded-full border transition-all duration-300 flex items-center justify-center ${
-                  autopilotEnabled
-                    ? 'bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 border-transparent text-white shadow-lg shadow-purple-500/25'
-                    : 'bg-slate-200 border-slate-300 text-slate-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-slate-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {/* Animated background for hover state when disabled */}
-                {!autopilotEnabled && (
-                  <div className="absolute left-[20%] top-1/2 -translate-y-1/2 h-2 w-2 rounded-full transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:translate-y-0 group-hover:h-full group-hover:w-full group-hover:scale-[1.2] bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 scale-[1]" />
-                )}
-
-                {/* Default text - only show when not enabled */}
-                {!autopilotEnabled && (
-                  <span className="relative z-10 text-xs font-medium transition-all duration-300 group-hover:translate-x-8 group-hover:opacity-0 px-4">
-                    Pilot
-                  </span>
-                )}
-
-                {/* Enabled/Hover state with icon and gradient text */}
-                <div
-                  className={`absolute inset-0 z-20 flex items-center justify-center gap-2 px-3 transition-all duration-300 ${
+                <button
+                  onClick={() => {
+                    if (!autopilotEnabled && isAccountFree) {
+                      setAutopilotUpgradePopup(true);
+                    } else {
+                      setAutopilotEnabled(!autopilotEnabled);
+                    }
+                  }}
+                  className={`relative w-32 h-7 cursor-pointer overflow-hidden rounded-full border transition-all duration-300 flex items-center justify-center ${
                     autopilotEnabled
-                      ? 'translate-x-0 opacity-100'
-                      : 'translate-x-8 opacity-0 group-hover:-translate-x-1 group-hover:opacity-100'
+                      ? 'bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 border-transparent text-white shadow-lg shadow-purple-500/25'
+                      : 'bg-slate-200 border-slate-300 text-slate-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-slate-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  <Icon
-                    icon={autopilotEnabled ? 'mdi:lightning-bolt' : 'mdi:lightning-bolt-outline'}
-                    className={`w-3.5 h-3.5 ${autopilotEnabled ? 'text-white' : 'text-white'}`}
-                  />
-                  <span
-                    className={`text-xs font-bold ${
-                      autopilotEnabled ? 'text-white' : 'text-white'
+                  {/* Animated background for hover state when disabled */}
+                  {!autopilotEnabled && (
+                    <div className="absolute left-[20%] top-1/2 -translate-y-1/2 h-2 w-2 rounded-full transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:translate-y-0 group-hover:h-full group-hover:w-full group-hover:scale-[1.2] bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 scale-[1]" />
+                  )}
+
+                  {/* Default text - only show when not enabled */}
+                  {!autopilotEnabled && (
+                    <span className="relative z-10 text-xs font-medium transition-all duration-300 group-hover:translate-x-8 group-hover:opacity-0 px-4">
+                      Pilot
+                    </span>
+                  )}
+
+                  {/* Enabled/Hover state with icon and gradient text */}
+                  <div
+                    className={`absolute inset-0 z-20 flex items-center justify-center gap-2 px-3 transition-all duration-300 ${
+                      autopilotEnabled
+                        ? 'translate-x-0 opacity-100'
+                        : 'translate-x-8 opacity-0 group-hover:-translate-x-1 group-hover:opacity-100'
                     }`}
                   >
-                    Autopilot
-                  </span>
+                    <Icon
+                      icon={autopilotEnabled ? 'mdi:lightning-bolt' : 'mdi:lightning-bolt-outline'}
+                      className={`w-3.5 h-3.5 ${autopilotEnabled ? 'text-white' : 'text-white'}`}
+                    />
+                    <span
+                      className={`text-xs font-bold ${
+                        autopilotEnabled ? 'text-white' : 'text-white'
+                      }`}
+                    >
+                      Autopilot
+                    </span>
+                  </div>
+
+                  {/* Animated gradient overlay for enabled state */}
+                  {autopilotEnabled && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 opacity-100 animate-gradient-x" />
+                  )}
+                </button>
+
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Autopilot mode will plan your project and execute all steps automatically in the
+                  background
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
                 </div>
-
-                {/* Animated gradient overlay for enabled state */}
-                {autopilotEnabled && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 opacity-100 animate-gradient-x" />
-                )}
-              </button>
-
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                Autopilot mode will plan your project and execute all steps automatically in the
-                background
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
-              </div>
               </div>
             )}
           </div>

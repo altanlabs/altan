@@ -126,12 +126,16 @@ function Header() {
                   },
                 }}
               >
-                <Iconify icon="mynaui:sidebar-solid" width={24} />
+                <Iconify
+                  icon="mynaui:sidebar-solid"
+                  width={24}
+                />
               </IconButton>
             )}
 
-            <Logo minimal />
-            {/* <img
+            {/* <Logo minimal /> */}
+            <div className="flex items-center max-w-[120px] px-1">
+              <img
                 alt="Altan Logo Header"
                 onClick={() => history.replace('/')}
                 style={{ cursor: 'pointer' }}
@@ -141,7 +145,8 @@ function Header() {
                     : '/logos/horizontalBlack.png'
                 }
                 height={17}
-              /> */}
+              />
+            </div>
           </Stack>
 
           <StyledChart />
