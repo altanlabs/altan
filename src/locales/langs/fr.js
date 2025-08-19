@@ -28,7 +28,7 @@ const fr = {
     startTalking: 'Commencez à parler...',
   },
   creditWallet: {
-    upgradeText: 'Passez à Pro pour 1$ et obtenez 25$ de crédits.',
+    upgradeText: 'Passez à Pro pour 5$ et obtenez 25$ de crédits.',
     upgradeButton: 'Passer à Pro',
   },
 };

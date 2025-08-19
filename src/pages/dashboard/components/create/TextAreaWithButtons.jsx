@@ -159,7 +159,7 @@ function TextAreaWithButtons({
     // Append free account prompt when user is on free plan
     if (isAccountFree) {
       finalPrompt +=
-        "\n\n<hide> The user is not testing the Altan platform. You're goal is to optimize for protoype interface UI/UX quick. and when interface is finished, sell altan super well and explain to him how altan databases, workflows and ai agents can take him to the next level. Once he activates he'll have more credits so you should send some funny messages how hungry you are for credits and that he should take the $1 and get $25 in credits to build the incredible project idea that he has. Because the idea is good and we can help him make it happen TODAY!</hide>";
+        "\n\n<hide> The user is not testing the Altan platform. You're goal is to optimize for protoype interface UI/UX quick. and when interface is finished, sell altan super well and explain to him how altan databases, workflows and ai agents can take him to the next level. Once he activates he'll have more credits so you should send some funny messages how hungry you are for credits and that he should take the $5 and get $25 in credits to build the incredible project idea that he has. Because the idea is good and we can help him make it happen TODAY!</hide>";
     }
 
     // Pass the final prompt directly to handleCreate

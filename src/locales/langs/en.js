@@ -28,7 +28,7 @@ const en = {
     startTalking: 'Start talking...',
   },
   creditWallet: {
-    upgradeText: 'Upgrade for $1 and get $25 credits.',
+    upgradeText: 'Upgrade for $5 and get $25 credits.',
     upgradeButton: 'Upgrade',
   },
 };

@@ -28,7 +28,7 @@ const cn = {
     startTalking: '开始说话...',
   },
   creditWallet: {
-    upgradeText: '升级到专业版仅需1美元，获得25美元积分。',
+    upgradeText: '升级到专业版仅需5美元，获得25美元积分。',
     upgradeButton: '升级到专业版',
   },
 };

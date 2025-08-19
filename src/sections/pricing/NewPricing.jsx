@@ -486,7 +486,7 @@ export default function NewPricing() {
           price={
             isAuthenticated && proBillingOption && isYearlyBilling
               ? formatPrice(proBillingOption.price, billingFrequency)
-              : 1
+              : 5
           }
           description={proPlan?.description}
           priceSubtext={

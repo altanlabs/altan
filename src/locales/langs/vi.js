@@ -28,7 +28,7 @@ const vi = {
     startTalking: 'Bắt đầu nói...',
   },
   creditWallet: {
-    upgradeText: 'Nâng cấp lên Pro chỉ với $1 và nhận $25 tín dụng.',
+    upgradeText: 'Nâng cấp lên Pro chỉ với $5 và nhận $25 tín dụng.',
     upgradeButton: 'Nâng cấp lên Pro',
   },
 };

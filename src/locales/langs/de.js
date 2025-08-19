@@ -28,7 +28,7 @@ const de = {
     startTalking: 'Anfangen zu sprechen...',
   },
   creditWallet: {
-    upgradeText: 'Wechseln Sie zu Pro für 1$ und erhalten Sie 25$ Guthaben.',
+    upgradeText: 'Wechseln Sie zu Pro für 5$ und erhalten Sie 25$ Guthaben.',
     upgradeButton: 'Zu Pro wechseln',
   },
 };

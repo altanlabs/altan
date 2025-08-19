@@ -28,7 +28,7 @@ const ru = {
     startTalking: 'Начните говорить...',
   },
   creditWallet: {
-    upgradeText: 'Перейдите на Pro за $1 и получите $25 кредитов.',
+    upgradeText: 'Перейдите на Pro за $5 и получите $25 кредитов.',
     upgradeButton: 'Перейти на Pro',
   },
 };

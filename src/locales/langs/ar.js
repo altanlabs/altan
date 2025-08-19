@@ -28,7 +28,7 @@ const ar = {
     startTalking: 'ابدأ بالحديث...',
   },
   creditWallet: {
-    upgradeText: 'انتقل إلى Pro مقابل 1$ واحصل على 25$ رصيد.',
+    upgradeText: 'انتقل إلى Pro مقابل 5$ واحصل على 25$ رصيد.',
     upgradeButton: 'الانتقال إلى Pro',
   },
 };

@@ -86,14 +86,14 @@ const UpgradeDialog = ({ open, onClose }) => {
             component="h2"
             sx={{ mb: 1, fontWeight: 600 }}
           >
-            Unlock Pro for 1€
+            Unlock Pro for 5€
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
             sx={{ mb: 3 }}
           >
-            Get €25 in credits + full access to all Pro features
+            Get 25€ in credits + full access to all Pro features
           </Typography>
         </Box>
 
