@@ -46,13 +46,9 @@ const slice = createSlice({
     // Table reducers
     addTable(state, action) {
       const { baseId, table } = action.payload;
-      console.log('[bases slice] addTable called:', { baseId, table });
       if (state.bases[baseId]) {
         state.bases[baseId].tables = state.bases[baseId].tables || { items: [] };
         state.bases[baseId].tables.items.push(table);
-        console.log(`[bases slice] Table added to base ${baseId}:`, table);
-      } else {
-        console.warn(`[bases slice] Tried to add table to non-existent base: ${baseId}`, table);
       }
     },
     updateTable(state, action) {
@@ -423,7 +419,6 @@ export const createTable = (baseId, tableData) => async (dispatch, getState) => 
 export const updateTableById = (baseId, tableId, changes) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    console.log('updating table...', changes);
     const response = await optimai_tables.patch(`/table/${tableId}`, changes);
     return Promise.resolve(response.data);
   } catch (e) {

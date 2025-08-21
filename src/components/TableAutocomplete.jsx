@@ -12,22 +12,33 @@ import {
   Alert,
 } from '@mui/material';
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 
-// import { fetchBaseById } from '../redux/slices/bases';
+import { selectBases, getBasesByAccountID } from '../redux/slices/bases';
 import { selectAccount } from '../redux/slices/general';
 import { optimai_tables } from '../utils/axios';
 import { FIELD_TYPES } from './databases/fields/utils/fieldTypes';
 
 function TableAutocomplete({ value, onChange }) {
+  const dispatch = useDispatch();
   const account = useSelector(selectAccount);
+  const bases = useSelector(selectBases);
   const [selectedBase, setSelectedBase] = useState(null);
   const [filteredTables, setFilteredTables] = useState([]);
   const [tableFields, setTableFields] = useState([]);
   const [isLoadingFields, setIsLoadingFields] = useState(false);
+  const [loadingBases, setLoadingBases] = useState(false);
   const [copySnackbar, setCopySnackbar] = useState({ open: false, fieldName: '' });
+  // Initialize bases if not already loaded
+  useEffect(() => {
+    if (account?.id && Object.keys(bases).length === 0 && !loadingBases) {
+      setLoadingBases(true);
+      dispatch(getBasesByAccountID(account.id))
+        .catch(() => {})
+        .finally(() => setLoadingBases(false));
+    }
+  }, [dispatch, account?.id, bases, loadingBases]);
 
-  console.log('tableFields', tableFields);
   // Fetch table fields from backend
   const fetchTableFields = useCallback(async (tableId) => {
     if (!tableId) return;
@@ -39,21 +50,20 @@ function TableAutocomplete({ value, onChange }) {
         setTableFields(table.fields.items || []);
       }
     } catch (error) {
-      console.error('Error fetching table fields:', error);
       setTableFields([]);
     } finally {
       setIsLoadingFields(false);
     }
   }, []);
 
-  // Extract bases from account
-  const bases = useMemo(() => account?.bases || [], [account]);
+  // Convert bases object to array
+  const basesArray = useMemo(() => Object.values(bases), [bases]);
 
   // Get the current table's base id when component loads or value changes
   useEffect(() => {
-    if (value && bases.length > 0) {
+    if (value && basesArray.length > 0) {
       // Find which base contains this table
-      for (const base of bases) {
+      for (const base of basesArray) {
         const tableExists = base.tables?.items?.some((table) => table.id === value);
         if (tableExists) {
           setSelectedBase(base);
@@ -65,7 +75,7 @@ function TableAutocomplete({ value, onChange }) {
       // Clear fields if no table is selected
       setTableFields([]);
     }
-  }, [value, bases, fetchTableFields]);
+  }, [value, basesArray, fetchTableFields]);
 
   // Update filtered tables when base changes
   useEffect(() => {
@@ -88,8 +98,6 @@ function TableAutocomplete({ value, onChange }) {
   };
 
   const handleTableChange = (event, newValue) => {
-    // Log the selected table when it changes
-    console.log('Selected table:', newValue);
     const tableId = newValue?.details?.id ?? null;
     onChange(tableId);
     if (tableId) {
@@ -104,13 +112,10 @@ function TableAutocomplete({ value, onChange }) {
     navigator.clipboard
       .writeText(fieldName)
       .then(() => {
-        console.log(`Copied ${fieldName} to clipboard`);
         setCopySnackbar({ open: true, fieldName });
         setTimeout(() => setCopySnackbar({ open: false, fieldName: '' }), 2000);
       })
-      .catch((err) => {
-        console.error('Error copying to clipboard:', err);
-      });
+      .catch(() => {});
   };
 
   // Get color based on field type
@@ -149,12 +154,7 @@ function TableAutocomplete({ value, onChange }) {
   };
 
   const selectedValue = useMemo(() => {
-    const found = filteredTables?.find((table) => table.details?.id === value) || null;
-    // If found, log the selected table details
-    if (found) {
-      console.log('Selected table value:', found);
-    }
-    return found;
+    return filteredTables?.find((table) => table.details?.id === value) || null;
   }, [filteredTables, value]);
 
   return (
@@ -164,7 +164,7 @@ function TableAutocomplete({ value, onChange }) {
       sx={{ width: '100%' }}
     >
       <Autocomplete
-        options={bases || []}
+        options={basesArray || []}
         getOptionLabel={(option) => option?.name || ''}
         isOptionEqualToValue={(option, value) => option?.id === value?.id}
         value={selectedBase}
@@ -183,12 +183,14 @@ function TableAutocomplete({ value, onChange }) {
             size="small"
             label="Select Base"
             variant="filled"
-            placeholder="Choose a base first..."
+            placeholder={loadingBases ? 'Loading bases...' : 'Choose a base first...'}
+            disabled={loadingBases}
           />
         )}
         blurOnSelect
         clearOnBlur={false}
         selectOnFocus
+        disabled={loadingBases}
       />
 
       <Autocomplete

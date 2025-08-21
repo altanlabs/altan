@@ -1,12 +1,11 @@
 import { InputAdornment, TextField, Tooltip } from '@mui/material';
 import { m, AnimatePresence } from 'framer-motion';
 import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 
 import { cn } from '@lib/utils';
-import { selectAccount } from '@redux/slices/general';
 
 import Iconify from '../iconify';
+import TableResourceSelector from './TableResourceSelector';
 import ResourceCard from '../tools/ResourceCard';
 
 /**
@@ -221,130 +220,6 @@ const ResourceItem = ({
 };
 
 /**
- * BaseGroup: Groups resources by base_id and displays them under a base name
- */
-const BaseGroup = ({
-  baseId,
-  baseName,
-  resources,
-  typeId,
-  events,
-  selectedResources,
-  onToggleResource,
-  onToggleEvent,
-  filterQuery,
-  editable,
-  expanded,
-  onToggleExpand,
-}) => {
-  const filteredResources = useMemo(() => {
-    const q = filterQuery.toLowerCase();
-    return resources.filter(([resourceId, resource]) => {
-      const resourceMatches = resource.name?.toLowerCase().includes(q);
-      const eventMatches = events.some((e) => e.name.toLowerCase().includes(q));
-      return q.trim() === '' || resourceMatches || eventMatches;
-    });
-  }, [resources, filterQuery, events]);
-
-  // Calculate selection summary for this base
-  const { selectedResourceCount, selectedEventCount } = useMemo(() => {
-    let srCount = 0;
-    let seCount = 0;
-    for (const [resourceId] of filteredResources) {
-      const selEv = selectedResources[typeId]?.[resourceId];
-      if (selEv) {
-        srCount++;
-        seCount += selEv.size;
-      }
-    }
-    return {
-      selectedResourceCount: srCount,
-      selectedEventCount: seCount,
-    };
-  }, [selectedResources, typeId, filteredResources]);
-
-  if (filteredResources.length === 0) return null;
-
-  if (!editable && !(selectedResourceCount + selectedEventCount)) {
-    return null;
-  }
-
-  const realExpanded = expanded || (filterQuery.trim() !== '' && filteredResources.length > 0);
-
-  return (
-    <div className="mb-2 rounded-lg border border-gray-100 dark:border-gray-600 bg-gray-50/30 dark:bg-gray-800/30">
-      <button
-        onClick={() => onToggleExpand(baseId)}
-        className="w-full py-2 px-3 flex justify-between items-center hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors duration-200 text-left focus:outline-none focus-visible:ring focus-visible:ring-secondary rounded-lg"
-        aria-expanded={realExpanded}
-        aria-controls={`base-panel-${baseId}`}
-      >
-        <div className="flex items-center space-x-2">
-          <Iconify icon="mdi:database" className="text-secondary dark:text-secondary-dark" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {baseName || `Base ${baseId}`}
-          </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            ({filteredResources.length} table{filteredResources.length !== 1 ? 's' : ''})
-          </span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {!realExpanded && (selectedResourceCount > 0 || selectedEventCount > 0) && (
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              {selectedResourceCount} table{selectedResourceCount !== 1 ? 's' : ''}, {selectedEventCount} event{selectedEventCount !== 1 ? 's' : ''}
-            </span>
-          )}
-          <Iconify icon={realExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} />
-        </div>
-      </button>
-
-      <AnimatePresence>
-        {realExpanded && (
-          <m.div
-            id={`base-panel-${baseId}`}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="px-3 pb-2"
-            layout
-          >
-            {filteredResources
-              .sort(([aResourceId, aResource], [bResourceId, bResource]) => {
-                const aSelected = Boolean(selectedResources[typeId]?.[aResourceId]);
-                const bSelected = Boolean(selectedResources[typeId]?.[bResourceId]);
-
-                // Sort selected ones first
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-
-                // Sort alphabetically by resource.name as secondary criteria
-                const aName = aResource.name?.toLowerCase() || '';
-                const bName = bResource.name?.toLowerCase() || '';
-                return aName.localeCompare(bName);
-              })
-              .map(([resourceId, resource]) => (
-                <ResourceItem
-                  key={resourceId}
-                  typeId={typeId}
-                  resourceId={resourceId}
-                  resource={resource}
-                  events={events}
-                  selectedEvents={selectedResources[typeId]?.[resourceId]}
-                  onToggleResource={onToggleResource}
-                  onToggleEvent={onToggleEvent}
-                  filterQuery={filterQuery}
-                  editable={editable}
-                />
-              ))}
-          </m.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-/**
  * TypeCard: Handles a type block and its internal resources.
  * Can be collapsed/expanded. Shows summary of selected resources/events when collapsed.
  */
@@ -359,37 +234,7 @@ const TypeCard = ({
   filterQuery,
   editable = false,
 }) => {
-  const account = useSelector(selectAccount);
-  const [expandedBases, setExpandedBases] = useState({});
-  
-  // Group resources by base_id
-  const resourcesByBase = useMemo(() => {
-    const groups = {};
-    Object.entries(type.resources).forEach(([resourceId, resource]) => {
-      const baseId = resource.base_id || 'unknown';
-      if (!groups[baseId]) {
-        groups[baseId] = [];
-      }
-      groups[baseId].push([resourceId, resource]);
-    });
-    return groups;
-  }, [type.resources]);
-
-  // Get base names from account data
-  const baseNames = useMemo(() => {
-    const names = {};
-    if (account?.bases) {
-      Object.values(account.bases).forEach(base => {
-        names[base.id] = base.name;
-      });
-    }
-    return names;
-  }, [account?.bases]);
-
-  const toggleBaseExpansion = useCallback((baseId) => {
-    setExpandedBases((prev) => ({ ...prev, [baseId]: !prev[baseId] }));
-  }, []);
-
+  // Debug logging removed for production
   // Calculate selection summary
   const { totalResources, selectedResourceCount, totalEventCount, selectedEventCount } =
     useMemo(() => {
@@ -397,8 +242,8 @@ const TypeCard = ({
       let srCount = 0;
       let seCount = 0;
       const teCount = resources.length * (type.events?.length || 0);
-      for (const [rId] of resources) {
-        const selEv = selectedResources[typeId]?.[rId];
+      for (const [resourceId] of resources) {
+        const selEv = selectedResources[typeId]?.[resourceId];
         if (selEv) {
           srCount++;
           seCount += selEv.size;
@@ -412,26 +257,24 @@ const TypeCard = ({
       };
     }, [selectedResources, typeId, type]);
 
-  // Filter bases that have matching resources
-  const filteredBases = useMemo(() => {
+  // Filter resources based on query
+  const filteredResourceIds = useMemo(() => {
     const q = filterQuery.toLowerCase();
-    return Object.entries(resourcesByBase).filter(([baseId, resources]) => {
-      return resources.some(([resourceId, resource]) => {
-        const resourceMatches = resource.name?.toLowerCase().includes(q);
-        const eventMatches = type.events.some((e) => e.name.toLowerCase().includes(q));
-        return q.trim() === '' || resourceMatches || eventMatches;
-      });
+    return Object.entries(type.resources).filter(([, resource]) => {
+      const resourceMatches = resource.name?.toLowerCase().includes(q);
+      const eventMatches = type.events.some((e) => e.name.toLowerCase().includes(q));
+      return q.trim() === '' || resourceMatches || eventMatches;
     });
-  }, [resourcesByBase, filterQuery, type.events]);
+  }, [type, filterQuery]);
 
   const realExpanded = useMemo(
-    () => !!expanded || (!!filterQuery?.length && !!filteredBases?.length),
-    [expanded, filterQuery?.length, filteredBases?.length],
+    () => !!expanded || (!!filterQuery?.length && !!filteredResourceIds?.length),
+    [expanded, filterQuery?.length, filteredResourceIds?.length],
   );
 
   // If no matches and we have a query, don't show the type block
   if (
-    (filteredBases.length === 0 && filterQuery.trim() !== '') ||
+    (filteredResourceIds.length === 0 && filterQuery.trim() !== '') ||
     (!editable && !(selectedResourceCount + selectedEventCount))
   ) {
     return null;
@@ -474,27 +317,32 @@ const TypeCard = ({
             className="p-3"
             layout
           >
-            {filteredBases
-              .sort(([aBaseId], [bBaseId]) => {
-                const aName = baseNames[aBaseId]?.toLowerCase() || aBaseId;
-                const bName = baseNames[bBaseId]?.toLowerCase() || bBaseId;
+            {filteredResourceIds
+              .sort(([aResourceId, aResource], [bResourceId, bResource]) => {
+                const aSelected = Boolean(selectedResources[typeId]?.[aResourceId]);
+                const bSelected = Boolean(selectedResources[typeId]?.[bResourceId]);
+
+                // Sort selected ones first
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+
+                // Sort alphabetically by resource.name as secondary criteria
+                const aName = aResource.name?.toLowerCase() || '';
+                const bName = bResource.name?.toLowerCase() || '';
                 return aName.localeCompare(bName);
               })
-              .map(([baseId, resources]) => (
-                <BaseGroup
-                  key={baseId}
-                  baseId={baseId}
-                  baseName={baseNames[baseId]}
-                  resources={resources}
+              .map(([resourceId, resource]) => (
+                <ResourceItem
+                  key={resourceId}
                   typeId={typeId}
+                  resourceId={resourceId}
+                  resource={resource}
                   events={type.events}
-                  selectedResources={selectedResources}
+                  selectedEvents={selectedResources[typeId]?.[resourceId]}
                   onToggleResource={onToggleResource}
                   onToggleEvent={onToggleEvent}
                   filterQuery={filterQuery}
                   editable={editable}
-                  expanded={expandedBases[baseId]}
-                  onToggleExpand={toggleBaseExpansion}
                 />
               ))}
           </m.div>
@@ -580,14 +428,31 @@ const ResourceSelector = ({
 
   const totalSubscriptions = useMemo(
     () =>
-      Object.entries(selectedResources).reduce((acc, [resourceTypeId, groupedResources]) => {
-        Object.entries(groupedResources).forEach(([resourceId, eventsIds]) => {
-          acc += eventsIds?.size ?? 0;
-        });
-        return acc;
+      Object.entries(selectedResources).reduce((total, [, groupedResources]) => {
+        const groupTotal = Object.entries(groupedResources).reduce((subTotal, [, eventsIds]) => {
+          return subTotal + (eventsIds?.size ?? 0);
+        }, 0);
+        return total + groupTotal;
       }, 0),
     [selectedResources],
   );
+
+  // Check if we have a table type - use custom component for tables
+  const hasTableType = data && data.table;
+
+  // If we only have table type, render ONLY the custom TableResourceSelector
+  if (hasTableType && Object.keys(data).length === 1) {
+    return (
+      <TableResourceSelector
+        events={data.table.events}
+        value={selectedResources.table || {}}
+        onChange={(tableSelections) => {
+          setSelectedResources(prev => ({ ...prev, table: tableSelections }));
+        }}
+        editable={editable}
+      />
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -619,48 +484,39 @@ const ResourceSelector = ({
         />
       </div>
 
-      {Object.entries(data).map(([typeId, type]) => (
-        <TypeCard
-          key={typeId}
-          typeId={typeId}
-          type={type}
-          expanded={expandedTypes[typeId]}
-          onToggleExpand={toggleTypeExpansion}
-          selectedResources={selectedResources}
-          onToggleResource={toggleResourceSelection}
-          onToggleEvent={toggleEventSelection}
-          filterQuery={searchQuery}
-          editable={editable}
-        />
-      ))}
+      {Object.entries(data).map(([typeId, type]) => {
+        // Use custom TableResourceSelector for table type
+        if (typeId === 'table') {
+          return (
+            <div key={typeId} className="mb-4">
+              <TableResourceSelector
+                events={type.events}
+                value={selectedResources.table || {}}
+                onChange={(tableSelections) => {
+                  setSelectedResources(prev => ({ ...prev, table: tableSelections }));
+                }}
+                editable={editable}
+              />
+            </div>
+          );
+        }
 
-      {/* <m.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        className="p-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-lg shadow-inner"
-      >
-        <h3 className="text-md font-bold mb-2 text-gray-800 dark:text-gray-200">
-          Selected Values:
-        </h3>
-        <pre className="text-sm bg-white/70 dark:bg-gray-700/70 p-2 rounded-md overflow-auto text-gray-800 dark:text-gray-200 shadow-inner max-h-64">
-          {JSON.stringify(
-            Object.fromEntries(
-              Object.entries(selectedResources).map(([tId, resources]) => [
-                tId,
-                Object.fromEntries(
-                  Object.entries(resources).map(([rId, events]) => [
-                    rId,
-                    Array.from(events),
-                  ])
-                ),
-              ])
-            ),
-            null,
-            2
-          )}
-        </pre>
-      </m.div> */}
+        // Use default TypeCard for other types
+        return (
+          <TypeCard
+            key={typeId}
+            typeId={typeId}
+            type={type}
+            expanded={expandedTypes[typeId]}
+            onToggleExpand={toggleTypeExpansion}
+            selectedResources={selectedResources}
+            onToggleResource={toggleResourceSelection}
+            onToggleEvent={toggleEventSelection}
+            filterQuery={searchQuery}
+            editable={editable}
+          />
+        );
+      })}
     </div>
   );
 };

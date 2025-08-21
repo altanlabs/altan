@@ -171,11 +171,11 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent:', {
-    data,
-    userId: user_id,
-    timestamp: new Date().toISOString(),
-  });
+  // console.log('handleWebSocketEvent:', {
+  //   data,
+  //   userId: user_id,
+  //   timestamp: new Date().toISOString(),
+  // });
   // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':

@@ -52,7 +52,6 @@ const initialState = {
     payments: [],
     developer_apps: [],
     apps: [],
-    bases: [],
     interfaces: [],
     meta_data: {
       nav: [],
@@ -72,7 +71,6 @@ const initialState = {
     members: false,
     developer_apps: false,
     apps: false,
-    bases: false,
     interfaces: false,
   },
   accountAssetsInitialized: {
@@ -89,7 +87,6 @@ const initialState = {
     members: false,
     developer_apps: false,
     apps: false,
-    bases: false,
     interfaces: false,
   },
   accountAssetsErrors: {
@@ -106,7 +103,6 @@ const initialState = {
     members: null,
     developer_apps: null,
     apps: null,
-    bases: null,
     interfaces: null,
   },
   webSocketEvents: [],
@@ -1077,12 +1073,6 @@ const ACCOUNT_GQ = {
   apikeys: {
     '@fields': ['@base@exc:meta_data', 'name'],
   },
-  bases: {
-    '@fields': '@all',
-    tables: {
-      '@fields': ['id', 'name'],
-    },
-  },
   gates: {
     '@fields': ['@base@exc:meta_data', 'name'],
   },
@@ -1156,7 +1146,6 @@ const KEY_MAPPING = {
   owner: 'user',
   developer_apps: 'developer_apps',
   apps: 'apps',
-  bases: 'bases',
   interfaces: 'interfaces',
 };
 

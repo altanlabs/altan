@@ -1,17 +1,35 @@
 import { TextField, Autocomplete, Chip, Stack, Skeleton, FormControlLabel, Switch, Box } from '@mui/material';
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 
 import { selectCurrentAltaner } from '../redux/slices/altaners';
+import { selectBases, getBasesByAccountID } from '../redux/slices/bases';
 import { useSelector } from '../redux/store';
 
 const BaseAutocomplete = ({ value, onChange }) => {
-  const bases = useSelector((state) => state.general.account.bases);
+  const dispatch = useDispatch();
+  const bases = useSelector(selectBases);
+  const account = useSelector(state => state.general.account);
   const altaner = useSelector(selectCurrentAltaner);
   const [showAllBases, setShowAllBases] = useState(!altaner);
+  const [loadingBases, setLoadingBases] = useState(false);
   const components = altaner?.components?.items || [];
   const baseIds = components.filter((c) => c.type === 'base').flatMap((c) => c.params?.ids);
 
-  if (!bases) {
+  // Initialize bases if not already loaded
+  useEffect(() => {
+    if (account?.id && Object.keys(bases).length === 0 && !loadingBases) {
+      setLoadingBases(true);
+      dispatch(getBasesByAccountID(account.id))
+        .catch(console.error)
+        .finally(() => setLoadingBases(false));
+    }
+  }, [dispatch, account?.id, bases, loadingBases]);
+
+  // Convert bases object to array
+  const basesArray = Object.values(bases);
+
+  if (loadingBases || basesArray.length === 0) {
     return (
       <Skeleton
         variant="rectangular"
@@ -22,8 +40,8 @@ const BaseAutocomplete = ({ value, onChange }) => {
   }
 
   const filteredBases = (!altaner || showAllBases)
-    ? bases
-    : bases.filter(base => baseIds.includes(base.id));
+    ? basesArray
+    : basesArray.filter(base => baseIds.includes(base.id));
 
   return (
     <Stack sx={{ width: '100%' }} spacing={1}>

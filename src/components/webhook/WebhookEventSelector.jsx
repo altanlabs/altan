@@ -122,15 +122,8 @@ const WebhookEventSelector = ({
   setSelectedConnectionType,
   editable = false,
 }) => {
-  const account = useSelector(selectAccount);
-  console.log('account', account);
   const { reset, getValues, setValue } = useFormContext();
   const initialSubscriptionsRef = useRef();
-  // const { fields, append, remove } = useFieldArray({
-  //   control,
-  //   name: "subscriptions",
-  //   keyName: '__key'
-  // });
   const [groupedEvents, setGroupedEvents] = useState({});
   const [existingSubscriptions, setExistingSubscriptions] = useState({});
   const [selectedConnection, setSelectedConnection] = useState(null);
@@ -147,10 +140,6 @@ const WebhookEventSelector = ({
   const extraResourcesSelector = useMemo(() => (state) => selectExtendedResources(state, true), []);
   const extraResources = useSelector(extraResourcesSelector);
 
-  // console.log('extraResources', extraResources);
-  // const throttledSearchTerm = useDebounce(searchTerm, 500);
-
-  // Flatten all events from webhooks
   const { events, webhooks } = useMemo(
     () =>
       !selectedConnectionType?.webhooks
