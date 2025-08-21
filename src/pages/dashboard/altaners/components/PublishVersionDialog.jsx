@@ -443,7 +443,7 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
       <AddDomainDialog
         open={isDomainDialogOpen}
         onClose={() => setIsDomainDialogOpen(false)}
-        ui={altaner}
+        ui={ui}
       />
     </>
   );
