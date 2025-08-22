@@ -104,15 +104,16 @@ export function BaseCard({
               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-50 hover:opacity-100"
               onClick={() =>
                 !(isEditMode && mode === 'widget' && item.type !== 'custom_message') &&
-                onEdit(item.id)}
+                onEdit(item.id)
+              }
               disabled={content !== null && !content.length}
             >
               <Iconify
                 icon={
                   isEditMode
                     ? !content || content !== item.name
-                        ? 'mdi:tick'
-                        : 'mdi:close'
+                      ? 'mdi:tick'
+                      : 'mdi:close'
                     : 'material-symbols:edit'
                 }
                 className="text-green-500"
@@ -127,7 +128,8 @@ export function BaseCard({
                   ? onSettings()
                   : dispatch(
                       setDialogActive({ item: { id: item.id, type: mode }, dialog: 'settings' }),
-                    )}
+                    )
+              }
             >
               <Iconify
                 icon="solar:settings-bold-duotone"
@@ -230,8 +232,8 @@ export const KnowledgeCard = ({ item }) => {
               startIcon={
                 knowledge.file.meta_data.status === 'learning' ||
                 knowledge.file.meta_data.status === 'processing' ? (
-                      <Iconify icon="line-md:loading-twotone-loop" />
-                    ) : null
+                  <Iconify icon="line-md:loading-twotone-loop" />
+                ) : null
               }
             >
               {knowledge.file.meta_data.status}
@@ -252,23 +254,22 @@ export const KnowledgeCard = ({ item }) => {
 
 export const SpaceToolCard = ({ item, onEdit, spaceId }) => {
   const isClientTool = item.tool?.tool_type === 'client';
-  const onClickEdit = () => onEdit(item);  
+  const onClickEdit = () => onEdit(item);
   return (
-    <BaseCard
-      item={item}
-      mode="tool"
-      draggable={false}
-      onDelete={() => dispatch(deleteToolLink(item.id,item.tool.id, spaceId))}
+    <div
+      className="group relative flex items-center gap-3 p-3 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+      style={{
+        backgroundColor: 'transparent',
+        transition: 'all 200ms ease-in-out',
+      }}
+      onClick={onClickEdit}
     >
-      <div
-        className="flex items-center space-x-2 w-full cursor-pointer"
-        onClick={onClickEdit}
-      >
+      <div className="flex items-center space-x-2 w-full">
         <Chip
           icon={
             <IconRenderer
               icon={
-                isClientTool 
+                isClientTool
                   ? 'mdi:desktop-classic'
                   : item.tool?.action_type?.connection_type?.icon ||
                     item?.tool?.action_type?.connection_type?.external_app?.icon ||
@@ -277,7 +278,7 @@ export const SpaceToolCard = ({ item, onEdit, spaceId }) => {
             />
           }
           label={
-            isClientTool 
+            isClientTool
               ? 'Client Tool'
               : item?.tool?.action_type?.connection_type?.name || 'Server Tool'
           }
@@ -292,7 +293,27 @@ export const SpaceToolCard = ({ item, onEdit, spaceId }) => {
           {item.tool.name}
         </Typography>
       </div>
-    </BaseCard>
+
+      {/* Delete button */}
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            dispatch(deleteToolLink(item.id, item.tool.id, spaceId));
+          }}
+          className="p-1 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 };
 
