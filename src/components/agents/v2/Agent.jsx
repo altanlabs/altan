@@ -22,7 +22,7 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
-// sdk
+
 // hooks
 import { useAuthContext } from '../../../auth/useAuthContext';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
@@ -277,7 +277,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         justifyContent: 'center',
         alignItems: 'center',
         px: 4,
-        py: { xs: 0.5, sm: 0.75 },
+        py: 0.2
       }}
     >
       {TABS.map((tab) => (
@@ -354,7 +354,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           borderBottom: 1,
           borderColor: theme.palette.divider,
           px: { xs: 1, sm: 2, md: 3 },
-          py: 1,
+          py: .2,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -413,38 +413,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                         '&::placeholder': {
                           color: theme.palette.text.disabled,
                           opacity: 0.8,
-                        },
-                      },
-                    },
-                  }}
-                />
-                <TextField
-                  variant="standard"
-                  value={agentData.description || ''}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  placeholder="Agent description"
-                  fullWidth
-                  InputProps={{
-                    disableUnderline: true,
-                    sx: {
-                      fontSize: isMobile ? '0.875rem' : '0.875rem',
-                      color: theme.palette.text.secondary,
-                      '&:before, &:after': {
-                        display: 'none',
-                      },
-                      '& input': {
-                        padding: isMobile ? '8px 4px' : '4px 0px',
-                        fontSize: isMobile ? '0.875rem' : '0.875rem',
-                        color: theme.palette.text.secondary,
-                        borderBottom: '1px solid transparent',
-                        marginTop: '4px',
-                        '&:focus': {
-                          borderBottomColor: theme.palette.primary.main,
-                          color: theme.palette.text.primary,
-                        },
-                        '&::placeholder': {
-                          color: theme.palette.text.disabled,
-                          opacity: 0.7,
                         },
                       },
                     },
@@ -705,6 +673,35 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 color="text.secondary"
                 gutterBottom
               >
+                Description
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                value={agentData?.description || ''}
+                onChange={(e) => handleFieldChange('description', e.target.value)}
+                placeholder="Agent description"
+                variant="outlined"
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: theme.palette.primary.main,
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: theme.palette.primary.main,
+                    },
+                  },
+                }}
+              />
+            </Box>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 Agent ID
               </Typography>
               <TextField
@@ -732,7 +729,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 color="text.secondary"
                 gutterBottom
               >
-                ElevenLabs Voice ID
+                ElevenLabs Agent ID
               </Typography>
               <TextField
                 fullWidth

@@ -90,17 +90,23 @@ const MessageContent = ({ message, threadId }) => {
   const hasCommits = commitResources.length > 0;
 
   // Check if message contains database versions
-  const databaseVersionResources = useMemo(() => extractDatabaseVersionResources(messageContent), [messageContent]);
+  const databaseVersionResources = useMemo(
+    () => extractDatabaseVersionResources(messageContent),
+    [messageContent],
+  );
   const hasDatabaseVersions = databaseVersionResources.length > 0;
 
   // Combined logic for both commits and database versions
   const hasAnyWidgets = hasCommits || hasDatabaseVersions;
-  const allWidgetResources = useMemo(() => [...commitResources, ...databaseVersionResources], [commitResources, databaseVersionResources]);
+  const allWidgetResources = useMemo(
+    () => [...commitResources, ...databaseVersionResources],
+    [commitResources, databaseVersionResources],
+  );
 
   // Remove both commits and database versions from text content
   const textContentWithoutWidgets = useMemo(() => {
     let cleanedContent = messageContent || '';
-    allWidgetResources.forEach(widget => {
+    allWidgetResources.forEach((widget) => {
       cleanedContent = cleanedContent.replace(widget.fullMatch, '');
     });
     return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
@@ -108,9 +114,11 @@ const MessageContent = ({ message, threadId }) => {
 
   // Create markdown with all widgets
   const widgetOnlyContent = useMemo(() => {
-    return allWidgetResources.map((widget) =>
-      `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`,
-    ).join('\n\n');
+    return allWidgetResources
+      .map(
+        (widget) => `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`,
+      )
+      .join('\n\n');
   }, [allWidgetResources]);
 
   const handleMessageClick = () => {
@@ -180,9 +188,12 @@ const MessageContent = ({ message, threadId }) => {
     <Stack
       spacing={0}
       width="100%"
+      sx={{
+        pt: 0.25,
+      }}
     >
       {/* Show accordion with thought process when commits are detected */}
-      {hasAnyWidgets && (textContentWithoutWidgets || (message?.thread_id === threadId)) && (
+      {hasAnyWidgets && (textContentWithoutWidgets || message?.thread_id === threadId) && (
         <Accordion
           expanded={thoughtAccordionOpen}
           onChange={() => setThoughtAccordionOpen(!thoughtAccordionOpen)}

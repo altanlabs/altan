@@ -654,8 +654,8 @@ const SuggestionButton = ({ children, threadId }) => {
 // Suggestion Group Component - for compact grouped suggestions
 const SuggestionGroup = ({ children }) => {
   return (
-    <div className="my-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/30 dark:to-slate-900/30 border border-gray-200 dark:border-gray-700 rounded-xl">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="my-2 p-2.5 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/30 dark:to-slate-900/30 border border-gray-200 dark:border-gray-700 rounded-xl">
+      <div className="flex items-center gap-2 mb-1.5">
         <svg
           className="w-4 h-4 text-gray-600 dark:text-gray-400"
           fill="none"
@@ -671,7 +671,7 @@ const SuggestionGroup = ({ children }) => {
         </svg>
         <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Next steps</span>
       </div>
-      <div className="flex flex-wrap gap-3">{children}</div>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   );
 };
@@ -742,51 +742,51 @@ const CustomMarkdown = ({
             [rehypeExternalLinks, { target: '_blank', rel: ['nofollow'] }],
           ]}
           components={{
-            // Enhanced headings with better hierarchy
+            // Enhanced headings with better hierarchy - ultra compact
             h1: ({ children }) => (
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6 mt-8 pb-3 border-b-2 border-gradient-to-r from-blue-500 to-purple-500 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-3 mt-4 pb-1.5 border-b-2 border-gradient-to-r from-blue-500 to-purple-500 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-5 mt-7 pb-2 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2 mt-4 pb-1 border-b border-slate-200 dark:border-slate-700">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-4 mt-6">
+              <h3 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-2 mt-3">
                 {children}
               </h3>
             ),
             h4: ({ children }) => (
-              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-3 mt-5">
+              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-1.5 mt-3">
                 {children}
               </h4>
             ),
             h5: ({ children }) => (
-              <h5 className="text-base font-medium text-slate-700 dark:text-slate-300 mb-3 mt-4">
+              <h5 className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1.5 mt-2.5">
                 {children}
               </h5>
             ),
             h6: ({ children }) => (
-              <h6 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 mt-4 uppercase tracking-wide">
+              <h6 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 mt-2.5 uppercase tracking-wide">
                 {children}
               </h6>
             ),
-            // Enhanced blockquotes
+            // Enhanced blockquotes - ultra compact
             blockquote: ({ children }) => (
-              <blockquote className="border-l-4 border-blue-500 pl-6 pr-4 py-3 my-6 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/20 dark:to-transparent rounded-r-lg italic text-slate-700 dark:text-slate-300 relative">
-                <div className="absolute -left-2 top-3 w-4 h-4 bg-blue-500 rounded-full opacity-30"></div>
+              <blockquote className="border-l-4 border-blue-500 pl-4 pr-3 py-1.5 my-3 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/20 dark:to-transparent rounded-r-lg italic text-slate-700 dark:text-slate-300 relative">
+                <div className="absolute -left-2 top-1.5 w-4 h-4 bg-blue-500 rounded-full opacity-30"></div>
                 {children}
               </blockquote>
             ),
-            // Enhanced horizontal rules
+            // Enhanced horizontal rules - ultra compact
             hr: () => (
-              <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent" />
+              <hr className="my-3 border-0 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent" />
             ),
-            // Enhanced tables
+            // Enhanced tables - ultra compact
             table: ({ children }) => (
-              <div className="my-6 overflow-x-auto">
+              <div className="my-3 overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm">
                   {children}
                 </table>
@@ -806,12 +806,12 @@ const CustomMarkdown = ({
               </tr>
             ),
             th: ({ children }) => (
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 {children}
               </th>
             ),
             td: ({ children }) => (
-              <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{children}</td>
+              <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">{children}</td>
             ),
             // Code blocks
             ...(!!codeActive && {
@@ -820,10 +820,10 @@ const CustomMarkdown = ({
                 const language = match ? match[1] : '';
                 const codeValue = String(children || '').replace(/\n$/, '');
 
-                // Handle mermaid diagrams
+                // Handle mermaid diagrams - ultra compact
                 if (!inline && language === 'mermaid') {
                   return (
-                    <div className="my-6 rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="my-3 rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
                       <MermaidDiagram
                         chart={codeValue}
                         className="bg-white dark:bg-slate-900"
@@ -832,7 +832,7 @@ const CustomMarkdown = ({
                   );
                 }
                 return !inline && match ? (
-                  <div className="my-6">
+                  <div className="my-3">
                     <CodeBlock
                       language={language}
                       value={codeValue}
@@ -865,11 +865,11 @@ const CustomMarkdown = ({
                 );
               },
             }),
-            // Enhanced paragraph styling
+            // Enhanced paragraph styling - ultra compact
             p: ({ children }) => (
               <p
                 className={cn(
-                  'mb-0 leading-7 text-slate-700 dark:text-slate-300',
+                  'mb-0 leading-6 text-slate-700 dark:text-slate-300',
                   noWrap
                     ? 'overflow-hidden text-ellipsis whitespace-nowrap'
                     : 'whitespace-pre-line',
@@ -887,23 +887,23 @@ const CustomMarkdown = ({
                 {children}
               </strong>
             ),
-            // Enhanced list styling
+            // Enhanced list styling - ultra compact
             li: ({ children }) => (
-              <li className="mb-2 leading-7 text-slate-700 dark:text-slate-300">{children}</li>
+              <li className="mb-0.5 leading-5 text-slate-700 dark:text-slate-300">{children}</li>
             ),
-            // Enhanced ordered list
+            // Enhanced ordered list - ultra compact
             ol: ({ children, ...props }) => (
               <ol
-                className="list-decimal ml-6 mb-6 space-y-1"
+                className="list-decimal ml-5 mb-3 space-y-0"
                 {...props}
               >
                 {children}
               </ol>
             ),
-            // Enhanced unordered list
+            // Enhanced unordered list - ultra compact
             ul: ({ children, ...props }) => (
               <ul
-                className="list-disc ml-6 mb-6 space-y-1"
+                className="list-disc ml-5 mb-3 space-y-0"
                 {...props}
               >
                 {children}
@@ -963,10 +963,10 @@ const CustomMarkdown = ({
             sup: ({ children }) => (
               <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>
             ),
-            // Enhanced collapsible sections
+            // Enhanced collapsible sections - ultra compact
             details: ({ children, ...props }) => (
               <details
-                className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg my-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg my-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow duration-200"
                 {...props}
               >
                 {children}
