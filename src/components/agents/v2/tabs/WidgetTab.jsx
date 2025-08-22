@@ -63,7 +63,7 @@ function WidgetTab({ agentData, onFieldChange }) {
     background_blur: widgetConfig.background_blur ?? true,
     position: widgetConfig.position || 'bottom-right',
     width: widgetConfig.width || 350,
-    room_width: widgetConfig.room_width || 450,
+    room_width: widgetConfig.room_width || 250,
     room_height: widgetConfig.room_height || 700,
     border_radius: widgetConfig.border_radius || 16,
   });

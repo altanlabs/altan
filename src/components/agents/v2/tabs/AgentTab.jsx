@@ -2,8 +2,6 @@ import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slid
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
-import { Space } from '../../../../sections/@dashboard/spaces';
-
 const models = [
   {
     provider: 'Anthropic',
@@ -276,12 +274,6 @@ function AgentTab({ agentData, onFieldChange }) {
               />
             </Box>
           </Box>
-
-          <Space
-            navigate={() => console.log('navigated')}
-            spaceId={agentData?.space_id}
-            isPreview={true}
-          />
         </Box>
       </Box>
     </Box>

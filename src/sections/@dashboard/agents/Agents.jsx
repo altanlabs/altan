@@ -85,7 +85,7 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
   const initialized = useSelector(getAgentsInitialized);
   const history = useHistory();
   const location = useLocation();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
 
   // Handle URL changes (including back/forward navigation and programmatic changes)
   useEffect(() => {
@@ -117,15 +117,15 @@ function Agents({ filterIds = null, altanerComponentId = null, altanerId = null 
       return [];
     }
     return (agents ?? []).filter((agent) => {
-      // Hide agents cloned from Altan's official templates
-      if (shouldHideClonedAgent(agent)) {
+      // Show all agents for superadmins, otherwise hide agents cloned from Altan's official templates
+      if (!user?.xsup && shouldHideClonedAgent(agent)) {
         return false;
       }
 
       // Apply existing filter logic
       return !filterIds || !filterIds.length || filterIds.includes(agent.id);
     });
-  }, [agents, altanerComponentId, filterIds]);
+  }, [agents, altanerComponentId, filterIds, user?.xsup]);
 
   const { originalAgents, clonedAgents, pinnedAgents } = useMemo(() => {
     // First filter agents based on search term

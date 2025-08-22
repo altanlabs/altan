@@ -57,15 +57,16 @@ const Header = () => {
         size="small"
         component={RouterLink}
         to={section.link}
+        color="inherit"
         startIcon={<Iconify icon={section.icon} />}
       >
         {section.name}
       </Button>
     ) : (
       <IconButton
-        color="primary"
+        color="inherit"
         key={section.id}
-                      onClick={() => history.push(section.link)}
+        onClick={() => history.push(section.link)}
       >
         <Iconify
           width={25}
@@ -76,12 +77,13 @@ const Header = () => {
   );
   const renderContent = (
     <>
-      <Logo sx={{ mr: 2.5 }} />
+      <Logo minimal />
       {!isSmallScreen ? (
         <>
           <Button
-            sx={{ height: 44 }}
+            sx={{ height: 44, pl: 4 }}
             size="small"
+            color="inherit"
             component={RouterLink}
             to={PATH_DASHBOARD.super.root}
             startIcon={<Iconify icon="ic:twotone-admin-panel-settings" />}
@@ -93,8 +95,8 @@ const Header = () => {
       ) : (
         <>
           <IconButton
-            color="primary"
-                          onClick={() => history.push(PATH_DASHBOARD.super.root)}
+            color="inherit"
+            onClick={() => history.push(PATH_DASHBOARD.super.root)}
           >
             <Iconify
               width={25}
@@ -118,6 +120,7 @@ const Header = () => {
             size="small"
             component={RouterLink}
             to="/"
+            color="inherit"
             startIcon={<Iconify icon="ic:twotone-home" />}
           >
             Back to platform
@@ -135,7 +138,7 @@ const Header = () => {
         )}
         {/* <ContactsPopover /> */}
         <IconButton
-          href="https://status.altan.ai/"
+          href="https://uptime.altan.ai/"
           target="_blank"
           rel="noopener noreferrer"
           sx={{ color: 'text.primary', width: 40, height: 40 }}
@@ -143,7 +146,6 @@ const Header = () => {
           <Iconify
             icon="pajamas:status-health"
             width={35}
-            color={theme.palette.primary.main}
           />
         </IconButton>
         <AccountPopover />

@@ -16,6 +16,11 @@ const initialState = {
     nextPageToken: null,
     searchQuery: '',
   },
+  rooms: {
+    items: [],
+    loading: false,
+    error: null,
+  },
 };
 
 const slice = createSlice({
@@ -94,6 +99,19 @@ const slice = createSlice({
       state.voices.loading = false;
       state.voices.error = action.payload;
     },
+    // Room actions
+    startLoadingRooms(state) {
+      state.rooms.loading = true;
+      state.rooms.error = null;
+    },
+    loadRoomsSuccess(state, action) {
+      state.rooms.items = action.payload;
+      state.rooms.loading = false;
+    },
+    loadRoomsError(state, action) {
+      state.rooms.loading = false;
+      state.rooms.error = action.payload;
+    },
   },
 });
 
@@ -163,7 +181,6 @@ export const deleteAgent = (agentId) => async (dispatch) => {
     dispatch(slice.actions.deleteAgent(agentId));
     return Promise.resolve(response);
   } catch (e) {
-    console.error(`error: could not delete agent ${agentId}: ${e}`);
     return Promise.reject(e);
   }
 };
@@ -200,5 +217,17 @@ export const fetchVoices =
       throw errorMessage;
     }
   };
+
+export const fetchAgentRooms = (agentId) => async (dispatch) => {
+  dispatch(slice.actions.startLoadingRooms());
+  try {
+    const response = await optimai.get(`/agent/${agentId}/rooms`);
+    dispatch(slice.actions.loadRoomsSuccess(response.data.rooms));
+  } catch (error) {
+    const errorMessage = error.response?.data?.detail || error.message;
+    dispatch(slice.actions.loadRoomsError(errorMessage));
+    throw errorMessage;
+  }
+};
 
 export const { setAgents, resetVoices } = slice.actions;

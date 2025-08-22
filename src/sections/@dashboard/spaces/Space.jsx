@@ -330,7 +330,6 @@ const Space = ({ navigate, spaceId, isPreview }) => {
               spacing={1}
               sx={{ position: 'relative', height: '100%', width: '100%', overflowY: 'auto' }}
             >
- 
               {current.id === 'root' && (
                 <Paper
                   sx={{
@@ -371,65 +370,36 @@ const Space = ({ navigate, spaceId, isPreview }) => {
               )}
 
               {current.id !== 'root' && (
-                <Box
-                  sx={{
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    p: 2,
-                  }}
-                >
+                <Box>
                   <div className="flex flex-row items-center gap-3">
-                    <InfoModal
-                      title="Tools"
-                      description="Tools enable the model to interact with the real-world and perform actions."
-                    />
                     <Button
                       color="inherit"
                       variant="soft"
-                      onClick={handleToolMenuOpen}
-                      size="small"
+                      onClick={handleServerTool}
+                      fullWidth
                       startIcon={
                         <Iconify
-                          icon="mdi:plus"
+                          icon="mdi:server"
                           width={15}
                         />
                       }
                     >
-                      Add Tool
+                      Add Server Tool
                     </Button>
-                    <Menu
-                      anchorEl={toolMenuAnchor}
-                      open={Boolean(toolMenuAnchor)}
-                      onClose={handleToolMenuClose}
-                      anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'left',
-                      }}
-                      transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                      }}
+                    <Button
+                      color="inherit"
+                      variant="soft"
+                      onClick={handleClientTool}
+                      fullWidth
+                      startIcon={
+                        <Iconify
+                          icon="mdi:desktop-classic"
+                          width={15}
+                        />
+                      }
                     >
-                      <MenuItem onClick={handleServerTool}>
-                        <ListItemIcon>
-                          <Iconify icon="mdi:server" width={20} />
-                        </ListItemIcon>
-                        <ListItemText primary="Server Tool" secondary="Current logic" />
-                      </MenuItem>
-                      <MenuItem onClick={handleClientTool}>
-                        <ListItemIcon>
-                          <Iconify icon="mdi:desktop-classic" width={20} />
-                        </ListItemIcon>
-                        <ListItemText primary="Client Tool" secondary="Create custom tool" />
-                      </MenuItem>
-                      {/* <MenuItem onClick={handleSystemTool}>
-                        <ListItemIcon>
-                          <Iconify icon="mdi:cog" width={20} />
-                        </ListItemIcon>
-                        <ListItemText primary="System Tool" secondary="Coming soon" />
-                      </MenuItem> */}
-                    </Menu>
+                      Add Client Tool
+                    </Button>
                   </div>
                   <div className="flex flex-col space-y-1 py-2 px-1">
                     {current.id !== 'root' && (

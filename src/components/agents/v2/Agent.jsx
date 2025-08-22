@@ -46,7 +46,9 @@ import { UploadAvatar } from '../../upload';
 // local components
 import AvatarSelectionModal from './components/AvatarSelectionModal';
 import AgentTab from './tabs/AgentTab';
+import ConversationsTab from './tabs/ConversationsTab';
 import SecurityTab from './tabs/SecurityTab';
+import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
 import WidgetTab from './tabs/WidgetTab';
 
@@ -54,8 +56,16 @@ const versionsSelector = (template) => template?.versions;
 
 const TABS = [
   { id: 'agent', label: 'Agent', icon: 'eva:settings-2-outline', component: AgentTab },
+  { id: 'tools', label: 'Tools', icon: 'eva:grid-outline', component: ToolsTab },
   { id: 'voice', label: 'Voice', icon: 'eva:mic-outline', component: VoiceTab },
   { id: 'security', label: 'Security', icon: 'eva:shield-outline', component: SecurityTab },
+  {
+    id: 'conversations',
+    label: 'Conversations',
+    icon: 'eva:message-circle-outline',
+    component: ConversationsTab,
+  },
+
   { id: 'widget', label: 'Widget', icon: 'eva:cube-outline', component: WidgetTab },
 ];
 
