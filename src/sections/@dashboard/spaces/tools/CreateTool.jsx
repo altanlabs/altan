@@ -18,9 +18,12 @@ import { createToolLink } from '../../../../redux/slices/spaces.js';
 import { dispatch } from '../../../../redux/store.js';
 import ExternalConnectionTypes from '../../flows/modulespanel/ExternalConnectionTypes.jsx';
 
-const createLink = (tool) => dispatch(createToolLink(tool.id));
+const createLink = (tool, onClose) => {
+  dispatch(createToolLink(tool.id));
+  if (onClose) onClose();
+};
 
-const CreateTool = () => {
+const CreateTool = ({ onClose }) => {
   const inputRef = useRef();
   const [panelState, setPanelState] = useState({
     history: [],
@@ -164,7 +167,7 @@ const CreateTool = () => {
           ) : (
             <ActionTypeCard
               action={actionType}
-              onSave={createLink}
+              onSave={(tool) => createLink(tool, onClose)}
             />
           )}
         </CardContent>

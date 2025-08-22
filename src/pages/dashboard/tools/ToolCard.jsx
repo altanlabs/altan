@@ -1,10 +1,4 @@
-import {
-  Card,
-  Stack,
-  IconButton,
-  Typography,
-  ButtonGroup,
-} from '@mui/material';
+import { Card, Stack, IconButton, Typography, ButtonGroup } from '@mui/material';
 import React, { useState } from 'react';
 
 import Iconify from '@components/iconify/Iconify';

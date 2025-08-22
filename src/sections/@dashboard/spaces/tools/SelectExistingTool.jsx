@@ -43,7 +43,7 @@ function extractConnectionInfo(tool, connections) {
 
 const selectCurrentSpace = (state) => state.spaces.current;
 
-const SelectExistingTool = () => {
+const SelectExistingTool = ({ onClose }) => {
   const initialized = useSelector(selectAccountConnectionsInitialized);
   const connections = useSelector(selectAccountConnections);
   const current = useSelector(selectCurrentSpace);
@@ -51,7 +51,6 @@ const SelectExistingTool = () => {
   const [dispatchWithFeedback] = useFeedbackDispatch();
 
   const tools = useMemo(() => extractToolsFromConnections(connections) || [], [connections]);
-  console.log('tools', tools);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTools, setSelectedTools] = useState([]);
   const [selectedConnection, setSelectedConnection] = useState(null); // Track selected connection
@@ -75,7 +74,8 @@ const SelectExistingTool = () => {
       }),
     );
     setSelectedTools([]);
-  }, [dispatchWithFeedback, selectedTools]);
+    if (onClose) onClose();
+  }, [dispatchWithFeedback, selectedTools, onClose]);
 
   const filteredTools = useMemo(
     () =>

@@ -108,7 +108,7 @@ const ToolNavigator = ({ toolDrawer, setToolDrawer }) => {
         }}
       >
         {renderHead}
-        {mode === 'existing' ? <SelectExistingTool /> : <CreateTool />}
+        {mode === 'existing' ? <SelectExistingTool onClose={() => setToolDrawer(false)} /> : <CreateTool onClose={() => setToolDrawer(false)} />}
       </Drawer>
     </>
   );
