@@ -56,8 +56,8 @@ const DesktopRoom = ({
   description = null,
   suggestions = [],
   renderCredits = false,
+  renderFeedback = false,
 }) => {
-  console.log('renderCredits', renderCredits);
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
@@ -143,6 +143,8 @@ const DesktopRoom = ({
               title={title}
               description={description}
               suggestions={suggestions}
+              renderFeedback={renderFeedback}
+              renderCredits={renderCredits}
             />
           ) : (
             <div
@@ -222,6 +224,7 @@ const DesktopRoom = ({
             description={description}
             suggestions={suggestions}
             renderCredits={renderCredits}
+            renderFeedback={renderFeedback}
           />
         </div>
       </Panel>

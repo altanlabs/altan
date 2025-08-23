@@ -57,6 +57,7 @@ const Thread = ({
   description = null,
   suggestions = [],
   renderCredits = false,
+  renderFeedback = false,
 }) => {
   const { gateId } = useParams();
   const history = useHistory();
@@ -269,6 +270,7 @@ const Thread = ({
             tId={tId}
             hasLoaded={hasLoaded}
             setHasLoaded={setHasLoaded}
+            renderFeedback={renderFeedback}
           />
         </div>
 

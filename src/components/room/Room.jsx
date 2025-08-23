@@ -39,6 +39,7 @@ const Room = ({
   suggestions = [], // Array of suggestion strings
   voice_enabled = null, // Boolean to override room.policy.voice_enabled
   renderCredits = false,
+  renderFeedback = false,
 }) => {
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
@@ -159,6 +160,7 @@ const Room = ({
           description={description}
           suggestions={suggestions}
           renderCredits={renderCredits}
+          renderFeedback={renderFeedback}
         />
       </VoiceConversationProvider>
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}

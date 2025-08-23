@@ -220,6 +220,7 @@ export default function ProjectPage() {
             isMobile={true}
             mobileActiveView={mobileActiveView}
             renderCredits={true}
+            renderFeedback={true}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
@@ -283,6 +284,7 @@ export default function ProjectPage() {
                       roomId={altaner?.room_id}
                       header={false}
                       renderCredits={true}
+                      renderFeedback={true}
                     />
                   </Box>
                 )}
@@ -310,6 +312,7 @@ export default function ProjectPage() {
                   roomId={altaner?.room_id}
                   header={false}
                   renderCredits={true}
+                  renderFeedback={true}
                 />
               </Box>
             )

@@ -42,7 +42,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds }) => {
+const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
   const messagesById = useSelector(selectMessagesById);
   const members = useSelector(selectMembers);
 
@@ -55,7 +55,7 @@ const Footer = memo(({ threadId, messageIds }) => {
   return (
     <div className="pb-[20px]">
       {/* Show ThreadActionBar if there are messages */}
-      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && (
+      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && (
         <ThreadActionBar
           threadId={threadId}
           lastMessageId={lastMessageId}
@@ -137,7 +137,7 @@ const useIsCreation = (mode) => {
 // -----------------------------------------------------
 // 4) The Main Component
 // -----------------------------------------------------
-const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null }) => {
+const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, renderFeedback = false }) => {
   const isCreation = useIsCreation(mode);
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
@@ -369,6 +369,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null }) 
                 <Footer
                   threadId={threadId}
                   messageIds={messageIds}
+                  renderFeedback={renderFeedback}
                 />
               ),
             }}
