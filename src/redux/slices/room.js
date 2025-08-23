@@ -1262,6 +1262,41 @@ export const makeSelectHasMessageMedia = () =>
 export const makeSelectMessageReactions = () =>
   createSelector([makeSelectMessage()], (message) => message?.reactions?.items);
 
+// Selector to get like/dislike reactions for a message
+export const makeSelectMessageLikeDislikeReactions = () =>
+  createSelector([makeSelectMessage()], (message) => {
+    const reactions = message?.reactions?.items || [];
+    return reactions.filter(reaction =>
+      reaction.reaction_type === 'like' || reaction.reaction_type === 'dislike',
+    );
+  });
+
+// Selector to check if current user has liked a message
+export const makeSelectMessageUserLiked = () =>
+  createSelector(
+    [makeSelectMessage(), selectMe],
+    (message, me) => {
+      const reactions = message?.reactions?.items || [];
+      const memberId = me?.id; // Use me.id, not me.member.id
+      return reactions.some(reaction =>
+        reaction.reaction_type === 'like' && reaction.member_id === memberId,
+      );
+    },
+  );
+
+// Selector to check if current user has disliked a message
+export const makeSelectMessageUserDisliked = () =>
+  createSelector(
+    [makeSelectMessage(), selectMe],
+    (message, me) => {
+      const reactions = message?.reactions?.items || [];
+      const memberId = me?.id; // Use me.id, not me.member.id
+      return reactions.some(reaction =>
+        reaction.reaction_type === 'dislike' && reaction.member_id === memberId,
+      );
+    },
+  );
+
 const selectMessagesCreation = createSelector(
   [selectMessagesById],
   (messages) =>
@@ -1486,6 +1521,17 @@ export const makeSelectThreadAttribute = () =>
   createSelector(
     [makeSelectThread(), (state, threadId, attribute) => attribute],
     (thread, attribute) => thread?.[attribute],
+  );
+
+export const makeSelectThreadMessageCount = () =>
+  createSelector(
+    [selectMessagesIdsByThread, (state, threadId) => threadId],
+    (messagesIdsByThread, threadId) => {
+      if (!threadId || !messagesIdsByThread[threadId]) {
+        return 0;
+      }
+      return messagesIdsByThread[threadId].length;
+    },
   );
 
 // Add tab selectors

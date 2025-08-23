@@ -120,6 +120,7 @@ const VersionWidget = memo(({ id }) => {
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 2,
+        mt: 1,
         transition: 'all 0.2s ease-in-out',
         cursor: hasPreviewUrl ? 'pointer' : 'default',
         background:

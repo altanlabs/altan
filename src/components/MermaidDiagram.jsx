@@ -1,6 +1,4 @@
-import { useTheme } from '@mui/material/styles';
 import {
-  Dialog,
   DialogContent,
   IconButton,
   Tooltip,
@@ -8,18 +6,87 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import Iconify from './iconify/Iconify.jsx';
+
 import CustomDialog from './dialogs/CustomDialog.jsx';
+import Iconify from './iconify/Iconify.jsx';
 
 const MermaidDiagram = ({ chart, className = '' }) => {
   const theme = useTheme();
   const mermaidRef = useRef(null);
+  const lastRenderedChartRef = useRef('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRendering, setIsRendering] = useState(false);
   const [error, setError] = useState(null);
   const [svgContent, setSvgContent] = useState('');
   const [mermaid, setMermaid] = useState(null);
+  const [isValidChart, setIsValidChart] = useState(false);
+  const [lastValidChart, setLastValidChart] = useState('');
+  const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
+
+  // Function to validate if the chart is complete and valid
+  const validateChart = useCallback((chartText) => {
+    if (!chartText || typeof chartText !== 'string') return false;
+
+    // Basic validation - check if it starts with a valid mermaid diagram type
+    const validStarters = [
+      'graph',
+      'flowchart',
+      'sequenceDiagram',
+      'classDiagram',
+      'stateDiagram',
+      'erDiagram',
+      'journey',
+      'gantt',
+      'pie',
+      'gitgraph',
+      'mindmap',
+      'timeline',
+      'sankey',
+      'block',
+    ];
+
+    const trimmed = chartText.trim();
+    const hasValidStart = validStarters.some((starter) =>
+      trimmed.toLowerCase().startsWith(starter.toLowerCase()),
+    );
+
+    if (!hasValidStart) return false;
+
+    // Check for basic completeness - should have at least some content after the declaration
+    const lines = trimmed.split('\n').filter((line) => line.trim());
+    if (lines.length < 2) return false;
+
+    // Check for balanced brackets/parentheses (basic syntax check)
+    const brackets = { '(': ')', '[': ']', '{': '}' };
+    const stack = [];
+
+    for (const char of trimmed) {
+      if (Object.keys(brackets).includes(char)) {
+        stack.push(char);
+      } else if (Object.values(brackets).includes(char)) {
+        const lastOpen = stack.pop();
+        if (!lastOpen || brackets[lastOpen] !== char) {
+          return false;
+        }
+      }
+    }
+
+    // Allow some unbalanced brackets as the chart might still be being written
+    // But if there are too many, it's likely incomplete
+    return stack.length <= 3;
+  }, []);
+
+  // Effect to validate chart and update state
+  useEffect(() => {
+    const isValid = validateChart(chart);
+    setIsValidChart(isValid);
+
+    if (isValid && chart !== lastValidChart) {
+      setLastValidChart(chart);
+    }
+  }, [chart, validateChart, lastValidChart]);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,11 +112,14 @@ const MermaidDiagram = ({ chart, className = '' }) => {
           logLevel: 'fatal',
           securityLevel: 'loose',
         });
-        if (!cancelled) setMermaid(mermaidInstance);
+        if (!cancelled) {
+          setMermaid(mermaidInstance);
+          // Reset rendered chart ref when mermaid instance changes
+          lastRenderedChartRef.current = '';
+        }
       } catch {
         if (!cancelled) {
           setError('Failed to load Mermaid');
-          setIsLoading(false);
         }
       }
     })();
@@ -59,25 +129,47 @@ const MermaidDiagram = ({ chart, className = '' }) => {
   }, [theme]);
 
   const renderDiagram = useCallback(async () => {
-    if (!chart || !mermaid) return;
-    setIsLoading(true);
+    if (!mermaid || !lastValidChart) return;
+
+    // Don't render if we've already rendered this exact chart
+    if (lastRenderedChartRef.current === lastValidChart) return;
+
+    setIsRendering(true);
     setError(null);
+
     try {
-      const { svg } = await mermaid.render(`mermaid-${Date.now()}`, chart);
+      const { svg } = await mermaid.render(`mermaid-${Date.now()}`, lastValidChart);
       setSvgContent(svg);
-      setIsLoading(false);
+      setHasRenderedOnce(true);
+      lastRenderedChartRef.current = lastValidChart;
+      setIsRendering(false);
     } catch (e) {
+      setIsRendering(false);
       setError(e.message || 'Render error');
-      setIsLoading(false);
     }
-  }, [chart, mermaid]);
+  }, [lastValidChart, mermaid]);
 
+  // Debounced rendering effect
   useEffect(() => {
-    renderDiagram();
-  }, [renderDiagram]);
+    if (!isValidChart || !lastValidChart || !mermaid) return;
 
-  // Return null if loading or error
-  if (isLoading || error) {
+    // Don't trigger if we've already rendered this chart
+    if (lastRenderedChartRef.current === lastValidChart) return;
+
+    const timeoutId = setTimeout(() => {
+      renderDiagram();
+    }, 500); // 500ms debounce to avoid rapid re-renders
+
+    return () => clearTimeout(timeoutId);
+  }, [isValidChart, lastValidChart, mermaid, renderDiagram]);
+
+  // Determine what to show
+  const showSkeleton = !isValidChart && !hasRenderedOnce;
+  const showDiagram = svgContent || hasRenderedOnce;
+  const showError = error && !svgContent && !showSkeleton;
+
+  // Return null if error and no content to show
+  if (showError) {
     return null;
   }
 
@@ -107,11 +199,12 @@ const MermaidDiagram = ({ chart, className = '' }) => {
         width: '100%',
         height: fullscreen ? '100%' : 'auto',
         minHeight: fullscreen ? '100%' : 200,
+        maxHeight: fullscreen ? '100%' : 350,
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
         backgroundColor: theme.palette.background.paper,
         overflow: 'hidden',
-        '&:hover .mermaid-controls': { opacity: 1 },
+        '&:hover .mermaid-controls': { opacity: showDiagram ? 1 : 0 },
       }}
     >
       <Box
@@ -168,27 +261,107 @@ const MermaidDiagram = ({ chart, className = '' }) => {
         sx={{
           width: '100%',
           height: '100%',
+          minHeight: fullscreen ? '100%' : 200,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           p: 2,
           overflow: 'auto',
-          cursor: fullscreen ? 'default' : 'pointer',
+          cursor: fullscreen ? 'default' : (showDiagram ? 'pointer' : 'default'),
         }}
-        onClick={!fullscreen ? handleFullscreenToggle : undefined}
+        onClick={!fullscreen && showDiagram ? handleFullscreenToggle : undefined}
       >
-        {isLoading && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <CircularProgress size={32} />
-            <Typography
-              variant="body2"
-              color="text.secondary"
+        {/* Show skeleton content */}
+        {showSkeleton && (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            {/* Animated skeleton shapes */}
+            <Box
+              sx={{
+                width: '80%',
+                height: '60%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                alignItems: 'center',
+              }}
             >
-              Rendering diagram...
-            </Typography>
+              {/* Top nodes */}
+              <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+                {[1, 2, 3].map((i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: 80,
+                      height: 40,
+                      backgroundColor: theme.palette.action.hover,
+                      borderRadius: 1,
+                      animation: 'pulse 2s ease-in-out infinite',
+                      animationDelay: `${i * 0.2}s`,
+                      '@keyframes pulse': {
+                        '0%, 100%': { opacity: 0.4 },
+                        '50%': { opacity: 0.8 },
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+
+              {/* Connecting lines */}
+              <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', alignItems: 'center' }}>
+                {[1, 2].map((i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: 2,
+                      height: 30,
+                      backgroundColor: theme.palette.action.hover,
+                      animation: 'pulse 2s ease-in-out infinite',
+                      animationDelay: `${i * 0.3}s`,
+                    }}
+                  />
+                ))}
+              </Box>
+
+              {/* Bottom nodes */}
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                {[1, 2].map((i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: 100,
+                      height: 40,
+                      backgroundColor: theme.palette.action.hover,
+                      borderRadius: 1,
+                      animation: 'pulse 2s ease-in-out infinite',
+                      animationDelay: `${i * 0.4}s`,
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            {/* Loading indicator */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+              <CircularProgress size={16} />
+              <Typography variant="body2" color="text.secondary">
+                Generating diagram...
+              </Typography>
+            </Box>
           </Box>
         )}
-        {error && (
+
+        {/* Show error content */}
+        {error && !svgContent && !showSkeleton && (
           <Box sx={{ textAlign: 'center', color: 'error.main', p: 2 }}>
             <Iconify
               icon="eva:alert-triangle-outline"
@@ -204,12 +377,45 @@ const MermaidDiagram = ({ chart, className = '' }) => {
             </Typography>
           </Box>
         )}
-        {!isLoading && !error && (
+
+        {/* Show diagram content */}
+        {svgContent && (
           <Box
             ref={mermaidRef}
-            sx={{ width: '100%', '& svg': { width: '100%', height: 'auto', display: 'block' } }}
+            sx={{
+              width: '100%',
+              position: 'relative',
+              '& svg': { width: '100%', height: 'auto', display: 'block' },
+              opacity: isRendering ? 0.8 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
             dangerouslySetInnerHTML={{ __html: svgContent }}
           />
+        )}
+
+        {/* Show updating indicator */}
+        {isRendering && svgContent && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: '0.75rem',
+            }}
+          >
+            <CircularProgress size={12} color="inherit" />
+            <Typography variant="caption" color="inherit">
+              Updating...
+            </Typography>
+          </Box>
         )}
       </Box>
     </Box>

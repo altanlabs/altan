@@ -40,7 +40,6 @@ const Room = ({
   voice_enabled = null, // Boolean to override room.policy.voice_enabled
   renderCredits = false,
 }) => {
-  console.log('Room.renderCredits', renderCredits);
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);

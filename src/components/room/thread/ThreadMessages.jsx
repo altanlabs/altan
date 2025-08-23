@@ -4,6 +4,7 @@ import React, { useRef, useState, useCallback, useMemo, useEffect, memo } from '
 import { Virtuoso } from 'react-virtuoso';
 
 import Message from './Message.jsx';
+import ThreadActionBar from './ThreadActionBar.jsx';
 import ExecutionDialogProvider from '../../../providers/ExecutionDialogProvider.jsx';
 import {
   fetchThreadResource,
@@ -11,6 +12,8 @@ import {
   makeSelectSortedThreadMessageIds,
   selectCurrentDrawerThreadId,
   makeSelectMoreMessages,
+  selectMessagesById,
+  selectMembers,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -39,7 +42,29 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(() => <div className="h-[20px]" />);
+const Footer = memo(({ threadId, messageIds }) => {
+  const messagesById = useSelector(selectMessagesById);
+  const members = useSelector(selectMembers);
+
+  // Get the last message and check if it's from an agent
+  const lastMessageId = messageIds && messageIds.length > 0 ? messageIds[messageIds.length - 1] : null;
+  const lastMessage = lastMessageId ? messagesById[lastMessageId] : null;
+  const lastMessageSender = lastMessage ? members.byId[lastMessage.member_id] : null;
+  const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
+
+  return (
+    <div className="pb-[20px]">
+      {/* Show ThreadActionBar if there are messages */}
+      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && (
+        <ThreadActionBar
+          threadId={threadId}
+          lastMessageId={lastMessageId}
+          isAgentMessage={isLastMessageFromAgent}
+        />
+      )}
+    </div>
+  );
+});
 Footer.displayName = 'Footer';
 
 const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
@@ -340,7 +365,12 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null }) 
                   isCreation={isCreation}
                 />
               ),
-              Footer,
+              Footer: () => (
+                <Footer
+                  threadId={threadId}
+                  messageIds={messageIds}
+                />
+              ),
             }}
             onScroll={handleScroll}
           />

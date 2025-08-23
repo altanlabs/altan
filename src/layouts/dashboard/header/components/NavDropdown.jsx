@@ -49,7 +49,7 @@ const NavDropdown = memo(
       zIndex: 50,
       width: dropdownWidth,
       marginTop: '0.25rem',
-      padding: '0.25rem',
+      padding: '0rem',
       borderRadius: '0.375rem',
       background: theme.palette.background.paper,
       boxShadow: theme.customShadows.z20,

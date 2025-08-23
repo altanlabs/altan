@@ -62,8 +62,8 @@ function WidgetTab({ agentData, onFieldChange }) {
     background_color: widgetConfig.background_color || '#ffffff',
     background_blur: widgetConfig.background_blur ?? true,
     position: widgetConfig.position || 'bottom-right',
-    width: widgetConfig.width || 350,
-    room_width: widgetConfig.room_width || 250,
+    width: widgetConfig.width || 250,
+    room_width: widgetConfig.room_width || 400,
     room_height: widgetConfig.room_height || 700,
     border_radius: widgetConfig.border_radius || 16,
   });

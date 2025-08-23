@@ -70,12 +70,15 @@ const Reactions = ({ messageId }) => {
   const reactions = useSelector((state) => reactionSelector(state, messageId));
   const members = useSelector(selectMembers);
 
-  const reactionCounts = useMemo(() => (reactions ?? []).reduce((acc, reaction) => {
-    acc[reaction.emoji] = acc[reaction.emoji] || { count: 0, members: [] };
-    acc[reaction.emoji].count++;
-    acc[reaction.emoji].members.push(members.byId[reaction.member_id]);
-    return acc;
-  }, {}), [members.byId, reactions]);
+  const reactionCounts = useMemo(() => (reactions ?? [])
+    // Filter out like/dislike reactions - these should be handled by ThreadActionBar
+    .filter(reaction => reaction.reaction_type !== 'like' && reaction.reaction_type !== 'dislike')
+    .reduce((acc, reaction) => {
+      acc[reaction.emoji] = acc[reaction.emoji] || { count: 0, members: [] };
+      acc[reaction.emoji].count++;
+      acc[reaction.emoji].members.push(members.byId[reaction.member_id]);
+      return acc;
+    }, {}), [members.byId, reactions]);
 
   const reactionList = Object.entries(reactionCounts).map(([emoji, details]) => (
     <Reaction key={`emoji-index-${emoji}`} emoji={emoji} count={details.count} members={details.members} />

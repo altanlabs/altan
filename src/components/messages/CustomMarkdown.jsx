@@ -865,11 +865,11 @@ const CustomMarkdown = ({
                 );
               },
             }),
-            // Enhanced paragraph styling - ultra compact
+            // Enhanced paragraph styling - standard spacing
             p: ({ children }) => (
               <p
                 className={cn(
-                  'mb-0 leading-6 text-slate-700 dark:text-slate-300',
+                  'mb-1 leading-6 text-slate-700 dark:text-slate-300',
                   noWrap
                     ? 'overflow-hidden text-ellipsis whitespace-nowrap'
                     : 'whitespace-pre-line',
@@ -887,23 +887,23 @@ const CustomMarkdown = ({
                 {children}
               </strong>
             ),
-            // Enhanced list styling - ultra compact
+            // Enhanced list styling - better spacing like ChatGPT
             li: ({ children }) => (
-              <li className="mb-0.5 leading-5 text-slate-700 dark:text-slate-300">{children}</li>
+              <li className="mb-1.5 leading-6 text-slate-700 dark:text-slate-300">{children}</li>
             ),
-            // Enhanced ordered list - ultra compact
+            // Enhanced ordered list - better spacing
             ol: ({ children, ...props }) => (
               <ol
-                className="list-decimal ml-5 mb-3 space-y-0"
+                className="list-decimal ml-5 mb-4 space-y-1"
                 {...props}
               >
                 {children}
               </ol>
             ),
-            // Enhanced unordered list - ultra compact
+            // Enhanced unordered list - better spacing
             ul: ({ children, ...props }) => (
               <ul
-                className="list-disc ml-5 mb-3 space-y-0"
+                className="list-disc ml-5 mb-4 space-y-1"
                 {...props}
               >
                 {children}

@@ -15,6 +15,7 @@ import ProjectNav from './ProjectNav.jsx';
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
+import FormDialog from '../../../components/FormDialog.jsx';
 import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
@@ -26,7 +27,7 @@ import useResponsive from '../../../hooks/useResponsive';
 import AltanerComponentDialog from '../../../pages/dashboard/altaners/components/AltanerComponentDialog.jsx';
 import PublishVersionDialog from '../../../pages/dashboard/altaners/components/PublishVersionDialog.jsx';
 import TemplateSettings from '../../../pages/dashboard/altaners/components/TemplateSettings.jsx';
-import AltanerSwitcher from '../../../pages/dashboard/altaners/nav/AltanerSwitcher.jsx';
+// import AltanerSwitcher from '../../../pages/dashboard/altaners/nav/AltanerSwitcher.jsx';
 import SettingsDrawer from '../../../pages/dashboard/interfaces/components/SettingsDrawer.jsx';
 import {
   deleteAltanerComponentById,
@@ -36,6 +37,7 @@ import {
   selectDisplayMode,
   setViewType,
   setDisplayMode,
+  updateAltanerById,
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
 import {
@@ -161,6 +163,7 @@ function ProjectHeader() {
   const [openSettingsDrawer, setOpenSettingsDrawer] = useState(false);
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
+  const [openEditAltaner, setOpenEditAltaner] = useState(false);
 
   // Navigation handlers for URLNavigationBar using Redux
   const handleNavigateToPath = useCallback((path) => {
@@ -248,6 +251,43 @@ function ProjectHeader() {
       });
   }, [dispatch, selectedComponentId]);
 
+  const handleConfirmEditAltaner = useCallback(
+    async (data) => {
+      try {
+        await dispatch(updateAltanerById(altaner.id, data));
+        setOpenEditAltaner(false);
+      } catch (error) {
+        console.error('Failed to update altaner:', error);
+      }
+    },
+    [dispatch, altaner?.id],
+  );
+
+  const editAltanerSchema = useMemo(
+    () => ({
+      properties: {
+        name: {
+          type: 'string',
+          title: 'Name',
+          default: altaner?.name,
+        },
+        description: {
+          type: 'string',
+          title: 'Description',
+          default: altaner?.description,
+        },
+        icon_url: {
+          type: 'string',
+          title: 'Icon URL',
+          default: altaner?.icon_url,
+          'x-component': 'IconAutocomplete',
+        },
+      },
+      required: ['name'],
+    }),
+    [altaner],
+  );
+
   // Calculate safe area aware styles for iOS
   const getHeaderStyles = () => {
     const baseStyles = {
@@ -294,33 +334,23 @@ function ProjectHeader() {
           >
             {altaner?.id ? (
               <>
-                <AltanerSwitcher />
                 {sortedComponents && (
                   <ProjectNav
                     components={sortedComponents}
                     altanerId={altanerId}
-                    onAddClick={() => setOpenComponentDialog(true)}
+                    onEditAltaner={() => setOpenEditAltaner(true)}
                   />
                 )}
-                {altaner?.room_id && !isMobile && (
-                  <Tooltip
-                    title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
-                  >
-                    <HeaderIconButton
-                      onClick={() => {
-                        // Toggle between preview and both modes only
-                        const nextMode = displayMode === 'preview' ? 'both' : 'preview';
-                        dispatch(setDisplayMode(nextMode));
-                      }}
-                    >
-                      <Iconify
-                        icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
-                        className="w-5 h-5"
-                      />
-                    </HeaderIconButton>
-                  </Tooltip>
+                {altaner?.id && isInterfaceComponent && !isMobile && (
+                    <URLNavigationBar
+                      onNavigate={handleNavigateToPath}
+                      onToggleViewMode={handleToggleIframeViewMode}
+                      onOpenInNewTab={handleOpenIframeInNewTab}
+                      onRefresh={handleRefreshIframe}
+                      viewMode={iframeViewMode}
+                      disabled={!ui || viewType === 'code'}
+                    />
                 )}
-
               </>
             ) : (
               <HoverBorderGradient
@@ -346,16 +376,6 @@ function ProjectHeader() {
           </Stack>
 
           {/* Middle section - URL Navigation Bar */}
-          {altaner?.id && isInterfaceComponent && !isMobile && (
-            <URLNavigationBar
-              onNavigate={handleNavigateToPath}
-              onToggleViewMode={handleToggleIframeViewMode}
-              onOpenInNewTab={handleOpenIframeInNewTab}
-              onRefresh={handleRefreshIframe}
-              viewMode={iframeViewMode}
-              disabled={!ui || viewType === 'code'}
-            />
-          )}
 
           <Stack
             direction="row"
@@ -412,6 +432,7 @@ function ProjectHeader() {
                         }}
                         style={{
                           backgroundColor: alpha(theme.palette.grey[500], 0.08),
+                          padding: 2,
                           '&:hover': {
                             backgroundColor: alpha(theme.palette.grey[500], 0.24),
                           },
@@ -435,7 +456,10 @@ function ProjectHeader() {
                               viewType === 'code'
                                 ? theme.palette.primary.main
                                 : theme.palette.background.paper,
-                            color: viewType === 'code' ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                            color:
+                              viewType === 'code'
+                                ? theme.palette.primary.contrastText
+                                : theme.palette.text.secondary,
                             boxShadow:
                               viewType === 'code'
                                 ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.25)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
@@ -445,9 +469,7 @@ function ProjectHeader() {
                           <Iconify
                             icon="mdi:code-tags"
                             className={`w-4 h-3 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
-                              viewType === 'code'
-                                ? 'scale-105'
-                                : 'scale-100'
+                              viewType === 'code' ? 'scale-105' : 'scale-100'
                             }`}
                           />
                         </div>
@@ -465,7 +487,24 @@ function ProjectHeader() {
                       </button>
                     </Tooltip>
                   )}
-
+                  {altaner?.room_id && !isMobile && (
+                    <Tooltip
+                      title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
+                    >
+                      <HeaderIconButton
+                        onClick={() => {
+                          // Toggle between preview and both modes only
+                          const nextMode = displayMode === 'preview' ? 'both' : 'preview';
+                          dispatch(setDisplayMode(nextMode));
+                        }}
+                      >
+                        <Iconify
+                          icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
+                          className="w-5 h-5"
+                        />
+                      </HeaderIconButton>
+                    </Tooltip>
+                  )}
                   <MobileActionsMenu
                     onDistribution={() => setOpenSettings(true)}
                     onHistory={() => setOpenVersionHistory(true)}
@@ -560,6 +599,15 @@ function ProjectHeader() {
           ui={ui}
         />
       )}
+
+      <FormDialog
+        open={openEditAltaner}
+        onClose={() => setOpenEditAltaner(false)}
+        schema={editAltanerSchema}
+        title="Edit Project"
+        description="Update the project details"
+        onConfirm={handleConfirmEditAltaner}
+      />
     </>
   );
 }

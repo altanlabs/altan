@@ -589,8 +589,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         </Box>
       </Box>
 
-      {/* New Widget Preview - Always Visible on All Tabs */}
-      {agentData?.id && agentData?.account_id && (
+      {/* Widget Preview - Only Visible on Widget Tab */}
+      {activeTab === 'widget' && agentData?.id && agentData?.account_id && (
         <Room
           key={`widget-preview-${agentData.id}-${activeTab}-${JSON.stringify(agentData.widget || {})}`}
           mode="compact"

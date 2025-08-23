@@ -510,7 +510,7 @@ export const GridView = memo(
 
     return (
       <div className="h-full flex flex-col">
-        <GridViewHeader
+        {/* <GridViewHeader
           onQuickFilterChange={setQuickFilterText}
           onAddRecord={onAddRecord}
           table={table}
@@ -520,7 +520,7 @@ export const GridView = memo(
           paginationGoToNextPage={paginationGoToNextPage}
           paginationGoToPreviousPage={paginationGoToPreviousPage}
           isLoading={isDataLoading}
-        />
+        /> */}
         <div className="flex-grow flex">
           <div
             className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow`}

@@ -1,11 +1,11 @@
-import { TextField, InputAdornment, IconButton, Tooltip } from '@mui/material';
+import { TextField, InputAdornment, IconButton, Tooltip, Box } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { m } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { memo, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import NavDropdown from './NavDropdown';
-import HeaderIconButton from '../../../../components/HeaderIconButton';
 import Iconify from '../../../../components/iconify';
 import { deleteWorkflow, duplicateWorkflow } from '../../../../redux/slices/flows';
 import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general';
@@ -33,6 +33,7 @@ const COMPONENT_ICONS = {
 
 const ItemSwitcher = memo(
   ({ activeComponentType, currentI, componentId, activeComponent, onItemSelect }) => {
+    const theme = useTheme();
     const dispatch = useDispatch();
     const flows = useSelector((state) => state.flows.flows || []);
     const agents = useSelector((state) => state.general.account?.agents || []);
@@ -216,35 +217,105 @@ const ItemSwitcher = memo(
 
     const renderTriggerElement = useCallback(
       (isOpen) => (
-        <HeaderIconButton
+        <Box
           sx={{
-            width: 'auto',
-            px: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            height: 42,
             gap: 0.5,
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
           }}
         >
-          {isFlowType(activeComponentType) && currentItem && renderStatusIndicator(currentItem)}
-          {isAgentType(activeComponentType) && currentItem && renderAvatar(currentItem)}
-
-          <span className="hidden sm:inline">
-            {currentItemName}
-          </span>
-
-          <m.span
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: 2,
+              marginTop: 0.5,
+              background: `linear-gradient(135deg, 
+                ${alpha(theme.palette.background.paper, 0.8)} 0%, 
+                ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              overflow: 'hidden',
+              p: 0.25,
+              gap: 0.5,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              },
+            }}
           >
-            <Iconify
-              icon="mdi:chevron-down"
-              width={16}
-            />
-          </m.span>
-        </HeaderIconButton>
+          {/* Item Icon/Avatar */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 32,
+              borderRadius: 1.5,
+              backgroundColor: 'transparent',
+            }}
+          >
+            {isFlowType(activeComponentType) && currentItem && renderStatusIndicator(currentItem)}
+            {isAgentType(activeComponentType) && currentItem && renderAvatar(currentItem)}
+            {!currentItem && (
+              <Iconify
+                icon={COMPONENT_ICONS[activeComponentType] || 'eva:file-outline'}
+                width={16}
+                height={16}
+                sx={{ color: theme.palette.text.secondary }}
+              />
+            )}
+          </Box>
+
+          {/* Item Name */}
+          <Box
+            sx={{
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: theme.palette.text.primary,
+              whiteSpace: 'nowrap',
+              minWidth: 0, // Allow text to shrink
+              maxWidth: 80, // Much smaller to match component switcher
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {currentItemName || 'Select Item'}
+          </Box>
+
+          {/* Chevron */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 32,
+              borderRadius: 1.5,
+              backgroundColor: 'transparent',
+              color: theme.palette.text.secondary,
+            }}
+          >
+            <m.span
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Iconify
+                icon="mdi:chevron-down"
+                width={16}
+              />
+            </m.span>
+          </Box>
+          </Box>
+        </Box>
       ),
       [
+        theme,
         activeComponentType,
         currentItem,
         currentItemName,
@@ -421,13 +492,12 @@ const ItemSwitcher = memo(
 
     return (
       <>
-        <div className="px-1"></div>
         <NavDropdown
           triggerElement={renderTriggerElement}
           items={filteredItems}
           renderItem={renderItem}
           addOption={getCreatePlaceholder(activeComponentType)}
-          dropdownStyle={{ right: -115 }}
+          dropdownStyle={{ right: -50 }}
           dropdownWidth="18rem"
           customHeader={renderSearchInput}
         />

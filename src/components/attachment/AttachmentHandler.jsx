@@ -111,7 +111,7 @@ const AttachmentHandler = ({
         }
       }
     },
-    [handleUrlUpload, flows, enqueueSnackbar],
+    [handleUrlUpload, flows, enqueueSnackbar, fileInputRef],
   );
 
   // Handle flow selection

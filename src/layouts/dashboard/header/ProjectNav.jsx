@@ -1,11 +1,13 @@
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
 import React, { useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useParams, useHistory } from 'react-router-dom';
 
 // components
-import ComponentSwitcher from './components/ComponentSwitcher';
 import ItemSwitcher from './components/ItemSwitcher';
+import UnifiedNavigation from './components/UnifiedNavigation';
+import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 
 // Default icons in case component doesn't provide one
 const DEFAULT_ICONS = {
@@ -18,9 +20,10 @@ const DEFAULT_ICONS = {
   external_link: 'eva:link-outline',
 };
 
-const ProjectNav = ({ components, altanerId, onAddClick }) => {
+const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
   const history = useHistory();
   const { componentId, itemId } = useParams();
+  const altaner = useSelector(selectCurrentAltaner);
 
   // Convert components to array and sort by position
   const sortedComponents = useMemo(() => {
@@ -70,14 +73,15 @@ const ProjectNav = ({ components, altanerId, onAddClick }) => {
         display: 'flex',
         alignItems: 'center',
         height: 42,
+        gap: 0.5,
       }}
     >
-      <ComponentSwitcher
+      <UnifiedNavigation
+        altaner={altaner}
         components={sortedComponents}
         activeComponent={activeComponent}
         onComponentSelect={handleComponentSelect}
-        onAddClick={onAddClick}
-        altanerId={altanerId}
+        onEditAltaner={onEditAltaner}
       />
 
       {activeComponent &&
@@ -97,7 +101,7 @@ const ProjectNav = ({ components, altanerId, onAddClick }) => {
 ProjectNav.propTypes = {
   components: PropTypes.object,
   altanerId: PropTypes.string,
-  onAddClick: PropTypes.func,
+  onEditAltaner: PropTypes.func,
 };
 
 export default ProjectNav;
