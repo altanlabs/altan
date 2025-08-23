@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
-import { Box, TextField, IconButton, Tooltip, Stack, Typography } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 
 import Iconify from './iconify';
+import { useSelector, dispatch } from '../redux/store';
+import { selectPreviewMode, togglePreviewMode } from '../redux/slices/previewControl';
 
 function URLNavigationBar({
   onNavigate,
@@ -11,11 +13,19 @@ function URLNavigationBar({
   onOpenInNewTab,
   onRefresh,
   viewMode = 'desktop',
+  productionUrl,
   disabled = false,
 }) {
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
+  
+  // Get preview mode from Redux
+  const previewMode = useSelector(selectPreviewMode);
+  
+  const handleTogglePreviewMode = () => {
+    dispatch(togglePreviewMode());
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,7 +77,7 @@ function URLNavigationBar({
           }),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, maxWidth: 250 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, maxWidth: 200 }}>
           <Typography
             variant="body2"
             sx={{
@@ -121,6 +131,41 @@ function URLNavigationBar({
           spacing={0.25}
           alignItems="center"
         >
+          {/* Preview Mode Toggle - Only show if production URL is available */}
+          {productionUrl && (
+            <Tooltip title={`Switch to ${previewMode === 'production' ? 'Development' : 'Production'} Mode`}>
+              <Chip
+                label={previewMode === 'production' ? 'PROD' : 'DEV'}
+                size="small"
+                onClick={handleTogglePreviewMode}
+                disabled={disabled}
+                sx={{
+                  height: 24,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: previewMode === 'production'
+                    ? alpha(theme.palette.success.main, 0.12)
+                    : alpha(theme.palette.warning.main, 0.12),
+                  color: previewMode === 'production'
+                    ? theme.palette.success.main
+                    : theme.palette.warning.main,
+                  border: `1px solid ${previewMode === 'production'
+                    ? alpha(theme.palette.success.main, 0.24)
+                    : alpha(theme.palette.warning.main, 0.24)}`,
+                  '&:hover': {
+                    backgroundColor: previewMode === 'production'
+                      ? alpha(theme.palette.success.main, 0.16)
+                      : alpha(theme.palette.warning.main, 0.16),
+                  },
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
+                }}
+              />
+            </Tooltip>
+          )}
+
           {/* Open in New Tab */}
           <Tooltip title="Open in New Tab">
             <IconButton
@@ -180,6 +225,7 @@ URLNavigationBar.propTypes = {
   onOpenInNewTab: PropTypes.func.isRequired,
   onRefresh: PropTypes.func.isRequired,
   viewMode: PropTypes.oneOf(['mobile', 'desktop']),
+  productionUrl: PropTypes.string,
   disabled: PropTypes.bool,
 };
 

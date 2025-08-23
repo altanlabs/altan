@@ -1,6 +1,17 @@
 import { Capacitor } from '@capacitor/core';
 // @mui
-import { Stack, AppBar, Toolbar, Typography, Tooltip, Button, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import {
+  Stack,
+  AppBar,
+  Toolbar,
+  Typography,
+  Tooltip,
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 // react
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
@@ -84,7 +95,10 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
     <>
       <Tooltip title="More actions">
         <HeaderIconButton onClick={handleClick}>
-          <Iconify icon="mdi:dots-vertical" className="w-5 h-5" />
+          <Iconify
+            icon="mdi:dots-vertical"
+            className="w-5 h-5"
+          />
         </HeaderIconButton>
       </Tooltip>
       <Menu
@@ -102,27 +116,39 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
       >
         <MenuItem onClick={() => handleMenuItemClick(onDistribution)}>
           <ListItemIcon>
-            <Iconify icon="mdi:broadcast" className="w-5 h-5" />
+            <Iconify
+              icon="mdi:broadcast"
+              className="w-5 h-5"
+            />
           </ListItemIcon>
           <ListItemText>Distribution</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => handleMenuItemClick(onHistory)}>
           <ListItemIcon>
-            <Iconify icon="mdi:history" className="w-5 h-5" />
+            <Iconify
+              icon="mdi:history"
+              className="w-5 h-5"
+            />
           </ListItemIcon>
           <ListItemText>History</ListItemText>
         </MenuItem>
         {onSettings && (
           <MenuItem onClick={() => handleMenuItemClick(onSettings)}>
             <ListItemIcon>
-              <Iconify icon="mdi:cog" className="w-5 h-5" />
+              <Iconify
+                icon="mdi:cog"
+                className="w-5 h-5"
+              />
             </ListItemIcon>
             <ListItemText>Settings</ListItemText>
           </MenuItem>
         )}
         <MenuItem onClick={() => handleMenuItemClick(onUpgrade)}>
           <ListItemIcon>
-            <Iconify icon="material-symbols:crown" className="w-5 h-5" />
+            <Iconify
+              icon="material-symbols:crown"
+              className="w-5 h-5"
+            />
           </ListItemIcon>
           <ListItemText>Upgrade</ListItemText>
         </MenuItem>
@@ -153,6 +179,42 @@ function ProjectHeader() {
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
+
+  // Calculate production URL for the interface
+  const productionUrl = useMemo(() => {
+    if (!ui) return null;
+
+    // First, check if there are any successful deployments
+    const hasSuccessfulDeployments =
+      ui.deployments?.items?.length > 0 &&
+      ui.deployments.items.some(
+        (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS',
+      );
+
+    if (!hasSuccessfulDeployments) {
+      return null; // No successful deployments, don't show toggle
+    }
+
+    // Check for custom domain first (from meta_data.domains)
+    if (ui.meta_data?.domains) {
+      const customDomains = Object.keys(ui.meta_data.domains);
+      if (customDomains.length > 0) {
+        return `https://${customDomains[0]}`;
+      }
+    }
+
+    // Check for deployment_url
+    if (ui.deployment_url) {
+      return ui.deployment_url;
+    }
+
+    // Default to {interface.name}.altanlabs.com
+    if (ui.name) {
+      return `https://${ui.name}.altanlabs.com`;
+    }
+
+    return null;
+  }, [ui]);
   const [openComponentDialog, setOpenComponentDialog] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -166,9 +228,12 @@ function ProjectHeader() {
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
 
   // Navigation handlers for URLNavigationBar using Redux
-  const handleNavigateToPath = useCallback((path) => {
-    dispatch(navigateToPath(path));
-  }, [dispatch]);
+  const handleNavigateToPath = useCallback(
+    (path) => {
+      dispatch(navigateToPath(path));
+    },
+    [dispatch],
+  );
 
   const handleToggleIframeViewMode = useCallback(() => {
     dispatch(toggleIframeViewMode());
@@ -342,14 +407,15 @@ function ProjectHeader() {
                   />
                 )}
                 {altaner?.id && isInterfaceComponent && !isMobile && (
-                    <URLNavigationBar
-                      onNavigate={handleNavigateToPath}
-                      onToggleViewMode={handleToggleIframeViewMode}
-                      onOpenInNewTab={handleOpenIframeInNewTab}
-                      onRefresh={handleRefreshIframe}
-                      viewMode={iframeViewMode}
-                      disabled={!ui || viewType === 'code'}
-                    />
+                  <URLNavigationBar
+                    onNavigate={handleNavigateToPath}
+                    onToggleViewMode={handleToggleIframeViewMode}
+                    onOpenInNewTab={handleOpenIframeInNewTab}
+                    onRefresh={handleRefreshIframe}
+                    viewMode={iframeViewMode}
+                    productionUrl={productionUrl}
+                    disabled={!ui || viewType === 'code'}
+                  />
                 )}
               </>
             ) : (

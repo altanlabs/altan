@@ -1,6 +1,5 @@
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -12,8 +11,8 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 
-import { optimai } from '../../../../utils/axios';
 import CustomDialog from '../../../../components/dialogs/CustomDialog';
+import { optimai } from '../../../../utils/axios';
 
 function AddDomainDialog({ open, onClose, ui }) {
   const [domain, setDomain] = useState('');

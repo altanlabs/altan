@@ -27,14 +27,9 @@ export interface ErrorDetectedBoundary {
 interface PreviewErrorOverlayProps {
   error: ErrorDetectedBoundary;
   sendErrorToAgent: (_data: any) => void;
-  setOpenHireExpert: (_bool: boolean) => void;
 }
 
-const PreviewErrorOverlay: React.FC<PreviewErrorOverlayProps> = ({
-  error,
-  sendErrorToAgent,
-  setOpenHireExpert,
-}) => {
+const PreviewErrorOverlay: React.FC<PreviewErrorOverlayProps> = ({ error, sendErrorToAgent }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -178,18 +173,6 @@ const PreviewErrorOverlay: React.FC<PreviewErrorOverlayProps> = ({
             onClick={copyErrorToClipboard}
           >
             {copied ? '✅ Copied!' : '📋 Copy Error'}
-          </button>
-
-          <button
-            className="flex items-center px-5 py-2 bg-blue-500/20 hover:bg-blue-500/50 text-blue-300 hover:text-white hover:opacity-60 rounded-xl shadow-md transition-all duration-300 ease-in-out backdrop-blur-lg border border-blue-400/40 hover:shadow-blue-500/50 transform hover:scale-105 active:scale-95"
-            onClick={() => setOpenHireExpert(true)}
-          >
-            <img
-              src="https://api.altan.ai/platform/media/0a9f6003-f359-4d8d-87ac-ce20db8ff951?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7"
-              className="w-6 h-6 mr-2 rounded-lg"
-              alt="Expert Icon"
-            />
-            Get help
           </button>
         </div>
       </div>

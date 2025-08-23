@@ -55,6 +55,41 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
     return baseUrl ? `${baseUrl}?${queryParams.toString()}` : '';
   }, [ui?.repo_name, theme.palette.mode, currentPath]);
 
+  // Production URL - either deployment_url or {interface.name}.altanlabs.com or custom domain
+  const productionUrl = useMemo(() => {
+    if (!ui) return null;
+    
+    // First, check if there are any successful deployments
+    const hasSuccessfulDeployments = ui.deployments?.items?.length > 0 && 
+      ui.deployments.items.some(deployment => 
+        deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS'
+      );
+    
+    if (!hasSuccessfulDeployments) {
+      return null; // No successful deployments, don't show production URL
+    }
+    
+    // Check for custom domain first (from meta_data.domains)
+    if (ui.meta_data?.domains) {
+      const customDomains = Object.keys(ui.meta_data.domains);
+      if (customDomains.length > 0) {
+        return `https://${customDomains[0]}${currentPath}`;
+      }
+    }
+    
+    // Check for deployment_url
+    if (ui.deployment_url) {
+      return `${ui.deployment_url}${currentPath}`;
+    }
+    
+    // Default to {interface.name}.altanlabs.com
+    if (ui.name) {
+      return `https://${ui.name}.altanlabs.com${currentPath}`;
+    }
+    
+    return null;
+  }, [ui, currentPath]);
+
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
   }, []);
@@ -162,6 +197,7 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
         viewMode={viewMode}
         status={status}
         iframeUrl={iframeUrl}
+        productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
       />

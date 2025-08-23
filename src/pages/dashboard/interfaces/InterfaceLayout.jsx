@@ -22,6 +22,7 @@ function InterfaceLayout({
   viewMode,
   status,
   iframeUrl,
+  productionUrl,
   handleIframeLoad,
   iframeRef,
 }) {
@@ -54,6 +55,7 @@ function InterfaceLayout({
               interfaceId={id}
               status={status}
               iframeUrl={iframeUrl}
+              productionUrl={productionUrl}
               viewMode={viewMode}
               handleIframeLoad={handleIframeLoad}
               iframeRef={iframeRef}

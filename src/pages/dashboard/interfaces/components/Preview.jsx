@@ -5,12 +5,12 @@ import { memo, useCallback, useState, useEffect } from 'react';
 import IframeControls from './IframeControls';
 import LoadingFrame from './LoadingFrame';
 import PreviewErrorOverlay from './PreviewErrorOverlay';
-import HireAnExpert from '../../../../components/HireAnExpert';
 import {
   selectNavigationPath,
   selectShouldRefresh,
   selectShouldOpenInNewTab,
   selectIframeViewMode,
+  selectPreviewMode,
   selectActionId,
   clearActions,
 } from '../../../../redux/slices/previewControl';
@@ -21,6 +21,7 @@ function Preview({
   interfaceId,
   status,
   iframeUrl,
+  productionUrl,
   viewMode,
   handleIframeLoad,
   iframeRef,
@@ -28,7 +29,6 @@ function Preview({
   chatIframeRef,
   isLoading,
 }) {
-  const [openHireExpert, setOpenHireExpert] = useState(false);
   const [isSendingError, setIsSendingError] = useState(false);
 
   // Redux state selectors
@@ -36,7 +36,11 @@ function Preview({
   const shouldRefresh = useSelector(selectShouldRefresh);
   const shouldOpenInNewTab = useSelector(selectShouldOpenInNewTab);
   const iframeViewMode = useSelector(selectIframeViewMode);
+  const previewMode = useSelector(selectPreviewMode);
   const actionId = useSelector(selectActionId);
+
+  // Determine the current URL based on preview mode
+  const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
 
   // Effect to handle Redux actions
   useEffect(() => {
@@ -74,7 +78,7 @@ function Preview({
     }
 
     if (shouldOpenInNewTab) {
-      const url = iframeRef.current?.src || iframeUrl;
+      const url = iframeRef.current?.src || currentUrl;
       if (url) {
         window.open(url, '_blank');
       }
@@ -82,7 +86,15 @@ function Preview({
 
     // Clear actions after processing
     dispatch(clearActions());
-  }, [actionId, navigationPath, shouldRefresh, shouldOpenInNewTab, iframeRef, handleIframeLoad, iframeUrl]);
+  }, [
+    actionId,
+    navigationPath,
+    shouldRefresh,
+    shouldOpenInNewTab,
+    iframeRef,
+    handleIframeLoad,
+    currentUrl,
+  ]);
 
   // Handler to send error to agent (if targeting 'ai')
   const sendErrorToAgent = useCallback(
@@ -108,12 +120,12 @@ function Preview({
       flex={1}
       sx={{ position: 'relative' }}
     >
-      {(!status || status === 'stopped') && <LoadingFrame status={status} />}
-      {status === 'running' && (
+      {(!status || status === 'stopped') && previewMode === 'development' && <LoadingFrame status={status} />}
+      {(status === 'running' || previewMode === 'production') && (
         <>
           <iframe
             id="preview-iframe"
-            src={iframeUrl}
+            src={currentUrl}
             onLoad={handleIframeLoad}
             ref={iframeRef}
             allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
@@ -129,14 +141,8 @@ function Preview({
             <PreviewErrorOverlay
               error={fatalError}
               sendErrorToAgent={sendErrorToAgent}
-              setOpenHireExpert={setOpenHireExpert}
             />
           )}
-          <HireAnExpert
-            open={openHireExpert}
-            setOpen={setOpenHireExpert}
-            iconSize={15}
-          />
           <IframeControls
             previewIframeRef={iframeRef}
             chatIframeRef={chatIframeRef}
@@ -152,6 +158,7 @@ function Preview({
 Preview.propTypes = {
   status: PropTypes.string,
   iframeUrl: PropTypes.string.isRequired,
+  productionUrl: PropTypes.string,
   viewMode: PropTypes.string.isRequired,
   handleIframeLoad: PropTypes.func.isRequired,
   iframeRef: PropTypes.object.isRequired,

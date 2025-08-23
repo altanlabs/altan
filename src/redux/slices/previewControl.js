@@ -6,6 +6,7 @@ const initialState = {
   shouldRefresh: false,
   shouldOpenInNewTab: false,
   iframeViewMode: 'desktop', // 'mobile' or 'desktop'
+  previewMode: 'production', // 'production' or 'development'
   actionId: null, // Used to trigger actions
 };
 
@@ -43,6 +44,18 @@ const previewControlSlice = createSlice({
       state.actionId = Date.now(); // Trigger action
     },
 
+    // Action to toggle preview mode between production and development
+    togglePreviewMode: (state) => {
+      state.previewMode = state.previewMode === 'production' ? 'development' : 'production';
+      state.actionId = Date.now(); // Trigger action
+    },
+
+    // Action to set preview mode
+    setPreviewMode: (state, action) => {
+      state.previewMode = action.payload;
+      state.actionId = Date.now(); // Trigger action
+    },
+
     // Clear actions after they've been processed
     clearActions: (state) => {
       state.navigationPath = null;
@@ -60,6 +73,8 @@ export const {
   openInNewTab,
   toggleIframeViewMode,
   setIframeViewMode,
+  togglePreviewMode,
+  setPreviewMode,
   clearActions,
 } = previewControlSlice.actions;
 
@@ -68,6 +83,7 @@ export const selectNavigationPath = (state) => state.previewControl.navigationPa
 export const selectShouldRefresh = (state) => state.previewControl.shouldRefresh;
 export const selectShouldOpenInNewTab = (state) => state.previewControl.shouldOpenInNewTab;
 export const selectIframeViewMode = (state) => state.previewControl.iframeViewMode;
+export const selectPreviewMode = (state) => state.previewControl.previewMode;
 export const selectActionId = (state) => state.previewControl.actionId;
 
 export default previewControlSlice.reducer; 

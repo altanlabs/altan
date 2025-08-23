@@ -11,6 +11,7 @@ import {
   getNestedProperty,
 } from '../helpers/memoize';
 import { paginateCollection } from './utils/collections';
+import { setPreviewMode } from './previewControl';
 import { optimai, optimai_room, optimai_agent } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
@@ -1266,36 +1267,30 @@ export const makeSelectMessageReactions = () =>
 export const makeSelectMessageLikeDislikeReactions = () =>
   createSelector([makeSelectMessage()], (message) => {
     const reactions = message?.reactions?.items || [];
-    return reactions.filter(reaction =>
-      reaction.reaction_type === 'like' || reaction.reaction_type === 'dislike',
+    return reactions.filter(
+      (reaction) => reaction.reaction_type === 'like' || reaction.reaction_type === 'dislike',
     );
   });
 
 // Selector to check if current user has liked a message
 export const makeSelectMessageUserLiked = () =>
-  createSelector(
-    [makeSelectMessage(), selectMe],
-    (message, me) => {
-      const reactions = message?.reactions?.items || [];
-      const memberId = me?.id; // Use me.id, not me.member.id
-      return reactions.some(reaction =>
-        reaction.reaction_type === 'like' && reaction.member_id === memberId,
-      );
-    },
-  );
+  createSelector([makeSelectMessage(), selectMe], (message, me) => {
+    const reactions = message?.reactions?.items || [];
+    const memberId = me?.id; // Use me.id, not me.member.id
+    return reactions.some(
+      (reaction) => reaction.reaction_type === 'like' && reaction.member_id === memberId,
+    );
+  });
 
 // Selector to check if current user has disliked a message
 export const makeSelectMessageUserDisliked = () =>
-  createSelector(
-    [makeSelectMessage(), selectMe],
-    (message, me) => {
-      const reactions = message?.reactions?.items || [];
-      const memberId = me?.id; // Use me.id, not me.member.id
-      return reactions.some(reaction =>
-        reaction.reaction_type === 'dislike' && reaction.member_id === memberId,
-      );
-    },
-  );
+  createSelector([makeSelectMessage(), selectMe], (message, me) => {
+    const reactions = message?.reactions?.items || [];
+    const memberId = me?.id; // Use me.id, not me.member.id
+    return reactions.some(
+      (reaction) => reaction.reaction_type === 'dislike' && reaction.member_id === memberId,
+    );
+  });
 
 const selectMessagesCreation = createSelector(
   [selectMessagesById],
@@ -1922,15 +1917,26 @@ export const sendMessage =
   ({ content, attachments, threadId }) =>
   async (dispatch, getState) => {
     try {
+      const state = getState();
       const {
         thread: { respond },
-      } = getState().room;
+      } = state.room;
+
+      // Check if we're in an interface project and switch to dev mode if needed
+      const currentUrl = window.location.pathname;
+      const isInProjectRoute = currentUrl.includes('/project/');
+
+      if (isInProjectRoute) {
+        dispatch(setPreviewMode('development'));
+      }
+
       const config = {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           dispatch(slice.actions.updateMediaProgress({ threadId, percentCompleted }));
         },
       };
+
       if (attachments?.length > 0) {
         dispatch(slice.actions.setIsUploading({ threadId, messageId: null }));
       }
@@ -1942,12 +1948,12 @@ export const sendMessage =
       );
 
       // Don't play sound if voice is active for this thread
-      const state = getState();
-      const isVoiceActiveForThread = !!state.room.voiceConversations.byThreadId[threadId]?.isActive;
+      const isVoiceActiveForThread =
+        !!state.room.voiceConversations?.byThreadId?.[threadId]?.isActive;
       if (!isVoiceActiveForThread) {
         SOUND_OUT.play();
       }
-      if (!!respond) {
+      if (respond && respond[threadId]) {
         dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
       }
       return response.data;
