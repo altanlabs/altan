@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
 import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
+import { useState, useRef } from 'react';
 
+import CodeToggleButton from './buttons/CodeToggleButton';
 import Iconify from './iconify';
-import { useSelector, dispatch } from '../redux/store';
 import { selectPreviewMode, togglePreviewMode } from '../redux/slices/previewControl';
+import { useSelector, dispatch } from '../redux/store';
 
 function URLNavigationBar({
   onNavigate,
@@ -19,10 +20,10 @@ function URLNavigationBar({
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
-  
+
   // Get preview mode from Redux
   const previewMode = useSelector(selectPreviewMode);
-  
+
   const handleTogglePreviewMode = () => {
     dispatch(togglePreviewMode());
   };
@@ -50,7 +51,7 @@ function URLNavigationBar({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        height: 42,
+        height: 40,
         gap: 0.5,
       }}
     >
@@ -67,7 +68,7 @@ function URLNavigationBar({
           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           overflow: 'hidden',
           p: 0.25,
-          gap: 0.5,
+          gap: 0.25,
           '&:hover': {
             backgroundColor: alpha(theme.palette.background.paper, 0.9),
             border: `1px solid ${alpha(theme.palette.divider, 0.24)}`,
@@ -77,6 +78,53 @@ function URLNavigationBar({
           }),
         }}
       >
+        {/* Refresh */}
+        <Tooltip title="Refresh">
+          <IconButton
+            size="small"
+            onClick={onRefresh}
+            disabled={disabled}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1.5,
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.text.primary,
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:refresh"
+              sx={{ width: 16, height: 16 }}
+            />
+          </IconButton>
+        </Tooltip>
+        {/* Open in New Tab */}
+        <Tooltip title="Open in New Tab">
+          <IconButton
+            size="small"
+            onClick={onOpenInNewTab}
+            disabled={disabled}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1.5,
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.text.primary,
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:open-in-new"
+              sx={{ width: 16, height: 16 }}
+            />
+          </IconButton>
+        </Tooltip>
+
         <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, maxWidth: 200 }}>
           <Typography
             variant="body2"
@@ -133,7 +181,9 @@ function URLNavigationBar({
         >
           {/* Preview Mode Toggle - Only show if production URL is available */}
           {productionUrl && (
-            <Tooltip title={`Switch to ${previewMode === 'production' ? 'Development' : 'Production'} Mode`}>
+            <Tooltip
+              title={`Switch to ${previewMode === 'production' ? 'Development' : 'Production'} Mode`}
+            >
               <Chip
                 label={previewMode === 'production' ? 'PROD' : 'DEV'}
                 size="small"
@@ -144,19 +194,24 @@ function URLNavigationBar({
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  backgroundColor: previewMode === 'production'
-                    ? alpha(theme.palette.success.main, 0.12)
-                    : alpha(theme.palette.warning.main, 0.12),
-                  color: previewMode === 'production'
-                    ? theme.palette.success.main
-                    : theme.palette.warning.main,
-                  border: `1px solid ${previewMode === 'production'
-                    ? alpha(theme.palette.success.main, 0.24)
-                    : alpha(theme.palette.warning.main, 0.24)}`,
+                  backgroundColor:
+                    previewMode === 'production'
+                      ? alpha(theme.palette.success.main, 0.12)
+                      : alpha(theme.palette.warning.main, 0.12),
+                  color:
+                    previewMode === 'production'
+                      ? theme.palette.success.main
+                      : theme.palette.warning.main,
+                  border: `1px solid ${
+                    previewMode === 'production'
+                      ? alpha(theme.palette.success.main, 0.24)
+                      : alpha(theme.palette.warning.main, 0.24)
+                  }`,
                   '&:hover': {
-                    backgroundColor: previewMode === 'production'
-                      ? alpha(theme.palette.success.main, 0.16)
-                      : alpha(theme.palette.warning.main, 0.16),
+                    backgroundColor:
+                      previewMode === 'production'
+                        ? alpha(theme.palette.success.main, 0.16)
+                        : alpha(theme.palette.warning.main, 0.16),
                   },
                   '& .MuiChip-label': {
                     px: 1,
@@ -165,54 +220,7 @@ function URLNavigationBar({
               />
             </Tooltip>
           )}
-
-          {/* Open in New Tab */}
-          <Tooltip title="Open in New Tab">
-            <IconButton
-              size="small"
-              onClick={onOpenInNewTab}
-              disabled={disabled}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.text.primary,
-                },
-              }}
-            >
-              <Iconify
-                icon="mdi:open-in-new"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
-
-          {/* Refresh */}
-          <Tooltip title="Refresh">
-            <IconButton
-              size="small"
-              onClick={onRefresh}
-              disabled={disabled}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.text.primary,
-                },
-              }}
-            >
-              <Iconify
-                icon="mdi:refresh"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
+          <CodeToggleButton />
         </Stack>
       </Box>
     </Box>

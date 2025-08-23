@@ -12,18 +12,18 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 // react
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
 
 // local components
-import AccountPopover from './AccountPopover.jsx';
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
+import CodeToggleButton from '../../../components/buttons/CodeToggleButton.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
 import FormDialog from '../../../components/FormDialog.jsx';
@@ -46,7 +46,6 @@ import {
   selectSortedAltanerComponents,
   selectViewType,
   selectDisplayMode,
-  setViewType,
   setDisplayMode,
   updateAltanerById,
 } from '../../../redux/slices/altaners';
@@ -94,10 +93,17 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
   return (
     <>
       <Tooltip title="More actions">
-        <HeaderIconButton onClick={handleClick}>
+        <HeaderIconButton
+          onClick={handleClick}
+          sx={{
+            width: 32,
+            height: 32,
+            borderRadius: 1.5,
+          }}
+        >
           <Iconify
             icon="mdi:dots-vertical"
-            className="w-5 h-5"
+            sx={{ width: 16, height: 16 }}
           />
         </HeaderIconButton>
       </Tooltip>
@@ -309,6 +315,7 @@ function ProjectHeader() {
         setSelectedComponentId(null);
       })
       .catch((error) => {
+        // Failed to delete component
         console.error('Failed to delete component:', error);
       })
       .finally(() => {
@@ -322,6 +329,7 @@ function ProjectHeader() {
         await dispatch(updateAltanerById(altaner.id, data));
         setOpenEditAltaner(false);
       } catch (error) {
+        // Failed to update altaner
         console.error('Failed to update altaner:', error);
       }
     },
@@ -406,17 +414,6 @@ function ProjectHeader() {
                     onEditAltaner={() => setOpenEditAltaner(true)}
                   />
                 )}
-                {altaner?.id && isInterfaceComponent && !isMobile && (
-                  <URLNavigationBar
-                    onNavigate={handleNavigateToPath}
-                    onToggleViewMode={handleToggleIframeViewMode}
-                    onOpenInNewTab={handleOpenIframeInNewTab}
-                    onRefresh={handleRefreshIframe}
-                    viewMode={iframeViewMode}
-                    productionUrl={productionUrl}
-                    disabled={!ui || viewType === 'code'}
-                  />
-                )}
               </>
             ) : (
               <HoverBorderGradient
@@ -440,6 +437,18 @@ function ProjectHeader() {
               </HoverBorderGradient>
             )}
           </Stack>
+
+          {altaner?.id && isInterfaceComponent && !isMobile && (
+            <URLNavigationBar
+              onNavigate={handleNavigateToPath}
+              onToggleViewMode={handleToggleIframeViewMode}
+              onOpenInNewTab={handleOpenIframeInNewTab}
+              onRefresh={handleRefreshIframe}
+              viewMode={iframeViewMode}
+              productionUrl={productionUrl}
+              disabled={!ui || viewType === 'code'}
+            />
+          )}
 
           {/* Middle section - URL Navigation Bar */}
 
@@ -468,6 +477,9 @@ function ProjectHeader() {
                     <HeaderIconButton
                       onClick={() => setOpenPublishDialog(true)}
                       sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 1.5,
                         bgcolor: 'primary.main',
                         color: 'primary.contrastText',
                         '&:hover': {
@@ -477,7 +489,7 @@ function ProjectHeader() {
                     >
                       <Iconify
                         icon="mdi:rocket-launch-outline"
-                        className="w-5 h-5"
+                        sx={{ width: 16, height: 16 }}
                       />
                     </HeaderIconButton>
                   </Tooltip>
@@ -488,71 +500,7 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                  {isInterfaceComponent && (
-                    <Tooltip
-                      title={viewType === 'code' ? 'Turn off Code Editor' : 'Turn on Code Editor'}
-                    >
-                      <button
-                        onClick={() => {
-                          dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
-                        }}
-                        style={{
-                          backgroundColor: alpha(theme.palette.grey[500], 0.08),
-                          padding: 2,
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.grey[500], 0.24),
-                          },
-                        }}
-                        className="relative flex items-center rounded-md h-[30px] w-12 transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:bg-opacity-80 active:scale-98"
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.24);
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
-                        }}
-                        aria-label={`${viewType === 'code' ? 'Turn off' : 'Turn on'} Code Editor`}
-                      >
-                        {/* Sliding indicator with icon */}
-                        <div
-                          className={`absolute w-6 h-6 rounded-sm shadow-lg transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex items-center justify-center will-change-transform ${
-                            viewType === 'code' ? 'right-1 scale-105' : 'left-1 scale-100'
-                          }`}
-                          style={{
-                            backgroundColor:
-                              viewType === 'code'
-                                ? theme.palette.primary.main
-                                : theme.palette.background.paper,
-                            color:
-                              viewType === 'code'
-                                ? theme.palette.primary.contrastText
-                                : theme.palette.text.secondary,
-                            boxShadow:
-                              viewType === 'code'
-                                ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.25)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`
-                                : theme.shadows[2],
-                          }}
-                        >
-                          <Iconify
-                            icon="mdi:code-tags"
-                            className={`w-4 h-3 transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
-                              viewType === 'code' ? 'scale-105' : 'scale-100'
-                            }`}
-                          />
-                        </div>
-
-                        {/* Background glow effect when active */}
-                        {viewType === 'code' && (
-                          <div
-                            className="absolute inset-0 rounded-full opacity-20 transition-all duration-600 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
-                            style={{
-                              background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.3)} 0%, transparent 70%)`,
-                              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                            }}
-                          />
-                        )}
-                      </button>
-                    </Tooltip>
-                  )}
+                 
                   {altaner?.room_id && !isMobile && (
                     <Tooltip
                       title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
@@ -563,10 +511,15 @@ function ProjectHeader() {
                           const nextMode = displayMode === 'preview' ? 'both' : 'preview';
                           dispatch(setDisplayMode(nextMode));
                         }}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                        }}
                       >
                         <Iconify
                           icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
-                          className="w-5 h-5"
+                          sx={{ width: 16, height: 16 }}
                         />
                       </HeaderIconButton>
                     </Tooltip>
@@ -593,14 +546,19 @@ function ProjectHeader() {
                   <Button
                     size="small"
                     variant="contained"
-                    startIcon={<Iconify icon="mdi:rocket-launch-outline" />}
+                    startIcon={<Iconify icon="mdi:rocket-launch-outline" sx={{ width: 16, height: 16 }} />}
                     onClick={() => setOpenPublishDialog(true)}
+                    sx={{
+                      height: 32,
+                      borderRadius: 1.5,
+                      px: 2,
+                      minWidth: 'auto',
+                    }}
                   >
                     Publish
                   </Button>
                 </Stack>
               ))}
-            <AccountPopover />
           </Stack>
         </Toolbar>
       </AppBar>

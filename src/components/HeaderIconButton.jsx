@@ -13,18 +13,19 @@ const HeaderIconButton = forwardRef(({ children, sx, ...other }, ref) => (
     ref={ref}
     size="small"
     sx={{
-      width: 30,
-      height: 30,
+      width: 32,
+      height: 32,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: '8px',
-      color: (theme) => theme.palette.text.primary,
+      borderRadius: 1.5,
+      color: (theme) => theme.palette.text.secondary,
       backgroundColor: (theme) => alpha(theme.palette.grey[500], 0.08),
       backdropFilter: 'blur(8px)',
       transition: 'colors 150ms cubic-bezier(.33,0,.2,1), background-color 150ms cubic-bezier(.33,0,.2,1)',
       '&:hover': {
-        backgroundColor: (theme) => alpha(theme.palette.grey[500], 0.24),
+        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08),
+        color: (theme) => theme.palette.text.primary,
       },
       ...sx,
     }}

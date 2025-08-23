@@ -208,7 +208,7 @@ const CodeEditor = forwardRef(({ interfaceId, filePath, chatIframeRef }, ref) =>
           theme={theme.palette.mode === 'light' ? 'light' : 'vs-dark'}
           path={filePath}
           options={{
-            minimap: { enabled: true },
+            minimap: { enabled: false },
             fontSize: 14,
             lineNumbers: 'on',
             readOnly: false,
