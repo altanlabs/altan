@@ -57,11 +57,6 @@ function IframeControls({
   // Listen to messages from allowed origins
   useMessageListener(['https://*.preview.altan.ai', 'https://app.altan.ai'], async (event) => {
     const data = event.data;
-    
-    // Log all messages to debug
-    if (data.type) {
-      console.log('📨 Received message:', data.type, data);
-    }
     // If the message is an error notification, store it
     if (data.type === 'error_detected_boundary') {
       if (data.error_type === 'console_error') {
@@ -69,9 +64,10 @@ function IframeControls({
       }
       // Build a notification object from the received data
       // Ensure message is always a string
-      const errorMessage = typeof data.data.message === 'object' && data.data.message !== null
-        ? data.data.message.message || JSON.stringify(data.data.message)
-        : String(data.data.message || 'Unknown error');
+      const errorMessage =
+        typeof data.data.message === 'object' && data.data.message !== null
+          ? data.data.message.message || JSON.stringify(data.data.message)
+          : String(data.data.message || 'Unknown error');
 
       const notification = {
         id: crypto.randomUUID(),
@@ -120,10 +116,10 @@ function IframeControls({
     } else if (data.type === 'element_selected') {
       // Log all element_selected messages to see what we're getting
       console.log('🎯 Received element_selected:', data);
-      
+
       if (['select-component', 'select-instance'].includes(data.action)) {
         console.log('✅ Processing select-component/select-instance action');
-        
+
         // Get the current iframe URL path
         let currentPath = '/';
         try {
@@ -134,7 +130,7 @@ function IframeControls({
         } catch (error) {
           console.warn('Could not get iframe path:', error);
         }
-        
+
         // Create the component details directly and dispatch to Redux or direct component insertion
         const componentDetails = {
           file: data.data?.file || 'unknown',
@@ -153,15 +149,22 @@ function IframeControls({
             path: currentPath,
           }),
         };
-        
+
         console.log('📝 Creating component target directly:', componentDetails);
-        
+
         // Dispatch a custom event that can be picked up by any editor
-        window.dispatchEvent(new CustomEvent('insertComponentTarget', {
-          detail: componentDetails
-        }));
+        window.dispatchEvent(
+          new CustomEvent('insertComponentTarget', {
+            detail: componentDetails,
+          }),
+        );
       } else {
-        console.log('❌ Not processing - action:', data.action, 'chatIframeRef exists:', !!chatIframeRef?.current);
+        console.log(
+          '❌ Not processing - action:',
+          data.action,
+          'chatIframeRef exists:',
+          !!chatIframeRef?.current,
+        );
       }
       if (data.action === 'show-code') {
         // TODO: show code

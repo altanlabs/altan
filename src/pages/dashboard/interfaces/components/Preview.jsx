@@ -115,12 +115,14 @@ function Preview({
     [interfaceId, isSendingError],
   );
 
+  console.log('status', status);
+
   return (
     <Box
       flex={1}
       sx={{ position: 'relative' }}
     >
-      {(!status || status === 'stopped') && previewMode === 'development' && <LoadingFrame status={status} />}
+      {(!status || status === 'stopped' || status === 'running:stalled') && previewMode === 'development' && <LoadingFrame status={status} />}
       {(status === 'running' || previewMode === 'production') && (
         <>
           <iframe

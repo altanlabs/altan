@@ -23,7 +23,7 @@ function LoadingFrame({ viewMode }) {
                 className="font-mono text-base sm:text-lg"
                 duration={1.4}
               >
-                Securing connection...
+                Loading Live Preview...
               </TextShimmer>
             </div>
 

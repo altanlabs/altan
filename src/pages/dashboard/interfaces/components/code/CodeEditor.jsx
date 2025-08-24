@@ -104,17 +104,19 @@ const CodeEditor = forwardRef(({ interfaceId, filePath, chatIframeRef }, ref) =>
                 action: 'add-to-chat',
                 data: { file: filePath, code: selectedText, interfaceId },
               };
-              
+
               // Send to chat iframe if it exists
               if (chatIframeRef?.current?.contentWindow) {
                 chatIframeRef.current.contentWindow.postMessage(data, '*');
               }
-              
+
               // Also dispatch to the current window for direct React editor
-              window.dispatchEvent(new CustomEvent('insertCodeSnippet', {
-                detail: { file: filePath, code: selectedText, interfaceId }
-              }));
-              
+              window.dispatchEvent(
+                new CustomEvent('insertCodeSnippet', {
+                  detail: { file: filePath, code: selectedText, interfaceId },
+                }),
+              );
+
               console.log('Add to chat:', { file: filePath, code: selectedText });
             }
           },
@@ -186,17 +188,19 @@ const CodeEditor = forwardRef(({ interfaceId, filePath, chatIframeRef }, ref) =>
         action: 'add-to-chat',
         data: { file: filePath, code: selectedText, interfaceId },
       };
-      
+
       // Send to chat iframe if it exists
       if (chatIframeRef?.current?.contentWindow) {
         chatIframeRef.current.contentWindow.postMessage(data, '*');
       }
-      
+
       // Also dispatch to the current window for direct React editor
-      window.dispatchEvent(new CustomEvent('insertCodeSnippet', {
-        detail: { file: filePath, code: selectedText, interfaceId }
-      }));
-      
+      window.dispatchEvent(
+        new CustomEvent('insertCodeSnippet', {
+          detail: { file: filePath, code: selectedText, interfaceId },
+        }),
+      );
+
       console.log('Add to chat:', { file: filePath, code: selectedText });
     }
   }, [chatIframeRef, debouncedSelection?.text, filePath, interfaceId]);
