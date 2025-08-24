@@ -42,30 +42,18 @@ function Preview({
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
 
-  console.log('currentUrl', currentUrl);
-  console.log('previewMode', previewMode);
-
-  // Effect to automatically adjust preview mode based on production URL availability and interface changes
+  // Effect to automatically adjust preview mode when switching interfaces (projects)
   useEffect(() => {
     if (!productionUrl) {
-      // If no production URL available, force development mode
-      if (previewMode === 'production') {
-        console.log('Switching to development mode - no production URL available');
-        dispatch(setPreviewMode('development'));
-      }
+      dispatch(setPreviewMode('development'));
     } else {
-      // If production URL is available, default to production mode
-      if (previewMode === 'development') {
-        console.log('Switching to production mode - production URL available');
-        dispatch(setPreviewMode('production'));
-      }
+      dispatch(setPreviewMode('production'));
     }
-  }, [interfaceId, productionUrl, previewMode, dispatch]);
+  }, [interfaceId]); // Removed previewMode from dependencies
 
   // Effect to update iframe src when currentUrl changes
   useEffect(() => {
     if (iframeRef.current && currentUrl && iframeRef.current.src !== currentUrl) {
-      console.log('Updating iframe src from', iframeRef.current.src, 'to', currentUrl);
       iframeRef.current.src = currentUrl;
     }
   }, [currentUrl, iframeRef]);
