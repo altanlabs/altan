@@ -13,6 +13,7 @@ import {
   selectPreviewMode,
   selectActionId,
   clearActions,
+  setPreviewMode,
 } from '../../../../redux/slices/previewControl';
 import { useSelector, dispatch } from '../../../../redux/store';
 import { optimai } from '../../../../utils/axios';
@@ -40,6 +41,26 @@ function Preview({
 
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
+
+  console.log('currentUrl', currentUrl);
+  console.log('previewMode', previewMode);
+
+  // Effect to automatically adjust preview mode based on production URL availability and interface changes
+  useEffect(() => {
+    if (!productionUrl) {
+      // If no production URL available, force development mode
+      if (previewMode === 'production') {
+        console.log('Switching to development mode - no production URL available');
+        dispatch(setPreviewMode('development'));
+      }
+    } else {
+      // If production URL is available, default to production mode
+      if (previewMode === 'development') {
+        console.log('Switching to production mode - production URL available');
+        dispatch(setPreviewMode('production'));
+      }
+    }
+  }, [interfaceId, productionUrl, previewMode, dispatch]);
 
   // Effect to update iframe src when currentUrl changes
   useEffect(() => {

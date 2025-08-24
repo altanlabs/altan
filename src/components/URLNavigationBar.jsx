@@ -16,7 +16,7 @@ function URLNavigationBar({
   productionUrl,
   disabled = false,
 }) {
-  console.log('productionUrl', productionUrl);
+
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);

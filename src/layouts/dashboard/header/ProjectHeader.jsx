@@ -199,7 +199,7 @@ function ProjectHeader() {
     console.log('hasSuccessfulDeployments', hasSuccessfulDeployments);
 
     if (!hasSuccessfulDeployments) {
-      return null; // No successful deployments, don't show toggle
+      return null;
     }
 
     // Check for custom domain first (from meta_data.domains)
