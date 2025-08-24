@@ -198,19 +198,6 @@ function ProjectHeader() {
       return null;
     }
 
-    // Check for custom domain first (from meta_data.domains)
-    if (ui.meta_data?.domains) {
-      const customDomains = Object.keys(ui.meta_data.domains);
-      if (customDomains.length > 0) {
-        return `https://${customDomains[0]}`;
-      }
-    }
-
-    // Check for deployment_url
-    if (ui.deployment_url) {
-      return ui.deployment_url;
-    }
-
     // Default to {interface.name}.altanlabs.com
     if (ui.name) {
       return `https://${ui.name}.altanlabs.com`;
