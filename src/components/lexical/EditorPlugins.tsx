@@ -15,6 +15,7 @@ import { useEffect, memo, useMemo, useCallback } from 'react';
 import AutoEmbedPlugin from './plugins/AutoEmbedPlugin';
 import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import CollapsiblePlugin from './plugins/CollapsiblePlugin';
+import ComponentSelectionPlugin from './plugins/ComponentSelectionPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import EnterKeyPlugin from './plugins/EnterKeyPlugin';
 import FigmaPlugin from './plugins/FigmaPlugin';
@@ -178,6 +179,7 @@ const EditorPlugins = (props: PluginProps): JSX.Element => {
       {/* <AutocompletePlugin /> */}
       <EmojisPlugin />
       {/* <EquationsPlugin /> */}
+      <ComponentSelectionPlugin />
       <EnterKeyPlugin onSendMessage={sendMessage} />
     </>
   );

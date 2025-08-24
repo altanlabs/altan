@@ -30,6 +30,7 @@ export interface ComponentTargetDetails {
   elementName: string;
   type?: string | undefined;
   screenPosition?: ScreenPosition | undefined;
+  rawData?: string | undefined; // JSON string with additional component data
 }
 
 export type SerializedComponentTargetNode = Spread<
@@ -47,6 +48,7 @@ function convertComponentTargetElement(domNode: HTMLSpanElement): DOMConversionO
   const column = domNode.getAttribute('data-ct-column');
   const elementName = domNode.getAttribute('data-ct-elementName');
   const type = domNode.getAttribute('data-ct-type');
+  const rawData = domNode.getAttribute('data-ct-rawData');
   const screenPositionX = domNode.getAttribute('data-ct-sp-x');
   const screenPositionY = domNode.getAttribute('data-ct-sp-y');
   const screenPositionWidth = domNode.getAttribute('data-ct-sp-width');
@@ -69,6 +71,7 @@ function convertComponentTargetElement(domNode: HTMLSpanElement): DOMConversionO
         column: Number(column),
         elementName,
         type: type || undefined,
+        rawData: rawData || undefined,
         screenPosition: !screenPositionX
           ? undefined
           : {
@@ -120,13 +123,14 @@ class ComponentTargetNode extends DecoratorNode<JSX.Element> {
 
   exportDOM(): DOMExportOutput {
     const element = document.createElement('span');
-    const { file, line, column, elementName, type, screenPosition } = this.__details;
+    const { file, line, column, elementName, type, screenPosition, rawData } = this.__details;
 
     element.setAttribute('data-ct-file', file);
     element.setAttribute('data-ct-line', line.toString());
     element.setAttribute('data-ct-column', column.toString());
     element.setAttribute('data-ct-elementName', elementName);
     if (type) element.setAttribute('data-ct-type', type);
+    if (rawData) element.setAttribute('data-ct-rawData', rawData);
 
     if (screenPosition) {
       element.setAttribute('data-ct-sp-x', screenPosition.x.toString());
@@ -176,16 +180,42 @@ class ComponentTargetNode extends DecoratorNode<JSX.Element> {
       column,
       elementName,
       type,
-      // screenPosition
+      rawData,
     } = this.__details;
 
+    // Parse raw data to include rich information
+    let parsedData = null;
+    try {
+      if (rawData) {
+        parsedData = JSON.parse(rawData);
+      }
+    } catch (error) {
+      console.warn('Failed to parse rawData in getTextContent:', error);
+    }
+
     const typeInfo = type ? `:${type}` : '';
-    // const positionInfo = `${screenPosition.x},${screenPosition.y},${screenPosition.width}x${screenPosition.height}`;
+    const basicInfo = `${elementName}${typeInfo} @ ${file}:${line}:${column}`;
 
-    // Compact, concise, and readable embedding details
-    const innerText = `${elementName}${typeInfo} @ ${file}:${line}:${column}`; // [${positionInfo}]`;
+    // Include rich data in the message content, wrapped in <hide> tags
+    if (parsedData) {
+      const richInfo = [
+        `📁 File: ${file}`,
+        `📍 Position: Line ${line}, Column ${column}`,
+        `🏷️ Element: ${elementName}${type ? ` (${type})` : ''}`,
+        `📊 Details:`,
+        `  • Line Range: ${parsedData.lineRange || 'N/A'}`,
+        `  • Column Range: ${parsedData.columnRange || 'N/A'}`,
+        `  • Custom Component: ${parsedData.isCustom ? 'Yes' : 'No'}`,
+        parsedData.componentName ? `  • Component Name: ${parsedData.componentName}` : null,
+        parsedData.ancestry ? `  • Parent Components: ${parsedData.ancestry.length}` : null,
+        parsedData.path ? `  • Current path: ${parsedData.path}` : null,
+      ].filter(Boolean).join('\n');
 
-    return `\n[selected_component](${innerText})\n`;
+      return `\n[selected_component](${basicInfo})\n\n<hide>\n${richInfo}\n</hide>\n`;
+    }
+
+    // Fallback to basic info if no rich data
+    return `\n[selected_component](${basicInfo})\n`;
   }
 
   decorate(_editor: LexicalEditor, _config: unknown): JSX.Element {
@@ -247,7 +277,17 @@ export const ComponentTarget = ({
   handleClick,
   onContextMenu,
 }: ComponentTargetProps): JSX.Element => {
-  const { file, line, column, elementName, type, screenPosition } = details;
+  const { file, line, column, elementName, type, screenPosition, rawData } = details;
+  
+  // Parse raw data if available
+  let parsedData = null;
+  try {
+    if (rawData) {
+      parsedData = JSON.parse(rawData);
+    }
+  } catch (error) {
+    console.warn('Failed to parse rawData:', error);
+  }
 
   return (
     <span
@@ -262,28 +302,54 @@ export const ComponentTarget = ({
     >
       <Tooltip
         title={
-          <div className="p-2 text-white rounded-md dark:text-gray-200">
-            <div>
-              <strong>File:</strong> {file}
+          <div style={{ padding: '12px', fontSize: '13px', lineHeight: '1.4' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <strong>📁 File:</strong> {file}
             </div>
-            <div>
-              <strong>Line:</strong> {line}, <strong>Column:</strong> {column}
+            <div style={{ marginBottom: '8px' }}>
+              <strong>📍 Position:</strong> Line {line}, Column {column}
             </div>
-            <div>
-              <strong>Element:</strong> {elementName}
+            <div style={{ marginBottom: '8px' }}>
+              <strong>🏷️ Element:</strong> {elementName}
             </div>
-            <div>
-              <strong>Type:</strong> {type ?? 'N/A'}
-            </div>
+            {type && (
+              <div style={{ marginBottom: '8px' }}>
+                <strong>🔧 Type:</strong> {type}
+              </div>
+            )}
+            {parsedData && (
+              <>
+                <div style={{ borderTop: '1px solid #666', paddingTop: '8px', marginTop: '8px', marginBottom: '8px' }}>
+                  <strong>📊 Component Details:</strong>
+                </div>
+                <div style={{ fontSize: '12px' }}>
+                  <div><strong>Line Range:</strong> {parsedData.lineRange || 'N/A'}</div>
+                  <div><strong>Column Range:</strong> {parsedData.columnRange || 'N/A'}</div>
+                  <div><strong>Custom Component:</strong> {parsedData.isCustom ? 'Yes' : 'No'}</div>
+                  {parsedData.componentName && (
+                    <div><strong>Component Name:</strong> {parsedData.componentName}</div>
+                  )}
+                  {parsedData.ancestry && (
+                    <div><strong>Ancestry:</strong> {parsedData.ancestry.length} parent(s)</div>
+                  )}
+                  {parsedData.path && (
+                    <div><strong>Path:</strong> {parsedData.path}</div>
+                  )}
+                </div>
+              </>
+            )}
             {!!screenPosition && (
-              <div>
-                <strong>Position:</strong> ({screenPosition.x}, {screenPosition.y},{' '}
+              <div style={{ fontSize: '12px', borderTop: '1px solid #666', paddingTop: '8px', marginTop: '8px' }}>
+                <strong>🖥️ Screen Position:</strong> ({screenPosition.x}, {screenPosition.y},{' '}
                 {screenPosition.width}x{screenPosition.height})
               </div>
             )}
           </div>
         }
         arrow
+        placement="top"
+        enterDelay={500}
+        leaveDelay={200}
       >
         <Icon
           icon="mdi:target"

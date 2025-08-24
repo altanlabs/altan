@@ -4,16 +4,15 @@ import PropTypes from 'prop-types';
 import { useState, useRef } from 'react';
 
 import CodeToggleButton from './buttons/CodeToggleButton';
+import EditToggleButton from './buttons/EditToggleButton';
 import Iconify from './iconify';
-import { selectPreviewMode, togglePreviewMode } from '../redux/slices/previewControl';
+import { selectPreviewMode, selectEditMode, togglePreviewMode, toggleEditMode } from '../redux/slices/previewControl';
 import { useSelector, dispatch } from '../redux/store';
 
 function URLNavigationBar({
   onNavigate,
-  onToggleViewMode,
   onOpenInNewTab,
   onRefresh,
-  viewMode = 'desktop',
   productionUrl,
   disabled = false,
 }) {
@@ -21,11 +20,16 @@ function URLNavigationBar({
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
 
-  // Get preview mode from Redux
+  // Get preview mode and edit mode from Redux
   const previewMode = useSelector(selectPreviewMode);
+  const editMode = useSelector(selectEditMode);
 
   const handleTogglePreviewMode = () => {
     dispatch(togglePreviewMode());
+  };
+
+  const handleToggleEditMode = () => {
+    dispatch(toggleEditMode());
   };
 
   const handleSubmit = (e) => {
@@ -220,6 +224,11 @@ function URLNavigationBar({
               />
             </Tooltip>
           )}
+          <EditToggleButton
+            editMode={editMode}
+            onToggle={handleToggleEditMode}
+            disabled={disabled}
+          />
           <CodeToggleButton />
         </Stack>
       </Box>
@@ -229,10 +238,8 @@ function URLNavigationBar({
 
 URLNavigationBar.propTypes = {
   onNavigate: PropTypes.func.isRequired,
-  onToggleViewMode: PropTypes.func.isRequired,
   onOpenInNewTab: PropTypes.func.isRequired,
   onRefresh: PropTypes.func.isRequired,
-  viewMode: PropTypes.oneOf(['mobile', 'desktop']),
   productionUrl: PropTypes.string,
   disabled: PropTypes.bool,
 };

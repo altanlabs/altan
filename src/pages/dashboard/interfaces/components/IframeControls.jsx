@@ -3,7 +3,6 @@
 import { truncate } from 'lodash';
 import { useSnackbar } from 'notistack';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 // import { cn } from '@lib/utils';
 
@@ -17,7 +16,8 @@ import {
   acceptChanges,
   discardChanges,
 } from '../../../../redux/slices/codeEditor';
-import { dispatch } from '../../../../redux/store.js';
+import { selectEditMode } from '../../../../redux/slices/previewControl';
+import { dispatch, useSelector } from '../../../../redux/store.js';
 import { optimai } from '../../../../utils/axios';
 
 function IframeControls({
@@ -29,7 +29,8 @@ function IframeControls({
 }) {
   const { enqueueSnackbar } = useSnackbar();
 
-  const [isTargeting, setIsTargeting] = useState(false);
+  // Get edit mode from Redux instead of local state
+  const editMode = useSelector(selectEditMode);
 
   // Local state for various dialogs and sending error flag
   const [openRevisionConfirm, setOpenRevisionConfirm] = useState(false);
@@ -56,6 +57,11 @@ function IframeControls({
   // Listen to messages from allowed origins
   useMessageListener(['https://*.preview.altan.ai', 'https://app.altan.ai'], async (event) => {
     const data = event.data;
+    
+    // Log all messages to debug
+    if (data.type) {
+      console.log('📨 Received message:', data.type, data);
+    }
     // If the message is an error notification, store it
     if (data.type === 'error_detected_boundary') {
       if (data.error_type === 'console_error') {
@@ -68,7 +74,7 @@ function IframeControls({
         : String(data.data.message || 'Unknown error');
 
       const notification = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         timestamp: data.timestamp || new Date().toISOString(),
         error_type: data.error_type,
         message: errorMessage,
@@ -112,44 +118,50 @@ function IframeControls({
         setFatalError(data);
       }
     } else if (data.type === 'element_selected') {
-      if (['select-component', 'select-instance'].includes(data.action) && chatIframeRef?.current) {
-        // ****
-        // CURRENT EXAMPLE
-        // ****
-        // componentRegistry[uniqueId] = {
-        //   file: relativeFile,
-        //   loc: {
-        //     start: { line: start.line, column: start.column },
-        //     end: { line: end.line, column: end.column }
-        //   },
-        //   ancestry, // Array of parent unique IDs (from within the file)
-        //   isCustom,
-        //   tagName,
-        //   componentName: isCustom ? tagName : null
-        // };
-        // ****
-        // ROOM UI EXPECTS EXAMPLE
-        // ****
-        // export interface ComponentTargetDetails {
-        //   file: string;
-        //   line: number;
-        //   column: number;
-        //   elementName: string;
-        //   type?: string | undefined;
-        //   screenPosition?: ScreenPosition | undefined;
-        // }
-        chatIframeRef.current.contentWindow.postMessage(
-          {
-            ...data,
-            data: {
-              file: data.data?.file,
-              line: data.data?.loc?.start?.line,
-              column: data.data?.loc.start.line,
-              elementName: data.data?.tagName,
-            },
-          },
-          '*',
-        );
+      // Log all element_selected messages to see what we're getting
+      console.log('🎯 Received element_selected:', data);
+      
+      if (['select-component', 'select-instance'].includes(data.action)) {
+        console.log('✅ Processing select-component/select-instance action');
+        
+        // Get the current iframe URL path
+        let currentPath = '/';
+        try {
+          if (previewIframeRef?.current?.src) {
+            const url = new URL(previewIframeRef.current.src);
+            currentPath = url.pathname;
+          }
+        } catch (error) {
+          console.warn('Could not get iframe path:', error);
+        }
+        
+        // Create the component details directly and dispatch to Redux or direct component insertion
+        const componentDetails = {
+          file: data.data?.file || 'unknown',
+          line: data.data?.loc?.start?.line || 0,
+          column: data.data?.loc?.start?.column || 0,
+          elementName: data.data?.tagName || 'unknown',
+          type: data.data?.componentName || undefined,
+          rawData: JSON.stringify({
+            tagName: data.data?.tagName,
+            file: data.data?.file,
+            lineRange: `${data.data?.loc?.start?.line}-${data.data?.loc?.end?.line}`,
+            columnRange: `${data.data?.loc?.start?.column}-${data.data?.loc?.end?.column}`,
+            isCustom: data.data?.isCustom,
+            componentName: data.data?.componentName,
+            ancestry: data.data?.ancestry,
+            path: currentPath,
+          }),
+        };
+        
+        console.log('📝 Creating component target directly:', componentDetails);
+        
+        // Dispatch a custom event that can be picked up by any editor
+        window.dispatchEvent(new CustomEvent('insertComponentTarget', {
+          detail: componentDetails
+        }));
+      } else {
+        console.log('❌ Not processing - action:', data.action, 'chatIframeRef exists:', !!chatIframeRef?.current);
       }
       if (data.action === 'show-code') {
         // TODO: show code
@@ -200,12 +212,12 @@ function IframeControls({
     if (!!previewIframeRef?.current?.contentWindow) {
       previewIframeRef.current.contentWindow.postMessage(
         {
-          action: isTargeting ? 'enable-element-overlay' : 'disable-element-overlay',
+          action: editMode ? 'enable-element-overlay' : 'disable-element-overlay',
         },
         '*',
       );
     }
-  }, [isTargeting, previewIframeRef]);
+  }, [editMode, previewIframeRef]);
 
   // For demonstration: if a nonfatal error occurs, show a snackbar
   // (Assuming error notifications that aren't fatal are to be shown as snackbars)

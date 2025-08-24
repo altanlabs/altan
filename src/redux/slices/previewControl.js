@@ -7,6 +7,7 @@ const initialState = {
   shouldOpenInNewTab: false,
   iframeViewMode: 'desktop', // 'mobile' or 'desktop'
   previewMode: 'production', // 'production' or 'development'
+  editMode: false, // Edit mode for component editing
   actionId: null, // Used to trigger actions
 };
 
@@ -56,6 +57,16 @@ const previewControlSlice = createSlice({
       state.actionId = Date.now(); // Trigger action
     },
 
+    // Action to toggle edit mode
+    toggleEditMode: (state) => {
+      state.editMode = !state.editMode;
+      // If enabling edit mode, switch to development mode
+      if (state.editMode && state.previewMode === 'production') {
+        state.previewMode = 'development';
+      }
+      state.actionId = Date.now(); // Trigger action
+    },
+
     // Clear actions after they've been processed
     clearActions: (state) => {
       state.navigationPath = null;
@@ -75,6 +86,7 @@ export const {
   setIframeViewMode,
   togglePreviewMode,
   setPreviewMode,
+  toggleEditMode,
   clearActions,
 } = previewControlSlice.actions;
 
@@ -84,6 +96,7 @@ export const selectShouldRefresh = (state) => state.previewControl.shouldRefresh
 export const selectShouldOpenInNewTab = (state) => state.previewControl.shouldOpenInNewTab;
 export const selectIframeViewMode = (state) => state.previewControl.iframeViewMode;
 export const selectPreviewMode = (state) => state.previewControl.previewMode;
+export const selectEditMode = (state) => state.previewControl.editMode;
 export const selectActionId = (state) => state.previewControl.actionId;
 
 export default previewControlSlice.reducer; 

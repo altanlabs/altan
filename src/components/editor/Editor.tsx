@@ -9,20 +9,20 @@ import {
   $isTextNode,
   $createParagraphNode,
 } from 'lexical';
-import { memo, RefObject, useMemo, useEffect, useCallback } from 'react';
+import React, { memo, RefObject, useMemo, useEffect, useCallback } from 'react';
 
-import useMessageListener from '@hooks/useMessageListener.ts';
+import useMessageListener from '@hooks/useMessageListener';
 
-import EditorPlugins from './EditorPlugins.tsx';
-import { $createCodeFileTargetNode, CodeFileTargetDetails } from './nodes/CodeFileTargetNode.tsx';
+import EditorPlugins from './EditorPlugins';
+import { $createCodeFileTargetNode, CodeFileTargetDetails } from './nodes/CodeFileTargetNode';
 import {
   $createComponentTargetNode,
   ComponentTargetDetails,
-} from './nodes/ComponentTargetNode.tsx';
+} from './nodes/ComponentTargetNode';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import editorTheme from '../../theme/editorTheme.js';
 // import './editor.css';
-import type { Attachment } from './plugins/ImageAttachmentPlugin/index.tsx';
+import type { Attachment } from './plugins/ImageAttachmentPlugin/index';
 
 const EDITOR_NAMESPACE = 'lexical-editor';
 
@@ -152,24 +152,29 @@ const Editor = ({
     });
   };
 
-  useMessageListener(
-    ['https://*.preview.altan.ai', 'https://www.altan.ai', 'https://dev-local.altan.ai:5173'],
-    (event) => {
-      const data = event.data;
-      // console.debug('Received message (roomui):', data);
-      if (data.type === 'element_selected' && data.action !== 'show-code') {
-        insertComponentTargetNode(data.data);
-      } else if (data.type === 'repo_file_selected') {
-        if (data.action === 'add-to-chat') {
-          insertCodeFileTargetNode(data.data);
-        }
-      } else if (data.type === 'code_snippet_selected') {
-        if (data.action === 'add-to-chat') {
-          insertCodeFileTargetNode(data.data);
-        }
-      }
-    },
-  );
+  // Listen for custom insertComponentTarget events with debounce to prevent duplicates
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    const handleInsertComponent = (event: CustomEvent) => {
+      const componentDetails = event.detail as ComponentTargetDetails;
+      console.log('🎯 TypeScript Editor received custom event:', componentDetails);
+      
+      // Clear any existing timeout to debounce rapid events
+      clearTimeout(timeoutId);
+      
+      // Add a small delay to prevent duplicate insertions
+      timeoutId = setTimeout(() => {
+        insertComponentTargetNode(componentDetails);
+      }, 100);
+    };
+    
+    window.addEventListener('insertComponentTarget', handleInsertComponent as EventListener);
+    return () => {
+      window.removeEventListener('insertComponentTarget', handleInsertComponent as EventListener);
+      clearTimeout(timeoutId);
+    };
+  }, [insertComponentTargetNode]);
 
   // Use the stable function in useEffect
   useEffect(() => {
@@ -184,6 +189,7 @@ const Editor = ({
       theme: editorTheme,
       nodes: [...PlaygroundNodes],
       onError: (error: Error) => {
+        // eslint-disable-next-line no-console
         console.error(error);
       },
     }),

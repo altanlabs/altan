@@ -33,6 +33,8 @@ import { HelperNameNode } from './HelperNameNode';
 import { HelperNode } from './HelperNode';
 import { SpanNode } from './SpanNode';
 import { VarNode } from './VarNode';
+// Import ComponentTargetNode from the editor folder
+import ComponentTargetNode from '../../editor/nodes/ComponentTargetNode';
 // import { ClickableParagraphNode } from './ClickableParagraphNode';
 
 const PlaygroundNodes: Array<Klass<LexicalNode>> = [
@@ -59,6 +61,7 @@ const PlaygroundNodes: Array<Klass<LexicalNode>> = [
   EmptyArgNode,
   DecoratedTextNode,
   SpanNode,
+  ComponentTargetNode,
   // ClickableParagraphNode
   // EmojiNode,
   // EquationNode,
