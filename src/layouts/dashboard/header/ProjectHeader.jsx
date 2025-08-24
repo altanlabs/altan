@@ -23,10 +23,9 @@ import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
-import CodeToggleButton from '../../../components/buttons/CodeToggleButton.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
+import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
-import FormDialog from '../../../components/FormDialog.jsx';
 import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
@@ -47,7 +46,6 @@ import {
   selectViewType,
   selectDisplayMode,
   setDisplayMode,
-  updateAltanerById,
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
 import {
@@ -195,8 +193,6 @@ function ProjectHeader() {
       ui.deployments.items.some(
         (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS' || deployment.status === 'COMPLETED',
       );
-    
-    console.log('hasSuccessfulDeployments', hasSuccessfulDeployments);
 
     if (!hasSuccessfulDeployments) {
       return null;
@@ -317,50 +313,12 @@ function ProjectHeader() {
       })
       .catch((error) => {
         // Failed to delete component
-        console.error('Failed to delete component:', error);
+        throw error;
       })
       .finally(() => {
         setIsSubmitting(false);
       });
   }, [dispatch, selectedComponentId]);
-
-  const handleConfirmEditAltaner = useCallback(
-    async (data) => {
-      try {
-        await dispatch(updateAltanerById(altaner.id, data));
-        setOpenEditAltaner(false);
-      } catch (error) {
-        // Failed to update altaner
-        console.error('Failed to update altaner:', error);
-      }
-    },
-    [dispatch, altaner?.id],
-  );
-
-  const editAltanerSchema = useMemo(
-    () => ({
-      properties: {
-        name: {
-          type: 'string',
-          title: 'Name',
-          default: altaner?.name,
-        },
-        description: {
-          type: 'string',
-          title: 'Description',
-          default: altaner?.description,
-        },
-        icon_url: {
-          type: 'string',
-          title: 'Icon URL',
-          default: altaner?.icon_url,
-          'x-component': 'IconAutocomplete',
-        },
-      },
-      required: ['name'],
-    }),
-    [altaner],
-  );
 
   // Calculate safe area aware styles for iOS
   const getHeaderStyles = () => {
@@ -412,7 +370,11 @@ function ProjectHeader() {
                   <ProjectNav
                     components={sortedComponents}
                     altanerId={altanerId}
-                    onEditAltaner={() => setOpenEditAltaner(true)}
+                    onEditAltaner={() => {
+                      if (altaner?.id) {
+                        setOpenEditAltaner(true);
+                      }
+                    }}
                   />
                 )}
               </>
@@ -501,7 +463,6 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                 
                   {altaner?.room_id && !isMobile && (
                     <Tooltip
                       title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
@@ -625,13 +586,10 @@ function ProjectHeader() {
         />
       )}
 
-      <FormDialog
+      <EditProjectDialog
         open={openEditAltaner}
         onClose={() => setOpenEditAltaner(false)}
-        schema={editAltanerSchema}
-        title="Edit Project"
-        description="Update the project details"
-        onConfirm={handleConfirmEditAltaner}
+        project={altaner}
       />
     </>
   );

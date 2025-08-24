@@ -12,15 +12,15 @@ import {
   Divider,
 } from '@mui/material';
 import React, { useState, useCallback, memo, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import FormDialog from '../../../../components/FormDialog';
+import EditProjectDialog from '../../../../components/dialogs/EditProjectDialog';
 import HeaderIconButton from '../../../../components/HeaderIconButton';
 import Iconify from '../../../../components/iconify/Iconify';
 import IconRenderer from '../../../../components/icons/IconRenderer';
 import Logo from '../../../../components/logo/Logo';
-import { selectCurrentAltaner, updateAltanerById } from '../../../../redux/slices/altaners';
+import { selectCurrentAltaner } from '../../../../redux/slices/altaners';
 
 // Constants
 const MENU_CONFIG = {
@@ -171,7 +171,6 @@ ChevronButton.displayName = 'ChevronButton';
 // Main component
 const AltanerSwitcher = () => {
   const history = useHistory();
-  const dispatch = useDispatch();
 
   // Redux state
   const altaners = useSelector(selectAccountAltaners);
@@ -192,31 +191,6 @@ const AltanerSwitcher = () => {
     const query = searchQuery.toLowerCase();
     return altaners.filter((altaner) => altaner.name.toLowerCase().includes(query));
   }, [altaners, searchQuery]);
-
-  const editSchema = useMemo(
-    () => ({
-      properties: {
-        name: {
-          type: 'string',
-          title: 'Name',
-          default: currentAltaner?.name,
-        },
-        description: {
-          type: 'string',
-          title: 'Description',
-          default: currentAltaner?.description,
-        },
-        icon_url: {
-          type: 'string',
-          title: 'Icon URL',
-          default: currentAltaner?.icon_url,
-          'x-component': 'IconAutocomplete',
-        },
-      },
-      required: ['name'],
-    }),
-    [currentAltaner],
-  );
 
   // Event handlers
   const handleBoxClick = useCallback((event) => {
@@ -252,19 +226,6 @@ const AltanerSwitcher = () => {
   const handleCloseEditDialog = useCallback(() => {
     setEditDialogOpen(false);
   }, []);
-
-  const handleConfirmEdit = useCallback(
-    async (data) => {
-      try {
-        await dispatch(updateAltanerById(currentAltaner.id, data));
-        handleCloseEditDialog();
-      } catch (error) {
-        console.error('Failed to update altaner:', error);
-        // Consider showing a user-friendly error message here
-      }
-    },
-    [dispatch, currentAltaner?.id, handleCloseEditDialog],
-  );
 
   // Render
   return (
@@ -347,13 +308,10 @@ const AltanerSwitcher = () => {
         )}
       </Menu>
 
-      <FormDialog
+      <EditProjectDialog
         open={editDialogOpen}
         onClose={handleCloseEditDialog}
-        schema={editSchema}
-        title="Edit Project"
-        description="Update the altaner details"
-        onConfirm={handleConfirmEdit}
+        project={currentAltaner}
       />
     </>
   );
