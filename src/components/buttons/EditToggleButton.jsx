@@ -13,7 +13,12 @@ function EditToggleButton({ editMode, onToggle, disabled = false }) {
   return (
     <Tooltip title={editMode ? 'Turn off Edit Mode' : 'Turn on Edit Mode'}>
       <Chip
-        icon={<Iconify icon="mdi:pencil" sx={{ width: 14, height: 14 }} />}
+        icon={
+          <Iconify
+            icon="fluent:window-location-target-20-filled"
+            sx={{ width: 14, height: 14 }}
+          />
+        }
         size="small"
         onClick={onToggle}
         disabled={disabled}
@@ -27,9 +32,7 @@ function EditToggleButton({ editMode, onToggle, disabled = false }) {
           backgroundColor: editMode
             ? alpha(theme.palette.secondary.main, 0.12)
             : alpha(theme.palette.grey[500], 0.08),
-          color: editMode
-            ? theme.palette.secondary.main
-            : theme.palette.text.secondary,
+          color: editMode ? theme.palette.secondary.main : theme.palette.text.secondary,
           border: `1px solid ${
             editMode
               ? alpha(theme.palette.secondary.main, 0.24)
