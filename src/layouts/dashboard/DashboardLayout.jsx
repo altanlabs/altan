@@ -128,20 +128,22 @@ const DashboardLayout = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
-    if (!!accountId && !accountInitialized && !accountLoading && !!user) {
+    if (!!accountId && !accountInitialized && !accountLoading) {
       dispatch(getAccount()).then(() => {
         dispatch(getConnections(accountId));
         dispatch(getAccountMembers(accountId));
         [
           ['altaners'],
-          ['bases', 'rooms', 'interfaces', 'workflows'],
-          ['subscriptions', 'forms', 'webhooks', 'apikeys', 'agents', 'developer_apps', 'apps'],
+          ['subscriptions'],
+          ['interfaces'],
+          ['agents'],
+          ['webhooks', 'apikeys', 'developer_apps', 'apps'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));
         dispatch(fetchNotifications());
       });
     }
-  }, [accountId, accountInitialized, accountLoading, user]);
+  }, [accountId, accountInitialized, accountLoading]);
 
   useEffect(() => {
     const id = searchParams.get('cloned_template');

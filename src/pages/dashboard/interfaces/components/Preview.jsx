@@ -22,7 +22,6 @@ function Preview({
   status,
   iframeUrl,
   productionUrl,
-  viewMode,
   handleIframeLoad,
   iframeRef,
   fatalError,
@@ -41,6 +40,14 @@ function Preview({
 
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
+
+  // Effect to update iframe src when currentUrl changes
+  useEffect(() => {
+    if (iframeRef.current && currentUrl && iframeRef.current.src !== currentUrl) {
+      console.log('Updating iframe src from', iframeRef.current.src, 'to', currentUrl);
+      iframeRef.current.src = currentUrl;
+    }
+  }, [currentUrl, iframeRef]);
 
   // Effect to handle Redux actions
   useEffect(() => {
@@ -115,14 +122,13 @@ function Preview({
     [interfaceId, isSendingError],
   );
 
-  console.log('status', status);
-
   return (
     <Box
       flex={1}
       sx={{ position: 'relative' }}
     >
-      {(!status || status === 'stopped' || status === 'running:stalled') && previewMode === 'development' && <LoadingFrame status={status} />}
+      {(!status || status === 'stopped' || status === 'running:stalled') &&
+        previewMode === 'development' && <LoadingFrame status={status} />}
       {(status === 'running' || previewMode === 'production') && (
         <>
           <iframe
@@ -161,7 +167,6 @@ Preview.propTypes = {
   status: PropTypes.string,
   iframeUrl: PropTypes.string.isRequired,
   productionUrl: PropTypes.string,
-  viewMode: PropTypes.string.isRequired,
   handleIframeLoad: PropTypes.func.isRequired,
   iframeRef: PropTypes.object.isRequired,
   chatIframeRef: PropTypes.object.isRequired,

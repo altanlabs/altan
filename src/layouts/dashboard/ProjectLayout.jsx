@@ -130,9 +130,12 @@ const ProjectLayout = ({ children }) => {
         dispatch(getConnections(accountId));
         dispatch(getAccountMembers(accountId));
         [
-          ['altaners', 'subscriptions'],
-          ['bases', 'rooms', 'interfaces', 'workflows'],
-          ['forms', 'webhooks', 'apikeys', 'agents', 'developer_apps', 'apps'],
+          ['subscriptions'],
+          ['altaners'],
+          ['interfaces'],
+          ['workflows'],
+          ['agents'],
+          ['webhooks', 'apikeys', 'developer_apps', 'apps'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));
         dispatch(fetchNotifications());

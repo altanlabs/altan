@@ -59,16 +59,6 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
   const productionUrl = useMemo(() => {
     if (!ui) return null;
     
-    // First, check if there are any successful deployments
-    const hasSuccessfulDeployments = ui.deployments?.items?.length > 0 && 
-      ui.deployments.items.some(deployment => 
-        deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS'
-      );
-    
-    if (!hasSuccessfulDeployments) {
-      return null; // No successful deployments, don't show production URL
-    }
-    
     // Check for custom domain first (from meta_data.domains)
     if (ui.meta_data?.domains) {
       const customDomains = Object.keys(ui.meta_data.domains);
@@ -77,16 +67,24 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
       }
     }
     
-    // Check for deployment_url
-    if (ui.deployment_url) {
+    // Check for deployment_url (only if there are successful deployments)
+    const hasSuccessfulDeployments = ui.deployments?.items?.length > 0 && 
+      ui.deployments.items.some(deployment => 
+        deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS'
+      );
+    
+    if (hasSuccessfulDeployments && ui.deployment_url) {
       return `${ui.deployment_url}${currentPath}`;
     }
     
-    // Default to {interface.name}.altanlabs.com
+    // Default to {interface.name}.altanlabs.com (always available if interface has a name)
     if (ui.name) {
-      return `https://${ui.name}.altanlabs.com${currentPath}`;
+      const prodUrl = `https://${ui.name}.altanlabs.com${currentPath}`;
+      console.log('Production URL calculated:', prodUrl);
+      return prodUrl;
     }
     
+    console.log('No production URL available - no interface name');
     return null;
   }, [ui, currentPath]);
 

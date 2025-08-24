@@ -195,6 +195,8 @@ function ProjectHeader() {
       ui.deployments.items.some(
         (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS' || deployment.status === 'COMPLETED',
       );
+    
+    console.log('hasSuccessfulDeployments', hasSuccessfulDeployments);
 
     if (!hasSuccessfulDeployments) {
       return null; // No successful deployments, don't show toggle

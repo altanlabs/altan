@@ -56,7 +56,6 @@ function InterfaceLayout({
               status={status}
               iframeUrl={iframeUrl}
               productionUrl={productionUrl}
-              viewMode={viewMode}
               handleIframeLoad={handleIframeLoad}
               iframeRef={iframeRef}
               chatIframeRef={chatIframeRef}
