@@ -176,6 +176,18 @@ const Editor = ({
     };
   }, [insertComponentTargetNode]);
 
+  // Listen for custom insertCodeSnippet events
+  useEffect(() => {
+    const handleInsertCodeSnippet = (event: CustomEvent) => {
+      const codeDetails = event.detail as CodeFileTargetDetails;
+      console.log('📝 TypeScript Editor received code snippet:', codeDetails);
+      insertCodeFileTargetNode(codeDetails);
+    };
+    
+    window.addEventListener('insertCodeSnippet', handleInsertCodeSnippet as EventListener);
+    return () => window.removeEventListener('insertCodeSnippet', handleInsertCodeSnippet as EventListener);
+  }, [insertCodeFileTargetNode]);
+
   // Use the stable function in useEffect
   useEffect(() => {
     setupInsertText(editorRef);

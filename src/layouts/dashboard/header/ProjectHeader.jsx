@@ -185,7 +185,6 @@ function ProjectHeader() {
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
-
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -194,7 +193,7 @@ function ProjectHeader() {
     const hasSuccessfulDeployments =
       ui.deployments?.items?.length > 0 &&
       ui.deployments.items.some(
-        (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS',
+        (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS' || deployment.status === 'COMPLETED',
       );
 
     if (!hasSuccessfulDeployments) {
