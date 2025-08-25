@@ -217,30 +217,101 @@ const slice = createSlice({
       };
     },
     updateTableRecord(state, action) {
-      const { tableId, recordId, changes } = action.payload;
-      const tableRecords = state.records[tableId]?.items;
+      const { tableId, tableName, recordId, changes } = action.payload;
+
+      // First try to find by exact tableId
+      let tableRecords = state.records[tableId]?.items;
+
+      // If not found by tableId and we have a tableName, try to find by table name
+      if (!tableRecords && tableName) {
+        // Look through all bases to find a table with matching name
+        for (const baseId of Object.keys(state.bases)) {
+          const base = state.bases[baseId];
+          if (base.tables?.items) {
+            const matchingTable = base.tables.items.find((table) =>
+              table.name === tableName || table.db_name === tableName,
+            );
+            if (matchingTable) {
+              tableRecords = state.records[matchingTable.id]?.items;
+              if (tableRecords) {
+                break;
+              }
+            }
+          }
+        }
+      }
+
       if (tableRecords) {
         const recordIndex = tableRecords.findIndex((r) => r.id === recordId);
         if (recordIndex !== -1) {
           tableRecords[recordIndex] = { ...tableRecords[recordIndex], ...changes };
         }
+      } else {
+        // Last resort: Try to find the record in any available table
+        const availableTables = Object.keys(state.records);
+        for (const availableTableId of availableTables) {
+          const availableTableRecords = state.records[availableTableId]?.items;
+          if (availableTableRecords) {
+            const foundRecordIndex = availableTableRecords.findIndex((r) => r.id === recordId);
+            if (foundRecordIndex !== -1) {
+              availableTableRecords[foundRecordIndex] = { ...availableTableRecords[foundRecordIndex], ...changes };
+              return;
+            }
+          }
+        }
       }
     },
     addTableRecord(state, action) {
-      const { tableId, record } = action.payload;
-      if (!state.records[tableId]) {
-        state.records[tableId] = { items: [], total: 0 };
+      const { tableId, tableName, record } = action.payload;
+      let targetTableId = tableId;
+
+      // If tableId doesn't exist in records but we have a tableName, try to find by name
+      if (!state.records[tableId] && tableName) {
+        for (const baseId of Object.keys(state.bases)) {
+          const base = state.bases[baseId];
+          if (base.tables?.items) {
+            const matchingTable = base.tables.items.find((table) =>
+              table.name === tableName || table.db_name === tableName,
+            );
+            if (matchingTable && state.records[matchingTable.id]) {
+              targetTableId = matchingTable.id;
+              break;
+            }
+          }
+        }
       }
-      state.records[tableId].items.push(record);
-      state.records[tableId].total += 1;
+
+      if (!state.records[targetTableId]) {
+        state.records[targetTableId] = { items: [], total: 0 };
+      }
+      state.records[targetTableId].items.push(record);
+      state.records[targetTableId].total += 1;
     },
     deleteTableRecord(state, action) {
-      const { tableId, recordId } = action.payload;
-      if (state.records[tableId]) {
-        state.records[tableId].items = state.records[tableId].items.filter(
+      const { tableId, tableName, recordId } = action.payload;
+      let targetTableId = tableId;
+
+      // If tableId doesn't exist in records but we have a tableName, try to find by name
+      if (!state.records[tableId] && tableName) {
+        for (const baseId of Object.keys(state.bases)) {
+          const base = state.bases[baseId];
+          if (base.tables?.items) {
+            const matchingTable = base.tables.items.find((table) =>
+              table.name === tableName || table.db_name === tableName,
+            );
+            if (matchingTable && state.records[matchingTable.id]) {
+              targetTableId = matchingTable.id;
+              break;
+            }
+          }
+        }
+      }
+
+      if (state.records[targetTableId]) {
+        state.records[targetTableId].items = state.records[targetTableId].items.filter(
           (record) => record.id !== recordId,
         );
-        state.records[tableId].total -= 1;
+        state.records[targetTableId].total -= 1;
       }
     },
     clearTableRecords(state, action) {

@@ -534,20 +534,27 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
     case 'RecordsNew':
+      // Extract table_id from data structure
+      const newTableId = data.data.table_id || data.data.id;
+      const newTableName = data.data.table_name;
       data.data.records.forEach((record) => {
         dispatch(
           addTableRecord({
-            tableId: data.table_id,
+            tableId: newTableId,
+            tableName: newTableName,
             record: record,
           }),
         );
       });
       break;
     case 'RecordsUpdate':
-      data.data.data.forEach((record) => {
+      const updateTableId = data.data.table_id || data.data.id;
+      const tableName = data.data.table_name;
+      data.data.records.forEach((record) => {
         dispatch(
           updateTableRecord({
-            tableId: data.table_id,
+            tableId: updateTableId,
+            tableName: tableName,
             recordId: record.id,
             changes: record,
           }),
@@ -555,11 +562,14 @@ export const handleWebSocketEvent = async (data, user_id) => {
       });
       break;
     case 'RecordsDelete':
+      const deleteRecordsTableId = data.data.table_id || data.data.id;
+      const deleteTableName = data.data.table_name;
       data.data.ids.forEach((recordId) => {
         dispatch(
           deleteTableRecord({
-            tableId: data.table_id,
-            recordId: parseInt(recordId, 10),
+            tableId: deleteRecordsTableId,
+            tableName: deleteTableName,
+            recordId: recordId,
           }),
         );
       });
