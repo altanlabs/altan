@@ -20,6 +20,7 @@ const View = memo(
     onDeleteRecords,
     onLoadMore,
     hasMore,
+    onPaginationChange,
   }) => {
     if (!view) {
       console.error('View Component: No view configuration provided');
@@ -50,6 +51,7 @@ const View = memo(
             onDeleteRecords={onDeleteRecords}
             onLoadMore={onLoadMore}
             hasMore={hasMore}
+            onPaginationChange={onPaginationChange}
           />
         );
 

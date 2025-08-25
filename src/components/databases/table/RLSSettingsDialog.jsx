@@ -162,8 +162,6 @@ const RLSSettingsDialog = ({ baseId, table, open, onClose }) => {
     <CustomDialog
       dialogOpen={open}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
     >
       <DialogContent sx={{ p: 2 }}>
         <Stack
@@ -172,18 +170,18 @@ const RLSSettingsDialog = ({ baseId, table, open, onClose }) => {
           sx={{ mb: 2 }}
         >
           <Typography variant="h6">RLS Settings</Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                size="small"
-                checked={rlsEnabled}
-                onChange={(e) => setRlsEnabled(e.target.checked)}
-              />
-            }
-            label="Enable RLS"
-            labelPlacement="start"
-          />
         </Stack>
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={rlsEnabled}
+              onChange={(e) => setRlsEnabled(e.target.checked)}
+            />
+          }
+          label="Enable RLS"
+          labelPlacement="start"
+        />
 
         {rlsEnabled && (
           <>

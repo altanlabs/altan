@@ -23,6 +23,10 @@ import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
+import DatabaseInfoDialog from '../../../components/databases/dialogs/DatabaseInfoDialog.jsx';
+import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
+import CreateRecordDialog from '../../../components/databases/records/CreateRecordDialog.jsx';
+import RLSSettingsDialog from '../../../components/databases/table/RLSSettingsDialog.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
@@ -47,6 +51,14 @@ import {
   selectDisplayMode,
   setDisplayMode,
 } from '../../../redux/slices/altaners';
+import {
+  selectBaseById,
+  selectDatabaseRefreshing,
+  selectDatabaseRecordCount,
+  setDatabaseQuickFilter,
+  setDatabaseRefreshing,
+  loadAllTableRecords,
+} from '../../../redux/slices/bases';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
 import {
   navigateToPath,
@@ -178,11 +190,20 @@ function ProjectHeader() {
 
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
+  const isDatabaseComponent = currentComponent?.type === 'base';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
+  const baseId = isDatabaseComponent ? currentComponent?.params?.ids?.[0] : null;
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
+
+  // Database selectors
+  const database = useSelector((state) =>
+    isDatabaseComponent && baseId ? selectBaseById(state, baseId) : null,
+  );
+  const databaseRefreshing = useSelector(selectDatabaseRefreshing);
+  const databaseRecordCount = useSelector(selectDatabaseRecordCount);
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -217,6 +238,11 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
 
+  // Database dialog states
+  const [openCreateRecord, setOpenCreateRecord] = useState(false);
+  const [openRLSSettings, setOpenRLSSettings] = useState(false);
+  const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
+
   // Navigation handlers for URLNavigationBar using Redux
   const handleNavigateToPath = useCallback(
     (path) => {
@@ -236,6 +262,36 @@ function ProjectHeader() {
   const handleRefreshIframe = useCallback(() => {
     dispatch(refreshIframe());
   }, [dispatch]);
+
+  // Database navigation handlers
+  const handleDatabaseQuickFilterChange = useCallback((filter) => {
+    dispatch(setDatabaseQuickFilter(filter));
+  }, [dispatch]);
+
+  const handleDatabaseRefresh = useCallback(() => {
+    if (baseId && database?.tables?.items?.length > 0) {
+      dispatch(setDatabaseRefreshing(true));
+      // Refresh the current table (assuming first table for now)
+      const currentTableId = database.tables.items[0]?.id;
+      if (currentTableId) {
+        dispatch(loadAllTableRecords(currentTableId, true))
+          .finally(() => dispatch(setDatabaseRefreshing(false)));
+      }
+    }
+  }, [dispatch, baseId, database]);
+
+  // Database dialog handlers
+  const handleDatabaseAddRecord = useCallback(() => {
+    setOpenCreateRecord(true);
+  }, []);
+
+  const handleDatabaseRLSSettings = useCallback(() => {
+    setOpenRLSSettings(true);
+  }, []);
+
+  const handleDatabaseInfo = useCallback(() => {
+    setOpenDatabaseInfo(true);
+  }, []);
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat') {
@@ -397,6 +453,21 @@ function ProjectHeader() {
               viewMode={iframeViewMode}
               productionUrl={productionUrl}
               disabled={!ui || viewType === 'code'}
+            />
+          )}
+
+          {altaner?.id && isDatabaseComponent && !isMobile && (
+            <DatabaseNavigationBar
+              database={database}
+              table={database?.tables?.items?.[0]} // Current table (simplified for now)
+              onQuickFilterChange={handleDatabaseQuickFilterChange}
+              onRefresh={handleDatabaseRefresh}
+              onAddRecord={handleDatabaseAddRecord}
+              onRLSSettings={handleDatabaseRLSSettings}
+              onDatabaseInfo={handleDatabaseInfo}
+              disabled={!database}
+              recordCount={databaseRecordCount}
+              isLoading={databaseRefreshing}
             />
           )}
 
@@ -578,6 +649,33 @@ function ProjectHeader() {
         onClose={() => setOpenEditAltaner(false)}
         project={altaner}
       />
+
+      {/* Database Dialogs */}
+      {isDatabaseComponent && baseId && (
+        <>
+          <DatabaseInfoDialog
+            open={openDatabaseInfo}
+            onClose={() => setOpenDatabaseInfo(false)}
+            database={database}
+          />
+          {database?.tables?.items?.[0] && (
+            <>
+              <CreateRecordDialog
+                baseId={baseId}
+                tableId={database.tables.items[0].id}
+                open={openCreateRecord}
+                onClose={() => setOpenCreateRecord(false)}
+              />
+              <RLSSettingsDialog
+                baseId={baseId}
+                table={database.tables.items[0]}
+                open={openRLSSettings}
+                onClose={() => setOpenRLSSettings(false)}
+              />
+            </>
+          )}
+        </>
+      )}
     </>
   );
 }

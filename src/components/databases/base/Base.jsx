@@ -281,8 +281,6 @@ function Base({
       ) : (
         <BaseLayout
           baseId={baseId}
-          base={base}
-          hideChat={hideChat}
           tableId={tableId}
           handleTabChange={handleTabChange}
           handleOpenCreateTable={handleOpenCreateTable}

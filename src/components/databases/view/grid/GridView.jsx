@@ -16,21 +16,24 @@ import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
 import { useTheme } from '@mui/material';
 import { debounce, maxBy } from 'lodash';
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { createColumnDefs } from './columns/index.js';
 import AttachmentEditor from './editors/AttachmentEditor';
 import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
-import GridViewHeader from './GridViewHeader';
+import DatabaseNavigationBar from '../../navigation/DatabaseNavigationBar';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { rowHeight, headerHeight, defaultColDef } from './utils/settings.js';
-import { queryTableRecords } from '../../../../redux/slices/bases';
+import { 
+  queryTableRecords,
+  selectDatabaseQuickFilter,
+  setDatabaseRecordCount,
+} from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
-import { dispatch } from '../../../../redux/store';
+import { dispatch, useSelector } from '../../../../redux/store';
 import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
 import EditFieldDialog from '../../fields/EditFieldDialog.jsx';
 import CreateRecordDialog from '../../records/CreateRecordDialog';
@@ -64,15 +67,25 @@ LicenseManager.setLicenseKey(
 );
 
 export const GridView = memo(
-  ({ table, fields, records, onAddRecord, onUpdateRecord, onDeleteRecords, onDuplicateRecord }) => {
+  ({ 
+    table, 
+    fields, 
+    records, 
+    onAddRecord, 
+    onUpdateRecord, 
+    onDeleteRecords, 
+    onDuplicateRecord,
+    // Pagination props to pass up to parent
+    onPaginationChange
+  }) => {
     const theme = useTheme();
     const gridRef = useRef();
     const history = useHistory();;
     const location = useLocation();
     const members = useSelector((state) => selectAccount(state)?.members || []);
+    const quickFilterText = useSelector(selectDatabaseQuickFilter);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
-    const [quickFilterText, setQuickFilterText] = useState('');
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
@@ -308,7 +321,7 @@ export const GridView = memo(
                 handleRecordUpdate(params.data.id, { ...params.data, ...changes });
               }
             } catch (error) {
-              console.error('Error updating record:', error);
+              // console.error('Error updating record:', error);
               if (gridRef.current?.api) {
                 handleRecordUpdate(params.data.id, {
                   ...params.data,
@@ -318,7 +331,7 @@ export const GridView = memo(
             }
           }
         } catch (error) {
-          console.error('Error in cell value change handler:', error);
+          // console.error('Error in cell value change handler:', error);
         }
       },
       [onAddRecord, onUpdateRecord, handleRecordUpdate],
@@ -508,19 +521,30 @@ export const GridView = memo(
     // Add data loading states to show in the UI
     const isDataLoading = !isReady || !initialGridSetupComplete.current;
 
+    // Pass pagination info up to parent components
+    useEffect(() => {
+      if (onPaginationChange) {
+        onPaginationChange({
+          paginationInfo,
+          handlers: {
+            onGoToFirstPage: paginationGoToFirstPage,
+            onGoToLastPage: paginationGoToLastPage,
+            onGoToNextPage: paginationGoToNextPage,
+            onGoToPreviousPage: paginationGoToPreviousPage,
+          }
+        });
+      }
+    }, [paginationInfo, onPaginationChange, paginationGoToFirstPage, paginationGoToLastPage, paginationGoToNextPage, paginationGoToPreviousPage]);
+
+    // Update record count in Redux when data changes
+    useEffect(() => {
+      if (localRowData?.length !== undefined) {
+        dispatch(setDatabaseRecordCount(localRowData.length));
+      }
+    }, [localRowData?.length]);
+
     return (
       <div className="h-full flex flex-col">
-        {/* <GridViewHeader
-          onQuickFilterChange={setQuickFilterText}
-          onAddRecord={onAddRecord}
-          table={table}
-          paginationInfo={paginationInfo}
-          paginationGoToFirstPage={paginationGoToFirstPage}
-          paginationGoToLastPage={paginationGoToLastPage}
-          paginationGoToNextPage={paginationGoToNextPage}
-          paginationGoToPreviousPage={paginationGoToPreviousPage}
-          isLoading={isDataLoading}
-        /> */}
         <div className="flex-grow flex">
           <div
             className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow`}

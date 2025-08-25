@@ -3,6 +3,10 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import LastPageIcon from '@mui/icons-material/LastPage';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import {
   Tabs,
   Tab,
@@ -12,6 +16,9 @@ import {
   TextField,
   CircularProgress,
   Tooltip,
+  Box,
+  Typography,
+  Divider,
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import DialogActions from '@mui/material/DialogActions';
@@ -283,6 +290,89 @@ const TabsList = memo(
 
 TabsList.displayName = 'TabsList';
 
+// Pagination Controls Component
+const PaginationControls = ({
+  paginationInfo,
+  onGoToFirstPage,
+  onGoToLastPage,
+  onGoToNextPage,
+  onGoToPreviousPage,
+  isLoading = false,
+}) => {
+  if (!paginationInfo) return null;
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.5,
+      }}
+    >
+      <IconButton
+        size="small"
+        onClick={onGoToFirstPage}
+        disabled={paginationInfo.currentPage === 0 || isLoading}
+        sx={{ width: 28, height: 28 }}
+      >
+        <FirstPageIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+
+      <IconButton
+        size="small"
+        onClick={onGoToPreviousPage}
+        disabled={paginationInfo.currentPage === 0 || isLoading}
+        sx={{ width: 28, height: 28 }}
+      >
+        <NavigateBeforeIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mx: 1 }}>
+        <Typography variant="caption" color="text.secondary">
+          Page
+        </Typography>
+        <Typography variant="body2" fontWeight={600}>
+          {paginationInfo.currentPage + 1}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          of
+        </Typography>
+        <Typography variant="body2" fontWeight={600}>
+          {paginationInfo.totalPages || 1}
+        </Typography>
+      </Box>
+
+      <IconButton
+        size="small"
+        onClick={onGoToNextPage}
+        disabled={
+          paginationInfo.currentPage === paginationInfo.totalPages - 1 ||
+          !paginationInfo.isLastPageFound ||
+          isLoading
+        }
+        sx={{ width: 28, height: 28 }}
+      >
+        <NavigateNextIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+
+      <IconButton
+        size="small"
+        onClick={onGoToLastPage}
+        disabled={
+          !paginationInfo.isLastPageFound ||
+          paginationInfo.currentPage === paginationInfo.totalPages - 1 ||
+          isLoading
+        }
+        sx={{ width: 28, height: 28 }}
+      >
+        <LastPageIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+    </Box>
+  );
+};
+
 // Main component using the memoized TabsList
 function TableTabs({
   activeTableId,
@@ -291,6 +381,12 @@ function TableTabs({
   onRenameTable,
   isLoading = false,
   baseId = null,
+  // Pagination props
+  paginationInfo,
+  onGoToFirstPage,
+  onGoToLastPage,
+  onGoToNextPage,
+  onGoToPreviousPage,
 }) {
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedTableId, setSelectedTableId] = useState(null);
@@ -425,6 +521,7 @@ function TableTabs({
                 variant="scrollable"
                 scrollButtons="auto"
                 aria-label="Tables"
+                sx={{ flex: 1 }}
               >
                 <TabsList
                   tables={validTables}
@@ -437,6 +534,21 @@ function TableTabs({
                 />
                 {provided.placeholder}
               </StyledTabs>
+
+              {/* Pagination Controls - Right Side */}
+              {paginationInfo && (
+                <>
+                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                  <PaginationControls
+                    paginationInfo={paginationInfo}
+                    onGoToFirstPage={onGoToFirstPage}
+                    onGoToLastPage={onGoToLastPage}
+                    onGoToNextPage={onGoToNextPage}
+                    onGoToPreviousPage={onGoToPreviousPage}
+                    isLoading={isLoading}
+                  />
+                </>
+              )}
             </div>
           )}
         </Droppable>

@@ -9,6 +9,13 @@ const initialState = {
   bases: {},
   records: {},
   recordsState: {},
+  // Database navigation state
+  databaseNavigation: {
+    quickFilter: '',
+    currentViewType: 'grid',
+    isRefreshing: false,
+    recordCount: 0,
+  },
 };
 
 const slice = createSlice({
@@ -256,6 +263,27 @@ const slice = createSlice({
         cached,
       };
     },
+    // Database navigation reducers
+    setDatabaseQuickFilter(state, action) {
+      state.databaseNavigation.quickFilter = action.payload;
+    },
+    setDatabaseViewType(state, action) {
+      state.databaseNavigation.currentViewType = action.payload;
+    },
+    setDatabaseRefreshing(state, action) {
+      state.databaseNavigation.isRefreshing = action.payload;
+    },
+    setDatabaseRecordCount(state, action) {
+      state.databaseNavigation.recordCount = action.payload;
+    },
+    clearDatabaseNavigation(state) {
+      state.databaseNavigation = {
+        quickFilter: '',
+        currentViewType: 'grid',
+        isRefreshing: false,
+        recordCount: 0,
+      };
+    },
   },
 });
 
@@ -283,6 +311,12 @@ export const {
   clearTableRecords,
   setTableRecordsState,
   setTableRecordsLoading,
+  // Database navigation actions
+  setDatabaseQuickFilter,
+  setDatabaseViewType,
+  setDatabaseRefreshing,
+  setDatabaseRecordCount,
+  clearDatabaseNavigation,
 } = slice.actions;
 
 // Thunk actions for bases
@@ -850,3 +884,29 @@ export const createRecordPrimaryValueSelector = (baseId, tableId, recordId) =>
       return record[fieldToUse?.db_field_name] || `Record ${recordId}`;
     },
   );
+
+// Database navigation selectors
+export const selectDatabaseNavigation = createSelector(
+  [selectBaseState],
+  (state) => state.databaseNavigation,
+);
+
+export const selectDatabaseQuickFilter = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.quickFilter,
+);
+
+export const selectDatabaseViewType = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.currentViewType,
+);
+
+export const selectDatabaseRefreshing = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.isRefreshing,
+);
+
+export const selectDatabaseRecordCount = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.recordCount,
+);

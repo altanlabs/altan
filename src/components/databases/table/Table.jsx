@@ -20,7 +20,7 @@ import { dispatch, useSelector } from '../../../redux/store';
 import Iconify from '../../iconify';
 import View from '../View';
 
-const Table = ({ tableId, viewId, baseId }) => {
+const Table = ({ tableId, viewId, baseId, onPaginationChange }) => {
   // Track loading state
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -146,6 +146,7 @@ const Table = ({ tableId, viewId, baseId }) => {
         onDeleteRecords={handleDeleteRecords}
         hasMore={false}
         isLoadingMore={false}
+        onPaginationChange={onPaginationChange}
       />
     </div>
   );
