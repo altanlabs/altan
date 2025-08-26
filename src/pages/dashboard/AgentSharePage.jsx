@@ -77,7 +77,7 @@ export default function AgentSharePage() {
     return (
       <Box
         sx={{
-          height: '100vh',
+          height: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -156,7 +156,7 @@ export default function AgentSharePage() {
   return (
     <Box
       sx={{
-        height: '100vh',
+        height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
