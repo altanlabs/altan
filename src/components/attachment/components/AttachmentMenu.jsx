@@ -26,13 +26,16 @@ const AttachmentMenu = ({
     <>
       <button
         onClick={handleMenuOpen}
-        className="flex items-center justify-center p-1 rounded-full
-                 bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800
-                 text-gray-600 dark:text-gray-300 transition"
+        className="flex items-center justify-center w-7 h-7 rounded-lg
+                 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-700/90
+                 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
+                 border border-gray-200/50 dark:border-gray-600/50
+                 backdrop-blur-md shadow-sm hover:shadow-md
+                 transition-all duration-150 ease-out"
       >
         <Iconify
           icon="mdi:plus"
-          className="text-xl"
+          className="text-sm"
         />
       </button>
 
@@ -50,22 +53,26 @@ const AttachmentMenu = ({
         }}
         slotProps={{
           paper: {
-            className: 'bg-white/30 dark:bg-black/30 py-0 my-0',
+            className: 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/60 dark:border-gray-700/60 shadow-lg rounded-lg p-0.5 min-w-[160px]',
           },
         }}
       >
-        {menuItems.map((item) => (
+        {menuItems.map((item, index) => (
           <MenuItem
             key={item.type}
             onClick={() => handleMenuItemClick(item.type)}
-            className="flex flex-col items-start py-1 px-2 bg-white/30 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/60 backdrop-blur-lg rounded-lg"
+            className={`flex items-center gap-2.5 py-1.5 px-2.5 mx-0.5 my-0.5 rounded-md transition-all duration-150 ease-out
+              bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-800/70 
+              text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100
+              border-0 min-h-0`}
           >
-            <div className="flex items-center gap-3 w-full">
-              <Iconify icon={item.icon} />
-              <div className="flex flex-col">
-                <span className="font-bold tracking-wide text-sm">{item.label}</span>
-              </div>
+            <div className="flex items-center justify-center w-6 h-6 rounded bg-gray-100/60 dark:bg-gray-800/60">
+              <Iconify 
+                icon={item.icon} 
+                className="text-sm text-gray-600 dark:text-gray-400" 
+              />
             </div>
+            <span className="font-medium text-xs flex-1">{item.label}</span>
           </MenuItem>
         ))}
       </Menu>

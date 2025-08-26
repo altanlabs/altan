@@ -1,4 +1,4 @@
-import { useMediaQuery, useTheme } from '@mui/material';
+import { useMediaQuery, useTheme, DialogContent } from '@mui/material';
 import { memo, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -12,8 +12,10 @@ import VoiceCallButton from './components/VoiceCallButton.jsx';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
-import { BASE_MENU_ITEMS, FLOW_MENU_ITEM } from './utils/constants';
+import { BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM } from './utils/constants';
 import { fetchAltanerData } from './utils/fetchAltanerData';
+import ConnectionManager from '../tools/ConnectionManager';
+import CustomDialog from '../dialogs/CustomDialog.jsx';
 
 const AttachmentHandler = ({
   threadId = null,
@@ -46,12 +48,13 @@ const AttachmentHandler = ({
   const [flows, setFlows] = useState([]);
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [showSpeechInput, setShowSpeechInput] = useState(false);
+  const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
 
   // Get altaner_id from route params
   const { altanerId } = useParams();
 
   // Determine menu items based on altanerId presence
-  const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, FLOW_MENU_ITEM] : BASE_MENU_ITEMS;
+  const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM] : BASE_MENU_ITEMS;
 
   // Fetch altaner data on mount if altanerId exists
   useEffect(() => {
@@ -109,6 +112,9 @@ const AttachmentHandler = ({
           console.warn('Workflows not available or empty. Cannot open selection dialog.');
           enqueueSnackbar('No workflows available', { variant: 'warning' });
         }
+      } else if (type === 'tool') {
+        // Open the tool creation dialog
+        setIsToolDialogOpen(true);
       }
     },
     [handleUrlUpload, flows, enqueueSnackbar, fileInputRef],
@@ -138,6 +144,24 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
     },
     [editorRef],
   );
+
+  // Handle connection selection from ConnectionManager
+  const handleConnectionSelected = useCallback((connection) => {
+    console.log('Connection selected:', connection);
+    // You can add logic here to handle the selected connection
+    // For example, insert connection info into the editor
+    if (editorRef?.current?.insertText && connection) {
+      const connectionText = `
+Tool Connected: ${connection.name} (${connection.connection_type?.name})
+`;
+      editorRef.current.insertText(connectionText);
+    }
+  }, [editorRef]);
+
+  // Handle tool dialog close
+  const handleToolDialogClose = useCallback(() => {
+    setIsToolDialogOpen(false);
+  }, []);
 
   // Agent selection handlers
   const handleAgentSelect = useCallback(
@@ -256,6 +280,20 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
         flows={flows}
         onSelectFlow={handleSelectFlow}
       />
+
+      {/* Tool Creation Dialog */}
+      <CustomDialog
+        open={isToolDialogOpen}
+        onClose={handleToolDialogClose}
+      >
+        <DialogContent className="py-6">
+          <ConnectionManager
+            onConnectionSelected={handleConnectionSelected}
+            onClose={handleToolDialogClose}
+            title="Add Tool Connection"
+          />
+        </DialogContent>
+      </CustomDialog>
 
       {/* DRAG-AND-DROP OVERLAY */}
       <DragOverlay

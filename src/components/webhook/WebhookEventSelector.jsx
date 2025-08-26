@@ -8,7 +8,7 @@ import {
   selectAccountConnectionsByType,
   selectConnectionTypes,
 } from '../../redux/slices/connections';
-import { selectAccount, selectExtendedResources } from '../../redux/slices/general';
+import { selectExtendedResources } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { optimai_integration } from '../../utils/axios';
 import ConfirmationButton from '../buttons/ConfirmationButton';

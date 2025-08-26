@@ -137,7 +137,7 @@ const DashboardLayout = ({ children }) => {
           ['subscriptions'],
           ['interfaces'],
           ['agents'],
-          ['webhooks', 'apikeys', 'developer_apps', 'apps'],
+          ['webhooks', 'apikeys', 'developer_apps', 'apps', 'connections'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));
         dispatch(fetchNotifications());

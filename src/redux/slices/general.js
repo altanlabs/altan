@@ -51,8 +51,10 @@ const initialState = {
     altaners: [],
     payments: [],
     developer_apps: [],
+    connections: [],
     apps: [],
     interfaces: [],
+    bases: [],
     meta_data: {
       nav: [],
     },
@@ -70,6 +72,7 @@ const initialState = {
     agents: false,
     members: false,
     developer_apps: false,
+    connections: false,
     apps: false,
     interfaces: false,
   },
@@ -86,6 +89,7 @@ const initialState = {
     agents: false,
     members: false,
     developer_apps: false,
+    connections: false,
     apps: false,
     interfaces: false,
   },
@@ -102,6 +106,7 @@ const initialState = {
     agents: null,
     members: null,
     developer_apps: null,
+    connections: null,
     apps: null,
     interfaces: null,
   },
@@ -898,6 +903,8 @@ export const selectAccounts = (state) => selectGeneralState(state).accounts;
 
 export const selectAccountRooms = (state) => selectAccount(state).rooms;
 
+export const selectAccountConnections = (state) => selectAccount(state).connections;
+
 export const selectNav = createSelector(
   [selectAccount],
   (account) =>
@@ -917,7 +924,15 @@ export const selectNav = createSelector(
 
 export const selectForms = createSelector(
   [selectAccount],
-  (account) => account.forms.map((f) => ({ details: f, resource_type_id: 'form' })),
+  (account) => {
+    // Defensive check: ensure account and forms exist
+    if (!account || !Array.isArray(account.forms)) {
+      console.warn('selectForms: account.forms is not available or not an array:', { account, forms: account?.forms });
+      return [];
+    }
+
+    return account.forms.map((f) => ({ details: f, resource_type_id: 'form' }));
+  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -927,13 +942,20 @@ export const selectForms = createSelector(
 
 export const selectTables = createSelector(
   [selectAccount],
-  (account) =>
-    account.bases.flatMap((base) =>
-      (base.tables?.items || []).map((table) => ({
+  (account) => {
+    // Defensive check: ensure account and bases exist
+    if (!account || !Array.isArray(account.bases)) {
+      console.warn('selectTables: account.bases is not available or not an array:', { account, bases: account?.bases });
+      return [];
+    }
+
+    return account.bases.flatMap((base) =>
+      (base?.tables?.items || []).map((table) => ({
         details: { ...table, base_id: base.id },
         resource_type_id: 'table',
       })),
-    ),
+    );
+  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -956,7 +978,15 @@ export const selectRoomByExternalId = (externalId) =>
 
 export const selectRooms = createSelector(
   [selectAccount],
-  (account) => account.rooms.map((r) => ({ details: r, resource_type_id: 'room' })),
+  (account) => {
+    // Defensive check: ensure account and rooms exist
+    if (!account || !Array.isArray(account.rooms)) {
+      console.warn('selectRooms: account.rooms is not available or not an array:', { account, rooms: account?.rooms });
+      return [];
+    }
+
+    return account.rooms.map((r) => ({ details: r, resource_type_id: 'room' }));
+  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -966,7 +996,15 @@ export const selectRooms = createSelector(
 
 export const selectGates = createSelector(
   [selectAccount],
-  (account) => account.gates.map((r) => ({ details: r, resource_type_id: 'gate' })),
+  (account) => {
+    // Defensive check: ensure account and gates exist
+    if (!account || !Array.isArray(account.gates)) {
+      console.warn('selectGates: account.gates is not available or not an array:', { account, gates: account?.gates });
+      return [];
+    }
+
+    return account.gates.map((r) => ({ details: r, resource_type_id: 'gate' }));
+  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -976,15 +1014,22 @@ export const selectGates = createSelector(
 
 export const selectApps = createSelector(
   [selectAccount],
-  (account) =>
-    account.apps.map((app) => ({
+  (account) => {
+    // Defensive check: ensure account and apps exist
+    if (!account || !Array.isArray(account.apps)) {
+      console.warn('selectApps: account.apps is not available or not an array:', { account, apps: account?.apps });
+      return [];
+    }
+
+    return account.apps.map((app) => ({
       details: {
         ...app,
         // Include connection types directly in the app details
         connection_types: app.connection_types?.items || [],
       },
       resource_type_id: 'app',
-    })),
+    }));
+  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -1110,6 +1155,12 @@ const ACCOUNT_GQ = {
       '@fields': ['commit_hash', 'message', 'date_creation'],
     },
   },
+  connections: {
+    '@fields': '@all',
+    connection_type: {
+      '@fields': ['id', 'name'],
+    },
+  },
   apps: {
     '@fields': '@all',
     connection_types: {
@@ -1134,7 +1185,7 @@ const KEY_MAPPING = {
   subscriptions: 'subscriptions',
   apikeys: 'apikeys',
   agents: 'agents',
-  // executions: 'action_executions',
+  connections: 'connections',
   workflows: 'workflows',
   webhooks: 'webhooks',
   forms: 'forms',
