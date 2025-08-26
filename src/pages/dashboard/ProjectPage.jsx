@@ -221,6 +221,8 @@ export default function ProjectPage() {
             mobileActiveView={mobileActiveView}
             renderCredits={true}
             renderFeedback={true}
+            settings={false}
+            tabs={false}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
@@ -285,6 +287,8 @@ export default function ProjectPage() {
                       header={false}
                       renderCredits={true}
                       renderFeedback={true}
+                      settings={false}
+                      tabs={false}
                     />
                   </Box>
                 )}
@@ -313,6 +317,8 @@ export default function ProjectPage() {
                   header={false}
                   renderCredits={true}
                   renderFeedback={true}
+                  settings={false}
+                  tabs={false}
                 />
               </Box>
             )

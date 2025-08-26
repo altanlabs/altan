@@ -445,7 +445,30 @@ const slice = createSlice({
       } else {
         state.threads.byId[thread.id] = { ...state.threads.byId[thread.id], ...tempThread };
       }
-      state.thread.main.current = state.mainThread = thread.id;
+
+      // Set the main thread reference
+      state.mainThread = thread.id;
+
+      // Only set as current thread if:
+      // 1. No tabs are active, OR
+      // 2. There's an active tab but it's pointing to the main thread, OR
+      // 3. There's an active tab but the thread it points to doesn't exist yet
+      const hasActiveTabs = state.tabs.allIds.length > 0 && state.tabs.activeTabId;
+      if (!hasActiveTabs) {
+        // No tabs system in use, set main thread as current
+        state.thread.main.current = thread.id;
+      } else {
+        // Tabs are in use, check if we should override the current thread
+        const activeTab = state.tabs.byId[state.tabs.activeTabId];
+        const activeTabThreadExists = activeTab && state.threads.byId[activeTab.threadId];
+
+        // Only override if the active tab's thread doesn't exist or if there's no current thread set
+        if (!activeTabThreadExists || !state.thread.main.current) {
+          state.thread.main.current = thread.id;
+        }
+        // Otherwise, preserve the current thread (from active tab)
+      }
+
       state.initialized.mainThread = true;
       state.loading.mainThread = false;
     },
@@ -1507,9 +1530,16 @@ export const makeHasUnreadMessages = () =>
 export const makeSelectThreadName = () =>
   createSelector(
     [makeSelectThread()],
-    (thread) =>
-      (!!thread?.is_main ? 'Main' : thread?.name?.replace(MENTION_ANNOTATION_REGEX, '@$1')) ??
-      'Unknown',
+    (thread) => {
+      if (!thread) {
+        return 'Main'; // Default to 'Main' instead of 'Unknown' when thread doesn't exist
+      }
+      if (thread.is_main) {
+        return 'Main';
+      }
+      // For non-main threads, use the thread name or default to 'Thread'
+      return thread.name?.replace(MENTION_ANNOTATION_REGEX, '@$1') || 'Thread';
+    },
   );
 
 export const makeSelectThreadAttribute = () =>
@@ -2456,7 +2486,7 @@ export const createMemberContextMenu =
   };
 
 export const updateMessage =
-  ({ messageId, content, threadId }) =>
+  ({ messageId, content }) =>
   async (dispatch) => {
     try {
       await optimai_room.patch(`/messages/${messageId}`, {

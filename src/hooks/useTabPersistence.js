@@ -8,6 +8,7 @@ import {
   loadTabs,
   clearTabs,
   updateTab,
+  fetchThread,
 } from '../redux/slices/room';
 
 const STORAGE_KEY = 'roomTabState';
@@ -79,11 +80,20 @@ export const useTabPersistence = () => {
 
     Object.values(tabs.byId).forEach(tab => {
       const thread = threadsById[tab.threadId];
-      if (thread && thread.name && thread.name !== tab.name) {
-        dispatch(updateTab({
-          tabId: tab.id,
-          changes: { name: thread.name }
-        }));
+      if (thread) {
+        let expectedName;
+        if (thread.is_main) {
+          expectedName = 'Main';
+        } else {
+          expectedName = thread.name || 'Thread';
+        }
+        
+        if (expectedName !== tab.name) {
+          dispatch(updateTab({
+            tabId: tab.id,
+            changes: { name: expectedName }
+          }));
+        }
       }
     });
   }, [tabs, threadsById, dispatch]);
@@ -100,6 +110,21 @@ export const useTabPersistence = () => {
       dispatch(clearTabs());
     }
   }, [roomId, dispatch, loadTabsFromStorage]);
+
+  // Fetch threads for tabs that don't have their threads loaded yet
+  useEffect(() => {
+    if (!tabs || !threadsById || !roomId) return;
+
+    Object.values(tabs.byId).forEach(tab => {
+      const threadExists = threadsById[tab.threadId];
+      if (!threadExists && tab.threadId) {
+        // Fetch the thread if it doesn't exist yet
+        dispatch(fetchThread({ threadId: tab.threadId })).catch(error => {
+          console.warn(`Failed to fetch thread ${tab.threadId} for tab ${tab.id}:`, error);
+        });
+      }
+    });
+  }, [tabs, threadsById, roomId, dispatch]);
 
   // Save tabs when they change
   useEffect(() => {

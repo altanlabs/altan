@@ -24,7 +24,7 @@ const Room = ({
   isMobile = false,
   mobileActiveView = 'chat',
   // New personalization options
-  tabs = false,
+  tabs = true,
   conversation_history = true,
   members = true,
   settings = true,

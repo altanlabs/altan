@@ -307,7 +307,7 @@ const TabBar = ({
                         onSwitch={handleTabSwitch}
                         onClose={handleTabClose}
                         maxWidth={tabWidth}
-                        canClose={tabsCount > 1 && !tab.isMainThread}
+                        canClose={tabsCount > 1}
                       />
                     </div>
                     {/* Chrome-style divider between tabs */}
