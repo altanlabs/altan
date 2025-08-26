@@ -222,7 +222,7 @@ export default function ProjectPage() {
             renderCredits={true}
             renderFeedback={true}
             settings={false}
-            tabs={false}
+            tabs={true}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
@@ -288,7 +288,7 @@ export default function ProjectPage() {
                       renderCredits={true}
                       renderFeedback={true}
                       settings={false}
-                      tabs={false}
+                      tabs={true}
                     />
                   </Box>
                 )}
@@ -318,7 +318,7 @@ export default function ProjectPage() {
                   renderCredits={true}
                   renderFeedback={true}
                   settings={false}
-                  tabs={false}
+                  tabs={true}
                 />
               </Box>
             )
