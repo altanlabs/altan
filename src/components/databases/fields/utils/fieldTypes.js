@@ -1,6 +1,7 @@
 // src/components/databases/fields/fieldTypes.js
 import { Code } from '@mui/icons-material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import EmailIcon from '@mui/icons-material/Email';
@@ -29,11 +30,11 @@ export const FIELD_TYPES = [
   { id: 'url', name: 'URL', icon: LinkIcon },
   { id: 'json', name: 'JSON', icon: Code },
   { id: 'trigger', name: 'Trigger', icon: PlayArrowIcon },
+  { id: 'currency', name: 'Currency', icon: AttachMoneyIcon },
   // { id: 'duration', name: 'Duration', icon: TimerIcon },
   // { id: 'formula', name: 'Formula', icon: FunctionsIcon },
   // { id: 'rollup', name: 'Rollup', icon: SummarizeIcon },
   // { id: 'lookup', name: 'Lookup', icon: Search },
   // { id: 'count', name: 'Count', icon: NumbersIcon },
-  // { id: 'currency', name: 'Currency', icon: AttachMoneyIcon },
   // { id: 'percent', name: 'Percent', icon: PercentIcon },
 ];

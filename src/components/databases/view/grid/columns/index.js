@@ -2,6 +2,7 @@ import { getAttachmentColumnDef } from './attachmentColumnDef';
 import { getCheckboxColumnDef } from './checkboxColumnDef.jsx';
 import { getCreatedAtColumnDef } from './createdAtColumnDef.jsx';
 import { getCreatedByColumnDef } from './createdByColumnDef.jsx';
+import { getCurrencyColumnDef } from './currencyColumnDef.jsx';
 import { getDefaultColumnDef } from './defaultColumnDef.jsx';
 import { getIdColumnDef } from './idColumnDef.jsx';
 import { getJsonColumnDef } from './jsonColumnDef.jsx';
@@ -68,6 +69,8 @@ export const createColumnDefs = ({
           return getUrlColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
         case 'attachment':
           return getAttachmentColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+        case 'currency':
+          return getCurrencyColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
         default:
           return getDefaultColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
       }
