@@ -1,5 +1,4 @@
 import ListIcon from '@mui/icons-material/List';
-import { Chip } from '@mui/material';
 
 class SelectOptionRenderer {
   init(props) {
@@ -103,15 +102,21 @@ export const getSelectColumnDef = ({ field, getCommonFieldMenuItems }) => {
               const option = selectOptions.find((opt) => opt.label === value);
               if (!option) return null;
               return (
-                <Chip
+                <span
                   key={value}
-                  label={value}
-                  size="small"
                   style={{
                     backgroundColor: option.color,
                     color: option.textColor || '#fff',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    display: 'inline-block',
                   }}
-                />
+                >
+                  {value}
+                </span>
               );
             })}
           </div>

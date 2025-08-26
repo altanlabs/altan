@@ -50,10 +50,9 @@ function DatabaseNavigationBar({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        height: 48,
+        height: 42,
         px: 2,
         gap: 1,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
       }}
     >
       {/* Glassmorphic Container */}
@@ -62,20 +61,15 @@ function DatabaseNavigationBar({
           display: 'flex',
           alignItems: 'center',
           flex: 1,
-          height: 40,
+          height: 38,
           borderRadius: 3,
           background: `linear-gradient(135deg, 
             ${alpha(theme.palette.background.paper, 0.8)} 0%, 
             ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
           backdropFilter: 'blur(10px)',
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           overflow: 'hidden',
           px: 1,
           gap: 1,
-          '&:hover': {
-            backgroundColor: alpha(theme.palette.background.paper, 0.9),
-            border: `1px solid ${alpha(theme.palette.divider, 0.24)}`,
-          },
           transition: theme.transitions.create(['background-color', 'border-color'], {
             duration: theme.transitions.duration.shorter,
           }),
