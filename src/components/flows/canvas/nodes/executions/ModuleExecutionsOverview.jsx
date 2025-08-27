@@ -87,7 +87,7 @@ const ModuleExecutionsOverview = ({ status, moduleId }) => {
       },
       {
         icon: 'mdi:currency-usd',
-        message: `Task Credits consumed: ${Number(moduleExecutions.credits * 0.3).toFixed(2)}`,
+        message: `Credits consumed: $ ${Number(moduleExecutions.credits * 0.3 / 100).toFixed(6)}`,
       },
     ];
     if (!!moduleExecutions.llm_credits) {

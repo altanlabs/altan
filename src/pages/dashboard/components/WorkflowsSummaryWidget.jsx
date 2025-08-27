@@ -37,7 +37,7 @@ const formatCredits = (credits) => {
   if (credits >= 1e3) {
     return (credits / 1e3).toFixed(2) + 'k';
   }
-  return credits.toFixed(2);
+  return credits.toFixed(6);
 };
 
 const selectWorkflows = (state) => state.general.account?.workflows;
@@ -59,7 +59,7 @@ const statusConfig = {
 };
 
 // Add this conversion helper near the formatCredits function
-const taskToAltanCredits = (taskCredits) => taskCredits * 0.3;
+const taskToAltanCredits = (taskCredits) => taskCredits * 0.3 / 100;
 
 const WorkflowsSummaryWidget = () => {
   const theme = useTheme();

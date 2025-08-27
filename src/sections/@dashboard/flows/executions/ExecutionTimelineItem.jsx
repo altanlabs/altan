@@ -55,7 +55,7 @@ const ExecutionTimelineItem = ({
           <Typography variant="body2">{fToNow(execution.date_creation)}</Typography>
           {!!execution.credits && (
             <Chip
-              label={`${Number(execution.credits * 0.3).toFixed(1)} credits`}
+              label={`$ ${Number(execution.credits * 0.3 / 100).toFixed(6)}`}
               size="small"
             />
           )}
