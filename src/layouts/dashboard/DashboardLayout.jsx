@@ -6,6 +6,7 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
+import AltanAgentWidget from '../../components/AltanAgentWidget.jsx';
 import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import useResponsive from '../../hooks/useResponsive';
@@ -180,6 +181,7 @@ const DashboardLayout = ({ children }) => {
       {!hideHeader && <Header onOpenNav={handleToggleNav} />}
       {!shouldHideFloatingNav && <FloatingNavigation />}
       {user && <FloatingVoiceWidget />}
+      <AltanAgentWidget />
 
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
       <Box

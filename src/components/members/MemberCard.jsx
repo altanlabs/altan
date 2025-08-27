@@ -15,8 +15,8 @@ function MemberCard({ userItem, id, roles }) {
             {userItem.user.person.last_name[0]} */}
             <CustomAvatar
               sx={{ width: 48, height: 48 }}
-              name={userItem.user.person?.first_name}
-              src={userItem.user.person?.avatar_url}
+              name={userItem.user?.first_name}
+              src={userItem.user?.avatar_url}
             />
           </div>
         </div>
@@ -25,7 +25,7 @@ function MemberCard({ userItem, id, roles }) {
             layoutId={`name-${userItem.user.id}-${id}`}
             className="text-lg font-semibold text-gray-800 dark:text-gray-200"
           >
-            {userItem.user.person?.first_name} {userItem.user.person?.last_name}
+            {userItem.user?.first_name} {userItem.user?.last_name}
           </m.h3>
           <m.p
             layoutId={`email-${userItem.user.id}-${id}`}
@@ -40,7 +40,7 @@ function MemberCard({ userItem, id, roles }) {
         <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
           {userItem.type === 'account' ? 'workspace' : userItem.type}
         </span>
-      </div>
+      </div>  
       {/* Role Chips */}
       <div className="mt-4 overflow-x-auto">
         <div className="flex space-x-2">
