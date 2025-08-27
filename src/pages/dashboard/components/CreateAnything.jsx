@@ -232,21 +232,10 @@ function CreateAnything({ handleVoice }) {
                     <button
                       key={category.id}
                       onClick={() => handleCategoryClick(category.id)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-lg bg-white dark:bg-[#1c1c1c] hover:shadow-xl hover:scale-105"
                       style={{
-                        backgroundColor: alpha(theme.palette.grey[500], 0.08),
                         color: theme.palette.text.primary,
-                        border: 'none',
                         cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.grey[500], 0.16),
-                        },
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.16);
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
                       }}
                     >
                       {category.name}
@@ -320,7 +309,12 @@ function CreateAnything({ handleVoice }) {
                           stroke="currentColor"
                           viewBox="0 0 24 24"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </button>
                     ))}
@@ -328,6 +322,8 @@ function CreateAnything({ handleVoice }) {
                 </div>
               )}
             </div>
+
+            
           </div>
         </div>
       </div>

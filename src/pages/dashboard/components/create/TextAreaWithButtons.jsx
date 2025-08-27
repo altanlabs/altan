@@ -3,12 +3,11 @@ import { m } from 'framer-motion';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import AutopilotUpgradeDialog from './AutopilotUpgradeDialog';
 import GitHubRepoDialog from './GitHubRepoDialog';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
+import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
 import { selectIsAccountFree } from '../../../../redux/slices/general';
 import { useSelector } from '../../../../redux/store';
-import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
 
 // Helper function to get the appropriate icon based on file type
 const getFileIcon = (type) => {

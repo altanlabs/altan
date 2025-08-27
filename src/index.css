@@ -107,6 +107,16 @@
     background-size: 200% 200%;
     animation: gradient-x 3s ease infinite;
   }
+
+  /* Fade-in gradient background inspired by Lovable.dev */
+  @keyframes fadeInGradient {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
 }
 
 /* 

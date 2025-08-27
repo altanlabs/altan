@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import React, { memo, useMemo, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { HEADER } from '../../../config-global';
@@ -43,6 +44,11 @@ const CompactLayout = ({
   const isMobile = useResponsive('down', 'sm');
   const isIOS = isIOSCapacitor();
   const { user } = useAuthContext();
+  const location = useLocation();
+
+  // Define paths where gradient background should be shown
+  const allowedPaths = ['/', '/agents', '/flows', '/usage', '/pricing'];
+  const shouldShowGradient = allowedPaths.includes(location.pathname);
 
   // Track drawer state from localStorage
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -192,6 +198,30 @@ const CompactLayout = ({
         className={wrapperClasses.join(' ')}
         style={getSafeAreaStyle()}
       >
+        {/* Gradient background using Lovable.dev SVG - only on specific paths */}
+        {shouldShowGradient && (
+          <div
+            className="fixed left-1/2 aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto pointer-events-none"
+            style={{
+              backgroundImage:
+                'url("https://api.altan.ai/platform/media/e8f8925f-636f-48b5-8bd8-aca456f89eb2?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")',
+              backgroundSize: 'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center top',
+              mask: 'linear-gradient(transparent 0%, black 5%, black 100%)',
+              WebkitMask: 'linear-gradient(transparent 0%, black 5%, black 100%)',
+              backfaceVisibility: 'hidden',
+              perspective: '1000px',
+              willChange: 'transform',
+              animation: 'fadeInGradient 1.5s ease-in forwards',
+              opacity: 0,
+              top: 0,
+              bottom: 0,
+              maxHeight: '100dvh',
+              zIndex: -1,
+            }}
+          />
+        )}
         <div className={contentClasses.join(' ')}>{children}</div>
       </div>
     </>

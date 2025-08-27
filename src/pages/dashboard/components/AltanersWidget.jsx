@@ -159,7 +159,10 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
     <>
       <Box sx={{ mb: 4 }}>
         {isLoading ? (
-          <Grid container spacing={2}>
+          <Grid
+            container
+            spacing={2}
+          >
             {[...Array(6)].map((_, index) => (
               <AltanerSkeleton key={`skeleton-${index}`} />
             ))}
@@ -176,10 +179,17 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
                 px: 1,
               }}
             >
-              <Typography variant="h4" sx={{ fontWeight: 600, mx: 1 }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 600, mx: 1 }}
+              >
                 Projects
               </Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+              >
                 <SearchField
                   size="small"
                   value={searchQuery}
@@ -188,8 +198,15 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
                 />
                 {isDesktop && (
                   <>
-                    <Divider orientation="vertical" flexItem />
-                    <FormControl size="small" variant="filled" sx={{ minWidth: 140 }}>
+                    <Divider
+                      orientation="vertical"
+                      flexItem
+                    />
+                    <FormControl
+                      size="small"
+                      variant="filled"
+                      sx={{ minWidth: 140 }}
+                    >
                       <InputLabel id="sort-options-label">Sort by</InputLabel>
                       <Select
                         labelId="sort-options-label"
@@ -209,12 +226,21 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
                 )}
               </Stack>
             </Box>
-            
+
             {filteredAltaners?.length ? (
               <>
-                <Grid container spacing={2}>
+                <Grid
+                  container
+                  spacing={2}
+                >
                   {visibleAltaners.map((altaner) => (
-                    <Grid item xs={12} sm={6} lg={4} key={altaner.id}>
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      lg={4}
+                      key={altaner.id}
+                    >
                       <AltanerCard
                         id={altaner.id}
                         name={altaner.name}
@@ -256,14 +282,20 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
                   textAlign: 'center',
                 }}
               >
-                <Iconify 
-                  icon="eva:search-outline" 
-                  sx={{ width: 64, height: 64, color: 'text.disabled', mb: 2 }} 
+                <Iconify
+                  icon="eva:search-outline"
+                  sx={{ width: 64, height: 64, color: 'text.disabled', mb: 2 }}
                 />
-                <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.secondary', mb: 1 }}
+                >
                   No projects found
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.disabled' }}
+                >
                   Try adjusting your search terms or clear the search to see all projects.
                 </Typography>
                 {searchQuery && (

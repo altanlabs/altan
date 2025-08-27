@@ -140,14 +140,14 @@ const AltanerTemplateMarketplace = () => {
 
           {/* Uncategorized section - for templates without a specific category */}
 
-          <Box>
+          {/* <Box>
             <AltanerSectionCategory
               category="uncategorized"
               title="From the community"
               initialExpanded={false}
               onTemplateClick={handleTemplateClick}
             />
-          </Box>
+          </Box> */}
         </Stack>
       </Box>
 

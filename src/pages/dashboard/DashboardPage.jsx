@@ -20,7 +20,7 @@ import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx
 
 const DashboardPage = () => {
   const { mode = 'projects' } = useParams();
-  const { isAuthenticated, user } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
   const accountId = useSelector((state) => state.general.account?.id);
 
   const agents = {
@@ -149,7 +149,7 @@ const DashboardPage = () => {
             variants={fadeIn}
           >
             <m.div
-              className="flex flex-col py-8 sm:py-20"
+              className="flex flex-col py-10 sm:py-20 mt-4"
               variants={fadeIn}
             >
               {/* VOICE WIDGET */}
@@ -168,7 +168,7 @@ const DashboardPage = () => {
                         ? 'dashboard.agents.title'
                         : mode === 'flows'
                           ? 'dashboard.flows.title'
-                          : 'dashboard.createAnything.title'
+                          : 'dashboard.createAnything.title',
                     )}
                   </Typography>
                   <Typography
@@ -185,7 +185,7 @@ const DashboardPage = () => {
                         ? 'dashboard.agents.subtitle'
                         : mode === 'flows'
                           ? 'dashboard.flows.subtitle'
-                          : 'dashboard.createAnything.subtitle'
+                          : 'dashboard.createAnything.subtitle',
                     )}
                   </Typography>
                   {/* Only show original voice component when not floating or when not in voice mode */}
@@ -227,10 +227,10 @@ const DashboardPage = () => {
             </m.div>
 
             <m.div
-              className="flex flex-col pt-6"
+              className="flex flex-col pt-10"
               variants={fadeIn}
             >
-              <div className="w-full py-2 sm:px-6 sm:rounded-t-2xl sm:shadow-md sm:bg-white sm:dark:bg-[#1c1c1c] sm:dark:border-gray-800 sm:dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
+              <div className="w-full py-2 px-4 sm:px-6 rounded-t-2xl shadow-md bg-white dark:bg-[#1c1c1c] dark:border-gray-800 shadow-[0_2px_8px_rgba(0,0,0,0.1)] dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">
                 {renderContentBasedOnMode(mode)}
                 <Footer />
               </div>

@@ -177,31 +177,30 @@ const DashboardLayout = ({ children }) => {
   const shouldHideFloatingNav = location.pathname.startsWith('/room') && isMobile;
 
   // Check if we should show AltanAgentWidget based on current route
-  const shouldShowAgentWidget = useCallback(() => {
-    const { pathname } = location;
+  // const shouldShowAgentWidget = useCallback(() => {
+  //   const { pathname } = location;
 
-    // Show widget on these exact paths
-    const allowedPaths = ['/', '/agents', '/flows', '/usage'];
+  //   // Show widget on these exact paths
+  //   const allowedPaths = ['/', '/agents', '/flows', '/usage'];
 
-    // Check for exact matches first
-    if (allowedPaths.includes(pathname)) {
-      return true;
-    }
+  //   // Check for exact matches first
+  //   if (allowedPaths.includes(pathname)) {
+  //     return true;
+  //   }
 
-    // Don't show on specific ID-based routes
-    if (pathname.match(/^\/agent\/[^/]+$/) || pathname.match(/^\/flow\/[^/]+$/)) {
-      return false;
-    }
+  //   // Don't show on specific ID-based routes
+  //   if (pathname.match(/^\/agent\/[^/]+$/) || pathname.match(/^\/flow\/[^/]+$/)) {
+  //     return false;
+  //   }
 
-    return false;
-  }, [location]);
+  //   return false;
+  // }, [location]);
 
   return (
     <VoiceConversationProvider>
       {!hideHeader && <Header onOpenNav={handleToggleNav} />}
       {!shouldHideFloatingNav && <FloatingNavigation />}
-      {user && <FloatingVoiceWidget />}
-      {shouldShowAgentWidget() && <AltanAgentWidget />}
+      {/* {shouldShowAgentWidget() && <AltanAgentWidget />} */}
 
       {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
       <Box
