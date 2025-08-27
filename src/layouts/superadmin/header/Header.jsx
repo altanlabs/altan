@@ -57,14 +57,14 @@ const Header = () => {
         size="small"
         component={RouterLink}
         to={section.link}
-        color="inherit"
+        color="primary"
         startIcon={<Iconify icon={section.icon} />}
       >
         {section.name}
       </Button>
     ) : (
       <IconButton
-        color="inherit"
+        color="primary"
         key={section.id}
         onClick={() => history.push(section.link)}
       >
@@ -83,7 +83,7 @@ const Header = () => {
           <Button
             sx={{ height: 44, pl: 4 }}
             size="small"
-            color="inherit"
+            color="primary"
             component={RouterLink}
             to={PATH_DASHBOARD.super.root}
             startIcon={<Iconify icon="ic:twotone-admin-panel-settings" />}
@@ -95,7 +95,7 @@ const Header = () => {
       ) : (
         <>
           <IconButton
-            color="inherit"
+            color="primary"
             onClick={() => history.push(PATH_DASHBOARD.super.root)}
           >
             <Iconify
@@ -120,7 +120,7 @@ const Header = () => {
             size="small"
             component={RouterLink}
             to="/"
-            color="inherit"
+            color="primary"
             startIcon={<Iconify icon="ic:twotone-home" />}
           >
             Back to platform
