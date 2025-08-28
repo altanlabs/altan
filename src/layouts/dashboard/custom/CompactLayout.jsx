@@ -198,8 +198,7 @@ const CompactLayout = ({
         className={wrapperClasses.join(' ')}
         style={getSafeAreaStyle()}
       >
-        {/* Gradient background using Lovable.dev SVG - only on specific paths */}
-        {shouldShowGradient && (
+        {shouldShowGradient && !isMobile && (
           <div
             className="fixed left-1/2 aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto pointer-events-none"
             style={{

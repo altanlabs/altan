@@ -3,14 +3,14 @@ import { Capacitor } from '@capacitor/core';
 import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState, useEffect } from 'react';
-
+import { useHistory } from 'react-router-dom';
 import ChatDrawer from './ChatDrawer';
 import HeaderActions from './HeaderActions';
 import MobileNavSidebar from './MobileNavSidebar';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { StyledChart } from '../../../components/chart';
 import Iconify from '../../../components/iconify';
-import Logo from '../../../components/logo/Logo';
+
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
@@ -31,6 +31,7 @@ const isIOSCapacitor = () => {
 
 function Header() {
   const theme = useTheme();
+  const history = useHistory();
   const { user } = useAuthContext();
   const isDesktop = useResponsive('up', 'md');
   const headerVisible = useSelector(selectHeaderVisible);
@@ -134,17 +135,20 @@ function Header() {
             )}
 
             {/* <Logo minimal /> */}
-            <div className="flex items-center max-w-[120px] px-1">
+            <div className="flex items-center max-w-[120px] px-1 mb-1">
               <img
                 alt="Altan Logo Header"
                 onClick={() => history.replace('/')}
-                style={{ cursor: 'pointer' }}
+                style={{
+                  cursor: 'pointer',
+                  height: '26px',
+                  width: 'auto',
+                }}
                 src={
                   theme.palette.mode === 'dark'
-                    ? '/logos/horizontalWhite.png'
-                    : '/logos/horizontalBlack.png'
+                    ? '/logos/v2/logoWhite2.svg'
+                    : '/logos/v2/logoBlack2.svg'
                 }
-                height={17}
               />
             </div>
           </Stack>
