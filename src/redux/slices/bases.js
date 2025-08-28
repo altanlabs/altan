@@ -694,7 +694,7 @@ export const queryTableRecords =
     }
   };
 
-export const getTableRecord = (tableId, recordId) => async (dispatch, getState) => {
+export const getTableRecord = (tableId, recordId, customTableName = null) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
     const state = getState();
@@ -706,7 +706,7 @@ export const getTableRecord = (tableId, recordId) => async (dispatch, getState) 
         const table = base.tables.items.find((t) => t.id === tableId);
         if (table) {
           baseId = bId;
-          tableName = table.name || table.db_name;
+          tableName = customTableName || table.name || table.db_name;
           break;
         }
       }
@@ -716,7 +716,14 @@ export const getTableRecord = (tableId, recordId) => async (dispatch, getState) 
       throw new Error(`Could not find base or table name for table ${tableId}`);
     }
     
-    // Use Supabase-style endpoint
+    if (customTableName && customTableName.startsWith('auth.')) {
+      const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+        id: recordId,
+      });
+      return Promise.resolve(response.data.record);
+    }
+    
+    // Use Supabase-style endpoint for regular tables
     const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
       params: { id: recordId }
     });
@@ -736,7 +743,41 @@ export const getTableRecord = (tableId, recordId) => async (dispatch, getState) 
 export const createTableRecords = (tableId, recordData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_tables.post(`/table/${tableId}/record`, recordData);
+    // Find the base that contains this table
+    const state = getState();
+    let baseId, tableName;
+    for (const [bId, base] of Object.entries(state.bases.bases)) {
+      if (base.tables?.items) {
+        const table = base.tables.items.find((t) => t.id === tableId);
+        if (table) {
+          baseId = bId;
+          tableName = table.db_name || table.name;
+          break;
+        }
+      }
+    }
+    
+    if (!baseId || !tableName) {
+      throw new Error(`Could not find base or table name for table ${tableId}`);
+    }
+
+    if (tableName && tableName.startsWith('auth.')) {
+      const response = await optimai_tables.post(`/table/${tableId}/record`, recordData);
+      return Promise.resolve(response.data);
+    }
+
+    // Transform data for Supabase format
+    let supabaseData;
+    if (recordData.records && recordData.records.length > 0) {
+      // Extract the fields from the Altan API format
+      supabaseData = recordData.records[0].fields;
+    } else {
+      // If it's already in the correct format, use as is
+      supabaseData = recordData;
+    }
+
+    // Use Supabase-style endpoint with proxy for creating records
+    const response = await optimai_database.post(`/admin/records/${baseId}/${tableName}`, supabaseData);
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -855,13 +896,41 @@ export const loadAllTableRecords =
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
+      if (tableName && tableName.startsWith('auth.')) {
+        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+          limit: BATCH_SIZE,
+        });
+
+        const responseRecords = Array.isArray(response.data.records) ? response.data.records : [];
+        dispatch(
+          slice.actions.setTableRecords({
+            tableId,
+            records: responseRecords,
+            total: response.data.total || responseRecords.length,
+            next_page_token: null,
+            isPagination: false,
+          }),
+        );
+
+        // Mark as cached since auth tables don't support pagination
+        dispatch(
+          slice.actions.setTableRecordsState({
+            tableId,
+            loading: false,
+            lastFetched: Date.now(),
+            cached: true,
+          }),
+        );
+
+        return getState().bases.records[tableId];
+      }
+
       // Resume from where we left off if we have a page token
       let pageToken = recordsState?.next_page_token;
       let hasMore = true;
 
       // Initial load if needed
       if (!pageToken && (!records || records.items.length === 0)) {
-        console.log(`🔄 Loading records from: https://database.altan.ai/admin/records/${baseId}/${tableName}`);
         const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
           params: {
             limit: BATCH_SIZE,

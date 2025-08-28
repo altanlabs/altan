@@ -63,7 +63,11 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
     // 2. The table is not fully cached (recordsState.cached is false)
     if (!record && tableId && recordId && (!recordsState || !recordsState.cached)) {
       setIsLoading(true);
-      dispatch(getTableRecord(tableId, recordId))
+
+      // For auth tables, use the rawTableId as the custom table name
+      const customTableName = rawTableId && rawTableId.startsWith('auth.') ? rawTableId : null;
+
+      dispatch(getTableRecord(tableId, recordId, customTableName))
         .catch((error) => {
           console.warn(`Error fetching record ${recordId} from table ${tableId}:`, error);
         })
@@ -71,11 +75,68 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
           setIsLoading(false);
         });
     }
-  }, [tableId, recordId, record, recordsState]);
+  }, [tableId, recordId, record, recordsState, rawTableId]);
 
   // Early return if missing required props
   if (!tableId || !recordId || !baseId) {
     return null;
+  }
+
+  // Handle system auth tables specially for rendering
+  if (rawTableId && rawTableId.startsWith('auth.')) {
+    // Show loading spinner while fetching
+    if (isLoading) {
+      return (
+        <Chip
+          size="small"
+          variant="outlined"
+          icon={<CircularProgress size={12} />}
+          sx={{
+            height: '20px',
+            '& .MuiChip-label': {
+              fontSize: '0.75rem',
+              lineHeight: '20px',
+              px: 1,
+              py: 0,
+            },
+            backgroundColor:
+              theme.palette.mode === 'dark'
+                ? 'rgba(76, 175, 80, 0.08)'
+                : 'rgba(76, 175, 80, 0.08)',
+            borderColor:
+              theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.2)',
+            color: theme.palette.mode === 'dark' ? '#4CAF50' : '#4CAF50',
+          }}
+        />
+      );
+    }
+
+    // Show the record data if available, otherwise show the ID
+    const displayValue = primaryValue || recordId;
+
+    return (
+      <Chip
+        size="small"
+        variant="outlined"
+        label={displayValue}
+        sx={{
+          height: '20px',
+          '& .MuiChip-label': {
+            fontSize: '0.75rem',
+            lineHeight: '20px',
+            px: 1,
+            py: 0,
+          },
+          backgroundColor:
+            theme.palette.mode === 'dark'
+              ? 'rgba(76, 175, 80, 0.08)'
+              : 'rgba(76, 175, 80, 0.08)',
+          borderColor:
+            theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.2)',
+          color: theme.palette.mode === 'dark' ? '#4CAF50' : '#4CAF50',
+        }}
+      />
+    );
   }
 
   // Show loading spinner while fetching

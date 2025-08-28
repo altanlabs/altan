@@ -24,21 +24,6 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange }) => {
   // Track loading state
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Smarter loading management - only load records if they aren't already loaded
-  useEffect(() => {
-    if (!tableId) return;
-
-    const loadRecords = async () => {
-      try {
-        await dispatch(loadAllTableRecords(tableId));
-      } finally {
-        setIsInitialLoad(false);
-      }
-    };
-
-    loadRecords();
-  }, [tableId]);
-
   const recordsState = useSelector((state) => selectTableRecordsState(state, tableId));
   const records = useSelector((state) => selectTableRecords(state, tableId));
   const hasRecords = records?.length > 0;
@@ -72,6 +57,24 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange }) => {
   const currentView = useSelector(viewSelectors.currentViewSelector);
   const totalRecords = useSelector(tableOnlySelectors.totalRecordsSelector);
   const isLoading = useSelector(tableOnlySelectors.isLoadingSelector);
+
+  // Check if the table exists in the state (base is loaded)
+  const tableExists = !!table;
+
+  // Smarter loading management - only load records if they aren't already loaded
+  useEffect(() => {
+    if (!tableId || !baseId || !tableExists) return;
+
+    const loadRecords = async () => {
+      try {
+        await dispatch(loadAllTableRecords(tableId));
+      } finally {
+        setIsInitialLoad(false);
+      }
+    };
+
+    loadRecords();
+  }, [tableId, baseId, tableExists]);
 
   // Add throttling to handle frequent page size changes
   const handlePageSizeChange = useCallback((newPageSize) => {
