@@ -75,6 +75,7 @@ const initialState = {
     connections: false,
     apps: false,
     interfaces: false,
+    bases: false,
   },
   accountAssetsInitialized: {
     altaners: false,
@@ -92,6 +93,7 @@ const initialState = {
     connections: false,
     apps: false,
     interfaces: false,
+    bases: false,
   },
   accountAssetsErrors: {
     altaners: null,
@@ -109,6 +111,7 @@ const initialState = {
     connections: null,
     apps: null,
     interfaces: null,
+    bases: null,
   },
   webSocketEvents: [],
   accounts: [],
@@ -780,6 +783,10 @@ export const {
   addInterfaceCommit,
   updateInterfaceCommit,
   deleteInterfaceCommit,
+  startAccountAttributeLoading,
+  stopAccountAttributeLoading,
+  setAccountAttribute,
+  setAccountAttributeError,
 } = slice.actions;
 
 // ----------------------------------------------------------------------

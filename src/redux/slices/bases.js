@@ -1,5 +1,11 @@
 import { createSlice, createSelector } from '@reduxjs/toolkit';
 
+import {
+  startAccountAttributeLoading,
+  stopAccountAttributeLoading,
+  setAccountAttribute,
+  setAccountAttributeError,
+} from './general';
 import { optimai_tables } from '../../utils/axios';
 
 const initialState = {
@@ -409,7 +415,7 @@ export const getBaseById = (baseId) => async (dispatch) => {
 
 // Thunk actions for bases
 export const getBasesByAccountID = (accountId) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
+  dispatch(startAccountAttributeLoading('bases'));
   try {
     const response = await optimai_tables.get(`/base/list/${accountId}`);
     // La estructura parece ser response.data.data.bases
@@ -417,12 +423,14 @@ export const getBasesByAccountID = (accountId) => async (dispatch) => {
     bases.forEach((base) => {
       dispatch(slice.actions.addBase(base));
     });
+    // Establecer las bases en el estado de la cuenta y marcar como inicializado
+    dispatch(setAccountAttribute({ key: 'bases', value: bases }));
     return Promise.resolve(bases);
   } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
+    dispatch(setAccountAttributeError({ key: 'bases', error: e.message }));
     throw e;
   } finally {
-    dispatch(slice.actions.stopLoading());
+    dispatch(stopAccountAttributeLoading('bases'));
   }
 };
 
