@@ -15,6 +15,11 @@ const optimai_tables_legacy = axios.create({
   baseURL: 'https://database-api.altan.ai/v3',
 });
 
+const optimai_database = axios.create({
+  name: 'optimai_database',
+  baseURL: 'https://database.altan.ai',
+});
+
 const optimai_root = axios.create({
   name: 'optimai_root',
   baseURL: OPTIMAI_BASE_URL,
@@ -62,6 +67,7 @@ addResponseInterceptor(optimai_root);
 addResponseInterceptor(optimai_tables);
 addResponseInterceptor(optimai_agent);
 addResponseInterceptor(optimai_tables_legacy);
+addResponseInterceptor(optimai_database);
 
 const authorizeUser = () => {
   return new Promise(async (resolve, reject) => {
@@ -75,6 +81,7 @@ const authorizeUser = () => {
       setSession(accessToken, optimai_tables);
       setSession(accessToken, optimai_agent);
       setSession(accessToken, optimai_tables_legacy);
+      setSession(accessToken, optimai_database);
       resolve({ accessToken });
     } catch (error) {
       reject(error);
@@ -111,6 +118,7 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_shop);
           setSession(tokenString, optimai_integration);
           setSession(tokenString, optimai_agent);
+          setSession(tokenString, optimai_database);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
         }
@@ -137,6 +145,7 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_tables, originalRequest);
   setSession(accessToken, optimai_tables_legacy, originalRequest);
   setSession(accessToken, optimai_agent, originalRequest);
+  setSession(accessToken, optimai_database, originalRequest);
 };
 
 const unauthorizeUser = () => {
@@ -153,6 +162,7 @@ const axiosInstances = {
   optimai_tables,
   optimai_agent,
   optimai_tables_legacy,
+  optimai_database,
 };
 
 export const getAltanAxiosInstance = (instanceName) => {
@@ -173,6 +183,7 @@ export {
   optimai_tables,
   optimai_agent,
   optimai_tables_legacy,
+  optimai_database,
   authorizeUser,
   authorizeGuest,
   unauthorizeUser,
