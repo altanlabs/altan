@@ -1,12 +1,4 @@
-import {
-  Box,
-  TextField,
-  IconButton,
-  Tooltip,
-  Stack,
-  Chip,
-  useMediaQuery,
-} from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Stack, Chip, useMediaQuery } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { useRef } from 'react';
@@ -67,6 +59,10 @@ function DatabaseNavigationBar({
             ${alpha(theme.palette.background.paper, 0.8)} 0%, 
             ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
           backdropFilter: 'blur(10px)',
+          border:
+            theme.palette.mode === 'light'
+              ? `1px solid ${alpha(theme.palette.divider, 0.12)}`
+              : 'none',
           overflow: 'hidden',
           px: 1,
           gap: 1,

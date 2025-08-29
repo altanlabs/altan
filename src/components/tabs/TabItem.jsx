@@ -1,6 +1,6 @@
 import { IconButton, Tooltip } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { cn } from '@lib/utils';
@@ -8,6 +8,8 @@ import { cn } from '@lib/utils';
 import { switchTab, closeTab, makeSelectThreadName } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
+
+import ThreadInfoPopup from './ThreadInfoPopup.jsx';
 
 const TabItem = ({
   tab,
@@ -26,6 +28,9 @@ const TabItem = ({
   // Use the actual thread name or fallback to tab name
   const displayName = actualThreadName || 'Thread';
 
+  // State for thread info popup
+  const [showThreadInfo, setShowThreadInfo] = useState(false);
+
   const handleClick = useCallback(
     (e) => {
       e.stopPropagation();
@@ -37,6 +42,28 @@ const TabItem = ({
     },
     [tab.id, onSwitch],
   );
+
+  const handleRightClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowThreadInfo(true);
+    },
+    [],
+  );
+
+  const handleDoubleClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowThreadInfo(true);
+    },
+    [],
+  );
+
+  const handleCloseThreadInfo = useCallback(() => {
+    setShowThreadInfo(false);
+  }, []);
 
   const handleClose = useCallback(
     (e) => {
@@ -61,97 +88,111 @@ const TabItem = ({
   );
 
   return (
-    <div
-      className={cn(
-        'relative flex items-center gap-1 px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none rounded-md',
-        className,
-      )}
-      onClick={handleClick}
-      role="tab"
-      aria-selected={isActive}
-      aria-label={`Switch to ${displayName} tab`}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick(e);
-        }
-      }}
-      style={{
-        maxWidth,
-        backgroundColor: isActive
-          ? alpha(theme.palette.grey[500], 0.08)
-          : 'transparent',
-        color: isActive
-          ? theme.palette.text.primary
-          : theme.palette.text.secondary,
-        '&:hover': {
-          backgroundColor: alpha(theme.palette.grey[500], 0.08),
-        },
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.target.style.backgroundColor = 'transparent';
-        }
-      }}
-    >
-      {/* Tab Name */}
-      <span
+    <>
+      <div
         className={cn(
-          'truncate flex-1 min-w-0',
-          isActive ? 'font-semibold' : 'font-normal',
+          'relative flex items-center gap-1 px-3 py-1.5 text-sm cursor-pointer transition-all duration-200 select-none rounded-md',
+          className,
         )}
-        title={displayName}
+        onClick={handleClick}
+        onContextMenu={handleRightClick}
+        onDoubleClick={handleDoubleClick}
+        role="tab"
+        aria-selected={isActive}
+        aria-label={`Switch to ${displayName} tab`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick(e);
+          }
+        }}
+        title={`${displayName} - Right-click or double-click for thread info`}
         style={{
+          maxWidth,
+          backgroundColor: isActive
+            ? alpha(theme.palette.grey[500], 0.08)
+            : 'transparent',
           color: isActive
             ? theme.palette.text.primary
             : theme.palette.text.secondary,
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.grey[500], 0.08),
+          },
+        }}
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.08);
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            e.target.style.backgroundColor = 'transparent';
+          }
         }}
       >
-        {displayName}
-      </span>
-
-      {/* Close Button */}
-      {canClose && (
-        <div
-          className="flex-shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          onClick={(e) => e.stopPropagation()}
+        {/* Tab Name */}
+        <span
+          className={cn(
+            'truncate flex-1 min-w-0',
+            isActive ? 'font-semibold' : 'font-normal',
+          )}
+          title={displayName}
+          style={{
+            color: isActive
+              ? theme.palette.text.primary
+              : theme.palette.text.secondary,
+          }}
         >
-          <Tooltip
-            title="Close tab"
-            placement="top"
+          {displayName}
+        </span>
+
+        {/* Close Button */}
+        {canClose && (
+          <div
+            className="flex-shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            onClick={(e) => e.stopPropagation()}
           >
-            <IconButton
-              size="small"
-              onClick={handleClose}
-              onKeyDown={handleCloseKeyDown}
-              className="!p-0.5 !min-w-0"
-              sx={{
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.grey[500], 0.24),
-                },
-              }}
+            <Tooltip
+              title="Close tab"
+              placement="top"
             >
-              <Iconify
-                icon="solar:close-circle-linear"
-                width={14}
+              <IconButton
+                size="small"
+                onClick={handleClose}
+                onKeyDown={handleCloseKeyDown}
+                className="!p-0.5 !min-w-0"
                 sx={{
-                  color: theme.palette.text.secondary,
                   '&:hover': {
-                    color: theme.palette.text.primary,
+                    backgroundColor: alpha(theme.palette.grey[500], 0.24),
                   },
                 }}
-              />
-            </IconButton>
-          </Tooltip>
-        </div>
-      )}
-    </div>
+              >
+                <Iconify
+                  icon="solar:close-circle-linear"
+                  width={14}
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    '&:hover': {
+                      color: theme.palette.text.primary,
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </div>
+        )}
+      </div>
+
+      {/* Thread Info Popup */}
+      <ThreadInfoPopup
+        open={showThreadInfo}
+        onClose={handleCloseThreadInfo}
+        threadId={tab.threadId}
+        threadName={actualThreadName}
+        isMainThread={tab.isMainThread}
+      />
+    </>
   );
 };
 
