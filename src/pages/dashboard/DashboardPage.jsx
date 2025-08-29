@@ -175,7 +175,6 @@ const DashboardPage = () => {
                     variant="h6"
                     sx={{
                       textAlign: 'center',
-                      color: 'text.secondary',
                       margin: 0,
                       mb: 2,
                     }}
