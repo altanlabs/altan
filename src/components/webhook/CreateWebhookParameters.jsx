@@ -140,6 +140,9 @@ const CreateWebhookParameters = ({ webhook, onSaveWebhook, onClose }) => {
         padding={2}
         spacing={2}
         component="form"
+        style={{
+          width: '550px',
+        }}
       >
         <TextField
           fullWidth
