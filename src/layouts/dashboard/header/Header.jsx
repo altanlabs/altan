@@ -146,8 +146,8 @@ function Header() {
                 }}
                 src={
                   theme.palette.mode === 'dark'
-                    ? '/logos/v2/logoWhite2.svg'
-                    : '/logos/v2/logoBlack2.svg'
+                    ? '/logos/v2/logoWhite.svg'
+                    : '/logos/v2/logoBlack.svg'
                 }
               />
             </div>

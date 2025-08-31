@@ -96,7 +96,7 @@ const CreateWebhookParameters = ({ webhook, onSaveWebhook, onClose }) => {
         },
         details: data.details,
       };
-
+      console.log('formattedData', formattedData);
       if (mustCreate) {
         dispatchWithFeedback(createWebhook(formattedData), {
           useSnackbar: true,

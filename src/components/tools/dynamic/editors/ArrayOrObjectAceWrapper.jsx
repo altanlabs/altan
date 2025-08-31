@@ -26,8 +26,6 @@ const ArrayOrObjectAceWrapper = ({ expanded, fieldKey, fieldType, value, onChang
         mode={getMode(fieldType)}
         value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
         onChange={(newValue) => {
-          console.log(`ArrayOrObjectAceWrapper onChange for ${fieldKey}:`, { newValue, fieldType });
-          
           if (fieldType !== 'object' && fieldType !== 'array') {
             onChange(newValue);
             return;
@@ -36,14 +34,12 @@ const ArrayOrObjectAceWrapper = ({ expanded, fieldKey, fieldType, value, onChang
           // Handle empty/null values
           if (!newValue || newValue.trim() === '') {
             const emptyValue = fieldType === 'object' ? {} : [];
-            console.log(`Setting empty ${fieldType}:`, emptyValue);
             onChange(emptyValue);
             return;
           }
 
           try {
             const parsed = JSON.parse(newValue);
-            console.log(`Successfully parsed ${fieldType}:`, parsed);
             onChange(parsed);
           } catch (error) {
             console.warn(`Invalid JSON for ${fieldType}, not updating:`, error.message, newValue);

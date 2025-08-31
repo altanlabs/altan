@@ -5,11 +5,10 @@ import { useSelector } from 'react-redux';
 
 import { cn } from '@lib/utils';
 
+import ThreadInfoPopup from './ThreadInfoPopup.jsx';
 import { switchTab, closeTab, makeSelectThreadName } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
-
-import ThreadInfoPopup from './ThreadInfoPopup.jsx';
 
 const TabItem = ({
   tab,
@@ -148,7 +147,7 @@ const TabItem = ({
         </span>
 
         {/* Close Button */}
-        {canClose && (
+        {canClose && !tab.isMainThread && (
           <div
             className="flex-shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             onClick={(e) => e.stopPropagation()}
