@@ -1,10 +1,13 @@
 import PropTypes from 'prop-types';
-import { createContext, useEffect, useContext, useMemo, useCallback, memo } from 'react';
+import { createContext, useEffect, useContext, useMemo, useCallback, memo, useState } from 'react';
 
 // hooks
 import { defaultSettings } from './config-setting';
 import { defaultPreset, getPresets, presetsOption } from './presets';
 import useLocalStorage from '../../hooks/useLocalStorage';
+
+// utils
+import { resolveThemeMode, addSystemThemeListener } from '../../utils/getSystemTheme';
 
 // ----------------------------------------------------------------------
 
@@ -54,17 +57,41 @@ SettingsProvider.propTypes = {
 
 function SettingsProvider({ children }) {
   const [settings, setSettings] = useLocalStorage('settings', defaultSettings);
+  
+  // Track the resolved theme mode (converts 'system' to 'light' or 'dark')
+  const [resolvedThemeMode, setResolvedThemeMode] = useState(() => resolveThemeMode(settings.themeMode));
 
   const isArabic = settings.langStorage === 'ar';
 
+  // Update resolved theme mode when settings change
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', settings.themeMode === 'dark');
+    const newResolvedMode = resolveThemeMode(settings.themeMode);
+    setResolvedThemeMode(newResolvedMode);
+  }, [settings.themeMode]);
+
+  // Apply the resolved theme mode to the document
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', resolvedThemeMode === 'dark');
+  }, [resolvedThemeMode]);
+
+  // Add system theme change listener when theme mode is 'system'
+  useEffect(() => {
+    if (settings.themeMode !== 'system') {
+      return undefined; // No cleanup needed
+    }
+
+    const cleanup = addSystemThemeListener((systemTheme) => {
+      setResolvedThemeMode(systemTheme);
+    });
+
+    return cleanup;
   }, [settings.themeMode]);
 
   // Mode
   const onToggleMode = useCallback(() => {
-    const themeMode = settings.themeMode === 'light' ? 'dark' : 'light';
-    setSettings({ ...settings, themeMode });
+    // Simple toggle between light and dark only
+    const nextMode = settings.themeMode === 'light' ? 'dark' : 'light';
+    setSettings({ ...settings, themeMode: nextMode });
   }, [setSettings, settings]);
 
   const onToggleAnimation = useCallback(
@@ -164,6 +191,8 @@ function SettingsProvider({ children }) {
   const memoizedValue = useMemo(
     () => ({
       ...settings,
+      // Add the resolved theme mode for the theme provider
+      resolvedThemeMode,
       // Mode
       onToggleMode,
       onChangeMode,
@@ -189,6 +218,7 @@ function SettingsProvider({ children }) {
     }),
     [
       settings,
+      resolvedThemeMode,
       // Mode
       onToggleMode,
       onChangeMode,

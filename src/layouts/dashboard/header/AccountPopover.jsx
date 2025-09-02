@@ -32,7 +32,7 @@ import NavAccount from '../nav/NavAccount.jsx';
 
 export default function AccountPopover() {
   const history = useHistory();
-  const { themeMode, onChangeMode } = useSettingsContext();
+  const { resolvedThemeMode, onToggleMode } = useSettingsContext();
   const ws = useWebSocket();
   const { user, logout } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
@@ -311,7 +311,7 @@ export default function AccountPopover() {
               </Typography>
               <IconButton
                 size="small"
-                onClick={() => onChangeMode(themeMode === 'light' ? 'dark' : 'light')}
+                onClick={onToggleMode}
                 sx={{
                   border: '1px solid',
                   borderColor: 'divider',
@@ -323,7 +323,9 @@ export default function AccountPopover() {
               >
                 <Iconify
                   icon={
-                    themeMode === 'light' ? 'solar:sun-2-bold-duotone' : 'iconamoon:mode-dark-light'
+                    resolvedThemeMode === 'light'
+                      ? 'solar:sun-2-bold-duotone'
+                      : 'iconamoon:mode-dark-light'
                   }
                   width={18}
                 />

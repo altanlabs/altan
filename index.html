@@ -86,9 +86,31 @@
   <!-- Theme initialization -->
   <script>
     (function() {
+      function getSystemTheme() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      }
+      
+      function resolveThemeMode(themeMode) {
+        if (themeMode === 'system') {
+          return getSystemTheme();
+        }
+        return themeMode === 'dark' ? 'dark' : 'light';
+      }
+      
       try {
         const settings = localStorage.getItem('settings');
-        const isDark = settings ? JSON.parse(settings).themeMode === 'dark' : true;
+        let themeMode = 'system'; // Default to system theme
+        
+        if (settings) {
+          const parsedSettings = JSON.parse(settings);
+          themeMode = parsedSettings.themeMode || 'system';
+        }
+        
+        const resolvedTheme = resolveThemeMode(themeMode);
+        const isDark = resolvedTheme === 'dark';
         
         // Set theme class
         document.documentElement.classList.toggle('dark', isDark);
@@ -103,15 +125,18 @@
           themeColorMeta.content = isDark ? '#161C24' : '#FFFFFF';
         }
       } catch (error) {
-        // Fallback to light theme
-        document.documentElement.classList.add('light');
-        document.documentElement.style.colorScheme = 'light';
-        document.documentElement.style.backgroundColor = '#FFFFFF';
+        // Fallback to system theme detection
+        const systemTheme = getSystemTheme();
+        const isDark = systemTheme === 'dark';
+        
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = isDark ? '#161C24' : '#FFFFFF';
         
         // Update theme-color meta tag for mobile browsers
         const themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (themeColorMeta) {
-          themeColorMeta.content = '#FFFFFF';
+          themeColorMeta.content = isDark ? '#161C24' : '#FFFFFF';
         }
       }
     })();

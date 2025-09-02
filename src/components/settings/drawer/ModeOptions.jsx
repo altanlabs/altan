@@ -11,7 +11,7 @@ import { StyledCard, StyledWrap, MaskControl } from '../styles';
 const OPTIONS = ['light', 'dark'];
 
 export default function ModeOptions() {
-  const { themeMode, onChangeMode } = useSettingsContext();
+  const { themeMode, resolvedThemeMode, onChangeMode } = useSettingsContext();
 
   return (
     <RadioGroup
@@ -23,7 +23,7 @@ export default function ModeOptions() {
         {OPTIONS.map((mode) => (
           <StyledCard
             key={mode}
-            selected={themeMode === mode}
+            selected={themeMode === mode || (themeMode === 'system' && resolvedThemeMode === mode)}
           >
             <SvgColor
               src={`/assets/icons/setting/${mode === 'light' ? 'ic_sun' : 'ic_moon'}.svg`}

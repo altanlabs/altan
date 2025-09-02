@@ -49,6 +49,8 @@ const AUTH_API_ENDPOINTS = {
   optimai_room: `${API_BASE_URL}/auth/token/platform`,
   optimai_tables: `${API_BASE_URL}/auth/token/platform`,
   optimai_tables_legacy: `${API_BASE_URL}/auth/token/platform`,
+  optimai_agent: `${API_BASE_URL}/auth/token/platform`,
+  optimai_database: `${API_BASE_URL}/auth/token/platform`,
 };
 
 const MOBILE_AUTH_API_ENDPOINTS = {
@@ -60,6 +62,8 @@ const MOBILE_AUTH_API_ENDPOINTS = {
   optimai_room: `${API_BASE_URL}/auth/token/mobile`,
   optimai_tables: `${API_BASE_URL}/auth/token/mobile`,
   optimai_tables_legacy: `${API_BASE_URL}/auth/token/mobile`,
+  optimai_agent: `${API_BASE_URL}/auth/token/mobile`,
+  optimai_database: `${API_BASE_URL}/auth/token/mobile`,
 };
 
 // Mobile refresh token storage

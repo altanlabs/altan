@@ -1,4 +1,9 @@
-/* Suisse Int'l Font Faces */
+/* Helvetica Neue is a system font - no @font-face definitions needed */
+/* The font will fallback to system fonts as defined in typography.js */
+
+/* 
+  Previous Suisse Int'l Font Faces - commented out since we're now using Helvetica Neue
+  
 @font-face {
   font-family: 'Suisse Intl';
   src: url('/fonts/SuisseIntl-Regular.woff2') format('woff2'),
@@ -34,3 +39,4 @@
   font-style: normal;
   font-display: swap;
 }
+*/
