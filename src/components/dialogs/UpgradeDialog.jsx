@@ -13,7 +13,8 @@ import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import CustomDialog from './CustomDialog';
-import { selectAccountId } from '../../redux/slices/general';
+import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
+import SubscribedPricing from '../../sections/pricing/SubscribedPricing';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
 import Iconify from '../iconify';
@@ -32,6 +33,8 @@ const PRO_FEATURES = [
 const UpgradeDialog = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const accountId = useSelector(selectAccountId);
+  const isAccountFree = useSelector(selectIsAccountFree);
+  console.log('isAccountFree', isAccountFree);
   const history = useHistory();
 
   const handleUpgrade = async () => {
@@ -71,6 +74,20 @@ const UpgradeDialog = ({ open, onClose }) => {
       setLoading(false);
     }
   };
+
+  if (!isAccountFree) {
+    return (
+      <CustomDialog
+        dialogOpen={open}
+        onClose={onClose}
+        maxWidth="sm"
+      >
+        <Box sx={{ p: 5 }}>
+          <SubscribedPricing />
+        </Box>
+      </CustomDialog>
+    );
+  }
 
   return (
     <CustomDialog

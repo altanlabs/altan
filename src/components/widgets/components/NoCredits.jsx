@@ -22,7 +22,7 @@ const NoCredits = () => {
   const handleClose = () => setOpen(false);
 
   return (
-    <div className="flex flex-col items-center justify-center max-w-[400px]">
+    <div className="flex flex-col items-center justify-center max-w-[300px]">
       <div className="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-100">
         {translate
           ? translate('creditWallet.noCreditsTitle', 'You’re out of credits!')
@@ -35,7 +35,7 @@ const NoCredits = () => {
         style={{ background: 'rgba(255,255,255,0.2)' }}
       />
 
-      {/* <Button
+      <Button
         size="small"
         variant="contained"
         color="primary"
@@ -44,7 +44,7 @@ const NoCredits = () => {
         onClick={handleUpgrade}
       >
         {translate('creditWallet.upgradeButton')}
-      </Button> */}
+      </Button>
       <UpgradeDialog
         open={open}
         onClose={handleClose}

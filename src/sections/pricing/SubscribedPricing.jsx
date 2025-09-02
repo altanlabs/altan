@@ -20,7 +20,11 @@ import { useSelector } from 'react-redux';
 
 import Iconify from '../../components/iconify';
 import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
-import { selectAccountId, selectAccountSubscriptions, selectAccountCreditBalance } from '../../redux/slices/general';
+import {
+  selectAccountId,
+  selectAccountSubscriptions,
+  selectAccountCreditBalance,
+} from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
 import { optimai, optimai_shop } from '../../utils/axios';
 
@@ -67,7 +71,9 @@ export default function SubscribedPricing() {
   const currentSubscription = activeSubscriptions?.[0];
   const currentPlan = currentSubscription?.billing_option?.plan;
   const currentBillingOption = currentSubscription?.billing_option;
-  const currentMonthlyPrice = currentBillingOption ? formatPrice(currentBillingOption.price, currentBillingOption.billing_frequency) : 0;
+  const currentMonthlyPrice = currentBillingOption
+    ? formatPrice(currentBillingOption.price, currentBillingOption.billing_frequency)
+    : 0;
   const totalCredits = currentSubscription?.meta_data?.custom_subscription
     ? Number(currentSubscription?.meta_data?.total_credits ?? 0)
     : Number(currentPlan?.credits ?? 0);
@@ -434,7 +440,7 @@ export default function SubscribedPricing() {
                 label={currentPlan?.name || 'Unknown Plan'}
                 color="primary"
                 variant="filled"
-                sx={{ mb: 2, px: 2, py: 1, fontWeight: 600 }}
+                sx={{ px: 2, py: 1, fontWeight: 600 }}
               />
             </Box>
 
