@@ -24,7 +24,7 @@ import { useHistory } from 'react-router-dom';
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
-import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
+import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { openUrl } from '../../utils/auth';
 import { optimai, optimai_shop } from '../../utils/axios';
@@ -89,6 +89,14 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
         plan_type: planType,
         billing_frequency: billingOption.billing_frequency,
         credits_included: plan.credits,
+      });
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      const value = billingOption.price / 100;
+      window.fbq('track', 'InitiateCheckout', {
+        value,
+        currency: 'EUR',
       });
     }
   } catch (error) {
@@ -256,7 +264,6 @@ export default function NewPricing() {
     enterprise: false,
   });
   const accountId = useSelector(selectAccountId);
-  const isAccountFree = useSelector(selectIsAccountFree);
   const { isAuthenticated } = useAuthContext();
   const history = useHistory();
 

@@ -42,6 +42,16 @@ export default function PricingPlanCard({ card, isYearly, index, isEnterprise, s
   );
 
   const onButtonClick = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined' && window.fbq) {
+        const eventData = {};
+        if (typeof price === 'number' && price > 0) {
+          eventData.value = price;
+          eventData.currency = 'EUR';
+        }
+        window.fbq('track', 'InitiateCheckout', eventData);
+      }
+    } catch (e) {}
     if (subscription === 'free' || !user) {
       history.push('/auth/register');
     } else if (!account) {

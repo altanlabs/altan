@@ -46,6 +46,13 @@ const trackCreditPurchaseEvent = (packageInfo) => {
         amount: packageInfo.price,
       });
     }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'InitiateCheckout', {
+        value: packageInfo.price,
+        currency: 'EUR',
+      });
+    }
   } catch (error) {
     console.error('Error tracking credit purchase event:', error);
   }

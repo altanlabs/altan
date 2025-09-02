@@ -64,9 +64,14 @@ export default function AuthRegisterForm({ invitation, idea }) {
           invitation?.id,
           idea,
         );
+
+        if (typeof window !== 'undefined' && window.fbq) {
+          try {
+            window.fbq('track', 'CompleteRegistration');
+          } catch (e) {}
+        }
       }
     } catch (error) {
-      console.error(error);
       reset();
       setError('afterSubmit', {
         ...error,

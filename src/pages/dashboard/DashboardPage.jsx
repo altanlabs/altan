@@ -161,6 +161,7 @@ const DashboardPage = () => {
                       textAlign: 'center',
                       margin: 0,
                       mb: 1,
+                      fontWeight: 'bold',
                     }}
                   >
                     {translate(

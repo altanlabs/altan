@@ -1,12 +1,12 @@
-import { Box, Container, Typography, Button, Card, Stack, Alert } from '@mui/material';
+import { Box, Container, Typography, Button, Stack, Alert } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { CompactLayout } from '../layouts/dashboard';
 
 import Iconify from '../components/iconify';
+import { CompactLayout } from '../layouts/dashboard';
 import { selectAccountId } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
-import { optimai, optimai_shop } from '../utils/axios';
+import { optimai_shop } from '../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ import { optimai, optimai_shop } from '../utils/axios';
 const trackPurchaseEvent = (sessionData) => {
   try {
     if (typeof window !== 'undefined' && window.gtag && sessionData) {
-      const { subscription, plan, billing_option } = sessionData;
+      const { plan, billing_option } = sessionData;
 
       // Get URL parameters for attribution
       const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
@@ -25,7 +25,7 @@ const trackPurchaseEvent = (sessionData) => {
       const currency = 'EUR';
 
       window.gtag('event', 'purchase', {
-        transaction_id: subscription?.id || sessionData.session_id,
+        transaction_id: sessionData?.subscription?.id || sessionData.session_id,
         value,
         currency,
         items: [
@@ -44,28 +44,37 @@ const trackPurchaseEvent = (sessionData) => {
         plan_type: plan?.name?.toLowerCase(),
         billing_frequency: billing_option?.billing_frequency,
         credits_included: plan?.credits,
-        subscription_id: subscription?.id,
+        subscription_id: sessionData?.subscription?.id,
       });
 
-      console.log('🎉 Purchase event tracked:', {
-        transaction_id: subscription?.id || sessionData.session_id,
-        plan_name: plan?.name,
+      // console.debug('Purchase event tracked', {
+      //   transaction_id: subscription?.id || sessionData.session_id,
+      //   plan_name: plan?.name,
+      //   value,
+      //   currency,
+      //   billing_frequency: billing_option?.billing_frequency,
+      //   credits_included: plan?.credits,
+      //   urlParams,
+      // });
+    }
+
+    if (typeof window !== 'undefined' && window.fbq && sessionData) {
+      const { plan, billing_option } = sessionData;
+      const value = billing_option?.price ? billing_option.price / 100 : 0;
+      window.fbq('track', 'Purchase', {
         value,
-        currency,
-        billing_frequency: billing_option?.billing_frequency,
-        credits_included: plan?.credits,
-        urlParams,
+        currency: 'EUR',
+        contents: plan?.id ? [{ id: plan.id, quantity: 1 }] : undefined,
+        content_type: 'product',
       });
     }
-  } catch (error) {
-    console.error('Error tracking purchase event:', error);
+  } catch {
   }
 };
 
 // ----------------------------------------------------------------------
 
 export default function PurchaseSuccessPage() {
-  const [sessionData, setSessionData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
@@ -91,14 +100,11 @@ export default function PurchaseSuccessPage() {
         });
 
         const data = response.data;
-        setSessionData(data);
-
         // Track purchase event
         trackPurchaseEvent(data);
 
         setLoading(false);
-      } catch (err) {
-        console.error('Error fetching session data:', err);
+      } catch {
         setError('Failed to load purchase information');
         setLoading(false);
       }
