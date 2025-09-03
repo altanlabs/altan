@@ -25,7 +25,6 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
     if (!activeSubscriptions?.[0]) {
       return { used: 0, total: 0, remaining: 0, isLowCredits: false };
     }
-
     const subscription = activeSubscriptions[0];
     const totalCredits = subscription?.meta_data?.custom_subscription
       ? Number(subscription?.meta_data?.total_credits ?? 0)

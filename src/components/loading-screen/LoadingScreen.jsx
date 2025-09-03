@@ -138,8 +138,8 @@ function LoadingScreen() {
         <img
           src={
             theme.palette.mode === 'light'
-              ? 'https://altan.ai/logos/horizontalBlack.png'
-              : 'https://altan.ai/logos/horizontalWhite.png'
+              ? '/logos/v2/bold/logoBlack.svg'
+              : '/logos/v2/bold/logoWhite.svg'
           }
           alt="ALTAN"
           style={{

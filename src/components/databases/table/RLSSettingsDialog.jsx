@@ -52,9 +52,9 @@ const RLSSettingsDialog = ({ baseId, table, open, onClose }) => {
 
   // Load existing RLS settings from table metadata
   useEffect(() => {
-    if (table && table.meta_data && table.meta_data.rls) {
-      setRlsEnabled(table.meta_data.rls.enabled ?? true);
-      setPolicies(table.meta_data.rls.policies ?? []);
+    if (table) {
+      setRlsEnabled(table.rls_enabled ?? true);
+      setPolicies(table.rls_policies ?? []);
     } else {
       setRlsEnabled(true);
       setPolicies([]);

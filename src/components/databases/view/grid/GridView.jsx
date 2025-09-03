@@ -22,12 +22,11 @@ import { createColumnDefs } from './columns/index.js';
 import AttachmentEditor from './editors/AttachmentEditor';
 import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
-import DatabaseNavigationBar from '../../navigation/DatabaseNavigationBar';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { rowHeight, headerHeight, defaultColDef } from './utils/settings.js';
-import { 
+import {
   queryTableRecords,
   selectDatabaseQuickFilter,
   setDatabaseRecordCount,
@@ -67,20 +66,20 @@ LicenseManager.setLicenseKey(
 );
 
 export const GridView = memo(
-  ({ 
-    table, 
-    fields, 
-    records, 
-    onAddRecord, 
-    onUpdateRecord, 
-    onDeleteRecords, 
+  ({
+    table,
+    fields,
+    records,
+    onAddRecord,
+    onUpdateRecord,
+    onDeleteRecords,
     onDuplicateRecord,
     // Pagination props to pass up to parent
-    onPaginationChange
+    onPaginationChange,
   }) => {
     const theme = useTheme();
     const gridRef = useRef();
-    const history = useHistory();;
+    const history = useHistory();
     const location = useLocation();
     const members = useSelector((state) => selectAccount(state)?.members || []);
     const quickFilterText = useSelector(selectDatabaseQuickFilter);
@@ -531,10 +530,17 @@ export const GridView = memo(
             onGoToLastPage: paginationGoToLastPage,
             onGoToNextPage: paginationGoToNextPage,
             onGoToPreviousPage: paginationGoToPreviousPage,
-          }
+          },
         });
       }
-    }, [paginationInfo, onPaginationChange, paginationGoToFirstPage, paginationGoToLastPage, paginationGoToNextPage, paginationGoToPreviousPage]);
+    }, [
+      paginationInfo,
+      onPaginationChange,
+      paginationGoToFirstPage,
+      paginationGoToLastPage,
+      paginationGoToNextPage,
+      paginationGoToPreviousPage,
+    ]);
 
     // Update record count in Redux when data changes
     useEffect(() => {

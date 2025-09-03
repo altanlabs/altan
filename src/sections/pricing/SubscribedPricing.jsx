@@ -157,7 +157,7 @@ export default function SubscribedPricing() {
   };
 
   const handleEnterpriseContact = () => {
-    window.open('https://calendly.com/david-altan/15-min-onboarding-agency-clone', '_blank');
+    window.open('https://calendar.app.google/m56phyYffHxMzX6Y7', '_blank');
   };
 
   const currentGrowthPlan = filteredGrowthPlans[selectedGrowthTier];
@@ -167,7 +167,7 @@ export default function SubscribedPricing() {
     <Box>
       <Grid
         container
-        spacing={4}
+        spacing={2}
       >
         {/* Left side - Upgrade Options */}
         <Grid

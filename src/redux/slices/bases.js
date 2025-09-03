@@ -297,8 +297,20 @@ const slice = createSlice({
       if (!state.records[targetTableId]) {
         state.records[targetTableId] = { items: [], total: 0 };
       }
-      state.records[targetTableId].items.push(record);
-      state.records[targetTableId].total += 1;
+
+      // Check if record already exists to prevent duplicates
+      const existingIndex = state.records[targetTableId].items.findIndex(
+        (existingRecord) => existingRecord.id === record.id,
+      );
+
+      if (existingIndex !== -1) {
+        // Update existing record instead of adding duplicate
+        state.records[targetTableId].items[existingIndex] = record;
+      } else {
+        // Add new record
+        state.records[targetTableId].items.push(record);
+        state.records[targetTableId].total += 1;
+      }
     },
     deleteTableRecord(state, action) {
       const { tableId, tableName, recordId } = action.payload;

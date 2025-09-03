@@ -251,6 +251,9 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
     const formattedLimit = formatTokenCount(MAX_TOKENS);
     const formattedUsed = formatTokenCount(totalTokens);
 
+    if (tokenPercentage >= 100) {
+      return `Context is ${tokenPercentage}% full (${formattedUsed}/${formattedLimit}). Context exceeded - start a new chat to improve performance.`;
+    }
     if (isOverLimit) {
       return `Context is ${tokenPercentage}% full (${formattedUsed}/${formattedLimit}). Start a new chat to improve performance.`;
     }
@@ -264,7 +267,26 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const strokeDasharray = circumference;
-    const strokeDashoffset = circumference - (tokenPercentage / 100) * circumference;
+
+    // Cap the visual progress at 100% for the chart display
+    const displayPercentage = Math.min(tokenPercentage, 100);
+    const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+
+    // Determine colors based on usage level
+    const isNearLimit = tokenPercentage >= 75;
+    const isOverLimit = tokenPercentage >= 100;
+
+    const getProgressColor = () => {
+      if (isOverLimit) return 'text-red-500 dark:text-red-400';
+      if (isNearLimit) return 'text-orange-500 dark:text-orange-400';
+      return 'text-gray-700 dark:text-gray-300';
+    };
+
+    const getTextColor = () => {
+      if (isOverLimit) return 'text-red-600 dark:text-red-400';
+      if (isNearLimit) return 'text-orange-600 dark:text-orange-400';
+      return 'text-gray-700 dark:text-gray-300';
+    };
 
     return (
       <div className="flex items-center gap-1">
@@ -290,11 +312,11 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
             strokeDasharray={strokeDasharray}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            className="text-gray-700 dark:text-gray-300"
+            className={getProgressColor()}
           />
         </svg>
         {/* Percentage text next to chart */}
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+        <span className={`text-xs font-medium ${getTextColor()}`}>
           {tokenPercentage}%
         </span>
       </div>
@@ -306,14 +328,36 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
       {/* Left: Context warning message (when needed) */}
       <div className="flex-1 flex items-center">
         {isOverLimit && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg">
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg ${
+              tokenPercentage >= 100
+                ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700/40'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30'
+            }`}
+          >
             <Iconify
               icon="mdi:alert-circle-outline"
               width={16}
-              className="text-red-600 dark:text-red-400 flex-shrink-0"
+              className={
+                tokenPercentage >= 100
+                  ? 'text-red-700 dark:text-red-300 flex-shrink-0'
+                  : 'text-red-600 dark:text-red-400 flex-shrink-0'
+              }
             />
-            <span className="text-sm text-red-700 dark:text-red-300 font-medium">
-              {isMobile ? 'Context full - start new chat' : 'Start a new chat for better performance.'}
+            <span
+              className={`text-sm font-medium ${
+                tokenPercentage >= 100
+                  ? 'text-red-800 dark:text-red-200'
+                  : 'text-red-700 dark:text-red-300'
+              }`}
+            >
+              {isMobile
+                ? tokenPercentage >= 100
+                  ? 'Context exceeded - new chat needed'
+                  : 'Context full - start new chat'
+                : tokenPercentage >= 100
+                  ? 'Context exceeded - start a new chat immediately.'
+                  : 'Start a new chat for better performance.'}
             </span>
           </div>
         )}

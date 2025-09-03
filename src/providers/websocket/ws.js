@@ -171,12 +171,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('handleWebSocketEvent:', {
-  //   data,
-  //   userId: user_id,
-  //   timestamp: new Date().toISOString(),
-  // });
-  // dispatch(addWebSocketEvent(data));
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -341,7 +335,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addSubscription(data.data.attributes));
       break;
     case 'SubscriptionUpdate':
-      console.log('SubscriptionUpdate', data);
       dispatch(
         updateSubscription({
           id: data.data.ids[0],
@@ -634,12 +627,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'ThreadOpened':
       const thread = data.data.attributes;
       dispatch(addThread(thread));
-      // Create a new tab for the thread without switching to it
-      dispatch(createTab({
-        threadId: thread.id,
-        threadName: thread.name,
-        isMainThread: false,
-      }));
+      // dispatch(createTab({
+      //   threadId: thread.id,
+      //   threadName: thread.name,
+      //   isMainThread: false,
+      // }));
       break;
     case 'ThreadUpdate':
       dispatch(threadUpdate(data.data));

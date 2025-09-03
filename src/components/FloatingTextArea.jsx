@@ -1,6 +1,7 @@
 import { IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 import AttachmentHandler from './attachment/AttachmentHandler.jsx';
 import AuthorizationRequests from './AuthorizationRequests.jsx';
@@ -11,6 +12,7 @@ import Iconify from './iconify/Iconify.jsx';
 import FileUpload from './room/thread/FileUpload.jsx';
 import MessageMinified from './room/thread/MessageMinified.jsx';
 import { useSnackbar } from './snackbar';
+import TodoWidget from './TodoWidget.jsx';
 import useLocales from '../locales/useLocales';
 import { useVoiceConversation } from '../providers/voice/VoiceConversationProvider';
 import { checkObjectsEqual } from '../redux/helpers/memoize';
@@ -25,6 +27,7 @@ import {
   setThreadRespond,
   selectIsVoiceActive,
 } from '../redux/slices/room';
+import { selectTasksByThread } from '../redux/slices/tasks';
 import { dispatch, useSelector } from '../redux/store.js';
 import { optimai_room } from '../utils/axios.js';
 import { getMemberDetails } from './room/utils.js';
@@ -70,15 +73,20 @@ const FloatingTextArea = ({
   onMobileToggle = null,
   renderCredits = false,
 }) => {
+  const { altanerId } = useParams();
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
   const messageSelector = useMemo(makeSelectMessage, []);
   const selectedMessage = useSelector((state) => messageSelector(state, messageId));
+  const tasks = useSelector(selectTasksByThread(threadId));
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
+
+  // Check if we have tasks to show (only in altaner context)
+  const hasTasks = altanerId && tasks && tasks.length > 0;
 
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
@@ -269,11 +277,16 @@ const FloatingTextArea = ({
         <>
           <AuthorizationRequests />
 
+          {/* Todo Widget integrated with text field */}
+          <TodoWidget threadId={threadId} />
+
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
                 ? 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
-                : 'w-full max-w-[700px] mx-auto pb-2 pt-3 rounded-3xl bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30'
+                : `w-full max-w-[700px] mx-auto pb-2 pt-3 ${
+                  hasTasks ? 'rounded-b-3xl border-x border-b' : 'rounded-3xl border'
+                } bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30`
             }`}
             style={
               mode === 'mobile'

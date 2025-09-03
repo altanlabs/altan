@@ -24,6 +24,7 @@ import { useSelector } from 'react-redux';
 import Iconify from '../../../../components/iconify';
 import { selectAccount } from '../../../../redux/slices/general';
 import { optimai_shop } from '../../../../utils/axios';
+import { openUrl } from '../../../../utils/auth';
 
 // Invoice Status Colors
 const getInvoiceStatusColor = (status) => {
@@ -109,8 +110,8 @@ function AccountBilling() {
       });
 
       if (response.data.url) {
-        // Open in a new tab
-        window.open(response.data.url, '_blank');
+        // Open using platform-aware utility
+        await openUrl(response.data.url);
       } else {
         setError('Failed to create portal session. Please try again.');
       }
@@ -304,7 +305,7 @@ function AccountBilling() {
                             <Tooltip title="View Online">
                               <IconButton
                                 size="small"
-                                onClick={() => window.open(invoice.hosted_invoice_url, '_blank')}
+                                onClick={() => openUrl(invoice.hosted_invoice_url)}
                               >
                                 <Iconify icon="eva:external-link-outline" />
                               </IconButton>
