@@ -152,8 +152,7 @@ function TextAreaWithButtons({
 
     // Append free account prompt when user is on free plan
     if (isAccountFree) {
-      finalPrompt +=
-        "\n\n<hide>The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on:\n\n1. Building a polished, functional prototype quickly\n2. Showcasing clean, modern design patterns\n3. Implementing smooth interactions and responsive layouts\n\nOnce the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today.</hide>";
+      finalPrompt += "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today .</hide>";
     }
 
     // Pass the final prompt directly to handleCreate

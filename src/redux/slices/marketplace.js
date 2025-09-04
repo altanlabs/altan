@@ -50,7 +50,6 @@ const slice = createSlice({
     },
     setTemplates(state, action) {
       const { mode, templates } = action.payload;
-      console.log('templates being set', templates);
       state.templates[mode].allIds = templates.map((t) => t.id);
       state.templates[mode].byId = templates.reduce((acc, t) => {
         acc[t.id] = t;

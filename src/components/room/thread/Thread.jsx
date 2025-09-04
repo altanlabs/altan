@@ -89,16 +89,15 @@ const Thread = ({
   );
   const todoExpanded = useSelector(selectTasksExpanded(tId || drawer.current));
   const threadId = thread?.id;
-  
   // Debug logging for padding calculation
-  const calculatedPaddingBottom = isMobile 
-    ? '120px' 
-    : !hideInput 
-      ? todoExpanded 
+  const calculatedPaddingBottom = isMobile
+    ? '120px'
+    : !hideInput
+      ? todoExpanded
         ? '300px'
         : '120px'
       : '0px';
-  
+
   // eslint-disable-next-line no-console
   console.log('Thread padding debug:', {
     mode,
@@ -106,7 +105,7 @@ const Thread = ({
     todoExpanded,
     isMobile,
     hideInput,
-    calculatedPaddingBottom
+    calculatedPaddingBottom,
   });
   const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
