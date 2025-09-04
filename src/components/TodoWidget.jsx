@@ -1,4 +1,4 @@
-import { Typography } from '@mui/material';
+import { IconButton, Tooltip, Typography } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -10,21 +10,29 @@ import {
   selectTasksByThread,
   selectTasksLoading,
   selectTasksError,
+  selectTasksExpanded,
+  setTasksExpanded,
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
 const TodoWidget = ({ threadId }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const tasks = useSelector(selectTasksByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
+  const isExpanded = useSelector(selectTasksExpanded(threadId));
 
   // eslint-disable-next-line no-console
-  console.log('tasks', tasks);
+  console.log('TodoWidget debug:', {
+    threadId,
+    altanerId,
+    isExpanded,
+    taskCount: tasks?.length,
+    tasks
+  });
 
   // Sort tasks by status priority: running -> ready -> to-do -> completed
   const sortedTasks = useMemo(() => {
@@ -82,12 +90,12 @@ const TodoWidget = ({ threadId }) => {
       );
 
       if (hasActiveTasks) {
-        setIsExpanded(true);
+        dispatch(setTasksExpanded({ threadId, expanded: true }));
       }
 
       setHasInitialized(true);
     }
-  }, [sortedTasks, isLoading, hasInitialized]);
+  }, [sortedTasks, isLoading, hasInitialized, dispatch, threadId]);
 
   // Don't render if we're not in an altaner context
   if (!altanerId) {
@@ -168,7 +176,7 @@ const TodoWidget = ({ threadId }) => {
     <div className="w-full max-w-[700px] mx-auto">
       {/* Compact Collapsible Header */}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }))}
         className="flex items-center justify-between px-3 py-1.5 rounded-t-3xl cursor-pointer bg-white/90 dark:bg-[#1c1c1c]/90 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-lg text-gray-900 dark:text-gray-100 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-[#1c1c1c]/95 hover:border-gray-300/40 dark:hover:border-gray-600/40"
       >
         <div className="flex items-center gap-1.5">
@@ -184,6 +192,32 @@ const TodoWidget = ({ threadId }) => {
             {sortedTasks.length} Task{sortedTasks.length !== 1 ? 's' : ''}
           </span>
         </div>
+        
+        {/* Debug button to test Redux state */}
+        <Tooltip title="Debug: Toggle expanded state">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }));
+              // eslint-disable-next-line no-console
+              console.log('Debug: Manually toggled expanded state', { threadId, expanded: !isExpanded });
+            }}
+            sx={{
+              width: 18,
+              height: 18,
+              color: 'text.secondary',
+              '&:hover': {
+                color: 'primary.main',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:bug"
+              width={12}
+            />
+          </IconButton>
+        </Tooltip>
 
         {/* Show running task when collapsed */}
         {!isExpanded && runningTask && (

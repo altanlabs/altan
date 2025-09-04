@@ -22,6 +22,7 @@ import {
   selectIsVoiceActive,
   selectIsVoiceConnecting,
 } from '../../../redux/slices/room';
+import { selectTasksExpanded } from '../../../redux/slices/tasks';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import { useVoiceConversationHandler } from '../../attachment/hooks/useVoiceConversation.js';
 import FloatingTextArea from '../../FloatingTextArea.jsx';
@@ -86,7 +87,27 @@ const Thread = ({
   const thread = useSelector((state) =>
     threadSelector(state, mode === 'drawer' ? drawer.current : tId),
   );
+  const todoExpanded = useSelector(selectTasksExpanded(tId || drawer.current));
   const threadId = thread?.id;
+  
+  // Debug logging for padding calculation
+  const calculatedPaddingBottom = isMobile 
+    ? '120px' 
+    : !hideInput 
+      ? todoExpanded 
+        ? '300px'
+        : '120px'
+      : '0px';
+  
+  // eslint-disable-next-line no-console
+  console.log('Thread padding debug:', {
+    mode,
+    threadId: tId || drawer.current,
+    todoExpanded,
+    isMobile,
+    hideInput,
+    calculatedPaddingBottom
+  });
   const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
@@ -259,7 +280,8 @@ const Thread = ({
             position: 'relative',
             width: '100%',
             // Add bottom padding: always on mobile (fixed FloatingTextArea), or on desktop when input shown
-            paddingBottom: isMobile ? '120px' : !hideInput ? '120px' : '0px',
+            // Extra padding when TodoWidget is expanded
+            paddingBottom: calculatedPaddingBottom,
             // Only hide if we're certain there are no messages AND not in drawer mode
             ...(!hasMessages ? { display: 'none' } : {}),
           }}
