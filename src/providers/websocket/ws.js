@@ -107,7 +107,6 @@ import {
   deleteRunningResponse,
   updateAuthorizationRequest,
   addAuthorizationRequest,
-  createTab,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -118,6 +117,7 @@ import {
   deletePlanGroup,
   // Note: There's no specific reducer for SubscriptionPlanBilling in the current slice
 } from '../../redux/slices/subscriptions';
+import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 
 // TODO: add other redux actions for agent, gate and form
@@ -171,6 +171,8 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('data', data.type);
+
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -616,10 +618,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(roomUpdate(data.data));
       break;
     case 'RoomMemberJoined':
-      dispatch(addMember({
-        roomMember: data.data.attributes,
-        currentUserId: user_id,
-      }));
+      dispatch(
+        addMember({
+          roomMember: data.data.attributes,
+          currentUserId: user_id,
+        }),
+      );
       break;
     case 'RoomMemberUpdate':
       dispatch(roomMemberUpdate(data.data));
@@ -641,6 +645,37 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'ThreadRead':
       dispatch(changeThreadReadState(data.data));
+      break;
+    case 'ThreadTaskNew':
+      // eslint-disable-next-line no-console
+      console.log('🆕 ThreadTaskNew:', data);
+      dispatch(
+        addTask({
+          threadId: data.data.mainthread_id,
+          task: data.data,
+        }),
+      );
+      break;
+    case 'ThreadTaskUpdate':
+      // eslint-disable-next-line no-console
+      console.log('🔄 ThreadTaskUpdate:', data);
+      dispatch(
+        updateTask({
+          threadId: data.data.mainthread_id,
+          taskId: data.data.id,
+          updates: data.data,
+        }),
+      );
+      break;
+    case 'ThreadTaskDelete':
+      // eslint-disable-next-line no-console
+      console.log('🗑️ ThreadTaskDelete:', data);
+      dispatch(
+        removeTask({
+          threadId: data.data.mainthread_id,
+          taskId: data.data.id,
+        }),
+      );
       break;
     case 'MessageNew':
       dispatch(addMessage(data.data.attributes));

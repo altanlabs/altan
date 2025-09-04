@@ -1,17 +1,16 @@
+import { Typography } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { Typography } from '@mui/material';
-
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
 import Iconify from './iconify/Iconify.jsx';
+import { switchToThread } from '../redux/slices/room';
 import {
   fetchTasks,
   selectTasksByThread,
   selectTasksLoading,
   selectTasksError,
 } from '../redux/slices/tasks';
-import { switchToThread } from '../redux/slices/room';
 import { useSelector, useDispatch } from '../redux/store';
 
 const TodoWidget = ({ threadId }) => {
@@ -25,7 +24,7 @@ const TodoWidget = ({ threadId }) => {
   const error = useSelector(selectTasksError(threadId));
 
   // eslint-disable-next-line no-console
-  console.log("tasks", tasks);
+  console.log('tasks', tasks);
 
   // Sort tasks by status priority: running -> ready -> to-do -> completed
   const sortedTasks = useMemo(() => {
@@ -49,18 +48,23 @@ const TodoWidget = ({ threadId }) => {
   }, [tasks]);
 
   // Handle opening subthread in a new tab
-  const handleOpenSubthread = useCallback((task) => {
-    if (task.subthread_id) {
-      dispatch(switchToThread({
-        threadId: task.subthread_id,
-        threadName: task.task_name || 'Task Thread',
-      }));
-    }
-  }, [dispatch]);
+  const handleOpenSubthread = useCallback(
+    (task) => {
+      if (task.subthread_id) {
+        dispatch(
+          switchToThread({
+            threadId: task.subthread_id,
+            threadName: task.task_name || 'Task Thread',
+          }),
+        );
+      }
+    },
+    [dispatch],
+  );
 
   // Get the first running task to show in collapsed state
   const runningTask = useMemo(() => {
-    return sortedTasks.find(task => task.status?.toLowerCase() === 'running');
+    return sortedTasks.find((task) => task.status?.toLowerCase() === 'running');
   }, [sortedTasks]);
 
   // Only fetch tasks if we're inside an altaner context
@@ -73,14 +77,14 @@ const TodoWidget = ({ threadId }) => {
   // Auto-expand on first load if there are active (non-completed) tasks
   useEffect(() => {
     if (!hasInitialized && sortedTasks.length > 0 && !isLoading) {
-      const hasActiveTasks = sortedTasks.some(task => 
-        !['completed', 'done'].includes(task.status?.toLowerCase())
+      const hasActiveTasks = sortedTasks.some(
+        (task) => !['completed', 'done'].includes(task.status?.toLowerCase()),
       );
-      
+
       if (hasActiveTasks) {
         setIsExpanded(true);
       }
-      
+
       setHasInitialized(true);
     }
   }, [sortedTasks, isLoading, hasInitialized]);
@@ -149,9 +153,7 @@ const TodoWidget = ({ threadId }) => {
             icon="mdi:alert-circle"
             className="w-3.5 h-3.5"
           />
-          <span className="text-xs font-medium">
-            Failed to load tasks
-          </span>
+          <span className="text-xs font-medium">Failed to load tasks</span>
         </div>
       </div>
     );
@@ -182,7 +184,7 @@ const TodoWidget = ({ threadId }) => {
             {sortedTasks.length} Task{sortedTasks.length !== 1 ? 's' : ''}
           </span>
         </div>
-        
+
         {/* Show running task when collapsed */}
         {!isExpanded && runningTask && (
           <div className="flex items-center gap-1.5 max-w-[200px]">

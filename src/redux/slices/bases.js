@@ -241,8 +241,8 @@ const slice = createSlice({
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
           if (base.tables?.items) {
-            const matchingTable = base.tables.items.find((table) =>
-              table.name === tableName || table.db_name === tableName,
+            const matchingTable = base.tables.items.find(
+              (table) => table.name === tableName || table.db_name === tableName,
             );
             if (matchingTable) {
               tableRecords = state.records[matchingTable.id]?.items;
@@ -267,7 +267,10 @@ const slice = createSlice({
           if (availableTableRecords) {
             const foundRecordIndex = availableTableRecords.findIndex((r) => r.id === recordId);
             if (foundRecordIndex !== -1) {
-              availableTableRecords[foundRecordIndex] = { ...availableTableRecords[foundRecordIndex], ...changes };
+              availableTableRecords[foundRecordIndex] = {
+                ...availableTableRecords[foundRecordIndex],
+                ...changes,
+              };
               return;
             }
           }
@@ -283,8 +286,8 @@ const slice = createSlice({
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
           if (base.tables?.items) {
-            const matchingTable = base.tables.items.find((table) =>
-              table.name === tableName || table.db_name === tableName,
+            const matchingTable = base.tables.items.find(
+              (table) => table.name === tableName || table.db_name === tableName,
             );
             if (matchingTable && state.records[matchingTable.id]) {
               targetTableId = matchingTable.id;
@@ -321,8 +324,8 @@ const slice = createSlice({
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
           if (base.tables?.items) {
-            const matchingTable = base.tables.items.find((table) =>
-              table.name === tableName || table.db_name === tableName,
+            const matchingTable = base.tables.items.find(
+              (table) => table.name === tableName || table.db_name === tableName,
             );
             if (matchingTable && state.records[matchingTable.id]) {
               targetTableId = matchingTable.id;
@@ -669,20 +672,20 @@ export const queryTableRecords =
       const base = state.bases.bases[baseId];
       const table = base.tables?.items?.find((t) => t.id === tableId);
       const tableName = table?.db_name || table?.name;
-      
+
       if (!tableName) {
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
       // Use Supabase-style endpoint: /admin/records/{baseId}/{tableName}
       // GET request with query parameters following Supabase pattern
-      console.log(`🔄 Querying records from: https://database.altan.ai/admin/records/${baseId}/${tableName}`, queryParams);
-      const response = await optimai_database.get(
-        `/admin/records/${baseId}/${tableName}`,
-        {
-          params: queryParams,
-        },
+      console.log(
+        `🔄 Querying records from: https://database.altan.ai/admin/records/${baseId}/${tableName}`,
+        queryParams,
       );
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: queryParams,
+      });
 
       // Process response data following Supabase format
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
@@ -706,51 +709,53 @@ export const queryTableRecords =
     }
   };
 
-export const getTableRecord = (tableId, recordId, customTableName = null) => async (dispatch, getState) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const state = getState();
-    
-    // Find the base and table info
-    let baseId, tableName;
-    for (const [bId, base] of Object.entries(state.bases.bases)) {
-      if (base.tables?.items) {
-        const table = base.tables.items.find((t) => t.id === tableId);
-        if (table) {
-          baseId = bId;
-          tableName = customTableName || table.name || table.db_name;
-          break;
+export const getTableRecord =
+  (tableId, recordId, customTableName = null) =>
+  async (dispatch, getState) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const state = getState();
+
+      // Find the base and table info
+      let baseId, tableName;
+      for (const [bId, base] of Object.entries(state.bases.bases)) {
+        if (base.tables?.items) {
+          const table = base.tables.items.find((t) => t.id === tableId);
+          if (table) {
+            baseId = bId;
+            tableName = customTableName || table.name || table.db_name;
+            break;
+          }
         }
       }
-    }
-    
-    if (!baseId || !tableName) {
-      throw new Error(`Could not find base or table name for table ${tableId}`);
-    }
-    
-    if (customTableName && customTableName.startsWith('auth.')) {
-      const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-        id: recordId,
+
+      if (!baseId || !tableName) {
+        throw new Error(`Could not find base or table name for table ${tableId}`);
+      }
+
+      if (customTableName && customTableName.startsWith('auth.')) {
+        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+          id: recordId,
+        });
+        return Promise.resolve(response.data.record);
+      }
+
+      // Use Supabase-style endpoint for regular tables
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: { id: recordId },
       });
-      return Promise.resolve(response.data.record);
+
+      const records = Array.isArray(response.data) ? response.data : response.data.records || [];
+      const record = records.find((r) => r.id === recordId) || records[0];
+
+      return Promise.resolve(record);
+    } catch (e) {
+      dispatch(slice.actions.hasError(e.message));
+      throw e;
+    } finally {
+      dispatch(slice.actions.stopLoading());
     }
-    
-    // Use Supabase-style endpoint for regular tables
-    const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-      params: { id: recordId }
-    });
-    
-    const records = Array.isArray(response.data) ? response.data : response.data.records || [];
-    const record = records.find(r => r.id === recordId) || records[0];
-    
-    return Promise.resolve(record);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
+  };
 
 export const createTableRecords = (tableId, recordData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
@@ -768,7 +773,7 @@ export const createTableRecords = (tableId, recordData) => async (dispatch, getS
         }
       }
     }
-    
+
     if (!baseId || !tableName) {
       throw new Error(`Could not find base or table name for table ${tableId}`);
     }
@@ -789,7 +794,10 @@ export const createTableRecords = (tableId, recordData) => async (dispatch, getS
     }
 
     // Use Supabase-style endpoint with proxy for creating records
-    const response = await optimai_database.post(`/admin/records/${baseId}/${tableName}`, supabaseData);
+    const response = await optimai_database.post(
+      `/admin/records/${baseId}/${tableName}`,
+      supabaseData,
+    );
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -799,38 +807,29 @@ export const createTableRecords = (tableId, recordData) => async (dispatch, getS
   }
 };
 
-export const updateTableRecordThunk =
-  (tableId, recordId, changes) => async (dispatch, getState) => {
-    dispatch(slice.actions.startLoading());
-    try {
-      const response = await optimai_tables.patch(`/table/${tableId}/record/${recordId}`, {
-        fields: changes,
-      });
-      return Promise.resolve(response.data.record);
-    } catch (e) {
-      dispatch(slice.actions.hasError(e.message));
-      throw e;
-    } finally {
-      dispatch(slice.actions.stopLoading());
-    }
-  };
-
-export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, getState) => {
+export const updateTableRecordThunk = (tableId, recordId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table to determine which API to use
-    const state = getState();
+    const response = await optimai_tables.patch(`/table/${tableId}/record/${recordId}`, {
+      fields: changes,
+    });
+    return Promise.resolve(response.data.record);
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
     // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
     await optimai_tables.delete(`/table/${tableId}/record`, {
       data: { ids },
     });
-
-    // Update state for each deleted record
-    ids.forEach((recordId) => {
-      dispatch(slice.actions.deleteTableRecord({ tableId, recordId }));
-    });
-
     return Promise.resolve();
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -841,7 +840,7 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
 };
 
 // Add this new thunk action
-export const searchTableRecords = (tableId, query) => async (dispatch, getState) => {
+export const searchTableRecords = (tableId, query) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.get(`/table/${tableId}/record/search`, {
@@ -903,7 +902,7 @@ export const loadAllTableRecords =
       const base = state.bases.bases[baseId];
       const table = base.tables?.items?.find((t) => t.id === tableId);
       const tableName = table?.db_name || table?.name;
-      
+
       if (!tableName) {
         throw new Error(`Could not find table name for table ${tableId}`);
       }
@@ -949,7 +948,9 @@ export const loadAllTableRecords =
           },
         });
 
-        const responseRecords = Array.isArray(response.data) ? response.data : response.data.records || [];
+        const responseRecords = Array.isArray(response.data)
+          ? response.data
+          : response.data.records || [];
         dispatch(
           slice.actions.setTableRecords({
             tableId,
@@ -973,7 +974,9 @@ export const loadAllTableRecords =
           },
         });
 
-        const responseRecords = Array.isArray(response.data) ? response.data : response.data.records || [];
+        const responseRecords = Array.isArray(response.data)
+          ? response.data
+          : response.data.records || [];
         dispatch(
           slice.actions.setTableRecords({
             tableId,

@@ -478,20 +478,6 @@ const HermesWebSocketProvider = ({ children }) => {
 
               setSubscriptionQueue([]);
             } else {
-              // Log all other events
-              console.log('🔄 WS: Event received:', {
-                type: data.type,
-                entity: data.entity,
-                action: data.action,
-                payload: data.payload,
-                timestamp: new Date().toISOString(),
-              });
-
-              console.log('🔄 WS Event Handled by handleWebSocketEvent:', {
-                data,
-                userId: user_id,
-                timestamp: new Date().toISOString(),
-              });
               handleWebSocketEvent(data, user_id);
             }
           };
