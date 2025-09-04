@@ -130,10 +130,6 @@ const Thread = ({
 
       // If voice is currently active, restart the call with the new language
       if (isVoiceActive && agents.length > 0) {
-        console.log(
-          '🔄 [Thread] Language changed during active voice call, restarting with new language:',
-          langValue,
-        );
         // Stop current call and restart with new language
         stopVoiceCall();
         // Add a small delay to ensure cleanup is complete before restarting
@@ -152,15 +148,6 @@ const Thread = ({
     }
   }, [agents, startVoiceCall]);
 
-  const manageSubscription = useCallback(
-    (threadId) => {
-      if (threadId) {
-        subscribe(`thread:${threadId}`);
-      }
-    },
-    [subscribe],
-  );
-
   // INITIALIZATION LOGIC
   useEffect(() => {
     if (!!threadId && threadId !== lastThreadId && !isCreation && !!isOpen) {
@@ -175,7 +162,6 @@ const Thread = ({
             history.replace('/404');
           } else {
             console.log('🧵 Thread fetched successfully, managing subscription');
-            manageSubscription(threadId);
             console.log('🧵 Setting hasLoaded to true in 1.5s');
             setTimeout(() => {
               console.log('🧵 Setting hasLoaded to true NOW');
@@ -201,19 +187,6 @@ const Thread = ({
       });
     }
   }, [threadId, isCreation, isOpen]);
-
-  useEffect(() => {
-    if (isOpen && threadId) {
-      console.log('🧵 Managing subscription for thread:', threadId);
-      manageSubscription(threadId);
-      return () => {
-        console.log('🧵 Unsubscribing from thread:', threadId);
-        unsubscribe(`thread:${threadId}`, () => dispatch(readThread({ threadId })));
-      };
-    } else {
-      console.log('🧵 Not managing subscription - isOpen:', isOpen, 'threadId:', threadId);
-    }
-  }, [isOpen, threadId]);
 
   const helmetName = thread?.is_main
     ? room?.name || 'Room'

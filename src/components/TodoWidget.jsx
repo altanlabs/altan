@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
 import Iconify from './iconify/Iconify.jsx';
+import ThreadPreview from './room/thread/ThreadPreview.jsx';
 import { switchToThread } from '../redux/slices/room';
 import {
   fetchTasks,
@@ -31,7 +32,7 @@ const TodoWidget = ({ threadId }) => {
     altanerId,
     isExpanded,
     taskCount: tasks?.length,
-    tasks
+    tasks,
   });
 
   // Sort tasks by status priority: running -> ready -> to-do -> completed
@@ -192,7 +193,7 @@ const TodoWidget = ({ threadId }) => {
             {sortedTasks.length} Task{sortedTasks.length !== 1 ? 's' : ''}
           </span>
         </div>
-        
+
         {/* Debug button to test Redux state */}
         <Tooltip title="Debug: Toggle expanded state">
           <IconButton
@@ -221,28 +222,40 @@ const TodoWidget = ({ threadId }) => {
 
         {/* Show running task when collapsed */}
         {!isExpanded && runningTask && (
-          <div className="flex items-center gap-1.5 max-w-[200px]">
-            <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
-            <TextShimmer
-              className="text-xs font-medium truncate leading-none"
-              duration={2}
-            >
-              {runningTask.task_name || 'Running task...'}
-            </TextShimmer>
-            {runningTask.subthread_id && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenSubthread(runningTask);
-                }}
-                className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                title={`Open task thread: ${runningTask.task_name}`}
+          <div className="flex flex-col gap-1.5 max-w-[300px]">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
+              <TextShimmer
+                className="text-xs font-medium truncate leading-none"
+                duration={2}
               >
-                <Iconify
-                  icon="mdi:open-in-new"
-                  className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                {runningTask.task_name || 'Running task...'}
+              </TextShimmer>
+              {runningTask.subthread_id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenSubthread(runningTask);
+                  }}
+                  className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                  title={`Open task thread: ${runningTask.task_name}`}
+                >
+                  <Iconify
+                    icon="mdi:open-in-new"
+                    className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* Compact thread preview for collapsed state */}
+            {runningTask.subthread_id && (
+              <div className="ml-3 max-w-[250px]">
+                <ThreadPreview
+                  threadId={runningTask.subthread_id}
+                  className="scale-90 origin-left transform"
                 />
-              </button>
+              </div>
             )}
           </div>
         )}
@@ -251,60 +264,69 @@ const TodoWidget = ({ threadId }) => {
       {/* Compact Expandable Content */}
       <div
         className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+          isExpanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border-x border-b border-gray-200/30 dark:border-gray-700/30 backdrop-blur-lg">
-          <div className="max-h-44 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1">
+          <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1">
             {sortedTasks.map((task, index) => (
-              <div
-                key={task.id || index}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors duration-150"
-              >
-                {/* Status Icon */}
-                <div className="flex-shrink-0">
-                  <Iconify
-                    icon={getTaskIcon(task.status)}
-                    className={`w-3 h-3 ${getTaskIconColor(task.status)}`}
-                  />
-                </div>
+              <div key={task.id || index} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors duration-150">
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                  {/* Status Icon */}
+                  <div className="flex-shrink-0">
+                    <Iconify
+                      icon={getTaskIcon(task.status)}
+                      className={`w-3 h-3 ${getTaskIconColor(task.status)}`}
+                    />
+                  </div>
 
-                {/* Task Content with Status-Based Styling */}
-                <div className="flex-1 min-w-0 flex items-center">
-                  {task.status?.toLowerCase() === 'running' ? (
-                    <TextShimmer
-                      className="text-xs font-medium truncate leading-none"
-                      duration={2}
-                    >
-                      {task.task_name || 'Untitled Task'}
-                    </TextShimmer>
-                  ) : (
-                    <Typography
-                      variant="caption"
-                      className={`font-medium truncate text-xs leading-none ${getTaskTextStyle(task.status)}`}
-                      title={task.task_name}
-                    >
-                      {task.task_name || 'Untitled Task'}
-                    </Typography>
+                  {/* Task Content with Status-Based Styling */}
+                  <div className="flex-1 min-w-0 flex items-center">
+                    {task.status?.toLowerCase() === 'running' ? (
+                      <TextShimmer
+                        className="text-xs font-medium truncate leading-none"
+                        duration={2}
+                      >
+                        {task.task_name || 'Untitled Task'}
+                      </TextShimmer>
+                    ) : (
+                      <Typography
+                        variant="caption"
+                        className={`font-medium truncate text-xs leading-none ${getTaskTextStyle(task.status)}`}
+                        title={task.task_name}
+                      >
+                        {task.task_name || 'Untitled Task'}
+                      </Typography>
+                    )}
+                  </div>
+
+                  {/* Subthread Icon - show if task has subthread_id */}
+                  {task.subthread_id && (
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenSubthread(task);
+                        }}
+                        className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                        title={`Open task thread: ${task.task_name}`}
+                      >
+                        <Iconify
+                          icon="mdi:open-in-new"
+                          className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                        />
+                      </button>
+                    </div>
                   )}
                 </div>
 
-                {/* Subthread Icon - show if task has subthread_id */}
-                {task.subthread_id && (
-                  <div className="flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSubthread(task);
-                      }}
-                      className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                      title={`Open task thread: ${task.task_name}`}
-                    >
-                      <Iconify
-                        icon="mdi:open-in-new"
-                        className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                      />
-                    </button>
+                {/* Thread Preview - show for running tasks with subthread_id */}
+                {task.status?.toLowerCase() === 'running' && task.subthread_id && (
+                  <div className="mt-2 px-3 pb-3">
+                    <ThreadPreview
+                      threadId={task.subthread_id}
+                      className="w-full"
+                    />
                   </div>
                 )}
               </div>
