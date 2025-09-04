@@ -14,45 +14,46 @@ const variants = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: [0.6, -0.05, 0.01, 0.99] } },
 };
 
-const makeSelectMessages = () => createSelector(
-  [
-    selectMessagesById,
-    (state, messageId) => messageId,
-    (state, messageId, previousMessageId) => previousMessageId ?? null,
-  ],
-  (messagesById, messageId, previousMessageId) => {
-    const messages = {};
-    if (!!messageId) {
-      const m = messagesById[messageId];
-      if (m) {
-        messages.message = {
-          id: m.id,
-          date_creation: m.date_creation,
-          member_id: m.member_id,
-          thread_id: m.thread_id,
-          error: m.error,
-          replied: m.replied,
-        };
+const makeSelectMessages = () =>
+  createSelector(
+    [
+      selectMessagesById,
+      (state, messageId) => messageId,
+      (state, messageId, previousMessageId) => previousMessageId ?? null,
+    ],
+    (messagesById, messageId, previousMessageId) => {
+      const messages = {};
+      if (!!messageId) {
+        const m = messagesById[messageId];
+        if (m) {
+          messages.message = {
+            id: m.id,
+            date_creation: m.date_creation,
+            member_id: m.member_id,
+            thread_id: m.thread_id,
+            error: m.error,
+            replied: m.replied,
+          };
+        }
       }
-    }
-    if (!!previousMessageId) {
-      const prev = messagesById[previousMessageId];
-      if (prev) {
-        messages.previousMessage = {
-          id: prev.id,
-          date_creation: prev.date_creation,
-          member_id: prev.member_id,
-        };
+      if (!!previousMessageId) {
+        const prev = messagesById[previousMessageId];
+        if (prev) {
+          messages.previousMessage = {
+            id: prev.id,
+            date_creation: prev.date_creation,
+            member_id: prev.member_id,
+          };
+        }
       }
-    }
-    return messages;
-  },
-  {
-    memoizeOptions: {
-      resultEqualityCheck: checkObjectsEqual,
+      return messages;
     },
-  },
-);
+    {
+      memoizeOptions: {
+        resultEqualityCheck: checkObjectsEqual,
+      },
+    },
+  );
 
 const Message = ({
   messageId,
@@ -63,10 +64,9 @@ const Message = ({
   threadId,
 }) => {
   const messageSelector = useMemo(makeSelectMessages, []);
-  const {
-    message,
-    previousMessage,
-  } = useSelector((state) => messageSelector(state, messageId, previousMessageId));
+  const { message, previousMessage } = useSelector((state) =>
+    messageSelector(state, messageId, previousMessageId),
+  );
 
   const me = useSelector(selectMe);
   const members = useSelector(selectMembers);
@@ -79,11 +79,11 @@ const Message = ({
   if (!message || !!message.space) return null;
   return (
     <m.div
-      className={`overflow-hidden items-start min-w-[200px] w-full max-w-[800px] mx-auto flex-col py-1 px-4 ${
-        is_me
-          ? 'flex justify-end'
-          : 'flex justify-start'
-      }`}
+      className={`overflow-hidden items-start ${
+        mode === 'mini'
+          ? 'min-w-0 w-full py-0 px-1'
+          : 'min-w-[200px] w-full max-w-[800px] mx-auto py-1 px-4'
+      } flex-col ${is_me ? 'flex justify-end' : 'flex justify-start'}`}
       variants={variants}
       initial="hidden"
       animate="visible"
@@ -105,6 +105,7 @@ const Message = ({
           <MessageContent
             message={message}
             threadId={threadId}
+            mode={mode}
           />
         </MessageBoxWrapper>
       </MessageContainer>

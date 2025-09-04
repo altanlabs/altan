@@ -63,7 +63,7 @@ function extractDatabaseVersionResources(message) {
   return databaseVersionResources;
 }
 
-const MessageContent = ({ message, threadId }) => {
+const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const selectors = useMemo(
     () => ({
       hasContent: makeSelectHasMessageContent(),
@@ -312,13 +312,13 @@ const MessageContent = ({ message, threadId }) => {
                   onClick={handleCancelEdit}
                   className="px-4 py-1 text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   className="px-4 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors"
                 >
-                  Enviar
+                  Send
                 </button>
               </div>
             </div>
@@ -330,12 +330,14 @@ const MessageContent = ({ message, threadId }) => {
               <CustomMarkdown
                 text={widgetOnlyContent}
                 threadId={threadId}
+                minified={mode === 'mini'}
               />
             ) : (
               // Show regular content
               <CustomMarkdown
                 messageId={message?.id}
                 threadId={threadId}
+                minified={mode === 'mini'}
               />
             )}
           </div>

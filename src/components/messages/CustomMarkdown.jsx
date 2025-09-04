@@ -698,7 +698,7 @@ const CustomMarkdown = ({
         'markdown font-light text-slate-800 dark:text-slate-100 leading-relaxed w-full prose prose-slate dark:prose-invert max-w-none pb-0',
         center && 'text-center',
         noWrap && 'overflow-hidden whitespace-nowrap',
-        minified && 'text-sm prose-sm',
+        minified && 'text-xs prose-xs leading-tight [&_p]:mb-0.5 [&_p]:mt-0 [&_h1]:text-sm [&_h1]:mb-1 [&_h1]:mt-1 [&_h2]:text-xs [&_h2]:mb-0.5 [&_h2]:mt-0.5 [&_h3]:text-xs [&_h3]:mb-0.5 [&_h3]:mt-0.5 [&_h4]:text-xs [&_h4]:mb-0.5 [&_h4]:mt-0.5 [&_h5]:text-xs [&_h5]:mb-0.5 [&_h5]:mt-0.5 [&_h6]:text-xs [&_h6]:mb-0.5 [&_h6]:mt-0.5 [&_li]:my-0 [&_li]:py-0 [&_ul]:my-0.5 [&_ol]:my-0.5 [&_*]:leading-tight',
       )}
       style={{
         '--tw-prose-body': 'rgb(51 65 85)',

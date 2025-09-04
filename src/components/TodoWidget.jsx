@@ -1,11 +1,12 @@
-import { IconButton, Tooltip, Typography } from '@mui/material';
+import { Tooltip, Typography } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { Virtuoso } from 'react-virtuoso';
 
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
 import Iconify from './iconify/Iconify.jsx';
-import ThreadPreview from './room/thread/ThreadPreview.jsx';
-import { switchToThread } from '../redux/slices/room';
+import Message from './room/thread/Message.jsx';
+import { switchToThread, makeSelectSortedThreadMessageIds } from '../redux/slices/room';
 import {
   fetchTasks,
   selectTasksByThread,
@@ -13,27 +14,22 @@ import {
   selectTasksError,
   selectTasksExpanded,
   setTasksExpanded,
+  selectThreadExpanded,
+  setThreadExpanded,
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
-const TodoWidget = ({ threadId }) => {
+const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [expandedTasks, setExpandedTasks] = useState(new Set());
 
   const tasks = useSelector(selectTasksByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
   const isExpanded = useSelector(selectTasksExpanded(threadId));
-
-  // eslint-disable-next-line no-console
-  console.log('TodoWidget debug:', {
-    threadId,
-    altanerId,
-    isExpanded,
-    taskCount: tasks?.length,
-    tasks,
-  });
+  const isThreadExpanded = useSelector(selectThreadExpanded(threadId));
 
   // Sort tasks by status priority: running -> ready -> to-do -> completed
   const sortedTasks = useMemo(() => {
@@ -76,6 +72,12 @@ const TodoWidget = ({ threadId }) => {
     return sortedTasks.find((task) => task.status?.toLowerCase() === 'running');
   }, [sortedTasks]);
 
+  // Message selectors for running task thread
+  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
+  const runningTaskMessages = useSelector((state) =>
+    runningTask?.subthread_id ? messagesSelector(state, runningTask.subthread_id) : [],
+  );
+
   // Only fetch tasks if we're inside an altaner context
   useEffect(() => {
     if (altanerId && threadId) {
@@ -100,6 +102,11 @@ const TodoWidget = ({ threadId }) => {
 
   // Don't render if we're not in an altaner context
   if (!altanerId) {
+    return null;
+  }
+
+  // Don't render in mini mode
+  if (mode === 'mini') {
     return null;
   }
 
@@ -174,7 +181,7 @@ const TodoWidget = ({ threadId }) => {
   }
 
   return (
-    <div className="w-full max-w-[700px] mx-auto">
+    <div className="w-full max-w-[1000px] mx-auto">
       {/* Compact Collapsible Header */}
       <div
         onClick={() => dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }))}
@@ -194,83 +201,92 @@ const TodoWidget = ({ threadId }) => {
           </span>
         </div>
 
-        {/* Debug button to test Redux state */}
-        <Tooltip title="Debug: Toggle expanded state">
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }));
-              // eslint-disable-next-line no-console
-              console.log('Debug: Manually toggled expanded state', { threadId, expanded: !isExpanded });
-            }}
-            sx={{
-              width: 18,
-              height: 18,
-              color: 'text.secondary',
-              '&:hover': {
-                color: 'primary.main',
-              },
-            }}
-          >
-            <Iconify
-              icon="mdi:bug"
-              width={12}
-            />
-          </IconButton>
-        </Tooltip>
-
-        {/* Show running task when collapsed */}
+        {/* Show running task info when collapsed */}
         {!isExpanded && runningTask && (
-          <div className="flex flex-col gap-1.5 max-w-[300px]">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
-              <TextShimmer
-                className="text-xs font-medium truncate leading-none"
-                duration={2}
-              >
-                {runningTask.task_name || 'Running task...'}
-              </TextShimmer>
-              {runningTask.subthread_id && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenSubthread(runningTask);
-                  }}
-                  className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                  title={`Open task thread: ${runningTask.task_name}`}
-                >
-                  <Iconify
-                    icon="mdi:open-in-new"
-                    className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                  />
-                </button>
-              )}
-            </div>
+          <div className="flex items-center gap-1.5 ml-2">
+            <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
+            {(() => {
+              try {
+                const taskName = runningTask?.task_name;
+                const safeTaskName =
+                  taskName !== null && taskName !== undefined && taskName !== ''
+                    ? String(taskName).trim()
+                    : 'Running task...';
 
-            {/* Compact thread preview for collapsed state */}
+                if (!safeTaskName || safeTaskName.length === 0) {
+                  return (
+                    <span className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300">
+                      Running task...
+                    </span>
+                  );
+                }
+
+                return (
+                  <TextShimmer
+                    className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300"
+                    duration={2}
+                  >
+                    {safeTaskName}
+                  </TextShimmer>
+                );
+              } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error('TextShimmer error in collapsed TodoWidget:', error, runningTask);
+                return (
+                  <span className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300">
+                    Running task...
+                  </span>
+                );
+              }
+            })()}
+
+            {/* Compact action buttons */}
             {runningTask.subthread_id && (
-              <div className="ml-3 max-w-[250px]">
-                <ThreadPreview
-                  threadId={runningTask.subthread_id}
-                  className="scale-90 origin-left transform"
-                />
+              <div className="flex items-center gap-0.5 ml-1">
+
+
+                <Tooltip title={`Open task thread: ${runningTask.task_name}`}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenSubthread(runningTask);
+                    }}
+                    className="p-0.5 rounded transition-colors group hover:bg-gray-200/50 dark:hover:bg-gray-600/50"
+                  >
+                    <Iconify
+                      icon="mdi:open-in-new"
+                      className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                    />
+                  </button>
+                </Tooltip>
               </div>
             )}
           </div>
         )}
       </div>
 
+
       {/* Compact Expandable Content */}
       <div
         className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+          isExpanded
+            ? expandedTasks.size > 0
+              ? 'max-h-[800px] opacity-100'
+              : 'max-h-96 opacity-100'
+            : 'max-h-0 opacity-0'
         }`}
       >
         <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border-x border-b border-gray-200/30 dark:border-gray-700/30 backdrop-blur-lg">
-          <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1">
+          <div
+            className={`overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1 ${
+              expandedTasks.size > 0 ? 'max-h-[550px]' : 'max-h-80'
+            }`}
+          >
             {sortedTasks.map((task, index) => (
-              <div key={task.id || index} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors duration-150">
+              <div
+                key={task.id || index}
+                className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors duration-150"
+              >
                 <div className="flex items-center gap-2 px-3 py-1.5">
                   {/* Status Icon */}
                   <div className="flex-shrink-0">
@@ -283,12 +299,40 @@ const TodoWidget = ({ threadId }) => {
                   {/* Task Content with Status-Based Styling */}
                   <div className="flex-1 min-w-0 flex items-center">
                     {task.status?.toLowerCase() === 'running' ? (
-                      <TextShimmer
-                        className="text-xs font-medium truncate leading-none"
-                        duration={2}
-                      >
-                        {task.task_name || 'Untitled Task'}
-                      </TextShimmer>
+                      (() => {
+                        try {
+                          const taskName = task?.task_name;
+                          const safeTaskName =
+                            taskName !== null && taskName !== undefined && taskName !== ''
+                              ? String(taskName).trim()
+                              : 'Untitled Task';
+
+                          if (!safeTaskName || safeTaskName.length === 0) {
+                            return (
+                              <span className="text-xs font-medium truncate leading-none text-gray-900 dark:text-gray-100">
+                                Untitled Task
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <TextShimmer
+                              className="text-xs font-medium truncate leading-none"
+                              duration={2}
+                            >
+                              {safeTaskName}
+                            </TextShimmer>
+                          );
+                        } catch (error) {
+                          // eslint-disable-next-line no-console
+                          console.error('TextShimmer error in TodoWidget:', error, task);
+                          return (
+                            <span className="text-xs font-medium truncate leading-none text-gray-900 dark:text-gray-100">
+                              Task Error
+                            </span>
+                          );
+                        }
+                      })()
                     ) : (
                       <Typography
                         variant="caption"
@@ -300,33 +344,89 @@ const TodoWidget = ({ threadId }) => {
                     )}
                   </div>
 
-                  {/* Subthread Icon - show if task has subthread_id */}
+                  {/* Subthread Actions - show if task has subthread_id */}
                   {task.subthread_id && (
-                    <div className="flex-shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenSubthread(task);
-                        }}
-                        className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                        title={`Open task thread: ${task.task_name}`}
-                      >
-                        <Iconify
-                          icon="mdi:open-in-new"
-                          className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                        />
-                      </button>
+                    <div className="flex-shrink-0 flex items-center gap-1">
+                      {/* Expand/Collapse Button - only for running tasks */}
+                      {task.status?.toLowerCase() === 'running' && (
+                        <Tooltip
+                          title={
+                            expandedTasks.has(task.id)
+                              ? 'Collapse thread view'
+                              : 'Expand thread view'
+                          }
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedTasks((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(task.id)) {
+                                  newSet.delete(task.id);
+                                } else {
+                                  newSet.add(task.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                          >
+                            <Iconify
+                              icon={
+                                expandedTasks.has(task.id)
+                                  ? 'mdi:unfold-less-horizontal'
+                                  : 'mdi:unfold-more-horizontal'
+                              }
+                              className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                            />
+                          </button>
+                        </Tooltip>
+                      )}
+
+                      {/* Open in New Tab Button - always show if subthread exists */}
+                      <Tooltip title={`Open task thread: ${task.task_name}`}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenSubthread(task);
+                          }}
+                          className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                        >
+                          <Iconify
+                            icon="mdi:open-in-new"
+                            className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                          />
+                        </button>
+                      </Tooltip>
                     </div>
                   )}
                 </div>
 
-                {/* Thread Preview - show for running tasks with subthread_id */}
+                {/* Thread preview for running tasks - always visible, expandable */}
                 {task.status?.toLowerCase() === 'running' && task.subthread_id && (
-                  <div className="mt-2 px-3 pb-3">
-                    <ThreadPreview
-                      threadId={task.subthread_id}
-                      className="w-full"
-                    />
+                  <div className="ml-5 border-l-2 border-blue-500 dark:border-blue-400 pl-3 mt-2">
+                    <div
+                      className={`rounded-md overflow-hidden transition-all duration-300 ${
+                        expandedTasks.has(task.id) ? 'h-[450px]' : 'h-24'
+                      }`}
+                    >
+                      <Virtuoso
+                        data={runningTaskMessages}
+                        initialTopMostItemIndex={Math.max(0, runningTaskMessages.length - 1)}
+                        itemContent={(index, messageId) => (
+                          <div className={expandedTasks.has(task.id) ? 'px-2 py-1' : ''}>
+                            <Message
+                              messageId={messageId}
+                              threadId={task.subthread_id}
+                              mode="mini"
+                              disableEndButtons={true}
+                              previousMessageId={messageId} // Same as current to suppress date separators
+                            />
+                          </div>
+                        )}
+                        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

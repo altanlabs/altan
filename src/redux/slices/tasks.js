@@ -9,6 +9,7 @@ const initialState = {
   errors: {}, // Track errors per threadId
   initialized: {}, // Track initialization per threadId
   expandedState: {}, // Track expanded state per threadId
+  threadExpandedState: {}, // Track thread area expanded state per threadId
 };
 
 const slice = createSlice({
@@ -75,6 +76,11 @@ const slice = createSlice({
       state.expandedState[threadId] = expanded;
     },
 
+    setThreadExpanded(state, action) {
+      const { threadId, expanded } = action.payload;
+      state.threadExpandedState[threadId] = expanded;
+    },
+
     clearTasks(state, action) {
       const { threadId } = action.payload;
       if (threadId) {
@@ -83,6 +89,7 @@ const slice = createSlice({
         delete state.errors[threadId];
         delete state.initialized[threadId];
         delete state.expandedState[threadId];
+        delete state.threadExpandedState[threadId];
       } else {
         // Clear all tasks
         state.tasksByThread = {};
@@ -90,6 +97,7 @@ const slice = createSlice({
         state.errors = {};
         state.initialized = {};
         state.expandedState = {};
+        state.threadExpandedState = {};
       }
     },
   },
@@ -108,6 +116,7 @@ export const {
   updateTask,
   removeTask,
   setTasksExpanded,
+  setThreadExpanded,
   clearTasks,
 } = slice.actions;
 
@@ -131,6 +140,9 @@ export const selectTasksInitialized = (threadId) => (state) =>
 
 export const selectTasksExpanded = (threadId) => (state) =>
   selectTasksState(state).expandedState[threadId] || false;
+
+export const selectThreadExpanded = (threadId) => (state) =>
+  selectTasksState(state).threadExpandedState[threadId] || false;
 
 // ----------------------------------------------------------------------
 

@@ -278,7 +278,7 @@ const FloatingTextArea = ({
           <AuthorizationRequests />
 
           {/* Todo Widget integrated with text field */}
-          <TodoWidget threadId={threadId} />
+          <TodoWidget threadId={threadId} mode={mode} />
 
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${

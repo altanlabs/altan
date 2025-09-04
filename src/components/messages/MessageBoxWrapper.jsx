@@ -60,6 +60,9 @@ const MessageBoxWrapper = ({
     connectorRef,
   });
 
+  // Override shouldShowMember for mini mode - always show member info
+  const finalShouldShowMember = mode === 'mini' ? true : shouldShowMember;
+
   const handlePopoverClose = useCallback(() => {
     setPopoverOpen(false);
     setPopoverAnchorEl(null);
@@ -95,12 +98,12 @@ const MessageBoxWrapper = ({
 
   const renderAvatar = useMemo(
     () =>
-      !!shouldShowMember && (
+      !!finalShouldShowMember && (
         <CustomAvatar
           alt={sender?.id}
           sx={{
-            width: 20,
-            height: 20,
+            width: mode === 'mini' ? 16 : 20,
+            height: mode === 'mini' ? 16 : 20,
             cursor: 'pointer',
             '&:hover': {
               opacity: 0.8,
@@ -112,7 +115,7 @@ const MessageBoxWrapper = ({
           onClick={handleAvatarClick}
         />
       ),
-    [shouldShowMember, sender?.id, sender?.member?.guest?.nickname, picture, handleAvatarClick],
+    [finalShouldShowMember, sender?.id, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode],
   );
 
   return (
@@ -157,14 +160,16 @@ const MessageBoxWrapper = ({
                 spacing={1}
                 sx={{ width: '100%' }}
               >
-                {!!shouldShowMember && !is_me && (
+                {!!finalShouldShowMember && !is_me && (
                   <div className="group relative inline-flex items-baseline gap-2">
-                    <Typography className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <Typography className={`${mode === 'mini' ? 'text-xs' : 'text-sm'} font-medium text-slate-700 dark:text-slate-300`}>
                       {senderName}
                     </Typography>
-                    <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#555] dark:text-[#99aab5]">
-                      {formatTime(message.date_creation)} {!shouldShowMember ? '' : '· From Earth'}
-                    </span>
+                    {mode !== 'mini' && (
+                      <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#555] dark:text-[#99aab5]">
+                        {formatTime(message.date_creation)} {!finalShouldShowMember ? '' : '· From Earth'}
+                      </span>
+                    )}
                   </div>
                 )}
                 {!disableEndButtons && (
