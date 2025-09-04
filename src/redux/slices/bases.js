@@ -846,7 +846,7 @@ export const updateTableRecordThunk =
     }
   };
 
-export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch) => {
+export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
     // Find the base that contains this table
@@ -876,9 +876,9 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch) =
       });
     } else {
       // Use Supabase-style endpoint for regular tables
-      await optimai_database.delete(`/admin/records/${baseId}/${tableName}`, {
-        data: { ids },
-      });
+      // For multiple IDs, use 'in' operator: ?id=in.(id1,id2,id3)
+      const idFilter = ids.length === 1 ? `id=eq.${ids[0]}` : `id=in.(${ids.join(',')})`;
+      await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
     }
 
     // Update state for each deleted record
