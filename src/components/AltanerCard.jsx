@@ -192,31 +192,20 @@ const AltanerCard = memo(
             {/* Single line with all info */}
             <div className="flex items-center justify-between text-xs w-full min-w-0">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                {/* Icon */}
-                <div className="w-4 h-4 flex-shrink-0">
-                  <IconRenderer
-                    icon={iconUrl || 'mdi:apps'}
-                    size={16}
-                  />
-                </div>
-
-                {/* Name */}
-                <span className="truncate max-w-[120px] font-semibold">
-                  {name}
-                </span>
-
                 {/* Pin indicator */}
                 {isPinned && (
                   <div className="flex items-center">
                     <Iconify
                       icon="mdi:pin"
-                      width={10}
+                      width={14}
                       sx={{
                         color: 'inherit',
                       }}
                     />
                   </div>
                 )}
+                {/* Name */}
+                <span className="truncate max-w-[140px] font-semibold text-sm">{name}</span>
               </div>
 
               {/* Last modified */}
