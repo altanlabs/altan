@@ -31,17 +31,6 @@ function BaseLayout({
   // Uses min-w-0 to allow flex sizing without overflow.
   return (
     <div className="flex flex-col h-full min-w-0">
-      <div className="flex-1 relative overflow-auto">
-        {(state.isTableSwitching || isTableLoading) && <LoadingFallback />}
-        {tableId && viewId && !state.isTableSwitching && (
-          <Table
-            tableId={tableId}
-            viewId={viewId}
-            baseId={baseId}
-            onPaginationChange={handlePaginationChange}
-          />
-        )}
-      </div>
       <TableTabs
         activeTableId={tableId}
         onTableChange={handleTabChange}
@@ -56,6 +45,17 @@ function BaseLayout({
         onGoToNextPage={paginationHandlers?.onGoToNextPage}
         onGoToPreviousPage={paginationHandlers?.onGoToPreviousPage}
       />
+      <div className="flex-1 relative overflow-auto">
+        {(state.isTableSwitching || isTableLoading) && <LoadingFallback />}
+        {tableId && viewId && !state.isTableSwitching && (
+          <Table
+            tableId={tableId}
+            viewId={viewId}
+            baseId={baseId}
+            onPaginationChange={handlePaginationChange}
+          />
+        )}
+      </div>
     </div>
   );
 

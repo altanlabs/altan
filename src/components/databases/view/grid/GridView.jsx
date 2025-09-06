@@ -22,6 +22,7 @@ import { createColumnDefs } from './columns/index.js';
 import AttachmentEditor from './editors/AttachmentEditor';
 import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
+import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
@@ -30,15 +31,32 @@ import {
   queryTableRecords,
   selectDatabaseQuickFilter,
   setDatabaseRecordCount,
+  loadAllTableRecords,
+  importCSVToTable,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
+import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
 import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
 import EditFieldDialog from '../../fields/EditFieldDialog.jsx';
+import ImportCSVDrawer from '../../import/ImportCSVDrawer';
 import CreateRecordDialog from '../../records/CreateRecordDialog';
 import EditRecordDialog from '../../records/EditRecordDialog';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
+
+// Helper function to convert file to base64
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = reader.result.split(',')[1]; // Remove data:type;base64, prefix
+      resolve(base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -86,6 +104,7 @@ export const GridView = memo(
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showImportDrawer, setShowImportDrawer] = useState(false);
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
     const [isReady, setIsReady] = useState(false);
@@ -518,7 +537,7 @@ export const GridView = memo(
     }, []);
 
     // Add data loading states to show in the UI
-    const isDataLoading = !isReady || !initialGridSetupComplete.current;
+    // const isDataLoading = !isReady || !initialGridSetupComplete.current;
 
     // Pass pagination info up to parent components
     useEffect(() => {
@@ -549,11 +568,77 @@ export const GridView = memo(
       }
     }, [localRowData?.length]);
 
+    // Check if table is empty (no real records, only the '+' row for new records)
+    const hasRealRecords = useMemo(() => {
+      if (!Array.isArray(records)) return false;
+      return records.some(record => record && record.id !== '+');
+    }, [records]);
+
+    // Handler for CSV import
+    const handleImportCSV = useCallback(() => {
+      setShowImportDrawer(true);
+    }, []);
+
+    // Handler for actual import process
+    const handleCSVImport = useCallback(async (file, previewData) => {
+      try {
+        // Step 1: Upload the CSV file as media to get a URL
+        const mediaUrl = await dispatch(createMedia({
+          fileName: file.name,
+          fileContent: await fileToBase64(file),
+          fileType: file.type || 'text/csv',
+        }));
+
+        if (!mediaUrl) {
+          throw new Error('Failed to upload CSV file');
+        }
+
+        // Step 2: Create column mapping from CSV headers to table fields
+        const columnMapping = {};
+        const tableFields = fields || [];
+        // Map CSV headers to database field names
+        previewData.headers.forEach((csvHeader, index) => {
+          // Try to find a matching field by name (case insensitive)
+          const matchingField = tableFields.find((field) =>
+            field.name.toLowerCase() === csvHeader.toLowerCase() ||
+            field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
+          );
+
+          if (matchingField) {
+            columnMapping[csvHeader] = matchingField.db_field_name;
+          } else {
+            // If no exact match, use index-based mapping
+            columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
+          }
+        });
+
+        // Step 3: Call the import endpoint
+        const importData = {
+          file_url: mediaUrl,
+          column_mapping: columnMapping,
+          has_header: true,
+          batch_size: 1000,
+          use_staging: false,
+          validate_only: false,
+        };
+
+        const response = await dispatch(importCSVToTable(table.id, importData));
+
+        // Refresh the table records after successful import
+        await dispatch(loadAllTableRecords(table.id, true));
+
+        return response;
+      } catch (error) {
+        // console.error('CSV import error:', error);
+        throw error;
+      }
+    }, [fields, table?.id]);
+
     return (
       <div className="h-full flex flex-col">
         <div className="flex-grow flex">
           <div
-            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow`}
+            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow relative`}
             style={{
               // Base colors
               '--ag-foreground-color': theme.palette.text.primary,
@@ -702,6 +787,25 @@ export const GridView = memo(
                 defaultToolPanelWidth: 0,
               }}
             />
+            {!hasRealRecords && isReady && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100px', // A bit below the header
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 10,
+                  pointerEvents: 'none', // Allow clicks through to the grid
+                }}
+              >
+                <div style={{ pointerEvents: 'auto' }}>
+                  <EmptyTableState
+                    onImportCSV={handleImportCSV}
+                    tableName={table?.name || 'table'}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <CreateFieldDialog
@@ -733,6 +837,12 @@ export const GridView = memo(
           tableId={table.id}
           open={!!editField}
           onClose={() => setEditField(null)}
+        />
+        <ImportCSVDrawer
+          open={showImportDrawer}
+          onClose={() => setShowImportDrawer(false)}
+          onImport={handleCSVImport}
+          tableName={table?.name || 'table'}
         />
       </div>
     );

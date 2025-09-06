@@ -10,6 +10,7 @@ import {
   selectBaseById,
   updateTableById,
   loadAllTableRecords,
+  preloadUsersForBase,
 } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
 import CreateBaseDialog from '../base/CreateBaseDialog.jsx';
@@ -100,6 +101,13 @@ function Base({
     if (baseId) {
       dispatch(getBaseById(baseId)).then((response) => {
         const tables = response?.base?.tables?.items || [];
+
+        // Preload users for this base to avoid redundant API calls
+        // This runs in parallel with navigation, so it won't block the UI
+        dispatch(preloadUsersForBase(baseId)).catch(() => {
+          // Silently handle errors - user cache is an optimization, not critical
+        });
+
         if (tables.length > 0) {
           const firstTable = tables[0];
           const firstView = firstTable.views?.items?.[0]?.id || 'default';
@@ -145,7 +153,7 @@ function Base({
           }
         })
         .catch(() => {
-          // console.error('Error deleting table:', error);
+          // Error deleting table - silently handled
         });
     },
     [

@@ -22,6 +22,13 @@ const initialState = {
     isRefreshing: false,
     recordCount: 0,
   },
+  // User cache for auth.users table to avoid redundant API calls
+  userCache: {},
+  userCacheState: {
+    loading: false,
+    lastFetched: null,
+    error: null,
+  },
 };
 
 const slice = createSlice({
@@ -376,6 +383,48 @@ const slice = createSlice({
         recordCount: 0,
       };
     },
+    // User cache reducers
+    setUserCacheLoading(state, action) {
+      state.userCacheState.loading = action.payload;
+      if (action.payload) {
+        state.userCacheState.error = null;
+      }
+    },
+    setUserCache(state, action) {
+      const { users, baseId } = action.payload;
+
+      // Store users by ID for quick lookup
+      if (!state.userCache[baseId]) {
+        state.userCache[baseId] = {};
+      }
+
+      users.forEach((user) => {
+        if (user && user.id) {
+          state.userCache[baseId][user.id] = user;
+        }
+      });
+
+      state.userCacheState.loading = false;
+      state.userCacheState.lastFetched = Date.now();
+      state.userCacheState.error = null;
+    },
+    setUserCacheError(state, action) {
+      state.userCacheState.loading = false;
+      state.userCacheState.error = action.payload;
+    },
+    clearUserCache(state, action) {
+      const { baseId } = action.payload || {};
+      if (baseId) {
+        delete state.userCache[baseId];
+      } else {
+        state.userCache = {};
+      }
+      state.userCacheState = {
+        loading: false,
+        lastFetched: null,
+        error: null,
+      };
+    },
   },
 });
 
@@ -409,6 +458,11 @@ export const {
   setDatabaseRefreshing,
   setDatabaseRecordCount,
   clearDatabaseNavigation,
+  // User cache actions
+  setUserCacheLoading,
+  setUserCache,
+  setUserCacheError,
+  clearUserCache,
 } = slice.actions;
 
 // Thunk actions for bases
@@ -491,7 +545,7 @@ export const fetchBaseById = (baseId) => async (dispatch) => {
   }
 };
 
-export const updateBaseById = (baseId, baseData) => async (dispatch, getState) => {
+export const updateBaseById = (baseId, baseData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.patch(`/base/${baseId}`, baseData);
@@ -504,7 +558,7 @@ export const updateBaseById = (baseId, baseData) => async (dispatch, getState) =
   }
 };
 
-export const duplicateBase = (duplicateData) => async (dispatch, getState) => {
+export const duplicateBase = (duplicateData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.post('/base/duplicate', duplicateData);
@@ -517,7 +571,7 @@ export const duplicateBase = (duplicateData) => async (dispatch, getState) => {
   }
 };
 
-export const deleteBaseById = (baseId) => async (dispatch, getState) => {
+export const deleteBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     await optimai_tables.delete(`/base/${baseId}/permanent`);
@@ -531,7 +585,7 @@ export const deleteBaseById = (baseId) => async (dispatch, getState) => {
 };
 
 // Thunk actions for tables
-export const createTable = (baseId, tableData) => async (dispatch, getState) => {
+export const createTable = (baseId, tableData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.post(`/base/${baseId}/table`, tableData);
@@ -544,7 +598,7 @@ export const createTable = (baseId, tableData) => async (dispatch, getState) => 
   }
 };
 
-export const updateTableById = (baseId, tableId, changes) => async (dispatch, getState) => {
+export const updateTableById = (baseId, tableId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.patch(`/table/${tableId}`, changes);
@@ -557,7 +611,7 @@ export const updateTableById = (baseId, tableId, changes) => async (dispatch, ge
   }
 };
 
-export const deleteTableById = (baseId, tableId) => async (dispatch, getState) => {
+export const deleteTableById = (baseId, tableId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     await optimai_tables.delete(`/table/${tableId}`);
@@ -571,7 +625,7 @@ export const deleteTableById = (baseId, tableId) => async (dispatch, getState) =
 };
 
 // Thunk actions for fields
-export const createField = (table, fieldData) => async (dispatch, getState) => {
+export const createField = (table, fieldData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.post(`/table/${table.id}/field`, fieldData);
@@ -584,7 +638,7 @@ export const createField = (table, fieldData) => async (dispatch, getState) => {
   }
 };
 
-export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, getState) => {
+export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.patch(`/table/${tableId}/field/${fieldId}`, changes);
@@ -597,7 +651,7 @@ export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, 
   }
 };
 
-export const deleteFieldThunk = (tableId, fieldId) => async (dispatch, getState) => {
+export const deleteFieldThunk = (tableId, fieldId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     await optimai_tables.delete(`/table/${tableId}/field/${fieldId}`);
@@ -612,7 +666,7 @@ export const deleteFieldThunk = (tableId, fieldId) => async (dispatch, getState)
 };
 
 // Thunk actions for views
-export const createViewThunk = (baseId, tableId, viewData) => async (dispatch, getState) => {
+export const createViewThunk = (baseId, tableId, viewData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.post(`/base/${baseId}/table/${tableId}/view`, viewData);
@@ -625,7 +679,7 @@ export const createViewThunk = (baseId, tableId, viewData) => async (dispatch, g
   }
 };
 
-export const updateViewThunk = (baseId, tableId, viewId, changes) => async (dispatch, getState) => {
+export const updateViewThunk = (baseId, tableId, viewId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.patch(
@@ -641,7 +695,7 @@ export const updateViewThunk = (baseId, tableId, viewId, changes) => async (disp
   }
 };
 
-export const deleteViewThunk = (baseId, tableId, viewId) => async (dispatch, getState) => {
+export const deleteViewThunk = (baseId, tableId, viewId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     await optimai_tables.delete(`/base/${baseId}/table/${tableId}/view/${viewId}`);
@@ -679,12 +733,9 @@ export const queryTableRecords =
 
       // Use Supabase-style endpoint: /admin/records/{baseId}/{tableName}
       // GET request with query parameters following Supabase pattern
-      const response = await optimai_database.get(
-        `/admin/records/${baseId}/${tableName}`,
-        {
-          params: queryParams,
-        },
-      );
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: queryParams,
+      });
 
       // Process response data following Supabase format
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
@@ -708,51 +759,53 @@ export const queryTableRecords =
     }
   };
 
-export const getTableRecord = (tableId, recordId, customTableName = null) => async (dispatch, getState) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const state = getState();
+export const getTableRecord =
+  (tableId, recordId, customTableName = null) =>
+  async (dispatch, getState) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const state = getState();
 
-    // Find the base and table info
-    let baseId, tableName;
-    for (const [bId, base] of Object.entries(state.bases.bases)) {
-      if (base.tables?.items) {
-        const table = base.tables.items.find((t) => t.id === tableId);
-        if (table) {
-          baseId = bId;
-          tableName = customTableName || table.name || table.db_name;
-          break;
+      // Find the base and table info
+      let baseId, tableName;
+      for (const [bId, base] of Object.entries(state.bases.bases)) {
+        if (base.tables?.items) {
+          const table = base.tables.items.find((t) => t.id === tableId);
+          if (table) {
+            baseId = bId;
+            tableName = customTableName || table.name || table.db_name;
+            break;
+          }
         }
       }
-    }
 
-    if (!baseId || !tableName) {
-      throw new Error(`Could not find base or table name for table ${tableId}`);
-    }
+      if (!baseId || !tableName) {
+        throw new Error(`Could not find base or table name for table ${tableId}`);
+      }
 
-    if (customTableName && customTableName.startsWith('auth.')) {
-      const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-        id: recordId,
+      if (customTableName && customTableName.startsWith('auth.')) {
+        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
+          id: recordId,
+        });
+        return Promise.resolve(response.data.record);
+      }
+
+      // Use Supabase-style endpoint for regular tables
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: { id: recordId },
       });
-      return Promise.resolve(response.data.record);
+
+      const records = Array.isArray(response.data) ? response.data : response.data.records || [];
+      const record = records.find((r) => r.id === recordId) || records[0];
+
+      return Promise.resolve(record);
+    } catch (e) {
+      dispatch(slice.actions.hasError(e.message));
+      throw e;
+    } finally {
+      dispatch(slice.actions.stopLoading());
     }
-
-    // Use Supabase-style endpoint for regular tables
-    const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-      params: { id: recordId },
-    });
-
-    const records = Array.isArray(response.data) ? response.data : response.data.records || [];
-    const record = records.find(r => r.id === recordId) || records[0];
-
-    return Promise.resolve(record);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
+  };
 
 export const createTableRecords = (tableId, recordData) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
@@ -834,9 +887,12 @@ export const updateTableRecordThunk =
       }
 
       // Use Supabase-style endpoint for regular tables
-      const response = await optimai_database.patch(`/admin/records/${baseId}/${tableName}?id=eq.${recordId}`, {
-        ...changes,
-      });
+      const response = await optimai_database.patch(
+        `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
+        {
+          ...changes,
+        },
+      );
       return Promise.resolve(response.data);
     } catch (e) {
       dispatch(slice.actions.hasError(e.message));
@@ -915,6 +971,107 @@ export const searchTableRecords = (tableId, query) => async (dispatch) => {
     );
 
     return response.data;
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+// Thunk action to preload users for a base
+export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
+  const state = getState();
+  const userCacheState = state.bases.userCacheState;
+  const existingUsers = state.bases.userCache[baseId];
+
+  // Don't fetch if we already have users cached and it's not too old (1 hour)
+  const ONE_HOUR = 60 * 60 * 1000;
+  if (
+    existingUsers &&
+    Object.keys(existingUsers).length > 0 &&
+    userCacheState.lastFetched &&
+    Date.now() - userCacheState.lastFetched < ONE_HOUR
+  ) {
+    return Promise.resolve(existingUsers);
+  }
+
+  // Don't fetch if already loading
+  if (userCacheState.loading) {
+    return Promise.resolve({});
+  }
+
+  dispatch(setUserCacheLoading(true));
+
+  try {
+    // Find auth.users table in this base
+    const base = state.bases.bases[baseId];
+    if (!base || !base.tables || !base.tables.items) {
+      throw new Error(`Base ${baseId} not found or has no tables`);
+    }
+
+    // Log available tables for debugging
+    // eslint-disable-next-line no-console
+    console.log(
+      'Available tables in base:',
+      base.tables.items.map((t) => ({ name: t.name, db_name: t.db_name })),
+    );
+
+    // Look for user table with various possible names
+    const authUsersTable = base.tables.items.find(
+      (table) =>
+        table.db_name === 'auth.users' ||
+        table.name === 'auth.users' ||
+        table.db_name === 'users' ||
+        table.name === 'users' ||
+        table.db_name === 'auth_users' ||
+        table.name === 'auth_users' ||
+        table.name?.toLowerCase().includes('user'),
+    );
+
+    if (!authUsersTable) {
+      // eslint-disable-next-line no-console
+      console.log('No user table found in base', baseId);
+      // If no user table, just mark as complete
+      dispatch(setUserCache({ users: [], baseId }));
+      return Promise.resolve({});
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('Found user table:', authUsersTable.name || authUsersTable.db_name);
+
+    // Fetch all users from auth.users table
+    const response = await optimai_tables.post(`/table/${authUsersTable.id}/record/query`, {
+      limit: 1000, // Should be enough for most use cases
+    });
+
+    const users = Array.isArray(response.data.records) ? response.data.records : [];
+
+    // Log user data structure for debugging
+    if (users.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('Loaded users from auth table:', users.length, 'users');
+      // eslint-disable-next-line no-console
+      console.log('Sample user fields:', Object.keys(users[0]));
+      // eslint-disable-next-line no-console
+      console.log('Sample user data:', users[0]);
+    }
+
+    dispatch(setUserCache({ users, baseId }));
+
+    return Promise.resolve(state.bases.userCache[baseId] || {});
+  } catch (error) {
+    dispatch(setUserCacheError(error.message));
+    throw error;
+  }
+};
+
+// CSV Import thunk
+export const importCSVToTable = (tableId, importData) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_tables.post(`/table/${tableId}/import-csv`, importData);
+    return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
     throw e;
@@ -1189,3 +1346,50 @@ export const selectDatabaseRecordCount = createSelector(
   [selectDatabaseNavigation],
   (navigation) => navigation.recordCount,
 );
+
+// User cache selectors
+export const selectUserCache = createSelector([selectBaseState], (state) => state.userCache);
+
+export const selectUserCacheState = createSelector(
+  [selectBaseState],
+  (state) => state.userCacheState,
+);
+
+export const selectUserCacheForBase = createSelector(
+  [selectUserCache, (_, baseId) => baseId],
+  (userCache, baseId) => userCache[baseId] || {},
+);
+
+export const selectUserById = createSelector(
+  [selectUserCacheForBase, (_, __, userId) => userId],
+  (users, userId) => users[userId] || null,
+);
+
+export const createUserDisplayValueSelector = (baseId, userId) =>
+  createSelector([(state) => selectUserCacheForBase(state, baseId)], (users) => {
+    const user = users[userId];
+    if (!user) {
+      return userId; // Fallback to ID if user not found
+    }
+
+    // Try different possible field names for display value
+    // Common field names in auth systems: email, username, name, first_name, last_name, display_name, etc.
+    const displayValue =
+      user.email ||
+      user.username ||
+      user.name ||
+      user.display_name ||
+      user.full_name ||
+      user.first_name ||
+      user.last_name ||
+      user.user_name ||
+      user.displayName ||
+      user.firstName ||
+      user.lastName ||
+      // Try concatenating first and last name
+      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
+      (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null) ||
+      userId;
+
+    return displayValue;
+  });

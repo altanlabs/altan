@@ -18,7 +18,6 @@ import {
   Tooltip,
   Box,
   Typography,
-  Divider,
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import DialogActions from '@mui/material/DialogActions';
@@ -35,7 +34,7 @@ import DeleteDialog from '../../dialogs/DeleteDialog.jsx';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
 
 const StyledTabs = styled(Tabs)(() => ({
-  minHeight: '32px',
+  minHeight: '30px',
   position: 'relative',
   backgroundColor: 'transparent',
   padding: '0 0 0 8px',
@@ -44,7 +43,7 @@ const StyledTabs = styled(Tabs)(() => ({
   '& .MuiTabs-indicator': {
     display: 'none',
   },
-  '& .MuiTabs-flexContainer': {
+  '& .MuiTabs-flexContainer': { 
     gap: '0px',
     '& > *': {
       margin: '0 !important',
@@ -59,7 +58,7 @@ const StyledTabs = styled(Tabs)(() => ({
 }));
 
 const StyledTab = styled(Tab)(() => ({
-  height: '32px',
+  height: '30px',
   padding: '0 16px',
   textTransform: 'none',
   fontSize: '18px',
@@ -495,7 +494,7 @@ function TableTabs({
   };
 
   return (
-    <div className="relative w-full border-b p-0">
+    <div className="relative w-full p-0">
       <DragDropContext
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}
@@ -513,7 +512,7 @@ function TableTabs({
                 flex: 1,
                 width: '100%',
                 overflowX: 'auto',
-                minHeight: '40px',
+                minHeight: '30px',
               }}
             >
               <StyledTabs
@@ -538,7 +537,6 @@ function TableTabs({
               {/* Pagination Controls - Right Side */}
               {paginationInfo && (
                 <>
-                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
                   <PaginationControls
                     paginationInfo={paginationInfo}
                     onGoToFirstPage={onGoToFirstPage}

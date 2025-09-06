@@ -1,7 +1,47 @@
 import { Chip } from '@mui/material';
+import { useSelector } from 'react-redux';
 
 import Iconify from '../../../../iconify/Iconify';
-import RecordChip from '../../../records/RecordChip';
+import { createUserDisplayValueSelector } from '../../../../../redux/slices/bases';
+
+const UserChip = ({ baseId, userId }) => {
+  const userDisplayValue = useSelector(createUserDisplayValueSelector(baseId, userId));
+  
+  if (!userId) {
+    return (
+      <Chip
+        label="System"
+        size="small"
+      />
+    );
+  }
+
+  // If userDisplayValue is the same as userId, it means we couldn't find user data
+  // So let's show a truncated version of the ID for better UX
+  const displayLabel = userDisplayValue === userId 
+    ? `${userId.substring(0, 8)}...` 
+    : userDisplayValue;
+
+  return (
+    <Chip
+      label={displayLabel}
+      size="small"
+      variant="outlined"
+      sx={{
+        height: '20px',
+        '& .MuiChip-label': {
+          fontSize: '0.75rem',
+          lineHeight: '20px',
+          px: 1,
+          py: 0,
+        },
+        backgroundColor: 'rgba(76, 175, 80, 0.08)',
+        borderColor: 'rgba(76, 175, 80, 0.2)',
+        color: '#4CAF50',
+      }}
+    />
+  );
+};
 
 export const getUpdatedByColumnDef = ({ table }) => ({
   headerName: 'Updated By',
@@ -24,23 +64,13 @@ export const getUpdatedByColumnDef = ({ table }) => ({
   cellRenderer: (params) => {
     if (params.data.id === '+') return null;
 
-    if (!params.value) {
-      return (
-        <Chip
-          label="System"
-          size="small"
-        />
-      );
-    }
-
-    // Use RecordChip to display user from auth.users table
+    // Use cached user data instead of making individual API calls
     return (
       <div className="h-full w-full flex items-center overflow-visible p-1">
         <div className="flex flex-wrap gap-1 min-w-0 w-full">
-          <RecordChip
+          <UserChip
             baseId={table.base_id}
-            tableId="auth.users"
-            recordId={params.value}
+            userId={params.value}
           />
         </div>
       </div>

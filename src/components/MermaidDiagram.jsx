@@ -200,7 +200,6 @@ const MermaidDiagram = ({ chart, className = '' }) => {
         height: fullscreen ? '100%' : 'auto',
         minHeight: fullscreen ? '100%' : 200,
         maxHeight: fullscreen ? '100%' : 350,
-        border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
         backgroundColor: theme.palette.background.paper,
         overflow: 'hidden',
