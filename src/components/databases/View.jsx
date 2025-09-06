@@ -21,6 +21,7 @@ const View = memo(
     onLoadMore,
     hasMore,
     onPaginationChange,
+    triggerImport,
   }) => {
     if (!view) {
       console.error('View Component: No view configuration provided');
@@ -52,6 +53,7 @@ const View = memo(
             onLoadMore={onLoadMore}
             hasMore={hasMore}
             onPaginationChange={onPaginationChange}
+            triggerImport={triggerImport}
           />
         );
 

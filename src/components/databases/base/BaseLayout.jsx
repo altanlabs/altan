@@ -1,4 +1,3 @@
-import { useMediaQuery } from '@mui/material';
 import React, { memo, useState, useCallback } from 'react';
 
 import TableTabs from './TableTabs.jsx';
@@ -12,9 +11,11 @@ function BaseLayout({
   handleOpenCreateTable,
   handleDeleteTable,
   handleRenameTable,
+  handleImportTable,
   state,
   isTableLoading,
   viewId,
+  triggerImport,
 }) {
   // Local pagination state
   const [paginationInfo, setPaginationInfo] = useState(null);
@@ -37,6 +38,7 @@ function BaseLayout({
         onCreateTable={handleOpenCreateTable}
         onDeleteTable={handleDeleteTable}
         onRenameTable={handleRenameTable}
+        onImportTable={handleImportTable}
         isLoading={state.isTableSwitching}
         baseId={baseId}
         paginationInfo={paginationInfo}
@@ -53,6 +55,7 @@ function BaseLayout({
             viewId={viewId}
             baseId={baseId}
             onPaginationChange={handlePaginationChange}
+            triggerImport={triggerImport}
           />
         )}
       </div>

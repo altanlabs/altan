@@ -20,7 +20,7 @@ import { dispatch, useSelector } from '../../../redux/store';
 import Iconify from '../../iconify';
 import View from '../View';
 
-const Table = ({ tableId, viewId, baseId, onPaginationChange }) => {
+const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) => {
   // Track loading state
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -150,6 +150,7 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange }) => {
         hasMore={false}
         isLoadingMore={false}
         onPaginationChange={onPaginationChange}
+        triggerImport={triggerImport}
       />
     </div>
   );

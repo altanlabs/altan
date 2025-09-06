@@ -94,6 +94,7 @@ export const GridView = memo(
     onDuplicateRecord,
     // Pagination props to pass up to parent
     onPaginationChange,
+    triggerImport,
   }) => {
     const theme = useTheme();
     const gridRef = useRef();
@@ -633,6 +634,13 @@ export const GridView = memo(
         throw error;
       }
     }, [fields, table?.id]);
+
+    // Watch for import trigger from context menu
+    useEffect(() => {
+      if (triggerImport) {
+        setShowImportDrawer(true);
+      }
+    }, [triggerImport]);
 
     return (
       <div className="h-full flex flex-col">

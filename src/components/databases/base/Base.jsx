@@ -215,6 +215,32 @@ function Base({
     [baseId],
   );
 
+  const handleImportTable = useCallback(
+    (targetTableId) => {
+      if (!targetTableId) return;
+
+      // If we're already on the target table, trigger import directly
+      if (targetTableId === tableId) {
+        // This will be handled by GridView when it receives the import trigger
+        setState((prev) => ({ ...prev, triggerImport: Date.now() }));
+      } else {
+        // Navigate to the target table first, then trigger import
+        const targetTable = base?.tables?.items?.find((table) => table.id === targetTableId);
+        const defaultView = targetTable?.views?.items?.[0]?.id || 'default';
+
+        setState((prev) => ({
+          ...prev,
+          isTableSwitching: true,
+          pendingImport: targetTableId,
+        }));
+
+        dispatch(loadAllTableRecords(targetTableId));
+        navigateToPath(targetTableId, defaultView);
+      }
+    },
+    [tableId, base?.tables?.items, navigateToPath],
+  );
+
   const handleOpenCreateBase = useCallback(
     () => setState((prev) => ({ ...prev, createBaseOpen: true })),
     [],
@@ -294,9 +320,11 @@ function Base({
           handleOpenCreateTable={handleOpenCreateTable}
           handleDeleteTable={handleDeleteTable}
           handleRenameTable={handleRenameTable}
+          handleImportTable={handleImportTable}
           state={state}
           isTableLoading={isTableLoading}
           viewId={viewId}
+          triggerImport={state.triggerImport}
         />
       )}
       <CreateTableDialog

@@ -31,6 +31,7 @@ import { selectTablesByBaseId, updateTableById } from '../../../redux/slices/bas
 import { dispatch, useSelector } from '../../../redux/store';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 import DeleteDialog from '../../dialogs/DeleteDialog.jsx';
+import Iconify from '../../iconify';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
 
 const StyledTabs = styled(Tabs)(() => ({
@@ -43,7 +44,7 @@ const StyledTabs = styled(Tabs)(() => ({
   '& .MuiTabs-indicator': {
     display: 'none',
   },
-  '& .MuiTabs-flexContainer': { 
+  '& .MuiTabs-flexContainer': {
     gap: '0px',
     '& > *': {
       margin: '0 !important',
@@ -378,6 +379,7 @@ function TableTabs({
   onTableChange,
   onDeleteTable,
   onRenameTable,
+  onImportTable,
   isLoading = false,
   baseId = null,
   // Pagination props
@@ -449,6 +451,13 @@ function TableTabs({
       setSelectedTableId(null);
     }
   }, [newTableName, selectedTableId, onRenameTable]);
+
+  const handleImportClick = useCallback(() => {
+    if (selectedTableId && onImportTable) {
+      onImportTable(selectedTableId);
+      handleCloseMenu();
+    }
+  }, [selectedTableId, onImportTable, handleCloseMenu]);
 
   const handleDragEnd = useCallback(
     async (result) => {
@@ -570,6 +579,18 @@ function TableTabs({
             sx={{ mr: 1 }}
           />
           Rename
+        </MenuItem>
+        <MenuItem
+          onClick={handleImportClick}
+          disabled={isLoading}
+        >
+          <Iconify
+            icon="mdi:upload"
+            width={16}
+            height={16}
+            sx={{ mr: 1 }}
+          />
+          Import
         </MenuItem>
         <MenuItem
           onClick={handleDeleteClick}
