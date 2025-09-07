@@ -8,7 +8,6 @@ import {
   deleteTableById,
   getBaseById,
   selectBaseById,
-  updateTableById,
   loadAllTableRecords,
   preloadUsersForBase,
 } from '../../../redux/slices/bases';
@@ -203,18 +202,6 @@ function Base({
     [],
   );
 
-  const handleRenameTable = useCallback(
-    (tableId, newName) => {
-      if (!tableId) return;
-      try {
-        dispatch(updateTableById(baseId, tableId, { name: newName }));
-      } catch {
-        // console.error('Error renaming table:', error);
-      }
-    },
-    [baseId],
-  );
-
   const handleImportTable = useCallback(
     (targetTableId) => {
       if (!targetTableId) return;
@@ -319,7 +306,6 @@ function Base({
           handleTabChange={handleTabChange}
           handleOpenCreateTable={handleOpenCreateTable}
           handleDeleteTable={handleDeleteTable}
-          handleRenameTable={handleRenameTable}
           handleImportTable={handleImportTable}
           state={state}
           isTableLoading={isTableLoading}

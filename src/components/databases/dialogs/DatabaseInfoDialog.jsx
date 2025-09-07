@@ -14,6 +14,11 @@ import {
   Divider,
   Alert,
   Snackbar,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
@@ -22,22 +27,20 @@ import { useDispatch } from 'react-redux';
 
 import { updateBaseById } from '../../../redux/slices/bases';
 import Iconify from '../../iconify';
+import EditTableDrawer from '../table/EditTableDrawer';
 
-function DatabaseInfoDialog({ 
-  open, 
-  onClose, 
-  database,
-  onDatabaseUpdate 
-}) {
+function DatabaseInfoDialog({ open, onClose, database, onDatabaseUpdate }) {
   const theme = useTheme();
   const dispatch = useDispatch();
-  
+
   const [editMode, setEditMode] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [editTableDrawerOpen, setEditTableDrawerOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState(null);
 
   // Initialize form values when dialog opens or database changes
   useEffect(() => {
@@ -51,33 +54,33 @@ function DatabaseInfoDialog({
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess(`${label} copied to clipboard!`);
-    } catch (err) {
+    } catch {
       setError(`Failed to copy ${label.toLowerCase()}`);
     }
   };
 
   const handleSave = async () => {
     if (!database?.id) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const updates = {
         name: editedName.trim(),
         description: editedDescription.trim(),
       };
-      
+
       await dispatch(updateBaseById(database.id, updates));
-      
+
       // Call the callback to update parent component
       if (onDatabaseUpdate) {
         onDatabaseUpdate({ ...database, ...updates });
       }
-      
+
       setEditMode(false);
-    } catch (err) {
-      setError(err.message || 'Failed to update database');
+    } catch (error) {
+      setError(error.message || 'Failed to update database');
     } finally {
       setIsLoading(false);
     }
@@ -95,10 +98,21 @@ function DatabaseInfoDialog({
     onClose();
   };
 
+  const handleTableClick = (table) => {
+    setSelectedTable(table);
+    setEditTableDrawerOpen(true);
+    onClose(); // Close the database info dialog when opening table editor
+  };
+
+  const handleCloseEditTableDrawer = () => {
+    setEditTableDrawerOpen(false);
+    setSelectedTable(null);
+  };
+
   if (!database) return null;
 
   const tableCount = database.tables?.items?.length || 0;
-  const createdDate = database.date_creation 
+  const createdDate = database.date_creation
     ? new Date(database.date_creation).toLocaleDateString()
     : 'Unknown';
 
@@ -128,18 +142,22 @@ function DatabaseInfoDialog({
             pb: 1,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+          >
             <Iconify
               icon="mdi:database"
-              sx={{ 
-                width: 24, 
-                height: 24, 
-                color: theme.palette.primary.main 
+              sx={{
+                width: 24,
+                height: 24,
+                color: theme.palette.primary.main,
               }}
             />
-            <Typography variant="h6">Database Information</Typography>
+            <Typography variant="h6">Database Settings</Typography>
           </Stack>
-          
+
           <IconButton
             onClick={handleClose}
             size="small"
@@ -151,17 +169,20 @@ function DatabaseInfoDialog({
               },
             }}
           >
-            <Iconify icon="mdi:close" sx={{ width: 20, height: 20 }} />
+            <Iconify
+              icon="mdi:close"
+              sx={{ width: 20, height: 20 }}
+            />
           </IconButton>
         </DialogTitle>
 
         <DialogContent sx={{ pt: 1 }}>
-          <Stack spacing={3}>
+          <Stack spacing={1.5}>
             {/* Database ID */}
             <Box>
-              <Typography 
-                variant="subtitle2" 
-                color="text.secondary" 
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
                 gutterBottom
               >
                 Database ID
@@ -177,9 +198,9 @@ function DatabaseInfoDialog({
                   border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 }}
               >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     fontFamily: 'monospace',
                     flex: 1,
                     wordBreak: 'break-all',
@@ -199,7 +220,10 @@ function DatabaseInfoDialog({
                       },
                     }}
                   >
-                    <Iconify icon="mdi:content-copy" sx={{ width: 16, height: 16 }} />
+                    <Iconify
+                      icon="mdi:content-copy"
+                      sx={{ width: 16, height: 16 }}
+                    />
                   </IconButton>
                 </Tooltip>
               </Box>
@@ -209,8 +233,16 @@ function DatabaseInfoDialog({
 
             {/* Database Name */}
             <Box>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                <Typography variant="subtitle2" color="text.secondary">
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={1}
+              >
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                >
                   Name
                 </Typography>
                 {!editMode && (
@@ -226,12 +258,15 @@ function DatabaseInfoDialog({
                         },
                       }}
                     >
-                      <Iconify icon="mdi:pencil" sx={{ width: 16, height: 16 }} />
+                      <Iconify
+                        icon="mdi:pencil"
+                        sx={{ width: 16, height: 16 }}
+                      />
                     </IconButton>
                   </Tooltip>
                 )}
               </Stack>
-              
+
               {editMode ? (
                 <TextField
                   fullWidth
@@ -246,18 +281,20 @@ function DatabaseInfoDialog({
                   }}
                 />
               ) : (
-                <Typography variant="body1">
-                  {database.name || 'Unnamed Database'}
-                </Typography>
+                <Typography variant="body1">{database.name || 'Unnamed Database'}</Typography>
               )}
             </Box>
 
             {/* Database Description */}
             <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 Description
               </Typography>
-              
+
               {editMode ? (
                 <TextField
                   fullWidth
@@ -274,7 +311,10 @@ function DatabaseInfoDialog({
                   }}
                 />
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   {database.description || 'No description provided'}
                 </Typography>
               )}
@@ -282,38 +322,127 @@ function DatabaseInfoDialog({
 
             <Divider />
 
-            {/* Database Stats */}
+            {/* Tables List */}
             <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Statistics
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Tables ({tableCount})
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip
-                  icon={<Iconify icon="mdi:table" sx={{ width: 16, height: 16 }} />}
-                  label={`${tableCount} ${tableCount === 1 ? 'Table' : 'Tables'}`}
-                  size="small"
+              {tableCount > 0 ? (
+                <List
                   sx={{
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    bgcolor: alpha(theme.palette.background.neutral, 0.3),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    maxHeight: 200,
+                    overflow: 'auto',
                   }}
-                />
-                <Chip
-                  icon={<Iconify icon="mdi:calendar" sx={{ width: 16, height: 16 }} />}
-                  label={`Created ${createdDate}`}
-                  size="small"
+                >
+                  {database.tables.items.map((table, index) => (
+                    <ListItem
+                      key={table.id}
+                      disablePadding
+                    >
+                      <ListItemButton
+                        onClick={() => handleTableClick(table)}
+                        sx={{
+                          borderRadius:
+                            index === 0
+                              ? '8px 8px 0 0'
+                              : index === tableCount - 1
+                                ? '0 0 8px 8px'
+                                : 0,
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Iconify
+                            icon="mdi:table"
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              color: theme.palette.primary.main,
+                            }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={table.name || `Table ${index + 1}`}
+                          secondary={
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                ID: {table.system_field_config?.id_type || 'UUID'}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                •
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {table.fields?.items?.length || 0} fields
+                              </Typography>
+                            </Stack>
+                          }
+                        />
+                        <Iconify
+                          icon="mdi:chevron-right"
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            color: theme.palette.text.secondary,
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Box
                   sx={{
-                    backgroundColor: alpha(theme.palette.info.main, 0.1),
-                    color: theme.palette.info.main,
-                    border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                    p: 3,
+                    textAlign: 'center',
+                    bgcolor: alpha(theme.palette.background.neutral, 0.3),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                   }}
-                />
-              </Stack>
+                >
+                  <Iconify
+                    icon="mdi:table-off"
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      color: theme.palette.text.secondary,
+                      mb: 1,
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    No tables in this database
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             {error && (
-              <Alert 
-                severity="error" 
+              <Alert
+                severity="error"
                 onClose={() => setError(null)}
                 sx={{ borderRadius: 2 }}
               >
@@ -325,7 +454,10 @@ function DatabaseInfoDialog({
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
           {editMode ? (
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+            >
               <Button
                 onClick={handleCancel}
                 disabled={isLoading}
@@ -373,14 +505,25 @@ function DatabaseInfoDialog({
         onClose={() => setCopySuccess(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setCopySuccess(false)} 
+        <Alert
+          onClose={() => setCopySuccess(false)}
           severity="success"
           sx={{ borderRadius: 2 }}
         >
           {copySuccess}
         </Alert>
       </Snackbar>
+
+      {/* Edit Table Drawer */}
+      {selectedTable && (
+        <EditTableDrawer
+          baseId={database.id}
+          tableId={selectedTable.id}
+          table={selectedTable}
+          open={editTableDrawerOpen}
+          onClose={handleCloseEditTableDrawer}
+        />
+      )}
     </>
   );
 }

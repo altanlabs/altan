@@ -13,26 +13,21 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  TextField,
   CircularProgress,
   Tooltip,
   Box,
   Typography,
 } from '@mui/material';
-import Button from '@mui/material/Button';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import { styled } from '@mui/material/styles';
 import React, { useState, memo, useCallback, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 import { selectTablesByBaseId, updateTableById } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
-import CustomDialog from '../../dialogs/CustomDialog.jsx';
 import DeleteDialog from '../../dialogs/DeleteDialog.jsx';
 import Iconify from '../../iconify';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
+import EditTableDrawer from '../table/EditTableDrawer.jsx';
 
 const StyledTabs = styled(Tabs)(() => ({
   minHeight: '30px',
@@ -378,7 +373,6 @@ function TableTabs({
   activeTableId,
   onTableChange,
   onDeleteTable,
-  onRenameTable,
   onImportTable,
   isLoading = false,
   baseId = null,
@@ -392,8 +386,7 @@ function TableTabs({
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [newTableName, setNewTableName] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createTableDialogOpen, setCreateTableDialogOpen] = useState(false);
   const [tableDropdownAnchor, setTableDropdownAnchor] = useState(null);
 
@@ -437,20 +430,10 @@ function TableTabs({
     }
   }, [selectedTableId, onDeleteTable]);
 
-  const handleRenameClick = useCallback(() => {
-    const table = tables.find((t) => t.id === selectedTableId);
-    setNewTableName(table.name);
-    setRenameDialogOpen(true);
+  const handleEditClick = useCallback(() => {
+    setEditDialogOpen(true);
     handleCloseMenu();
-  }, [handleCloseMenu, selectedTableId, tables]);
-
-  const handleRenameSubmit = useCallback(() => {
-    if (newTableName.trim() && selectedTableId) {
-      onRenameTable(selectedTableId, newTableName.trim());
-      setRenameDialogOpen(false);
-      setSelectedTableId(null);
-    }
-  }, [newTableName, selectedTableId, onRenameTable]);
+  }, [handleCloseMenu]);
 
   const handleImportClick = useCallback(() => {
     if (selectedTableId && onImportTable) {
@@ -571,14 +554,14 @@ function TableTabs({
         }
       >
         <MenuItem
-          onClick={handleRenameClick}
+          onClick={handleEditClick}
           disabled={isLoading}
         >
           <DriveFileRenameOutlineIcon
             fontSize="small"
             sx={{ mr: 1 }}
           />
-          Rename
+          Edit
         </MenuItem>
         <MenuItem
           onClick={handleImportClick}
@@ -664,37 +647,16 @@ function TableTabs({
         message="Are you sure you want to delete this table? All data will be permanently lost."
       />
 
-      <CustomDialog
-        open={renameDialogOpen}
-        onClose={() => setRenameDialogOpen(false)}
-        maxWidth="xs"
-      >
-        <DialogTitle>Rename Table</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Table Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newTableName}
-            onChange={(e) => setNewTableName(e.target.value)}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleRenameSubmit}
-            variant="contained"
-            disabled={!newTableName.trim()}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </CustomDialog>
+      <EditTableDrawer
+        baseId={baseId}
+        tableId={selectedTableId}
+        table={validTables.find((t) => t.id === selectedTableId)}
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setSelectedTableId(null);
+        }}
+      />
 
       <CreateTableDialog
         baseId={baseId}

@@ -10,7 +10,6 @@ function BaseLayout({
   handleTabChange,
   handleOpenCreateTable,
   handleDeleteTable,
-  handleRenameTable,
   handleImportTable,
   state,
   isTableLoading,
@@ -37,7 +36,6 @@ function BaseLayout({
         onTableChange={handleTabChange}
         onCreateTable={handleOpenCreateTable}
         onDeleteTable={handleDeleteTable}
-        onRenameTable={handleRenameTable}
         onImportTable={handleImportTable}
         isLoading={state.isTableSwitching}
         baseId={baseId}

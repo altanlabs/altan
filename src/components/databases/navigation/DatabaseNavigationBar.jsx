@@ -78,7 +78,7 @@ function DatabaseNavigationBar({
           alignItems="center"
         >
           {/* Database Info */}
-          <Tooltip title="Database information">
+          <Tooltip title="Database settings">
             <IconButton
               size="small"
               onClick={onDatabaseInfo}
@@ -95,7 +95,7 @@ function DatabaseNavigationBar({
               }}
             >
               <Iconify
-                icon="mdi:information-outline"
+                icon="mdi:cog-outline"
                 sx={{ width: 16, height: 16 }}
               />
             </IconButton>
