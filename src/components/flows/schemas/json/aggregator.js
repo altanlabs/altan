@@ -34,7 +34,7 @@ const AGGEGATOR_SCHEMA = {
           aggregator_method: {
             title: 'Aggregator Method',
             type: 'string',
-            enum: ['sum', 'average', 'count', 'min', 'max', 'concat', 'merge'],
+            enum: ['sum', 'average', 'count', 'min', 'max', 'concat', 'merge', 'collect'],
             enumDescriptions: [
               'Sum of all values',
               'Average of all values',
@@ -43,6 +43,7 @@ const AGGEGATOR_SCHEMA = {
               'Maximum value',
               'Concatenate all values',
               'Merge all values into a single object',
+              'Collect all values into a single array',
             ],
           },
           output_type: {
