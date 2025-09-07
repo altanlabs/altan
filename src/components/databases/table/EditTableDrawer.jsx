@@ -7,6 +7,7 @@ import { updateTableById } from '../../../redux/slices/bases';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';
+import EditFieldDrawer from '../fields/EditFieldDrawer';
 
 // Available ID field types based on the SystemFieldConfig
 const ID_FIELD_TYPES = [
@@ -35,6 +36,8 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
 
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [idTypeDrawerOpen, setIdTypeDrawerOpen] = useState(false);
+  const [fieldEditDrawerOpen, setFieldEditDrawerOpen] = useState(false);
+  const [selectedField, setSelectedField] = useState(null);
 
   // Reset form when table changes or dialog opens
   useEffect(() => {
@@ -79,6 +82,16 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
     setValue('id_type', idType, { shouldDirty: true });
     setIdTypeDrawerOpen(false);
   }, [setValue]);
+
+  const handleFieldClick = useCallback((field) => {
+    setSelectedField(field);
+    setFieldEditDrawerOpen(true);
+  }, []);
+
+  const handleCloseFieldEditDrawer = useCallback(() => {
+    setFieldEditDrawerOpen(false);
+    setSelectedField(null);
+  }, []);
 
   const watchedValues = watch();
   const selectedIdType = ID_FIELD_TYPES.find(type => type.value === watchedValues.id_type);
@@ -198,6 +211,82 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                   )}
                 </Typography>
               </Stack>
+
+              {/* Fields List */}
+              {table?.fields?.items && table.fields.items.length > 0 && (
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Fields ({table.fields.items.length})
+                  </Typography>
+                  <List
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                      borderRadius: 2,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      maxHeight: 200,
+                      overflow: 'auto',
+                      p: 0,
+                    }}
+                  >
+                    {table.fields.items.map((field, index) => (
+                      <ListItem key={field.id} disablePadding>
+                        <ListItemButton
+                          onClick={() => handleFieldClick(field)}
+                          disabled={isUsersTable}
+                          sx={{
+                            borderRadius: index === 0 ? '8px 8px 0 0' : index === table.fields.items.length - 1 ? '0 0 8px 8px' : 0,
+                            opacity: isUsersTable ? 0.6 : 1,
+                            '&:hover': {
+                              backgroundColor: isUsersTable ? 'transparent' : 'rgba(255, 255, 255, 0.04)',
+                            },
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {field.name}
+                                </Typography>
+                                {field.is_primary && (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                      color: 'rgba(255, 193, 7, 0.9)',
+                                      px: 1,
+                                      py: 0.25,
+                                      borderRadius: '4px',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    PRIMARY
+                                  </Typography>
+                                )}
+                              </Stack>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary">
+                                {field.type} • {field.db_field_type}
+                              </Typography>
+                            }
+                          />
+                          {!isUsersTable && (
+                            <Iconify
+                              icon="mdi:chevron-right"
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                color: 'text.secondary',
+                              }}
+                            />
+                          )}
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Stack>
+              )}
             </Stack>
 
             {/* Footer Actions */}
@@ -349,6 +438,17 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
           </List>
         </Stack>
       </Drawer>
+
+      {/* Edit Field Drawer - Stacked */}
+      {selectedField && (
+        <EditFieldDrawer
+          baseId={baseId}
+          tableId={tableId}
+          field={selectedField}
+          open={fieldEditDrawerOpen}
+          onClose={handleCloseFieldEditDrawer}
+        />
+      )}
     </>
   );
 };
