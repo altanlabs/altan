@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
-import usePageVisibility from '@hooks/usePageVisibility.ts';
+// import usePageVisibility from '@hooks/usePageVisibility.ts';
 
 import { optimai } from '../../../../utils/axios';
 
@@ -20,17 +20,15 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
   const prevStatusRef = useRef(null);
   const isStartingRef = useRef(false); // Avoid multiple start requests
 
-  // Use custom hook to track page visibility
-  const isPageVisible = usePageVisibility();
-
-  // Determine if polling should be active based on dev mode and page visibility.
-  const isPollingActive = useMemo(() => isDev && isPageVisible, [isDev, isPageVisible]);
+  // const isPollingActive = useMemo(() => isDev && isPageVisible, [isDev, isPageVisible]);
+  const isPollingActive = useMemo(() => isDev, [isDev]);
 
   /**
    * Pings the backend for server status.
    */
   const pingBackend = useCallback(async () => {
-    if (!interfaceId || !isPollingActive) return;
+    // if (!interfaceId || !isPollingActive) return;
+    if (!interfaceId || !isDev) return;
 
     try {
       const { data } = await optimai.get(`/interfaces/dev/${interfaceId}/status`);
@@ -50,7 +48,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
       setStatus('server_error');
       setIntervalTime(10 * 1000);
     }
-  }, [interfaceId, isPollingActive]);
+  }, [interfaceId, isDev]);
 
   /**
    * Starts the dev server if not already running or starting.
