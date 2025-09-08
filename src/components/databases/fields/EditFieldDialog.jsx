@@ -24,6 +24,12 @@ import { updateFieldThunk, selectTableRecordsTotal } from '../../../redux/slices
 import { dispatch } from '../../../redux/store.js';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 
+/**
+ * @deprecated Use EditFieldDrawer instead for a better stacked drawer experience.
+ * This dialog component will be removed in a future version.
+ * 
+ * @see EditFieldDrawer - Provides the same functionality with improved UX
+ */
 export default function EditFieldDialog({ field, baseId, tableId, open, onClose }) {
   const [fieldName, setFieldName] = useState('');
   const [fieldType, setFieldType] = useState('');

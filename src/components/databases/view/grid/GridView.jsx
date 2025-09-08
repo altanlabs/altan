@@ -38,7 +38,7 @@ import { selectAccount } from '../../../../redux/slices/general';
 import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
 import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
-import EditFieldDialog from '../../fields/EditFieldDialog.jsx';
+import EditFieldDrawer from '../../fields/EditFieldDrawer.jsx';
 import ImportCSVDrawer from '../../import/ImportCSVDrawer';
 import CreateRecordDialog from '../../records/CreateRecordDialog';
 import EditRecordDialog from '../../records/EditRecordDialog';
@@ -839,7 +839,7 @@ export const GridView = memo(
             }}
           />
         )}
-        <EditFieldDialog
+        <EditFieldDrawer
           field={editField}
           baseId={table.base_id}
           tableId={table.id}
