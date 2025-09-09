@@ -1,17 +1,20 @@
-import { Tooltip } from '@mui/material';
+import { Tooltip, Chip } from '@mui/material';
 import { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 
 import CustomDialog from './dialogs/CustomDialog';
 import HeaderIconButton from './HeaderIconButton';
 import Iconify from './iconify';
-import { selectAccountId } from '../redux/slices/general';
+import { selectAccountId, selectHasGrowthSubscription } from '../redux/slices/general';
 import { optimai_shop } from '../utils/axios'; // Adjust the import path as needed
 
 function HireAnExpert({ open, setOpen, iconSize = 20 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showExpertPackages, setShowExpertPackages] = useState(false);
   const accountId = useSelector(selectAccountId);
+  const hasGrowthSubscription = useSelector(selectHasGrowthSubscription);
+  const history = useHistory();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -122,27 +125,67 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
         <span className="text-blue-500">→</span>
       </a>
 
-      <a
-        href="https://chat.whatsapp.com/Jx3X3vP9A6i5pZerCq8xUl?mode=ac_t"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
-      >
-        <div className="flex items-center gap-3">
-          <Iconify
-            icon="ri:whatsapp-fill"
-            width={24}
-            className="text-green-500"
-          />
-          <div>
-            <div className="font-medium text-gray-900 dark:text-white">Chat on WhatsApp</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Get quick support via WhatsApp
-            </p>
+      {hasGrowthSubscription ? (
+        <a
+          href="https://chat.whatsapp.com/Jx3X3vP9A6i5pZerCq8xUl?mode=ac_t"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
+        >
+          <div className="flex items-center gap-3">
+            <Iconify
+              icon="ri:whatsapp-fill"
+              width={24}
+              className="text-green-500"
+            />
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Chat on WhatsApp</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Get quick support via WhatsApp
+              </p>
+            </div>
           </div>
-        </div>
-        <span className="text-blue-500">→</span>
-      </a>
+          <span className="text-blue-500">→</span>
+        </a>
+      ) : (
+        <button
+          onClick={() => {
+            history.push('/pricing');
+            handleClose();
+          }}
+          className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
+        >
+          <div className="flex items-center gap-3">
+            <Iconify
+              icon="ri:whatsapp-fill"
+              width={24}
+              className="text-gray-400"
+            />
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Chat on WhatsApp</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Get quick support via WhatsApp
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Chip
+              label="Growth Required"
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                color: '#8B4513',
+                fontSize: '0.75rem',
+                height: '20px',
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+            <span className="text-blue-500">→</span>
+          </div>
+        </button>
+      )}
 
       <button
         onClick={() => setShowExpertPackages(true)}

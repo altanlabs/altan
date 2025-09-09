@@ -32,7 +32,7 @@ import { optimai, optimai_shop } from '../../utils/axios';
 const GROWTH_FEATURES = [
   { text: 'Everything in your current plan', available: true },
   { text: 'Unlimited builders', available: true },
-  { text: 'Discord support', available: true },
+  { text: 'Whatsapp support', available: true },
   { text: 'Shared database pools', available: true },
   { text: 'Team collaboration tools', available: true },
   { text: 'Advanced analytics', available: true },

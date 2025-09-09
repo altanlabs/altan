@@ -853,6 +853,33 @@ export const selectIsAccountFree = createSelector(
   },
 );
 
+export const selectHasGrowthSubscription = createSelector(
+  [selectAccountSubscriptions],
+  (subscriptions) => {
+    if (!subscriptions || subscriptions.length === 0) {
+      return false; // No subscriptions means no Growth plan
+    }
+
+    // Check if any active subscription is a Growth plan
+    const activeSubscription = subscriptions.find(
+      (sub) => sub.status === 'active' || sub.status === 'trialing',
+    );
+
+    if (!activeSubscription) {
+      return false; // No active subscription means no Growth plan
+    }
+
+    const planName = activeSubscription?.billing_option?.plan?.name;
+    // Check if the plan name starts with "Growth"
+    return planName && planName.startsWith('Growth');
+  },
+  {
+    memoizeOptions: {
+      resultEqualityCheck: (a, b) => a === b,
+    },
+  },
+);
+
 export const selectCustomApps = (state) => selectAccount(state).apps;
 
 export const selectCustomConnectionTypes = createSelector(

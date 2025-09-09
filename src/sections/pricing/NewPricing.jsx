@@ -45,7 +45,7 @@ const PRO_FEATURES = [
 const GROWTH_FEATURES = [
   { text: 'Everything in Pro', available: true },
   { text: 'Unlimited builders', available: true },
-  { text: 'Discord support', available: true },
+  { text: 'Whatsapp support', available: true },
   { text: 'Shared database pools', available: true },
   { text: 'Team collaboration tools', available: true },
   { text: 'Advanced analytics', available: true },
