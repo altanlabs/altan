@@ -38,7 +38,7 @@ export default function SupportPage() {
           'Billing questions',
         ]}
         // Room configuration
-        tabs={true}
+        tabs={false}
         conversation_history={true}
         members={false}
         settings={true}

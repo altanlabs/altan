@@ -35,8 +35,11 @@ const FloatingNavigation = () => {
     const availableSections = {
       '/media': { label: 'Media', icon: 'material-symbols:perm-media-outline' },
       '/integration': { label: 'Integration', icon: 'material-symbols:integration-instructions-outline' },
+      '/support': { label: 'Support', icon: 'material-symbols:support-agent' },
       '/bases': { label: 'Databases', icon: 'material-symbols:database-outline' },
       '/settings': { label: 'Settings', icon: 'material-symbols:settings-outline' },
+      '/account/settings': { label: 'Settings', icon: 'material-symbols:settings-outline' },
+      '/account/settings?tab=team': { label: 'Team', icon: 'fluent-mdl2:team-favorite' },
       '/usage': { label: 'Usage', icon: 'material-symbols:monitoring' },
     };
 
@@ -44,19 +47,23 @@ const FloatingNavigation = () => {
     const defaultNavPaths = ['/agents', '/flows', '/pricing', '/usage'];
 
     const currentPath = location.pathname;
+    const currentPathWithQuery = location.pathname + location.search;
+
+    // Check both path with and without query params
+    const pathToCheck = availableSections[currentPathWithQuery] ? currentPathWithQuery : currentPath;
 
     // Only track paths that are in availableSections and not in default nav
-    if (availableSections[currentPath] && !defaultNavPaths.includes(currentPath)) {
+    if (availableSections[pathToCheck] && !defaultNavPaths.includes(currentPath)) {
       const sectionInfo = {
-        path: currentPath,
-        label: availableSections[currentPath].label,
-        icon: availableSections[currentPath].icon,
+        path: pathToCheck,
+        label: availableSections[pathToCheck].label,
+        icon: availableSections[pathToCheck].icon,
         timestamp: Date.now(),
       };
 
       setRecentSections(prev => {
         // Remove if already exists
-        const filtered = prev.filter(item => item.path !== currentPath);
+        const filtered = prev.filter(item => item.path !== pathToCheck);
         // Add to beginning
         const updated = [sectionInfo, ...filtered];
         // Keep only 3 most recent
@@ -68,7 +75,7 @@ const FloatingNavigation = () => {
         return limited;
       });
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   // Submenu configuration for home button
   const submenuItems = {

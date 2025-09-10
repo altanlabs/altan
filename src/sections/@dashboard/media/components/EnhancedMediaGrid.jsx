@@ -1,5 +1,5 @@
 import { Typography, Box, Stack, Divider } from '@mui/material';
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import RenderPreview from './RenderPreview';
@@ -11,136 +11,6 @@ import { dispatch } from '../../../../redux/store';
 const DRAWER_MODES = ['custom_message', 'drawer'];
 const MEDIA_PAGE_MODE = 'default';
 const MEDIA_BASE_URL = `${API_BASE_URL}/platform/media`;
-
-const MediaCard = memo(({ media, selected, onSelect, mode, selectedMedia, handleSelect }) => (
-  <Box
-    sx={{
-      position: 'relative',
-      borderRadius: 3,
-      overflow: 'hidden',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-      outline: 'none',
-      '&:focus': {
-        outline: 'none',
-        border: '1px solid rgba(255, 255, 255, 0.4)',
-        boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.1)',
-      },
-      '&:focus-visible': {
-        outline: 'none',
-        border: '1px solid rgba(255, 255, 255, 0.4)',
-        boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.1)',
-      },
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-      },
-    }}
-    tabIndex={0}
-  >
-    <RenderPreview
-      className="relative group cursor-pointer focus:outline-none"
-      mode="drawer"
-      preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
-      fileType={media?.type?.split('/').pop()}
-      fileName={media?.name}
-      media={media}
-      style={{ outline: 'none' }}
-    />
-
-    {/* Media metadata overlay */}
-    <Box
-      sx={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
-        color: 'white',
-        p: 1.5,
-        transform: 'translateY(100%)',
-        transition: 'transform 0.3s ease',
-        '.group:hover &': {
-          transform: 'translateY(0)',
-        },
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{ display: 'block', fontWeight: 600 }}
-      >
-        {media?.name || 'Unnamed file'}
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{ opacity: 0.8 }}
-      >
-        {media?.type} • {formatFileSize(media?.file_size)}
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{ opacity: 0.6, display: 'block' }}
-      >
-        {formatUploadDate(media?.date_creation)}
-      </Typography>
-    </Box>
-
-    {/* Selection checkbox */}
-    {(DRAWER_MODES.includes(mode) || MEDIA_PAGE_MODE === mode) && (
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 12,
-          left: 12,
-          width: 24,
-          height: 24,
-          borderRadius: '50%',
-          backgroundColor: selectedMedia?.has(media.id)
-            ? 'primary.main'
-            : 'rgba(255, 255, 255, 0.3)',
-          backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(255, 255, 255, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          opacity: selectedMedia?.has(media.id) ? 1 : 0,
-          '.group:hover &': {
-            opacity: 1,
-          },
-          '&:hover': {
-            transform: 'scale(1.1)',
-            backgroundColor: 'primary.main',
-          },
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (DRAWER_MODES.includes(mode)) {
-            onSelect(e, media.id);
-          } else {
-            handleSelect(media.id);
-          }
-        }}
-      >
-        {selectedMedia?.has(media.id) && (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-          </svg>
-        )}
-      </Box>
-    )}
-  </Box>
-));
 
 // Utility functions
 const formatFileSize = (bytes) => {
@@ -160,6 +30,224 @@ const formatUploadDate = (dateString) => {
     minute: '2-digit',
   });
 };
+
+const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) => {
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleCardClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only handle selection, don't trigger preview/download
+    if (DRAWER_MODES.includes(mode)) {
+      onSelect(e, media.id);
+    } else {
+      handleSelect(media.id);
+    }
+  };
+
+  const handleDoubleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowPreview(true);
+  };
+
+  return (
+    <>
+      <Box
+        sx={{
+          position: 'relative',
+          borderRadius: 3,
+          overflow: 'hidden',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer',
+          outline: 'none',
+          '&:focus': {
+            outline: 'none',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.1)',
+          },
+          '&:focus-visible': {
+            outline: 'none',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.1)',
+          },
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          },
+        }}
+        tabIndex={0}
+        onClick={handleCardClick}
+        onDoubleClick={handleDoubleClick}
+      >
+        <RenderPreview
+          className="relative group cursor-pointer focus:outline-none"
+          mode="display"
+          preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
+          fileType={media?.type?.split('/').pop()}
+          fileName={media?.name}
+          media={media}
+          style={{ outline: 'none' }}
+        />
+
+        {/* Media metadata overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+            color: 'white',
+            p: 1.5,
+            transform: 'translateY(100%)',
+            transition: 'transform 0.3s ease',
+            '.group:hover &': {
+              transform: 'translateY(0)',
+            },
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ display: 'block', fontWeight: 600 }}
+          >
+            {media?.name || 'Unnamed file'}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ opacity: 0.8 }}
+          >
+            {media?.type} • {formatFileSize(media?.file_size)}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ opacity: 0.6, display: 'block' }}
+          >
+            {formatUploadDate(media?.date_creation)}
+          </Typography>
+        </Box>
+
+        {/* Selection checkbox */}
+        {(DRAWER_MODES.includes(mode) || MEDIA_PAGE_MODE === mode) && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              backgroundColor: selectedMedia?.has(media.id)
+                ? 'primary.main'
+                : 'rgba(255, 255, 255, 0.3)',
+              backdropFilter: 'blur(10px)',
+              border: '2px solid rgba(255, 255, 255, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              opacity: selectedMedia?.has(media.id) ? 1 : 0,
+              '.group:hover &': {
+                opacity: 1,
+              },
+              '&:hover': {
+                transform: 'scale(1.1)',
+                backgroundColor: 'primary.main',
+              },
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (DRAWER_MODES.includes(mode)) {
+                onSelect(e, media.id);
+              } else {
+                handleSelect(media.id);
+              }
+            }}
+          >
+            {selectedMedia?.has(media.id) && (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+              </svg>
+            )}
+          </Box>
+        )}
+      </Box>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => setShowPreview(false)}
+        >
+          <Box
+            sx={{
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RenderPreview
+              mode="preview"
+              preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
+              fileType={media?.type?.split('/').pop()}
+              fileName={media?.name}
+              media={media}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                },
+              }}
+              onClick={() => setShowPreview(false)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+              </svg>
+            </Box>
+          </Box>
+        </Box>
+      )}
+    </>
+  );
+});
+
+MediaCard.displayName = 'MediaCard';
 
 const getTimeGroup = (dateString) => {
   if (!dateString) return 'Unknown';
@@ -245,11 +333,12 @@ const EnhancedMediaGrid = ({
     // Group by time
     const grouped = filtered.reduce((groups, media) => {
       const timeGroup = getTimeGroup(media.date_creation);
-      if (!groups[timeGroup]) {
-        groups[timeGroup] = [];
+      const newGroups = { ...groups };
+      if (!newGroups[timeGroup]) {
+        newGroups[timeGroup] = [];
       }
-      groups[timeGroup].push(media);
-      return groups;
+      newGroups[timeGroup].push(media);
+      return newGroups;
     }, {});
 
     // Sort groups by recency and items within groups by date
@@ -284,8 +373,8 @@ const EnhancedMediaGrid = ({
 
   const onSelect = useCallback(
     (e, mediaId) => {
-      const selectedMedia = mediaList.find((f) => f.id === mediaId);
-      setMedia(e, selectedMedia);
+      const selectedMediaItem = mediaList.find((f) => f.id === mediaId);
+      setMedia(e, selectedMediaItem);
     },
     [mediaList, setMedia],
   );
@@ -389,7 +478,6 @@ const EnhancedMediaGrid = ({
                 key={media.id}
                 media={media}
                 onSelect={onSelect}
-                selected={false}
                 mode={mode}
                 selectedMedia={selectedMedia}
                 handleSelect={handleSelect}
