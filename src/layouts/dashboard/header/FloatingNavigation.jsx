@@ -81,6 +81,7 @@ const FloatingNavigation = () => {
     utils: [
       { path: '/media', label: 'Media', icon: 'material-symbols:perm-media-outline' },
       { path: '/integration', label: 'Integration', icon: 'material-symbols:integration-instructions-outline' },
+      { path: '/support', label: 'Support', icon: 'material-symbols:support-agent' },
     ],
     workspace: isAuthenticated ? [
       { path: '/usage', label: 'Usage', icon: 'material-symbols:monitoring' },

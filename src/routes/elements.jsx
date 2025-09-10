@@ -156,3 +156,4 @@ export const AdvancedEditorPage = Loadable(
 export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
 );
+export const SupportPage = Loadable(lazy(() => import('../pages/SupportPage.jsx')));

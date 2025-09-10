@@ -62,6 +62,7 @@ import {
   DemoTextVoicePage,
   AdvancedEditorPage,
   SDKTestPage,
+  SupportPage,
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
@@ -742,6 +743,17 @@ const Router = () => {
           <DashboardLayout>
             <ContactPage />
           </DashboardLayout>
+        </Route>
+
+        <Route
+          path="/support"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <SupportPage />
+            </DashboardLayout>
+          </AuthGuard>
         </Route>
 
         <Route

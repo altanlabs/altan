@@ -795,6 +795,8 @@ export const {
 
 const selectGeneralState = (state) => state.general;
 
+export const selectUser = (state) => selectGeneralState(state).user;
+
 export const selectGlobalVars = (state) => selectGeneralState(state).globalVars;
 
 export const selectHeaderVisible = (state) => selectGeneralState(state).headerVisible;
