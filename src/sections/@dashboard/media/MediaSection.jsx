@@ -9,6 +9,7 @@ import { useDropzone } from 'react-dropzone';
 
 import DrawerHeader from './components/DrawerHeader';
 import MediaGrid from './components/MediaGrid';
+import EnhancedMediaGrid from './components/EnhancedMediaGrid';
 import { DynamicIsland } from '../../../components/dynamic-island/DynamicIsland';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
@@ -44,7 +45,7 @@ const bounce = keyframes`
 const DRAWER_MODES = ['custom_message', 'drawer'];
 const MEDIA_PAGE_MODE = 'default';
 
-const MediaSection = ({ mode = MEDIA_PAGE_MODE, setMedia, searchTerm, onClose = null }) => {
+const MediaSection = ({ mode = MEDIA_PAGE_MODE, setMedia, searchTerm, selectedFilters = [], onClose = null }) => {
   const handleDrop = useCallback(async (acceptedFiles) => {
     const newFiles = acceptedFiles.map(async (file) => await uploadMedia(file));
     await Promise.all(newFiles);
@@ -184,14 +185,25 @@ const MediaSection = ({ mode = MEDIA_PAGE_MODE, setMedia, searchTerm, onClose = 
         )}
         <DndContext sensors={sensors}>
           <input {...getInputProps()} />
-          <MediaGrid
-            isMobile={isMobile}
-            setMedia={setMedia}
-            searchTerm={searchTerm}
-            mode={mode}
-            selectedMedia={selectedMedia}
-            handleSelect={handleSelect}
-          />
+          {mode === MEDIA_PAGE_MODE ? (
+            <EnhancedMediaGrid
+              setMedia={setMedia}
+              searchTerm={searchTerm}
+              selectedFilters={selectedFilters}
+              mode={mode}
+              selectedMedia={selectedMedia}
+              handleSelect={handleSelect}
+            />
+          ) : (
+            <MediaGrid
+              isMobile={isMobile}
+              setMedia={setMedia}
+              searchTerm={searchTerm}
+              mode={mode}
+              selectedMedia={selectedMedia}
+              handleSelect={handleSelect}
+            />
+          )}
         </DndContext>
       </Stack>
     </>

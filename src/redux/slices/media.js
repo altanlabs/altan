@@ -78,7 +78,7 @@ const TARGETED_GQ = {
   media: {
     '@fields': ['@base@exc:meta_data', 'file_name', 'mime_type'],
     '@filter': { is_chat: { _eq: 'false' } },
-    '@paginate': { limit: 25, order_by: 'date_creation', desc: 'true' },
+    '@paginate': { limit: 1000, order_by: 'date_creation', desc: 'true' },
   },
   media3D: {
     '@fields': '@all',
