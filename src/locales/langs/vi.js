@@ -1,7 +1,7 @@
 const vi = {
   dashboard: {
     createAnything: {
-      title: 'Bạn muốn xây dựng gì?',
+      title: 'Mục tiêu của bạn là gì?',
       subtitle: 'Tạo dự án bằng cách nói chuyện với AI',
     },
     agents: {

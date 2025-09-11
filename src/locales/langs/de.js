@@ -1,7 +1,7 @@
 const de = {
   dashboard: {
     createAnything: {
-      title: 'Was möchten Sie bauen?',
+      title: 'Was ist Ihr Ziel?',
       subtitle: 'Erstellen Sie Projekte durch Sprechen mit KI',
     },
     agents: {

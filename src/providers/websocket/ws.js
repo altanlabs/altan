@@ -496,13 +496,36 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'DeploymentUpdate':
-      dispatch(
-        updateInterfaceDeployment({
-          id: data.data.ids[0],
-          interface_id: data.data.changes.interface_id,
-          ...data.data.changes,
-        }),
-      );
+      // Find interface_id by searching through all interfaces and their deployments
+      const deploymentId = data.data.ids[0];
+      const findInterfaceIdForDeployment = (getState) => {
+        const state = getState();
+        const interfaces = state.general.account?.interfaces || [];
+        for (const interface_ of interfaces) {
+          if (interface_.deployments?.items) {
+            const deployment = interface_.deployments.items.find(d => d.id === deploymentId);
+            if (deployment) {
+              return interface_.id;
+            }
+          }
+        }
+        return null;
+      };
+
+      dispatch((dispatch, getState) => {
+        const interface_id = findInterfaceIdForDeployment(getState);
+        if (interface_id) {
+          dispatch(
+            updateInterfaceDeployment({
+              id: deploymentId,
+              interface_id,
+              ...data.data.changes,
+            }),
+          );
+        } else {
+          console.warn('Could not find interface_id for deployment:', deploymentId);
+        }
+      });
       break;
     case 'DeploymentDelete':
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));

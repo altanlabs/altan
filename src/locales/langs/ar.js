@@ -1,7 +1,7 @@
 const ar = {
   dashboard: {
     createAnything: {
-      title: 'ماذا تريد أن تبني؟',
+      title: 'ما هو هدفك؟',
       subtitle: 'إنشاء المشاريع بالتحدث مع الذكاء الاصطناعي',
     },
     agents: {
