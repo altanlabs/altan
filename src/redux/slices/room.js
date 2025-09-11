@@ -670,7 +670,7 @@ const slice = createSlice({
     // },
     addMessage: (state, action) => {
       const message = action.payload;
-
+      console.log('addMessage', message);
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;

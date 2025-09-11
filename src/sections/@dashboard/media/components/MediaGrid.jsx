@@ -1,6 +1,6 @@
 import Masonry from '@mui/lab/Masonry';
 import { Checkbox, Box } from '@mui/material';
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import RenderPreview from './RenderPreview';
@@ -13,15 +13,25 @@ const DRAWER_MODES = ['custom_message', 'drawer'];
 const MEDIA_PAGE_MODE = 'default';
 const MEDIA_BASE_URL = `${API_BASE_URL}/platform/media`;
 
-const MediaCard = memo(({ media, selected, onSelect, mode, selectedMedia, handleSelect }) => (
-  <RenderPreview
-    className="relative group rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg backdrop-blur-xl cursor-pointer"
-    mode="drawer"
-    preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
-    fileType={media?.type?.split('/').pop()}
-    fileName={media?.name}
-    media={media}
-  >
+const MediaCard = memo(({ media, selected, onSelect, mode, selectedMedia, handleSelect }) => {
+  const [hasLoadedPreview, setHasLoadedPreview] = useState(false);
+
+  const handleMouseEnter = () => {
+    setHasLoadedPreview(true);
+  };
+
+  return (
+    <div onMouseEnter={handleMouseEnter}>
+      <RenderPreview
+        className="relative group rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg backdrop-blur-xl cursor-pointer"
+        mode="drawer"
+        preview={hasLoadedPreview ? `${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}` : null}
+        fileType={media?.type?.split('/').pop()}
+        fileName={media?.name}
+        media={media}
+        shouldLoadPreview={hasLoadedPreview}
+        preventAutoDownload={false}
+      >
     {DRAWER_MODES.includes(mode) && (
       <div className="absolute transition transition-opacity top-5 left-5 z-[999] w-[30] h-[30] border border-gray-300 dark:border-gray-700 opacity-0 group-hover:opacity-1">
         <Checkbox
@@ -44,7 +54,9 @@ const MediaCard = memo(({ media, selected, onSelect, mode, selectedMedia, handle
       </div>
     )}
   </RenderPreview>
-));
+    </div>
+  );
+});
 
 const selectMedia = (state) => state.media.media;
 const selectMediaLoading = (state) => state.media.isLoading;

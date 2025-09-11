@@ -62,6 +62,25 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
   const renderSupportOptions = () => (
     <div className="space-y-4">
       <a
+        href="https://altan.ai/support"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
+      >
+        <div className="flex items-center gap-3">
+          <Iconify
+            icon="mdi:chat-processing"
+            width={24}
+            className="text-blue-500"
+          />
+          <div>
+            <div className="font-medium text-gray-900 dark:text-white">Chat Support</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Get quick support via our chat support</p>
+          </div>
+        </div>
+        <span className="text-blue-500">→</span>
+      </a>
+      <a
         href="https://discord.com/invite/2zPbKuukgx"
         target="_blank"
         rel="noopener noreferrer"
@@ -97,28 +116,6 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
             <div className="font-medium text-gray-900 dark:text-white">Docs & Guides</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Browse our documentation and guides
-            </p>
-          </div>
-        </div>
-        <span className="text-blue-500">→</span>
-      </a>
-
-      <a
-        href="https://calendar.app.google/WAMez8wYG6sHXQRD9"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
-      >
-        <div className="flex items-center gap-3">
-          <Iconify
-            icon="mdi:calendar-clock"
-            width={24}
-            className="text-blue-500"
-          />
-          <div>
-            <div className="font-medium text-gray-900 dark:text-white">Book a Call</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Schedule a free strategy call with our experts
             </p>
           </div>
         </div>

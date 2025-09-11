@@ -181,7 +181,7 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
 
   return (
     <>
-      {/* {latestDeployment && <DeploymentCard deployment={latestDeployment} />} */}
+      {latestDeployment && <DeploymentCard deployment={latestDeployment} />}
       <InterfaceLayout
         id={id}
         chatIframeRef={chatIframeRef}

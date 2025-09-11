@@ -3,7 +3,7 @@ import { styled, useTheme } from '@mui/material/styles';
 import { m, AnimatePresence } from 'framer-motion';
 import React, { useEffect, useState, memo } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router';
+import { useHistory } from 'react-router-dom';
 
 import { createAltaner } from '../../redux/slices/altaners.js';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
@@ -66,6 +66,7 @@ const LoaderStep = ({ step, icon, opacity, scale, yOffset }) => {
 function AltanerFromIdea({ idea, onClose }) {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const history = useHistory();
   const [isCreating, setIsCreating] = useState(false);
   const [cycleIndex, setCycleIndex] = useState(0);
 
@@ -116,7 +117,7 @@ function AltanerFromIdea({ idea, onClose }) {
     dispatch(createAltaner({ name: 'My First App' }, idea))
       .then((response) => {
         if (!isSubscribed || !response || !response.id) return;
-        window.location.href = `/project/${response.id}`;
+        history.push(`/project/${response.id}`);
       })
       .catch((error) => {
         if (!isSubscribed) return;

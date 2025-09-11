@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import RenderPreview from './RenderPreview';
 import SkeletonMediaItem from './skeletons/SkeletonMediaItem';
 import { API_BASE_URL } from '../../../../auth/utils';
+import Iconify from '../../../../components/iconify';
 import { getMedia } from '../../../../redux/slices/media';
 import { dispatch } from '../../../../redux/store';
 
@@ -29,6 +30,42 @@ const formatUploadDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit',
   });
+};
+
+const getFileTypeIcon = (mimeType) => {
+  if (!mimeType) return 'material-symbols:description-outline';
+
+  const type = mimeType.toLowerCase();
+  if (type.startsWith('image/')) return 'material-symbols:image-outline';
+  if (type.startsWith('video/')) return 'material-symbols:videocam-outline';
+  if (type.startsWith('audio/')) return 'material-symbols:audio-file-outline';
+  if (type.includes('pdf')) return 'material-symbols:picture-as-pdf-outline';
+  if (type.includes('document') || type.includes('word'))
+    return 'material-symbols:description-outline';
+  if (type.includes('spreadsheet') || type.includes('excel'))
+    return 'material-symbols:table-chart-outline';
+  if (type.includes('presentation') || type.includes('powerpoint'))
+    return 'material-symbols:slideshow-outline';
+  if (type.includes('text')) return 'material-symbols:text-snippet-outline';
+  if (type.includes('zip') || type.includes('rar') || type.includes('archive'))
+    return 'material-symbols:folder-zip-outline';
+
+  return 'material-symbols:description-outline';
+};
+
+const getFileTypeColor = (mimeType) => {
+  if (!mimeType) return '#9CA3AF';
+
+  const type = mimeType.toLowerCase();
+  if (type.startsWith('image/')) return '#10B981';
+  if (type.startsWith('video/')) return '#3B82F6';
+  if (type.startsWith('audio/')) return '#8B5CF6';
+  if (type.includes('pdf')) return '#EF4444';
+  if (type.includes('document') || type.includes('word')) return '#2563EB';
+  if (type.includes('spreadsheet') || type.includes('excel')) return '#059669';
+  if (type.includes('presentation') || type.includes('powerpoint')) return '#DC2626';
+
+  return '#9CA3AF';
 };
 
 const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) => {
@@ -84,52 +121,145 @@ const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) 
         onClick={handleCardClick}
         onDoubleClick={handleDoubleClick}
       >
-        <RenderPreview
-          className="relative group cursor-pointer focus:outline-none"
-          mode="display"
-          preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
-          fileType={media?.type?.split('/').pop()}
-          fileName={media?.name}
-          media={media}
-          style={{ outline: 'none' }}
-        />
-
-        {/* Media metadata overlay */}
+        {/* Smart media display - images show thumbnails, others show icons */}
         <Box
+          className="group"
           sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
-            color: 'white',
-            p: 1.5,
-            transform: 'translateY(100%)',
-            transition: 'transform 0.3s ease',
-            '.group:hover &': {
-              transform: 'translateY(0)',
-            },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 120,
+            p: media?.type?.startsWith('image/') ? 0 : 2,
+            position: 'relative',
+            width: '100%',
+            height: '100%',
           }}
         >
-          <Typography
-            variant="caption"
-            sx={{ display: 'block', fontWeight: 600 }}
-          >
-            {media?.name || 'Unnamed file'}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ opacity: 0.8 }}
-          >
-            {media?.type} • {formatFileSize(media?.file_size)}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ opacity: 0.6, display: 'block' }}
-          >
-            {formatUploadDate(media?.date_creation)}
-          </Typography>
+          {media?.type?.startsWith('image/') ? (
+            // Show actual image thumbnail for images
+            <Box
+              sx={{
+                width: '100%',
+                height: 160,
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: 2,
+              }}
+            >
+              <Box
+                component="img"
+                src={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
+                alt={media?.name || 'Image'}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                  },
+                }}
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              {/* Fallback icon (hidden by default) */}
+              <Box
+                sx={{
+                  display: 'none',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                }}
+              >
+                <Iconify
+                  icon={getFileTypeIcon(media?.type)}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    color: getFileTypeColor(media?.type),
+                    mb: 1,
+                  }}
+                />
+              </Box>
+            </Box>
+          ) : (
+            // Show file type icon for non-images
+            <>
+              <Iconify
+                icon={getFileTypeIcon(media?.type)}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  color: getFileTypeColor(media?.type),
+                  mb: 1,
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  textAlign: 'center',
+                  color: 'text.secondary',
+                  fontWeight: 500,
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {media?.name || 'Unnamed file'}
+              </Typography>
+            </>
+          )}
         </Box>
+
+        {/* Media metadata overlay - only show for images on hover */}
+        {media?.type?.startsWith('image/') && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+              color: 'white',
+              p: 1.5,
+              transform: 'translateY(100%)',
+              transition: 'transform 0.3s ease',
+              '.group:hover &': {
+                transform: 'translateY(0)',
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', fontWeight: 600 }}
+            >
+              {media?.name || 'Unnamed file'}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.8 }}
+            >
+              {media?.type} • {formatFileSize(media?.file_size)}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.6, display: 'block' }}
+            >
+              {formatUploadDate(media?.date_creation)}
+            </Typography>
+          </Box>
+        )}
 
         {/* Selection checkbox */}
         {(DRAWER_MODES.includes(mode) || MEDIA_PAGE_MODE === mode) && (
@@ -210,7 +340,7 @@ const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) 
             onClick={(e) => e.stopPropagation()}
           >
             <RenderPreview
-              mode="preview"
+              mode="modal"
               preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
               fileType={media?.type?.split('/').pop()}
               fileName={media?.name}
@@ -236,7 +366,12 @@ const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) 
               }}
               onClick={() => setShowPreview(false)}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="white"
+              >
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
               </svg>
             </Box>

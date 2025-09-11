@@ -97,16 +97,6 @@ const Thread = ({
         ? '300px'
         : '120px'
       : '0px';
-
-  // eslint-disable-next-line no-console
-  console.log('Thread padding debug:', {
-    mode,
-    threadId: tId || drawer.current,
-    todoExpanded,
-    isMobile,
-    hideInput,
-    calculatedPaddingBottom,
-  });
   const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
