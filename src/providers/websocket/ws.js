@@ -530,17 +530,19 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'RecordsNew':
       // Extract table_id from data structure
-      const newTableId = data.data.table_id || data.data.id;
-      const newTableName = data.data.table_name;
-      data.data.records.forEach((record) => {
-        dispatch(
-          addTableRecord({
-            tableId: newTableId,
-            tableName: newTableName,
-            record: record,
-          }),
-        );
-      });
+      const newTableId = data.table_id || data.data.table_id || data.data.id;
+      const newTableName = data.table_db_name || data.data.table_name;
+      if (data.data.records && Array.isArray(data.data.records)) {
+        data.data.records.forEach((record) => {
+          dispatch(
+            addTableRecord({
+              tableId: newTableId,
+              tableName: newTableName,
+              record: record,
+            }),
+          );
+        });
+      }
       break;
     case 'RecordsUpdate':
       const updateTableId = data.data.table_id || data.data.id;

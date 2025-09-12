@@ -77,9 +77,8 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   }, [tableId, baseId, tableExists]);
 
   // Add throttling to handle frequent page size changes
-  const handlePageSizeChange = useCallback((newPageSize) => {
+  const handlePageSizeChange = useCallback(() => {
     // For future implementation if needed
-    console.log(`Page size changed to ${newPageSize}`);
   }, []);
 
   const handleAddField = useCallback(
