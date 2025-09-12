@@ -26,7 +26,7 @@ import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
-import { rowHeight, headerHeight, defaultColDef } from './utils/settings.js';
+import { headerHeight, defaultColDef } from './utils/settings.js';
 import {
   queryTableRecords,
   selectDatabaseQuickFilter,
@@ -681,7 +681,7 @@ export const GridView = memo(
               '--ag-border-radius': `${theme.shape.borderRadius}px`,
               '--ag-grid-size': '4px',
               '--ag-list-item-height': '32px',
-              '--ag-row-height': '48px',
+              '--ag-row-height': '56px',
               '--ag-header-height': '56px',
 
               // Custom dark mode enhancements
@@ -701,7 +701,7 @@ export const GridView = memo(
               getRowId={(params) => params.data.id}
               onGridReady={onGridReady}
               onCellKeyPress={onCellKeyPress}
-              getRowHeight={() => rowHeight}
+              getRowHeight={() => 56}
               headerHeight={headerHeight}
               onCellValueChanged={onCellValueChanged}
               components={components}

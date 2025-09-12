@@ -88,8 +88,7 @@ const aggregateData = (data, groupBy) => {
           : groupBy === 'monthly'
             ? format(startOfMonth(itemDate), 'yyyy-MM')
             : item.date;
-    } catch (e) {
-      console.error('Error formatting date key:', item.date, groupBy, e);
+    } catch {
       return acc;
     }
 
@@ -396,7 +395,6 @@ const UsagePage = () => {
 
   const subscriptionData = getBasicSubscriptionData();
   const billingCycle = getBillingCycleData();
-  console.log('subscriptionData', subscriptionData);
 
   // Get container background based on theme
   const getContainerStyles = () => {
@@ -410,10 +408,11 @@ const UsagePage = () => {
   // Filters State
   const [timeframe, setTimeframe] = useState('daily');
   const [creditType, setCreditType] = useState('all');
-  const [dateRange, setDateRange] = useState([
-    startOfMonth(new Date()), // First day of current month
-    new Date(), // Current date
-  ]);
+  const [dateRange, setDateRange] = useState(() => {
+    const startDate = new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1);
+    const endDate = new Date();
+    return [startDate, endDate];
+  });
   const [chartType, setChartType] = useState('bar');
 
   // Listen for theme changes
@@ -451,8 +450,7 @@ const UsagePage = () => {
           return metrics;
         });
         setRawUsageData(processed);
-      } catch (err) {
-        console.error('Error fetching usage data:', err);
+      } catch {
         setError('Failed to fetch usage data.');
         setRawUsageData([]);
       } finally {

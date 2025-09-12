@@ -1,4 +1,3 @@
-import { Card, CardContent, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useCallback, useState, useEffect, memo } from 'react';
 
@@ -20,7 +19,7 @@ const DeploymentCard = ({ deployment }) => {
   const handleFixWithAI = useCallback(
     async (deploymentId) => {
       try {
-        const response = await optimai.get(`/interfaces/deployment/${deploymentId}/fix-with-ai`);
+        const response = await optimai.post(`/interfaces/deployment/${deploymentId}/fix-with-ai`);
         if (response.status === 200) {
           setIsWorking(true);
         }
@@ -43,71 +42,117 @@ const DeploymentCard = ({ deployment }) => {
     switch (deployment.status) {
       case 'ERROR':
         return (
-          <div className="flex flex-col shadow-lg items-center justify-center space-y-1">
-            <div className="flex flex-row items-center w-full space-x-1">
-              <Iconify
-                icon="mdi:alert-circle"
-                className="text-red-700"
-                width={17}
-              />
-              <span className="text-sm leading-relaxed tracking-wide">Deployment Failed</span>
+          <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-red-500/10 p-4 min-w-[280px]">
+            {/* Header with error status */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-sm">
+                  <Iconify
+                    icon="mdi:alert-circle"
+                    className="text-red-500 dark:text-red-400"
+                    width={18}
+                  />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Deployment Failed
+                  </span>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                    {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
             </div>
 
+            {/* Action button */}
             <HoverBorderGradient
-              containerClassName="group relative rounded-full p-[1px] bg-gradient-to-r from-blue-200/50 to-violet-200/50 dark:from-indigo-500/40 dark:to-violet-500/40 hover:shadow-xl hover:shadow-blue-300/20 dark:hover:shadow-indigo-500/20"
+              containerClassName="group relative rounded-xl p-[1px] bg-gradient-to-r from-red-200/30 via-pink-200/30 to-purple-200/30 dark:from-red-500/20 dark:via-pink-500/20 dark:to-purple-500/20 hover:shadow-lg hover:shadow-red-300/20 dark:hover:shadow-red-500/10"
               as="button"
-              className="transition-all duration-200 w-[185px] h-[40px] text-sm bg-white/80 dark:bg-black/20 text-black dark:text-gray-200 flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-white/5 rounded-full space-x-2"
+              className="transition-all duration-300 w-full h-10 text-sm bg-white/80 dark:bg-white/20 text-gray-800 dark:text-white flex items-center justify-center font-medium hover:bg-white/90 dark:hover:bg-white/30 rounded-xl space-x-2 backdrop-blur-sm"
               onClick={() => handleFixWithAI(deployment.deployment_id)}
               disabled={isWorking}
               disableAnimation
             >
-              <Iconify
-                icon="mdi:magic"
-                width={20}
-                height={20}
-              />
-              <Typography>{isWorking ? 'Fixing...' : 'Fix with AI'}</Typography>
+              {isWorking ? (
+                <>
+                  <Iconify
+                    icon="eos-icons:loading"
+                    width={16}
+                    height={16}
+                    className="text-purple-500"
+                  />
+                  <span className="text-purple-500">Fixing...</span>
+                </>
+              ) : (
+                <>
+                  <Iconify
+                    icon="mdi:auto-fix"
+                    width={16}
+                    height={16}
+                    className="text-gray-700 dark:text-white"
+                  />
+                  <span>Fix with AI</span>
+                </>
+              )}
             </HoverBorderGradient>
           </div>
         );
-      case 'COMPLETED':
-        return (
-          <Card className="bg-green-50 border border-green-300 shadow-lg">
-            <CardContent className="flex items-center space-x-3">
-              <Iconify
-                icon="mdi:check-circle"
-                className="text-green-600"
-                width={24}
-              />
-              <Typography>Deployment Completed!</Typography>
-            </CardContent>
-          </Card>
-        );
+      // case 'COMPLETED':
+      //   return (
+      //     <Card className="bg-green-50 border border-green-300 shadow-lg">
+      //       <CardContent className="flex items-center space-x-3">
+      //         <Iconify
+      //           icon="mdi:check-circle"
+      //           className="text-green-600"
+      //           width={24}
+      //         />
+      //         <Typography>Deployment Completed!</Typography>
+      //       </CardContent>
+      //     </Card>
+      //   );
       case 'PENDING':
         return (
-          <Card className="bg-blue-50 border border-blue-300 shadow-lg">
-            <CardContent className="flex items-center space-x-3">
-              <Iconify
-                icon="eos-icons:loading"
-                className="text-yellow-600"
-                width={24}
-              />
-              <Typography>Creating Deployment</Typography>
-            </CardContent>
-          </Card>
+          <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-blue-500/10 p-4 min-w-[280px]">
+            {/* Header with pending status */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm">
+                <Iconify
+                  icon="eos-icons:loading"
+                  className="text-blue-500 dark:text-blue-400"
+                  width={18}
+                />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  Creating Deployment
+                </span>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                  {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 'BUILDING':
         return (
-          <Card className="bg-yellow-50 border border-yellow-300 shadow-lg">
-            <CardContent className="flex items-center space-x-3">
-              <Iconify
-                icon="eos-icons:loading"
-                className="text-yellow-600"
-                width={24}
-              />
-              <Typography className="text-yellow-600">Building...</Typography>
-            </CardContent>
-          </Card>
+          <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-yellow-500/10 p-4 min-w-[280px]">
+            {/* Header with building status */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-sm">
+                <Iconify
+                  icon="eos-icons:loading"
+                  className="text-yellow-500 dark:text-yellow-400"
+                  width={18}
+                />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">Building...</span>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                  {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+          </div>
         );
       default:
         return null;

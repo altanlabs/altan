@@ -33,7 +33,7 @@ import {
   CloneTemplatePage,
   PermissionDeniedPage,
   IntegrationPage,
-  StandaloneWorkflowPage,
+  FlowPage,
   StandaloneRoomPage,
   //
   Page500,
@@ -381,7 +381,7 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <StandaloneWorkflowPage />
+            <FlowPage />
           </AuthGuard>
         </Route>
 
@@ -391,7 +391,7 @@ const Router = () => {
         >
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
-              <StandaloneWorkflowPage />
+              <FlowPage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

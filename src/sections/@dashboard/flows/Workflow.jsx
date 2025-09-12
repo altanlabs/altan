@@ -33,10 +33,22 @@ import {
 
 const FlowProviderWrapped = memo((props) => (
   <ReactFlowProvider>
-    <FlowCanvas
-      id="flowcanvas"
-      {...(props ?? {})}
-    />
+    <div style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flex: 1
+    }}>
+      <FlowCanvas
+        id="flowcanvas"
+        style={{
+          width: '100%',
+          height: '100%',
+          flex: 1
+        }}
+        {...(props ?? {})}
+      />
+    </div>
   </ReactFlowProvider>
 ));
 
@@ -47,6 +59,7 @@ const Workflow = ({
   // top = 0,
   onGoBack = null,
   altanerComponentId = null,
+  useCompactLayout = false,
   ...altanerProps
 }) => {
   const history = useHistory();;
@@ -113,20 +126,35 @@ const Workflow = ({
   const closeChat = useCallback(() => setIsChatOpen(false), []);
 
   if (!flow?.id && altanerComponentId && !isLoading) {
-    return <NewWorkflow altanerComponentId={altanerComponentId} />;
+    return useCompactLayout ? (
+      <CompactLayout noPadding overflowHidden>
+        <NewWorkflow altanerComponentId={altanerComponentId} />
+      </CompactLayout>
+    ) : (
+      <NewWorkflow altanerComponentId={altanerComponentId} />
+    );
   }
 
-  return (
-    <CompactLayout noPadding>
+  const workflowContent = (
+    <>
       <Stack
         direction="row"
         height="100%"
         width="100%"
-        className="overscroll-x-none overflow-hidden relative"
+        sx={{
+          overflow: 'hidden',
+          position: 'relative',
+          flex: 1,
+          display: 'flex'
+        }}
       >
         <div
           ref={toolbarRef}
-          className="relative h-full w-full overflow-hidden"
+          className="relative h-full w-full overflow-hidden flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
           <FlowCanvasToolbar
             {...(altanerProps ?? {})}
@@ -150,7 +178,13 @@ const Workflow = ({
           </button>
         </div>
         <ModuleMenu />
-        <div className="absolute inset-0 overflow-hidden">
+        <div 
+          className="absolute inset-0 overflow-hidden"
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+        >
           <AssemblingWorkflow
             open={!initialized || !initializedNodes}
             message="Loading workflow data... Please wait..."
@@ -172,7 +206,15 @@ const Workflow = ({
       )}
       <GlobalVarsMenu />
       <ModuleExecutionOverviewModal />
+    </>
+  );
+
+  return useCompactLayout ? (
+    <CompactLayout noPadding overflowHidden>
+      {workflowContent}
     </CompactLayout>
+  ) : (
+    workflowContent
   );
 };
 

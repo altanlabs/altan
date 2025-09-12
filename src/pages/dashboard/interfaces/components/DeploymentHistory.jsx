@@ -8,6 +8,7 @@ import {
   Tooltip,
   ToggleButton,
   ToggleButtonGroup,
+  Stack,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { formatDistanceToNow } from 'date-fns';
@@ -249,8 +250,8 @@ function DeploymentHistory({ ui, handleReload }) {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">History</Typography>
+      <Stack spacing={1}>
+        <Typography variant="h4">Interface History</Typography>
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -260,6 +261,7 @@ function DeploymentHistory({ ui, handleReload }) {
             }
           }}
           size="small"
+          fullWidth
         >
           <ToggleButton value="versions">
             <Tooltip title="Versions">
@@ -284,7 +286,7 @@ function DeploymentHistory({ ui, handleReload }) {
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
-      </Box>
+      </Stack>
 
       {viewMode === 'versions' ? <VersionsList /> : <CommitsList />}
 

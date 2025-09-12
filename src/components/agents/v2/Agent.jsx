@@ -21,7 +21,7 @@ import {
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useHistory, useParams } from 'react-router-dom';
 
 // hooks
 import { useAuthContext } from '../../../auth/useAuthContext';
@@ -74,6 +74,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const history = useHistory();
+  const { altanerId } = useParams();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const { currentAgent, isLoading } = useSelector((state) => state.agents);
   const { user } = useAuthContext();
@@ -287,7 +288,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         justifyContent: 'center',
         alignItems: 'center',
         px: 4,
-        py: 0.2
+        py: 0.2,
       }}
     >
       {TABS.map((tab) => (
@@ -369,7 +370,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-            <Tooltip title="Go Back">
+            {!altanerId && <Tooltip title="Go Back">
               <IconButton
                 onClick={handleGoBack}
                 sx={{
@@ -381,7 +382,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               >
                 <Iconify icon="eva:arrow-ios-back-fill" />
               </IconButton>
-            </Tooltip>
+                           </Tooltip>}
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
               <UploadAvatar

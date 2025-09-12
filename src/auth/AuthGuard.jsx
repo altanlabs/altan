@@ -8,6 +8,7 @@ import { Redirect, useLocation, useHistory } from 'react-router-dom';
 import { useAuthContext } from './useAuthContext';
 //
 import Login from '../pages/auth/LoginPage.jsx';
+import HermesWebSocketProvider from '../providers/websocket/HermesWebSocketProvider.jsx';
 import WebSocketProvider from '../providers/websocket/WebSocketProvider.jsx';
 import { setAccount, setAccounts, setUser } from '../redux/slices/general';
 import { dispatch } from '../redux/store';
@@ -203,7 +204,13 @@ function AuthGuard({ children, requireAuth = false }) {
         setShowLoginModal,
       }}
     >
-      {isAuthenticated ? <WebSocketProvider>{children}</WebSocketProvider> : children}
+      {isAuthenticated ? (
+        <HermesWebSocketProvider>
+          <WebSocketProvider>{children}</WebSocketProvider>
+        </HermesWebSocketProvider>
+      ) : (
+        children
+      )}
     </AuthRequirementContext.Provider>
   );
 }

@@ -99,7 +99,6 @@ const MermaidDiagram = ({ chart, className = '' }) => {
           themeVariables: {
             primaryColor: theme.palette.primary.main,
             primaryTextColor: theme.palette.text.primary,
-            primaryBorderColor: theme.palette.divider,
             lineColor: theme.palette.divider,
             sectionBkgColor: theme.palette.background.paper,
             altSectionBkgColor: theme.palette.background.default,

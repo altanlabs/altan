@@ -1,7 +1,7 @@
 const ru = {
   dashboard: {
     createAnything: {
-      title: 'Что вы хотите создать?',
+      title: 'Какова ваша цель?',
       subtitle: 'Создавайте проекты, разговаривая с ИИ',
     },
     agents: {

@@ -107,6 +107,11 @@ import {
   deleteRunningResponse,
   updateAuthorizationRequest,
   addAuthorizationRequest,
+  // Message parts actions
+  addMessagePart,
+  updateMessagePart,
+  markMessagePartDone,
+  deleteMessagePart,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -171,8 +176,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('data', data.type);
-
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -496,13 +499,36 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'DeploymentUpdate':
-      dispatch(
-        updateInterfaceDeployment({
-          id: data.data.ids[0],
-          interface_id: data.data.changes.interface_id,
-          ...data.data.changes,
-        }),
-      );
+      // Find interface_id by searching through all interfaces and their deployments
+      const deploymentId = data.data.ids[0];
+      const findInterfaceIdForDeployment = (getState) => {
+        const state = getState();
+        const interfaces = state.general.account?.interfaces || [];
+        for (const interface_ of interfaces) {
+          if (interface_.deployments?.items) {
+            const deployment = interface_.deployments.items.find(d => d.id === deploymentId);
+            if (deployment) {
+              return interface_.id;
+            }
+          }
+        }
+        return null;
+      };
+
+      dispatch((dispatch, getState) => {
+        const interface_id = findInterfaceIdForDeployment(getState);
+        if (interface_id) {
+          dispatch(
+            updateInterfaceDeployment({
+              id: deploymentId,
+              interface_id,
+              ...data.data.changes,
+            }),
+          );
+        } else {
+          console.warn('Could not find interface_id for deployment:', deploymentId);
+        }
+      });
       break;
     case 'DeploymentDelete':
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
@@ -625,6 +651,60 @@ export const handleWebSocketEvent = async (data, user_id) => {
         }),
       );
       break;
+
+    case 'AGENT_RESPONSE':
+      const agentEvent = data.data.agent_event;
+      if (!agentEvent) {
+        console.error('AGENT_RESPONSE missing agent_event:', data);
+        break;
+      }
+
+      switch (agentEvent.event_type) {
+        case 'MessagePartAdded':
+          console.log('MessagePartAdded', agentEvent.event_data);
+          dispatch(addMessagePart(agentEvent.event_data));
+          break;
+        case 'MessagePartUpdated':
+          console.log('MessagePartUpdated', agentEvent.event_data);
+          dispatch(updateMessagePart(agentEvent.event_data));
+          break;
+        case 'MessagePartDone':
+          console.log('MessagePartDone', agentEvent.event_data);
+          dispatch(markMessagePartDone(agentEvent.event_data));
+          break;
+        case 'MessagePartDeleted':
+          console.log('MessagePartDeleted', agentEvent.event_data);
+          dispatch(deleteMessagePart(agentEvent.event_data));
+          break;
+        case 'StreamingMessageStart':
+          console.log('StreamingMessageStart', agentEvent.event_data);
+          // Create the message if it doesn't exist yet
+          const messageData = {
+            id: agentEvent.event_data.id,
+            thread_id: agentEvent.event_data.thread_id,
+            member_id: agentEvent.event_data.room_member_id, // Will be determined by agent response
+            date_creation: agentEvent.event_extras?.timestamp || new Date().toISOString(),
+            text: '', // Empty initially, will be filled by message parts
+            is_streaming: true,
+            date_creation: agentEvent?.timestamp || new Date().toISOString(),
+          };
+
+          // Add the message to the thread
+          dispatch(addMessage(messageData));
+
+          // Track the running response
+          dispatch(addRunningResponse(agentEvent.event_data));
+          break;
+
+        case 'StreamingMessageEnd':
+          console.log('StreamingMessageEnd', agentEvent.event_data);
+          // Clean up running response when streaming ends
+          dispatch(deleteRunningResponse(agentEvent.event_data));
+          break;
+        default:
+          console.log('Unknown AGENT_RESPONSE event:', agentEvent.event_type, agentEvent);
+      }
+      break;
     case 'RoomMemberUpdate':
       dispatch(roomMemberUpdate(data.data));
       break;
@@ -647,8 +727,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'ThreadTaskNew':
-      // eslint-disable-next-line no-console
-      console.log('🆕 ThreadTaskNew:', data);
       dispatch(
         addTask({
           threadId: data.data.mainthread_id,
@@ -677,7 +755,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
         }),
       );
       break;
-    case 'MessageNew':
+    case 'MESSAGE':
+      console.log('MESSAGE', data);
       dispatch(addMessage(data.data.attributes));
       break;
     case 'MessageDelete':
@@ -692,49 +771,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'MessageMediaAdded':
       dispatch(addMessageAttachment(data.data.attributes));
       break;
-    case 'StreamingMessageStart':
-      dispatch(addRunningResponse(data.data));
-      // console.log('@handleWebSocketEvent: StreamingMessageStart', data.data);
-      break;
-    case 'StreamingMessageEnd':
-      dispatch(deleteRunningResponse(data.data));
-      // console.log('@handleWebSocketEvent: StreamingMessageEnd', data.data);
-      break;
     case 'TaskStarted':
       // console.log('TaskStarted:', data);
       dispatch(addMessageExecution(data.data.attributes));
       break;
-    case 'TaskExecutionArgumentsDelta':
-      // console.log('@handleWebSocketEvent: AIgentToolChosenArgumentsDelta', data.data);
-      // console.log('AIgentToolChosenArgumentsDelta:', data.data);
-      // dispatch(updateMessageExecution(data.data));
-      break;
-    /**
-       * TODO:
-       * {
-            "event": "update",
-            "type": "AIgentToolChosen",
-            "data": {
-                "content": "send_mail_fdce",
-                "tool_call_id": "call_HJmddc70lDvZ4SIIIWebY9CP",
-                "id": "8e70dc0d-b9b6-40da-a4df-3f9e92cad17a",
-                "thread_id": "40df92fe-2d2d-422d-81fe-83a3a7eb1407",
-                "room_id": "31062768-1d46-47e1-b40f-ad868f6f1856"
-            },
-            "entity": "Message",
-            "timestamp": "2024-07-12T21:00:16.861033"
-        }
-        */
-    /**
-       * AIgentToolChosenArgumentsDelta
-       * {
-            "tool_call_id": null,
-            "content": " Robot",
-            "id": "b13907f0-d0c8-4fd1-b35e-c520ceee55b4",
-            "thread_id": "40d06eb6-f20e-4ffc-ab85-41e8b31ea352",
-            "room_id": "31062768-1d46-47e1-b40f-ad868f6f1856"
-        }
-      */
     case 'TaskUpdate':
       // console.log('TaskUpdate:', data);
       dispatch(updateMessageExecution(data.data));
@@ -760,16 +800,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
           id: 'credits-not-enough',
         }),
       );
-      break;
-    case 'StreamingMessageDataReceived':
-      // const { id, content } = data.data;
-      // batchQueue[id] = (batchQueue[id] || '').concat(content);
-      // debouncedDispatch();
-      dispatch(addMessageDelta(data.data));
-      break;
-    case 'StreamingMessageError':
-      console.log('@handleWebSocketEvent: StreamingMessageError', data.data);
-      dispatch(setMessageError(data.data));
       break;
     default:
       // console.log('Received unknown event type', data);

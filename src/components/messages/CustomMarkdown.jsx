@@ -823,10 +823,9 @@ const CustomMarkdown = ({
                 // Handle mermaid diagrams - ultra compact
                 if (!inline && language === 'mermaid') {
                   return (
-                    <div className="my-3 rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="my-3 rounded-lg overflow-hidden">
                       <MermaidDiagram
                         chart={codeValue}
-                        className="bg-white dark:bg-slate-900"
                       />
                     </div>
                   );

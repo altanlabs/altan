@@ -10,9 +10,9 @@ import useGetInterfaceServerStatus from './hooks/useGetInterfaceServerStatus.js'
 import InterfaceLayout from './InterfaceLayout.jsx';
 import LoadingScreen from '../../../components/loading-screen';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { selectViewType } from '../../../redux/slices/altaners';
 import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
 import { makeSelectInterfaceById, makeSelectSortedCommits } from '../../../redux/slices/general';
-import { selectViewType } from '../../../redux/slices/altaners';
 // import { optimai } from '../../../utils/axios';
 import { dispatch, useSelector } from '../../../redux/store.js';
 
@@ -181,7 +181,7 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
 
   return (
     <>
-      {/* {latestDeployment && <DeploymentCard deployment={latestDeployment} />} */}
+      {latestDeployment && <DeploymentCard deployment={latestDeployment} />}
       <InterfaceLayout
         id={id}
         chatIframeRef={chatIframeRef}

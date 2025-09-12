@@ -15,6 +15,13 @@ const StyledRoot = styled('div')(({ theme }) => ({
 export default function ContactSupport() {
   const supportOptions = [
     {
+      icon: 'ri:chat-1-line',
+      title: 'Chat Support',
+      description: 'Get quick support via our chat support',
+      href: 'https://altan.ai/support',
+      iconColor: '#000000',
+    },
+    {
       icon: 'ri:discord-fill',
       title: 'Discord Community',
       description: 'Join our Discord community',

@@ -11,6 +11,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Drawer,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 // react
@@ -41,6 +42,7 @@ import useResponsive from '../../../hooks/useResponsive';
 import AltanerComponentDialog from '../../../pages/dashboard/altaners/components/AltanerComponentDialog.jsx';
 import PublishVersionDialog from '../../../pages/dashboard/altaners/components/PublishVersionDialog.jsx';
 import TemplateSettings from '../../../pages/dashboard/altaners/components/TemplateSettings.jsx';
+import DeploymentHistory from '../../../pages/dashboard/interfaces/components/DeploymentHistory.jsx';
 // import AltanerSwitcher from '../../../pages/dashboard/altaners/nav/AltanerSwitcher.jsx';
 import SettingsDrawer from '../../../pages/dashboard/interfaces/components/SettingsDrawer.jsx';
 import {
@@ -212,7 +214,10 @@ function ProjectHeader() {
     const hasSuccessfulDeployments =
       ui.deployments?.items?.length > 0 &&
       ui.deployments.items.some(
-        (deployment) => deployment.status === 'PROMOTED' || deployment.status === 'SUCCESS' || deployment.status === 'COMPLETED',
+        (deployment) =>
+          deployment.status === 'PROMOTED' ||
+          deployment.status === 'SUCCESS' ||
+          deployment.status === 'COMPLETED',
       );
 
     if (!hasSuccessfulDeployments) {
@@ -237,6 +242,7 @@ function ProjectHeader() {
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
+  const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
 
   // Database dialog states
   const [openCreateRecord, setOpenCreateRecord] = useState(false);
@@ -264,9 +270,12 @@ function ProjectHeader() {
   }, [dispatch]);
 
   // Database navigation handlers
-  const handleDatabaseQuickFilterChange = useCallback((filter) => {
-    dispatch(setDatabaseQuickFilter(filter));
-  }, [dispatch]);
+  const handleDatabaseQuickFilterChange = useCallback(
+    (filter) => {
+      dispatch(setDatabaseQuickFilter(filter));
+    },
+    [dispatch],
+  );
 
   const handleDatabaseRefresh = useCallback(() => {
     if (baseId && database?.tables?.items?.length > 0) {
@@ -274,8 +283,9 @@ function ProjectHeader() {
       // Refresh the current table (assuming first table for now)
       const currentTableId = database.tables.items[0]?.id;
       if (currentTableId) {
-        dispatch(loadAllTableRecords(currentTableId, true))
-          .finally(() => dispatch(setDatabaseRefreshing(false)));
+        dispatch(loadAllTableRecords(currentTableId, true)).finally(() =>
+          dispatch(setDatabaseRefreshing(false)),
+        );
       }
     }
   }, [dispatch, baseId, database]);
@@ -494,6 +504,23 @@ function ProjectHeader() {
                     }
                     onUpgrade={() => history.push('/pricing')}
                   />
+                  {isInterfaceComponent && (
+                    <Tooltip title="Deployment History">
+                      <HeaderIconButton
+                        onClick={() => setIsDeploymentHistoryOpen(true)}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                        }}
+                      >
+                        <Iconify
+                          icon="mdi:history"
+                          sx={{ width: 16, height: 16 }}
+                        />
+                      </HeaderIconButton>
+                    </Tooltip>
+                  )}
                   <Tooltip title="Publish">
                     <HeaderIconButton
                       onClick={() => setOpenPublishDialog(true)}
@@ -563,10 +590,33 @@ function ProjectHeader() {
                     Upgrade
                   </Button> */}
 
+                  {isInterfaceComponent && (
+                    <Tooltip title="Deployment History">
+                      <HeaderIconButton
+                        onClick={() => setIsDeploymentHistoryOpen(true)}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                        }}
+                      >
+                        <Iconify
+                          icon="mdi:history"
+                          sx={{ width: 16, height: 16 }}
+                        />
+                      </HeaderIconButton>
+                    </Tooltip>
+                  )}
+
                   <Button
                     size="small"
                     variant="contained"
-                    startIcon={<Iconify icon="mdi:rocket-launch-outline" sx={{ width: 16, height: 16 }} />}
+                    startIcon={
+                      <Iconify
+                        icon="mdi:rocket-launch-outline"
+                        sx={{ width: 16, height: 16 }}
+                      />
+                    }
                     onClick={() => setOpenPublishDialog(true)}
                     sx={{
                       height: 32,
@@ -676,6 +726,27 @@ function ProjectHeader() {
           )}
         </>
       )}
+
+      {/* Deployment History Drawer */}
+      <Drawer
+        anchor="right"
+        open={isDeploymentHistoryOpen}
+        onClose={() => setIsDeploymentHistoryOpen(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: 400,
+            maxWidth: '90vw',
+            padding: 2,
+          },
+        }}
+      >
+        <DeploymentHistory
+          ui={ui}
+          handleReload={() => {
+            // Optionally trigger a reload of interface data
+          }}
+        />
+      </Drawer>
     </>
   );
 }

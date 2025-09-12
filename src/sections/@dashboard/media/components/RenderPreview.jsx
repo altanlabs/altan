@@ -137,23 +137,31 @@ const AudioRenderer = memo(({ isModalOpen, preview, mode, fileName }) => (
   />
 ));
 
-const ImageRenderer = memo(({ isModalOpen, preview, fileName, mode }) =>
+const ImageRenderer = memo(({ isModalOpen, preview, fileName, mode, preventAutoDownload }) =>
   isModalOpen || mode !== 'drawer' ? (
     <img
       src={preview}
       alt={fileName}
       style={{ ...commonMediaStyle(isModalOpen, mode) }}
+      loading="lazy"
+      {...(preventAutoDownload && { 
+        onError: (e) => {
+          e.target.style.display = 'none';
+          console.log('Image failed to load, preventing download');
+        }
+      })}
     />
   ) : (
     <Image
       ratio={'1/1'}
       src={preview}
       alt={fileName}
+      loading="lazy"
     />
   ),
 );
 
-const VideoRenderer = memo(({ mode, preview, fileName, isModalOpen }) => {
+const VideoRenderer = memo(({ mode, preview, fileName, isModalOpen, preventAutoDownload }) => {
   // TODO: improve loading time
   // https://dieudonneawa7.medium.com/complete-guide-on-how-to-implement-a-video-player-in-react-js-afd07576d50a
 
@@ -189,11 +197,17 @@ const VideoRenderer = memo(({ mode, preview, fileName, isModalOpen }) => {
         src={preview}
         alt={fileName}
         style={{ ...commonMediaStyle(isModalOpen, mode), ...!isModalOpen }}
+        preload={preventAutoDownload ? "none" : "metadata"}
+        {...(preventAutoDownload && { 
+          onError: (e) => {
+            console.log('Video failed to load, preventing download');
+          }
+        })}
       >
         Your browser does not support the video tag.
       </video>
     ),
-    [mediaRef, isModalOpen, mode, showControls, shouldLoop, preview, fileName],
+    [mediaRef, isModalOpen, mode, showControls, shouldLoop, preview, fileName, preventAutoDownload],
   );
   return isModalOpen || mode !== 'drawer' ? videoSource : <Video ratio="1/1">{videoSource}</Video>;
 });
@@ -214,6 +228,8 @@ const RenderPreview = ({
   className,
   children,
   mode = 'default',
+  shouldLoadPreview = true,
+  preventAutoDownload = false,
 }) => {
   // const [isMediaHovered, setIsMediaHovered] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -248,78 +264,77 @@ const RenderPreview = ({
       });
   }, [accountId, media.id]);
 
+  // Create a placeholder component for when preview shouldn't load
+  const PlaceholderRenderer = () => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '120px',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 2,
+        border: '1px dashed rgba(255, 255, 255, 0.2)',
+        color: 'text.secondary',
+      }}
+    >
+      <Iconify 
+        icon={
+          fileType === 'pdf' ? 'fa:file-pdf-o' :
+          media?.type?.startsWith('image') ? 'material-symbols:image-outline' :
+          media?.type?.startsWith('video') ? 'material-symbols:videocam-outline' :
+          media?.type?.startsWith('audio') ? 'material-symbols:audio-file-outline' :
+          'material-symbols:description-outline'
+        } 
+        sx={{ fontSize: 32, mb: 1, opacity: 0.6 }} 
+      />
+      <Typography variant="caption" sx={{ textAlign: 'center', opacity: 0.8 }}>
+        {fileName || 'Media file'}
+      </Typography>
+      <Typography variant="caption" sx={{ textAlign: 'center', opacity: 0.6, fontSize: '0.7rem' }}>
+        Hover to load
+      </Typography>
+    </Box>
+  );
+
   return (
-    preview && (
+    <Box className={className}>
       <Box
-        // display="flex"
-        // flexDirection="row"
-        // justifyContent="left"
-        // alignItems="center"
-        // marginTop={1}
-        // onMouseEnter={handleMouseEnter}
-        // onMouseLeave={handleMouseLeave}
-        className={className}
+        {...(mode === 'drawer' && { onClick: handleFullscreenToggle })}
       >
-        <Box
-          // sx={{
-          //   position: 'relative',
-          //   ...(mode === 'drawer' && {
-          //     cursor: 'pointer'
-          //   }),
-          //   ...(isModalOpen && {
-          //     display: 'none'
-          //   })
-          // }}
-          // onMouseEnter={handleMouseEnter}
-          // onMouseLeave={handleMouseLeave}
-          {...(mode === 'drawer' && { onClick: handleFullscreenToggle })}
-        >
-          {children}
+        {children}
+        {shouldLoadPreview && preview ? (
           <MediaTypeRenderer
             preview={preview}
             fileName={fileName}
             isModalOpen={false}
             dateCreation={media?.date_creation}
             mode={mode}
+            preventAutoDownload={preventAutoDownload}
           />
-          {/* {isMediaHovered && fileType === 'pdf' && (
-          <IconButton
-            onClick={handleFullscreenToggle}
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 12,
-              left: 10,
-              border: 'none',
-              '&:focus': {
-                outline: 0
-              },
-              borderColor: 'transparent'
-
-            }}
-          >
-            <Iconify icon="line-md:arrows-diagonal" color="white"/>
-          </IconButton>
-        )} */}
-        </Box>
-        <Modal
-          open={isModalOpen}
-          onClose={handleFullscreenToggle}
-          style={modalStyle}
-        >
-          <Box>
-            <MediaTypeRenderer
-              preview={preview}
-              fileName={fileName}
-              dateCreation={media?.date_creation}
-              isModalOpen={true}
-              mode={mode}
-            />
-            <Button onClick={handleCopyUrl}>Copy url</Button>
-          </Box>
-        </Modal>
+        ) : (
+          <PlaceholderRenderer />
+        )}
       </Box>
-    )
+      <Modal
+        open={isModalOpen}
+        onClose={handleFullscreenToggle}
+        style={modalStyle}
+      >
+        <Box>
+          <MediaTypeRenderer
+            preview={preview}
+            fileName={fileName}
+            dateCreation={media?.date_creation}
+            isModalOpen={true}
+            mode={mode}
+            preventAutoDownload={false}
+          />
+          <Button onClick={handleCopyUrl}>Copy url</Button>
+        </Box>
+      </Modal>
+    </Box>
   );
 };
 

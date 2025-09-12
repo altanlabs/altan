@@ -1,7 +1,7 @@
 const cn = {
   dashboard: {
     createAnything: {
-      title: '你想建造什么？',
+      title: '你的目标是什么？',
       subtitle: '通过与人工智能对话创建项目',
     },
     agents: {

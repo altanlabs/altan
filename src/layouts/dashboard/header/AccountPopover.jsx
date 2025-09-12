@@ -25,6 +25,7 @@ import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
 import UpgradeButton from '../../../components/UpgradeButton.jsx';
 import { useLocales } from '../../../locales';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import NavAccount from '../nav/NavAccount.jsx';
 
@@ -34,6 +35,7 @@ export default function AccountPopover() {
   const history = useHistory();
   const { resolvedThemeMode, onToggleMode } = useSettingsContext();
   const ws = useWebSocket();
+  const hermesWs = useHermesWebSocket();
   const { user, logout } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const [openPopover, setOpenPopover] = useState(null);
@@ -119,7 +121,7 @@ export default function AccountPopover() {
             width: 30,
           }}
         />
-        {!!(user?.xsup && ws?.activeSubscriptions?.length) && (
+        {!!(user?.xsup && (ws?.activeSubscriptions?.length || hermesWs?.activeSubscriptions?.length)) && (
           <Tooltip
             arrow
             placement="bottom-start"
@@ -148,17 +150,48 @@ export default function AccountPopover() {
                   }}
                 >
                   <Typography variant="h4">SuperAdmin Stats</Typography>
-                  <Typography variant="h6">
-                    Active subscriptions ({ws.activeSubscriptions.length}):
-                  </Typography>
-                  {ws.activeSubscriptions.map((as) => (
-                    <Typography
-                      key={as}
-                      variant="caption"
-                    >
-                      {as}
+                  {/* Regular WebSocket Subscriptions */}
+                  {ws?.activeSubscriptions?.length > 0 && (
+                    <>
+                      <Typography variant="h6" sx={{ mt: 1, mb: 0.5 }}>
+                        WebSocket subscriptions ({ws.activeSubscriptions.length}):
+                      </Typography>
+                      {ws.activeSubscriptions.map((as) => (
+                        <Typography
+                          key={`ws-${as}`}
+                          variant="caption"
+                          sx={{ pl: 1, color: 'primary.main' }}
+                        >
+                          📡 {as}
+                        </Typography>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Hermes WebSocket Subscriptions */}
+                  {hermesWs?.activeSubscriptions?.length > 0 && (
+                    <>
+                      <Typography variant="h6" sx={{ mt: 2, mb: 0.5 }}>
+                        Hermes WebSocket subscriptions ({hermesWs.activeSubscriptions.length}):
+                      </Typography>
+                      {hermesWs.activeSubscriptions.map((as) => (
+                        <Typography
+                          key={`hermes-${as}`}
+                          variant="caption"
+                          sx={{ pl: 1, color: 'secondary.main' }}
+                        >
+                          🚀 {as}
+                        </Typography>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Show message if no subscriptions */}
+                  {!ws?.activeSubscriptions?.length && !hermesWs?.activeSubscriptions?.length && (
+                    <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                      No active subscriptions
                     </Typography>
-                  ))}
+                  )}
                 </Stack>
               </Card>
             }

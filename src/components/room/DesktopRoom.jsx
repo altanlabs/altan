@@ -8,6 +8,7 @@ import RoomContent from './RoomContent.jsx';
 import Threads from './Threads.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
 import {
@@ -58,7 +59,9 @@ const DesktopRoom = ({
   renderCredits = false,
   renderFeedback = false,
 }) => {
+  // const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   const { isOpen, subscribe, unsubscribe } = useWebSocket();
+
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
   const { initialized, isLoading, drawerOpen } = useSelector(roomSelector);
@@ -73,6 +76,7 @@ const DesktopRoom = ({
         unsubscribe(`room:${lastRoomId}`);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
 
   // Handle message query parameter

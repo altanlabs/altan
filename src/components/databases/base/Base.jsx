@@ -27,8 +27,6 @@ function Base({
   ids = [],
   onNavigate,
   baseId: explicitBaseId,
-  hideChat = true,
-  //  ...props
 }) {
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
   const history = useHistory();

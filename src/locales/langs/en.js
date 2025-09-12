@@ -1,7 +1,7 @@
 const en = {
   dashboard: {
     createAnything: {
-      title: 'What do you want to build?',
+      title: 'What\'s your goal?',
       subtitle: 'Create projects by talking to AI',
     },
     agents: {

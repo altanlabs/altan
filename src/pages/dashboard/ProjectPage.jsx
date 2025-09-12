@@ -87,17 +87,7 @@ export default function ProjectPage() {
     }
   }, [sortedComponents, activeComponentId, altanerId, history]);
 
-  // Set display mode based on component type
-  useEffect(() => {
-    if (currentComponent) {
-      const componentType = currentComponent.type?.toLowerCase();
-
-      // For flows component types, show only preview by default if current mode is 'both'
-      if (['flows', 'flow', 'setup_flow'].includes(componentType) && displayMode === 'both') {
-        dispatch(setDisplayMode('preview'));
-      }
-    }
-  }, [currentComponent, displayMode, dispatch]);
+  // Note: Removed automatic display mode switching to preserve user's chat sidebar preference
 
   const { acType, acProps } = useMemo(() => {
     if (!altaner || !currentComponent) return {};
