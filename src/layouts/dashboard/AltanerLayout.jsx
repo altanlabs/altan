@@ -38,8 +38,6 @@ const Loadable = (Component) => (props) => (
 );
 
 const ACCOUNT_ENTITIES = [
-  'actionexecution',
-  'taskexecution',
   'altaner',
   'subscription',
   'template',
@@ -50,14 +48,9 @@ const ACCOUNT_ENTITIES = [
   'media',
   'connection',
   'tool',
-  'resource',
   'agent',
   'user',
   'workflow',
-  'flowexecution',
-  'webhook',
-  'webhooksubscription',
-  'form',
   'deployment',
   'interface',
   'base',

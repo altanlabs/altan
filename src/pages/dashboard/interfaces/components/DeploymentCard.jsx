@@ -54,10 +54,10 @@ const DeploymentCard = ({ deployment }) => {
                   />
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-white dark:text-white">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
                     Deployment Failed
                   </span>
-                  <div className="text-xs text-gray-200 dark:text-gray-300 mt-0.5">
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                     {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
                   </div>
                 </div>
@@ -123,10 +123,10 @@ const DeploymentCard = ({ deployment }) => {
                 />
               </div>
               <div>
-                <span className="text-sm font-medium text-white dark:text-white">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
                   Creating Deployment
                 </span>
-                <div className="text-xs text-gray-200 dark:text-gray-300 mt-0.5">
+                <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                   {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
                 </div>
               </div>
@@ -146,8 +146,8 @@ const DeploymentCard = ({ deployment }) => {
                 />
               </div>
               <div>
-                <span className="text-sm font-medium text-white dark:text-white">Building...</span>
-                <div className="text-xs text-gray-200 dark:text-gray-300 mt-0.5">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">Building...</span>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                   {deployment?.created_at && new Date(deployment.created_at).toLocaleTimeString()}
                 </div>
               </div>

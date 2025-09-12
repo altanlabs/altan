@@ -125,8 +125,8 @@ export const PurchaseSuccessPage = Loadable(lazy(() => import('../pages/Purchase
 export const ComingSoonPage = Loadable(lazy(() => import('../pages/ComingSoonPage.jsx')));
 export const MaintenancePage = Loadable(lazy(() => import('../pages/MaintenancePage.jsx')));
 
-export const StandaloneWorkflowPage = Loadable(
-  lazy(() => import('../sections/@dashboard/flows/Workflow.jsx')),
+export const FlowPage = Loadable(
+  lazy(() => import('../pages/dashboard/flows/FlowPage.jsx')),
 );
 export const StandaloneBasePage = Loadable(
   lazy(() => import('../pages/dashboard/databases/StandaloneBasePage.jsx')),
