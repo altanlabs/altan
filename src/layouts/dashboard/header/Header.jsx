@@ -1,9 +1,11 @@
 import { Capacitor } from '@capacitor/core';
+
 // @mui
-import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
+import { Stack, AppBar, Toolbar, IconButton, Chip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
+
 import ChatDrawer from './ChatDrawer';
 import HeaderActions from './HeaderActions';
 import MobileNavSidebar from './MobileNavSidebar';
@@ -146,11 +148,37 @@ function Header() {
                 }}
                 src={
                   theme.palette.mode === 'dark'
-                    ? isDesktop ? '/logos/v2/bold/logoWhite.svg' : '/logos/v2/logoWhite.svg'
-                    : isDesktop ? '/logos/v2/bold/logoBlack.svg' : '/logos/v2/logoBlack.svg'
+                    ? isDesktop
+                      ? '/logos/v2/bold/logoWhite.svg'
+                      : '/logos/v2/logoWhite.svg'
+                    : isDesktop
+                      ? '/logos/v2/bold/logoBlack.svg'
+                      : '/logos/v2/logoBlack.svg'
                 }
               />
             </div>
+
+            {/* Beta Preview Chip - Desktop Only */}
+            {isDesktop && (
+              <Chip
+                label="Beta"
+                variant="soft"
+                color="secondary"
+                size="small"
+                sx={{
+                  mt: .5,
+                  height: '20px',
+                  fontSize: '0.65rem',
+                  fontWeight: 500,
+                  textTransform: 'lowercase',
+                  letterSpacing: '0.2px',
+                  borderRadius: '10px',
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
+                }}
+              />
+            )}
           </Stack>
 
           <StyledChart />

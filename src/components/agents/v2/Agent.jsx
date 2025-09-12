@@ -365,24 +365,26 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           borderBottom: 1,
           borderColor: theme.palette.divider,
           px: { xs: 1, sm: 2, md: 3 },
-          py: .2,
+          py: 0.2,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-            {!altanerId && <Tooltip title="Go Back">
-              <IconButton
-                onClick={handleGoBack}
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {
-                    bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
-                  },
-                }}
-              >
-                <Iconify icon="eva:arrow-ios-back-fill" />
-              </IconButton>
-                           </Tooltip>}
+            {!altanerId && (
+              <Tooltip title="Go Back">
+                <IconButton
+                  onClick={handleGoBack}
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
+                    },
+                  }}
+                >
+                  <Iconify icon="eva:arrow-ios-back-fill" />
+                </IconButton>
+              </Tooltip>
+            )}
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
               <UploadAvatar
@@ -751,7 +753,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   readOnly: true,
                   endAdornment: agentData?.elevenlabs_id ? (
                     <IconButton
-                      onClick={() => handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
+                      onClick={() =>
+                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
+                      }
                       size="small"
                       sx={{ color: 'text.secondary' }}
                     >
