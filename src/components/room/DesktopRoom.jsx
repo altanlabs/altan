@@ -59,8 +59,8 @@ const DesktopRoom = ({
   renderCredits = false,
   renderFeedback = false,
 }) => {
-  // const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
-  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
+  // const { isOpen, subscribe, unsubscribe } = useWebSocket();
 
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);

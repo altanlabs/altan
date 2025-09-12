@@ -9,7 +9,6 @@ import useResponsive from '../../../hooks/useResponsive';
 import useLocales from '../../../locales/useLocales';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
-import { selectGate } from '../../../redux/slices/gate';
 import {
   fetchThread,
   makeSelectThread,
@@ -62,7 +61,7 @@ const Thread = ({
 }) => {
   const { gateId } = useParams();
   const history = useHistory();
-  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const { isOpen } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
@@ -97,7 +96,6 @@ const Thread = ({
         ? '300px'
         : '120px'
       : '0px';
-  const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -216,7 +214,6 @@ const Thread = ({
       <Helmet>
         <title>
           {helmetName} |{' '}
-          {gateId && !!gate?.account?.company?.name ? gate?.account?.company?.name : 'Altan'}
         </title>
       </Helmet>
       {/* Main container with flex layout for proper centering in empty state */}

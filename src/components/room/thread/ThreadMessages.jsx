@@ -327,7 +327,9 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   return (
     <>
       {/* Loading placeholder if not loaded and not creation */}
-      {!hasLoaded && !isCreation && (
+
+
+      {/* {!hasLoaded && !isCreation && (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 px-10">
           <div className="max-w-[700px] w-full mx-auto">
             {[...Array(5)].map((_, index) => (
@@ -335,7 +337,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Scroll to bottom button (memoized) */}
       <ScrollToBottomButton

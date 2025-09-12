@@ -158,6 +158,12 @@ const initialState = {
   },
   messagesContent: {},
   messagesExecutions: {},
+  // Add message parts support
+  messageParts: {
+    byId: {},
+    allIds: [],
+    byMessageId: {}, // messageId -> [partId1, partId2, ...]
+  },
   executions: {
     byId: {},
     allIds: [],
@@ -560,8 +566,8 @@ const slice = createSlice({
     threadUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -570,12 +576,21 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((id) => {
+      const threadIds = Array.isArray(ids) ? ids : [ids];
+
+      threadIds.forEach((id) => {
+        if (typeof id !== 'string') {
+          console.error(`Invalid thread id: ${id}`);
+          return;
+        }
+
         const thread = state.threads.byId[id];
         if (thread) {
           // Apply changes to each valid thread
           Object.keys(changes).forEach((key) => {
-            thread[key] = changes[key];
+            if (changes[key] !== undefined) {
+              thread[key] = changes[key];
+            }
           });
 
           // Update corresponding tab name if the thread name changed
@@ -622,8 +637,8 @@ const slice = createSlice({
     roomMemberUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -632,16 +647,29 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((id) => {
+      const memberIds = Array.isArray(ids) ? ids : [ids];
+
+      memberIds.forEach((id) => {
+        if (typeof id !== 'string') {
+          console.error(`Invalid member id: ${id}`);
+          return;
+        }
+
         const member = state.members.byId[id];
         if (member) {
-          // Apply changes to each valid thread
+          // Apply changes to each valid member
           Object.keys(changes).forEach((key) => {
-            member[key] = changes[key];
+            if (changes[key] !== undefined) {
+              member[key] = changes[key];
+            }
           });
+
+          // Update the 'me' state if this member is the current user
           if (!!state.me && member.id === state.me.id) {
             Object.keys(changes).forEach((key) => {
-              state.me[key] = changes[key];
+              if (changes[key] !== undefined) {
+                state.me[key] = changes[key];
+              }
             });
           }
         } else {
@@ -670,12 +698,15 @@ const slice = createSlice({
     // },
     addMessage: (state, action) => {
       const message = action.payload;
-
+      console.log('addMessage', message);
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
       }
-      if (message.member_id !== state.me?.id) {
+
+      // Only play sound for non-streaming messages or when streaming starts
+      // and it's not from the current user
+      if (message.member_id !== state.me?.id && !message.is_streaming) {
         // Don't play sound if voice is active for this thread
         const isVoiceActiveForThread =
           !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
@@ -683,6 +714,14 @@ const slice = createSlice({
           SOUND_IN.play();
         }
       }
+
+      // Check if message already exists to avoid duplicates
+      if (state.messages.byId[message.id]) {
+        // Update existing message properties
+        Object.assign(state.messages.byId[message.id], message);
+        return;
+      }
+
       extractMessagesFromThread(state, {
         messages: { byId: { [message.id]: message }, allIds: [message.id] },
       });
@@ -696,6 +735,15 @@ const slice = createSlice({
         console.error('Invalid message to delete.');
         return;
       }
+
+      // Clean up message parts
+      const messageParts = state.messageParts.byMessageId[messageId] || [];
+      messageParts.forEach((partId) => {
+        delete state.messageParts.byId[partId];
+        state.messageParts.allIds = state.messageParts.allIds.filter((id) => id !== partId);
+      });
+      delete state.messageParts.byMessageId[messageId];
+
       delete state.messages.byId[messageId];
       delete state.messagesExecutions[messageId];
       delete state.messagesContent[messageId];
@@ -771,6 +819,12 @@ const slice = createSlice({
       const { messageId, content } = action.payload;
       state.messagesContent[messageId] = content;
     },
+    updateMessageStreamingState: (state, action) => {
+      const { messageId, isStreaming } = action.payload;
+      if (state.messages.byId[messageId]) {
+        state.messages.byId[messageId].is_streaming = isStreaming;
+      }
+    },
     addAuthorizationRequest: (state, action) => {
       const request = action.payload;
       state.authorization_requests.push(request);
@@ -793,8 +847,8 @@ const slice = createSlice({
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -803,11 +857,20 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((roomId) => {
+      const roomIds = Array.isArray(ids) ? ids : [ids];
+
+      roomIds.forEach((roomId) => {
+        if (typeof roomId !== 'string') {
+          console.error(`Invalid room id: ${roomId}`);
+          return;
+        }
+
         // Update current room if it matches
         if (state.room && state.room.id === roomId) {
           Object.keys(changes).forEach((key) => {
-            state.room[key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.room[key] = changes[key];
+            }
           });
         }
 
@@ -815,7 +878,9 @@ const slice = createSlice({
         const userRoomIndex = state.userRooms.findIndex((room) => room.id === roomId);
         if (userRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.userRooms[userRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.userRooms[userRoomIndex][key] = changes[key];
+            }
           });
         }
 
@@ -823,7 +888,9 @@ const slice = createSlice({
         const publicRoomIndex = state.publicRooms.findIndex((room) => room.id === roomId);
         if (publicRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.publicRooms[publicRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.publicRooms[publicRoomIndex][key] = changes[key];
+            }
           });
         }
 
@@ -831,7 +898,9 @@ const slice = createSlice({
         const searchRoomIndex = state.searchRooms.results.findIndex((room) => room.id === roomId);
         if (searchRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.searchRooms.results[searchRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.searchRooms.results[searchRoomIndex][key] = changes[key];
+            }
           });
         }
       });
@@ -1053,6 +1122,168 @@ const slice = createSlice({
         Object.assign(state.voiceConversations.byThreadId[threadId], updates);
       }
     },
+    // Message Parts reducers
+    addMessagePart: (state, action) => {
+      const part = action.payload;
+      if (!part?.id || !part?.message_id) {
+        console.error('Invalid message part data');
+        return;
+      }
+
+      // Normalize the part data structure
+      const normalizedPart = {
+        ...part,
+        part_type: part.type || part.part_type || 'text',
+        text: part.text || '',
+        order: part.order || part.block_order || 0,
+        is_done: part.is_done || false,
+      };
+
+      // Add part to global parts collection
+      state.messageParts.byId[part.id] = normalizedPart;
+      if (!state.messageParts.allIds.includes(part.id)) {
+        state.messageParts.allIds.push(part.id);
+      }
+
+      // Associate part with message
+      if (!state.messageParts.byMessageId[part.message_id]) {
+        state.messageParts.byMessageId[part.message_id] = [];
+      }
+      if (!state.messageParts.byMessageId[part.message_id].includes(part.id)) {
+        state.messageParts.byMessageId[part.message_id].push(part.id);
+        // Sort parts by order
+        state.messageParts.byMessageId[part.message_id].sort((a, b) => {
+          const partA = state.messageParts.byId[a];
+          const partB = state.messageParts.byId[b];
+          return (partA?.order || 0) - (partB?.order || 0);
+        });
+      }
+    },
+    updateMessagePart: (state, action) => {
+      const { id, delta, index, ...updates } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found for update:', id);
+        console.error('Available parts:', Object.keys(state.messageParts.byId));
+        console.error('Payload:', action.payload);
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+
+      // Handle delta updates for text parts with proper ordering
+      const partType = part.type || part.part_type || 'text';
+      if (delta !== undefined && partType === 'text') {
+        if (index !== undefined && index >= 0) {
+          // Initialize buffer for ordered streaming
+          if (!part.deltaBuffer) {
+            part.deltaBuffer = new Map(); // index -> delta
+            part.lastProcessedIndex = -1;
+          }
+          
+          // Store the delta at the specified index
+          part.deltaBuffer.set(index, delta);
+          
+          // Process all consecutive deltas starting from lastProcessedIndex + 1
+          let currentIndex = part.lastProcessedIndex + 1;
+          let newText = part.text || '';
+          
+          while (part.deltaBuffer.has(currentIndex)) {
+            newText += part.deltaBuffer.get(currentIndex);
+            part.deltaBuffer.delete(currentIndex);
+            part.lastProcessedIndex = currentIndex;
+            currentIndex++;
+          }
+          
+          part.text = newText;
+        } else {
+          // Fallback: simple append if no index provided
+          part.text = (part.text || '') + delta;
+        }
+      }
+
+      // Apply other updates
+      Object.keys(updates).forEach((key) => {
+        if (updates[key] !== undefined) {
+          part[key] = updates[key];
+        }
+      });
+    },
+    markMessagePartDone: (state, action) => {
+      const { id } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found');
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+      part.is_done = true;
+
+      // Clean up the text buffer when streaming is complete
+      if (part.textBuffer) {
+        delete part.textBuffer;
+      }
+    },
+    deleteMessagePart: (state, action) => {
+      const { id } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found for deletion');
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+      const messageId = part.message_id;
+
+      // Remove from global collection
+      delete state.messageParts.byId[id];
+      state.messageParts.allIds = state.messageParts.allIds.filter((partId) => partId !== id);
+
+      // Remove from message association
+      if (state.messageParts.byMessageId[messageId]) {
+        state.messageParts.byMessageId[messageId] = state.messageParts.byMessageId[
+          messageId
+        ].filter((partId) => partId !== id);
+        if (state.messageParts.byMessageId[messageId].length === 0) {
+          delete state.messageParts.byMessageId[messageId];
+        }
+      }
+    },
+    clearMessageParts: (state, action) => {
+      const { messageId } = action.payload;
+      if (!messageId) {
+        console.error('Message ID required for clearing parts');
+        return;
+      }
+
+      // Get all parts for this message
+      const messageParts = state.messageParts.byMessageId[messageId] || [];
+
+      // Remove each part from global collection
+      messageParts.forEach((partId) => {
+        delete state.messageParts.byId[partId];
+        state.messageParts.allIds = state.messageParts.allIds.filter((id) => id !== partId);
+      });
+
+      // Remove message association
+      delete state.messageParts.byMessageId[messageId];
+    },
+    resetMessagePartStreaming: (state, action) => {
+      const { id } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found for reset');
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+
+      // Reset streaming state
+      part.text = '';
+      part.is_done = false;
+
+      // Clear any existing text buffer
+      if (part.textBuffer) {
+        delete part.textBuffer;
+      }
+    },
   },
 });
 
@@ -1095,6 +1326,7 @@ export const {
   deleteRunningResponse,
   clearState: clearRoomState,
   updateMessageContent,
+  updateMessageStreamingState,
   addAuthorizationRequest,
   updateAuthorizationRequest,
   setPublicRooms,
@@ -1117,6 +1349,13 @@ export const {
   setVoiceConversationConnecting,
   stopVoiceConversation,
   updateVoiceConversation,
+  // Message parts actions
+  addMessagePart,
+  updateMessagePart,
+  markMessagePartDone,
+  deleteMessagePart,
+  clearMessageParts,
+  resetMessagePartStreaming,
 } = slice.actions;
 
 // SELECTORS
@@ -1256,10 +1495,39 @@ export const makeSelectMessage = () =>
     (messagesById, messageId) => !!messageId && messagesById?.[messageId],
   );
 
+// Message Parts selectors (moved up to be defined before use)
+export const selectMessageParts = (state) => selectRoomState(state).messageParts;
+
+export const selectMessagePartsById = (state) => selectMessageParts(state).byId;
+
+export const selectMessagePartsAllIds = (state) => selectMessageParts(state).allIds;
+
+export const selectMessagePartsByMessageId = (state) => selectMessageParts(state).byMessageId;
+
 export const makeSelectMessageContent = () =>
   createSelector(
-    [selectMessagesContent, (state, messageId) => messageId],
-    (messagesContent, messageId) => messagesContent[messageId],
+    [
+      selectMessagesContent,
+      selectMessagePartsById,
+      selectMessagePartsByMessageId,
+      (state, messageId) => messageId,
+    ],
+    (messagesContent, partsById, partsByMessageId, messageId) => {
+      // First check if we have message parts for this message
+      const messageParts = partsByMessageId[messageId];
+      if (messageParts && messageParts.length > 0) {
+        // Use message parts to construct content
+        return messageParts
+          .map((partId) => partsById[partId])
+          .filter((part) => part && part.part_type === 'text')
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map((part) => part.text || '')
+          .join('');
+      }
+
+      // Fallback to legacy message content
+      return messagesContent[messageId] || '';
+    },
   );
 
 export const makeSelectHasMessageContent = () =>
@@ -1596,6 +1864,65 @@ export const selectIsVoiceActive = (threadId) =>
   );
 
 export const selectIsVoiceConnecting = (state) => selectVoiceConversations(state).isConnecting;
+
+// Message Parts selectors (definitions moved up earlier)
+
+export const makeSelectMessageParts = () =>
+  createSelector(
+    [selectMessagePartsByMessageId, (state, messageId) => messageId],
+    (partsByMessageId, messageId) => partsByMessageId[messageId] || [],
+  );
+
+export const makeSelectMessagePartById = () =>
+  createSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => partsById[partId] || null,
+  );
+
+export const makeSelectMessagePartsContent = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part && (part.type === 'text' || part.part_type === 'text'))
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((part) => part.text || '')
+      .join('');
+  });
+
+export const makeSelectMessagePartsOfType = (partType) =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part && (part.type === partType || part.part_type === partType))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  });
+
+// Helper selector to get all parts for a message organized by type
+export const makeSelectMessagePartsGrouped = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    const parts = partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    return parts.reduce((acc, part) => {
+      const partType = part.type || part.part_type || 'text';
+      if (!acc[partType]) {
+        acc[partType] = [];
+      }
+      acc[partType].push(part);
+      return acc;
+    }, {});
+  });
+
+// Helper to check if a message has any streaming parts
+export const makeSelectMessageHasStreamingParts = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds.some((partId) => {
+      const part = partsById[partId];
+      return part && !part.is_done;
+    });
+  });
 
 // ACTIONS
 

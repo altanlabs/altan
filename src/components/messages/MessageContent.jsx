@@ -1,6 +1,6 @@
 import { Stack, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { CLEAR_EDITOR_COMMAND } from 'lexical';
-import { memo, useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 
@@ -12,6 +12,9 @@ import {
   makeSelectHasMessageContent,
   makeSelectHasMessageMedia,
   makeSelectMessageContent,
+  makeSelectMessageParts,
+  makeSelectMessagePartsContent,
+  makeSelectMessagePartsGrouped,
   sendMessage,
   updateMessage,
   selectMe,
@@ -69,6 +72,9 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       hasContent: makeSelectHasMessageContent(),
       hasMedia: makeSelectHasMessageMedia(),
       content: makeSelectMessageContent(),
+      messageParts: makeSelectMessageParts(),
+      partsContent: makeSelectMessagePartsContent(),
+      partsGrouped: makeSelectMessagePartsGrouped(),
     }),
     [],
   );
@@ -76,6 +82,9 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const hasContent = useSelector((state) => selectors.hasContent(state, message.id));
   const hasMessageMedia = useSelector((state) => selectors.hasMedia(state, message.id));
   const messageContent = useSelector((state) => selectors.content(state, message.id));
+  const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
+  const partsContent = useSelector((state) => selectors.partsContent(state, message.id));
+  const partsGrouped = useSelector((state) => selectors.partsGrouped(state, message.id));
   const me = useSelector(selectMe);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -85,19 +94,35 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
 
   const isOwnMessage = message.member_id === me?.id;
 
+  // Use message parts content if available, otherwise fall back to legacy content
+  const effectiveContent = useMemo(() => {
+    if (messageParts.length > 0) {
+      return partsContent;
+    }
+    return messageContent || '';
+  }, [messageParts.length, partsContent, messageContent]);
+
   // Check if message contains commits
-  const commitResources = useMemo(() => extractCommitResources(messageContent), [messageContent]);
+  const commitResources = useMemo(
+    () => extractCommitResources(effectiveContent),
+    [effectiveContent],
+  );
   const hasCommits = commitResources.length > 0;
 
   // Check if message contains database versions
   const databaseVersionResources = useMemo(
-    () => extractDatabaseVersionResources(messageContent),
-    [messageContent],
+    () => extractDatabaseVersionResources(effectiveContent),
+    [effectiveContent],
   );
   const hasDatabaseVersions = databaseVersionResources.length > 0;
 
+  // Check if we have non-text parts (media, tasks, etc.)
+  const hasNonTextParts = useMemo(() => {
+    return Object.keys(partsGrouped).some((partType) => partType !== 'text');
+  }, [partsGrouped]);
+
   // Combined logic for both commits and database versions
-  const hasAnyWidgets = hasCommits || hasDatabaseVersions;
+  const hasAnyWidgets = hasCommits || hasDatabaseVersions || hasNonTextParts;
   const allWidgetResources = useMemo(
     () => [...commitResources, ...databaseVersionResources],
     [commitResources, databaseVersionResources],
@@ -105,12 +130,12 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
 
   // Remove both commits and database versions from text content
   const textContentWithoutWidgets = useMemo(() => {
-    let cleanedContent = messageContent || '';
+    let cleanedContent = effectiveContent || '';
     allWidgetResources.forEach((widget) => {
       cleanedContent = cleanedContent.replace(widget.fullMatch, '');
     });
     return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
-  }, [messageContent, allWidgetResources]);
+  }, [effectiveContent, allWidgetResources]);
 
   // Create markdown with all widgets
   const widgetOnlyContent = useMemo(() => {
@@ -121,8 +146,70 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       .join('\n\n');
   }, [allWidgetResources]);
 
+  // Component to render message parts of different types
+  const MessagePartRenderer = ({ parts, partType }) => {
+    if (!parts || parts.length === 0) return null;
+
+    switch (partType) {
+      case 'text':
+        return parts.map((part) => (
+          <div
+            key={part.id}
+            className="message-part-text"
+          >
+            {part.text && (
+              <CustomMarkdown
+                text={part.text}
+                threadId={threadId}
+                minified={mode === 'mini'}
+              />
+            )}
+          </div>
+        ));
+
+      case 'media':
+        return parts.map((part) => (
+          <div
+            key={part.id}
+            className="message-part-media"
+          >
+            {/* Media rendering logic would go here */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              📎 Media: {part.media_type || 'Unknown'}
+            </div>
+          </div>
+        ));
+
+      case 'task':
+        return parts.map((part) => (
+          <div
+            key={part.id}
+            className="message-part-task"
+          >
+            {/* Task rendering logic would go here */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              ⚡ Task: {part.task_type || 'Unknown'}
+              {!part.is_done && <span className="ml-2 text-blue-500">Running...</span>}
+            </div>
+          </div>
+        ));
+
+      default:
+        return parts.map((part) => (
+          <div
+            key={part.id}
+            className="message-part-unknown"
+          >
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Unknown part type: {partType}
+            </div>
+          </div>
+        ));
+    }
+  };
+
   const handleMessageClick = () => {
-    console.log('TODO');
+    // TODO: Implement message click handling
     // if (isOwnMessage && hasContent) {
     //   setIsEditing(true);
     // }
@@ -136,33 +223,37 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
     }
   };
 
-  const handleSaveEdit = (e) => {
-    e.stopPropagation();
-    const content = editorRef.current?.editor?._editorState.read(() => {
-      const root = editorRef.current.editor.getEditorState()._nodeMap.get('root');
-      return root.getTextContent();
-    });
+  const handleSaveEdit = useCallback(
+    (e) => {
+      e.stopPropagation();
+      const content = editorRef.current?.editor?._editorState.read(() => {
+        const root = editorRef.current.editor.getEditorState()._nodeMap.get('root');
+        return root.getTextContent();
+      });
 
-    if (content && !editorEmpty && content !== messageContent) {
-      dispatch(
-        updateMessage({
-          messageId: message.id,
-          content,
-          threadId,
-        }),
-      );
-    }
-    setIsEditing(false);
-    editorRef.current?.editor?.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-  };
+      if (content && !editorEmpty && content !== effectiveContent) {
+        dispatch(
+          updateMessage({
+            messageId: message.id,
+            content,
+            threadId,
+          }),
+        );
+      }
+      setIsEditing(false);
+      editorRef.current?.editor?.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+    },
+    [effectiveContent, editorEmpty, message.id, threadId, editorRef],
+  );
 
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.sendContent = handleSaveEdit;
     }
-  }, [handleSaveEdit]);
+  }, [handleSaveEdit, editorRef]);
 
-  if (!hasContent && !message.error && !hasMessageMedia) {
+  // Only show loading state if we have absolutely no content
+  if (!hasContent && !message.error && !hasMessageMedia && !effectiveContent) {
     return (
       <Stack
         spacing={1}
@@ -325,15 +416,26 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
           </div>
         ) : (
           <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
-            {hasAnyWidgets ? (
-              // Show only commit widgets as main content
+            {messageParts.length > 0 ? (
+              // Render message parts
+              <div className="message-parts-container">
+                {Object.entries(partsGrouped).map(([partType, parts]) => (
+                  <MessagePartRenderer
+                    key={partType}
+                    parts={parts}
+                    partType={partType}
+                  />
+                ))}
+              </div>
+            ) : hasAnyWidgets ? (
+              // Show only commit widgets as main content (legacy)
               <CustomMarkdown
                 text={widgetOnlyContent}
                 threadId={threadId}
                 minified={mode === 'mini'}
               />
             ) : (
-              // Show regular content
+              // Show regular content (legacy)
               <CustomMarkdown
                 messageId={message?.id}
                 threadId={threadId}
