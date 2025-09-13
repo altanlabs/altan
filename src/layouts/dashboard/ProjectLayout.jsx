@@ -124,11 +124,10 @@ const ProjectLayout = ({ children }) => {
         dispatch(getAccountMembers(accountId));
         [
           ['subscriptions'],
-          ['altaners'],
-          ['interfaces'],
+          // ['altaners'],
+          // ['interfaces'],
           ['workflows'],
           ['agents'],
-          ['webhooks', 'apikeys', 'developer_apps', 'apps', 'connections'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));
         dispatch(fetchNotifications());

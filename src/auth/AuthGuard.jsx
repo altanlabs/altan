@@ -205,9 +205,9 @@ function AuthGuard({ children, requireAuth = false }) {
       }}
     >
       {isAuthenticated ? (
-        <HermesWebSocketProvider>
+        <>
           <WebSocketProvider>{children}</WebSocketProvider>
-        </HermesWebSocketProvider>
+        </>
       ) : (
         children
       )}

@@ -40,6 +40,7 @@ export const openUrl = async (url, options = {}) => {
 export const API_BASE = 'api.altan.ai';
 export const API_BASE_URL = `https://${API_BASE}`;
 
+
 const AUTH_API_ENDPOINTS = {
   optimai: `${API_BASE_URL}/auth/token/platform`,
   optimai_shop: `${API_BASE_URL}/auth/token/platform`,

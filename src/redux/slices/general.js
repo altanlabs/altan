@@ -2088,6 +2088,30 @@ export const deleteInterfaceById = (interfaceId) => async () => {
   }
 };
 
+export const getInterfaceById = (interfaceId) => async (dispatch, getState) => {
+  const state = getState();
+  const interfaces = state.general.account?.interfaces || [];
+
+  // Check if interface already exists in store
+  const existingInterface = interfaces.find(i => i.id === interfaceId);
+  if (existingInterface) {
+    return Promise.resolve(existingInterface);
+  }
+
+  try {
+    const response = await optimai.get(`/interfaces/${interfaceId}`);
+    const interfaceData = response.data.interface;
+
+    // Add interface to Redux store
+    dispatch(slice.actions.addInterface(interfaceData));
+
+    return Promise.resolve(interfaceData);
+  } catch (e) {
+    console.error(`error: could not get interface ${interfaceId}: ${e}`);
+    return Promise.reject(e);
+  }
+};
+
 //  -----------------------------------------------------------------------------------------
 
 export const createRoom = (data) => async (dispatch, getState) => {

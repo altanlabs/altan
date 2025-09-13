@@ -11,7 +11,7 @@ import { MenuModule } from '@ag-grid-enterprise/menu';
 import { RowGroupingModule } from '@ag-grid-enterprise/row-grouping';
 import { Typography, useTheme, Button, Drawer, Stack } from '@mui/material';
 import { parseISO } from 'date-fns';
-import React, { useCallback, useState, useMemo, memo } from 'react';
+import React, { useCallback, useState, useMemo, memo, useEffect } from 'react';
 
 import DeleteDialog from '@components/dialogs/DeleteDialog';
 import Iconify from '@components/iconify/Iconify';
@@ -23,8 +23,8 @@ import useFeedbackDispatch from '@hooks/useFeedbackDispatch';
 import useResponsive from '@hooks/useResponsive';
 
 import { CompactLayout } from '../../layouts/dashboard';
-import { deleteAccountResource } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { deleteAccountResource, getAccountAttribute } from '../../redux/slices/general';
+import { useSelector, dispatch } from '../../redux/store';
 import { fToNow } from '../../utils/formatTime';
 
 ModuleRegistry.registerModules([
@@ -152,6 +152,11 @@ function WebhooksPage() {
   const webhooks = useSelector((state) => state.general.account.webhooks);
   const isSmallScreen = useResponsive('down', 'md');
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
+  
+  // Selectors for conditional loading
+  const accountId = useSelector((state) => state.general.account?.id);
+  const webhooksInitialized = useSelector((state) => state.general.accountAssetsInitialized.webhooks);
+  const webhooksLoading = useSelector((state) => state.general.accountAssetsLoading.webhooks);
   const [selectedFlowToDelete, setSelectedFlowToDelete] = useState(null);
   const openDeleteDialog = (hookId) => setSelectedFlowToDelete(hookId);
   const closeDeleteDialog = useCallback(() => setSelectedFlowToDelete(null), []);
@@ -177,6 +182,13 @@ function WebhooksPage() {
   }, [closeDeleteDialog, dispatchWithFeedback, selectedFlowToDelete]);
 
   const handleTestWebhook = useCallback((data) => openTestDialog(data), []);
+
+  // Load webhooks when page loads
+  useEffect(() => {
+    if (accountId && !webhooksInitialized && !webhooksLoading) {
+      dispatch(getAccountAttribute(accountId, ['webhooks']));
+    }
+  }, [accountId, webhooksInitialized, webhooksLoading]);
 
   const columns = useMemo(() => {
     const actions = [

@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import { Box, Menu, MenuItem, alpha } from '@mui/material';
-import React, { memo, useCallback, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { memo, useCallback, useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import DeleteDialog from './dialogs/DeleteDialog';
@@ -10,10 +10,8 @@ import FormDialog from './FormDialog';
 import Iconify from './iconify/Iconify';
 import IconRenderer from './icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../redux/slices/altaners';
+import { optimai } from '../utils/axios';
 import { fToNow } from '../utils/formatTime';
-
-const selectInterface = (id) => (state) =>
-  state.general.account?.interfaces?.find((i) => i.id === id);
 
 const AltanerCard = memo(
   ({ id, name, iconUrl, description, components = [], last_modified, isPinned }) => {
@@ -25,13 +23,27 @@ const AltanerCard = memo(
     const [isDeleting, setIsDeleting] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [coverUrl, setCoverUrl] = useState(null);
 
     // Find interface component if it exists
     const interfaceComponent = components.find((comp) => comp.type === 'interface');
-    const interfaceData = useSelector(
-      interfaceComponent?.params?.id ? selectInterface(interfaceComponent.params.id) : () => null,
-    );
-    const coverUrl = interfaceData?.cover_url;
+
+    // Fetch cover URL when interface component exists
+    useEffect(() => {
+      const fetchCoverUrl = async () => {
+        if (interfaceComponent?.params?.id) {
+          try {
+            const response = await optimai.get(`/interfaces/${interfaceComponent.params.id}/preview`);
+            setCoverUrl(response.data.url);
+          } catch (error) {
+            console.error('Failed to fetch interface cover URL:', error);
+            setCoverUrl(null);
+          }
+        }
+      };
+
+      fetchCoverUrl();
+    }, [interfaceComponent?.params?.id]);
 
     const handleClick = useCallback(() => {
           history.push(`/project/${id}`);

@@ -9,6 +9,8 @@ import StaticDrawerNav from './altaners/nav/StaticDrawerNav.jsx';
 import ConnectionTypeCreator from '../../sections/@dashboard/ConnectionTypeCreator.jsx';
 import CustomApps from '../../sections/@dashboard/CustomApps.jsx';
 import DevApps from '../../sections/@dashboard/DevApps.jsx';
+import { getAccountAttribute } from '../../redux/slices/general';
+import { dispatch, useSelector } from '../../redux/store';
 
 const TABS = {
   connections: {
@@ -43,6 +45,13 @@ function IntegrationPage() {
   const location = useLocation();
   const history = useHistory();
   const [currentTab, setCurrentTab] = useState('connections');
+  
+  // Selectors for conditional loading
+  const accountId = useSelector((state) => state.general.account?.id);
+  const appsInitialized = useSelector((state) => state.general.accountAssetsInitialized.apps);
+  const appsLoading = useSelector((state) => state.general.accountAssetsLoading.apps);
+  const devAppsInitialized = useSelector((state) => state.general.accountAssetsInitialized.developer_apps);
+  const devAppsLoading = useSelector((state) => state.general.accountAssetsLoading.developer_apps);
 
   // Parse search params manually for React Router v5
   const searchParams = new URLSearchParams(location.search);
@@ -65,6 +74,27 @@ function IntegrationPage() {
       setSearchParams(newSearchParams);
     }
   }, [location.search]);
+
+  // Conditional resource loading based on current tab
+  useEffect(() => {
+    if (!accountId) return;
+
+    switch (currentTab) {
+      case 'custom_apps':
+        if (!appsInitialized && !appsLoading) {
+          dispatch(getAccountAttribute(accountId, ['apps']));
+        }
+        break;
+      case 'dev_apps':
+        if (!devAppsInitialized && !devAppsLoading) {
+          dispatch(getAccountAttribute(accountId, ['developer_apps']));
+        }
+        break;
+      default:
+        // No additional resources needed for connections and integration_creator tabs
+        break;
+    }
+  }, [currentTab, accountId, appsInitialized, appsLoading, devAppsInitialized, devAppsLoading]);
 
   // useEffect(() => {
   //   if (accountId) {

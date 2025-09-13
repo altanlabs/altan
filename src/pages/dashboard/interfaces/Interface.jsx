@@ -12,11 +12,11 @@ import LoadingScreen from '../../../components/loading-screen';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { selectViewType } from '../../../redux/slices/altaners';
 import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
-import { makeSelectInterfaceById, makeSelectSortedCommits } from '../../../redux/slices/general';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../../redux/slices/general';
 // import { optimai } from '../../../utils/axios';
 import { dispatch, useSelector } from '../../../redux/store.js';
 
-function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp = null }) {
+function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   const theme = useTheme();
   const ws = useWebSocket();
   // const { enqueueSnackbar } = useSnackbar();
@@ -106,6 +106,13 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
     setIsSettingsOpen(false);
   };
 
+  // Fetch interface if not available in Redux store
+  useEffect(() => {
+    if (!ui && id) {
+      dispatch(getInterfaceById(id));
+    }
+  }, [ui, id]);
+
   useEffect(() => {
     let timeoutId;
 
@@ -177,7 +184,7 @@ function InterfacePage({ id, showRoom = false, chatIframeRef: chatIframeRefProp 
     }
   }, [commits, handleReload, viewType]);
 
-  if (!ui) return <LoadingScreen />;
+  if (!ui) return null;
 
   return (
     <>

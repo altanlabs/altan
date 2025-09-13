@@ -281,9 +281,7 @@ const FlowCanvasToolbar = ({
       totalModules,
     ],
   );
-  console.log("entryModule", entryModule);
-  console.log('totalModules', totalModules);
-  console.log("show", show);
+
   const handleActivateFlow = useCallback(() => {
     let flowArgs = null;
     if (hasFlowSchema) {
@@ -416,26 +414,27 @@ const FlowCanvasToolbar = ({
         padding={2}
         spacing={1}
       >
-        {!!onGoBack &&
-        <HoverBorderGradient
-          containerClassName="group rounded-full bg-white dark:bg-black border-transparent"
-          as="button"
-          className="transition-all duration-200 w-[50px] h-[36px] group-hover:md:w-[170px] text-sm bg-slate-500 group-hover:bg-slate-700 dark:group-hover:bg-slate-300 text-black dark:text-white flex items-center space-x-1"
-          onClick={onGoBack}
-          disableAnimation
-        >
-          <Iconify
-            className="text-white dark:text-black"
-            icon="eva:arrow-back-outline"
-          />
-          <Typography
-            noWrap
-            variant="body"
-            className="flex-no-wrap hidden group-hover:md:flex text-white dark:text-black"
+        {!!onGoBack && (
+          <HoverBorderGradient
+            containerClassName="group rounded-full bg-white dark:bg-black border-transparent"
+            as="button"
+            className="transition-all duration-200 w-[50px] h-[36px] group-hover:md:w-[170px] text-sm bg-slate-500 group-hover:bg-slate-700 dark:group-hover:bg-slate-300 text-black dark:text-white flex items-center space-x-1"
+            onClick={onGoBack}
+            disableAnimation
           >
-            Back to workflows
-          </Typography>
-        </HoverBorderGradient>}
+            <Iconify
+              className="text-white dark:text-black"
+              icon="eva:arrow-back-outline"
+            />
+            <Typography
+              noWrap
+              variant="body"
+              className="flex-no-wrap hidden group-hover:md:flex text-white dark:text-black"
+            >
+              Back to workflows
+            </Typography>
+          </HoverBorderGradient>
+        )}
         {!flow || !initialized ? (
           <Skeleton
             variant="text"

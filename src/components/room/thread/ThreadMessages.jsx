@@ -238,6 +238,13 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
     hasLoadedRef.current = hasLoaded;
   }, [threadId, hasLoaded]);
 
+  // Ensure hasLoaded is set when messages are available
+  useEffect(() => {
+    if (messageIds.length > 0 && !hasLoaded) {
+      setHasLoaded(true);
+    }
+  }, [messageIds.length, hasLoaded, setHasLoaded]);
+
   useEffect(() => {
     isCreationRef.current = isCreation;
   }, [isCreation]);

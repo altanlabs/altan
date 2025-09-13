@@ -15,6 +15,9 @@ import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
 import Footer from '../../layouts/main/Footer.jsx';
 import useLocales from '../../locales/useLocales.js';
+import { getFlows } from '../../redux/slices/flows';
+import { getAccountAttribute } from '../../redux/slices/general';
+import { dispatch } from '../../redux/store';
 import Agents from '../../sections/@dashboard/agents/Agents.jsx';
 import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
 
@@ -22,6 +25,18 @@ const DashboardPage = () => {
   const { mode = 'projects' } = useParams();
   const { isAuthenticated } = useAuthContext();
   const accountId = useSelector((state) => state.general.account?.id);
+
+  // Selectors for checking if resources are already loaded
+  const agentsInitialized = useSelector((state) => state.general.accountAssetsInitialized.agents);
+  const agentsLoading = useSelector((state) => state.general.accountAssetsLoading.agents);
+  const altanersInitialized = useSelector(
+    (state) => state.general.accountAssetsInitialized.altaners,
+  );
+  const altanersLoading = useSelector((state) => state.general.accountAssetsLoading.altaners);
+  const interfacesInitialized = useSelector((state) => state.general.accountAssetsInitialized.interfaces);
+  const interfacesLoading = useSelector((state) => state.general.accountAssetsLoading.interfaces);
+  const flowsInitialized = useSelector((state) => state.flows.initialized);
+  const flowsLoading = useSelector((state) => state.flows.isLoading);
 
   const agents = {
     unauthenticated: {
@@ -86,6 +101,45 @@ const DashboardPage = () => {
   useEffect(() => {
     localStorage.setItem('voicePreference', JSON.stringify(isVoice));
   }, [isVoice]);
+
+  // Conditional resource loading based on mode and authentication
+  useEffect(() => {
+    if (!isAuthenticated || !accountId) return;
+
+    switch (mode) {
+      case 'agents':
+        if (!agentsInitialized && !agentsLoading) {
+          dispatch(getAccountAttribute(accountId, ['agents']));
+        }
+        break;
+      case 'flows':
+        dispatch(getFlows(accountId));
+        break;
+      case 'interfaces':
+        if (!interfacesInitialized && !interfacesLoading) {
+          dispatch(getAccountAttribute(accountId, ['interfaces']));
+        }
+        break;
+      case 'projects':
+      default:
+        if (!altanersInitialized && !altanersLoading) {
+          dispatch(getAccountAttribute(accountId, ['altaners']));
+        }
+        break;
+    }
+  }, [
+    mode,
+    isAuthenticated,
+    accountId,
+    agentsInitialized,
+    agentsLoading,
+    altanersInitialized,
+    altanersLoading,
+    interfacesInitialized,
+    interfacesLoading,
+    flowsInitialized,
+    flowsLoading,
+  ]);
 
   // Track scroll position to show/hide floating voice component
   useEffect(() => {
@@ -248,7 +302,6 @@ const DashboardPage = () => {
           exit="hidden"
           variants={floatingAnimation}
           style={{ zIndex: 9999 }}
-          onAnimationComplete={() => console.log('Floating component animation completed')}
         >
           <div>
             <VoiceConversation

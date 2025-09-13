@@ -9,7 +9,8 @@ import APIKeys from './APIKeys';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
-import { selectAccount } from '../../redux/slices/general';
+import { selectAccount, getAccountAttribute } from '../../redux/slices/general';
+import { dispatch } from '../../redux/store';
 import {
   AccountGeneral,
   AccountMembers,
@@ -29,11 +30,27 @@ function UserAccountPage() {
   const history = useHistory();
   const { tab } = queryString.parse(location.search);
   const [currentTab, setCurrentTab] = useState(tab || 'general');
+  
+  // Selectors for conditional loading
+  const accountId = useSelector((state) => state.general.account?.id);
+  const apikeysInitialized = useSelector((state) => state.general.accountAssetsInitialized.apikeys);
+  const apikeysLoading = useSelector((state) => state.general.accountAssetsLoading.apikeys);
 
   useEffect(() => {
     // Update URL when currentTab changes
     history.push(`?tab=${currentTab}`, { replace: true });
   }, [currentTab, history.push]);
+
+  // Conditional resource loading based on current tab
+  useEffect(() => {
+    if (!accountId) return;
+
+    if (currentTab === 'api') {
+      if (!apikeysInitialized && !apikeysLoading) {
+        dispatch(getAccountAttribute(accountId, ['apikeys']));
+      }
+    }
+  }, [currentTab, accountId, apikeysInitialized, apikeysLoading]);
 
   const TABS = useMemo(
     () => ({

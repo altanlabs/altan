@@ -284,15 +284,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'WebhookNew':
       dispatch(addWebhook(data.data.attributes));
       break;
-    case 'FormNew':
-      dispatch(addForm(data.data.attributes));
-      break;
-    case 'FormUpdate':
-      dispatch(patchForm({ id: data.data.ids[0], ...data.data.changes }));
-      break;
-    case 'FormDelete':
-      dispatch(deleteForm(data.data.ids[0]));
-      break;
     case 'WebhookDelete':
       dispatch(deleteWebhook(data.data.ids[0]));
       break;

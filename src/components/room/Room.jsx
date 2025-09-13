@@ -76,10 +76,7 @@ const Room = ({
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => {
         if (!response) {
-          console.error('❌ No response from fetchRoom, redirecting to 404');
           history.replace('/404');
-        } else {
-          console.log('✅ Room fetched successfully:', response);
         }
       })
       .catch((error) => {

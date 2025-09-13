@@ -20,6 +20,7 @@ import {
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
+import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
@@ -46,6 +47,7 @@ export default function ProjectPage() {
   const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
+  console.log('altaners isLoading', isLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
@@ -185,7 +187,7 @@ export default function ProjectPage() {
   };
 
   if (isLoading) {
-    return <LoadingFallback />;
+    return <LoadingScreen />;
   }
 
   // Mobile layout
