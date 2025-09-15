@@ -1,6 +1,11 @@
 import { getDefaultColumnDef } from './defaultColumnDef';
 
-export const getLongTextColumnDef = ({ field, getCommonFieldMenuItems, onEditField, additionalProps = {} }) => ({
+export const getLongTextColumnDef = ({
+  field,
+  getCommonFieldMenuItems,
+  onEditField,
+  additionalProps = {},
+}) => ({
   ...getDefaultColumnDef({
     field,
     getCommonFieldMenuItems,
@@ -9,16 +14,16 @@ export const getLongTextColumnDef = ({ field, getCommonFieldMenuItems, onEditFie
     additionalProps: {
       headerComponent: (params) => {
         const IconComponent = field.icon;
-        
+
         const handleHeaderClick = (e) => {
           e.stopPropagation();
           if (onEditField) {
             onEditField(field);
           }
         };
-        
+
         return (
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={handleHeaderClick}
             title="Click to edit field"

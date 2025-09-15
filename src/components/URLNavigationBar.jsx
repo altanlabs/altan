@@ -323,11 +323,11 @@ function URLNavigationBar({
               />
             </Tooltip>
           )}
-          <EditToggleButton
+          {/* <EditToggleButton
             editMode={editMode}
             onToggle={handleToggleEditMode}
             disabled={disabled}
-          />
+          /> */}
           <CodeToggleButton />
         </Stack>
       </Box>

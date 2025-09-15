@@ -1,4 +1,15 @@
-import { Stack, TextField, Drawer, List, ListItem, ListItemButton, ListItemText, Typography, Divider, IconButton } from '@mui/material';
+import {
+  Stack,
+  TextField,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+  Divider,
+  IconButton,
+} from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useCallback, memo, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -51,20 +62,23 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
     }
   }, [table, open, reset]);
 
-  const onSubmit = useCallback(async (data) => {
-    const updateData = {
-      name: data.name,
-      system_field_config: {
-        id_type: data.id_type,
-      },
-    };
+  const onSubmit = useCallback(
+    async (data) => {
+      const updateData = {
+        name: data.name,
+        system_field_config: {
+          id_type: data.id_type,
+        },
+      };
 
-    dispatchWithFeedback(updateTableById(baseId, tableId, updateData), {
-      useSnackbar: true,
-      successMessage: 'Table updated successfully',
-      errorMessage: 'Could not update table',
-    }).then(() => onClose());
-  }, [baseId, tableId, onClose, dispatchWithFeedback]);
+      dispatchWithFeedback(updateTableById(baseId, tableId, updateData), {
+        useSnackbar: true,
+        successMessage: 'Table updated successfully',
+        errorMessage: 'Could not update table',
+      }).then(() => onClose());
+    },
+    [baseId, tableId, onClose, dispatchWithFeedback],
+  );
 
   const handleClose = useCallback(() => {
     reset();
@@ -80,10 +94,13 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
     setIdTypeDrawerOpen(false);
   }, []);
 
-  const handleSelectIdType = useCallback((idType) => {
-    setValue('id_type', idType, { shouldDirty: true });
-    setIdTypeDrawerOpen(false);
-  }, [setValue]);
+  const handleSelectIdType = useCallback(
+    (idType) => {
+      setValue('id_type', idType, { shouldDirty: true });
+      setIdTypeDrawerOpen(false);
+    },
+    [setValue],
+  );
 
   const handleFieldClick = useCallback((field) => {
     setSelectedField(field);
@@ -96,7 +113,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
   }, []);
 
   const watchedValues = watch();
-  const selectedIdType = ID_FIELD_TYPES.find(type => type.value === watchedValues.id_type);
+  const selectedIdType = ID_FIELD_TYPES.find((type) => type.value === watchedValues.id_type);
   const isUsersTable = table?.name?.toLowerCase() === 'users';
 
   return (
@@ -125,8 +142,15 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               sx={{ p: 3, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}` }}
             >
               <CardTitle>Edit Table</CardTitle>
-              <IconButton onClick={handleClose} size="small">
-                <Iconify icon="mdi:close" width={20} height={20} />
+              <IconButton
+                onClick={handleClose}
+                size="small"
+              >
+                <Iconify
+                  icon="mdi:close"
+                  width={20}
+                  height={20}
+                />
               </IconButton>
             </Stack>
 
@@ -143,20 +167,20 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                 helperText={isUsersTable ? 'Users table name cannot be changed' : ''}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: isUsersTable 
+                    backgroundColor: isUsersTable
                       ? alpha(theme.palette.action.disabled, 0.08)
                       : alpha(theme.palette.background.paper, 0.6),
                     backdropFilter: 'blur(10px)',
                     borderRadius: '12px',
                     border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                     '&:hover': {
-                      backgroundColor: isUsersTable 
+                      backgroundColor: isUsersTable
                         ? alpha(theme.palette.action.disabled, 0.08)
                         : alpha(theme.palette.background.paper, 0.8),
                       borderColor: alpha(theme.palette.divider, 0.2),
                     },
                     '&.Mui-focused': {
-                      backgroundColor: isUsersTable 
+                      backgroundColor: isUsersTable
                         ? alpha(theme.palette.action.disabled, 0.08)
                         : alpha(theme.palette.background.paper, 0.9),
                       borderColor: theme.palette.primary.main,
@@ -167,7 +191,10 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
 
               {/* ID Field Type Selection */}
               <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   ID Field Type
                 </Typography>
                 <Stack
@@ -177,7 +204,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                   onClick={isUsersTable ? undefined : handleOpenIdTypeDrawer}
                   sx={{
                     padding: 2,
-                    backgroundColor: isUsersTable 
+                    backgroundColor: isUsersTable
                       ? alpha(theme.palette.action.disabled, 0.08)
                       : alpha(theme.palette.background.paper, 0.6),
                     backdropFilter: 'blur(10px)',
@@ -187,26 +214,40 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                     opacity: isUsersTable ? 0.6 : 1,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      backgroundColor: isUsersTable 
+                      backgroundColor: isUsersTable
                         ? alpha(theme.palette.action.disabled, 0.08)
                         : alpha(theme.palette.background.paper, 0.8),
                       borderColor: alpha(theme.palette.divider, 0.2),
                     },
                   }}
                 >
-                  <Stack direction="column" spacing={0.5}>
-                    <Typography variant="body1" fontWeight={600}>
+                  <Stack
+                    direction="column"
+                    spacing={0.5}
+                  >
+                    <Typography
+                      variant="body1"
+                      fontWeight={600}
+                    >
                       {selectedIdType?.label || 'UUID'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {watchedValues.id_type === 'UUID' && 'Universally unique identifier (recommended)'}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      {watchedValues.id_type === 'UUID' &&
+                        'Universally unique identifier (recommended)'}
                       {watchedValues.id_type === 'BIGSERIAL' && 'Auto-incrementing 64-bit integer'}
                       {watchedValues.id_type === 'SERIAL' && 'Auto-incrementing 32-bit integer'}
                       {watchedValues.id_type === 'INTEGER' && 'Manual 32-bit integer'}
                       {watchedValues.id_type === 'BIGINT' && 'Manual 64-bit integer'}
                     </Typography>
                   </Stack>
-                  <Iconify icon="mdi:chevron-right" width={24} height={24} />
+                  <Iconify
+                    icon="mdi:chevron-right"
+                    width={24}
+                    height={24}
+                  />
                 </Stack>
               </Stack>
 
@@ -214,24 +255,33 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               <Stack
                 sx={{
                   padding: 2,
-                  backgroundColor: isUsersTable 
+                  backgroundColor: isUsersTable
                     ? alpha(theme.palette.warning.main, 0.08)
                     : alpha(theme.palette.info.main, 0.08),
                   borderRadius: '12px',
-                  border: `1px solid ${isUsersTable 
-                    ? alpha(theme.palette.warning.main, 0.2)
-                    : alpha(theme.palette.info.main, 0.2)}`,
+                  border: `1px solid ${
+                    isUsersTable
+                      ? alpha(theme.palette.warning.main, 0.2)
+                      : alpha(theme.palette.info.main, 0.2)
+                  }`,
                 }}
               >
-                <Typography variant="body2" sx={{ 
-                  color: isUsersTable 
-                    ? theme.palette.warning.main
-                    : theme.palette.info.main
-                }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: isUsersTable ? theme.palette.warning.main : theme.palette.info.main,
+                  }}
+                >
                   {isUsersTable ? (
-                    <>🔒 The users table is a system table and cannot be modified. This table manages user authentication and core user data.</>
+                    <>
+                      🔒 The users table is a system table and cannot be modified. This table
+                      manages user authentication and core user data.
+                    </>
                   ) : (
-                    <>💡 Changing the ID field type will affect how new records are created. Existing records will not be modified.</>
+                    <>
+                      💡 Changing the ID field type will affect how new records are created.
+                      Existing records will not be modified.
+                    </>
                   )}
                 </Typography>
               </Stack>
@@ -239,7 +289,10 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               {/* Fields List */}
               {table?.fields?.items && table.fields.items.length > 0 && (
                 <Stack spacing={1}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
                     Fields ({table.fields.items.length})
                   </Typography>
                   <List
@@ -253,22 +306,39 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                     }}
                   >
                     {table.fields.items.map((field, index) => (
-                      <ListItem key={field.id} disablePadding>
+                      <ListItem
+                        key={field.id}
+                        disablePadding
+                      >
                         <ListItemButton
                           onClick={() => handleFieldClick(field)}
                           disabled={isUsersTable}
                           sx={{
-                            borderRadius: index === 0 ? '8px 8px 0 0' : index === table.fields.items.length - 1 ? '0 0 8px 8px' : 0,
+                            borderRadius:
+                              index === 0
+                                ? '8px 8px 0 0'
+                                : index === table.fields.items.length - 1
+                                  ? '0 0 8px 8px'
+                                  : 0,
                             opacity: isUsersTable ? 0.6 : 1,
                             '&:hover': {
-                              backgroundColor: isUsersTable ? 'transparent' : alpha(theme.palette.action.hover, 0.08),
+                              backgroundColor: isUsersTable
+                                ? 'transparent'
+                                : alpha(theme.palette.action.hover, 0.08),
                             },
                           }}
                         >
                           <ListItemText
                             primary={
-                              <Stack direction="row" alignItems="center" spacing={1}>
-                                <Typography variant="body2" fontWeight={600}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                >
                                   {field.name}
                                 </Typography>
                                 {field.is_primary && (
@@ -290,7 +360,10 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                               </Stack>
                             }
                             secondary={
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {field.type} • {field.db_field_type}
                               </Typography>
                             }
@@ -378,14 +451,31 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
           },
         }}
       >
-        <Stack spacing={2} sx={{ p: 3 }}>
+        <Stack
+          spacing={2}
+          sx={{ p: 3 }}
+        >
           {/* Header */}
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" fontWeight={600}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Typography
+              variant="h6"
+              fontWeight={600}
+            >
               Select ID Field Type
             </Typography>
-            <IconButton onClick={handleCloseIdTypeDrawer} size="small">
-              <Iconify icon="mdi:close" width={20} height={20} />
+            <IconButton
+              onClick={handleCloseIdTypeDrawer}
+              size="small"
+            >
+              <Iconify
+                icon="mdi:close"
+                width={20}
+                height={20}
+              />
             </IconButton>
           </Stack>
 
@@ -394,20 +484,25 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
           {/* Options List */}
           <List sx={{ p: 0 }}>
             {ID_FIELD_TYPES.map((type) => (
-              <ListItem key={type.value} disablePadding>
+              <ListItem
+                key={type.value}
+                disablePadding
+              >
                 <ListItemButton
                   onClick={() => handleSelectIdType(type.value)}
                   selected={watchedValues.id_type === type.value}
                   sx={{
                     borderRadius: '12px',
                     mb: 1,
-                    backgroundColor: watchedValues.id_type === type.value
-                      ? alpha(theme.palette.primary.main, 0.08)
-                      : 'transparent',
+                    backgroundColor:
+                      watchedValues.id_type === type.value
+                        ? alpha(theme.palette.primary.main, 0.08)
+                        : 'transparent',
                     '&:hover': {
-                      backgroundColor: watchedValues.id_type === type.value
-                        ? alpha(theme.palette.primary.main, 0.12)
-                        : alpha(theme.palette.action.hover, 0.08),
+                      backgroundColor:
+                        watchedValues.id_type === type.value
+                          ? alpha(theme.palette.primary.main, 0.12)
+                          : alpha(theme.palette.action.hover, 0.08),
                     },
                     '&.Mui-selected': {
                       backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -419,8 +514,15 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                 >
                   <ListItemText
                     primary={
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="body1" fontWeight={600}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                      >
+                        <Typography
+                          variant="body1"
+                          fontWeight={600}
+                        >
                           {type.label}
                         </Typography>
                         {type.value === 'UUID' && (
@@ -450,7 +552,11 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                       </Stack>
                     }
                     secondary={
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                      >
                         {type.value === 'UUID' && 'Universally unique identifier (recommended)'}
                         {type.value === 'BIGSERIAL' && 'Auto-incrementing 64-bit integer'}
                         {type.value === 'SERIAL' && 'Auto-incrementing 32-bit integer'}
