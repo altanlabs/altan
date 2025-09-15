@@ -31,11 +31,14 @@ document.addEventListener('DOMContentLoaded',function(){
     textSpan.textContent='Made with ';
     textSpan.style.fontSize='13px';
     textSpan.style.fontWeight='500';
+    textSpan.style.lineHeight='14px';
     const img=document.createElement('img');
-    img.src='https://altan.ai/logos/horizontalWhite.png';
+    img.src='/logos/v2/logoWhite.svg';
     img.style.height='14px';
     img.style.marginLeft='4px';
-    container.addEventListener('click',function(){window.location.href='https://www.altan.ai';});
+    img.style.verticalAlign='top';
+    img.style.marginTop='-2px';
+    container.addEventListener('click',function(){window.open('https://www.altan.ai?utm_source=widget&utm_medium=snippet&utm_campaign=branding', '_blank');});
     container.appendChild(textSpan);
     container.appendChild(img);
     document.body.appendChild(container);

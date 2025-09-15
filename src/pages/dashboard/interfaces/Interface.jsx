@@ -42,7 +42,6 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   const {
     status,
     // isStarting
-    apiError,
   } = useGetInterfaceServerStatus(id, viewType === 'preview');
 
   const baseIframeUrl = useMemo(() => {
@@ -214,7 +213,6 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
-        apiError={apiError}
       />
       {/* Drawer for viewing deployments */}
       <Drawer
