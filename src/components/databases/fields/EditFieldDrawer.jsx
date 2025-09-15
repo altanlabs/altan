@@ -1,13 +1,13 @@
 import { ContentCopy } from '@mui/icons-material';
-import { 
-  Stack, 
-  TextField, 
-  Drawer, 
-  Typography, 
-  IconButton, 
+import {
+  Stack,
+  TextField,
+  Drawer,
+  Typography,
+  IconButton,
   InputAdornment,
   Autocomplete,
-  Box
+  Box,
 } from '@mui/material';
 import { useCallback, memo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -93,10 +93,8 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
   // Check if field type can be changed (table has no records)
   const canChangeFieldType = recordsTotal === 0;
 
-  // Get the current field type display name and icon
-  const currentFieldType = FIELD_TYPES.find(type => type.id === fieldType);
-  const currentFieldTypeName = currentFieldType?.name || fieldType;
-  const FieldTypeIcon = currentFieldType?.icon;
+  // Get the current field type
+  const currentFieldType = FIELD_TYPES.find((type) => type.id === fieldType);
 
   return (
     <Drawer
@@ -106,7 +104,10 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
       PaperProps={{
         sx: {
           width: { xs: '100%', sm: 420 },
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(18, 18, 18, 0.95)'
+              : 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
           marginLeft: { sm: '400px' }, // Stack next to the table drawer
           zIndex: 1400, // Higher than the table drawer
@@ -122,11 +123,22 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ p: 3, borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}
+          sx={{
+            p: 3,
+            borderBottom: (theme) =>
+              `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+          }}
         >
           <CardTitle>Edit Field</CardTitle>
-          <IconButton onClick={handleClose} size="small">
-            <Iconify icon="mdi:close" width={20} height={20} />
+          <IconButton
+            onClick={handleClose}
+            size="small"
+          >
+            <Iconify
+              icon="mdi:close"
+              width={20}
+              height={20}
+            />
           </IconButton>
         </Stack>
 
@@ -143,7 +155,10 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
             helperText={fieldNameError}
             sx={{
               '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.05)'
+                    : 'rgba(0, 0, 0, 0.02)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: '12px',
               },
@@ -176,7 +191,10 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.02)'
+                    : 'rgba(0, 0, 0, 0.02)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: '12px',
               },
@@ -206,7 +224,16 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
                 }
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: !canChangeFieldType ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
+                    backgroundColor: (theme) => {
+                      if (!canChangeFieldType) {
+                        return theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.02)'
+                          : 'rgba(0, 0, 0, 0.02)';
+                      }
+                      return theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.02)';
+                    },
                     backdropFilter: 'blur(10px)',
                     borderRadius: '12px',
                   },
@@ -226,11 +253,17 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
               >
                 <option.icon sx={{ fontSize: 20, color: 'text.secondary' }} />
                 <Stack>
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                  >
                     {option.name}
                   </Typography>
                   {option.badge && (
-                    <Typography variant="caption" color="primary.main">
+                    <Typography
+                      variant="caption"
+                      color="primary.main"
+                    >
                       {option.badge}
                     </Typography>
                   )}
@@ -247,7 +280,10 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
           {/* Field Configuration */}
           {field && (
             <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
                 Field Configuration
               </Typography>
               <FieldConfig
@@ -264,12 +300,26 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
           <Stack
             sx={{
               padding: 2,
-              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              backgroundColor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(144, 202, 249, 0.08)'
+                  : 'rgba(25, 118, 210, 0.08)',
               borderRadius: '12px',
-              border: '1px solid rgba(25, 118, 210, 0.2)',
+              border: (theme) =>
+                `1px solid ${theme.palette.mode === 'dark'
+                  ? 'rgba(144, 202, 249, 0.2)'
+                  : 'rgba(25, 118, 210, 0.2)'}`,
             }}
           >
-            <Typography variant="body2" sx={{ color: 'rgba(25, 118, 210, 0.9)' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(144, 202, 249, 0.9)'
+                    : 'rgba(25, 118, 210, 0.9)',
+              }}
+            >
               💡 Changes to field configuration will affect how data is displayed and validated.
             </Typography>
           </Stack>
@@ -281,8 +331,12 @@ const EditFieldDrawer = ({ baseId, tableId, field, open, onClose }) => {
           spacing={2}
           sx={{
             p: 3,
-            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            borderTop: (theme) =>
+              `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'rgba(18, 18, 18, 0.5)'
+                : 'rgba(255, 255, 255, 0.5)',
           }}
         >
           <InteractiveButton

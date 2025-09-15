@@ -1009,14 +1009,6 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     if (!base || !base.tables || !base.tables.items) {
       throw new Error(`Base ${baseId} not found or has no tables`);
     }
-
-    // Log available tables for debugging
-    // eslint-disable-next-line no-console
-    console.log(
-      'Available tables in base:',
-      base.tables.items.map((t) => ({ name: t.name, db_name: t.db_name })),
-    );
-
     // Look for user table with various possible names
     const authUsersTable = base.tables.items.find(
       (table) =>

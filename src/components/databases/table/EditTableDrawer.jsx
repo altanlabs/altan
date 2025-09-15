@@ -1,4 +1,5 @@
 import { Stack, TextField, Drawer, List, ListItem, ListItemButton, ListItemText, Typography, Divider, IconButton } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import { useCallback, memo, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -19,6 +20,7 @@ const ID_FIELD_TYPES = [
 ];
 
 const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
+  const theme = useTheme();
   const methods = useForm({
     defaultValues: {
       name: '',
@@ -107,8 +109,9 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
         PaperProps={{
           sx: {
             width: { xs: '100%', sm: 400 },
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: alpha(theme.palette.background.paper, 0.95),
             backdropFilter: 'blur(20px)',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           },
         }}
       >
@@ -119,7 +122,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               direction="row"
               alignItems="center"
               justifyContent="space-between"
-              sx={{ p: 3, borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}
+              sx={{ p: 3, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}` }}
             >
               <CardTitle>Edit Table</CardTitle>
               <IconButton onClick={handleClose} size="small">
@@ -140,14 +143,23 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                 helperText={isUsersTable ? 'Users table name cannot be changed' : ''}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: isUsersTable ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
+                    backgroundColor: isUsersTable 
+                      ? alpha(theme.palette.action.disabled, 0.08)
+                      : alpha(theme.palette.background.paper, 0.6),
                     backdropFilter: 'blur(10px)',
                     borderRadius: '12px',
+                    border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                     '&:hover': {
-                      backgroundColor: isUsersTable ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.04)',
+                      backgroundColor: isUsersTable 
+                        ? alpha(theme.palette.action.disabled, 0.08)
+                        : alpha(theme.palette.background.paper, 0.8),
+                      borderColor: alpha(theme.palette.divider, 0.2),
                     },
                     '&.Mui-focused': {
-                      backgroundColor: isUsersTable ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.06)',
+                      backgroundColor: isUsersTable 
+                        ? alpha(theme.palette.action.disabled, 0.08)
+                        : alpha(theme.palette.background.paper, 0.9),
+                      borderColor: theme.palette.primary.main,
                     },
                   },
                 }}
@@ -165,16 +177,20 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                   onClick={isUsersTable ? undefined : handleOpenIdTypeDrawer}
                   sx={{
                     padding: 2,
-                    backgroundColor: isUsersTable ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
+                    backgroundColor: isUsersTable 
+                      ? alpha(theme.palette.action.disabled, 0.08)
+                      : alpha(theme.palette.background.paper, 0.6),
                     backdropFilter: 'blur(10px)',
                     borderRadius: '12px',
-                    border: `1px solid ${isUsersTable ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)'}`,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                     cursor: isUsersTable ? 'not-allowed' : 'pointer',
                     opacity: isUsersTable ? 0.6 : 1,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      backgroundColor: isUsersTable ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.04)',
-                      borderColor: isUsersTable ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.2)',
+                      backgroundColor: isUsersTable 
+                        ? alpha(theme.palette.action.disabled, 0.08)
+                        : alpha(theme.palette.background.paper, 0.8),
+                      borderColor: alpha(theme.palette.divider, 0.2),
                     },
                   }}
                 >
@@ -198,12 +214,20 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               <Stack
                 sx={{
                   padding: 2,
-                  backgroundColor: isUsersTable ? 'rgba(255, 152, 0, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                  backgroundColor: isUsersTable 
+                    ? alpha(theme.palette.warning.main, 0.08)
+                    : alpha(theme.palette.info.main, 0.08),
                   borderRadius: '12px',
-                  border: `1px solid ${isUsersTable ? 'rgba(255, 152, 0, 0.2)' : 'rgba(25, 118, 210, 0.2)'}`,
+                  border: `1px solid ${isUsersTable 
+                    ? alpha(theme.palette.warning.main, 0.2)
+                    : alpha(theme.palette.info.main, 0.2)}`,
                 }}
               >
-                <Typography variant="body2" sx={{ color: isUsersTable ? 'rgba(255, 152, 0, 0.9)' : 'rgba(25, 118, 210, 0.9)' }}>
+                <Typography variant="body2" sx={{ 
+                  color: isUsersTable 
+                    ? theme.palette.warning.main
+                    : theme.palette.info.main
+                }}>
                   {isUsersTable ? (
                     <>🔒 The users table is a system table and cannot be modified. This table manages user authentication and core user data.</>
                   ) : (
@@ -220,9 +244,9 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                   </Typography>
                   <List
                     sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                      bgcolor: alpha(theme.palette.background.paper, 0.4),
                       borderRadius: 2,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                       maxHeight: 200,
                       overflow: 'auto',
                       p: 0,
@@ -237,7 +261,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                             borderRadius: index === 0 ? '8px 8px 0 0' : index === table.fields.items.length - 1 ? '0 0 8px 8px' : 0,
                             opacity: isUsersTable ? 0.6 : 1,
                             '&:hover': {
-                              backgroundColor: isUsersTable ? 'transparent' : 'rgba(255, 255, 255, 0.04)',
+                              backgroundColor: isUsersTable ? 'transparent' : alpha(theme.palette.action.hover, 0.08),
                             },
                           }}
                         >
@@ -251,8 +275,8 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                                      color: 'rgba(255, 193, 7, 0.9)',
+                                      backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                                      color: theme.palette.warning.main,
                                       px: 1,
                                       py: 0.25,
                                       borderRadius: '4px',
@@ -295,8 +319,9 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
               spacing={2}
               sx={{
                 p: 3,
-                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                backdropFilter: 'blur(10px)',
               }}
             >
               {isUsersTable ? (
@@ -343,11 +368,13 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
         onClose={handleCloseIdTypeDrawer}
         PaperProps={{
           sx: {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: alpha(theme.palette.background.paper, 0.95),
             backdropFilter: 'blur(20px)',
             borderTopLeftRadius: '16px',
             borderTopRightRadius: '16px',
             maxHeight: '70vh',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            borderBottom: 'none',
           },
         }}
       >
@@ -375,17 +402,17 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                     borderRadius: '12px',
                     mb: 1,
                     backgroundColor: watchedValues.id_type === type.value
-                      ? 'rgba(25, 118, 210, 0.08)'
+                      ? alpha(theme.palette.primary.main, 0.08)
                       : 'transparent',
                     '&:hover': {
                       backgroundColor: watchedValues.id_type === type.value
-                        ? 'rgba(25, 118, 210, 0.12)'
-                        : 'rgba(0, 0, 0, 0.04)',
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : alpha(theme.palette.action.hover, 0.08),
                     },
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
                       '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.12)',
+                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
                       },
                     },
                   }}
@@ -400,8 +427,8 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                           <Typography
                             variant="caption"
                             sx={{
-                              backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                              color: 'rgba(76, 175, 80, 0.9)',
+                              backgroundColor: alpha(theme.palette.success.main, 0.1),
+                              color: theme.palette.success.main,
                               px: 1,
                               py: 0.25,
                               borderRadius: '4px',

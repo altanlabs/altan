@@ -406,6 +406,7 @@ export const GridView = memo(
         handleExpandRecord,
         setShowFieldDialog: () => setShowFieldDialog(true),
         getCommonFieldMenuItems,
+        onEditField: setEditField, // Add direct edit field handler
         // Add email column widths to column definitions
         getAdditionalColumnProps: (field) => {
           if (field.type === 'email' && emailColumnWidths[field.db_field_name]) {
@@ -446,6 +447,7 @@ export const GridView = memo(
       handleExpandRecord,
       setShowFieldDialog,
       getCommonFieldMenuItems,
+      setEditField,
       emailColumnWidths,
     ]);
 
@@ -701,7 +703,7 @@ export const GridView = memo(
               getRowId={(params) => params.data.id}
               onGridReady={onGridReady}
               onCellKeyPress={onCellKeyPress}
-              getRowHeight={() => 56}
+              getRowHeight={() => 48}
               headerHeight={headerHeight}
               onCellValueChanged={onCellValueChanged}
               components={components}

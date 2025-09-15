@@ -1,6 +1,7 @@
 export const getDefaultColumnDef = ({
   field,
   getCommonFieldMenuItems,
+  onEditField,
   cellEditor = 'agLargeTextCellEditor',
   additionalProps = {},
 }) => ({
@@ -98,9 +99,20 @@ export const getDefaultColumnDef = ({
       fieldName.includes('budget') ||
       fieldName.includes('total')
     );
+
+    const handleHeaderClick = (e) => {
+      e.stopPropagation();
+      if (onEditField) {
+        onEditField(field);
+      }
+    };
     
     return (
-      <div className="flex items-center gap-2">
+      <div 
+        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={handleHeaderClick}
+        title="Click to edit field"
+      >
         {isCurrencyField ? (
           <span style={{ fontSize: '16px', opacity: 0.7 }}>$</span>
         ) : IconComponent ? (
