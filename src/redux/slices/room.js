@@ -364,11 +364,7 @@ const slice = createSlice({
       state.authorization_requests = roomObject.authorization_requests.items || [];
 
       const memberId = guest?.member.id || user?.member.id;
-      console.log('memberId', memberId);
-      console.log('guest', guest);
-
       state.me = fetchCurrentMember(memberId, state.members);
-      console.log('state.me', state.me);
 
       if (threads?.items) {
         threads.items = threads.items.map(handleThread);
@@ -622,15 +618,7 @@ const slice = createSlice({
       state.members.byId[roomMember.id] = roomMember;
       state.members.allIds.push(roomMember.id);
 
-      // Update the me state if the member being added is the current user
-      console.log(
-        'addMember: currentUserId:',
-        currentUserId,
-        'roomMember.member.user.id:',
-        roomMember.member?.user?.id,
-      );
       if (currentUserId && roomMember.member?.user?.id === currentUserId) {
-        console.log('addMember: Updating me state for current user');
         state.me = roomMember;
       }
     },
@@ -698,7 +686,6 @@ const slice = createSlice({
     // },
     addMessage: (state, action) => {
       const message = action.payload;
-      console.log('addMessage', message);
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
@@ -1176,24 +1163,24 @@ const slice = createSlice({
         if (index !== undefined && index >= 0) {
           // Initialize buffer for ordered streaming
           if (!part.deltaBuffer) {
-            part.deltaBuffer = new Map(); // index -> delta
+            part.deltaBuffer = {}; // index -> delta (using plain object instead of Map)
             part.lastProcessedIndex = -1;
           }
-          
+
           // Store the delta at the specified index
-          part.deltaBuffer.set(index, delta);
-          
+          part.deltaBuffer[index] = delta;
+
           // Process all consecutive deltas starting from lastProcessedIndex + 1
           let currentIndex = part.lastProcessedIndex + 1;
           let newText = part.text || '';
-          
-          while (part.deltaBuffer.has(currentIndex)) {
-            newText += part.deltaBuffer.get(currentIndex);
-            part.deltaBuffer.delete(currentIndex);
+
+          while (part.deltaBuffer[currentIndex] !== undefined) {
+            newText += part.deltaBuffer[currentIndex];
+            delete part.deltaBuffer[currentIndex];
             part.lastProcessedIndex = currentIndex;
             currentIndex++;
           }
-          
+
           part.text = newText;
         } else {
           // Fallback: simple append if no index provided
@@ -2184,7 +2171,6 @@ export const createMedia =
         mime_type: fileType,
         file_content: fileContent,
       });
-      console.log('response', response.data);
       const { media_url } = response.data;
       return media_url;
     } catch (e) {

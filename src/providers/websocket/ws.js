@@ -689,6 +689,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
         case 'MessagePartUpdated':
           console.log('MessagePartUpdated', agentEvent.event_data);
+          console.log('MessagePartUpdated.index', agentEvent.event_data.index);
           dispatch(updateMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartDone':
@@ -761,6 +762,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'MESSAGE':
       console.log('MESSAGE', data);
+      dispatch(addMessage(data.data.attributes));
+      break;
+    case 'MessageNew':
       dispatch(addMessage(data.data.attributes));
       break;
     case 'MessageDelete':

@@ -16,6 +16,7 @@ import {
   selectRoomThreadMain,
   selectThreadDrawerDetails,
 } from '../../redux/slices/room';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 
 const selectIsCreation = (state) => selectThreadDrawerDetails(state)?.isCreation;
 
@@ -32,7 +33,7 @@ const MobileRoom = ({
   onSidebar,
   onClose,
 } = {}) => {
-  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   const theme = useTheme();
   const isCreation = useSelector(selectIsCreation);
 

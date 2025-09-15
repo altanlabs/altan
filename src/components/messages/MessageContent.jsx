@@ -100,7 +100,7 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       return partsContent;
     }
     return messageContent || '';
-  }, [messageParts.length, partsContent, messageContent]);
+  }, [messageParts.length, partsContent, messageContent, message.id, hasContent, partsGrouped]);
 
   // Check if message contains commits
   const commitResources = useMemo(
@@ -252,7 +252,6 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
     }
   }, [handleSaveEdit, editorRef]);
 
-  // Only show loading state if we have absolutely no content
   if (!hasContent && !message.error && !hasMessageMedia && !effectiveContent) {
     return (
       <Stack
