@@ -133,7 +133,7 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   }
 
   return (
-    <div className="flex h-full grow basis-[500px] flex-col">
+    <div className="flex h-full w-full min-w-0 flex-col">
       <View
         table={table}
         view={currentView}

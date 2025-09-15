@@ -35,14 +35,30 @@ const StyledTabs = styled(Tabs)(() => ({
   backgroundColor: 'transparent',
   padding: '0 0 0 8px',
   minWidth: 0,
+  maxWidth: '100%',
+  width: '100%',
   flex: 1,
+  overflow: 'hidden',
   '& .MuiTabs-indicator': {
     display: 'none',
   },
   '& .MuiTabs-flexContainer': {
     gap: '0px',
+    minWidth: 0,
     '& > *': {
       margin: '0 !important',
+    },
+  },
+  '& .MuiTabs-scroller': {
+    overflow: 'auto !important',
+    flexGrow: 1,
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+  '& .MuiTabs-scrollButtons': {
+    flexShrink: 0,
+    '&.Mui-disabled': {
+      opacity: 0.3,
     },
   },
   '& .MuiButtonBase-root': {
@@ -50,6 +66,7 @@ const StyledTabs = styled(Tabs)(() => ({
     minWidth: '0 !important',
     padding: '6px 12px !important',
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    flexShrink: 0,
   },
 }));
 
@@ -217,7 +234,7 @@ const TabsList = memo(
       <>
         <div
           className="google-sheets-controls"
-          style={{ display: 'flex', alignItems: 'center', marginRight: '40px' }}
+          style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}
         >
           {' '}
           <Tooltip title="Add new table">
@@ -486,7 +503,7 @@ function TableTabs({
   };
 
   return (
-    <div className="relative w-full p-0">
+    <div className="relative w-full min-w-0 p-0">
       <DragDropContext
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}
@@ -503,6 +520,7 @@ function TableTabs({
                 display: 'flex',
                 flex: 1,
                 width: '100%',
+                minWidth: 0,
                 overflowX: 'auto',
                 minHeight: '30px',
               }}
@@ -511,8 +529,21 @@ function TableTabs({
                 value={effectiveTableId}
                 variant="scrollable"
                 scrollButtons="auto"
+                allowScrollButtonsMobile
                 aria-label="Tables"
-                sx={{ flex: 1 }}
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  width: '100%',
+                  '& .MuiTabs-scrollButtons': {
+                    flexShrink: 0,
+                  },
+                  '& .MuiTabs-scroller': {
+                    flexGrow: 1,
+                    minWidth: 0,
+                  },
+                }}
               >
                 <TabsList
                   tables={validTables}

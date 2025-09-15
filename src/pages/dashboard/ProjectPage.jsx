@@ -149,14 +149,28 @@ export default function ProjectPage() {
       };
 
       return (
-        <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>
+        <div
+          className="w-full h-full min-w-0 max-w-full overflow-hidden flex flex-col relative"
+          style={{
+            width: '100% !important',
+            height: '100% !important',
+            minWidth: '0 !important',
+            maxWidth: '100% !important',
+            overflow: 'hidden !important',
+            display: 'flex !important',
+            flexDirection: 'column !important',
+            position: 'relative !important',
+            contain: 'layout style size',
+            boxSizing: 'border-box',
+          }}
+        >
           <Base
             ids={currentComponent.params.ids}
             onNavigate={handleBaseNavigation}
             altanerComponentId={currentComponent.id}
             hideChat={displayMode === 'preview'}
           />
-        </Box>
+        </div>
       );
     }
 

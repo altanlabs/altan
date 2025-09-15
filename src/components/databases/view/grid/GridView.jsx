@@ -643,10 +643,10 @@ export const GridView = memo(
     }, [triggerImport]);
 
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex-grow flex">
+      <div className="h-full w-full flex flex-col min-w-0">
+        <div className="flex-grow flex min-w-0">
           <div
-            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow relative`}
+            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} w-full h-full relative`}
             style={{
               // Base colors
               '--ag-foreground-color': theme.palette.text.primary,

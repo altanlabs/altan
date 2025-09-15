@@ -6,6 +6,7 @@ import { useParams, useLocation, useHistory } from 'react-router-dom';
 
 import ProjectHeader from './header/ProjectHeader.jsx';
 import Main from './Main.jsx';
+import FloatingChatWidget from '../../components/chat/FloatingChatWidget.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
@@ -164,6 +165,9 @@ const ProjectLayout = ({ children }) => {
       >
         <Main>{children}</Main>
       </Box>
+
+      {/* Floating Chat Widget - only show when altaner has room_id */}
+      {altaner?.room_id && <FloatingChatWidget />}
     </VoiceConversationProvider>
   );
 };

@@ -1,6 +1,7 @@
 import { IconButton, Tooltip } from '@mui/material';
 import { memo, useCallback, useRef, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import { cn } from '@lib/utils';
 
@@ -8,6 +9,7 @@ import HistoryButton from './HistoryButton.jsx';
 import MembersButton from './MembersButton.jsx';
 import NewTabButton from './NewTabButton.jsx';
 import TabItem from './TabItem.jsx';
+import { selectDisplayMode, setDisplayMode } from '../../redux/slices/altaners';
 import {
   selectTabsArray,
   selectActiveTabId,
@@ -41,10 +43,12 @@ const TabBar = ({
   onFullscreen,
   onSidebar,
 }) => {
+  const { altanerId } = useParams();
   const tabs = useSelector(selectTabsArray);
   const activeTabId = useSelector(selectActiveTabId);
   const tabsCount = useSelector(selectTabsCount);
   const mainThread = useSelector(selectMainThread);
+  const displayMode = useSelector(selectDisplayMode);
 
   const scrollContainerRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -431,6 +435,32 @@ const TabBar = ({
                 <Iconify
                   icon="mdi:fullscreen"
                   width={32}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Chat Sidebar Toggle - only show when in project/altaner context */}
+          {altanerId && (
+            <Tooltip
+              title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
+              placement="top"
+            >
+              <IconButton
+                size="small"
+                onClick={() => {
+                  // Toggle between preview and both modes only
+                  const nextMode = displayMode === 'preview' ? 'both' : 'preview';
+                  dispatch(setDisplayMode(nextMode));
+                }}
+                sx={{
+                  width: 32,
+                  height: 32,
+                }}
+              >
+                <Iconify
+                  icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
+                  width={16}
                 />
               </IconButton>
             </Tooltip>

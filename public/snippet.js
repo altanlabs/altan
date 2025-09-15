@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded',function(){
     textSpan.style.fontWeight='500';
     textSpan.style.lineHeight='14px';
     const img=document.createElement('img');
-    img.src='/logos/v2/logoWhite.svg';
+    img.src='https://www.altan.ai/logos/v2/logoWhite.svg';
     img.style.height='14px';
     img.style.marginLeft='4px';
     img.style.verticalAlign='top';
