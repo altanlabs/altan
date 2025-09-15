@@ -15,6 +15,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
   const [status, setStatus] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [intervalTime, setIntervalTime] = useState(60 * 1000); // Default polling: 1 min
+  const [apiError, setApiError] = useState(null);
 
   const intervalRef = useRef(null);
   const prevStatusRef = useRef(null);
@@ -34,6 +35,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
       const { data } = await optimai.get(`/interfaces/dev/${interfaceId}/status`);
       setStatus(data.status);
       prevStatusRef.current = data.status;
+      setApiError(null); // Clear any previous API errors
 
       // Adjust polling interval and starting flags based on status.
       if (data.status === 'running') {
@@ -43,9 +45,23 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
       } else if (data.status === 'server_error') {
         setIntervalTime(10 * 1000); // poll more frequently on error
       }
-    } catch {
-      // console.error('Error pinging backend:', error);
-      setStatus('server_error');
+    } catch (error) {
+      console.log('Status API caught error:', error);
+      
+      // The axios interceptor transforms 500+ errors to just the string 'Server error'
+      // So we check if the error is the string 'Server error' which indicates a 500+ status
+      const is500Error = error === 'Server error' || 
+                        error.response?.status === 500 || 
+                        error.status === 500 || 
+                        (error.message && error.message.includes('500'));
+      
+      if (is500Error) {
+        console.log('Setting API error for 500 status');
+        setApiError({ type: 'api_500', message: 'Server error occurred while checking status' });
+        setStatus('api_error');
+      } else {
+        setStatus('server_error');
+      }
       setIntervalTime(10 * 1000);
     }
   }, [interfaceId, isDev]);
@@ -104,7 +120,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
     }
   }, [status, isPollingActive, startDevServer]);
 
-  return { status, isStarting };
+  return { status, isStarting, apiError };
 };
 
 export default useGetInterfaceServerStatus;

@@ -499,6 +499,31 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       Restore Dev to Main
                     </Button>
                   </Tooltip>
+
+                  <Tooltip
+                    title="Clear cache and restart the development server. Use this when experiencing server errors or if the preview is not working properly."
+                    arrow
+                  >
+                    <Button
+                      variant="outlined"
+                      startIcon={<Iconify icon="mdi:restart" />}
+                      fullWidth
+                      sx={{
+                        py: 1,
+                        bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.900' : 'white'),
+                      }}
+                      onClick={async () => {
+                        try {
+                          await optimai.post(`/interfaces/dev/${ui.id}/clear-cache-restart`);
+                          console.log('Cache cleared and server restarted successfully');
+                        } catch (error) {
+                          console.error('Failed to clear cache and restart:', error);
+                        }
+                      }}
+                    >
+                      Clear Cache & Restart
+                    </Button>
+                  </Tooltip>
                 </Stack>
               </Box>
             </Box>

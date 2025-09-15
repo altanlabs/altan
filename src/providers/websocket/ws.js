@@ -487,13 +487,47 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'DeploymentUpdate':
-      dispatch(
-        updateInterfaceDeployment({
-          id: data.data.ids[0],
-          interface_id: data.data.changes.interface_id,
-          ...data.data.changes,
-        }),
-      );
+      // Try to find deployment by both possible ID formats
+      const deploymentId = data.data.ids[0];
+      const vercelDeploymentId = data.data.changes.meta_data?.deployment_info?.id;
+
+      // Get interface_id from changes, or try to find it from existing deployment
+      let interfaceId = data.data.changes.interface_id;
+
+      // If interface_id is not in changes, we need to find it by searching all interfaces
+      if (!interfaceId) {
+        console.log('Interface ID not found in changes, searching existing deployments...');
+        // This will be handled by the Redux reducer with a special flag
+        dispatch(
+          updateInterfaceDeployment({
+            id: deploymentId,
+            interface_id: null, // Signal that we need to find it
+            vercel_deployment_id: vercelDeploymentId,
+            search_all_interfaces: true,
+            ...data.data.changes,
+          }),
+        );
+      } else {
+        dispatch(
+          updateInterfaceDeployment({
+            id: deploymentId,
+            interface_id: interfaceId,
+            vercel_deployment_id: vercelDeploymentId,
+            ...data.data.changes,
+          }),
+        );
+      }
+
+      // Show success notification for completed deployments
+      if (data.data.changes.status === 'COMPLETED') {
+        // Use a timeout to ensure the notification is shown after state update
+        setTimeout(() => {
+          const event = new CustomEvent('deployment-completed', {
+            detail: { message: 'Deployment completed successfully! 🚀' },
+          });
+          window.dispatchEvent(event);
+        }, 100);
+      }
       break;
     case 'DeploymentDelete':
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));

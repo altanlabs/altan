@@ -5,7 +5,6 @@ import { useParams, useHistory } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
-import LoadingFallback from '../../components/LoadingFallback.jsx';
 import Room from '../../components/room/Room.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
@@ -15,7 +14,6 @@ import {
   selectDisplayMode,
   getAltanerById,
   clearCurrentAltaner,
-  setDisplayMode,
 } from '../../redux/slices/altaners';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
@@ -47,7 +45,6 @@ export default function ProjectPage() {
   const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
-  console.log('altaners isLoading', isLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);

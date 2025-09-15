@@ -1,5 +1,5 @@
 import { Box, Drawer, useTheme } from '@mui/material';
-// import { useSnackbar } from 'notistack';
+import { useSnackbar } from 'notistack';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import DeploymentCard from './components/DeploymentCard.jsx';
@@ -8,7 +8,6 @@ import PublishDialog from './components/PublishDialog.jsx';
 import SettingsDrawer from './components/SettingsDrawer.jsx';
 import useGetInterfaceServerStatus from './hooks/useGetInterfaceServerStatus.js';
 import InterfaceLayout from './InterfaceLayout.jsx';
-import LoadingScreen from '../../../components/loading-screen';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { selectViewType } from '../../../redux/slices/altaners';
 import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
@@ -19,7 +18,7 @@ import { dispatch, useSelector } from '../../../redux/store.js';
 function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   const theme = useTheme();
   const ws = useWebSocket();
-  // const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
   const iframeRef = useRef(null);
   const chatIframeRefCustom = useRef(null);
   const chatIframeRef = chatIframeRefProp || chatIframeRefCustom;
@@ -33,7 +32,7 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   // const [currentPath, setCurrentPath] = useState('/');
   const currentPath = '/';
   const [iframeUrl, setIframeUrl] = useState('');
-  const [viewMode, setViewMode] = useState('desktop'); // 'desktop' or 'mobile'
+  // const [viewMode, setViewMode] = useState('desktop'); // 'desktop' or 'mobile'
   const [latestDeployment, setLatestDeployment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -43,6 +42,7 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   const {
     status,
     // isStarting
+    apiError,
   } = useGetInterfaceServerStatus(id, viewType === 'preview');
 
   const baseIframeUrl = useMemo(() => {
@@ -98,9 +98,9 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   const toggleDrawer = useCallback(() => setIsDrawerOpen((prev) => !prev), []);
 
-  const handleSettingsOpen = () => {
-    setIsSettingsOpen(true);
-  };
+  // const handleSettingsOpen = () => {
+  //   setIsSettingsOpen(true);
+  // };
 
   const handleSettingsClose = () => {
     setIsSettingsOpen(false);
@@ -128,13 +128,14 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [handleReload, status]);
 
   useEffect(() => {
+    const iframe = iframeRef?.current;
     return () => {
-      if (iframeRef?.current) {
-        iframeRef.current.src = 'about:blank';
-        iframeRef.current.remove();
+      if (iframe) {
+        iframe.src = 'about:blank';
+        iframe.remove();
       }
     };
-  }, [iframeRef]);
+  }, []);
 
   useEffect(() => {
     if (ui?.deployments?.items) {
@@ -172,6 +173,21 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
     return () => dispatch(clearCodeBaseState());
   }, []);
 
+  // Listen for deployment completion events
+  useEffect(() => {
+    const handleDeploymentCompleted = (event) => {
+      enqueueSnackbar(event.detail.message, {
+        variant: 'success',
+        autoHideDuration: 4000,
+      });
+    };
+
+    window.addEventListener('deployment-completed', handleDeploymentCompleted);
+    return () => {
+      window.removeEventListener('deployment-completed', handleDeploymentCompleted);
+    };
+  }, [enqueueSnackbar]);
+
   // Add effect to watch for new commits
   useEffect(() => {
     const latestCommit = commits?.[0]?.commit_hash;
@@ -193,12 +209,12 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
         id={id}
         chatIframeRef={chatIframeRef}
         isLoading={isLoading}
-        viewMode={viewMode}
         status={status}
         iframeUrl={iframeUrl}
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
+        apiError={apiError}
       />
       {/* Drawer for viewing deployments */}
       <Drawer

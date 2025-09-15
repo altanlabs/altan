@@ -556,24 +556,92 @@ const slice = createSlice({
       }
     },
     updateInterfaceDeployment(state, action) {
-      const { id, interface_id, ...changes } = action.payload;
-      const interface_ = state.account.interfaces.find((i) => i.id === interface_id);
-      if (interface_?.deployments?.items) {
-        const deploymentIndex = interface_.deployments.items.findIndex((d) => d.id === id);
-        if (deploymentIndex !== -1) {
-          interface_.deployments.items[deploymentIndex] = {
-            ...interface_.deployments.items[deploymentIndex],
-            ...changes,
-            id,
-            interface_id,
-          };
-        } else {
-          interface_.deployments.items.push({
-            id,
-            interface_id,
-            ...changes,
-          });
+      const { id, interface_id, vercel_deployment_id, search_all_interfaces, ...changes } = action.payload;
+      console.log('Redux updateInterfaceDeployment called with:', { id, interface_id, vercel_deployment_id, search_all_interfaces, changes });
+      
+      let interface_ = null;
+      let deploymentIndex = -1;
+      
+      // If we need to search all interfaces (interface_id is null)
+      if (search_all_interfaces && !interface_id) {
+        console.log('Searching all interfaces for deployment...');
+        
+        for (const iface of state.account.interfaces) {
+          if (iface.deployments?.items) {
+            // Try to find deployment by primary ID first
+            let idx = iface.deployments.items.findIndex((d) => d.id === id);
+            
+            // If not found by primary ID, try to find by vercel deployment ID
+            if (idx === -1 && vercel_deployment_id) {
+              idx = iface.deployments.items.findIndex(
+                (d) => d.meta_data?.deployment_info?.id === vercel_deployment_id,
+              );
+            }
+            
+            // If not found by either ID, try to find by deployment_id field
+            if (idx === -1) {
+              idx = iface.deployments.items.findIndex((d) => d.deployment_id === id);
+            }
+            
+            if (idx !== -1) {
+              interface_ = iface;
+              deploymentIndex = idx;
+              console.log('Found deployment in interface:', interface_.name, 'at index:', deploymentIndex);
+              break;
+            }
+          }
         }
+      } else {
+        // Normal case: we have interface_id
+        interface_ = state.account.interfaces.find((i) => i.id === interface_id);
+        console.log('Found interface:', interface_?.name || 'NOT FOUND');
+        
+        if (interface_?.deployments?.items) {
+          console.log('Existing deployments:', interface_.deployments.items.map(d => ({ id: d.id, deployment_id: d.deployment_id, vercel_id: d.meta_data?.deployment_info?.id })));
+          
+          // Try to find deployment by primary ID first
+          deploymentIndex = interface_.deployments.items.findIndex((d) => d.id === id);
+          console.log('Search by primary ID result:', deploymentIndex);
+
+          // If not found by primary ID, try to find by vercel deployment ID
+          if (deploymentIndex === -1 && vercel_deployment_id) {
+            deploymentIndex = interface_.deployments.items.findIndex(
+              (d) => d.meta_data?.deployment_info?.id === vercel_deployment_id,
+            );
+            console.log('Search by vercel ID result:', deploymentIndex);
+          }
+
+          // If not found by either ID, try to find by deployment_id field
+          if (deploymentIndex === -1) {
+            deploymentIndex = interface_.deployments.items.findIndex((d) => d.deployment_id === id);
+            console.log('Search by deployment_id field result:', deploymentIndex);
+          }
+        }
+      }
+      
+      if (interface_ && deploymentIndex !== -1) {
+        console.log('Updating existing deployment at index:', deploymentIndex);
+        interface_.deployments.items[deploymentIndex] = {
+          ...interface_.deployments.items[deploymentIndex],
+          ...changes,
+          id: interface_.deployments.items[deploymentIndex].id, // Keep original ID
+          interface_id: interface_.id, // Use the found interface ID
+        };
+      } else if (interface_id && interface_) {
+        console.log('Creating new deployment');
+        // If still not found but we have interface_id, create new deployment
+        if (!interface_.deployments) {
+          interface_.deployments = { items: [] };
+        } else if (!interface_.deployments.items) {
+          interface_.deployments.items = [];
+        }
+        interface_.deployments.items.push({
+          id,
+          interface_id,
+          ...changes,
+        });
+      } else {
+        console.log('Could not find interface or deployment to update');
       }
     },
     deleteInterfaceDeployment(state, action) {
