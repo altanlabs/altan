@@ -19,7 +19,7 @@ function InterfaceLayout({
   id,
   chatIframeRef,
   isLoading,
-  viewMode,
+  // viewMode,
   status,
   iframeUrl,
   productionUrl,

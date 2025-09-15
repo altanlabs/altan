@@ -49,11 +49,12 @@ function Preview({
     } else {
       dispatch(setPreviewMode('production'));
     }
-  }, [interfaceId]); // Removed previewMode from dependencies
+  }, [interfaceId, productionUrl]); // Added productionUrl to dependencies
 
   // Effect to update iframe src when currentUrl changes
   useEffect(() => {
     if (iframeRef.current && currentUrl && iframeRef.current.src !== currentUrl) {
+      // eslint-disable-next-line no-param-reassign
       iframeRef.current.src = currentUrl;
     }
   }, [currentUrl, iframeRef]);
@@ -76,13 +77,10 @@ function Preview({
         iframe.parentNode.replaceChild(newIframe, iframe);
 
         // Update the ref to point to the new iframe
-        Object.defineProperty(iframeRef, 'current', {
-          value: newIframe,
-          writable: true,
-          configurable: true,
-        });
-      } catch (error) {
-        console.error('Error navigating to path:', error);
+        // eslint-disable-next-line no-param-reassign
+        iframeRef.current = newIframe;
+      } catch {
+        // console.error('Error navigating to path:', error);
       }
     }
 
@@ -121,8 +119,8 @@ function Preview({
       setIsSendingError(true);
       try {
         await optimai.post(`/interfaces/dev/${interfaceId}/send-dev-error`, data);
-      } catch (err) {
-        console.error('Error sending error to agent:', err);
+      } catch {
+        // console.error('Error sending error to agent:', err);
       } finally {
         const timeoutId = setTimeout(() => setIsSendingError(false), 4000);
         return () => clearTimeout(timeoutId);
@@ -136,6 +134,7 @@ function Preview({
       flex={1}
       sx={{ position: 'relative' }}
     >
+
       {(!status || status === 'stopped' || status === 'running:stalled') &&
         previewMode === 'development' && <LoadingFrame status={status} />}
       {(status === 'running' || previewMode === 'production') && (

@@ -5,7 +5,6 @@ import { useParams, useHistory } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
-import LoadingFallback from '../../components/LoadingFallback.jsx';
 import Room from '../../components/room/Room.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
@@ -15,11 +14,11 @@ import {
   selectDisplayMode,
   getAltanerById,
   clearCurrentAltaner,
-  setDisplayMode,
 } from '../../redux/slices/altaners';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
+import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
@@ -150,14 +149,28 @@ export default function ProjectPage() {
       };
 
       return (
-        <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>
+        <div
+          className="w-full h-full min-w-0 max-w-full overflow-hidden flex flex-col relative"
+          style={{
+            width: '100% !important',
+            height: '100% !important',
+            minWidth: '0 !important',
+            maxWidth: '100% !important',
+            overflow: 'hidden !important',
+            display: 'flex !important',
+            flexDirection: 'column !important',
+            position: 'relative !important',
+            contain: 'layout style size',
+            boxSizing: 'border-box',
+          }}
+        >
           <Base
             ids={currentComponent.params.ids}
             onNavigate={handleBaseNavigation}
             altanerComponentId={currentComponent.id}
             hideChat={displayMode === 'preview'}
           />
-        </Box>
+        </div>
       );
     }
 
@@ -185,7 +198,7 @@ export default function ProjectPage() {
   };
 
   if (isLoading) {
-    return <LoadingFallback />;
+    return <LoadingScreen />;
   }
 
   // Mobile layout

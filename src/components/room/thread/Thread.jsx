@@ -150,11 +150,9 @@ const Thread = ({
             history.replace('/404');
           } else {
             console.log('🧵 Thread fetched successfully, managing subscription');
-            console.log('🧵 Setting hasLoaded to true in 1.5s');
-            setTimeout(() => {
-              console.log('🧵 Setting hasLoaded to true NOW');
-              setHasLoaded(true);
-            }, 1500);
+            // Set hasLoaded immediately when thread is fetched successfully
+            // The ThreadMessages component will handle its own loading state
+            setHasLoaded(true);
           }
         })
         .catch((error) => {
@@ -167,12 +165,6 @@ const Thread = ({
       // so empty state can show
       setHasLoaded(true);
     } else {
-      console.log('🧵 Conditions not met for thread fetch, current state:', {
-        hasThreadId: !!threadId,
-        isDifferentThread: threadId !== lastThreadId,
-        notCreation: !isCreation,
-        websocketOpen: !!isOpen,
-      });
     }
   }, [threadId, isCreation, isOpen]);
 

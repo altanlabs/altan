@@ -9,13 +9,6 @@ const DeploymentCard = ({ deployment }) => {
   const [isWorking, setIsWorking] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
-  // Reset isWorking when deployment changes
-  useEffect(() => {
-    setIsWorking(false);
-  }, [deployment]);
-
-  // Return null if no deployment or if deployment is from dev branch
-
   const handleFixWithAI = useCallback(
     async (deploymentId) => {
       try {
@@ -35,8 +28,12 @@ const DeploymentCard = ({ deployment }) => {
     setIsWorking(false);
   }, [deployment]);
 
-  if (!deployment || deployment?.meta_data?.deployment_info?.meta?.githubCommitRef === 'dev')
+  // Return null if no deployment, if deployment is from dev branch, or if completed
+  if (!deployment ||
+      deployment?.meta_data?.deployment_info?.meta?.githubCommitRef === 'dev' ||
+      deployment?.status === 'COMPLETED') {
     return null;
+  }
 
   const renderDeploymentContent = () => {
     switch (deployment.status) {

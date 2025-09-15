@@ -25,6 +25,8 @@ export const createColumnDefs = ({
   handleExpandRecord,
   setShowFieldDialog,
   getCommonFieldMenuItems,
+  onEditField,
+  getAdditionalColumnProps,
 }) => {
   const getFieldIcon = (fieldType) => {
     return FIELD_TYPES.find((type) => type.id === fieldType)?.icon;
@@ -41,38 +43,43 @@ export const createColumnDefs = ({
         headerName: field.name,
       };
 
+      // Get additional column props if provided
+      const additionalProps = getAdditionalColumnProps ? getAdditionalColumnProps(field) : {};
+
       switch (field.type) {
         case 'trigger':
-          return getTriggerColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getTriggerColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'json':
-          return getJsonColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getJsonColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'user':
-          return getUserColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, members });
+          return getUserColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, members, onEditField, additionalProps });
         case 'checkbox':
-          return getCheckboxColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getCheckboxColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'reference':
-          return getReferenceColumnDef({ field: fieldWithIcon, table, getCommonFieldMenuItems });
+          return getReferenceColumnDef({ field: fieldWithIcon, table, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'singleSelect':
         case 'multiSelect':
-          return getSelectColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getSelectColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'longText':
-          return getLongTextColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getLongTextColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'rating':
-          return getRatingColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getRatingColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'date':
           return getDefaultColumnDef({
             field: fieldWithIcon,
             getCommonFieldMenuItems,
+            onEditField,
             cellEditor: 'agDateCellEditor',
+            additionalProps,
           });
         case 'url':
-          return getUrlColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getUrlColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'attachment':
-          return getAttachmentColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getAttachmentColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         case 'currency':
-          return getCurrencyColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getCurrencyColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
         default:
-          return getDefaultColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems });
+          return getDefaultColumnDef({ field: fieldWithIcon, getCommonFieldMenuItems, onEditField, additionalProps });
       }
     }),
     // Add system columns at the end before the "New Column" definition

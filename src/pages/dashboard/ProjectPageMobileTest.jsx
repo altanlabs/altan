@@ -531,14 +531,24 @@ export default function ProjectPageMobileTest() {
     // For base component
     if (type === 'base' && component?.params?.ids?.[0]) {
       return (
-        <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}
+        >
           <Base
             ids={component.params.ids}
             altanerComponentId={component.id}
             hideChat={true}
             {...finalProps}
           />
-        </Box>
+        </div>
       );
     }
 
@@ -602,14 +612,24 @@ export default function ProjectPageMobileTest() {
       };
 
       return (
-        <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}
+        >
           <Base
             ids={currentComponent.params.ids}
             onNavigate={handleBaseNavigation}
             altanerComponentId={currentComponent.id}
             hideChat={true} // Always hide chat in this test
           />
-        </Box>
+        </div>
       );
     }
 

@@ -13,7 +13,6 @@ import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
-import { getFlows } from '../../redux/slices/flows';
 import {
   getAccount,
   getAccountAttribute,
@@ -127,13 +126,8 @@ const DashboardLayout = ({ children }) => {
         dispatch(getConnections(accountId));
         dispatch(getAccountMembers(accountId));
         [
-          ['altaners'],
           ['subscriptions'],
-          ['interfaces'],
-          ['agents'],
-          ['webhooks', 'apikeys', 'developer_apps', 'apps', 'connections'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
-        dispatch(getFlows(accountId));
         dispatch(fetchNotifications());
       });
     }

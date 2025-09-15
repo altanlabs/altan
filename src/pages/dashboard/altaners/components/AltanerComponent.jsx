@@ -81,6 +81,27 @@ const AltanerComponent = ({
   }
 
   // Apply a unique key on the loadable component instance, not inside the componentProps object
+  // Special containment wrapper for base components to prevent width overflow
+  if (altanerComponentType === 'base') {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          minWidth: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <LoadableComponent
+          key={`altaner-component-${altanerComponentId}`}
+          {...componentProps}
+        />
+      </div>
+    );
+  }
+
   return (
     <LoadableComponent
       key={`altaner-component-${altanerComponentId}`}

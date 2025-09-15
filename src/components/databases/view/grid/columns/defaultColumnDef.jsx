@@ -1,6 +1,7 @@
 export const getDefaultColumnDef = ({
   field,
   getCommonFieldMenuItems,
+  onEditField,
   cellEditor = 'agLargeTextCellEditor',
   additionalProps = {},
 }) => ({
@@ -21,17 +22,17 @@ export const getDefaultColumnDef = ({
   // Simple cell style that doesn't interfere with AG-Grid's layout
   cellStyle: (params) => {
     const fieldName = field.name?.toLowerCase() || field.db_field_name?.toLowerCase() || '';
-    const isCurrencyField = field.type === 'number' && (
-      fieldName.includes('price') || 
-      fieldName.includes('cost') || 
-      fieldName.includes('revenue') || 
-      fieldName.includes('amount') || 
-      fieldName.includes('fee') || 
-      fieldName.includes('salary') ||
-      fieldName.includes('budget') ||
-      fieldName.includes('total')
-    );
-    
+    const isCurrencyField =
+      field.type === 'number' &&
+      (fieldName.includes('price') ||
+        fieldName.includes('cost') ||
+        fieldName.includes('revenue') ||
+        fieldName.includes('amount') ||
+        fieldName.includes('fee') ||
+        fieldName.includes('salary') ||
+        fieldName.includes('budget') ||
+        fieldName.includes('total'));
+
     return {
       display: 'flex',
       alignItems: 'center',
@@ -54,18 +55,19 @@ export const getDefaultColumnDef = ({
     if (field.type === 'number') {
       const value = params.value;
       if (value === null || value === undefined || value === '') return '';
-      
+
       // Check if this looks like a currency field based on field name
       const fieldName = field.name?.toLowerCase() || field.db_field_name?.toLowerCase() || '';
-      const isCurrencyField = fieldName.includes('price') || 
-                             fieldName.includes('cost') || 
-                             fieldName.includes('revenue') || 
-                             fieldName.includes('amount') || 
-                             fieldName.includes('fee') || 
-                             fieldName.includes('salary') ||
-                             fieldName.includes('budget') ||
-                             fieldName.includes('total');
-      
+      const isCurrencyField =
+        fieldName.includes('price') ||
+        fieldName.includes('cost') ||
+        fieldName.includes('revenue') ||
+        fieldName.includes('amount') ||
+        fieldName.includes('fee') ||
+        fieldName.includes('salary') ||
+        fieldName.includes('budget') ||
+        fieldName.includes('total');
+
       if (isCurrencyField) {
         // Format as currency
         return new Intl.NumberFormat('en-US', {
@@ -75,7 +77,7 @@ export const getDefaultColumnDef = ({
           maximumFractionDigits: 0,
         }).format(Number(value));
       }
-      
+
       return Number(value)
         .toFixed(2)
         .replace(/\.?0+$/, '');
@@ -85,22 +87,33 @@ export const getDefaultColumnDef = ({
 
   headerComponent: (params) => {
     const IconComponent = field.icon;
-    
+
     // Check if this looks like a currency field for number types
     const fieldName = field.name?.toLowerCase() || field.db_field_name?.toLowerCase() || '';
-    const isCurrencyField = field.type === 'number' && (
-      fieldName.includes('price') || 
-      fieldName.includes('cost') || 
-      fieldName.includes('revenue') || 
-      fieldName.includes('amount') || 
-      fieldName.includes('fee') || 
-      fieldName.includes('salary') ||
-      fieldName.includes('budget') ||
-      fieldName.includes('total')
-    );
-    
+    const isCurrencyField =
+      field.type === 'number' &&
+      (fieldName.includes('price') ||
+        fieldName.includes('cost') ||
+        fieldName.includes('revenue') ||
+        fieldName.includes('amount') ||
+        fieldName.includes('fee') ||
+        fieldName.includes('salary') ||
+        fieldName.includes('budget') ||
+        fieldName.includes('total'));
+
+    const handleHeaderClick = (e) => {
+      e.stopPropagation();
+      if (onEditField) {
+        onEditField(field);
+      }
+    };
+
     return (
-      <div className="flex items-center gap-2">
+      <div
+        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={handleHeaderClick}
+        title="Click to edit field"
+      >
         {isCurrencyField ? (
           <span style={{ fontSize: '16px', opacity: 0.7 }}>$</span>
         ) : IconComponent ? (

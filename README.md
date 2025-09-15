@@ -10,3 +10,4 @@ bun cap open ios
 WEB
 bun run build
 firebase deploy
+

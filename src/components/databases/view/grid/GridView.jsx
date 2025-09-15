@@ -406,6 +406,7 @@ export const GridView = memo(
         handleExpandRecord,
         setShowFieldDialog: () => setShowFieldDialog(true),
         getCommonFieldMenuItems,
+        onEditField: setEditField, // Add direct edit field handler
         // Add email column widths to column definitions
         getAdditionalColumnProps: (field) => {
           if (field.type === 'email' && emailColumnWidths[field.db_field_name]) {
@@ -446,6 +447,7 @@ export const GridView = memo(
       handleExpandRecord,
       setShowFieldDialog,
       getCommonFieldMenuItems,
+      setEditField,
       emailColumnWidths,
     ]);
 
@@ -643,10 +645,10 @@ export const GridView = memo(
     }, [triggerImport]);
 
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex-grow flex">
+      <div className="h-full w-full flex flex-col min-w-0">
+        <div className="flex-grow flex min-w-0">
           <div
-            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} flex-grow relative`}
+            className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''} w-full h-full relative`}
             style={{
               // Base colors
               '--ag-foreground-color': theme.palette.text.primary,
@@ -701,7 +703,7 @@ export const GridView = memo(
               getRowId={(params) => params.data.id}
               onGridReady={onGridReady}
               onCellKeyPress={onCellKeyPress}
-              getRowHeight={() => 56}
+              getRowHeight={() => 48}
               headerHeight={headerHeight}
               onCellValueChanged={onCellValueChanged}
               components={components}

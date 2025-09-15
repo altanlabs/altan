@@ -287,15 +287,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'WebhookNew':
       dispatch(addWebhook(data.data.attributes));
       break;
-    case 'FormNew':
-      dispatch(addForm(data.data.attributes));
-      break;
-    case 'FormUpdate':
-      dispatch(patchForm({ id: data.data.ids[0], ...data.data.changes }));
-      break;
-    case 'FormDelete':
-      dispatch(deleteForm(data.data.ids[0]));
-      break;
     case 'WebhookDelete':
       dispatch(deleteWebhook(data.data.ids[0]));
       break;
@@ -499,36 +490,47 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'DeploymentUpdate':
-      // Find interface_id by searching through all interfaces and their deployments
+      // Try to find deployment by both possible ID formats
       const deploymentId = data.data.ids[0];
-      const findInterfaceIdForDeployment = (getState) => {
-        const state = getState();
-        const interfaces = state.general.account?.interfaces || [];
-        for (const interface_ of interfaces) {
-          if (interface_.deployments?.items) {
-            const deployment = interface_.deployments.items.find((d) => d.id === deploymentId);
-            if (deployment) {
-              return interface_.id;
-            }
-          }
-        }
-        return null;
-      };
+      const vercelDeploymentId = data.data.changes.meta_data?.deployment_info?.id;
 
-      dispatch((dispatch, getState) => {
-        const interface_id = findInterfaceIdForDeployment(getState);
-        if (interface_id) {
-          dispatch(
-            updateInterfaceDeployment({
-              id: deploymentId,
-              interface_id,
-              ...data.data.changes,
-            }),
-          );
-        } else {
-          console.warn('Could not find interface_id for deployment:', deploymentId);
-        }
-      });
+      // Get interface_id from changes, or try to find it from existing deployment
+      let interfaceId = data.data.changes.interface_id;
+
+      // If interface_id is not in changes, we need to find it by searching all interfaces
+      if (!interfaceId) {
+        console.log('Interface ID not found in changes, searching existing deployments...');
+        // This will be handled by the Redux reducer with a special flag
+        dispatch(
+          updateInterfaceDeployment({
+            id: deploymentId,
+            interface_id: null, // Signal that we need to find it
+            vercel_deployment_id: vercelDeploymentId,
+            search_all_interfaces: true,
+            ...data.data.changes,
+          }),
+        );
+      } else {
+        dispatch(
+          updateInterfaceDeployment({
+            id: deploymentId,
+            interface_id: interfaceId,
+            vercel_deployment_id: vercelDeploymentId,
+            ...data.data.changes,
+          }),
+        );
+      }
+
+      // Show success notification for completed deployments
+      if (data.data.changes.status === 'COMPLETED') {
+        // Use a timeout to ensure the notification is shown after state update
+        setTimeout(() => {
+          const event = new CustomEvent('deployment-completed', {
+            detail: { message: 'Deployment completed successfully! 🚀' },
+          });
+          window.dispatchEvent(event);
+        }, 100);
+      }
       break;
     case 'DeploymentDelete':
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
@@ -556,17 +558,19 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'RecordsNew':
       // Extract table_id from data structure
-      const newTableId = data.data.table_id || data.data.id;
-      const newTableName = data.data.table_name;
-      data.data.records.forEach((record) => {
-        dispatch(
-          addTableRecord({
-            tableId: newTableId,
-            tableName: newTableName,
-            record: record,
-          }),
-        );
-      });
+      const newTableId = data.table_id || data.data.table_id || data.data.id;
+      const newTableName = data.table_db_name || data.data.table_name;
+      if (data.data.records && Array.isArray(data.data.records)) {
+        data.data.records.forEach((record) => {
+          dispatch(
+            addTableRecord({
+              tableId: newTableId,
+              tableName: newTableName,
+              record: record,
+            }),
+          );
+        });
+      }
       break;
     case 'RecordsUpdate':
       const updateTableId = data.data.table_id || data.data.id;

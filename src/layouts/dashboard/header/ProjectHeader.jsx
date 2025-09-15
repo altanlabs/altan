@@ -548,29 +548,6 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                  {altaner?.room_id && !isMobile && (
-                    <Tooltip
-                      title={displayMode === 'preview' ? 'Show Chat Sidebar' : 'Hide Chat Sidebar'}
-                    >
-                      <HeaderIconButton
-                        onClick={() => {
-                          // Toggle between preview and both modes only
-                          const nextMode = displayMode === 'preview' ? 'both' : 'preview';
-                          dispatch(setDisplayMode(nextMode));
-                        }}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                        }}
-                      >
-                        <Iconify
-                          icon={displayMode === 'preview' ? 'mdi:dock-right' : 'mdi:dock-left'}
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </HeaderIconButton>
-                    </Tooltip>
-                  )}
                   <MobileActionsMenu
                     onDistribution={() => setOpenSettings(true)}
                     onHistory={() => setOpenVersionHistory(true)}

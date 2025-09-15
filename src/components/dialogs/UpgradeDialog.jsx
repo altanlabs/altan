@@ -34,7 +34,6 @@ const UpgradeDialog = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
-  console.log('isAccountFree', isAccountFree);
   const history = useHistory();
 
   const handleUpgrade = async () => {

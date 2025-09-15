@@ -45,7 +45,7 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
     if (params.data.id === '+') return null;
     const truncatedId = typeof params.value === 'string' ? params.value.slice(0, 4) : params.value;
     return (
-      <div className="flex items-center gap-2 w-full h-full group">
+      <div className="flex items-center justify-center w-full h-full group relative">
         <Tooltip
           title="Expand record"
           enterDelay={400}
@@ -57,13 +57,15 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
           <Iconify
             icon="mdi:arrow-expand"
             color="text.secondary"
+            className="cursor-pointer mr-2"
+            width={12}
             onClick={(e) => {
               e.stopPropagation();
               handleExpandRecord(params.data.id);
             }}
           />
         </Tooltip>
-        <div className="w-6">{truncatedId}</div>
+        <span className="text-xs font-mono">{truncatedId}</span>
       </div>
     );
   },

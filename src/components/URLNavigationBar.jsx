@@ -1,7 +1,7 @@
-import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip, Button } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import CodeToggleButton from './buttons/CodeToggleButton';
 import EditToggleButton from './buttons/EditToggleButton';
@@ -16,17 +16,46 @@ function URLNavigationBar({
   productionUrl,
   disabled = false,
 }) {
-
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
+  const [showPublishedTooltip, setShowPublishedTooltip] = useState(false);
   const inputRef = useRef(null);
 
   // Get preview mode and edit mode from Redux
   const previewMode = useSelector(selectPreviewMode);
   const editMode = useSelector(selectEditMode);
 
+  // Show tooltip when in production mode for the first time
+  useEffect(() => {
+    const hasSeenTooltip = localStorage.getItem('publishedVersionTooltipSeen') === 'true';
+
+    if (previewMode === 'production' && productionUrl && !disabled && !hasSeenTooltip) {
+      const timer = setTimeout(() => {
+        setShowPublishedTooltip(true);
+      }, 500); // Small delay to ensure smooth transition
+
+      // Auto-hide after 10 seconds
+      const autoHideTimer = setTimeout(() => {
+        setShowPublishedTooltip(false);
+      }, 10500); // 500ms delay + 10s display
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(autoHideTimer);
+      };
+    }
+  }, [previewMode, productionUrl, disabled]);
+
   const handleTogglePreviewMode = () => {
     dispatch(togglePreviewMode());
+    // Hide tooltip when switching modes
+    setShowPublishedTooltip(false);
+  };
+
+  const handleUnderstoodTooltip = () => {
+    // Store in localStorage that user has seen this tooltip
+    localStorage.setItem('publishedVersionTooltipSeen', 'true');
+    setShowPublishedTooltip(false);
   };
 
   const handleToggleEditMode = () => {
@@ -187,10 +216,79 @@ function URLNavigationBar({
           {/* Preview Mode Toggle - Only show if production URL is available */}
           {productionUrl && (
             <Tooltip
-              title={`Switch to ${previewMode === 'production' ? 'Development' : 'Production'} Mode`}
+              open={showPublishedTooltip}
+              disableFocusListener
+              disableHoverListener
+              disableTouchListener
+              placement="bottom"
+              arrow
+              title={
+                <Box sx={{ p: 1, maxWidth: 280 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 1,
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    Showing the last published version
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 2,
+                      lineHeight: 1.4,
+                      fontSize: '0.8rem',
+                      opacity: 0.9,
+                    }}
+                  >
+                    This is your live version that users see. Click the &quot;Live&quot; button to switch to development mode.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleUnderstoodTooltip}
+                    startIcon={<Iconify icon="mdi:check" sx={{ width: 14, height: 14 }} />}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.75rem',
+                      py: 0.5,
+                      px: 1.5,
+                      borderRadius: 1.5,
+                      background: `linear-gradient(135deg, 
+                        ${theme.palette.primary.main} 0%, 
+                        ${theme.palette.primary.dark} 100%)`,
+                      '&:hover': {
+                        background: `linear-gradient(135deg, 
+                          ${theme.palette.primary.dark} 0%, 
+                          ${theme.palette.primary.main} 100%)`,
+                      },
+                    }}
+                  >
+                    Understood
+                  </Button>
+                </Box>
+              }
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: alpha(theme.palette.background.paper, 0.95),
+                    backdropFilter: 'blur(10px)',
+                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    borderRadius: 2,
+                    boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
+                    color: theme.palette.text.primary,
+                    fontSize: '0.875rem',
+                    maxWidth: 320,
+                    p: 0,
+                  },
+                },
+              }}
             >
               <Chip
-                label={previewMode === 'production' ? 'PROD' : 'DEV'}
+                label={previewMode === 'production' ? 'Live' : 'Dev'}
                 size="small"
                 onClick={handleTogglePreviewMode}
                 disabled={disabled}
@@ -225,11 +323,11 @@ function URLNavigationBar({
               />
             </Tooltip>
           )}
-          <EditToggleButton
+          {/* <EditToggleButton
             editMode={editMode}
             onToggle={handleToggleEditMode}
             disabled={disabled}
-          />
+          /> */}
           <CodeToggleButton />
         </Stack>
       </Box>

@@ -15,6 +15,7 @@ import { dispatch, useSelector } from '../../../redux/store';
 import CreateBaseDialog from '../base/CreateBaseDialog.jsx';
 import NoEntityPlaceholder from '../placeholders/NoEntityPlaceholder.jsx';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
+import { CompactLayout } from '../../../layouts/dashboard/index.js';
 
 // const selectBasesError = (state) => state.bases.error;
 
