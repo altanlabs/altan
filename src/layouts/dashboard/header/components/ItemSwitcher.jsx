@@ -36,6 +36,7 @@ const ItemSwitcher = memo(
     const theme = useTheme();
     const dispatch = useDispatch();
     const flows = useSelector((state) => state.flows.flows || []);
+    console.log('flows', flows);
     const agents = useSelector((state) => state.general.account?.agents || []);
 
     const [searchQuery, setSearchQuery] = useState('');

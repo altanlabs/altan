@@ -127,7 +127,6 @@ const ProjectLayout = ({ children }) => {
           ['subscriptions'],
           // ['altaners'],
           // ['interfaces'],
-          ['workflows'],
           ['agents'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));

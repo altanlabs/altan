@@ -22,6 +22,7 @@ import {
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
+import { getFlows } from '../../redux/slices/flows.js';
 
 const AltanLogoFixed = (
   <AltanLogo
@@ -87,8 +88,6 @@ const DashboardLayout = ({ children }) => {
 
   const handleToggleNav = useCallback(() => setOpen((prev) => !prev), []);
 
-  const handleCloseNav = useCallback(() => setOpen(false), []);
-
   useEffect(() => {
     if (!!ws?.isOpen && !!accountId && !!user) {
       ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
@@ -129,6 +128,7 @@ const DashboardLayout = ({ children }) => {
           ['subscriptions'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(fetchNotifications());
+        dispatch(getFlows(accountId));
       });
     }
   }, [accountId, accountInitialized, accountLoading]);
