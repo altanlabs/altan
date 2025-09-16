@@ -139,20 +139,50 @@ function Preview({
         previewMode === 'development' && <LoadingFrame status={status} />}
       {(status === 'running' || previewMode === 'production') && (
         <>
-          <iframe
-            id="preview-iframe"
-            src={currentUrl}
-            onLoad={handleIframeLoad}
-            ref={iframeRef}
-            allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
-            style={{
-              width: iframeViewMode === 'mobile' ? '375px' : '100%',
+          <Box
+            sx={{
+              width: '100%',
               height: '100%',
-              border: 'none',
-              margin: iframeViewMode === 'mobile' ? '0 auto' : undefined,
-              display: 'block',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: iframeViewMode === 'desktop' ? 'stretch' : 'flex-start',
+              pt: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 2 : 0,
             }}
-          />
+          >
+            <Box
+              sx={{
+                width: 
+                  iframeViewMode === 'mobile' ? '375px' :
+                  iframeViewMode === 'tablet' ? '768px' : 
+                  '100%',
+                height: iframeViewMode === 'desktop' ? '100%' : 'calc(100% - 16px)',
+                maxWidth: '100%',
+                borderRadius: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 2 : 0,
+                overflow: 'hidden',
+                boxShadow: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 
+                  '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)' : 
+                  'none',
+                border: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 
+                  '1px solid rgba(0, 0, 0, 0.08)' : 
+                  'none',
+                position: 'relative',
+              }}
+            >
+              <iframe
+                id="preview-iframe"
+                src={currentUrl}
+                onLoad={handleIframeLoad}
+                ref={iframeRef}
+                allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          </Box>
           {fatalError && (
             <PreviewErrorOverlay
               error={fatalError}

@@ -1,0 +1,6 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+Never use npm, always use bun!

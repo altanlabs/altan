@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 import { useState, useRef, useEffect } from 'react';
 
 import CodeToggleButton from './buttons/CodeToggleButton';
-import EditToggleButton from './buttons/EditToggleButton';
+import ViewModeToggle from './buttons/ViewModeToggle';
 import Iconify from './iconify';
-import { selectPreviewMode, selectEditMode, togglePreviewMode, toggleEditMode } from '../redux/slices/previewControl';
+import { selectPreviewMode, togglePreviewMode } from '../redux/slices/previewControl';
 import { useSelector, dispatch } from '../redux/store';
 
 function URLNavigationBar({
@@ -21,9 +21,8 @@ function URLNavigationBar({
   const [showPublishedTooltip, setShowPublishedTooltip] = useState(false);
   const inputRef = useRef(null);
 
-  // Get preview mode and edit mode from Redux
+  // Get preview mode from Redux
   const previewMode = useSelector(selectPreviewMode);
-  const editMode = useSelector(selectEditMode);
 
   // Show tooltip when in production mode for the first time
   useEffect(() => {
@@ -56,10 +55,6 @@ function URLNavigationBar({
     // Store in localStorage that user has seen this tooltip
     localStorage.setItem('publishedVersionTooltipSeen', 'true');
     setShowPublishedTooltip(false);
-  };
-
-  const handleToggleEditMode = () => {
-    dispatch(toggleEditMode());
   };
 
   const handleSubmit = (e) => {
@@ -328,6 +323,7 @@ function URLNavigationBar({
             onToggle={handleToggleEditMode}
             disabled={disabled}
           /> */}
+          <ViewModeToggle disabled={disabled} />
           <CodeToggleButton />
         </Stack>
       </Box>

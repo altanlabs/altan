@@ -5,7 +5,7 @@ const initialState = {
   navigationPath: null,
   shouldRefresh: false,
   shouldOpenInNewTab: false,
-  iframeViewMode: 'desktop', // 'mobile' or 'desktop'
+  iframeViewMode: 'desktop', // 'desktop', 'tablet', or 'mobile'
   previewMode: 'production', // 'production' or 'development'
   editMode: false, // Edit mode for component editing
   actionId: null, // Used to trigger actions
@@ -33,9 +33,12 @@ const previewControlSlice = createSlice({
       state.actionId = Date.now(); // Trigger action
     },
 
-    // Action to toggle iframe view mode
+    // Action to toggle iframe view mode (cycles through desktop -> tablet -> mobile -> desktop)
     toggleIframeViewMode: (state) => {
-      state.iframeViewMode = state.iframeViewMode === 'mobile' ? 'desktop' : 'mobile';
+      const modes = ['desktop', 'tablet', 'mobile'];
+      const currentIndex = modes.indexOf(state.iframeViewMode);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      state.iframeViewMode = modes[nextIndex];
       state.actionId = Date.now(); // Trigger action
     },
 

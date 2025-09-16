@@ -9,6 +9,8 @@ import {
   Button,
   IconButton,
   TextField,
+  Box,
+  InputAdornment,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useState } from 'react';
@@ -21,6 +23,7 @@ import Logo from '../logo';
 function ConnectionDialog({ connection }) {
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState(connection.name);
+  const [copyButtonText, setCopyButtonText] = useState('Copy');
   const { enqueueSnackbar } = useSnackbar();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -32,6 +35,18 @@ function ConnectionDialog({ connection }) {
         enqueueSnackbar('Error renaming connection', { variant: 'error' });
       })
       .finally(() => handleClose());
+
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(connection.id);
+      setCopyButtonText('Copied!');
+      enqueueSnackbar('Connection ID copied to clipboard', { variant: 'success' });
+      setTimeout(() => setCopyButtonText('Copy'), 2000);
+    } catch (error) {
+      console.error('Failed to copy connection ID:', error);
+      enqueueSnackbar('Failed to copy connection ID', { variant: 'error' });
+    }
+  };
 
   return (
     <>
@@ -69,6 +84,41 @@ function ConnectionDialog({ connection }) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             margin="normal"
+          />
+          
+          <TextField
+            variant="filled"
+            fullWidth
+            label="Connection ID"
+            value={connection.id}
+            margin="normal"
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleCopyId}
+                    edge="end"
+                    size="small"
+                    sx={{ 
+                      color: 'primary.main',
+                      '&:hover': { bgcolor: 'primary.lighter' }
+                    }}
+                  >
+                    <Iconify 
+                      icon={copyButtonText === 'Copied!' ? 'eva:checkmark-circle-2-fill' : 'solar:copy-bold'} 
+                      width={20}
+                    />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiInputBase-input': {
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+              },
+            }}
           />
           {connection.details && (
             <Stack
