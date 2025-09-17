@@ -9,10 +9,6 @@ import { optimai_shop } from '../../utils/axios';
 // Credit packages with their Stripe price IDs
 const CREDIT_PACKAGES = [
   {
-    id: 'price_1Qr6FbKUsA7CGHPx2phx9KQS',
-    price: 10,
-  },
-  {
     id: 'price_1Qr6FbKUsA7CGHPxHYMOIVD9',
     price: 20,
   },
@@ -23,6 +19,14 @@ const CREDIT_PACKAGES = [
   {
     id: 'price_1RiD6vKUsA7CGHPxMJt2D9Bg',
     price: 100,
+  },
+  {
+    id: 'price_1S8RdTKUsA7CGHPx4lLkUHci',
+    price: 250,
+  },
+  {
+    id: 'price_1S8RdvKUsA7CGHPxtRG9QOio',
+    price: 500,
   },
 ];
 
@@ -99,12 +103,12 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
 
   const content = (
     <Box sx={{ p: 2 }}>
-      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb:2 }}>
+      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 2 }}>
         {title}
       </Typography>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        {[10, 20, 50, 100].map((amount) => (
+      <Stack direction="row" spacing={0} sx={{ mb: 1, flexWrap: 'wrap', gap: 1 }}>
+        {[20, 50, 100, 250, 500].map((amount) => (
           <Chip
             key={amount}
             label={`€${amount}`}
@@ -129,7 +133,7 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
         InputProps={{
           startAdornment: <Typography sx={{ mr: 1 }}>€</Typography>,
         }}
-        sx={{ mb: 3 }}
+        sx={{ mb: 1 }}
         type="number"
         inputProps={{ min: 1 }}
       />

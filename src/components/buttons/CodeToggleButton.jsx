@@ -1,68 +1,74 @@
-import { Tooltip, Chip } from '@mui/material';
+import { Tooltip, IconButton } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
+import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { setViewType, selectViewType } from '../../redux/slices/altaners';
 import Iconify from '../iconify';
 
 /**
- * A simple toggle button for switching between code and preview modes
- * Designed to match the PROD/DEV chip styling in URLNavigationBar
+ * A toggle button for switching between code and preview modes
+ * Designed to match the header button styling (HeaderIconButton style)
  */
-function CodeToggleButton() {
+function CodeToggleButton({ disabled = false }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const viewType = useSelector(selectViewType);
 
   const handleToggle = () => {
-    dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
+    if (!disabled) {
+      dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
+    }
   };
 
   const isCodeMode = viewType === 'code';
 
   return (
     <Tooltip title={isCodeMode ? 'Turn off Code Editor' : 'Turn on Code Editor'}>
-      <Chip
-        icon={<Iconify icon="mdi:code-tags" sx={{ width: 14, height: 14 }} />}
-        size="small"
+      <IconButton
         onClick={handleToggle}
+        disabled={disabled}
         sx={{
-          height: 24,
-          minWidth: 30,
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          px: 1,
-          cursor: 'pointer',
+          width: 32,
+          height: 32,
+          borderRadius: 1.5,
           backgroundColor: isCodeMode
             ? alpha(theme.palette.primary.main, 0.12)
-            : alpha(theme.palette.grey[500], 0.08),
+            : 'transparent',
           color: isCodeMode
             ? theme.palette.primary.main
             : theme.palette.text.secondary,
-          border: `1px solid ${
-            isCodeMode
-              ? alpha(theme.palette.primary.main, 0.24)
-              : alpha(theme.palette.grey[500], 0.12)
-          }`,
-          transition: theme.transitions.create(['background-color', 'color', 'border-color'], {
-            duration: theme.transitions.duration.shorter,
-          }),
+          border: `1px solid ${isCodeMode
+            ? alpha(theme.palette.primary.main, 0.24)
+            : 'transparent'}`,
           '&:hover': {
             backgroundColor: isCodeMode
               ? alpha(theme.palette.primary.main, 0.16)
-              : alpha(theme.palette.grey[500], 0.12),
+              : alpha(theme.palette.primary.main, 0.08),
+            color: theme.palette.primary.main,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.24)}`,
           },
-          '& .MuiChip-label': {
-            display: 'none', // Hide label, only show icon
+          '&:disabled': {
+            color: theme.palette.text.disabled,
+            backgroundColor: 'transparent',
+            border: '1px solid transparent',
           },
-          '& .MuiChip-icon': {
-            margin: 0,
-            color: 'inherit',
-          },
+          transition: theme.transitions.create(['background-color', 'color', 'border-color'], {
+            duration: theme.transitions.duration.shorter,
+          }),
         }}
-      />
+      >
+        <Iconify
+          icon="mdi:code-tags"
+          sx={{ width: 16, height: 16 }}
+        />
+      </IconButton>
     </Tooltip>
   );
 }
+
+CodeToggleButton.propTypes = {
+  disabled: PropTypes.bool,
+};
 
 export default CodeToggleButton;

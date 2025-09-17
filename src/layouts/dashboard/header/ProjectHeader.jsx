@@ -24,6 +24,7 @@ import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
+import CodeToggleButton from '../../../components/buttons/CodeToggleButton.jsx';
 import DatabaseInfoDialog from '../../../components/databases/dialogs/DatabaseInfoDialog.jsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
 import CreateRecordDialog from '../../../components/databases/records/CreateRecordDialog.jsx';
@@ -496,6 +497,9 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
+                  {isInterfaceComponent && (
+                    <CodeToggleButton disabled={!ui} />
+                  )}
                   <MobileActionsMenu
                     onDistribution={() => setOpenSettings(true)}
                     onHistory={() => setOpenVersionHistory(true)}
@@ -548,6 +552,9 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
+                  {isInterfaceComponent && (
+                    <CodeToggleButton disabled={!ui} />
+                  )}
                   <MobileActionsMenu
                     onDistribution={() => setOpenSettings(true)}
                     onHistory={() => setOpenVersionHistory(true)}

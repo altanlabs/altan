@@ -270,7 +270,7 @@ function DeploymentHistory({ ui, handleReload }) {
                   icon="mdi:package-variant"
                   width={20}
                 />
-                <Typography variant="body2">Versions</Typography>
+                <Typography variant="body2">Deployments</Typography>
               </Box>
             </Tooltip>
           </ToggleButton>

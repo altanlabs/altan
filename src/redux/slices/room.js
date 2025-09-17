@@ -1156,7 +1156,6 @@ const slice = createSlice({
       }
 
       const part = state.messageParts.byId[id];
-
       // Handle delta updates for text parts with proper ordering
       const partType = part.type || part.part_type || 'text';
       if (delta !== undefined && partType === 'text') {
@@ -1164,7 +1163,7 @@ const slice = createSlice({
           // Initialize buffer for ordered streaming
           if (!part.deltaBuffer) {
             part.deltaBuffer = {}; // index -> delta (using plain object instead of Map)
-            part.lastProcessedIndex = -1;
+            part.lastProcessedIndex = index - 1; // Start from one before the first index
           }
 
           // Store the delta at the specified index

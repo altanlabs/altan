@@ -66,8 +66,8 @@ const FloatingNavigation = () => {
         const filtered = prev.filter(item => item.path !== pathToCheck);
         // Add to beginning
         const updated = [sectionInfo, ...filtered];
-        // Keep only 3 most recent
-        const limited = updated.slice(0, 3);
+        // Keep only 1 most recent
+        const limited = updated.slice(0, 1);
 
         // Save to localStorage
         localStorage.setItem('recentNavigationSections', JSON.stringify(limited));

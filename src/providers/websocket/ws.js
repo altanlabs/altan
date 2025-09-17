@@ -112,6 +112,7 @@ import {
   updateMessagePart,
   markMessagePartDone,
   deleteMessagePart,
+  updateMessageStreamingState,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -662,11 +663,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
         console.error('AGENT_RESPONSE missing agent_event:', data);
         break;
       }
-
       switch (agentEvent.event_type) {
         case 'StreamingMessageStart':
-          console.log('StreamingMessageStart', agentEvent.event_data);
-          // Create the message if it doesn't exist yet
           const messageData = {
             id: agentEvent.event_data.message_id,
             thread_id: agentEvent.event_data.thread_id,
@@ -674,7 +672,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
             date_creation: agentEvent.event_extras?.timestamp || new Date().toISOString(),
             text: '', // Empty initially, will be filled by message parts
             is_streaming: true,
-            date_creation: agentEvent?.timestamp || new Date().toISOString(),
           };
 
           // Add the message to the thread
@@ -684,27 +681,28 @@ export const handleWebSocketEvent = async (data, user_id) => {
           dispatch(addRunningResponse(agentEvent.event_data));
           break;
         case 'MessagePartAdded':
-          console.log('MessagePartAdded', agentEvent.event_data);
+          console.log('added part:', agentEvent.event_data);
           dispatch(addMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartUpdated':
-          console.log('MessagePartUpdated', agentEvent.event_data);
-          console.log('MessagePartUpdated.index', agentEvent.event_data.index);
+          console.log('MessagePartUpdated:', agentEvent.event_data);
           dispatch(updateMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartDone':
-          console.log('MessagePartDone', agentEvent.event_data);
           dispatch(markMessagePartDone(agentEvent.event_data));
           break;
         case 'MessagePartDeleted':
-          console.log('MessagePartDeleted', agentEvent.event_data);
           dispatch(deleteMessagePart(agentEvent.event_data));
           break;
 
         case 'StreamingMessageEnd':
-          console.log('StreamingMessageEnd', agentEvent.event_data);
           // Clean up running response when streaming ends
           dispatch(deleteRunningResponse(agentEvent.event_data));
+          // Mark message as no longer streaming
+          dispatch(updateMessageStreamingState({
+            messageId: agentEvent.event_data.message_id,
+            is_streaming: false,
+          }));
           break;
         default:
           console.log('Unknown AGENT_RESPONSE event:', agentEvent.event_type, agentEvent);

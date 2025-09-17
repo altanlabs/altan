@@ -82,42 +82,9 @@ const HermesWebSocketProvider = ({ children }) => {
     [securedWs, activeSubscriptions],
   );
 
-  // Log subscription status periodically
-  useEffect(() => {
-    const logSubscriptionStatus = () => {
-      console.log('📊 WS: Current subscription status:', {
-        activeSubscriptions,
-        subscriptionQueue: subscriptionQueue.map((item) => item.channel),
-        totalSubscriptions: activeSubscriptions.length + subscriptionQueue.length,
-        wsReadyState: wsRef.current?.readyState,
-        isSecured: securedWs,
-        isOpen,
-        timestamp: new Date().toISOString(),
-      });
-    };
-
-    // Log every 30 seconds instead of 10
-    const interval = setInterval(logSubscriptionStatus, 30000);
-
-    // Also log immediately
-    logSubscriptionStatus();
-
-    return () => clearInterval(interval);
-  }, [activeSubscriptions, subscriptionQueue, securedWs, isOpen]);
-
   const subscribe = useCallback(
     (channel, callback) => {
       const channels = Array.isArray(channel) ? channel : [channel];
-
-      // Log current subscription state before processing
-      console.log('🔔 WS: Subscribe request received:', {
-        requestedChannels: channels,
-        currentActiveSubscriptions: activeSubscriptions,
-        currentQueuedSubscriptions: subscriptionQueue.map((item) => item.channel),
-        wsReadyState: wsRef.current?.readyState,
-        isSecured: securedWs,
-        timestamp: new Date().toISOString(),
-      });
 
       // Filter out channels that are already subscribed or in queue
       const newChannels = channels.filter(

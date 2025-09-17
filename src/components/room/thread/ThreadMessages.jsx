@@ -82,10 +82,6 @@ const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
       <>
         <ScrollSeekPlaceholder
           disableImage
-          lines={lines[0]}
-        />
-        <ScrollSeekPlaceholder
-          disableImage
           lines={lines[1]}
         />
       </>
@@ -321,6 +317,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
 
   // ----------------------------------------------
   // 4f) onBottomScroll
+
   // ----------------------------------------------
   const onBottomScroll = useCallback(() => {
     // If we're somewhat near bottom, use smooth. Otherwise, just jump instantly.
