@@ -279,8 +279,8 @@ function Base({
           altanerComponentId={altanerComponentId}
         />
         <NoEntityPlaceholder
-          title="No bases available"
-          description="Create your first base to get started"
+          title="No database available"
+          description="Ask your AI to create a database for you"
           buttonMessage="Create base"
           onButtonClick={handleOpenCreateBase}
           videoUrl="https://www.youtube.com/watch?v=lHtdZgR3SYw"
