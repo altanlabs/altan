@@ -89,6 +89,7 @@ const PreviewOverlay = styled(Box)(({ theme }) => ({
 }));
 
 const VersionHistoryDrawer = ({ open, onClose, versions = [], selectedVersionId }) => {
+  console.log('versions', versions);
   const [dispatchWithFeedback] = useFeedbackDispatch();
   const dispatch = useDispatch();
 

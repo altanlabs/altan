@@ -22,6 +22,7 @@ import spaceReducer from './slices/spaces';
 import subscriptionsReducer from './slices/subscriptions';
 import superadminReducer from './slices/superadmin';
 import tasksReducer from './slices/tasks';
+import templatesReducer from './slices/templates';
 import userReducer from './slices/user';
 
 // ----------------------------------------------------------------------
@@ -61,6 +62,7 @@ const rootReducer = combineReducers({
   room: roomsReducer,
   gate: gateReducer,
   tasks: tasksReducer,
+  templates: templatesReducer,
 });
 
 export default rootReducer;

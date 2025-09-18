@@ -156,6 +156,11 @@ function getTemplateDescription(template, selectedVersion) {
  * @returns {string} Cover URL
  */
 function getTemplateCoverUrl(template, selectedVersion) {
+  // Use the cover_url directly from selected_version if available (from new backend structure)
+  if (selectedVersion?.cover_url) {
+    return selectedVersion.cover_url;
+  }
+  // Fallback to build_metadata for backward compatibility
   if (selectedVersion?.build_metadata?.meta_data?.cover_url) {
     return selectedVersion.build_metadata.meta_data.cover_url;
   }

@@ -16,6 +16,7 @@ import CreateBaseDialog from '../base/CreateBaseDialog.jsx';
 import NoEntityPlaceholder from '../placeholders/NoEntityPlaceholder.jsx';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
 import { CompactLayout } from '../../../layouts/dashboard/index.js';
+import { Typography } from '@mui/material';
 
 // const selectBasesError = (state) => state.bases.error;
 
@@ -278,13 +279,22 @@ function Base({
           altanerId={altanerId}
           altanerComponentId={altanerComponentId}
         />
-        <NoEntityPlaceholder
-          title="No database available"
-          description="Ask your AI to create a database for you"
-          buttonMessage="Create base"
-          onButtonClick={handleOpenCreateBase}
-          videoUrl="https://www.youtube.com/watch?v=lHtdZgR3SYw"
-        />
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <Typography
+            variant="h2"
+            sx={{
+              textAlign: 'center',
+              marginTop: 2,
+            }}
+          >No database yet</Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: 'center',
+              marginTop: 1,
+            }}
+          >Ask the AI to create a database for you</Typography>
+        </div>
       </>
     );
   }

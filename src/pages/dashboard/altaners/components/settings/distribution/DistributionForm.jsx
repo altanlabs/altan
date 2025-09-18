@@ -48,7 +48,7 @@ const DistributionForm = ({ template, onSave, isSubmitting }) => {
     name: template?.name || '',
     description: template?.description || '',
     price: template?.price || 0,
-    category: template?.meta_data?.category || '',
+    category: template?.category || '',
     verticals: template?.meta_data?.verticals || [],
     useCases: template?.meta_data?.useCases || [],
     features: template?.meta_data?.features || [],

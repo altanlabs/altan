@@ -79,11 +79,12 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   );
 
   // Only fetch tasks if we're inside an altaner context
-  useEffect(() => {
-    if (altanerId && threadId) {
-      dispatch(fetchTasks(threadId));
-    }
-  }, [altanerId, threadId, dispatch]);
+
+  // useEffect(() => {
+  //   if (altanerId && threadId) {
+  //     dispatch(fetchTasks(threadId));
+  //   }
+  // }, [altanerId, threadId, dispatch]);
 
   // Auto-expand on first load if there are active (non-completed) tasks
   useEffect(() => {

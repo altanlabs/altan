@@ -11,6 +11,7 @@ import { createTemplate, updateTemplate, selectIsAccountFree } from '../../../..
 
 const Distribution = ({ altaner }) => {
   const hasTemplate = !!altaner?.template;
+  console.log(altaner.template);
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [openPaywallDialog, setOpenPaywallDialog] = useState(false);
   const isAccountFree = useSelector(selectIsAccountFree);

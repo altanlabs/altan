@@ -15,8 +15,17 @@ const ProjectTemplateCard = ({ template }) => {
 
   function getCoverUrl(template) {
     const selectedVersion = template.selected_version;
+    // Use the cover_url directly from selected_version if available (from new backend structure)
+    if (selectedVersion?.cover_url) {
+      return selectedVersion.cover_url;
+    }
+    // Fallback to deployment.cover_url for backward compatibility
     if (selectedVersion?.deployment?.cover_url) {
       return selectedVersion.deployment.cover_url;
+    }
+    // Fallback to build_metadata for backward compatibility
+    if (selectedVersion?.build_metadata?.meta_data?.cover_url) {
+      return selectedVersion.build_metadata.meta_data.cover_url;
     }
     return template.parent?.cover_url || '/assets/placeholder.svg';
   }

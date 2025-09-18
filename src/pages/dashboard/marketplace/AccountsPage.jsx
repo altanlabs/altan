@@ -6,6 +6,23 @@ import { optimai } from '../../../utils/axios';
 
 const ITEMS_PER_PAGE = 100;
 
+// Helper function to get cover URL from template data (same as Redux slice)
+const getCoverUrlFromTemplate = (template) => {
+  // Use the cover_url directly from selected_version if available
+  if (template.selected_version?.cover_url) {
+    return template.selected_version.cover_url;
+  }
+  // Fallback to build_metadata if still needed for compatibility
+  if (template.selected_version?.build_metadata?.meta_data?.cover_url) {
+    return template.selected_version.build_metadata.meta_data.cover_url;
+  }
+  // Fallback to template meta_data
+  if (template.meta_data?.cover_url) {
+    return template.meta_data.cover_url;
+  }
+  return null;
+};
+
 const SearchBar = ({ searchTerm, onSearchChange, resultsCount }) => {
   return (
     <div className="relative max-w-md mx-auto mb-8">
@@ -29,20 +46,20 @@ const SearchBar = ({ searchTerm, onSearchChange, resultsCount }) => {
           type="text"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search accounts..."
+          placeholder="Search templates..."
           className="w-full pl-12 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/40 dark:border-gray-600/40 rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-300 shadow-lg hover:shadow-xl"
         />
       </div>
       {searchTerm && (
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
-          {resultsCount} account{resultsCount !== 1 ? 's' : ''} found
+          {resultsCount} template{resultsCount !== 1 ? 's' : ''} found
         </p>
       )}
     </div>
   );
 };
 
-const AccountCard = ({ account, index }) => {
+const TemplateCard = ({ template, index }) => {
   // Format date for display
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -51,7 +68,7 @@ const AccountCard = ({ account, index }) => {
     });
   };
 
-  // Generate gradient based on account name or id
+  // Generate gradient based on template name or id
   const getGradientClasses = () => {
     const gradients = [
       'from-purple-500 to-indigo-600',
@@ -64,7 +81,7 @@ const AccountCard = ({ account, index }) => {
       'from-amber-400 to-orange-400',
     ];
 
-    const hash = (account.name || account.id).split('').reduce((a, b) => {
+    const hash = (template.name || template.id).split('').reduce((a, b) => {
       a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
@@ -73,10 +90,22 @@ const AccountCard = ({ account, index }) => {
   };
 
   const gradientClasses = getGradientClasses();
+  const coverUrl = getCoverUrlFromTemplate(template);
+
+  const formatPrice = (priceInCents) => {
+    if (!priceInCents && priceInCents !== 0) return 'Free';
+    if (priceInCents === 0) return 'Free';
+    const priceInEuros = priceInCents / 100;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+    }).format(priceInEuros);
+  };
 
   return (
     <Link
-      to={`/accounts/${account.id}`}
+      to={`/template/${template.id}`}
       className={'group block h-full transform transition-all duration-500 ease-out hover:-translate-y-2 animate-fadeInUp'}
       style={{ animationDelay: `${index * 100}ms` }}
     >
@@ -86,51 +115,55 @@ const AccountCard = ({ account, index }) => {
           className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientClasses} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
         />
 
-        <div className="p-6 h-full flex flex-col">
-          {/* Header with Avatar and Arrow */}
-          <div className="flex items-start justify-between mb-4">
-            <div
-              className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradientClasses} flex items-center justify-center text-white font-semibold text-xl shadow-lg transition-transform duration-300 group-hover:scale-105`}
-            >
-              {account.logo_url ? (
-                <img
-                  src={account.logo_url}
-                  alt={account.name || 'Account'}
-                  className="w-full h-full rounded-2xl object-cover"
-                />
-              ) : (
-                <span>{account.name ? account.name.charAt(0).toUpperCase() : '?'}</span>
-              )}
+        {/* Cover Image */}
+        <div className="relative h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={template.name || 'Template'}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${gradientClasses} flex items-center justify-center text-white font-semibold text-2xl`}>
+              {template.name ? template.name.charAt(0).toUpperCase() : '?'}
             </div>
-
-            <div className="opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300">
-              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-            </div>
+          )}
+          
+          {/* Price badge */}
+          <div className="absolute top-3 right-3 px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
+            {formatPrice(template.price)}
           </div>
 
-          {/* Account Name */}
+          {/* Arrow icon */}
+          <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300">
+            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 h-full flex flex-col">
+          {/* Template Name */}
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-1">
-            {account.name || 'Unnamed Account'}
+            {template.name || 'Unnamed Template'}
           </h3>
 
           {/* Description if available */}
-          {account.description && (
+          {template.description && (
             <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-1">
-              {account.description}
+              {template.description}
             </p>
           )}
 
@@ -150,14 +183,14 @@ const AccountCard = ({ account, index }) => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z"
                 />
               </svg>
-              <span>{formatDate(account.date_creation)}</span>
+              <span>{formatDate(template.date_creation)}</span>
             </div>
 
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              {account.currency}
+              {template.category || 'Uncategorized'}
             </span>
           </div>
         </div>
@@ -226,7 +259,7 @@ const InfiniteScrollTrigger = ({ onTrigger, loading, hasMore }) => {
       {loading ? (
         <div className="flex items-center space-x-2 text-gray-500">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-          <span>Loading more accounts...</span>
+          <span>Loading more templates...</span>
         </div>
       ) : hasMore ? (
         <div className="text-gray-400 text-sm">Scroll for more...</div>
@@ -235,8 +268,8 @@ const InfiniteScrollTrigger = ({ onTrigger, loading, hasMore }) => {
   );
 };
 
-const AccountsPage = () => {
-  const [accounts, setAccounts] = useState([]);
+const TemplatesPage = () => {
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
@@ -244,7 +277,7 @@ const AccountsPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchAccounts = useCallback(async (currentOffset = 0, isLoadMore = false, search = '') => {
+  const fetchTemplates = useCallback(async (currentOffset = 0, isLoadMore = false, search = '') => {
     if (isLoadMore) {
       setLoadingMore(true);
     } else {
@@ -256,25 +289,39 @@ const AccountsPage = () => {
       const params = new URLSearchParams({
         limit: ITEMS_PER_PAGE,
         offset: currentOffset,
+        template_type: 'altaner',
         ...(search && { name: search }),
       });
 
-      const response = await optimai.get(`/account/list?${params}`);
-      const newAccounts = response?.data?.accounts || [];
-      const totalCount = response?.data?.total_count || 0;
+      const response = await optimai.get(`/templates/list?${params}`);
+      let fetchedTemplates = response?.data?.templates || [];
+      
+      // Transform templates to include cover URLs (same as Redux slice)
+      const transformedTemplates = fetchedTemplates.map(template => {
+        const coverUrl = getCoverUrlFromTemplate(template);
+        return {
+          ...template,
+          cover_url: coverUrl || '/assets/placeholder.svg',
+          has_cover: Boolean(coverUrl),
+        };
+      });
+
+      // Filter out templates without actual cover URLs
+      const templatesWithCovers = transformedTemplates.filter(template => template.has_cover);
 
       if (isLoadMore) {
-        setAccounts((prev) => [...prev, ...newAccounts]);
+        setTemplates((prev) => [...prev, ...templatesWithCovers]);
       } else {
-        setAccounts(newAccounts);
+        setTemplates(templatesWithCovers);
         setOffset(currentOffset);
       }
 
-      setHasMore(currentOffset + newAccounts.length < totalCount);
+      // Check if there are more templates (we need to account for filtering)
+      setHasMore(fetchedTemplates.length === ITEMS_PER_PAGE);
     } catch (err) {
-      console.error('Failed to fetch accounts:', err);
-      setError('Failed to load accounts. Please try again later.');
-      setAccounts([]);
+      console.error('Failed to fetch templates:', err);
+      setError('Failed to load templates. Please try again later.');
+      setTemplates([]);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -285,24 +332,24 @@ const AccountsPage = () => {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setOffset(0);
-      fetchAccounts(0, false, searchTerm);
+      fetchTemplates(0, false, searchTerm);
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, fetchAccounts]);
+  }, [searchTerm, fetchTemplates]);
 
   // Initial load
   useEffect(() => {
-    fetchAccounts(0, false);
+    fetchTemplates(0, false);
   }, []);
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       const newOffset = offset + ITEMS_PER_PAGE;
       setOffset(newOffset);
-      fetchAccounts(newOffset, true, searchTerm);
+      fetchTemplates(newOffset, true, searchTerm);
     }
-  }, [loadingMore, hasMore, offset, fetchAccounts, searchTerm]);
+  }, [loadingMore, hasMore, offset, fetchTemplates, searchTerm]);
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
@@ -354,10 +401,10 @@ const AccountsPage = () => {
         {/* Hero Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 dark:from-white dark:via-blue-100 dark:to-indigo-100 bg-clip-text text-transparent mb-4">
-            Discover Accounts
+            Discover Templates
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            Explore creative accounts and discover amazing templates from our community
+            Explore creative templates with stunning visuals from our community
           </p>
         </div>
 
@@ -365,12 +412,12 @@ const AccountsPage = () => {
         <SearchBar
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
-          resultsCount={accounts.length}
+          resultsCount={templates.length}
         />
 
         {/* Content */}
         <div className="mt-8">
-          {loading && !accounts.length ? (
+          {loading && !templates.length ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[...Array(8)].map((_, index) => (
                 <LoadingCard
@@ -379,13 +426,13 @@ const AccountsPage = () => {
                 />
               ))}
             </div>
-          ) : accounts.length > 0 ? (
+          ) : templates.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {accounts.map((account, index) => (
-                  <AccountCard
-                    key={account.id}
-                    account={account}
+                {templates.map((template, index) => (
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
                     index={index}
                   />
                 ))}
@@ -402,11 +449,11 @@ const AccountsPage = () => {
           ) : (
             <div className="text-center py-20">
               <EmptyContent
-                title="No accounts found"
+                title="No templates found"
                 description={
                   searchTerm
                     ? 'Try adjusting your search terms'
-                    : 'Check back later for new accounts.'
+                    : 'Check back later for new templates.'
                 }
               />
             </div>
@@ -417,4 +464,4 @@ const AccountsPage = () => {
   );
 };
 
-export default AccountsPage;
+export default TemplatesPage;
