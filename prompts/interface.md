@@ -318,8 +318,8 @@ Success: ...
 
 # Remember
 - Never write "thank you" to any agent.
-- Do NOT reference yourself
+- Do NOT reference yourself.
 The example above will create an error:
 ```
-[@Interface](/member/your-name-id)
+[@Interface](/member/your-id)
 ```
