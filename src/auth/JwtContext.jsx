@@ -1,7 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 // Generic OAuth2 Auth
 import { GenericOAuth2 } from '@capacitor-community/generic-oauth2';
-import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 
@@ -11,7 +10,7 @@ import useMessageListener from '@hooks/useMessageListener.ts';
 import { AUTH_API } from './utils';
 import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
-import { optimai, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
+import { optimai, optimai_auth, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -199,7 +198,7 @@ const getUserProfile = async () => {
 
 const verifyEmail = async (code) => {
   try {
-    const response = await optimai.post(`/user/verify-email?code=${code}`);
+    const response = await optimai_auth.post(`/user/verify-email?code=${code}`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to verify email');
@@ -208,7 +207,7 @@ const verifyEmail = async (code) => {
 
 const resendVerification = async () => {
   try {
-    const response = await optimai.post('/user/resend-verification');
+    const response = await optimai_auth.post('/user/resend-verification');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to resend verification');
@@ -363,10 +362,9 @@ export function AuthProvider({ children }) {
             throw new Error('Guest ID and Agent ID are required for direct authentication');
           }
 
-          const response = await axios.post(
-            `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+          const response = await optimai_auth.post(
+            `/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
             {},
-            { withCredentials: true },
           );
 
           if (response.data && response.data.guest) {
@@ -494,15 +492,14 @@ export function AuthProvider({ children }) {
         trackSignUp('google');
 
         // Send the Google token to your backend for verification
-        const response = await axios.post(
-          `${AUTH_API}/oauth/google/mobile`,
+        const response = await optimai_auth.post(
+          `/oauth/google/mobile`,
           {
             idToken,
             accessToken,
             invitation_id: invitation_id || null,
             idea_id: idea_id || null,
           },
-          { withCredentials: true },
         );
 
         if (response.data.status === 'success' || response.data.access_token) {
@@ -583,12 +580,9 @@ export function AuthProvider({ children }) {
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
-    const response = await axios.post(
-      `${AUTH_API}/login?origin=${encodeURIComponent(baseUrl)}${dev}`,
+    const response = await optimai_auth.post(
+      `/login?origin=${encodeURIComponent(baseUrl)}${dev}`,
       payload,
-      {
-        withCredentials: true,
-      },
     );
 
     if (!response || !response.data) {
@@ -675,8 +669,8 @@ export function AuthProvider({ children }) {
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
-    const response = await axios.post(
-      `${AUTH_API}/register?origin=${baseUrl}${dev}`,
+    const response = await optimai_auth.post(
+      `/register?origin=${baseUrl}${dev}`,
       {
         first_name: firstName,
         last_name: lastName,
@@ -686,7 +680,6 @@ export function AuthProvider({ children }) {
         invitation_id: iid !== undefined ? iid : null,
         idea: idea !== undefined ? idea : null,
       },
-      { withCredentials: true },
     );
 
     // Check if running on mobile platform
@@ -760,7 +753,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    await axios.post(`${AUTH_API}/logout/user`, null, { withCredentials: true }).finally(() => {
+    await optimai_auth.post(`/logout/user`, null).finally(() => {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
       dispatch({

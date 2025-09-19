@@ -69,7 +69,7 @@ class AltanWidget {
       placeholder: script.getAttribute('data-placeholder') || 'How can I help you?',
       apiBaseUrl: script.getAttribute('data-api-base-url') || 'https://api.altan.ai/platform/guest',
       authBaseUrl:
-        script.getAttribute('data-auth-base-url') || 'https://api.altan.ai/auth/login/guest',
+        script.getAttribute('data-auth-base-url') || 'https://auth.altan.ai/login/guest',
       roomBaseUrl: script.getAttribute('data-room-base-url') || 'https://altan.ai/r',
       guestName: script.getAttribute('data-guest-name') || 'Website Visitor',
       guestEmail: script.getAttribute('data-guest-email'),
@@ -133,7 +133,7 @@ class AltanWidget {
       mode: 'compact',
       placeholder: 'How can I help you?',
       apiBaseUrl: 'https://api.altan.ai/platform/guest',
-      authBaseUrl: 'https://api.altan.ai/auth/login/guest',
+      authBaseUrl: 'https://auth.altan.ai/login/guest',
       roomBaseUrl: 'https://altan.ai/r',
       guestName: 'Website Visitor',
       externalId: this.generateExternalId(),

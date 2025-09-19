@@ -4,6 +4,7 @@ import { refreshToken, setSession } from './auth';
 import { addResponseInterceptor } from './interceptors';
 
 const OPTIMAI_BASE_URL = 'https://api.altan.ai';
+const AUTH_BASE_URL = 'https://auth.altan.ai';
 
 const optimai_tables = axios.create({
   name: 'optimai_tables',
@@ -58,6 +59,12 @@ const optimai_galaxia = axios.create({
   baseURL: `${OPTIMAI_BASE_URL}/galaxia`,
 });
 
+const optimai_auth = axios.create({
+  name: 'optimai_auth',
+  baseURL: AUTH_BASE_URL,
+  withCredentials: true,
+});
+
 addResponseInterceptor(optimai);
 addResponseInterceptor(optimai_integration);
 addResponseInterceptor(optimai_shop);
@@ -68,6 +75,7 @@ addResponseInterceptor(optimai_tables);
 addResponseInterceptor(optimai_agent);
 addResponseInterceptor(optimai_tables_legacy);
 addResponseInterceptor(optimai_database);
+addResponseInterceptor(optimai_auth);
 
 const authorizeUser = () => {
   return new Promise(async (resolve, reject) => {
@@ -82,6 +90,7 @@ const authorizeUser = () => {
       setSession(accessToken, optimai_agent);
       setSession(accessToken, optimai_tables_legacy);
       setSession(accessToken, optimai_database);
+      setSession(accessToken, optimai_auth);
       resolve({ accessToken });
     } catch (error) {
       reject(error);
@@ -119,6 +128,7 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_integration);
           setSession(tokenString, optimai_agent);
           setSession(tokenString, optimai_database);
+          setSession(tokenString, optimai_auth);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
         }
@@ -146,6 +156,7 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_tables_legacy, originalRequest);
   setSession(accessToken, optimai_agent, originalRequest);
   setSession(accessToken, optimai_database, originalRequest);
+  setSession(accessToken, optimai_auth, originalRequest);
 };
 
 const unauthorizeUser = () => {
@@ -163,6 +174,7 @@ const axiosInstances = {
   optimai_agent,
   optimai_tables_legacy,
   optimai_database,
+  optimai_auth,
 };
 
 export const getAltanAxiosInstance = (instanceName) => {
@@ -174,6 +186,7 @@ export const getAltanAxiosInstance = (instanceName) => {
 
 export {
   OPTIMAI_BASE_URL,
+  AUTH_BASE_URL,
   optimai_root,
   optimai,
   optimai_room,
@@ -184,6 +197,7 @@ export {
   optimai_agent,
   optimai_tables_legacy,
   optimai_database,
+  optimai_auth,
   authorizeUser,
   authorizeGuest,
   unauthorizeUser,
