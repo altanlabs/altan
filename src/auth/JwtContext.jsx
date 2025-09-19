@@ -154,7 +154,7 @@ AuthProvider.propTypes = {
 
 const getUserProfile = async () => {
   try {
-    const res = await optimai.post('/user/me/gq', {
+    const res = await optimai_auth.post('/user/me/gq', {
       '@fields': '@all',
       member: {
         '@fields': 'id',
