@@ -8,7 +8,7 @@
       "headers": [
         {
           "key": "Permissions-Policy",
-          "value": "microphone=(self \"https://altan.ai\" \"https://api.altan.ai\")"
+          "value": "microphone=(self \"https://altan.ai\" \"https://www.altan.ai\" \"https://api.altan.ai\")"
         }
       ]
     }
