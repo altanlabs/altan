@@ -1,5 +1,16 @@
 {
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "installCommand": "bun install",
-  "buildCommand": "bun run build"
+  "buildCommand": "bun run build",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "microphone=(self https://altan.ai https://api.altan.ai)"
+        }
+      ]
+    }
+  ]
 }
