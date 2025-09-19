@@ -14,10 +14,9 @@ import {
   makeSelectMessageContent,
   makeSelectMessageParts,
   makeSelectMessagePartsContent,
-  makeSelectMessagePartsGrouped,
+  selectMessagePartsById,
 } from '../../redux/slices/room.js';
 import { useSelector } from '../../redux/store.js';
-import Iconify from '../iconify/Iconify.jsx';
 
 // Function to extract commit resources from message content
 function extractCommitResources(message) {
@@ -71,7 +70,6 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       content: makeSelectMessageContent(),
       messageParts: makeSelectMessageParts(),
       partsContent: makeSelectMessagePartsContent(),
-      partsGrouped: makeSelectMessagePartsGrouped(),
     }),
     [],
   );
@@ -81,16 +79,15 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const messageContent = useSelector((state) => selectors.content(state, message.id));
   const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
   const partsContent = useSelector((state) => selectors.partsContent(state, message.id));
-  const partsGrouped = useSelector((state) => selectors.partsGrouped(state, message.id));
+  const partsById = useSelector(selectMessagePartsById);
   // Debug logging for message parts
-  // console.log('MessageContent Debug:', {
-  //   messageId: message.id,
-  //   messageParts: messageParts,
-  //   partsContent: partsContent,
-  //   partsGrouped: partsGrouped,
-  //   hasContent: hasContent,
-  //   messageContent: messageContent,
-  // });
+  const partsWithData = messageParts.map((partId) => partsById[partId]).filter(Boolean);
+  console.log('MessageContent Debug:', {
+    messageId: message.id,
+    messageParts: messageParts,
+    partsWithData: partsWithData.map(p => ({ id: p.id, type: p.type || p.part_type, order: p.order || p.block_order, text: p.text?.substring(0, 50) })),
+    hasContent: hasContent,
+  });
 
   // Use message parts content if available, otherwise fall back to legacy content
   const effectiveContent = useMemo(() => {
@@ -113,11 +110,6 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
     [effectiveContent],
   );
   const hasDatabaseVersions = databaseVersionResources.length > 0;
-
-  // Check if we have non-text parts (media, tasks, etc.)
-  const hasNonTextParts = useMemo(() => {
-    return Object.keys(partsGrouped).some((partType) => partType !== 'text');
-  }, [partsGrouped]);
 
   // Combined logic for both commits and database versions
   const hasAnyWidgets = hasCommits || hasDatabaseVersions;
@@ -164,41 +156,25 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
             )}
           </div>
         ));
-
-      case 'media':
-        return parts.map((part) => (
-          <div
-            key={part.id}
-            className="message-part-media"
-          >
-            {/* Media rendering logic would go here */}
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              📎 Media: {part.media_type || 'Unknown'}
-            </div>
-          </div>
-        ));
-
-      case 'task':
-        return parts.map((part) => (
-          <div
-            key={part.id}
-            className="message-part-task"
-          >
-            {/* Task rendering logic would go here */}
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              ⚡ Task: {part.task_type || 'Unknown'}
-              {!part.is_done && <span className="ml-2 text-blue-500">Running...</span>}
-            </div>
-          </div>
-        ));
-
       case 'tool':
-        // Tool parts are usually internal/system parts, don't render them in the UI
-        return null;
+        return parts.map((part) => (
+          <div
+            key={part.id}
+            className="message-part-tool mb-2"
+          >
+            <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              🔧 Tool: {part.tool_id || 'Unknown'}
+              {part.name && <span className="ml-2 font-medium">({part.name})</span>}
+              {part.result && <div className="mt-1 text-xs text-gray-500">Completed</div>}
+              {!part.result && part.error && <div className="mt-1 text-xs text-red-500">Error occurred</div>}
+              {!part.result && !part.error && <div className="mt-1 text-xs text-blue-500">Running...</div>}
+            </div>
+          </div>
+        ));
 
       default:
         // Only show unknown part types in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           return parts.map((part) => (
             <div
               key={part.id}
@@ -259,15 +235,19 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       {/* Main content area */}
       <div>
         {messageParts.length > 0 ? (
-          // Render message parts
+          // Render message parts in order
           <div className="message-parts-container">
-            {Object.entries(partsGrouped).map(([partType, parts]) => (
-              <MessagePartRenderer
-                key={partType}
-                parts={parts}
-                partType={partType}
-              />
-            ))}
+            {messageParts
+              .map((partId) => partsById[partId])
+              .filter(Boolean)
+              .sort((a, b) => (a.order || a.block_order || 0) - (b.order || b.block_order || 0))
+              .map((part) => (
+                <MessagePartRenderer
+                  key={part.id}
+                  parts={[part]}
+                  partType={part.type || part.part_type || 'text'}
+                />
+              ))}
           </div>
         ) : hasAnyWidgets ? (
           // Show only commit widgets as main content (legacy)

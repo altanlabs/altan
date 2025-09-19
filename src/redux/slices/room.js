@@ -1167,8 +1167,17 @@ const slice = createSlice({
         state.messageParts.byMessageId[part.message_id].sort((a, b) => {
           const partA = state.messageParts.byId[a];
           const partB = state.messageParts.byId[b];
-          return (partA?.order || 0) - (partB?.order || 0);
+          const orderA = partA?.order || partA?.block_order || 0;
+          const orderB = partB?.order || partB?.block_order || 0;
+          console.log(`Sorting parts: ${partA?.type} (order: ${orderA}) vs ${partB?.type} (order: ${orderB})`);
+          return orderA - orderB;
         });
+        console.log('Final part order for message:', part.message_id, 
+          state.messageParts.byMessageId[part.message_id].map(id => {
+            const p = state.messageParts.byId[id];
+            return { id, type: p?.type || p?.part_type, order: p?.order || p?.block_order };
+          })
+        );
       }
     },
     updateMessagePart: (state, action) => {
