@@ -84,6 +84,7 @@ const FloatingNavigation = () => {
       { path: '/agents', label: 'Agents', icon: 'fluent:bot-sparkle-20-filled' },
       { path: '/flows', label: 'Flows', icon: 'fluent:flash-flow-24-filled' },
       { path: '/bases', label: 'Databases', icon: 'material-symbols:database-outline' },
+      { path: '/rooms', label: 'Rooms', icon: 'material-symbols:chat' },
     ],
     utils: [
       { path: '/media', label: 'Media', icon: 'material-symbols:perm-media-outline' },
@@ -99,16 +100,6 @@ const FloatingNavigation = () => {
 
   // Navigation items configuration
   const baseNavigationItems = [
-    // {
-    //   path: '/chat',
-    //   label: 'Chat',
-    //   icon: (
-    //     <Iconify
-    //       icon="material-symbols:chat"
-    //       className="w-[12px] h-[12px]"
-    //     />
-    //   ),
-    // },
     {
       path: '/',
       label: 'Home',
@@ -126,6 +117,16 @@ const FloatingNavigation = () => {
       icon: (
         <Iconify
           icon="fluent:bot-sparkle-20-filled"
+          className="w-[12px] h-[12px]"
+        />
+      ),
+    },
+    {
+      path: '/rooms',
+      label: 'Rooms',
+      icon: (
+        <Iconify
+          icon="solar:chat-round-call-bold"
           className="w-[12px] h-[12px]"
         />
       ),

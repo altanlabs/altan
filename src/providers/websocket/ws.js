@@ -686,6 +686,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
         case 'MessagePartUpdated':
           console.log('MessagePartUpdated:', agentEvent.event_data);
+          console.log('index:', agentEvent.event_data.index);
           dispatch(updateMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartDone':

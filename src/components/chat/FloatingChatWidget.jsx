@@ -40,13 +40,11 @@ const FloatingChatWidget = memo(() => {
         padding: '10px 16px',
         borderRadius: '24px',
         // Glassmorphic effect without displacement issues
-        background: isDarkMode 
-          ? 'rgba(255, 255, 255, 0.1)' 
-          : 'rgba(255, 255, 255, 0.8)',
+        background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: isDarkMode 
-          ? '1px solid rgba(255, 255, 255, 0.2)' 
+        border: isDarkMode
+          ? '1px solid rgba(255, 255, 255, 0.2)'
           : '1px solid rgba(255, 255, 255, 0.3)',
         boxShadow: isDarkMode
           ? '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
@@ -60,11 +58,9 @@ const FloatingChatWidget = memo(() => {
           display: 'flex',
           alignItems: 'center',
           width: '100%',
-          padding: 2
+          padding: 2,
         }}
       >
-
-
         {/* Placeholder text - theme-aware */}
         <span
           style={{

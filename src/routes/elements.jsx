@@ -19,6 +19,7 @@ export const ResetPasswordPage = Loadable(
 );
 
 export const RoomPage = Loadable(lazy(() => import('../pages/RoomPage.jsx')));
+export const RoomsPage = Loadable(lazy(() => import('../pages/dashboard/RoomsPageSimple.jsx')));
 export const StandaloneRoomPage = Loadable(lazy(() => import('../pages/StandaloneRoomPage.jsx')));
 export const ChatPage = Loadable(lazy(() => import('../pages/ChatPage.jsx')));
 // DASHBOARD: GENERAL

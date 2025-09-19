@@ -800,7 +800,32 @@ const slice = createSlice({
       }
     },
     clearState: (state) => {
-      Object.assign(state, initialState);
+      // Preserve userRooms data when clearing room state
+      const preservedUserRooms = [...state.userRooms];
+      const preservedUserRoomsPagination = { ...state.userRoomsPagination };
+      const preservedUserRoomsInitialized = state.initialized.userRooms;
+      const preservedSearchRooms = { ...state.searchRooms };
+
+      // Reset to initial state
+      Object.keys(initialState).forEach((key) => {
+        if (key === 'userRooms') {
+          state[key] = preservedUserRooms;
+        } else if (key === 'userRoomsPagination') {
+          state[key] = preservedUserRoomsPagination;
+        } else if (key === 'searchRooms') {
+          state[key] = preservedSearchRooms;
+        } else if (key === 'initialized') {
+          // Reset all initialized flags but preserve userRooms
+          state[key] = { ...initialState[key] };
+          state[key].userRooms = preservedUserRoomsInitialized;
+          // Specifically ensure room is not initialized for new room fetch
+          state[key].room = false;
+          state[key].mainThread = false;
+          state[key].allThreads = false;
+        } else {
+          state[key] = initialState[key];
+        }
+      });
     },
     updateMessageContent: (state, action) => {
       const { messageId, content } = action.payload;

@@ -398,7 +398,6 @@
       agent_id: agentId,
     };
 
-    console.log('🏠 Creating room with data:', requestData);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -414,7 +413,6 @@
     }
     
     const data = await response.json();
-    console.log('🏠 Room created:', data);
     
     // Format room data to match SDK structure
     const roomData = {

@@ -144,12 +144,9 @@ const Thread = ({
 
       dispatch(fetchThread({ threadId }))
         .then((response) => {
-          console.log('🧵 fetchThread response:', response);
           if (!response) {
-            console.log('🧵 No response, redirecting to 404');
             history.replace('/404');
           } else {
-            console.log('🧵 Thread fetched successfully, managing subscription');
             // Set hasLoaded immediately when thread is fetched successfully
             // The ThreadMessages component will handle its own loading state
             setHasLoaded(true);
