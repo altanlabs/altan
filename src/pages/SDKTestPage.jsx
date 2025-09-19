@@ -28,7 +28,7 @@ const TEST_CONFIG = {
   roomId: 'your-group-chat-room-id', // Example room ID for group chat
   apiBaseUrl: 'https://api.altan.ai/platform/guest',
   authBaseUrl: 'https://api.altan.ai/auth/login/guest',
-  roomBaseUrl: 'https://altan.ai/r', // Use production room server
+  roomBaseUrl: 'https://www.altan.ai/r', // Use production room server
 };
 
 export default function SDKTestPage() {
