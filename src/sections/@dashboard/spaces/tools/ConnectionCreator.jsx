@@ -37,7 +37,7 @@ const ConnectionCreator = ({ connectionType, setIsCreatingNewConnection }) => {
 
   const handleOauth = async () => {
     const { accessToken } = await refreshToken(optimai_root);
-    const oauthUrl = `${API_BASE_URL}/integration/account/${accountId}/oauth-connection?ctid=${connectionType.id}&origin=${window.location.origin}&atk=${accessToken}`;
+    const oauthUrl = `https://integration.altan.ai/account/${accountId}/oauth-connection?ctid=${connectionType.id}&origin=${window.location.origin}&atk=${accessToken}`;
     window.location = oauthUrl;
   };
 
