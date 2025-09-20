@@ -9,6 +9,7 @@ import useMessageListener from '@hooks/useMessageListener.ts';
 
 // utils
 import { AUTH_API } from './utils';
+import { analytics } from '../lib/analytics';
 import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
 import { optimai, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
@@ -520,6 +521,18 @@ export function AuthProvider({ children }) {
           // Get user profile and update state
           try {
             const userProfile = await getUserProfile();
+
+            // Identify user in PostHog
+            if (userProfile.user) {
+              analytics.identify(userProfile.user.id, {
+                email: userProfile.user.email,
+                first_name: userProfile.user.first_name,
+                last_name: userProfile.user.last_name,
+                method: 'google',
+                is_superadmin: userProfile.user.xsup,
+              });
+            }
+
             dispatch({
               type: 'LOGIN',
               payload: userProfile,
@@ -615,6 +628,18 @@ export function AuthProvider({ children }) {
       // Get user profile and update state
       try {
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog
+        if (userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'email',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'LOGIN',
           payload: userProfile,
@@ -625,6 +650,18 @@ export function AuthProvider({ children }) {
         try {
           await authorizeUser();
           const userProfile = await getUserProfile();
+
+          // Identify user in PostHog for fallback
+          if (userProfile.user) {
+            analytics.identify(userProfile.user.id, {
+              email: userProfile.user.email,
+              first_name: userProfile.user.first_name,
+              last_name: userProfile.user.last_name,
+              method: 'email',
+              is_superadmin: userProfile.user.xsup,
+            });
+          }
+
           dispatch({
             type: 'LOGIN',
             payload: userProfile,
@@ -712,6 +749,18 @@ export function AuthProvider({ children }) {
       // Get user profile and update state
       try {
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog
+        if (userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'email',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'REGISTER',
           payload: userProfile,
@@ -722,6 +771,18 @@ export function AuthProvider({ children }) {
         try {
           await authorizeUser();
           const userProfile = await getUserProfile();
+
+          // Identify user in PostHog for fallback
+          if (userProfile.user) {
+            analytics.identify(userProfile.user.id, {
+              email: userProfile.user.email,
+              first_name: userProfile.user.first_name,
+              last_name: userProfile.user.last_name,
+              method: 'email',
+              is_superadmin: userProfile.user.xsup,
+            });
+          }
+
           dispatch({
             type: 'REGISTER',
             payload: userProfile,
@@ -747,6 +808,9 @@ export function AuthProvider({ children }) {
 
   // LOGOUT
   const logout = useCallback(async () => {
+    // Track logout event
+    analytics.signOut();
+
     const isMobile = Capacitor.isNativePlatform();
 
     if (isMobile) {
@@ -763,6 +827,10 @@ export function AuthProvider({ children }) {
     await axios.post(`${AUTH_API}/logout/user`, null, { withCredentials: true }).finally(() => {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
+
+      // Reset PostHog session
+      analytics.reset();
+
       dispatch({
         type: 'LOGOUT',
       });

@@ -1,4 +1,5 @@
 // Analytics utility functions for tracking user events
+import { analytics } from '../lib/analytics';
 
 /**
  * Log tracking events to localStorage for debugging
@@ -30,29 +31,27 @@ export const trackSignUp = (method = 'default') => {
   try {
     console.log('🔄 Tracking sign-up event before backend call...', { method });
 
-    // Check if gtag is available
+    // Get all URL parameters
+    const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
+    const eventParams = {
+      method,
+      ...urlParams, // Captures all query params like ?utm_source=..., ?idea=...
+    };
+
+    // Track with PostHog
+    analytics.signUp(method, eventParams);
+
+    // Check if gtag is available (keep existing GA4 tracking)
     if (typeof window !== 'undefined' && window.gtag) {
-      // Get all URL parameters
-      const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
-
-      const eventParams = {
-        method,
-        ...urlParams, // Captures all query params like ?utm_source=..., ?idea=...
-      };
-
       // Send event to GA4
       window.gtag('event', 'sign_up', eventParams);
-
-      const logData = { method, ...urlParams };
-      console.log('✅ Sign-up event tracked successfully:', logData);
-      logTrackingEvent('sign_up', logData);
     } else {
-      console.warn('❌ gtag not available - sign-up tracking skipped', {
-        windowExists: typeof window !== 'undefined',
-        gtagExists: typeof window?.gtag,
-        dataLayerExists: typeof window?.dataLayer,
-      });
+      console.warn('❌ gtag not available - GA4 sign-up tracking skipped');
     }
+
+    const logData = { method, ...urlParams };
+    console.log('✅ Sign-up event tracked successfully:', logData);
+    logTrackingEvent('sign_up', logData);
   } catch (error) {
     console.error('💥 Error tracking sign-up event:', error);
   }
@@ -66,27 +65,26 @@ export const trackLogin = (method = 'default') => {
   try {
     console.log('🔄 Tracking login event before backend call...', { method });
 
+    const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
+    const eventParams = {
+      method,
+      ...urlParams,
+    };
+
+    // Track with PostHog
+    analytics.signIn(method, eventParams);
+
+    // Check if gtag is available (keep existing GA4 tracking)
     if (typeof window !== 'undefined' && window.gtag) {
-      const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
-
-      const eventParams = {
-        method,
-        ...urlParams,
-      };
-
       // Send event to GA4
       window.gtag('event', 'login', eventParams);
-
-      const logData = { method, ...urlParams };
-      console.log('✅ Login event tracked successfully:', logData);
-      logTrackingEvent('login', logData);
     } else {
-      console.warn('❌ gtag not available - login tracking skipped', {
-        windowExists: typeof window !== 'undefined',
-        gtagExists: typeof window?.gtag,
-        dataLayerExists: typeof window?.dataLayer,
-      });
+      console.warn('❌ gtag not available - GA4 login tracking skipped');
     }
+
+    const logData = { method, ...urlParams };
+    console.log('✅ Login event tracked successfully:', logData);
+    logTrackingEvent('login', logData);
   } catch (error) {
     console.error('💥 Error tracking login event:', error);
   }

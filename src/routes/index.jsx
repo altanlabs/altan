@@ -66,6 +66,7 @@ import {
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
+import PageTracker from '../components/analytics/PageTracker.jsx';
 import CompactLayout from '../layouts/compact';
 import DashboardLayout from '../layouts/dashboard';
 import ProjectLayout from '../layouts/dashboard/ProjectLayout.jsx';
@@ -76,6 +77,7 @@ import SuperAdminLayout from '../layouts/superadmin/SuperAdminLayout.jsx';
 const Router = () => {
   return (
     <BrowserRouter>
+      <PageTracker />
       <Switch>
         {/* Auth Routes */}
         <Route

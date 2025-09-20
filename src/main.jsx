@@ -7,8 +7,14 @@ import reportWebVitals from './reportWebVitals';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import './index.css';
 
+// Initialize analytics
+import { initializePostHog } from './lib/analytics';
+
 // Initialize Microsoft Clarity
 Clarity.init('qdemnm0y9o');
+
+// Initialize PostHog
+initializePostHog();
 
 // ----------------------------------------------------------------------
 
