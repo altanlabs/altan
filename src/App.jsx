@@ -40,6 +40,8 @@ import { AuthProvider } from './auth/JwtContext.jsx';
 import { MotionLazyContainer } from './components/animate';
 import { ThemeSettings, SettingsProvider } from './components/settings';
 import SnackbarProvider from './components/snackbar';
+import CookieBanner from './components/cookie-banner';
+import CookieManager from './components/cookie-banner/CookieManager';
 import ThemeLocalization from './locales';
 import { store, persistor } from './redux/store';
 // routes
@@ -83,6 +85,8 @@ function App() {
                           <ThemeLocalization>
                             <SnackbarProvider>
                               <Router />
+                              <CookieBanner />
+                              <CookieManager />
                             </SnackbarProvider>
                           </ThemeLocalization>
                         </ThemeSettings>
