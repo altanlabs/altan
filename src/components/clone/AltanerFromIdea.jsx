@@ -1,108 +1,29 @@
-import { LinearProgress } from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { m, AnimatePresence } from 'framer-motion';
 import React, { useEffect, useState, memo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import { createAltaner } from '../../redux/slices/altaners.js';
-import { TextShimmer } from '../aceternity/text/text-shimmer';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
 import Iconify from '../iconify';
+import { SpiralAnimation } from '../ui/SpiralAnimation.jsx';
+import { useAnalytics } from '../../hooks/useAnalytics.js';
 
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  width: '300px',
-  height: '2px',
-  borderRadius: '1px',
-  marginTop: '2rem',
-  backgroundColor:
-    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-  '& .MuiLinearProgress-bar': {
-    background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-    transition: 'transform 0.8s ease',
-  },
-}));
-
-const LoaderStep = ({ step, icon, opacity, scale, yOffset }) => {
-  const theme = useTheme();
-  return (
-    <m.div
-      className="flex items-center justify-center gap-3 w-full absolute inset-0"
-      initial={{ opacity: 0, y: 50 }}
-      animate={{
-        opacity,
-        y: yOffset,
-        scale,
-      }}
-      transition={{
-        duration: 0.8,
-        ease: 'easeInOut',
-      }}
-    >
-      <div className="flex-shrink-0">
-        <Iconify
-          icon={icon}
-          width={20}
-          sx={{
-            color: theme.palette.mode === 'dark' ? 'white' : 'black',
-          }}
-        />
-      </div>
-      <div
-        style={{
-          color:
-            theme.palette.mode === 'dark'
-              ? `rgba(255, 255, 255, ${opacity})`
-              : `rgba(0, 0, 0, ${opacity})`,
-        }}
-        className="font-medium text-sm flex-1 text-center"
-      >
-        {step}
-      </div>
-    </m.div>
-  );
-};
+// Clean and minimal - removed all unused components and CSS
 
 function AltanerFromIdea({ idea, onClose }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const history = useHistory();
+  const analytics = useAnalytics();
   const [isCreating, setIsCreating] = useState(false);
-  const [cycleIndex, setCycleIndex] = useState(0);
   const [error, setError] = useState(null);
 
   const handleRetry = () => {
     setError(null);
     setIsCreating(false);
-    setCycleIndex(0);
   };
-
-  const steps = [
-    {
-      text: 'Finding a computer',
-      icon: 'heroicons:computer-desktop',
-    },
-    {
-      text: 'Assembling your AI team',
-      icon: 'heroicons:users',
-    },
-    {
-      text: 'Creating main components',
-      icon: 'heroicons:code-bracket',
-    },
-    {
-      text: 'Creating repository',
-      icon: 'heroicons:folder',
-    },
-    {
-      text: 'Creating database',
-      icon: 'heroicons:circle-stack',
-    },
-    {
-      text: 'Preparing your project',
-      icon: 'heroicons:rocket-launch',
-    },
-  ];
 
   useEffect(() => {
     if (!idea || isCreating || error) return;
@@ -111,73 +32,77 @@ function AltanerFromIdea({ idea, onClose }) {
 
     let isSubscribed = true;
 
-    // Start the continuous cycling animation
-    const cycleInterval = setInterval(() => {
-      if (!isSubscribed) {
-        clearInterval(cycleInterval);
-        return;
-      }
-      setCycleIndex((prev) => (prev + 1) % (steps.length * 2)); // Cycle through steps
-    }, 1500); // Change step every 1.5 seconds
-
     // Start the actual creation process
-    dispatch(createAltaner({ name: 'New Project' }, idea))
-      .then((response) => {
-        // if (!isSubscribed) return;
-        if (!response || !response.id) {
-          setError('Failed to create project. Please try again.');
-          setIsCreating(false);
-          clearInterval(cycleInterval);
+    console.log('Starting project creation with idea:', idea); // Debug log
+    const createPromise = dispatch(createAltaner({ name: 'New Project' }, idea));
+    console.log('Create promise:', createPromise); // Debug log
+    
+    createPromise
+      .then((altaner) => {
+        console.log('Promise resolved with altaner:', altaner); // Debug log
+        
+        if (!altaner) {
+          console.error('No altaner returned from createAltaner'); // Debug log
+          if (isSubscribed) {
+            setError('Failed to create project. Please try again.');
+            setIsCreating(false);
+          }
           return;
         }
-        history.push(`/project/${response.id}`);
+        
+        if (!altaner.id) {
+          console.error('Altaner missing ID:', altaner); // Debug log
+          if (isSubscribed) {
+            setError('Failed to create project. Please try again.');
+            setIsCreating(false);
+          }
+          return;
+          }
+          try {
+            analytics.trackCreateProject(
+              altaner.name || 'New Project',
+              'App',
+              {
+                project_id: altaner.id,
+                creation_source: 'idea_dialog',
+                has_idea: !!idea,
+                idea_length: idea ? idea.length : 0,
+                is_public: altaner.is_public || false,
+                account_id: altaner.account_id,
+                created_via_spiral_animation: true,
+              }
+            );
+          } catch (analyticsError) {
+            console.error('Analytics tracking failed:', analyticsError);
+          }
+          
+          try {
+            // Try fast client-side navigation first
+            history.push(`/project/${altaner.id}`);
+            console.log('React Router navigation successful');
+            
+            // Close dialog after successful navigation
+            if (onClose) onClose();
+            
+          } catch (navError) {
+            console.log('React Router failed, using window.location fallback');
+            // Fallback to full page redirect if React Router fails
+            if (onClose) onClose();
+            window.location.href = `/project/${altaner.id}`;
+          }
       })
       .catch((error) => {
+        console.error('Promise rejected with error:', error); // Debug log
         if (!isSubscribed) return;
-        // console.error('Failed to create altaner:', error);
         setError(error?.message || 'Failed to create project. Please try again.');
         setIsCreating(false);
-        clearInterval(cycleInterval);
       });
 
     return () => {
       isSubscribed = false;
-      clearInterval(cycleInterval);
     };
-  }, [idea, isCreating, error, dispatch, history, steps.length]);
+  }, [idea, isCreating, error, dispatch, history]);
 
-  // Calculate positions and opacities for the sliding effect
-  const getStepProps = (stepIndex) => {
-    const currentPosition = cycleIndex % steps.length;
-    const relativePosition = (stepIndex - currentPosition + steps.length) % steps.length;
-    let opacity = 0;
-    let yOffset = 0;
-    let scale = 0.9;
-
-    if (relativePosition === 0) {
-      // Current active step
-      opacity = 1;
-      yOffset = 0;
-      scale = 1;
-    } else if (relativePosition === 1) {
-      // Next step coming in
-      opacity = 0.6;
-      yOffset = 30;
-      scale = 0.95;
-    } else if (relativePosition === steps.length - 1) {
-      // Previous step going out
-      opacity = 0.3;
-      yOffset = -30;
-      scale = 0.95;
-    } else if (relativePosition === 2) {
-      // Step after next
-      opacity = 0.2;
-      yOffset = 60;
-      scale = 0.9;
-    }
-
-    return { opacity, yOffset, scale };
-  };
 
   if (!idea) return null;
 
@@ -264,39 +189,23 @@ function AltanerFromIdea({ idea, onClose }) {
                   </div>
                 </m.div>
               ) : (
-                // Loading state
+                // Loading state with spiral animation
                 <>
-                  <div className="text-center mb-12">
-                    <TextShimmer
-                      className="text-2xl font-medium tracking-tight"
-                      duration={2}
-                    >
-                      Creating your project...
-                    </TextShimmer>
+                  {/* Spiral Animation Background */}
+                  <div className="absolute inset-0">
+                    <SpiralAnimation />
                   </div>
 
-                  {/* Steps container with relative positioning for sliding effect */}
-                  <div className="relative h-40 flex items-center justify-center overflow-hidden">
-                    {steps.map((step, index) => {
-                      const stepProps = getStepProps(index);
-                      return (
-                        <LoaderStep
-                          key={step.text}
-                          step={step.text}
-                          icon={step.icon}
-                          {...stepProps}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  <m.div
-                    initial={{ opacity: 0, y: 20 }}
+                  {/* Simple Elegant Text with Pulsing Effect */}
+                  <m.div 
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="flex justify-center w-full pt-8"
+                    transition={{ duration: 1.5, ease: "easeOut", delay: 2 }}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
                   >
-                    <StyledLinearProgress variant="indeterminate" />
+                    <div className="text-white text-2xl tracking-[0.2em] uppercase font-extralight animate-pulse">
+                      Creating your project...
+                    </div>
                   </m.div>
                 </>
               )}

@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import Iconify from '../components/iconify';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { CompactLayout } from '../layouts/dashboard';
 import { selectAccountId } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
 import { optimai_shop } from '../utils/axios';
-import { useAnalytics } from '../hooks/useAnalytics';
 
 // ----------------------------------------------------------------------
 
@@ -52,14 +52,15 @@ const trackPurchaseEvent = (sessionData, analytics) => {
           value,
           currency,
           items,
-        // Include attribution data
-        ...urlParams,
-        // Additional metadata
-        plan_type: plan?.name?.toLowerCase(),
-        billing_frequency: billing_option?.billing_frequency,
-        credits_included: plan?.credits,
-        subscription_id: sessionData?.subscription?.id,
-      });
+          // Include attribution data
+          ...urlParams,
+          // Additional metadata
+          plan_type: plan?.name?.toLowerCase(),
+          billing_frequency: billing_option?.billing_frequency,
+          credits_included: plan?.credits,
+          subscription_id: sessionData?.subscription?.id,
+        });
+      }
 
       // console.debug('Purchase event tracked', {
       //   transaction_id: subscription?.id || sessionData.session_id,
@@ -82,8 +83,7 @@ const trackPurchaseEvent = (sessionData, analytics) => {
         content_type: 'product',
       });
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 };
 
 // ----------------------------------------------------------------------

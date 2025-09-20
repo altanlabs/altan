@@ -12,7 +12,6 @@ import { refreshToken } from '../../../../utils/auth.js';
 import { optimai_root } from '../../../../utils/axios.js';
 
 const ConnectionCreator = ({ connectionType, setIsCreatingNewConnection }) => {
-  console.log('legacy conn creator');
   const [apiKey, setApiKey] = useState('');
   const dispatch = useDispatch();
   const { id: accountId } = useSelector((state) => state.general.account);
