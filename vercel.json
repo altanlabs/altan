@@ -3,7 +3,7 @@
     { "source": "/r/(.*)", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
   ],
-  "installCommand": "rm -rf node_modules bun.lockb && bun install --ignore-scripts && bun install esbuild@0.25.9",
+  "installCommand": "bun install",
   "buildCommand": "bun run build",
   "headers": [
     {
