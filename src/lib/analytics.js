@@ -4,28 +4,52 @@ import posthog from 'posthog-js';
 export const initializePostHog = () => {
   const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
   const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+  const isDev = import.meta.env.DEV;
+
+  // Debug logging
+  console.log('PostHog initialization:', {
+    hasKey: !!posthogKey,
+    hasHost: !!posthogHost,
+    isDev,
+    key: posthogKey ? `${posthogKey.substring(0, 8)}...` : 'missing',
+    host: posthogHost || 'missing',
+  });
 
   if (posthogKey && posthogHost) {
-    posthog.init(posthogKey, {
-      api_host: posthogHost,
-      // Enable session recording
-      session_recording: {
-        maskAllInputs: false,
-        maskInputOptions: {
-          password: true,
+    try {
+      posthog.init(posthogKey, {
+        api_host: posthogHost,
+        // Enable session recording
+        session_recording: {
+          maskAllInputs: false,
+          maskInputOptions: {
+            password: true,
+          },
         },
-      },
-      // Capture pageviews automatically
-      capture_pageview: true,
-      // Capture performance metrics
-      capture_performance: true,
-      // Enable autocapture for clicks and form submissions
-      autocapture: true,
-      // Disable in development
-      disabled: import.meta.env.DEV,
-    });
+        // Capture pageviews automatically
+        capture_pageview: true,
+        // Capture performance metrics
+        capture_performance: true,
+        // Enable autocapture for clicks and form submissions
+        autocapture: true,
+        // Disable in development
+        disabled: isDev,
+        // Debug mode in development
+        debug: isDev,
+      });
+
+      console.log('PostHog initialized successfully');
+
+      // Make PostHog available globally for debugging
+      window.posthog = posthog;
+    } catch (error) {
+      console.error('PostHog initialization failed:', error);
+    }
   } else {
-    console.warn('PostHog configuration missing. Analytics will be disabled.');
+    console.warn('PostHog configuration missing. Analytics will be disabled.', {
+      missingKey: !posthogKey,
+      missingHost: !posthogHost,
+    });
   }
 };
 
@@ -187,11 +211,23 @@ export const analytics = {
 
   // Project and template events
   createProject: (projectName, projectType, properties = {}) => {
-    posthog.capture('create_project', {
+    console.log('PostHog: Tracking create_project event', {
       project_name: projectName,
       project_type: projectType,
-      ...properties,
+      properties,
+      posthogAvailable: !!window.posthog,
+      posthogDisabled: window.posthog?.__loaded === false,
     });
+
+    if (window.posthog) {
+      posthog.capture('create_project', {
+        project_name: projectName,
+        project_type: projectType,
+        ...properties,
+      });
+    } else {
+      console.warn('PostHog not available for create_project event');
+    }
   },
 
   openProject: (projectId, projectName, properties = {}) => {
