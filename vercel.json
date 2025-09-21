@@ -3,8 +3,8 @@
     { "source": "/r/(.*)", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
   ],
-  "installCommand": "bun install",
-  "buildCommand": "bun run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build",
   "headers": [
     {
       "source": "/(.*)",
