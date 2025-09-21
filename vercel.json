@@ -3,8 +3,8 @@
     { "source": "/r/(.*)", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
   ],
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
+  "installCommand": "rm -rf node_modules bun.lockb && bun install --ignore-scripts && bun install esbuild@0.25.9",
+  "buildCommand": "bun run build",
   "headers": [
     {
       "source": "/(.*)",
