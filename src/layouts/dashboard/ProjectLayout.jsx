@@ -10,6 +10,7 @@ import FloatingChatWidget from '../../components/chat/FloatingChatWidget.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import {
   clearCurrentAltaner,
@@ -37,7 +38,6 @@ const ACCOUNT_ENTITIES = [
   'thread',
   'message',
   'media',
-  'connection',
   'tool',
   'agent',
   'user',
@@ -45,6 +45,10 @@ const ACCOUNT_ENTITIES = [
   'deployment',
   'interface',
   'base',
+];
+
+const HERMES_ACCOUNT_ENTITIES = [
+  'connection',
 ];
 
 const selectAccountId = (state) => state.general.account?.id;
@@ -55,8 +59,9 @@ const ProjectLayout = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
 
-  // Parse search params manually for React Router v5
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const searchParams = new URLSearchParams(location.search);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const setSearchParams = (newParams) => {
     history.replace({
       pathname: location.pathname,
@@ -64,6 +69,7 @@ const ProjectLayout = ({ children }) => {
     });
   };
   const ws = useWebSocket();
+  const hermesWs = useHermesWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
@@ -107,6 +113,12 @@ const ProjectLayout = ({ children }) => {
       ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
     }
   }, [ws?.isOpen, accountId, ws]);
+
+  useEffect(() => {
+    if (!!hermesWs?.isOpen && !!accountId) {
+      hermesWs.subscribe(`account:${accountId}`);
+    }
+  }, [hermesWs?.isOpen, accountId, hermesWs]);
 
   useEffect(() => {
     if (!accountId && ws?.isOpen) {

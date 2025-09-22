@@ -44,14 +44,6 @@ const ROOM_GENERAL_GQ = {
   threads: {
     '@fields': 'id',
   },
-  authorization_requests: {
-    '@fields': '@all',
-    '@filter': {
-      is_completed: {
-        _eq: false,
-      },
-    },
-  },
 };
 
 const ROOM_PARENT_THREAD_GQ = {

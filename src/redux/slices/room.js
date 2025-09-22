@@ -4,6 +4,7 @@ import { createCachedSelector } from 're-reselect';
 
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
+import { setPreviewMode } from './previewControl';
 import {
   // checkArraysEqualShallow,
   checkArraysEqualsProperties,
@@ -11,8 +12,7 @@ import {
   getNestedProperty,
 } from '../helpers/memoize';
 import { paginateCollection } from './utils/collections';
-import { setPreviewMode } from './previewControl';
-import { optimai, optimai_room, optimai_agent } from '../../utils/axios';
+import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
 const SOUND_IN = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/in.mp3');
@@ -355,7 +355,7 @@ const slice = createSlice({
       };
       state.account = account;
       state.members = paginateCollection(members);
-      state.authorization_requests = roomObject.authorization_requests.items || [];
+      // Authorization requests are now fetched separately via API
 
       const memberId = guest?.member.id || user?.member.id;
 
@@ -779,6 +779,9 @@ const slice = createSlice({
         };
       }
     },
+    setAuthorizationRequests: (state, action) => {
+      state.authorization_requests = action.payload;
+    },
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
@@ -1086,6 +1089,7 @@ export const {
   updateMessageContent,
   addAuthorizationRequest,
   updateAuthorizationRequest,
+  setAuthorizationRequests,
   setPublicRooms,
   setUserRooms,
   setUserRoomsLoadingMore,
@@ -1669,6 +1673,27 @@ export const searchUserRooms = (query) => async (dispatch) => {
   }
 };
 
+// Fetch authorization requests from the API
+export const fetchAuthorizationRequests =
+  (roomId = null) =>
+  async (dispatch) => {
+    try {
+      const params = new URLSearchParams();
+      if (roomId) {
+        params.append('room_id', roomId);
+      }
+      params.append('is_completed', 'false');
+
+      const response = await optimai_integration.get(`/authorization-request?${params.toString()}`);
+
+      if (response.status === 200 && response.data?.authorization_requests) {
+        dispatch(setAuthorizationRequests(response.data.authorization_requests));
+      }
+    } catch (error) {
+      console.error('Failed to fetch authorization requests:', error);
+    }
+  };
+
 export const fetchRoom =
   ({ roomId, user, guest }) =>
   async (dispatch) => {
@@ -1677,6 +1702,9 @@ export const fetchRoom =
       const response = await optimai_room.post(`/${roomId}`, ROOM_GENERAL_GQ);
       const room = response.data;
       dispatch(slice.actions.setRoom({ room, guest, user }));
+
+      // Fetch authorization requests for this room
+      dispatch(fetchAuthorizationRequests(roomId));
       return room;
     } catch (e) {
       console.error('error fetching room', e);
