@@ -52,14 +52,15 @@ const trackPurchaseEvent = (sessionData, analytics) => {
           value,
           currency,
           items,
-        // Include attribution data
-        ...urlParams,
-        // Additional metadata
-        plan_type: plan?.name?.toLowerCase(),
-        billing_frequency: billing_option?.billing_frequency,
-        credits_included: plan?.credits,
-        subscription_id: sessionData?.subscription?.id,
-      });
+          // Include attribution data
+          ...urlParams,
+          // Additional metadata
+          plan_type: plan?.name?.toLowerCase(),
+          billing_frequency: billing_option?.billing_frequency,
+          credits_included: plan?.credits,
+          subscription_id: sessionData?.subscription?.id,
+        });
+      }
 
       // console.debug('Purchase event tracked', {
       //   transaction_id: subscription?.id || sessionData.session_id,
@@ -82,8 +83,7 @@ const trackPurchaseEvent = (sessionData, analytics) => {
         content_type: 'product',
       });
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 };
 
 // ----------------------------------------------------------------------
