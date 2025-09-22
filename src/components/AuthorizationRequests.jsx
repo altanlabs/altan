@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { selectAccountId, selectAuthorizationRequests } from '../redux/slices/room.js';
-import { optimai } from '../utils/axios.js';
+import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
 import CreateConnection from './tools/CreateConnection.jsx';
 
@@ -18,7 +18,7 @@ const AuthorizationRequests = () => {
 
   const handleReject = async (request) => {
     try {
-      const response = await optimai.patch(`/authorization-request/${request.id}/reject`);
+      const response = await optimai_integration.patch(`/authorization-request/${request.id}/reject`);
       if (response.status === 200) {
       }
     } catch (error) {
@@ -59,7 +59,7 @@ const AuthorizationRequests = () => {
               {expandedRequest?.id === request.id ? (
                 <div className="p-2">
                   <CreateConnection
-                    id={request.meta_data.connection_type_id}
+                    id={request.connection_type_id}
                     accountId={accountId}
                     external_id={request.id}
                     popup={true}
