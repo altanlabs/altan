@@ -53,56 +53,26 @@ export const analytics = {
       return;
     }
 
-    // Convert userId to string as PostHog expects distinct_id as string
     const distinctId = String(userId);
 
-    // Use PostHog's standard person properties with $set
-    const standardProperties = {
+    const properties = {
+      email: userProperties.email,
+      first_name: userProperties.first_name,
+      last_name: userProperties.last_name,
       $set: {
-        email: userProperties.email,
-        first_name: userProperties.first_name,
-        last_name: userProperties.last_name,
-        is_superadmin: userProperties.is_superadmin,
-        // Add any custom properties
-        ...Object.fromEntries(
-          Object.entries(userProperties).filter(([key]) =>
-            !['email', 'first_name', 'last_name', 'is_superadmin'].includes(key),
-          ),
-        ),
+        ...userProperties // custom props
       },
-      // Use $set_once for properties that should only be set on first identification
       $set_once: {
         first_seen_method: userProperties.method,
         signup_date: userProperties.signup_date,
-      },
+      }
     };
 
-    // Remove undefined values to keep the payload clean
-    Object.keys(standardProperties.$set).forEach((key) => {
-      if (standardProperties.$set[key] === undefined) {
-        delete standardProperties.$set[key];
-      }
-    });
-
-    Object.keys(standardProperties.$set_once).forEach((key) => {
-      if (standardProperties.$set_once[key] === undefined) {
-        delete standardProperties.$set_once[key];
-      }
-    });
-
-    // Remove empty objects
-    if (Object.keys(standardProperties.$set).length === 0) {
-      delete standardProperties.$set;
-    }
-    if (Object.keys(standardProperties.$set_once).length === 0) {
-      delete standardProperties.$set_once;
-    }
-
-    posthog.identify(distinctId, standardProperties);
+    posthog.identify(distinctId, properties);
 
     console.log('PostHog user identified:', {
       distinctId,
-      properties: standardProperties,
+      properties,
     });
   },
 
@@ -333,22 +303,29 @@ export const analytics = {
 
   // Set user properties
   setUserProperties: (properties) => {
-    // Use PostHog's person properties API correctly
-    const standardProperties = {
-      $set: {
-        ...properties,
-      },
-    };
+    // Build properties object with standard PostHog person properties at top level
+    const payload = {};
 
-    // Remove undefined values
-    Object.keys(standardProperties.$set).forEach((key) => {
-      if (standardProperties.$set[key] === undefined) {
-        delete standardProperties.$set[key];
+    // Standard person properties (sent at top level)
+    const standardProps = ['email', 'first_name', 'last_name'];
+    standardProps.forEach((prop) => {
+      if (properties[prop] !== undefined) {
+        payload[prop] = properties[prop];
       }
     });
 
-    if (Object.keys(standardProperties.$set).length > 0) {
-      posthog.capture('$set', standardProperties);
+    // Custom properties using $set
+    const customProperties = Object.fromEntries(
+      Object.entries(properties).filter(([key]) => !standardProps.includes(key) && properties[key] !== undefined),
+    );
+
+    if (Object.keys(customProperties).length > 0) {
+      payload.$set = customProperties;
+    }
+
+    // Only send if we have properties to set
+    if (Object.keys(payload).length > 0) {
+      posthog.capture('$set', payload);
     }
   },
 

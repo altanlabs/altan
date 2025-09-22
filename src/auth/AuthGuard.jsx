@@ -112,6 +112,9 @@ function AuthGuard({ children, requireAuth = false }) {
 
   useEffect(() => {
     if (isAuthenticated && user && !user.is_disabled) {
+      // Check if user just completed registration (for web flow)
+      const wasRegistering = localStorage.getItem('altan_registration_in_progress');
+      
       // Identify user in Microsoft Clarity
       Clarity.identify(
         user.id.toString(), // required: unique user ID
@@ -119,6 +122,15 @@ function AuthGuard({ children, requireAuth = false }) {
         undefined, // optional: page ID
         `${user.email}`, // optional: friendly name
       );
+
+      // If user was in registration flow, alias them first
+      if (wasRegistering === 'true') {
+        // Alias the user to link anonymous session to known user
+        analytics.alias(user.email, user.id);
+        
+        // Clear the flag
+        localStorage.removeItem('altan_registration_in_progress');
+      }
 
       // Identify user in PostHog
       analytics.identify(user.id, {

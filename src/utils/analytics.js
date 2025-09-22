@@ -31,6 +31,11 @@ export const trackSignUp = (method = 'default') => {
   try {
     console.log('🔄 Tracking sign-up event before backend call...', { method });
 
+    // Mark that user is in registration flow (for web flow alias detection)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('altan_registration_in_progress', 'true');
+    }
+
     // Get all URL parameters
     const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
     const eventParams = {
