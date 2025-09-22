@@ -34,7 +34,7 @@ const optimai = axios.create({
 
 const optimai_integration = axios.create({
   name: 'optimai_integration',
-  baseURL: `${OPTIMAI_BASE_URL}/integration`,
+  baseURL: 'https://integration.altan.ai',
 });
 
 const optimai_agent = axios.create({

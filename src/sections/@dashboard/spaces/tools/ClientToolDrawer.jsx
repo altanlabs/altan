@@ -37,7 +37,6 @@ const VALUE_TYPES = [
 ];
 
 const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
-  console.log('toolToEdit', toolToEdit);
   const { enqueueSnackbar } = useSnackbar();
   const currentAgent = useSelector((state) => state.agents.currentAgent);
   const [isSubmitting, setIsSubmitting] = useState(false);

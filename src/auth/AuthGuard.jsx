@@ -195,7 +195,7 @@ function AuthGuard({ children, requireAuth = false }) {
             setShowLoginModal,
           }}
         >
-          {isAuthenticated ? <WebSocketProvider>{children}</WebSocketProvider> : children}
+          {isAuthenticated ? <HermesWebSocketProvider><WebSocketProvider>{children}</WebSocketProvider></HermesWebSocketProvider> : children}
         </AuthRequirementContext.Provider>
         <Login
           onClose={() => setShowLoginModal(false)}
@@ -216,9 +216,9 @@ function AuthGuard({ children, requireAuth = false }) {
       }}
     >
       {isAuthenticated ? (
-        <>
+        <HermesWebSocketProvider>
           <WebSocketProvider>{children}</WebSocketProvider>
-        </>
+        </HermesWebSocketProvider>
       ) : (
         children
       )}

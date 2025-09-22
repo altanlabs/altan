@@ -139,7 +139,7 @@ const ConnectionCreator = ({
     const { name, host } = data;
 
     // Build base URL with required parameters
-    let oauthUrl = `${API_BASE_URL}/integration/account/${account.id}/oauth-connection?ctid=${connectionType.id}&origin=${encodeURIComponent(window.location.origin)}&atk=${accessToken}&name=${encodeURIComponent(name)}`;
+    let oauthUrl = `https://integration.altan.ai/account/${account.id}/oauth-connection?ctid=${connectionType.id}&origin=${encodeURIComponent(window.location.origin)}&atk=${accessToken}&name=${encodeURIComponent(name)}`;
 
     // Add host parameter if it exists in data
     if (host) {
