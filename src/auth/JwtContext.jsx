@@ -425,6 +425,18 @@ export function AuthProvider({ children }) {
 
         // Only make API calls for regular (non-iframe) users
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog on initialization
+        if (userProfile.isAuthenticated && userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'existing_session',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'INITIAL',
           payload: userProfile,

@@ -6,15 +6,6 @@ export const initializePostHog = () => {
   const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
   const isDev = import.meta.env.DEV;
 
-  // Debug logging
-  console.log('PostHog initialization:', {
-    hasKey: !!posthogKey,
-    hasHost: !!posthogHost,
-    isDev,
-    key: posthogKey ? `${posthogKey.substring(0, 8)}...` : 'missing',
-    host: posthogHost || 'missing',
-  });
-
   if (posthogKey && posthogHost) {
     try {
       posthog.init(posthogKey, {
@@ -57,7 +48,62 @@ export const initializePostHog = () => {
 export const analytics = {
   // User authentication events
   identify: (userId, userProperties = {}) => {
-    posthog.identify(userId, userProperties);
+    if (!userId) {
+      console.warn('PostHog identify called without userId');
+      return;
+    }
+
+    // Convert userId to string as PostHog expects distinct_id as string
+    const distinctId = String(userId);
+
+    // Use PostHog's standard person properties with $set
+    const standardProperties = {
+      $set: {
+        email: userProperties.email,
+        first_name: userProperties.first_name,
+        last_name: userProperties.last_name,
+        is_superadmin: userProperties.is_superadmin,
+        // Add any custom properties
+        ...Object.fromEntries(
+          Object.entries(userProperties).filter(([key]) =>
+            !['email', 'first_name', 'last_name', 'is_superadmin'].includes(key),
+          ),
+        ),
+      },
+      // Use $set_once for properties that should only be set on first identification
+      $set_once: {
+        first_seen_method: userProperties.method,
+        signup_date: userProperties.signup_date,
+      },
+    };
+
+    // Remove undefined values to keep the payload clean
+    Object.keys(standardProperties.$set).forEach((key) => {
+      if (standardProperties.$set[key] === undefined) {
+        delete standardProperties.$set[key];
+      }
+    });
+
+    Object.keys(standardProperties.$set_once).forEach((key) => {
+      if (standardProperties.$set_once[key] === undefined) {
+        delete standardProperties.$set_once[key];
+      }
+    });
+
+    // Remove empty objects
+    if (Object.keys(standardProperties.$set).length === 0) {
+      delete standardProperties.$set;
+    }
+    if (Object.keys(standardProperties.$set_once).length === 0) {
+      delete standardProperties.$set_once;
+    }
+
+    posthog.identify(distinctId, standardProperties);
+
+    console.log('PostHog user identified:', {
+      distinctId,
+      properties: standardProperties,
+    });
   },
 
   // Page view tracking
@@ -287,7 +333,23 @@ export const analytics = {
 
   // Set user properties
   setUserProperties: (properties) => {
-    posthog.people.set(properties);
+    // Use PostHog's person properties API correctly
+    const standardProperties = {
+      $set: {
+        ...properties,
+      },
+    };
+
+    // Remove undefined values
+    Object.keys(standardProperties.$set).forEach((key) => {
+      if (standardProperties.$set[key] === undefined) {
+        delete standardProperties.$set[key];
+      }
+    });
+
+    if (Object.keys(standardProperties.$set).length > 0) {
+      posthog.capture('$set', standardProperties);
+    }
   },
 
   // Reset user session (on logout)
