@@ -26,28 +26,9 @@ export const setupGlobalErrorHandling = () => {
     });
   });
 
-  // Handle console errors (optional - can be noisy)
-  const originalConsoleError = console.error;
-  console.error = (...args) => {
-    // Call original console.error first
-    originalConsoleError.apply(console, args);
-
-    // Track if it looks like an actual error
-    const firstArg = args[0];
-    if (firstArg instanceof Error) {
-      analytics.trackError(firstArg, {
-        source: 'console_error',
-        event_type: 'console_error',
-        console_args: args.slice(1),
-      });
-    } else if (typeof firstArg === 'string' && firstArg.toLowerCase().includes('error')) {
-      analytics.trackError(new Error(firstArg), {
-        source: 'console_error',
-        event_type: 'console_error_string',
-        console_args: args.slice(1),
-      });
-    }
-  };
+  // Note: Console error interception removed to prevent feedback loops
+  // If you need to track console errors, implement it carefully to avoid
+  // tracking your own analytics logging
 };
 
 // React Error Boundary is exported from a separate file to avoid JSX in .js files

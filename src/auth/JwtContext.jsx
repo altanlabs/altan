@@ -764,9 +764,6 @@ export function AuthProvider({ children }) {
 
         // Identify user in PostHog
         if (userProfile.user) {
-          // Alias the user to link anonymous session to known user
-          analytics.alias(userProfile.user.email, userProfile.user.id);
-
           analytics.identify(userProfile.user.id, {
             email: userProfile.user.email,
             first_name: userProfile.user.first_name,
@@ -789,8 +786,6 @@ export function AuthProvider({ children }) {
 
           // Identify user in PostHog for fallback
           if (userProfile.user) {
-            // Alias the user to link anonymous session to known user
-            analytics.alias(userProfile.user.email, userProfile.user.id);
             analytics.identify(userProfile.user.id, {
               email: userProfile.user.email,
               first_name: userProfile.user.first_name,

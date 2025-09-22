@@ -62,6 +62,7 @@ export const analytics = {
       email,
       first_name,
       last_name,
+      name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
       $set: {
         ...customProperties, // only custom props, never standard person properties
       },
@@ -223,7 +224,7 @@ export const analytics = {
 
     posthog.capture('application_error', errorInfo);
 
-    console.error('Tracked application error:', errorInfo);
+    console.log('Tracked application error:', errorInfo);
   },
 
   // API error tracking
@@ -241,7 +242,7 @@ export const analytics = {
 
     posthog.capture('api_error', apiErrorInfo);
 
-    console.error('Tracked API error:', apiErrorInfo);
+    console.log('Tracked API error:', apiErrorInfo);
   },
 
   // Performance events
@@ -411,23 +412,7 @@ export const analytics = {
     }
   },
 
-  // Alias user (link anonymous ID to known user ID)
-  alias: (email, userId) => {
-    if (!email || !userId) {
-      console.warn('PostHog alias called without email or userId', { email, userId });
-      return;
-    }
-
-    // Convert userId to string as PostHog expects distinct_id as string
-    const distinctId = String(userId);
-
-    posthog.alias(distinctId, email);
-
-    console.log('PostHog user aliased:', {
-      email,
-      userId: distinctId,
-    });
-  },
+  // Alias function removed - we use user.id consistently as distinct_id
 
   // Reset user session (on logout)
   reset: () => {
