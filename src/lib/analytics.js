@@ -352,6 +352,24 @@ export const analytics = {
     }
   },
 
+  // Alias user (link anonymous ID to known user ID)
+  alias: (email, userId) => {
+    if (!email || !userId) {
+      console.warn('PostHog alias called without email or userId', { email, userId });
+      return;
+    }
+
+    // Convert userId to string as PostHog expects distinct_id as string
+    const distinctId = String(userId);
+
+    posthog.alias(distinctId, email);
+
+    console.log('PostHog user aliased:', {
+      email,
+      userId: distinctId,
+    });
+  },
+
   // Reset user session (on logout)
   reset: () => {
     posthog.reset();
