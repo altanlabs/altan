@@ -11,6 +11,7 @@ import {
   checkObjectsEqual,
   getNestedProperty,
 } from '../helpers/memoize';
+import { analytics } from '../../lib/analytics';
 import { paginateCollection } from './utils/collections';
 import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
@@ -1999,6 +2000,28 @@ export const sendMessage =
       if (respond && respond[threadId]) {
         dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
       }
+
+      // Track message sent event
+      try {
+        const trackingProperties = {
+          has_attachments: !!(attachments?.length > 0),
+          attachment_count: attachments?.length || 0,
+          content_length: content?.length || 0,
+          is_reply: !!(respond && respond[threadId]),
+        };
+
+        // Extract project ID from URL (/project/{project-id}/c/{conversation-id})
+        const urlParts = window.location.pathname.split('/');
+        const projectIndex = urlParts.indexOf('project');
+        if (projectIndex !== -1 && urlParts[projectIndex + 1]) {
+          trackingProperties.project_id = urlParts[projectIndex + 1];
+        }
+
+        analytics.messageSent(threadId, trackingProperties);
+      } catch (trackingError) {
+        console.warn('Failed to track message sent event:', trackingError);
+      }
+
       return response.data;
     } catch (e) {
       console.error('Failed to send message:', e);

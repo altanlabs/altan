@@ -55,17 +55,20 @@ export const analytics = {
 
     const distinctId = String(userId);
 
+    // Extract standard person properties to send at top level
+    const { email, first_name, last_name, method, signup_date, ...customProperties } = userProperties;
+
     const properties = {
-      email: userProperties.email,
-      first_name: userProperties.first_name,
-      last_name: userProperties.last_name,
+      email,
+      first_name,
+      last_name,
       $set: {
-        ...userProperties // custom props
+        ...customProperties, // only custom props, never standard person properties
       },
       $set_once: {
-        first_seen_method: userProperties.method,
-        signup_date: userProperties.signup_date,
-      }
+        first_seen_method: method,
+        signup_date,
+      },
     };
 
     posthog.identify(distinctId, properties);
@@ -107,6 +110,16 @@ export const analytics = {
   agentCreated: (agentType, properties = {}) => {
     posthog.capture('agent_created', {
       agent_type: agentType,
+      ...properties,
+    });
+  },
+
+  // Flow creation events
+  flowCreated: (flowData, properties = {}) => {
+    posthog.capture('flow_created', {
+      flow_type: flowData.type || 'unknown',
+      has_prompt: !!(properties.prompt),
+      has_altaner_component: !!(properties.altaner_component_id),
       ...properties,
     });
   },
@@ -189,6 +202,48 @@ export const analytics = {
     });
   },
 
+  // Enhanced error tracking with full context
+  trackError: (error, context = {}) => {
+    const errorInfo = {
+      error_type: error.name || 'Error',
+      error_message: error.message || 'Unknown error',
+      error_stack: error.stack,
+      url: window.location.href,
+      user_agent: navigator.userAgent,
+      timestamp: new Date().toISOString(),
+      ...context,
+    };
+
+    // Also capture as exception for PostHog's error tracking
+    if (typeof posthog.captureException === 'function') {
+      posthog.captureException(error, {
+        extra: context,
+      });
+    }
+
+    posthog.capture('application_error', errorInfo);
+
+    console.error('Tracked application error:', errorInfo);
+  },
+
+  // API error tracking
+  trackAPIError: (error, endpoint, method = 'GET', context = {}) => {
+    const apiErrorInfo = {
+      error_type: 'API_ERROR',
+      api_endpoint: endpoint,
+      api_method: method,
+      status_code: error.response?.status,
+      status_text: error.response?.statusText,
+      error_message: error.message,
+      response_data: error.response?.data,
+      ...context,
+    };
+
+    posthog.capture('api_error', apiErrorInfo);
+
+    console.error('Tracked API error:', apiErrorInfo);
+  },
+
   // Performance events
   performanceMetric: (metricName, value, properties = {}) => {
     posthog.capture('performance_metric', {
@@ -204,6 +259,23 @@ export const analytics = {
       value,
       currency,
       items,
+      ...properties,
+    });
+  },
+
+  // Upgrade and pricing events
+  upgradeDialogViewed: (properties = {}) => {
+    posthog.capture('upgrade_dialog_viewed', {
+      ...properties,
+    });
+  },
+
+  checkoutInitiated: (planType, billingOption, properties = {}) => {
+    posthog.capture('checkout_initiated', {
+      plan_type: planType,
+      billing_frequency: billingOption.billing_frequency,
+      price: billingOption.price / 100, // Convert cents to euros
+      currency: 'EUR',
       ...properties,
     });
   },
@@ -288,6 +360,14 @@ export const analytics = {
     });
   },
 
+  // Message interaction events
+  messageSent: (threadId, properties = {}) => {
+    posthog.capture('message_sent', {
+      thread_id: threadId,
+      ...properties,
+    });
+  },
+
   // UI/UX events
   autopilotUpgradeDialog: (action, properties = {}) => {
     posthog.capture('autopilot_upgrade_dialog', {
@@ -316,7 +396,9 @@ export const analytics = {
 
     // Custom properties using $set
     const customProperties = Object.fromEntries(
-      Object.entries(properties).filter(([key]) => !standardProps.includes(key) && properties[key] !== undefined),
+      Object.entries(properties).filter(
+        ([key]) => !standardProps.includes(key) && properties[key] !== undefined,
+      ),
     );
 
     if (Object.keys(customProperties).length > 0) {

@@ -24,6 +24,7 @@ import { useHistory } from 'react-router-dom';
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
+import { analytics } from '../../lib/analytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { openUrl } from '../../utils/auth';
@@ -69,10 +70,19 @@ const ENTERPRISE_FEATURES = [
  */
 const trackCheckoutEvent = (plan, billingOption, planType) => {
   try {
-    if (typeof window !== 'undefined' && window.gtag) {
-      const value = billingOption.price / 100; // Convert cents to euros
-      const currency = 'EUR';
+    const value = billingOption.price / 100; // Convert cents to euros
+    const currency = 'EUR';
 
+    // Track with PostHog
+    analytics.checkoutInitiated(planType, billingOption, {
+      source: 'pricing_page',
+      plan_id: plan.id,
+      plan_name: plan.name,
+      credits_included: plan.credits,
+    });
+
+    // Track with GA4 (existing)
+    if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'begin_checkout', {
         currency,
         value,
@@ -92,8 +102,8 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
       });
     }
 
+    // Track with Facebook Pixel (existing)
     if (typeof window !== 'undefined' && window.fbq) {
-      const value = billingOption.price / 100;
       window.fbq('track', 'InitiateCheckout', {
         value,
         currency: 'EUR',
@@ -267,6 +277,14 @@ export default function NewPricing() {
   const { isAuthenticated } = useAuthContext();
   const history = useHistory();
 
+  // Track pricing page view
+  useEffect(() => {
+    analytics.pageView('pricing_page', {
+      is_authenticated: isAuthenticated,
+      account_id: accountId,
+    });
+  }, [isAuthenticated, accountId]);
+
   useEffect(() => {
     const fetchPricing = async () => {
       try {
@@ -383,7 +401,15 @@ export default function NewPricing() {
     setLoadingStates(prev => ({ ...prev, enterprise: true }));
 
     try {
-      // Track lead generation for enterprise plan
+      // Track lead generation for enterprise plan with PostHog
+      analytics.generateLead('enterprise', {
+        source: 'pricing_page',
+        action: 'book_call',
+        account_id: accountId,
+        is_authenticated: isAuthenticated,
+      });
+
+      // Track lead generation with GA4 (existing)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'generate_lead', {
           currency: 'EUR',
@@ -393,6 +419,7 @@ export default function NewPricing() {
           action: 'book_call',
         });
       }
+
       window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
     } catch (error) {
       console.error('Error tracking lead generation:', error);

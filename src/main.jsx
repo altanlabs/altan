@@ -9,12 +9,16 @@ import './index.css';
 
 // Initialize analytics
 import { initializePostHog } from './lib/analytics';
+import { setupGlobalErrorHandling } from './utils/errorTracking';
 
 // Initialize Microsoft Clarity
 Clarity.init('qdemnm0y9o');
 
 // Initialize PostHog
 initializePostHog();
+
+// Set up global error tracking
+setupGlobalErrorHandling();
 
 // ----------------------------------------------------------------------
 

@@ -10,6 +10,7 @@ import { clearMediaState } from './media';
 import { clearNotificationsState } from './notifications';
 import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
+import { analytics } from '../../lib/analytics';
 import { optimai, optimai_integration } from '../../utils/axios';
 import { ALTAN_AGENT_TEMPLATE_IDS } from '../../utils/constants';
 import { checkArraysEqualsProperties, checkObjectsEqual } from '../helpers/memoize';
@@ -1684,25 +1685,59 @@ export const createInvitation =
   };
 // ... existing code ...
 export const createFlow = (data, prompt, altaner_component_id) => async (dispatch, getState) => {
-  const { account } = getState().general;
-  let url = `/account/${account.id}/flow`;
+  try {
+    const { account } = getState().general;
+    let url = `/account/${account.id}/flow`;
 
-  // Build query parameters
-  const params = [];
-  if (prompt) {
-    params.push(`prompt=${encodeURIComponent(prompt)}`);
-  }
-  if (altaner_component_id) {
-    params.push(`altaner_component_id=${encodeURIComponent(altaner_component_id)}`);
-  }
+    // Build query parameters
+    const params = [];
+    if (prompt) {
+      params.push(`prompt=${encodeURIComponent(prompt)}`);
+    }
+    if (altaner_component_id) {
+      params.push(`altaner_component_id=${encodeURIComponent(altaner_component_id)}`);
+    }
 
-  // Add query parameters to URL if any exist
-  if (params.length > 0) {
-    url = `${url}?${params.join('&')}`;
-  }
+    // Add query parameters to URL if any exist
+    if (params.length > 0) {
+      url = `${url}?${params.join('&')}`;
+    }
 
-  const response = await optimai.post(url, data);
-  return response.data.flow;
+    const response = await optimai.post(url, data);
+    const flow = response.data.flow;
+
+    // Track flow creation (non-blocking)
+    try {
+      analytics.flowCreated(flow, {
+        prompt,
+        altaner_component_id,
+        account_id: account.id,
+      });
+    } catch (trackingError) {
+      // Silently fail to avoid impacting user experience
+      console.warn('Failed to track flow creation:', trackingError);
+    }
+
+    return flow;
+  } catch (e) {
+    console.error(`error: could not create flow: ${e}`);
+    
+    // Track the error with more context
+    try {
+      analytics.trackError(e, {
+        source: 'redux_action',
+        action: 'createFlow',
+        account_id: getState().general.account?.id,
+        flow_data: data,
+        prompt,
+        altaner_component_id,
+      });
+    } catch (trackingError) {
+      console.warn('Failed to track createFlow error:', trackingError);
+    }
+
+    return Promise.reject(e.toString());
+  }
 };
 
 //  API Tokens -----------------------------------------------------------------------------------------
@@ -1745,9 +1780,37 @@ export const createAgent = (data) => async (dispatch, getState) => {
     const response = await optimai.post(`/account/${account.id}/agent`, data);
     const { agent } = response.data;
     dispatch(slice.actions.addAgent(agent));
+
+    // Track agent creation (non-blocking)
+    try {
+      analytics.agentCreated(agent.type || 'custom', {
+        agent_id: agent.id,
+        agent_name: agent.name,
+        account_id: account.id,
+        has_voice: !!(agent.voice_enabled || agent.voice_settings),
+        template_id: agent.template_id,
+      });
+    } catch (trackingError) {
+      // Silently fail to avoid impacting user experience
+      console.warn('Failed to track agent creation:', trackingError);
+    }
+
     return agent;
   } catch (e) {
     console.error(`error: could not create agent: ${e}`);
+    
+    // Track the error with more context
+    try {
+      analytics.trackError(e, {
+        source: 'redux_action',
+        action: 'createAgent',
+        account_id: account.id,
+        agent_data: data,
+      });
+    } catch (trackingError) {
+      console.warn('Failed to track createAgent error:', trackingError);
+    }
+
     dispatch(slice.actions.hasError({ fileId: null, error: e.toString() }));
     return Promise.reject(e.toString());
   } finally {

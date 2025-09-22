@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { refreshToken, setSession } from './auth';
+import { setupAxiosErrorTracking } from './errorTracking';
 import { addResponseInterceptor } from './interceptors';
 
 const OPTIMAI_BASE_URL = 'https://api.altan.ai';
@@ -223,3 +224,16 @@ export const fetcher = async (args) => {
 
   return res.data;
 };
+
+// Set up error tracking for all axios instances (imported at top)
+// Add error tracking to all axios instances
+setupAxiosErrorTracking(optimai, 'optimai');
+setupAxiosErrorTracking(optimai_integration, 'optimai_integration');
+setupAxiosErrorTracking(optimai_shop, 'optimai_shop');
+setupAxiosErrorTracking(optimai_room, 'optimai_room');
+setupAxiosErrorTracking(optimai_galaxia, 'optimai_galaxia');
+setupAxiosErrorTracking(optimai_root, 'optimai_root');
+setupAxiosErrorTracking(optimai_tables, 'optimai_tables');
+setupAxiosErrorTracking(optimai_agent, 'optimai_agent');
+setupAxiosErrorTracking(optimai_tables_legacy, 'optimai_tables_legacy');
+setupAxiosErrorTracking(optimai_database, 'optimai_database');
