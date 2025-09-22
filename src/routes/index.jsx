@@ -60,7 +60,6 @@ import {
   Privacy,
   ContactPage,
   DemoTextVoicePage,
-  AdvancedEditorPage,
   SDKTestPage,
   SupportPage,
 } from './elements.jsx';
@@ -287,6 +286,73 @@ const Router = () => {
 
         <Route
           path="/project/:altanerId/c/:componentId/b/:baseId/tables/:tableId/views/:viewId/records/:recordId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Simplified Project Component Routes */}
+        <Route
+          path="/project/:altanerId/database"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/interface"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/flows"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/flows/:flowId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/agents"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/agents/:agentId"
           exact
         >
           <AuthGuard requireAuth={true}>

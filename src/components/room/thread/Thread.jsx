@@ -94,7 +94,7 @@ const Thread = ({
     ? '120px'
     : !hideInput
       ? todoExpanded
-        ? '300px'
+        ? '340px'
         : '120px'
       : '0px';
   const gate = useSelector(selectGate);

@@ -358,11 +358,8 @@ const slice = createSlice({
       state.authorization_requests = roomObject.authorization_requests.items || [];
 
       const memberId = guest?.member.id || user?.member.id;
-      console.log('memberId', memberId);
-      console.log('guest', guest);
 
       state.me = fetchCurrentMember(memberId, state.members);
-      console.log('state.me', state.me);
 
       if (threads?.items) {
         threads.items = threads.items.map(handleThread);
@@ -607,15 +604,7 @@ const slice = createSlice({
       state.members.byId[roomMember.id] = roomMember;
       state.members.allIds.push(roomMember.id);
 
-      // Update the me state if the member being added is the current user
-      console.log(
-        'addMember: currentUserId:',
-        currentUserId,
-        'roomMember.member.user.id:',
-        roomMember.member?.user?.id,
-      );
       if (currentUserId && roomMember.member?.user?.id === currentUserId) {
-        console.log('addMember: Updating me state for current user');
         state.me = roomMember;
       }
     },
@@ -1857,7 +1846,6 @@ export const createMedia =
         mime_type: fileType,
         file_content: fileContent,
       });
-      console.log('response', response.data);
       const { media_url } = response.data;
       return media_url;
     } catch (e) {
