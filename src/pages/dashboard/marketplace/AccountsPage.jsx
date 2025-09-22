@@ -1,27 +1,22 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
 import EmptyContent from '../../../components/empty-content';
-import { optimai } from '../../../utils/axios';
+import {
+  fetchAccountsTemplates,
+  loadMoreAccountsTemplates,
+  searchAccountsTemplates,
+  selectFilteredAccountsTemplates,
+  selectAccountsTemplatesLoading,
+  selectAccountsTemplatesError,
+  selectAccountsTemplatesHasMore,
+  selectAccountsTemplatesLoadingMore,
+  selectAccountsTemplatesSearchTerm,
+} from '../../../redux/slices/accountsTemplates';
 
 const ITEMS_PER_PAGE = 100;
 
-// Helper function to get cover URL from template data (same as Redux slice)
-const getCoverUrlFromTemplate = (template) => {
-  // Use the cover_url directly from selected_version if available
-  if (template.selected_version?.cover_url) {
-    return template.selected_version.cover_url;
-  }
-  // Fallback to build_metadata if still needed for compatibility
-  if (template.selected_version?.build_metadata?.meta_data?.cover_url) {
-    return template.selected_version.build_metadata.meta_data.cover_url;
-  }
-  // Fallback to template meta_data
-  if (template.meta_data?.cover_url) {
-    return template.meta_data.cover_url;
-  }
-  return null;
-};
 
 const SearchBar = ({ searchTerm, onSearchChange, resultsCount }) => {
   return (
@@ -269,91 +264,36 @@ const InfiniteScrollTrigger = ({ onTrigger, loading, hasMore }) => {
 };
 
 const TemplatesPage = () => {
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const fetchTemplates = useCallback(async (currentOffset = 0, isLoadMore = false, search = '') => {
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        limit: ITEMS_PER_PAGE,
-        offset: currentOffset,
-        template_type: 'altaner',
-        ...(search && { name: search }),
-      });
-
-      const response = await optimai.get(`/templates/list?${params}`);
-      let fetchedTemplates = response?.data?.templates || [];
-      
-      // Transform templates to include cover URLs (same as Redux slice)
-      const transformedTemplates = fetchedTemplates.map(template => {
-        const coverUrl = getCoverUrlFromTemplate(template);
-        return {
-          ...template,
-          cover_url: coverUrl || '/assets/placeholder.svg',
-          has_cover: Boolean(coverUrl),
-        };
-      });
-
-      // Filter out templates without actual cover URLs
-      const templatesWithCovers = transformedTemplates.filter(template => template.has_cover);
-
-      if (isLoadMore) {
-        setTemplates((prev) => [...prev, ...templatesWithCovers]);
-      } else {
-        setTemplates(templatesWithCovers);
-        setOffset(currentOffset);
-      }
-
-      // Check if there are more templates (we need to account for filtering)
-      setHasMore(fetchedTemplates.length === ITEMS_PER_PAGE);
-    } catch (err) {
-      console.error('Failed to fetch templates:', err);
-      setError('Failed to load templates. Please try again later.');
-      setTemplates([]);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
-
-  // Handle search with debounce
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setOffset(0);
-      fetchTemplates(0, false, searchTerm);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, fetchTemplates]);
+  const dispatch = useDispatch();
+  
+  // Get data from Redux store
+  const templates = useSelector(selectFilteredAccountsTemplates);
+  const loading = useSelector(selectAccountsTemplatesLoading);
+  const loadingMore = useSelector(selectAccountsTemplatesLoadingMore);
+  const error = useSelector(selectAccountsTemplatesError);
+  const hasMore = useSelector(selectAccountsTemplatesHasMore);
+  const searchTerm = useSelector(selectAccountsTemplatesSearchTerm);
 
   // Initial load
   useEffect(() => {
-    fetchTemplates(0, false);
-  }, []);
+    dispatch(fetchAccountsTemplates());
+  }, [dispatch]);
 
+  // Handle load more
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
-      const newOffset = offset + ITEMS_PER_PAGE;
-      setOffset(newOffset);
-      fetchTemplates(newOffset, true, searchTerm);
+      dispatch(loadMoreAccountsTemplates());
     }
-  }, [loadingMore, hasMore, offset, fetchTemplates, searchTerm]);
+  }, [dispatch, loadingMore, hasMore]);
 
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-  };
+  // Handle search change with debounce
+  const handleSearchChange = useCallback((value) => {
+    const timeoutId = setTimeout(() => {
+      dispatch(searchAccountsTemplates(value));
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [dispatch]);
 
   if (error) {
     return (
@@ -443,6 +383,7 @@ const TemplatesPage = () => {
                 <InfiniteScrollTrigger
                   onTrigger={handleLoadMore}
                   loading={loadingMore}
+                  hasMore={hasMore}
                 />
               )}
             </>

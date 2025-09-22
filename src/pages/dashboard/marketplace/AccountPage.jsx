@@ -1,93 +1,65 @@
 import { Avatar, Box, Container, Grid, Skeleton, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
 import TemplateCard from './components/card/TemplateCard';
 import EmptyContent from '../../../components/empty-content';
 import { CompactLayout } from '../../../layouts/dashboard';
-import { optimai_shop, optimai } from '../../../utils/axios';
+import TemplateDetailsDialog from '../../../components/templates/TemplateDetailsDialog';
+import {
+  fetchAccountData,
+  loadMoreAccountTemplates,
+  selectAccountState,
+  selectAccountLoading,
+  selectAccountError,
+} from '../../../redux/slices/accountTemplates';
 
 const ITEMS_PER_PAGE = 25;
 
 const AccountPage = () => {
   const { accountId } = useParams();
+  const dispatch = useDispatch();
   const loadMoreRef = useRef(null);
 
-  const [templates, setTemplates] = useState([]);
-  const [account, setAccount] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
+  // Get data from Redux store
+  const accountState = useSelector(selectAccountState(accountId));
+  const loading = useSelector(selectAccountLoading(accountId));
+  const error = useSelector(selectAccountError(accountId));
+  
+  const { templates, account, hasMore, initialized } = accountState;
+
+  // Local UI state
   const [searchTerm] = useState('');
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [sorting] = useState('newest');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-  // Fetch account details
-  const fetchAccount = useCallback(async () => {
-    try {
-      const response = await optimai.get(`/account/${accountId}/public`);
-      setAccount(response.data.account);
-    } catch (err) {
-      // Log error in a production-appropriate way
-      console.error('Failed to fetch account:', err); // eslint-disable-line no-console
-      setError('Failed to load account details');
-    }
-  }, [accountId]);
+  // Template dialog handlers
+  const handleTemplateClick = useCallback((template) => {
+    setSelectedTemplate(template);
+    setDialogOpen(true);
+  }, []);
 
-  // Fetch templates for the account
-  const fetchTemplates = useCallback(
-    async (currentOffset = 0, isLoadMore = false) => {
-      if (isLoadMore) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      try {
-        const response = await optimai_shop.get(
-          `/v2/templates/list?limit=${ITEMS_PER_PAGE}&offset=${currentOffset}&account_id=${accountId}`,
-        );
-
-        const newTemplates = response?.data?.templates || [];
-        const totalCount = response?.data?.total_count || 0;
-
-        if (isLoadMore) {
-          setTemplates((prev) => [...prev, ...newTemplates]);
-        } else {
-          setTemplates(newTemplates);
-        }
-
-        setHasMore(currentOffset + ITEMS_PER_PAGE < totalCount);
-      } catch (err) {
-        // Log error in a production-appropriate way
-        console.error('Failed to fetch templates:', err); // eslint-disable-line no-console
-        setError('Failed to load templates. Please try again later');
-        setTemplates([]);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [accountId],
-  );
+  const handleCloseDialog = useCallback(() => {
+    setDialogOpen(false);
+    setSelectedTemplate(null);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
-    fetchAccount();
-    fetchTemplates(0, false);
-  }, [fetchAccount, fetchTemplates]);
+    if (!initialized && !loading) {
+      dispatch(fetchAccountData(accountId));
+    }
+  }, [dispatch, accountId, initialized, loading]);
 
   // Handle infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && !loading && !loadingMore && hasMore) {
-          const newOffset = offset + ITEMS_PER_PAGE;
-          setOffset(newOffset);
-          fetchTemplates(newOffset, true);
+        if (entry.isIntersecting && !loading && hasMore) {
+          dispatch(loadMoreAccountTemplates(accountId));
         }
       },
       { threshold: 0.1 },
@@ -103,7 +75,7 @@ const AccountPage = () => {
         observer.unobserve(currentRef);
       }
     };
-  }, [loading, loadingMore, hasMore, offset, fetchTemplates]);
+  }, [dispatch, accountId, loading, hasMore]);
 
   const filteredTemplates = templates.filter(
     (template) =>
@@ -279,7 +251,10 @@ const AccountPage = () => {
                     md={4}
                     lg={3}
                   >
-                    <TemplateCard template={template} />
+                    <TemplateCard 
+                      template={template} 
+                      onClick={() => handleTemplateClick(template)}
+                    />
                   </Grid>
                 ))}
               </Grid>
@@ -290,7 +265,7 @@ const AccountPage = () => {
                   ref={loadMoreRef}
                   sx={{ py: 5, textAlign: 'center' }}
                 >
-                  {loadingMore ? (
+                  {loading ? (
                     <Skeleton
                       variant="rectangular"
                       width="100%"
@@ -311,6 +286,13 @@ const AccountPage = () => {
           )}
         </Box>
       </Container>
+
+      {/* Template Details Dialog */}
+      <TemplateDetailsDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        templateData={selectedTemplate}
+      />
     </CompactLayout>
   );
 };
