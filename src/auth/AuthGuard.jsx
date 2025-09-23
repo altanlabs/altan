@@ -15,6 +15,7 @@ import { setAccount, setAccounts, setUser } from '../redux/slices/general';
 import { dispatch } from '../redux/store';
 import { optimai } from '../utils/axios.js';
 import localStorageAvailable from '../utils/localStorageAvailable';
+import LoadingScreen from '../components/loading-screen/LoadingScreen.jsx';
 
 // Create a context for authentication requirements
 const AuthRequirementContext = createContext({
@@ -154,7 +155,7 @@ function AuthGuard({ children, requireAuth = false }) {
   }, [isAuthenticated, searchParams]);
 
   if (!isInitialized) {
-    return null;
+    return <LoadingScreen />;
   }
 
   // Handle authenticated users with special states
