@@ -99,6 +99,14 @@ export const analytics = {
       name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
       method,
       signup_date,
+      // Geographic and session data (captured once per user)
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      user_agent: navigator.userAgent,
+      screen_width: window.screen.width,
+      screen_height: window.screen.height,
+      signup_url: window.location.href,
+      signup_referrer: document.referrer || null,
       ...customProperties,
     };
 
