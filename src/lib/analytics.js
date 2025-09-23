@@ -1,123 +1,136 @@
-import posthog from 'posthog-js';
+import { createClient } from '@supabase/supabase-js';
 
-// PostHog configuration
-export const initializePostHog = () => {
-  const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
-  const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+// Supabase Analytics configuration
+const supabaseUrl = 'https://database.altan.ai';
+const supabaseKey = 'tenant_db49e5eb_2aa7_459f_8815_8f69889d90d5';
+
+let supabase = null;
+
+// Store current user context globally (updated by identify calls)
+let currentUserContext = {
+  user_id: null,
+  user_email: null,
+  account_id: null,
+};
+
+export const initializeAnalytics = () => {
   const isDev = import.meta.env.DEV;
 
-  if (posthogKey && posthogHost) {
-    try {
-      posthog.init(posthogKey, {
-        api_host: posthogHost,
-        // Enable session recording
-        session_recording: {
-          maskAllInputs: false,
-          maskInputOptions: {
-            password: true,
-          },
-        },
-        // Capture pageviews automatically
-        capture_pageview: true,
-        // Capture performance metrics
-        capture_performance: true,
-        // Enable autocapture for clicks and form submissions
-        autocapture: true,
-        // Disable in development
-        disabled: isDev,
-        // Debug mode in development
-        debug: isDev,
-      });
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    
+    console.log('Supabase Analytics initialized successfully');
 
-      console.log('PostHog initialized successfully');
+    // Make analytics available globally for debugging
+    window.supabaseAnalytics = supabase;
+  } catch (error) {
+    console.error('Supabase Analytics initialization failed:', error);
+  }
+};
 
-      // Make PostHog available globally for debugging
-      window.posthog = posthog;
-    } catch (error) {
-      console.error('PostHog initialization failed:', error);
+// Helper function to send events to Supabase
+const trackEvent = async (eventName, userId, userEmail, accountId, properties = {}, source = 'web') => {
+  if (!supabase) {
+    console.warn('Analytics not initialized');
+    return;
+  }
+
+  try {
+    // Use provided user context or get from stored context
+    
+    const eventData = {
+      event_name: eventName,
+      user_id: userId ? String(userId) : (currentUserContext.user_id ? String(currentUserContext.user_id) : null),
+      user_email: userEmail || currentUserContext.user_email || null,
+      account_id: accountId ? String(accountId) : (currentUserContext.account_id ? String(currentUserContext.account_id) : null),
+      properties: properties && Object.keys(properties).length > 0 ? properties : null,
+      source: source,
+    };
+
+    const { data, error } = await supabase
+      .from('events')
+      .insert([eventData]);
+
+    if (error) {
+      console.error('Error tracking event:', error);
+    } else {
+      console.log('Event tracked successfully:', eventName, eventData);
     }
-  } else {
-    console.warn('PostHog configuration missing. Analytics will be disabled.', {
-      missingKey: !posthogKey,
-      missingHost: !posthogHost,
-    });
+
+    return { data, error };
+  } catch (error) {
+    console.error('Failed to track event:', error);
   }
 };
 
 // Analytics event tracking functions
 export const analytics = {
   // User authentication events
-  identify: (userId, userProperties = {}) => {
+  identify: async (userId, userProperties = {}) => {
     if (!userId) {
-      console.warn('PostHog identify called without userId');
+      console.warn('Analytics identify called without userId');
       return;
     }
 
-    const distinctId = String(userId);
-
-    // Extract standard person properties to send at top level
     const { email, first_name, last_name, method, signup_date, ...customProperties } = userProperties;
 
+    // Store user context globally for future events
+    currentUserContext = {
+      user_id: userId,
+      user_email: email,
+      account_id: userProperties.account_id || null,
+    };
+
     const properties = {
-      email,
       first_name,
       last_name,
       name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
-      $set: {
-        ...customProperties, // only custom props, never standard person properties
-      },
-      $set_once: {
-        first_seen_method: method,
-        signup_date,
-      },
+      method,
+      signup_date,
+      ...customProperties,
     };
 
-    posthog.identify(distinctId, properties);
-
-    console.log('PostHog user identified:', {
-      distinctId,
-      properties,
-    });
+    return trackEvent('user_identified', userId, email, userProperties.account_id, properties);
   },
 
   // Page view tracking
-  pageView: (pageName, properties = {}) => {
-    posthog.capture('$pageview', {
+  pageView: async (pageName, properties = {}) => {
+    return trackEvent('page_viewed', properties.user_id, properties.user_email, properties.account_id, {
       page_name: pageName,
       ...properties,
     });
   },
 
   // User authentication events
-  signUp: (method = 'email', properties = {}) => {
-    posthog.capture('user_signed_up', {
+  signUp: async (method = 'email', properties = {}) => {
+    return trackEvent('user_signed_up', properties.user_id, properties.user_email, properties.account_id, {
       method,
       ...properties,
     });
   },
 
-  signIn: (method = 'email', properties = {}) => {
-    posthog.capture('user_signed_in', {
+  signIn: async (method = 'email', properties = {}) => {
+    return trackEvent('user_signed_in', properties.user_id, properties.user_email, properties.account_id, {
       method,
       ...properties,
     });
   },
 
-  signOut: (properties = {}) => {
-    posthog.capture('user_signed_out', properties);
+  signOut: async (properties = {}) => {
+    return trackEvent('user_signed_out', properties.user_id, properties.user_email, properties.account_id, properties);
   },
 
   // Agent/AI related events
-  agentCreated: (agentType, properties = {}) => {
-    posthog.capture('agent_created', {
+  agentCreated: async (agentType, properties = {}) => {
+    return trackEvent('agent_created', properties.user_id, properties.user_email, properties.account_id, {
       agent_type: agentType,
       ...properties,
     });
   },
 
   // Flow creation events
-  flowCreated: (flowData, properties = {}) => {
-    posthog.capture('flow_created', {
+  flowCreated: async (flowData, properties = {}) => {
+    return trackEvent('flow_created', properties.user_id, properties.user_email, properties.account_id, {
       flow_type: flowData.type || 'unknown',
       has_prompt: !!(properties.prompt),
       has_altaner_component: !!(properties.altaner_component_id),
@@ -125,8 +138,8 @@ export const analytics = {
     });
   },
 
-  agentInteraction: (agentId, interactionType, properties = {}) => {
-    posthog.capture('agent_interaction', {
+  agentInteraction: async (agentId, interactionType, properties = {}) => {
+    return trackEvent('agent_interaction', null, null, null, {
       agent_id: agentId,
       interaction_type: interactionType,
       ...properties,
@@ -195,8 +208,8 @@ export const analytics = {
   },
 
   // Error tracking
-  errorOccurred: (errorType, errorMessage, properties = {}) => {
-    posthog.capture('error_occurred', {
+  errorOccurred: async (errorType, errorMessage, properties = {}) => {
+    return trackEvent('error_occurred', null, null, null, {
       error_type: errorType,
       error_message: errorMessage,
       ...properties,
@@ -204,7 +217,7 @@ export const analytics = {
   },
 
   // Enhanced error tracking with full context
-  trackError: (error, context = {}) => {
+  trackError: async (error, context = {}) => {
     const errorInfo = {
       error_type: error.name || 'Error',
       error_message: error.message || 'Unknown error',
@@ -215,20 +228,11 @@ export const analytics = {
       ...context,
     };
 
-    // Also capture as exception for PostHog's error tracking
-    if (typeof posthog.captureException === 'function') {
-      posthog.captureException(error, {
-        extra: context,
-      });
-    }
-
-    posthog.capture('application_error', errorInfo);
-
-    console.log('Tracked application error:', errorInfo);
+    return trackEvent('application_error', context.user_id, context.user_email, context.account_id, errorInfo);
   },
 
   // API error tracking
-  trackAPIError: (error, endpoint, method = 'GET', context = {}) => {
+  trackAPIError: async (error, endpoint, method = 'GET', context = {}) => {
     const apiErrorInfo = {
       error_type: 'API_ERROR',
       api_endpoint: endpoint,
@@ -240,9 +244,7 @@ export const analytics = {
       ...context,
     };
 
-    posthog.capture('api_error', apiErrorInfo);
-
-    console.log('Tracked API error:', apiErrorInfo);
+    return trackEvent('api_error', context.user_id, context.user_email, context.account_id, apiErrorInfo);
   },
 
   // Performance events
@@ -265,14 +267,12 @@ export const analytics = {
   },
 
   // Upgrade and pricing events
-  upgradeDialogViewed: (properties = {}) => {
-    posthog.capture('upgrade_dialog_viewed', {
-      ...properties,
-    });
+  upgradeDialogViewed: async (properties = {}) => {
+    return trackEvent('upgrade_dialog_viewed', properties.user_id, properties.user_email, properties.account_id, properties);
   },
 
-  checkoutInitiated: (planType, billingOption, properties = {}) => {
-    posthog.capture('checkout_initiated', {
+  checkoutInitiated: async (planType, billingOption, properties = {}) => {
+    return trackEvent('checkout_initiated', properties.user_id, properties.user_email, properties.account_id, {
       plan_type: planType,
       billing_frequency: billingOption.billing_frequency,
       price: billingOption.price / 100, // Convert cents to euros
@@ -362,8 +362,8 @@ export const analytics = {
   },
 
   // Message interaction events
-  messageSent: (threadId, properties = {}) => {
-    posthog.capture('message_sent', {
+  messageSent: async (threadId, properties = {}) => {
+    return trackEvent('message_sent', null, null, null, {
       thread_id: threadId,
       ...properties,
     });
@@ -378,45 +378,23 @@ export const analytics = {
   },
 
   // Custom event tracking
-  track: (eventName, properties = {}) => {
-    posthog.capture(eventName, properties);
+  track: async (eventName, properties = {}) => {
+    return trackEvent(eventName, null, null, null, properties);
   },
 
-  // Set user properties
-  setUserProperties: (properties) => {
-    // Build properties object with standard PostHog person properties at top level
-    const payload = {};
-
-    // Standard person properties (sent at top level)
-    const standardProps = ['email', 'first_name', 'last_name'];
-    standardProps.forEach((prop) => {
-      if (properties[prop] !== undefined) {
-        payload[prop] = properties[prop];
-      }
-    });
-
-    // Custom properties using $set
-    const customProperties = Object.fromEntries(
-      Object.entries(properties).filter(
-        ([key]) => !standardProps.includes(key) && properties[key] !== undefined,
-      ),
-    );
-
-    if (Object.keys(customProperties).length > 0) {
-      payload.$set = customProperties;
-    }
-
-    // Only send if we have properties to set
-    if (Object.keys(payload).length > 0) {
-      posthog.capture('$set', payload);
-    }
+  // Set user properties - handled via identify() for Supabase
+  setUserProperties: async (properties) => {
+    console.log('Use analytics.identify() instead of setUserProperties for Supabase');
   },
-
-  // Alias function removed - we use user.id consistently as distinct_id
 
   // Reset user session (on logout)
   reset: () => {
-    posthog.reset();
+    currentUserContext = {
+      user_id: null,
+      user_email: null,
+      account_id: null,
+    };
+    console.log('Analytics session reset');
   },
 };
 
