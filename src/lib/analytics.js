@@ -18,8 +18,6 @@ export const initializeAnalytics = () => {
 
   try {
     supabase = createClient(supabaseUrl, supabaseKey);
-    
-    console.log('Supabase Analytics initialized successfully');
 
     // Make analytics available globally for debugging
     window.supabaseAnalytics = supabase;
@@ -29,27 +27,40 @@ export const initializeAnalytics = () => {
 };
 
 // Helper function to send events to Supabase
-const trackEvent = async (eventName, userId, userEmail, accountId, properties = {}, source = 'web') => {
+const trackEvent = async (
+  eventName,
+  userId,
+  userEmail,
+  accountId,
+  properties = {},
+  source = 'web',
+) => {
   if (!supabase) {
     console.warn('Analytics not initialized');
     return;
   }
 
   try {
-    // Use provided user context or get from stored context
-    
+    // Only track events for authenticated users
+    const finalUserId = userId || currentUserContext.user_id;
+    if (!finalUserId) {
+      return;
+    }
+
     const eventData = {
       event_name: eventName,
-      user_id: userId ? String(userId) : (currentUserContext.user_id ? String(currentUserContext.user_id) : null),
+      user_id: String(finalUserId),
       user_email: userEmail || currentUserContext.user_email || null,
-      account_id: accountId ? String(accountId) : (currentUserContext.account_id ? String(currentUserContext.account_id) : null),
+      account_id: accountId
+        ? String(accountId)
+        : currentUserContext.account_id
+          ? String(currentUserContext.account_id)
+          : null,
       properties: properties && Object.keys(properties).length > 0 ? properties : null,
       source: source,
     };
 
-    const { data, error } = await supabase
-      .from('events')
-      .insert([eventData]);
+    const { data, error } = await supabase.from('events').insert([eventData]);
 
     if (error) {
       console.error('Error tracking event:', error);
@@ -72,7 +83,8 @@ export const analytics = {
       return;
     }
 
-    const { email, first_name, last_name, method, signup_date, ...customProperties } = userProperties;
+    const { email, first_name, last_name, method, signup_date, ...customProperties } =
+      userProperties;
 
     // Store user context globally for future events
     currentUserContext = {
@@ -95,47 +107,83 @@ export const analytics = {
 
   // Page view tracking
   pageView: async (pageName, properties = {}) => {
-    return trackEvent('page_viewed', properties.user_id, properties.user_email, properties.account_id, {
-      page_name: pageName,
-      ...properties,
-    });
+    return trackEvent(
+      'page_viewed',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        page_name: pageName,
+        ...properties,
+      },
+    );
   },
 
   // User authentication events
   signUp: async (method = 'email', properties = {}) => {
-    return trackEvent('user_signed_up', properties.user_id, properties.user_email, properties.account_id, {
-      method,
-      ...properties,
-    });
+    return trackEvent(
+      'user_signed_up',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        method,
+        ...properties,
+      },
+    );
   },
 
   signIn: async (method = 'email', properties = {}) => {
-    return trackEvent('user_signed_in', properties.user_id, properties.user_email, properties.account_id, {
-      method,
-      ...properties,
-    });
+    return trackEvent(
+      'user_signed_in',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        method,
+        ...properties,
+      },
+    );
   },
 
   signOut: async (properties = {}) => {
-    return trackEvent('user_signed_out', properties.user_id, properties.user_email, properties.account_id, properties);
+    return trackEvent(
+      'user_signed_out',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      properties,
+    );
   },
 
   // Agent/AI related events
   agentCreated: async (agentType, properties = {}) => {
-    return trackEvent('agent_created', properties.user_id, properties.user_email, properties.account_id, {
-      agent_type: agentType,
-      ...properties,
-    });
+    return trackEvent(
+      'agent_created',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        agent_type: agentType,
+        ...properties,
+      },
+    );
   },
 
   // Flow creation events
   flowCreated: async (flowData, properties = {}) => {
-    return trackEvent('flow_created', properties.user_id, properties.user_email, properties.account_id, {
-      flow_type: flowData.type || 'unknown',
-      has_prompt: !!(properties.prompt),
-      has_altaner_component: !!(properties.altaner_component_id),
-      ...properties,
-    });
+    return trackEvent(
+      'flow_created',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        flow_type: flowData.type || 'unknown',
+        has_prompt: !!properties.prompt,
+        has_altaner_component: !!properties.altaner_component_id,
+        ...properties,
+      },
+    );
   },
 
   agentInteraction: async (agentId, interactionType, properties = {}) => {
@@ -146,38 +194,38 @@ export const analytics = {
     });
   },
 
-  voiceInteraction: (duration, properties = {}) => {
-    posthog.capture('voice_interaction', {
+  voiceInteraction: async (duration, properties = {}) => {
+    return trackEvent('voice_interaction', null, null, null, {
       duration_seconds: duration,
       ...properties,
     });
   },
 
   // Dashboard and navigation events
-  dashboardViewed: (section, properties = {}) => {
-    posthog.capture('dashboard_viewed', {
+  dashboardViewed: async (section, properties = {}) => {
+    return trackEvent('dashboard_viewed', null, null, null, {
       section,
       ...properties,
     });
   },
 
-  menuItemClicked: (menuItem, properties = {}) => {
-    posthog.capture('menu_item_clicked', {
+  menuItemClicked: async (menuItem, properties = {}) => {
+    return trackEvent('menu_item_clicked', null, null, null, {
       menu_item: menuItem,
       ...properties,
     });
   },
 
   // Feature usage events
-  featureUsed: (featureName, properties = {}) => {
-    posthog.capture('feature_used', {
+  featureUsed: async (featureName, properties = {}) => {
+    return trackEvent('feature_used', null, null, null, {
       feature_name: featureName,
       ...properties,
     });
   },
 
-  buttonClicked: (buttonName, location, properties = {}) => {
-    posthog.capture('button_clicked', {
+  buttonClicked: async (buttonName, location, properties = {}) => {
+    return trackEvent('button_clicked', null, null, null, {
       button_name: buttonName,
       location,
       ...properties,
@@ -185,22 +233,22 @@ export const analytics = {
   },
 
   // Form events
-  formStarted: (formName, properties = {}) => {
-    posthog.capture('form_started', {
+  formStarted: async (formName, properties = {}) => {
+    return trackEvent('form_started', null, null, null, {
       form_name: formName,
       ...properties,
     });
   },
 
-  formCompleted: (formName, properties = {}) => {
-    posthog.capture('form_completed', {
+  formCompleted: async (formName, properties = {}) => {
+    return trackEvent('form_completed', null, null, null, {
       form_name: formName,
       ...properties,
     });
   },
 
-  formAbandoned: (formName, completionRate, properties = {}) => {
-    posthog.capture('form_abandoned', {
+  formAbandoned: async (formName, completionRate, properties = {}) => {
+    return trackEvent('form_abandoned', null, null, null, {
       form_name: formName,
       completion_rate: completionRate,
       ...properties,
@@ -228,7 +276,13 @@ export const analytics = {
       ...context,
     };
 
-    return trackEvent('application_error', context.user_id, context.user_email, context.account_id, errorInfo);
+    return trackEvent(
+      'application_error',
+      context.user_id,
+      context.user_email,
+      context.account_id,
+      errorInfo,
+    );
   },
 
   // API error tracking
@@ -244,12 +298,18 @@ export const analytics = {
       ...context,
     };
 
-    return trackEvent('api_error', context.user_id, context.user_email, context.account_id, apiErrorInfo);
+    return trackEvent(
+      'api_error',
+      context.user_id,
+      context.user_email,
+      context.account_id,
+      apiErrorInfo,
+    );
   },
 
   // Performance events
-  performanceMetric: (metricName, value, properties = {}) => {
-    posthog.capture('performance_metric', {
+  performanceMetric: async (metricName, value, properties = {}) => {
+    return trackEvent('performance_metric', null, null, null, {
       metric_name: metricName,
       value,
       ...properties,
@@ -257,8 +317,8 @@ export const analytics = {
   },
 
   // E-commerce events
-  beginCheckout: (value, currency, items, properties = {}) => {
-    posthog.capture('begin_checkout', {
+  beginCheckout: async (value, currency, items, properties = {}) => {
+    return trackEvent('begin_checkout', null, null, null, {
       value,
       currency,
       items,
@@ -268,21 +328,33 @@ export const analytics = {
 
   // Upgrade and pricing events
   upgradeDialogViewed: async (properties = {}) => {
-    return trackEvent('upgrade_dialog_viewed', properties.user_id, properties.user_email, properties.account_id, properties);
+    return trackEvent(
+      'upgrade_dialog_viewed',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      properties,
+    );
   },
 
   checkoutInitiated: async (planType, billingOption, properties = {}) => {
-    return trackEvent('checkout_initiated', properties.user_id, properties.user_email, properties.account_id, {
-      plan_type: planType,
-      billing_frequency: billingOption.billing_frequency,
-      price: billingOption.price / 100, // Convert cents to euros
-      currency: 'EUR',
-      ...properties,
-    });
+    return trackEvent(
+      'checkout_initiated',
+      properties.user_id,
+      properties.user_email,
+      properties.account_id,
+      {
+        plan_type: planType,
+        billing_frequency: billingOption.billing_frequency,
+        price: billingOption.price / 100, // Convert cents to euros
+        currency: 'EUR',
+        ...properties,
+      },
+    );
   },
 
-  purchase: (transactionId, value, currency, items, properties = {}) => {
-    posthog.capture('purchase', {
+  purchase: async (transactionId, value, currency, items, properties = {}) => {
+    return trackEvent('purchase', null, null, null, {
       transaction_id: transactionId,
       value,
       currency,
@@ -291,52 +363,40 @@ export const analytics = {
     });
   },
 
-  generateLead: (leadType, properties = {}) => {
-    posthog.capture('generate_lead', {
+  generateLead: async (leadType, properties = {}) => {
+    return trackEvent('generate_lead', null, null, null, {
       lead_type: leadType,
       ...properties,
     });
   },
 
   // Project and template events
-  createProject: (projectName, projectType, properties = {}) => {
-    console.log('PostHog: Tracking create_project event', {
+  createProject: async (projectName, projectType, properties = {}) => {
+    return trackEvent('create_project', null, null, null, {
       project_name: projectName,
       project_type: projectType,
-      properties,
-      posthogAvailable: !!window.posthog,
-      posthogDisabled: window.posthog?.__loaded === false,
+      ...properties,
     });
-
-    if (window.posthog) {
-      posthog.capture('create_project', {
-        project_name: projectName,
-        project_type: projectType,
-        ...properties,
-      });
-    } else {
-      console.warn('PostHog not available for create_project event');
-    }
   },
 
-  openProject: (projectId, projectName, properties = {}) => {
-    posthog.capture('open_project', {
+  openProject: async (projectId, projectName, properties = {}) => {
+    return trackEvent('open_project', null, null, null, {
       project_id: projectId,
       project_name: projectName,
       ...properties,
     });
   },
 
-  cloneTemplate: (templateId, templateName, properties = {}) => {
-    posthog.capture('clone_template', {
+  cloneTemplate: async (templateId, templateName, properties = {}) => {
+    return trackEvent('clone_template', null, null, null, {
       template_id: templateId,
       template_name: templateName,
       ...properties,
     });
   },
 
-  openTemplate: (templateId, templateName, properties = {}) => {
-    posthog.capture('open_template', {
+  openTemplate: async (templateId, templateName, properties = {}) => {
+    return trackEvent('open_template', null, null, null, {
       template_id: templateId,
       template_name: templateName,
       ...properties,
@@ -344,16 +404,16 @@ export const analytics = {
   },
 
   // Enhanced voice conversation tracking
-  voiceConversationStart: (agentId, properties = {}) => {
-    posthog.capture('voice_conversation_start', {
+  voiceConversationStart: async (agentId, properties = {}) => {
+    return trackEvent('voice_conversation_start', null, null, null, {
       agent_id: agentId,
       action: 'start',
       ...properties,
     });
   },
 
-  voiceConversationEnd: (agentId, duration, properties = {}) => {
-    posthog.capture('voice_conversation_end', {
+  voiceConversationEnd: async (agentId, duration, properties = {}) => {
+    return trackEvent('voice_conversation_end', null, null, null, {
       agent_id: agentId,
       action: 'end',
       duration_seconds: duration,
@@ -370,8 +430,8 @@ export const analytics = {
   },
 
   // UI/UX events
-  autopilotUpgradeDialog: (action, properties = {}) => {
-    posthog.capture('autopilot_upgrade_dialog', {
+  autopilotUpgradeDialog: async (action, properties = {}) => {
+    return trackEvent('autopilot_upgrade_dialog', null, null, null, {
       action,
       ...properties,
     });
