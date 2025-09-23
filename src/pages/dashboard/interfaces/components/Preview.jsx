@@ -137,7 +137,7 @@ function Preview({
 
       {(!status || status === 'stopped' || status === 'running:stalled') &&
         previewMode === 'development' && <LoadingFrame status={status} />}
-      {(status === 'running' || previewMode === 'production') && (
+      {(status === 'running' || status === 'server_error' || previewMode === 'production') && (
         <>
           <iframe
             id="preview-iframe"

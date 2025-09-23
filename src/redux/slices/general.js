@@ -2278,14 +2278,45 @@ export const clearAccountState = () => async (dispatch) =>
 export const switchAccount =
   ({ accountId }) =>
   async (dispatch, getState) => {
-    const accounts = selectAccounts(getState());
+    const state = getState();
+    const accounts = selectAccounts(state);
     const account = accounts.find((a) => a.id === accountId);
+    const user = state.general.user;
+    
     if (account) {
+      const previousAccountId = state.general.account?.id;
+
       batch(() => {
         dispatch(clearAccountState());
         dispatch(setAccount(account));
       });
       localStorage.setItem('OAIPTACC', accountId);
+
+      // Track account switch and re-identify user with new account context
+      try {
+        if (user) {
+          // Track the account switch event
+          analytics.accountSwitched(previousAccountId, accountId, {
+            user_id: user.id,
+            user_email: user.email,
+            account_name: account.name,
+            previous_account_name: state.general.account?.name,
+          });
+
+          // Re-identify user with new account context for proper attribution
+          analytics.identify(user.id, {
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            account_id: accountId,
+            method: 'account_switch',
+            is_superadmin: user.xsup,
+          });
+        }
+      } catch (trackingError) {
+        console.warn('Failed to track account switch:', trackingError);
+      }
+
       return Promise.resolve('success');
     }
     return Promise.reject('user has no access to account');

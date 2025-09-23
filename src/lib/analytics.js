@@ -164,6 +164,15 @@ export const analytics = {
     );
   },
 
+  // Account switching
+  accountSwitched: async (fromAccountId, toAccountId, properties = {}) => {
+    return trackEvent('account_switched', properties.user_id, properties.user_email, toAccountId, {
+      from_account_id: fromAccountId,
+      to_account_id: toAccountId,
+      ...properties,
+    });
+  },
+
   // Agent/AI related events
   agentCreated: async (agentType, properties = {}) => {
     return trackEvent(
