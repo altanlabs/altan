@@ -931,10 +931,13 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
         data: { ids },
       });
     } else {
-      // Use Supabase-style endpoint for regular tables
-      // For multiple IDs, use 'in' operator: ?id=in.(id1,id2,id3)
-      const idFilter = ids.length === 1 ? `id=eq.${ids[0]}` : `id=in.(${ids.join(',')})`;
-      await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
+      const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batchIds = ids.slice(i, i + BATCH_SIZE);
+        const idFilter =
+          batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
+        await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
+      }
     }
 
     // Update state for each deleted record

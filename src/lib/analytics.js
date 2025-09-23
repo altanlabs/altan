@@ -255,56 +255,17 @@ export const analytics = {
     });
   },
 
-  // Error tracking
+  // Error tracking - disabled for business analytics
   errorOccurred: async (errorType, errorMessage, properties = {}) => {
-    return trackEvent('error_occurred', null, null, null, {
-      error_type: errorType,
-      error_message: errorMessage,
-      ...properties,
-    });
+    console.log('Error tracking disabled for business analytics');
   },
 
-  // Enhanced error tracking with full context
   trackError: async (error, context = {}) => {
-    const errorInfo = {
-      error_type: error.name || 'Error',
-      error_message: error.message || 'Unknown error',
-      error_stack: error.stack,
-      url: window.location.href,
-      user_agent: navigator.userAgent,
-      timestamp: new Date().toISOString(),
-      ...context,
-    };
-
-    return trackEvent(
-      'application_error',
-      context.user_id,
-      context.user_email,
-      context.account_id,
-      errorInfo,
-    );
+    console.log('Error tracking disabled for business analytics');
   },
 
-  // API error tracking
   trackAPIError: async (error, endpoint, method = 'GET', context = {}) => {
-    const apiErrorInfo = {
-      error_type: 'API_ERROR',
-      api_endpoint: endpoint,
-      api_method: method,
-      status_code: error.response?.status,
-      status_text: error.response?.statusText,
-      error_message: error.message,
-      response_data: error.response?.data,
-      ...context,
-    };
-
-    return trackEvent(
-      'api_error',
-      context.user_id,
-      context.user_email,
-      context.account_id,
-      apiErrorInfo,
-    );
+    console.log('API error tracking disabled for business analytics');
   },
 
   // Performance events
@@ -372,7 +333,7 @@ export const analytics = {
 
   // Project and template events
   createProject: async (projectName, projectType, properties = {}) => {
-    return trackEvent('create_project', null, null, null, {
+    return trackEvent('create_project', properties.user_id, properties.user_email, properties.account_id, {
       project_name: projectName,
       project_type: projectType,
       ...properties,
@@ -380,7 +341,7 @@ export const analytics = {
   },
 
   openProject: async (projectId, projectName, properties = {}) => {
-    return trackEvent('open_project', null, null, null, {
+    return trackEvent('open_project', properties.user_id, properties.user_email, properties.account_id, {
       project_id: projectId,
       project_name: projectName,
       ...properties,
@@ -388,7 +349,7 @@ export const analytics = {
   },
 
   cloneTemplate: async (templateId, templateName, properties = {}) => {
-    return trackEvent('clone_template', null, null, null, {
+    return trackEvent('clone_template', properties.user_id, properties.user_email, properties.account_id, {
       template_id: templateId,
       template_name: templateName,
       ...properties,
@@ -396,7 +357,7 @@ export const analytics = {
   },
 
   openTemplate: async (templateId, templateName, properties = {}) => {
-    return trackEvent('open_template', null, null, null, {
+    return trackEvent('open_template', properties.user_id, properties.user_email, properties.account_id, {
       template_id: templateId,
       template_name: templateName,
       ...properties,
