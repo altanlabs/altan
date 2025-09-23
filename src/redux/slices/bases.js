@@ -1261,16 +1261,15 @@ export const loadAllTableRecords = (tableId, forceReload = false) =>
   loadTableRecords(tableId, { limit: 50, forceReload });
 
 // Database-level search using the admin proxy
-export const searchTableRecords = (tableId, query) => async (dispatch) => {
+export const searchTableRecords = (tableId, query) => async (dispatch, getState) => {
   // eslint-disable-next-line no-console
   console.log('🔍 searchTableRecords called with query:', query);
   
   if (!query || !query.trim()) {
     // eslint-disable-next-line no-console
     console.log('🧹 Clearing search - empty query');
-    // If query is empty, clear search results and load regular records
+    // If query is empty, just clear search results (keep current records)
     dispatch(clearDatabaseSearchResults({ tableId }));
-    dispatch(loadTableRecords(tableId, { forceReload: true }));
     return;
   }
 
@@ -1279,12 +1278,44 @@ export const searchTableRecords = (tableId, query) => async (dispatch) => {
   dispatch(setDatabaseSearching(true));
 
   try {
-    // Use the new loadTableRecords with search functionality
-    const result = await dispatch(
+    // Get current records to merge with search results
+    const state = getState();
+    const currentRecords = state.bases.records[tableId]?.items || [];
+
+    // Search database for additional records
+    const searchResult = await dispatch(
       loadTableRecords(tableId, {
         searchQuery: query.trim(),
         forceReload: true,
-        limit: 100, // Higher limit for search results
+        limit: 200, // Higher limit for search results
+        append: false, // Don't append, we'll merge manually
+      }),
+    );
+
+    const searchRecords = searchResult?.items || [];
+    
+    // Merge current records with search results, avoiding duplicates
+    const existingIds = new Set(currentRecords.map(record => record.id));
+    const newSearchRecords = searchRecords.filter(record => !existingIds.has(record.id));
+    
+    // Combine all records
+    const mergedRecords = [...currentRecords, ...newSearchRecords];
+    
+    // eslint-disable-next-line no-console
+    console.log('🔍 Search results merged:', {
+      existing: currentRecords.length,
+      newFromSearch: newSearchRecords.length,
+      total: mergedRecords.length,
+    });
+
+    // Update the records with merged results
+    dispatch(
+      slice.actions.setTableRecords({
+        tableId,
+        records: mergedRecords,
+        total: mergedRecords.length, // Update total to reflect merged count
+        next_page_token: null,
+        isPagination: false,
       }),
     );
 
@@ -1292,12 +1323,12 @@ export const searchTableRecords = (tableId, query) => async (dispatch) => {
     dispatch(
       setDatabaseSearchResults({
         tableId,
-        results: result.items || [],
+        results: newSearchRecords,
         query: query.trim(),
       }),
     );
 
-    return result;
+    return { items: mergedRecords };
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
     throw e;
