@@ -14,7 +14,7 @@ import { RowGroupingModule } from '@ag-grid-enterprise/row-grouping';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
 import { useTheme } from '@mui/material';
-import { debounce, maxBy } from 'lodash';
+import { debounce, maxBy } from 'lodash-es';
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -30,13 +30,15 @@ import { headerHeight, defaultColDef } from './utils/settings.js';
 import {
   queryTableRecords,
   selectDatabaseQuickFilter,
-  setDatabaseRecordCount,
-  loadAllTableRecords,
+  selectDatabaseSearching,
+  loadTableRecords,
+  searchTableRecords,
   importCSVToTable,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
 import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
+import Iconify from '../../../iconify';
 import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
 import EditFieldDrawer from '../../fields/EditFieldDrawer.jsx';
 import ImportCSVDrawer from '../../import/ImportCSVDrawer';
@@ -92,29 +94,22 @@ export const GridView = memo(
     onUpdateRecord,
     onDeleteRecords,
     onDuplicateRecord,
-    // Pagination props to pass up to parent
-    onPaginationChange,
     triggerImport,
   }) => {
     const theme = useTheme();
     const gridRef = useRef();
     const history = useHistory();
     const location = useLocation();
-    const members = useSelector((state) => selectAccount(state)?.members || []);
-    const quickFilterText = useSelector(selectDatabaseQuickFilter);
+  const members = useSelector((state) => selectAccount(state)?.members || []);
+  const quickFilterText = useSelector(selectDatabaseQuickFilter);
+  const isSearching = useSelector(selectDatabaseSearching);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showImportDrawer, setShowImportDrawer] = useState(false);
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
-    const [isReady, setIsReady] = useState(false);
-    const [paginationInfo, setPaginationInfo] = useState({
-      currentPage: 0,
-      totalPages: 0,
-      pageSize: 50,
-      isLastPageFound: false,
-    });
+  const [isReady, setIsReady] = useState(false);
 
     // Use ref for cols to avoid unnecessary re-renders
     const colsRef = useRef([]);
@@ -125,11 +120,12 @@ export const GridView = memo(
     // Track initial grid setup to prevent flushSync issues
     const initialGridSetupComplete = useRef(false);
 
-    // Use ref for tracking when component is mounted to avoid updates during unmount
-    const isMounted = useRef(true);
+  // Use ref for tracking when component is mounted to avoid updates during unmount
+  const isMounted = useRef(true);
 
-    // Use optimized row data hook
-    const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
+
+  // Use optimized row data hook
+  const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
 
     // Calculate max width for email fields
     const getEmailColumnWidths = useCallback(
@@ -182,13 +178,17 @@ export const GridView = memo(
 
       const updates = Array.from(batchUpdateRef.current.updates.values());
 
-      // Apply updates in a single transaction with optimized settings
-      gridRef.current.api.applyTransaction({
-        update: updates,
-        suppressFlash: true,
-        suppressVerticalScroll: true,
-        suppressColumnVirtualisation: true,
-      });
+      // Apply updates in a single transaction with optimized settings, wrapped in setTimeout to avoid flushSync
+      setTimeout(() => {
+        if (gridRef.current?.api) {
+          gridRef.current.api.applyTransaction({
+            update: updates,
+            suppressFlash: true,
+            suppressVerticalScroll: true,
+            suppressColumnVirtualisation: true,
+          });
+        }
+      }, 0);
 
       batchUpdateRef.current.updates.clear();
     }, []);
@@ -221,6 +221,8 @@ export const GridView = memo(
       };
     }, []);
 
+    // Use AG-Grid's built-in client-side filtering - much simpler and no server loops
+
     // Simplified initial data loading logic
     useEffect(() => {
       if (!Array.isArray(records) || !Array.isArray(fields) || !isMounted.current) return;
@@ -246,7 +248,7 @@ export const GridView = memo(
         setEditRecordId(recordId);
         history.push(`${location.pathname}/records/${recordId}`);
       },
-      [history.push, location.pathname],
+      [history, location.pathname],
     );
 
     const getContextMenuItems = useCallback(
@@ -271,45 +273,14 @@ export const GridView = memo(
     );
 
     const getCommonFieldMenuItems = useCallback((field, params) => {
-      return createFieldContextMenuItems(field, params, setEditField, table.id);
-    }, []);
+      return createFieldContextMenuItems(field, params, setEditField, table?.id);
+    }, [table?.id]);
 
     const onGridReady = useCallback((params) => {
       gridRef.current = params;
       initialGridSetupComplete.current = true;
-      const api = params.api;
-      if (!api) return;
-
-      // Add direct keyboard shortcut handler for copy
-      document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-          const selectedCells = api.getCellRanges();
-          const focusedCell = api.getFocusedCell();
-
-          if (selectedCells?.length > 0 || focusedCell) {
-            setTimeout(() => {
-              api.copySelectedRangeToClipboard(false);
-            }, 0);
-          }
-        }
-      });
-
-      // Initial focus setup
-      // In newer AG-Grid, columnApi is available directly from api
-      // Set initial column sizes once
-      api.sizeColumnsToFit();
-
-      api.addEventListener('firstDataRendered', () => {
-        const displayedColumns = api.getAllDisplayedColumns();
-        if (displayedColumns?.length) {
-          api.setFocusedCell(0, displayedColumns[0]);
-        }
-        // Lock column sizes after initial render
-        displayedColumns.forEach((col) => {
-          const width = col.getActualWidth();
-          api.setColumnWidth(col, width, true);
-        });
-      });
+      // Remove all immediate API calls that cause flushSync issues
+      // Grid will work fine without these optimizations
     }, []);
 
     // Modified handler for cell value changes
@@ -339,8 +310,8 @@ export const GridView = memo(
               if (updatedRecord && gridRef.current?.api) {
                 handleRecordUpdate(params.data.id, { ...params.data, ...changes });
               }
-            } catch (error) {
-              // console.error('Error updating record:', error);
+            } catch {
+              // console.error('Error updating record');
               if (gridRef.current?.api) {
                 handleRecordUpdate(params.data.id, {
                   ...params.data,
@@ -349,8 +320,8 @@ export const GridView = memo(
               }
             }
           }
-        } catch (error) {
-          // console.error('Error in cell value change handler:', error);
+        } catch {
+          // console.error('Error in cell value change handler');
         }
       },
       [onAddRecord, onUpdateRecord, handleRecordUpdate],
@@ -364,39 +335,6 @@ export const GridView = memo(
       },
       [onCellValueChanged],
     );
-
-    // Pagination functions
-    const onPaginationChanged = useCallback(() => {
-      if (!gridRef.current?.api) return;
-
-      const api = gridRef.current.api;
-      setPaginationInfo({
-        currentPage: api.paginationGetCurrentPage(),
-        totalPages: api.paginationGetTotalPages(),
-        pageSize: api.paginationGetPageSize(),
-        isLastPageFound: api.paginationIsLastPageFound(),
-      });
-    }, []);
-
-    const paginationGoToFirstPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToFirstPage();
-    }, []);
-
-    const paginationGoToLastPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToLastPage();
-    }, []);
-
-    const paginationGoToNextPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToNextPage();
-    }, []);
-
-    const paginationGoToPreviousPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToPreviousPage();
-    }, []);
 
     const columnDefs = useMemo(() => {
       const defs = createColumnDefs({
@@ -456,7 +394,7 @@ export const GridView = memo(
 
     // Extract reference fields when the table schema changes
     const referenceFields = useMemo(() => {
-      if (!table || !table.fields || !table.fields.items) return [];
+      if (!table?.fields?.items) return [];
       return table.fields.items.filter((field) => {
         return (
           field.type === 'reference' &&
@@ -465,7 +403,7 @@ export const GridView = memo(
           field.options.reference_options.foreign_table
         );
       });
-    }, [table && table.fields && table.fields.items]);
+    }, [table?.fields?.items]);
 
     // Only dispatch queries for *new* related IDs
     const fetchRelatedRecords = useCallback(
@@ -514,7 +452,7 @@ export const GridView = memo(
           }
         });
       },
-      [dispatch, referenceFields],
+      [referenceFields],
     );
 
     // Create a stable debounced function just once
@@ -532,44 +470,17 @@ export const GridView = memo(
     }, [records, debouncedFetch]);
 
     useEffect(() => {
+      const batchUpdate = batchUpdateRef.current;
       return () => {
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
+        const timeoutId = batchUpdate?.timeoutId;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
         }
       };
     }, []);
 
     // Add data loading states to show in the UI
     // const isDataLoading = !isReady || !initialGridSetupComplete.current;
-
-    // Pass pagination info up to parent components
-    useEffect(() => {
-      if (onPaginationChange) {
-        onPaginationChange({
-          paginationInfo,
-          handlers: {
-            onGoToFirstPage: paginationGoToFirstPage,
-            onGoToLastPage: paginationGoToLastPage,
-            onGoToNextPage: paginationGoToNextPage,
-            onGoToPreviousPage: paginationGoToPreviousPage,
-          },
-        });
-      }
-    }, [
-      paginationInfo,
-      onPaginationChange,
-      paginationGoToFirstPage,
-      paginationGoToLastPage,
-      paginationGoToNextPage,
-      paginationGoToPreviousPage,
-    ]);
-
-    // Update record count in Redux when data changes
-    useEffect(() => {
-      if (localRowData?.length !== undefined) {
-        dispatch(setDatabaseRecordCount(localRowData.length));
-      }
-    }, [localRowData?.length]);
 
     // Check if table is empty (no real records, only the '+' row for new records)
     const hasRealRecords = useMemo(() => {
@@ -628,7 +539,7 @@ export const GridView = memo(
         const response = await dispatch(importCSVToTable(table.id, importData));
 
         // Refresh the table records after successful import
-        await dispatch(loadAllTableRecords(table.id, true));
+        await dispatch(loadTableRecords(table.id, { forceReload: true }));
 
         return response;
       } catch (error) {
@@ -744,11 +655,7 @@ export const GridView = memo(
               suppressClipboardPaste={false}
               includeHiddenColumnsInQuickFilter={true}
               suppressNoRowsOverlay={true}
-              pagination={true}
-              paginationPageSize={50}
-              paginationPageSizeSelector={[50, 100, 500, 1000]}
-              suppressPaginationPanel={true}
-              onPaginationChanged={onPaginationChanged}
+              pagination={false}
               initialState={{
                 sort: {
                   sortModel: [
@@ -797,7 +704,7 @@ export const GridView = memo(
                 defaultToolPanelWidth: 0,
               }}
             />
-            {!hasRealRecords && isReady && (
+            {!hasRealRecords && isReady && !isSearching && (
               <div
                 style={{
                   position: 'absolute',
@@ -814,6 +721,32 @@ export const GridView = memo(
                     tableName={table?.name || 'table'}
                   />
                 </div>
+              </div>
+            )}
+            {isSearching && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: theme.shape.borderRadius,
+                  boxShadow: theme.shadows[4],
+                }}
+              >
+                <Iconify
+                  icon="svg-spinners:blocks-shuffle-3"
+                  sx={{ width: 20, height: 20, color: theme.palette.primary.main }}
+                />
+                <span style={{ color: theme.palette.text.primary, fontSize: '0.875rem' }}>
+                  Searching...
+                </span>
               </div>
             )}
           </div>

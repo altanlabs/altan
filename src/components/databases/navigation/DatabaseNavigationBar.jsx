@@ -4,7 +4,8 @@ import PropTypes from 'prop-types';
 import { useRef } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectDatabaseQuickFilter } from '../../../redux/slices/bases';
+import { selectDatabaseQuickFilter, setDatabaseQuickFilter } from '../../../redux/slices/bases';
+import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
 
 function DatabaseNavigationBar({
@@ -26,6 +27,9 @@ function DatabaseNavigationBar({
 
   const handleFilterChange = (e) => {
     const value = e.target.value;
+    // Update Redux state directly
+    dispatch(setDatabaseQuickFilter(value));
+    // Also call the callback if provided (for backward compatibility)
     if (onQuickFilterChange) {
       onQuickFilterChange(value);
     }
@@ -190,7 +194,7 @@ function DatabaseNavigationBar({
           {/* Record Count - Hide on mobile */}
           {recordCount > 0 && !isMobile && (
             <Chip
-              label={`${recordCount.toLocaleString() - 1} records`}
+              label={`${recordCount.toLocaleString()} records`}
               size="small"
               sx={{
                 height: 24,

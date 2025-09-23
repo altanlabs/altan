@@ -260,7 +260,7 @@ const TabsList = memo(
           </Tooltip>
         </div>
 
-        {sortedTables.map((table, index) => (
+        {sortedTables.filter(table => table && table.id).map((table, index) => (
           <Draggable
             key={table.id}
             draggableId={table.id}
@@ -417,7 +417,10 @@ function TableTabs({
 
   // Ensure activeTableId is valid
   const effectiveTableId = useMemo(() => {
-    const isValidId = validTables.some((table) => table.id === activeTableId);
+    if (!activeTableId || validTables.length === 0) {
+      return validTables[0]?.id || null;
+    }
+    const isValidId = validTables.some((table) => table?.id === activeTableId);
     return isValidId ? activeTableId : validTables[0]?.id || null;
   }, [activeTableId, validTables]);
 
@@ -502,6 +505,30 @@ function TableTabs({
     handleCloseTableDropdown();
   };
 
+  // Don't render if we don't have any valid tables and no effective table ID
+  if (validTables.length === 0 && !effectiveTableId) {
+    return (
+      <div className="relative w-full min-w-0 p-0">
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            width: '100%',
+            minWidth: 0,
+            overflowX: 'auto',
+            minHeight: '30px',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            No tables available
+          </Typography>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full min-w-0 p-0">
       <DragDropContext
@@ -526,7 +553,7 @@ function TableTabs({
               }}
             >
               <StyledTabs
-                value={effectiveTableId}
+                value={effectiveTableId || false}
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile

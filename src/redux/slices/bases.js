@@ -21,6 +21,8 @@ const initialState = {
     currentViewType: 'grid',
     isRefreshing: false,
     recordCount: 0,
+    isSearching: false,
+    searchResults: {},
   },
   // User cache for auth.users table to avoid redundant API calls
   userCache: {},
@@ -354,13 +356,12 @@ const slice = createSlice({
       delete state.records[tableId];
     },
     setTableRecordsState(state, action) {
-      const { tableId, loading, lastFetched, queryParams, cached = false } = action.payload;
-      state.recordsState[tableId] = {
-        loading,
-        lastFetched,
-        queryParams,
-        cached,
-      };
+      const { tableId, ...updates } = action.payload;
+      if (!state.recordsState[tableId]) {
+        state.recordsState[tableId] = {};
+      }
+      // Merge with existing state instead of overwriting
+      Object.assign(state.recordsState[tableId], updates);
     },
     // Database navigation reducers
     setDatabaseQuickFilter(state, action) {
@@ -375,12 +376,33 @@ const slice = createSlice({
     setDatabaseRecordCount(state, action) {
       state.databaseNavigation.recordCount = action.payload;
     },
+    setDatabaseSearching(state, action) {
+      state.databaseNavigation.isSearching = action.payload;
+    },
+    setDatabaseSearchResults(state, action) {
+      const { tableId, results, query } = action.payload;
+      state.databaseNavigation.searchResults[tableId] = {
+        results,
+        query,
+        timestamp: Date.now(),
+      };
+    },
+    clearDatabaseSearchResults(state, action) {
+      const { tableId } = action.payload || {};
+      if (tableId) {
+        delete state.databaseNavigation.searchResults[tableId];
+      } else {
+        state.databaseNavigation.searchResults = {};
+      }
+    },
     clearDatabaseNavigation(state) {
       state.databaseNavigation = {
         quickFilter: '',
         currentViewType: 'grid',
         isRefreshing: false,
         recordCount: 0,
+        isSearching: false,
+        searchResults: {},
       };
     },
     // User cache reducers
@@ -457,6 +479,9 @@ export const {
   setDatabaseViewType,
   setDatabaseRefreshing,
   setDatabaseRecordCount,
+  setDatabaseSearching,
+  setDatabaseSearchResults,
+  clearDatabaseSearchResults,
   clearDatabaseNavigation,
   // User cache actions
   setUserCacheLoading,
@@ -783,16 +808,9 @@ export const getTableRecord =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      if (customTableName && customTableName.startsWith('auth.')) {
-        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-          id: recordId,
-        });
-        return Promise.resolve(response.data.record);
-      }
-
-      // Use Supabase-style endpoint for regular tables
+      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: { id: recordId },
+        params: { id: `eq.${recordId}` }, // PostgREST format for exact match
       });
 
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
@@ -828,25 +846,20 @@ export const createTableRecords = (tableId, recordData) => async (dispatch, getS
       throw new Error(`Could not find base or table name for table ${tableId}`);
     }
 
-    if (tableName && tableName.startsWith('auth.')) {
-      const response = await optimai_tables.post(`/table/${tableId}/record`, recordData);
-      return Promise.resolve(response.data);
-    }
-
-    // Transform data for Supabase format
-    let supabaseData;
+    // Transform data for PostgREST format
+    let postgreSQLData;
     if (recordData.records && recordData.records.length > 0) {
       // Extract the fields from the Altan API format
-      supabaseData = recordData.records[0].fields;
+      postgreSQLData = recordData.records[0].fields;
     } else {
       // If it's already in the correct format, use as is
-      supabaseData = recordData;
+      postgreSQLData = recordData;
     }
 
-    // Use Supabase-style endpoint with proxy for creating records
+    // Use admin proxy for all tables (including auth tables)
     const response = await optimai_database.post(
       `/admin/records/${baseId}/${tableName}`,
-      supabaseData,
+      postgreSQLData,
     );
     return Promise.resolve(response.data);
   } catch (e) {
@@ -879,19 +892,10 @@ export const updateTableRecordThunk =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      if (tableName && tableName.startsWith('auth.')) {
-        const response = await optimai_tables.patch(`/table/${tableId}/record/${recordId}`, {
-          fields: changes,
-        });
-        return Promise.resolve(response.data.record);
-      }
-
-      // Use Supabase-style endpoint for regular tables
+      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.patch(
         `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
-        {
-          ...changes,
-        },
+        changes,
       );
       return Promise.resolve(response.data);
     } catch (e) {
@@ -926,18 +930,13 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
 
-    if (tableName && tableName.startsWith('auth.')) {
-      await optimai_tables.delete(`/table/${tableId}/record`, {
-        data: { ids },
-      });
-    } else {
-      const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
-      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-        const batchIds = ids.slice(i, i + BATCH_SIZE);
-        const idFilter =
-          batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
-        await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
-      }
+    // Use admin proxy for all tables (including auth tables)
+    const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batchIds = ids.slice(i, i + BATCH_SIZE);
+      const idFilter =
+        batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
+      await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
     }
 
     // Update state for each deleted record
@@ -946,34 +945,6 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     });
 
     return Promise.resolve();
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-// Add this new thunk action
-export const searchTableRecords = (tableId, query) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.get(`/table/${tableId}/record/search`, {
-      params: { query },
-    });
-
-    // Merge search results with existing records
-    dispatch(
-      slice.actions.setTableRecords({
-        tableId,
-        records: response.data.records,
-        total: response.data.records.length,
-        next_page_token: null,
-        isPagination: false, // Add this flag to indicate search results
-      }),
-    );
-
-    return response.data;
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
     throw e;
@@ -1025,32 +996,20 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     );
 
     if (!authUsersTable) {
-      // eslint-disable-next-line no-console
-      console.log('No user table found in base', baseId);
       // If no user table, just mark as complete
       dispatch(setUserCache({ users: [], baseId }));
       return Promise.resolve({});
     }
 
-    // eslint-disable-next-line no-console
-    console.log('Found user table:', authUsersTable.name || authUsersTable.db_name);
+    // Fetch all users from auth.users table using admin proxy
+    const response = await optimai_database.get(
+      `/admin/records/${baseId}/${authUsersTable.db_name || authUsersTable.name}`,
+      {
+        params: { limit: 1000 }, // Should be enough for most use cases
+      },
+    );
 
-    // Fetch all users from auth.users table
-    const response = await optimai_tables.post(`/table/${authUsersTable.id}/record/query`, {
-      limit: 1000, // Should be enough for most use cases
-    });
-
-    const users = Array.isArray(response.data.records) ? response.data.records : [];
-
-    // Log user data structure for debugging
-    if (users.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('Loaded users from auth table:', users.length, 'users');
-      // eslint-disable-next-line no-console
-      console.log('Sample user fields:', Object.keys(users[0]));
-      // eslint-disable-next-line no-console
-      console.log('Sample user data:', users[0]);
-    }
+    const users = Array.isArray(response.data) ? response.data : response.data.records || [];
 
     dispatch(setUserCache({ users, baseId }));
 
@@ -1075,18 +1034,27 @@ export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   }
 };
 
-export const loadAllTableRecords =
-  (tableId, forceReload = false) =>
+// Load initial records with pagination support
+export const loadTableRecords =
+  (tableId, options = {}) =>
   async (dispatch, getState) => {
-    const BATCH_SIZE = 3000;
-    const DELAY_BETWEEN_BATCHES = 500;
+    const {
+      limit = 50,
+      page = 0,
+      forceReload = false,
+      searchQuery = null,
+      filters = null,
+      append = false,
+    } = options;
+
+    const offset = page * limit;
 
     const state = getState();
     const recordsState = state.bases.recordsState[tableId];
     const records = state.bases.records[tableId];
 
-    // If we already have fully loaded records for this table, don't reload them
-    if (recordsState?.cached && records?.items?.length > 0 && !forceReload) {
+    // If we already have records and not forcing reload or searching, return existing
+    if (!forceReload && !searchQuery && !filters && records?.items?.length > 0 && !append) {
       return Promise.resolve(records);
     }
 
@@ -1115,105 +1083,117 @@ export const loadAllTableRecords =
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
-      if (tableName && tableName.startsWith('auth.')) {
-        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-          limit: BATCH_SIZE,
-        });
+      // Handle auth tables the same way as regular tables using admin proxy
+      // No special case needed anymore
 
-        const responseRecords = Array.isArray(response.data.records) ? response.data.records : [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: null,
-            isPagination: false,
-          }),
+      // Build query parameters for regular tables
+      const queryParams = {
+        limit,
+        offset,
+      };
+
+      // Add search functionality using PostgREST text search
+      if (searchQuery && searchQuery.trim()) {
+        // eslint-disable-next-line no-console
+        console.log('🔍 Building search query for:', searchQuery.trim());
+        
+        // Get all text-based fields for full-text search
+        const textFields = table.fields?.items?.filter((field) =>
+          ['text', 'long_text', 'email', 'url', 'phone', 'single_line_text'].includes(field.type),
         );
 
-        // Mark as cached since auth tables don't support pagination
-        dispatch(
-          slice.actions.setTableRecordsState({
-            tableId,
-            loading: false,
-            lastFetched: Date.now(),
-            cached: true,
-          }),
-        );
+        // eslint-disable-next-line no-console
+        console.log('📝 Text fields for search:', textFields?.map(f => f.db_field_name));
 
-        return getState().bases.records[tableId];
-      }
-
-      // Resume from where we left off if we have a page token
-      let pageToken = recordsState?.next_page_token;
-      let hasMore = true;
-
-      // Initial load if needed
-      if (!pageToken && (!records || records.items.length === 0)) {
-        const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-          params: {
-            limit: BATCH_SIZE,
-          },
-        });
-
-        const responseRecords = Array.isArray(response.data)
-          ? response.data
-          : response.data.records || [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: response.data.next_page_token,
-            isPagination: false,
-          }),
-        );
-
-        pageToken = response.data.next_page_token;
-        hasMore = !!pageToken;
-      }
-
-      // Load remaining records if we have more
-      while (hasMore) {
-        const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-          params: {
-            limit: BATCH_SIZE,
-            page_token: pageToken,
-          },
-        });
-
-        const responseRecords = Array.isArray(response.data)
-          ? response.data
-          : response.data.records || [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: response.data.next_page_token,
-            isPagination: true,
-          }),
-        );
-
-        pageToken = response.data.next_page_token;
-        hasMore = !!pageToken;
-
-        if (hasMore) {
-          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        if (textFields && textFields.length > 0) {
+          // Create OR conditions for text search across multiple fields
+          const searchConditions = textFields
+            .map((field) => `${field.db_field_name}.ilike.*${searchQuery.trim()}*`)
+            .join(',');
+          queryParams.or = `(${searchConditions})`;
+          
+          // eslint-disable-next-line no-console
+          console.log('🔍 Search query params:', queryParams);
+        } else {
+          // eslint-disable-next-line no-console
+          console.log('⚠️ No text fields found for search');
         }
       }
 
-      // Mark this table's records as fully cached when all are loaded
-      if (!hasMore) {
-        dispatch(
-          slice.actions.setTableRecordsState({
-            tableId,
-            loading: false,
-            lastFetched: Date.now(),
-            cached: true,
-          }),
-        );
+      // Add custom filters if provided
+      if (filters) {
+        Object.assign(queryParams, filters);
       }
+
+      // Use existing total count, we'll get it from the actual data response
+      let totalCount = records?.total || recordsState?.totalRecords || 0;
+
+      // Fetch the actual records
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: queryParams,
+      });
+
+      const responseRecords = Array.isArray(response.data)
+        ? response.data
+        : response.data.records || [];
+
+      // If we don't have a count yet, get it using select=count(*)
+      if (!totalCount || totalCount === 0) {
+        try {
+          const countResponse = await optimai_database.head(`/admin/records/${baseId}/${tableName}`, {
+            headers: {
+              Prefer: 'count=exact',
+            },
+          });
+
+          // PostgREST returns count in Content-Range header: "0-49/12345"
+          const contentRange = countResponse.headers['content-range'] || countResponse.headers['Content-Range'];
+          if (contentRange) {
+            const match = contentRange.match(/\/(\d+)$/);
+            if (match) {
+              totalCount = parseInt(match[1], 10);
+              // eslint-disable-next-line no-console
+              console.log('✅ Got count using HEAD request:', totalCount);
+            }
+          }
+        } catch (countError) {
+          // eslint-disable-next-line no-console
+          console.log('Count query failed, estimating from data:', countError);
+
+          // Fallback: estimate from the data we got
+          if (responseRecords.length < limit) {
+            totalCount = responseRecords.length;
+          } else {
+            totalCount = Math.max(responseRecords.length * 20, 1000);
+          }
+          // eslint-disable-next-line no-console
+          console.log('📊 Using estimated count:', totalCount);
+        }
+      }
+
+      dispatch(
+        slice.actions.setTableRecords({
+          tableId,
+          records: responseRecords,
+          total: totalCount,
+          next_page_token: responseRecords.length === limit ? offset + limit : null,
+          isPagination: append,
+        }),
+      );
+
+      dispatch(
+        slice.actions.setTableRecordsState({
+          tableId,
+          loading: false,
+          lastFetched: Date.now(),
+          cached: false, // Never cache paginated or searched results
+          searchQuery,
+          currentPage: page,
+          pageSize: limit,
+          totalPages: Math.ceil(Math.max(totalCount, 1) / limit),
+          totalRecords: totalCount,
+        }),
+      );
 
       return getState().bases.records[tableId];
     } catch (error) {
@@ -1223,6 +1203,149 @@ export const loadAllTableRecords =
       dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
     }
   };
+
+// Get total record count for a table using PostgREST select=count(*)
+export const getTableRecordCount = (tableId) => async (dispatch, getState) => {
+  try {
+    const state = getState();
+
+    // Find the base that contains this table
+    const baseId = Object.keys(state.bases.bases).find((baseId) =>
+      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+    );
+    if (!baseId) {
+      throw new Error(`Could not find base containing table ${tableId}`);
+    }
+
+    // Find the table to get its name
+    const base = state.bases.bases[baseId];
+    const table = base.tables?.items?.find((t) => t.id === tableId);
+    const tableName = table?.db_name || table?.name;
+
+    if (!tableName) {
+      throw new Error(`Could not find table name for table ${tableId}`);
+    }
+
+    // Use PostgREST HEAD request with Prefer: count=exact (most optimal)
+    const response = await optimai_database.head(`/admin/records/${baseId}/${tableName}`, {
+      headers: {
+        Prefer: 'count=exact',
+      },
+    });
+
+    // PostgREST returns count in Content-Range header: "0-49/12345"
+    const contentRange = response.headers['content-range'] || response.headers['Content-Range'];
+    // eslint-disable-next-line no-console
+    console.log('🔍 Count function - Content-Range header:', contentRange);
+
+    if (contentRange) {
+      const match = contentRange.match(/\/(\d+)$/);
+      if (match) {
+        const count = parseInt(match[1], 10);
+        // eslint-disable-next-line no-console
+        console.log('✅ Count function extracted count:', count);
+        return count;
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to get table record count:', error);
+    return 0;
+  }
+};
+
+// Legacy function for backward compatibility - now just calls loadTableRecords
+export const loadAllTableRecords = (tableId, forceReload = false) =>
+  loadTableRecords(tableId, { limit: 50, forceReload });
+
+// Database-level search using the admin proxy
+export const searchTableRecords = (tableId, query) => async (dispatch) => {
+  // eslint-disable-next-line no-console
+  console.log('🔍 searchTableRecords called with query:', query);
+  
+  if (!query || !query.trim()) {
+    // eslint-disable-next-line no-console
+    console.log('🧹 Clearing search - empty query');
+    // If query is empty, clear search results and load regular records
+    dispatch(clearDatabaseSearchResults({ tableId }));
+    dispatch(loadTableRecords(tableId, { forceReload: true }));
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('🔍 Starting search for:', query.trim());
+  dispatch(setDatabaseSearching(true));
+
+  try {
+    // Use the new loadTableRecords with search functionality
+    const result = await dispatch(
+      loadTableRecords(tableId, {
+        searchQuery: query.trim(),
+        forceReload: true,
+        limit: 100, // Higher limit for search results
+      }),
+    );
+
+    // Store search results separately for UI indication
+    dispatch(
+      setDatabaseSearchResults({
+        tableId,
+        results: result.items || [],
+        query: query.trim(),
+      }),
+    );
+
+    return result;
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(setDatabaseSearching(false));
+  }
+};
+
+// Load specific page of records
+export const loadTablePage = (tableId, page) => async (dispatch, getState) => {
+  // eslint-disable-next-line no-console
+  console.log('📄 loadTablePage called for table:', tableId, 'page:', page);
+  
+  const state = getState();
+  const recordsState = state.bases.recordsState[tableId];
+
+  // eslint-disable-next-line no-console
+  console.log('📊 Current recordsState:', recordsState);
+
+  if (!recordsState || recordsState.loading) {
+    // eslint-disable-next-line no-console
+    console.log('⚠️ Cannot load page - no recordsState or already loading');
+    return;
+  }
+
+  const pageSize = recordsState.pageSize || 50;
+  const searchQuery = recordsState.searchQuery;
+
+  // eslint-disable-next-line no-console
+  console.log('📄 Loading page with params:', { page, pageSize, searchQuery });
+
+  try {
+    await dispatch(
+      loadTableRecords(tableId, {
+        page,
+        limit: pageSize,
+        searchQuery, // Maintain search context
+        forceReload: true, // Always reload when changing pages
+      }),
+    );
+    // eslint-disable-next-line no-console
+    console.log('✅ Successfully loaded page:', page);
+  } catch (loadError) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load table page:', loadError);
+    throw loadError;
+  }
+};
 
 // Base selectors
 export const selectBaseState = (state) => state.bases;
@@ -1300,6 +1423,26 @@ export const selectTableRecordById = createSelector(
   (records, recordId) => records.find((record) => record.id === recordId),
 );
 
+export const selectTablePaginationInfo = createSelector(
+  [selectTableRecordsState],
+  (recordsState) => {
+    if (!recordsState) return null;
+
+    return {
+      currentPage: recordsState.currentPage || 0,
+      totalPages: recordsState.totalPages || 1,
+      pageSize: recordsState.pageSize || 50,
+      totalRecords: recordsState.totalRecords || 0,
+      isLastPageFound: true, // We always know the total with database count
+    };
+  },
+);
+
+export const selectTableTotalRecords = createSelector(
+  [selectTableRecordsState],
+  (recordsState) => recordsState?.totalRecords || 0,
+);
+
 export const createRecordPrimaryValueSelector = (baseId, tableId, recordId) =>
   createSelector(
     [
@@ -1340,6 +1483,16 @@ export const selectDatabaseRefreshing = createSelector(
 export const selectDatabaseRecordCount = createSelector(
   [selectDatabaseNavigation],
   (navigation) => navigation.recordCount,
+);
+
+export const selectDatabaseSearching = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.isSearching,
+);
+
+export const selectDatabaseSearchResults = createSelector(
+  [selectDatabaseNavigation, (_, tableId) => tableId],
+  (navigation, tableId) => navigation.searchResults[tableId] || null,
 );
 
 // User cache selectors

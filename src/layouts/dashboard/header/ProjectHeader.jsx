@@ -51,15 +51,16 @@ import {
   selectSortedAltanerComponents,
   selectViewType,
   selectDisplayMode,
-  setDisplayMode,
+  setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
 import {
   selectBaseById,
   selectDatabaseRefreshing,
   selectDatabaseRecordCount,
+  selectTableTotalRecords,
   setDatabaseQuickFilter,
   setDatabaseRefreshing,
-  loadAllTableRecords,
+  loadTableRecords,
 } from '../../../redux/slices/bases';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
 import {
@@ -178,7 +179,7 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
 function ProjectHeader() {
   const theme = useTheme();
   const history = useHistory();
-  const { altanerId, componentId } = useParams();
+  const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const viewType = useSelector(selectViewType);
@@ -206,6 +207,20 @@ function ProjectHeader() {
   );
   const databaseRefreshing = useSelector(selectDatabaseRefreshing);
   const databaseRecordCount = useSelector(selectDatabaseRecordCount);
+  // Get the actual record count from the current table
+  const currentTableRecordCount = useSelector((state) => 
+    isDatabaseComponent && tableId ? selectTableTotalRecords(state, tableId) : 0
+  );
+  
+  // Debug logging
+  // eslint-disable-next-line no-console
+  console.log('🔍 Header count debug:', {
+    isDatabaseComponent,
+    tableId,
+    currentTableRecordCount,
+    databaseRecordCount,
+    finalCount: currentTableRecordCount || databaseRecordCount,
+  });
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -278,17 +293,24 @@ function ProjectHeader() {
   );
 
   const handleDatabaseRefresh = useCallback(() => {
-    if (baseId && database?.tables?.items?.length > 0) {
+    const currentTableId = tableId || routeBaseId;
+    if (baseId && currentTableId) {
       dispatch(setDatabaseRefreshing(true));
-      // Refresh the current table (assuming first table for now)
-      const currentTableId = database.tables.items[0]?.id;
-      if (currentTableId) {
-        dispatch(loadAllTableRecords(currentTableId, true)).finally(() =>
+      // Refresh the current table
+      dispatch(loadTableRecords(currentTableId, { forceReload: true })).finally(() =>
+        dispatch(setDatabaseRefreshing(false)),
+      );
+    } else if (baseId && database?.tables?.items?.length > 0) {
+      dispatch(setDatabaseRefreshing(true));
+      // Fallback: refresh the first table
+      const fallbackTableId = database.tables.items[0]?.id;
+      if (fallbackTableId) {
+        dispatch(loadTableRecords(fallbackTableId, { forceReload: true })).finally(() =>
           dispatch(setDatabaseRefreshing(false)),
         );
       }
     }
-  }, [dispatch, baseId, database]);
+  }, [dispatch, baseId, tableId, routeBaseId, database]);
 
   // Database dialog handlers
   const handleDatabaseAddRecord = useCallback(() => {
@@ -304,10 +326,10 @@ function ProjectHeader() {
   }, []);
 
   useEffect(() => {
-    if (isMobile && displayMode === 'chat') {
-      dispatch(setDisplayMode('both'));
+    if (isMobile && displayMode === 'chat' && altanerId) {
+      dispatch(setDisplayModeForProject({ altanerId, displayMode: 'both' }));
     }
-  }, [isMobile, displayMode, dispatch]);
+  }, [isMobile, displayMode, dispatch, altanerId]);
 
   useEffect(() => {
     const handleProjectComponentsUpdate = () => {
@@ -476,7 +498,7 @@ function ProjectHeader() {
               onRLSSettings={handleDatabaseRLSSettings}
               onDatabaseInfo={handleDatabaseInfo}
               disabled={!database}
-              recordCount={databaseRecordCount}
+              recordCount={currentTableRecordCount || databaseRecordCount}
               isLoading={databaseRefreshing}
             />
           )}

@@ -9,7 +9,7 @@ import { TextField, IconButton, Tooltip } from '@mui/material';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { loadAllTableRecords } from '../../../../redux/slices/bases';
+import { loadTableRecords } from '../../../../redux/slices/bases';
 import CreateRecordDialog from '../../records/CreateRecordDialog';
 import RLSSettingsDialog from '../../table/RLSSettingsDialog';
 
@@ -110,7 +110,7 @@ export default function GridViewHeader({
         <Tooltip title="Refresh data">
           <IconButton
             size="small"
-            onClick={() => dispatch(loadAllTableRecords(table.id, true))}
+            onClick={() => dispatch(loadTableRecords(table.id, { forceReload: true }))}
             className="text-gray-600 hover:text-blue-600"
             disabled={isLoading}
           >

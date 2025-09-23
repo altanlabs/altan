@@ -9,12 +9,17 @@ import {
   selectTableRecordsTotal,
   selectCurrentView,
   selectIsTableRecordsLoading,
+  selectTablePaginationInfo,
+  selectTableTotalRecords,
   createField,
   createTableRecords,
   updateTableRecordThunk,
   deleteTableRecordThunk,
   selectTableRecordsState,
-  loadAllTableRecords,
+  setTableRecordsState,
+  loadTableRecords,
+  loadTablePage,
+  getTableRecordCount,
 } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
 import Iconify from '../../iconify';
@@ -48,6 +53,8 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
     return {
       totalRecordsSelector: (state) => selectTableRecordsTotal(state, tableId),
       isLoadingSelector: (state) => selectIsTableRecordsLoading(state, tableId),
+      paginationInfoSelector: (state) => selectTablePaginationInfo(state, tableId),
+      totalRecordsCountSelector: (state) => selectTableTotalRecords(state, tableId),
     };
   }, [tableId]);
 
@@ -57,9 +64,40 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   const currentView = useSelector(viewSelectors.currentViewSelector);
   const totalRecords = useSelector(tableOnlySelectors.totalRecordsSelector);
   const isLoading = useSelector(tableOnlySelectors.isLoadingSelector);
-
+  const paginationInfo = useSelector(tableOnlySelectors.paginationInfoSelector);
   // Check if the table exists in the state (base is loaded)
   const tableExists = !!table;
+
+  // Pagination handlers
+  const handleGoToFirstPage = useCallback(() => {
+    // eslint-disable-next-line no-console
+    console.log('🔄 Going to first page for table:', tableId);
+    dispatch(loadTablePage(tableId, 0));
+  }, [tableId]);
+
+  const handleGoToLastPage = useCallback(() => {
+    if (paginationInfo?.totalPages) {
+      // eslint-disable-next-line no-console
+      console.log('🔄 Going to last page:', paginationInfo.totalPages - 1, 'for table:', tableId);
+      dispatch(loadTablePage(tableId, paginationInfo.totalPages - 1));
+    }
+  }, [tableId, paginationInfo?.totalPages]);
+
+  const handleGoToNextPage = useCallback(() => {
+    if (paginationInfo && paginationInfo.currentPage < paginationInfo.totalPages - 1) {
+      // eslint-disable-next-line no-console
+      console.log('🔄 Going to next page:', paginationInfo.currentPage + 1, 'for table:', tableId);
+      dispatch(loadTablePage(tableId, paginationInfo.currentPage + 1));
+    }
+  }, [tableId, paginationInfo]);
+
+  const handleGoToPreviousPage = useCallback(() => {
+    if (paginationInfo && paginationInfo.currentPage > 0) {
+      // eslint-disable-next-line no-console
+      console.log('🔄 Going to previous page:', paginationInfo.currentPage - 1, 'for table:', tableId);
+      dispatch(loadTablePage(tableId, paginationInfo.currentPage - 1));
+    }
+  }, [tableId, paginationInfo]);
 
   // Smarter loading management - only load records if they aren't already loaded
   useEffect(() => {
@@ -67,7 +105,7 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
     const loadRecords = async () => {
       try {
-        await dispatch(loadAllTableRecords(tableId));
+        await dispatch(loadTableRecords(tableId, { limit: 50 }));
       } finally {
         setIsInitialLoad(false);
       }
@@ -75,6 +113,65 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
     loadRecords();
   }, [tableId, baseId, tableExists]);
+
+  // Get accurate record count separately using PostgREST
+  useEffect(() => {
+    if (!tableId || !tableExists) return;
+
+    const getCount = async () => {
+      try {
+        // eslint-disable-next-line no-console
+        console.log('🔢 Table component getting count for tableId:', tableId);
+        const count = await dispatch(getTableRecordCount(tableId));
+        // eslint-disable-next-line no-console
+        console.log('📊 Table component got count:', count);
+        
+        if (count > 0) {
+          // Update the total records in the state
+          dispatch(setTableRecordsState({
+            tableId,
+            totalRecords: count,
+            totalPages: Math.ceil(count / (paginationInfo?.pageSize || 50)),
+          }));
+          // eslint-disable-next-line no-console
+          console.log('✅ Table component updated state with count:', count);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to get record count:', error);
+      }
+    };
+
+    getCount();
+  }, [tableId, tableExists, paginationInfo?.pageSize]);
+
+  // Pass pagination info up to parent components
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('📊 Table pagination info:', paginationInfo);
+    
+    if (onPaginationChange && paginationInfo) {
+      // eslint-disable-next-line no-console
+      console.log('📤 Passing pagination info to parent:', paginationInfo);
+      
+      onPaginationChange({
+        paginationInfo,
+        handlers: {
+          onGoToFirstPage: handleGoToFirstPage,
+          onGoToLastPage: handleGoToLastPage,
+          onGoToNextPage: handleGoToNextPage,
+          onGoToPreviousPage: handleGoToPreviousPage,
+        },
+      });
+    }
+  }, [
+    paginationInfo,
+    onPaginationChange,
+    handleGoToFirstPage,
+    handleGoToLastPage,
+    handleGoToNextPage,
+    handleGoToPreviousPage,
+  ]);
 
   // Add throttling to handle frequent page size changes
   const handlePageSizeChange = useCallback(() => {
