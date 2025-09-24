@@ -41,6 +41,7 @@ const transformProps = (type, props) => {
 const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
+  console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
   const history = useHistory();

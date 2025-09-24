@@ -24,6 +24,7 @@ import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
 import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
+import { useWebSocketIntegration } from './helpers/useWebSocketIntegration.js';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { headerHeight, defaultColDef } from './utils/settings.js';
@@ -32,7 +33,6 @@ import {
   selectDatabaseQuickFilter,
   selectDatabaseSearching,
   loadTableRecords,
-  searchTableRecords,
   importCSVToTable,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
@@ -123,11 +123,10 @@ export const GridView = memo(
   // Use ref for tracking when component is mounted to avoid updates during unmount
   const isMounted = useRef(true);
 
-
   // Use optimized row data hook
   const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
 
-    // Calculate max width for email fields
+  // Calculate max width for email fields
     const getEmailColumnWidths = useCallback(
       (rowData) => {
         if (!rowData?.length) return {};
@@ -166,53 +165,174 @@ export const GridView = memo(
       [optimizedRowData, getEmailColumnWidths],
     );
 
-    // Add a batch update manager
-    const batchUpdateRef = useRef({
-      updates: new Map(),
-      timeoutId: null,
+    // High-frequency async transaction manager for real-time updates
+    const asyncTransactionManager = useRef({
+      pendingUpdates: new Map(),
+      pendingAdds: [],
+      pendingRemoves: [],
+      isProcessing: false,
+      transactionCount: 0,
     });
 
-    // Batch process grid updates with optimized transaction
-    const processBatchUpdates = useCallback(() => {
-      if (!gridRef.current?.api || batchUpdateRef.current.updates.size === 0) return;
+    // Apply async transactions for high-frequency updates
+    const applyAsyncTransaction = useCallback(
+      (transaction, callback) => {
+        if (!gridRef.current?.api || !isMounted.current) {
+          callback?.(null);
+          return;
+        }
 
-      const updates = Array.from(batchUpdateRef.current.updates.values());
+        try {
+          gridRef.current.api.applyTransactionAsync(
+            {
+              ...transaction,
+              suppressFlash: true,
+              suppressVerticalScroll: true,
+            },
+            (result) => {
+              asyncTransactionManager.current.transactionCount++;
+              callback?.(result);
+            }
+          );
+        } catch (error) {
+          console.error('Error applying async transaction:', error);
+          callback?.(null);
+        }
+      },
+      []
+    );
 
-      // Apply updates in a single transaction with optimized settings, wrapped in setTimeout to avoid flushSync
-      setTimeout(() => {
-        if (gridRef.current?.api) {
-          gridRef.current.api.applyTransaction({
-            update: updates,
-            suppressFlash: true,
-            suppressVerticalScroll: true,
-            suppressColumnVirtualisation: true,
+    // Handle record updates using async transactions
+    const handleRecordUpdate = useCallback(
+      (recordId, changes, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+
+        if (isHighFrequency) {
+          // For high-frequency updates, batch them
+          manager.pendingUpdates.set(recordId, { ...changes, id: recordId });
+        } else {
+          // For single updates, apply immediately with async transaction
+          applyAsyncTransaction({
+            update: [{ ...changes, id: recordId }]
           });
         }
-      }, 0);
-
-      batchUpdateRef.current.updates.clear();
-    }, []);
-
-    // Handle record updates in batches
-    const handleRecordUpdate = useCallback(
-      (recordId, changes) => {
-        if (!isMounted.current) return;
-
-        // Add update to batch
-        batchUpdateRef.current.updates.set(recordId, changes);
-
-        // Clear existing timeout
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
-        }
-
-        // Schedule batch update
-        batchUpdateRef.current.timeoutId = setTimeout(() => {
-          processBatchUpdates();
-        }, 50); // 50ms batch window
       },
-      [processBatchUpdates],
+      [applyAsyncTransaction]
     );
+
+    // Handle record additions using async transactions
+    const handleRecordAdd = useCallback(
+      (record, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+
+        if (isHighFrequency) {
+          // For high-frequency adds, batch them
+          manager.pendingAdds.push(record);
+        } else {
+          // For single adds, apply immediately with async transaction
+          applyAsyncTransaction({
+            add: [record]
+          });
+        }
+      },
+      [applyAsyncTransaction]
+    );
+
+    // Handle record deletions using async transactions
+    const handleRecordDelete = useCallback(
+      (recordIds, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+        const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+
+        if (isHighFrequency) {
+          // For high-frequency deletes, batch them
+          manager.pendingRemoves.push(...ids.map(id => ({ id })));
+        } else {
+          // For single deletes, apply immediately with async transaction
+          applyAsyncTransaction({
+            remove: ids.map(id => ({ id }))
+          });
+        }
+      },
+      [applyAsyncTransaction]
+    );
+
+    // WebSocket integration for real-time updates
+    const {
+      handleWebSocketUpdate,
+      handleWebSocketAdd,
+      handleWebSocketDelete,
+      forceFlush: flushWebSocketUpdates,
+      clearUpdateFlags,
+      getBufferStats,
+    } = useWebSocketIntegration(
+      table?.id,
+      handleRecordUpdate,
+      handleRecordAdd,
+      handleRecordDelete,
+    );
+
+    // Flush pending high-frequency transactions
+    const flushPendingTransactions = useCallback(() => {
+      if (!gridRef.current?.api || !isMounted.current) return;
+
+      const manager = asyncTransactionManager.current;
+      if (manager.isProcessing) return;
+
+      const hasUpdates = manager.pendingUpdates.size > 0;
+      const hasAdds = manager.pendingAdds.length > 0;
+      const hasRemoves = manager.pendingRemoves.length > 0;
+
+      if (!hasUpdates && !hasAdds && !hasRemoves) return;
+
+      manager.isProcessing = true;
+
+      const transaction = {};
+      
+      if (hasUpdates) {
+        transaction.update = Array.from(manager.pendingUpdates.values());
+        manager.pendingUpdates.clear();
+      }
+      
+      if (hasAdds) {
+        transaction.add = [...manager.pendingAdds];
+        manager.pendingAdds.length = 0;
+      }
+      
+      if (hasRemoves) {
+        transaction.remove = [...manager.pendingRemoves];
+        manager.pendingRemoves.length = 0;
+      }
+
+      applyAsyncTransaction(transaction, () => {
+        manager.isProcessing = false;
+      });
+    }, [applyAsyncTransaction]);
+
+    // Auto-flush pending transactions every 100ms for high-frequency updates
+    useEffect(() => {
+      const interval = setInterval(() => {
+        flushPendingTransactions();
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+        // Flush any remaining transactions on cleanup
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions:', error);
+          }
+        }
+      };
+    }, [flushPendingTransactions]);
 
     useEffect(() => {
       isMounted.current = true;
@@ -300,7 +420,13 @@ export const GridView = memo(
             if (Object.keys(fieldsPayload).length > 0) {
               const result = await onAddRecord({ records: [{ fields: fieldsPayload }] });
               if (result?.records?.[0] && gridRef.current?.api) {
-                handleRecordUpdate(result.records[0].id, result.records[0]);
+                // Use async transaction for the new record
+                handleRecordAdd(result.records[0]);
+                // Also update the local row data to reflect the change from '+' to actual record
+                const updatedRowData = localRowData.map(row => 
+                  row.id === '+' ? result.records[0] : row
+                );
+                setLocalRowData(updatedRowData);
               }
             }
           } else {
@@ -308,11 +434,13 @@ export const GridView = memo(
             try {
               const updatedRecord = await onUpdateRecord(params.data.id, changes);
               if (updatedRecord && gridRef.current?.api) {
+                // Use async transaction for the update
                 handleRecordUpdate(params.data.id, { ...params.data, ...changes });
               }
             } catch {
               // console.error('Error updating record');
               if (gridRef.current?.api) {
+                // Revert the change using async transaction
                 handleRecordUpdate(params.data.id, {
                   ...params.data,
                   [params.column.colId]: params.oldValue,
@@ -469,13 +597,31 @@ export const GridView = memo(
       };
     }, [records, debouncedFetch]);
 
+    // Listen for async transactions applied event for debugging
+    const onAsyncTransactionsApplied = useCallback((event) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Async transactions applied:', {
+          results: event.results?.length || 0,
+          totalTransactions: asyncTransactionManager.current.transactionCount
+        });
+      }
+    }, []);
+
+    // Cleanup async transactions on unmount
     useEffect(() => {
-      const batchUpdate = batchUpdateRef.current;
       return () => {
-        const timeoutId = batchUpdate?.timeoutId;
-        if (timeoutId) {
-          clearTimeout(timeoutId);
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions on cleanup:', error);
+          }
         }
+        // Clear any pending transactions
+        const manager = asyncTransactionManager.current;
+        manager.pendingUpdates.clear();
+        manager.pendingAdds.length = 0;
+        manager.pendingRemoves.length = 0;
       };
     }, []);
 
@@ -626,6 +772,9 @@ export const GridView = memo(
               suppressRowHoverAnimation={true}
               suppressColumnMoveAnimation={true}
               suppressColumnResizeAnimation={true}
+              // Async transaction settings for high-frequency updates
+              asyncTransactionWaitMillis={50}
+              onAsyncTransactionsApplied={onAsyncTransactionsApplied}
               suppressCellFocus={false}
               suppressMovableColumns={false}
               suppressDragLeaveHidesColumns={true}

@@ -55,9 +55,6 @@ import {
 } from '../../../redux/slices/altaners';
 import {
   selectBaseById,
-  selectDatabaseRefreshing,
-  selectDatabaseRecordCount,
-  selectTableTotalRecords,
   setDatabaseQuickFilter,
   setDatabaseRefreshing,
   loadTableRecords,
@@ -177,6 +174,7 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
 };
 
 function ProjectHeader() {
+  console.log('ProjectHeader re-render');
   const theme = useTheme();
   const history = useHistory();
   const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();
@@ -201,26 +199,10 @@ function ProjectHeader() {
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
 
-  // Database selectors
+  // Database selectors - only get database info, not dynamic state
   const database = useSelector((state) =>
     isDatabaseComponent && baseId ? selectBaseById(state, baseId) : null,
   );
-  const databaseRefreshing = useSelector(selectDatabaseRefreshing);
-  const databaseRecordCount = useSelector(selectDatabaseRecordCount);
-  // Get the actual record count from the current table
-  const currentTableRecordCount = useSelector((state) => 
-    isDatabaseComponent && tableId ? selectTableTotalRecords(state, tableId) : 0
-  );
-  
-  // Debug logging
-  // eslint-disable-next-line no-console
-  console.log('🔍 Header count debug:', {
-    isDatabaseComponent,
-    tableId,
-    currentTableRecordCount,
-    databaseRecordCount,
-    finalCount: currentTableRecordCount || databaseRecordCount,
-  });
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -498,8 +480,8 @@ function ProjectHeader() {
               onRLSSettings={handleDatabaseRLSSettings}
               onDatabaseInfo={handleDatabaseInfo}
               disabled={!database}
-              recordCount={currentTableRecordCount || databaseRecordCount}
-              isLoading={databaseRefreshing}
+              recordCount={0} // DatabaseNavigationBar will handle its own record count
+              isLoading={false} // DatabaseNavigationBar will handle its own loading state
             />
           )}
 

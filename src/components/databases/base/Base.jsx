@@ -30,6 +30,7 @@ function Base({
   onNavigate,
   baseId: explicitBaseId,
 }) {
+  console.log('Base re-render');
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
   const history = useHistory();
   const ws = useHermesWebSocket();
