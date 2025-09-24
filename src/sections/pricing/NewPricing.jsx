@@ -32,6 +32,15 @@ import { optimai, optimai_shop } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
 
+// Discount Configuration
+const DISCOUNT_CONFIG = {
+  // Set to true to show the Pro plan discount (€25 -> €5)
+  showProDiscount: false,
+  originalPrice: 25,
+  discountPrice: 5,
+  discountLabel: 'First month offer',
+};
+
 const PRO_FEATURES = [
   { text: '25€ in credits included', available: true },
   { text: 'Autopilot mode', available: true },
@@ -520,7 +529,9 @@ export default function NewPricing() {
           price={
             isAuthenticated && proBillingOption && isYearlyBilling
               ? formatPrice(proBillingOption.price, billingFrequency)
-              : 5
+              : DISCOUNT_CONFIG.showProDiscount
+                ? DISCOUNT_CONFIG.discountPrice
+                : DISCOUNT_CONFIG.originalPrice
           }
           description={proPlan?.description}
           priceSubtext={
@@ -534,7 +545,7 @@ export default function NewPricing() {
                     €{Math.round(proBillingOption.price / 100 / 12)}/mo billed yearly
                   </Typography>
                 )}
-                {!isYearlyBilling && (
+                {!isYearlyBilling && DISCOUNT_CONFIG.showProDiscount && (
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Typography
                       variant="body2"
@@ -543,7 +554,7 @@ export default function NewPricing() {
                         textDecoration: 'line-through',
                       }}
                     >
-                      €25/mo
+                      €{DISCOUNT_CONFIG.originalPrice}/mo
                     </Typography>
                     <Typography
                       variant="caption"
@@ -555,36 +566,38 @@ export default function NewPricing() {
                         borderRadius: 1,
                       }}
                     >
-                      First month offer
+                      {DISCOUNT_CONFIG.discountLabel}
                     </Typography>
                   </Stack>
                 )}
               </Stack>
             ) : (
               <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      textDecoration: 'line-through',
-                    }}
-                  >
-                    €25/mo
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      backgroundColor: 'primary.lighter',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                    }}
-                  >
-                    First month offer
-                  </Typography>
-                </Stack>
+                {DISCOUNT_CONFIG.showProDiscount && (
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      €{DISCOUNT_CONFIG.originalPrice}/mo
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        backgroundColor: 'primary.lighter',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                      }}
+                    >
+                      {DISCOUNT_CONFIG.discountLabel}
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
             )
           }
