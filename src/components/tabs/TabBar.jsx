@@ -9,7 +9,7 @@ import HistoryButton from './HistoryButton.jsx';
 import MembersButton from './MembersButton.jsx';
 import NewTabButton from './NewTabButton.jsx';
 import TabItem from './TabItem.jsx';
-import { selectDisplayMode, setDisplayMode } from '../../redux/slices/altaners';
+import { selectDisplayMode, setDisplayModeForProject } from '../../redux/slices/altaners';
 import {
   selectTabsArray,
   selectActiveTabId,
@@ -451,7 +451,7 @@ const TabBar = ({
                 onClick={() => {
                   // Toggle between preview and both modes only
                   const nextMode = displayMode === 'preview' ? 'both' : 'preview';
-                  dispatch(setDisplayMode(nextMode));
+                  dispatch(setDisplayModeForProject({ altanerId, displayMode: nextMode }));
                 }}
                 sx={{
                   width: 32,

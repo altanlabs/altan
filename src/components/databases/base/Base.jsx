@@ -8,7 +8,7 @@ import {
   deleteTableById,
   getBaseById,
   selectBaseById,
-  loadAllTableRecords,
+  loadTableRecords,
   preloadUsersForBase,
 } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
@@ -30,6 +30,7 @@ function Base({
   onNavigate,
   baseId: explicitBaseId,
 }) {
+  console.log('Base re-render');
   const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
   const history = useHistory();
   const ws = useHermesWebSocket();
@@ -89,7 +90,7 @@ function Base({
 
       // Pre-fetch the table records to improve loading performance
       if (newTableId) {
-        dispatch(loadAllTableRecords(newTableId));
+        dispatch(loadTableRecords(newTableId, { limit: 50 }));
       }
     },
     [altanerId, altanerComponentId, baseId, onNavigate, history],
@@ -185,7 +186,7 @@ function Base({
         isTableSwitching: true,
       }));
 
-      dispatch(loadAllTableRecords(newTableId));
+      dispatch(loadTableRecords(newTableId, { limit: 50 }));
 
       navigateToPath(newTableId, defaultView);
     },
@@ -221,7 +222,7 @@ function Base({
           pendingImport: targetTableId,
         }));
 
-        dispatch(loadAllTableRecords(targetTableId));
+        dispatch(loadTableRecords(targetTableId, { limit: 50 }));
         navigateToPath(targetTableId, defaultView);
       }
     },

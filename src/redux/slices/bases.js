@@ -21,6 +21,8 @@ const initialState = {
     currentViewType: 'grid',
     isRefreshing: false,
     recordCount: 0,
+    isSearching: false,
+    searchResults: {},
   },
   // User cache for auth.users table to avoid redundant API calls
   userCache: {},
@@ -237,9 +239,10 @@ const slice = createSlice({
       };
     },
     updateTableRecord(state, action) {
-      const { tableId, tableName, recordId, changes } = action.payload;
+      const { tableId, tableName, recordId, changes, isRealTime = false } = action.payload;
 
       // First try to find by exact tableId
+      let targetTableId = tableId;
       let tableRecords = state.records[tableId]?.items;
 
       // If not found by tableId and we have a tableName, try to find by table name
@@ -252,6 +255,7 @@ const slice = createSlice({
               (table) => table.name === tableName || table.db_name === tableName,
             );
             if (matchingTable) {
+              targetTableId = matchingTable.id;
               tableRecords = state.records[matchingTable.id]?.items;
               if (tableRecords) {
                 break;
@@ -265,6 +269,12 @@ const slice = createSlice({
         const recordIndex = tableRecords.findIndex((r) => r.id === recordId);
         if (recordIndex !== -1) {
           tableRecords[recordIndex] = { ...tableRecords[recordIndex], ...changes };
+
+          // For real-time updates, mark that we have new data
+          if (isRealTime && state.recordsState[targetTableId]) {
+            state.recordsState[targetTableId].hasRealTimeUpdates = true;
+            state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
+          }
         }
       } else {
         // Last resort: Try to find the record in any available table
@@ -278,6 +288,12 @@ const slice = createSlice({
                 ...availableTableRecords[foundRecordIndex],
                 ...changes,
               };
+
+              // For real-time updates, mark that we have new data
+              if (isRealTime && state.recordsState[availableTableId]) {
+                state.recordsState[availableTableId].hasRealTimeUpdates = true;
+                state.recordsState[availableTableId].lastRealTimeUpdate = Date.now();
+              }
               return;
             }
           }
@@ -285,7 +301,13 @@ const slice = createSlice({
       }
     },
     addTableRecord(state, action) {
-      const { tableId, tableName, record } = action.payload;
+      const {
+        tableId,
+        tableName,
+        record,
+        isRealTime = false,
+        insertAtBeginning = false,
+      } = action.payload;
       let targetTableId = tableId;
 
       // If tableId doesn't exist in records but we have a tableName, try to find by name
@@ -317,13 +339,32 @@ const slice = createSlice({
         // Update existing record instead of adding duplicate
         state.records[targetTableId].items[existingIndex] = record;
       } else {
-        // Add new record
-        state.records[targetTableId].items.push(record);
+        // Add new record - for real-time updates, add at beginning to maintain order
+        if (insertAtBeginning || isRealTime) {
+          state.records[targetTableId].items.unshift(record);
+        } else {
+          state.records[targetTableId].items.push(record);
+        }
         state.records[targetTableId].total += 1;
+
+        // For real-time updates, mark that we have new data and may need pagination adjustment
+        if (isRealTime && state.recordsState[targetTableId]) {
+          state.recordsState[targetTableId].hasRealTimeUpdates = true;
+          state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
+          // Increment total records count for pagination
+          if (state.recordsState[targetTableId].totalRecords !== undefined) {
+            state.recordsState[targetTableId].totalRecords += 1;
+            // Recalculate total pages
+            const pageSize = state.recordsState[targetTableId].pageSize || 50;
+            state.recordsState[targetTableId].totalPages = Math.ceil(
+              state.recordsState[targetTableId].totalRecords / pageSize,
+            );
+          }
+        }
       }
     },
     deleteTableRecord(state, action) {
-      const { tableId, tableName, recordId } = action.payload;
+      const { tableId, tableName, recordId, isRealTime = false } = action.payload;
       let targetTableId = tableId;
 
       // If tableId doesn't exist in records but we have a tableName, try to find by name
@@ -343,10 +384,31 @@ const slice = createSlice({
       }
 
       if (state.records[targetTableId]) {
+        const initialLength = state.records[targetTableId].items.length;
         state.records[targetTableId].items = state.records[targetTableId].items.filter(
           (record) => record.id !== recordId,
         );
-        state.records[targetTableId].total -= 1;
+        const finalLength = state.records[targetTableId].items.length;
+
+        // Only decrement if we actually removed a record
+        if (finalLength < initialLength) {
+          state.records[targetTableId].total -= 1;
+
+          // For real-time updates, mark that we have changes and update pagination
+          if (isRealTime && state.recordsState[targetTableId]) {
+            state.recordsState[targetTableId].hasRealTimeUpdates = true;
+            state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
+            // Decrement total records count for pagination
+            if (state.recordsState[targetTableId].totalRecords !== undefined) {
+              state.recordsState[targetTableId].totalRecords -= 1;
+              // Recalculate total pages
+              const pageSize = state.recordsState[targetTableId].pageSize || 50;
+              state.recordsState[targetTableId].totalPages = Math.ceil(
+                Math.max(state.recordsState[targetTableId].totalRecords, 1) / pageSize,
+              );
+            }
+          }
+        }
       }
     },
     clearTableRecords(state, action) {
@@ -354,13 +416,99 @@ const slice = createSlice({
       delete state.records[tableId];
     },
     setTableRecordsState(state, action) {
-      const { tableId, loading, lastFetched, queryParams, cached = false } = action.payload;
-      state.recordsState[tableId] = {
-        loading,
-        lastFetched,
-        queryParams,
-        cached,
-      };
+      const { tableId, ...updates } = action.payload;
+      if (!state.recordsState[tableId]) {
+        state.recordsState[tableId] = {
+          hasRealTimeUpdates: false,
+          lastRealTimeUpdate: null,
+        };
+      }
+      // Merge with existing state instead of overwriting
+      Object.assign(state.recordsState[tableId], updates);
+    },
+    // New action to handle real-time data integration with pagination boundaries
+    integrateRealTimeUpdates(state, action) {
+      const { tableId, updates, additions, deletions } = action.payload;
+
+      if (!state.records[tableId]) {
+        state.records[tableId] = { items: [], total: 0 };
+      }
+
+      const tableRecords = state.records[tableId];
+      const recordsState = state.recordsState[tableId];
+      const pageSize = recordsState?.pageSize || 50;
+      const currentPage = recordsState?.currentPage || 0;
+      let totalChanged = 0;
+
+      // Handle deletions first
+      if (deletions && deletions.length > 0) {
+        const initialLength = tableRecords.items.length;
+        tableRecords.items = tableRecords.items.filter((record) => !deletions.includes(record.id));
+        const deletedCount = initialLength - tableRecords.items.length;
+        totalChanged -= deletedCount;
+      }
+
+      // Handle updates (these don't affect pagination)
+      if (updates && updates.length > 0) {
+        updates.forEach((update) => {
+          const index = tableRecords.items.findIndex((r) => r.id === update.id);
+          if (index !== -1) {
+            tableRecords.items[index] = { ...tableRecords.items[index], ...update };
+          }
+        });
+      }
+
+      // Handle additions with pagination boundaries
+      if (additions && additions.length > 0) {
+        additions.forEach((addition) => {
+          const existingIndex = tableRecords.items.findIndex((r) => r.id === addition.id);
+          if (existingIndex === -1) {
+            // Only add to current page if we're on the first page
+            // Otherwise, just update the total count (records will appear when user navigates)
+            if (currentPage === 0) {
+              // Add at beginning for chronological order
+              tableRecords.items.unshift(addition);
+
+              // Maintain page size boundary - remove excess records from the end
+              if (tableRecords.items.length > pageSize) {
+                tableRecords.items = tableRecords.items.slice(0, pageSize);
+              }
+            }
+            // Always increment the total count regardless of which page we're on
+            totalChanged += 1;
+          }
+        });
+      }
+
+      // Update totals
+      tableRecords.total = Math.max(tableRecords.total + totalChanged, 0);
+
+      // Update records state
+      if (recordsState) {
+        recordsState.hasRealTimeUpdates = true;
+        recordsState.lastRealTimeUpdate = Date.now();
+
+        if (recordsState.totalRecords !== undefined) {
+          recordsState.totalRecords = Math.max(recordsState.totalRecords + totalChanged, 0);
+
+          // Recalculate pagination
+          recordsState.totalPages = Math.ceil(Math.max(recordsState.totalRecords, 1) / pageSize);
+
+          // If we're not on the first page and there are new additions,
+          // mark that there might be new records available on previous pages
+          if (currentPage > 0 && additions && additions.length > 0) {
+            recordsState.hasNewRecordsOnPreviousPages = true;
+          }
+        }
+      }
+    },
+    // Action to clear real-time update flags
+    clearRealTimeUpdateFlags(state, action) {
+      const { tableId } = action.payload;
+      if (state.recordsState[tableId]) {
+        state.recordsState[tableId].hasRealTimeUpdates = false;
+        state.recordsState[tableId].hasNewRecordsOnPreviousPages = false;
+      }
     },
     // Database navigation reducers
     setDatabaseQuickFilter(state, action) {
@@ -375,12 +523,33 @@ const slice = createSlice({
     setDatabaseRecordCount(state, action) {
       state.databaseNavigation.recordCount = action.payload;
     },
+    setDatabaseSearching(state, action) {
+      state.databaseNavigation.isSearching = action.payload;
+    },
+    setDatabaseSearchResults(state, action) {
+      const { tableId, results, query } = action.payload;
+      state.databaseNavigation.searchResults[tableId] = {
+        results,
+        query,
+        timestamp: Date.now(),
+      };
+    },
+    clearDatabaseSearchResults(state, action) {
+      const { tableId } = action.payload || {};
+      if (tableId) {
+        delete state.databaseNavigation.searchResults[tableId];
+      } else {
+        state.databaseNavigation.searchResults = {};
+      }
+    },
     clearDatabaseNavigation(state) {
       state.databaseNavigation = {
         quickFilter: '',
         currentViewType: 'grid',
         isRefreshing: false,
         recordCount: 0,
+        isSearching: false,
+        searchResults: {},
       };
     },
     // User cache reducers
@@ -457,12 +626,17 @@ export const {
   setDatabaseViewType,
   setDatabaseRefreshing,
   setDatabaseRecordCount,
+  setDatabaseSearching,
+  setDatabaseSearchResults,
+  clearDatabaseSearchResults,
   clearDatabaseNavigation,
   // User cache actions
   setUserCacheLoading,
   setUserCache,
   setUserCacheError,
   clearUserCache,
+  integrateRealTimeUpdates,
+  clearRealTimeUpdateFlags,
 } = slice.actions;
 
 // Thunk actions for bases
@@ -783,16 +957,9 @@ export const getTableRecord =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      if (customTableName && customTableName.startsWith('auth.')) {
-        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-          id: recordId,
-        });
-        return Promise.resolve(response.data.record);
-      }
-
-      // Use Supabase-style endpoint for regular tables
+      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: { id: recordId },
+        params: { id: `eq.${recordId}` }, // PostgREST format for exact match
       });
 
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
@@ -807,59 +974,15 @@ export const getTableRecord =
     }
   };
 
-export const createTableRecords = (tableId, recordData) => async (dispatch, getState) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    // Find the base that contains this table
-    const state = getState();
-    let baseId, tableName;
-    for (const [bId, base] of Object.entries(state.bases.bases)) {
-      if (base.tables?.items) {
-        const table = base.tables.items.find((t) => t.id === tableId);
-        if (table) {
-          baseId = bId;
-          tableName = table.db_name || table.name;
-          break;
-        }
-      }
+export const createTableRecords =
+  (tableId, recordData, options = {}) =>
+  async (dispatch, getState) => {
+    const { isRealTime = false, suppressLoading = false } = options;
+
+    if (!suppressLoading) {
+      dispatch(slice.actions.startLoading());
     }
 
-    if (!baseId || !tableName) {
-      throw new Error(`Could not find base or table name for table ${tableId}`);
-    }
-
-    if (tableName && tableName.startsWith('auth.')) {
-      const response = await optimai_tables.post(`/table/${tableId}/record`, recordData);
-      return Promise.resolve(response.data);
-    }
-
-    // Transform data for Supabase format
-    let supabaseData;
-    if (recordData.records && recordData.records.length > 0) {
-      // Extract the fields from the Altan API format
-      supabaseData = recordData.records[0].fields;
-    } else {
-      // If it's already in the correct format, use as is
-      supabaseData = recordData;
-    }
-
-    // Use Supabase-style endpoint with proxy for creating records
-    const response = await optimai_database.post(
-      `/admin/records/${baseId}/${tableName}`,
-      supabaseData,
-    );
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-export const updateTableRecordThunk =
-  (tableId, recordId, changes) => async (dispatch, getState) => {
-    dispatch(slice.actions.startLoading());
     try {
       // Find the base that contains this table
       const state = getState();
@@ -879,26 +1002,104 @@ export const updateTableRecordThunk =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      if (tableName && tableName.startsWith('auth.')) {
-        const response = await optimai_tables.patch(`/table/${tableId}/record/${recordId}`, {
-          fields: changes,
-        });
-        return Promise.resolve(response.data.record);
+      // Transform data for PostgREST format
+      let postgreSQLData;
+      if (recordData.records && recordData.records.length > 0) {
+        // Extract the fields from the Altan API format
+        postgreSQLData = recordData.records[0].fields;
+      } else {
+        // If it's already in the correct format, use as is
+        postgreSQLData = recordData;
       }
 
-      // Use Supabase-style endpoint for regular tables
-      const response = await optimai_database.patch(
-        `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
-        {
-          ...changes,
-        },
+      // Use admin proxy for all tables (including auth tables)
+      const response = await optimai_database.post(
+        `/admin/records/${baseId}/${tableName}`,
+        postgreSQLData,
       );
+
+      // Add to local state with real-time flag
+      if (response.data) {
+        const newRecord = Array.isArray(response.data) ? response.data[0] : response.data;
+        if (newRecord) {
+          dispatch(
+            slice.actions.addTableRecord({
+              tableId,
+              record: newRecord,
+              isRealTime,
+              insertAtBeginning: isRealTime,
+            }),
+          );
+        }
+      }
+
       return Promise.resolve(response.data);
     } catch (e) {
-      dispatch(slice.actions.hasError(e.message));
+      if (!suppressLoading) {
+        dispatch(slice.actions.hasError(e.message));
+      }
       throw e;
     } finally {
-      dispatch(slice.actions.stopLoading());
+      if (!suppressLoading) {
+        dispatch(slice.actions.stopLoading());
+      }
+    }
+  };
+
+export const updateTableRecordThunk =
+  (tableId, recordId, changes, options = {}) =>
+  async (dispatch, getState) => {
+    const { isRealTime = false, suppressLoading = false } = options;
+
+    if (!suppressLoading) {
+      dispatch(slice.actions.startLoading());
+    }
+
+    try {
+      // Find the base that contains this table
+      const state = getState();
+      let baseId, tableName;
+      for (const [bId, base] of Object.entries(state.bases.bases)) {
+        if (base.tables?.items) {
+          const table = base.tables.items.find((t) => t.id === tableId);
+          if (table) {
+            baseId = bId;
+            tableName = table.db_name || table.name;
+            break;
+          }
+        }
+      }
+
+      if (!baseId || !tableName) {
+        throw new Error(`Could not find base or table name for table ${tableId}`);
+      }
+
+      // Use admin proxy for all tables (including auth tables)
+      const response = await optimai_database.patch(
+        `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
+        changes,
+      );
+
+      // Update local state with real-time flag
+      dispatch(
+        slice.actions.updateTableRecord({
+          tableId,
+          recordId,
+          changes,
+          isRealTime,
+        }),
+      );
+
+      return Promise.resolve(response.data);
+    } catch (e) {
+      if (!suppressLoading) {
+        dispatch(slice.actions.hasError(e.message));
+      }
+      throw e;
+    } finally {
+      if (!suppressLoading) {
+        dispatch(slice.actions.stopLoading());
+      }
     }
   };
 
@@ -926,18 +1127,13 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
 
-    if (tableName && tableName.startsWith('auth.')) {
-      await optimai_tables.delete(`/table/${tableId}/record`, {
-        data: { ids },
-      });
-    } else {
-      const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
-      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-        const batchIds = ids.slice(i, i + BATCH_SIZE);
-        const idFilter =
-          batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
-        await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
-      }
+    // Use admin proxy for all tables (including auth tables)
+    const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batchIds = ids.slice(i, i + BATCH_SIZE);
+      const idFilter =
+        batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
+      await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
     }
 
     // Update state for each deleted record
@@ -946,34 +1142,6 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     });
 
     return Promise.resolve();
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-// Add this new thunk action
-export const searchTableRecords = (tableId, query) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.get(`/table/${tableId}/record/search`, {
-      params: { query },
-    });
-
-    // Merge search results with existing records
-    dispatch(
-      slice.actions.setTableRecords({
-        tableId,
-        records: response.data.records,
-        total: response.data.records.length,
-        next_page_token: null,
-        isPagination: false, // Add this flag to indicate search results
-      }),
-    );
-
-    return response.data;
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
     throw e;
@@ -1025,32 +1193,20 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     );
 
     if (!authUsersTable) {
-      // eslint-disable-next-line no-console
-      console.log('No user table found in base', baseId);
       // If no user table, just mark as complete
       dispatch(setUserCache({ users: [], baseId }));
       return Promise.resolve({});
     }
 
-    // eslint-disable-next-line no-console
-    console.log('Found user table:', authUsersTable.name || authUsersTable.db_name);
+    // Fetch all users from auth.users table using admin proxy
+    const response = await optimai_database.get(
+      `/admin/records/${baseId}/${authUsersTable.db_name || authUsersTable.name}`,
+      {
+        params: { limit: 1000 }, // Should be enough for most use cases
+      },
+    );
 
-    // Fetch all users from auth.users table
-    const response = await optimai_tables.post(`/table/${authUsersTable.id}/record/query`, {
-      limit: 1000, // Should be enough for most use cases
-    });
-
-    const users = Array.isArray(response.data.records) ? response.data.records : [];
-
-    // Log user data structure for debugging
-    if (users.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('Loaded users from auth table:', users.length, 'users');
-      // eslint-disable-next-line no-console
-      console.log('Sample user fields:', Object.keys(users[0]));
-      // eslint-disable-next-line no-console
-      console.log('Sample user data:', users[0]);
-    }
+    const users = Array.isArray(response.data) ? response.data : response.data.records || [];
 
     dispatch(setUserCache({ users, baseId }));
 
@@ -1075,18 +1231,27 @@ export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   }
 };
 
-export const loadAllTableRecords =
-  (tableId, forceReload = false) =>
+// Load initial records with pagination support
+export const loadTableRecords =
+  (tableId, options = {}) =>
   async (dispatch, getState) => {
-    const BATCH_SIZE = 3000;
-    const DELAY_BETWEEN_BATCHES = 500;
+    const {
+      limit = 50,
+      page = 0,
+      forceReload = false,
+      searchQuery = null,
+      filters = null,
+      append = false,
+    } = options;
+
+    const offset = page * limit;
 
     const state = getState();
     const recordsState = state.bases.recordsState[tableId];
     const records = state.bases.records[tableId];
 
-    // If we already have fully loaded records for this table, don't reload them
-    if (recordsState?.cached && records?.items?.length > 0 && !forceReload) {
+    // If we already have records and not forcing reload or searching, return existing
+    if (!forceReload && !searchQuery && !filters && records?.items?.length > 0 && !append) {
       return Promise.resolve(records);
     }
 
@@ -1115,105 +1280,124 @@ export const loadAllTableRecords =
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
-      if (tableName && tableName.startsWith('auth.')) {
-        const response = await optimai_tables.post(`/table/${tableId}/record/query`, {
-          limit: BATCH_SIZE,
-        });
+      // Handle auth tables the same way as regular tables using admin proxy
+      // No special case needed anymore
 
-        const responseRecords = Array.isArray(response.data.records) ? response.data.records : [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: null,
-            isPagination: false,
-          }),
+      // Build query parameters for regular tables
+      const queryParams = {
+        limit,
+        offset,
+      };
+
+      // Add search functionality using PostgREST text search
+      if (searchQuery && searchQuery.trim()) {
+        // eslint-disable-next-line no-console
+        console.log('🔍 Building search query for:', searchQuery.trim());
+
+        // Get all text-based fields for full-text search
+        const textFields = table.fields?.items?.filter((field) =>
+          ['text', 'long_text', 'email', 'url', 'phone', 'single_line_text'].includes(field.type),
         );
 
-        // Mark as cached since auth tables don't support pagination
-        dispatch(
-          slice.actions.setTableRecordsState({
-            tableId,
-            loading: false,
-            lastFetched: Date.now(),
-            cached: true,
-          }),
+        // eslint-disable-next-line no-console
+        console.log(
+          '📝 Text fields for search:',
+          textFields?.map((f) => f.db_field_name),
         );
 
-        return getState().bases.records[tableId];
-      }
+        if (textFields && textFields.length > 0) {
+          // Create OR conditions for text search across multiple fields
+          const searchConditions = textFields
+            .map((field) => `${field.db_field_name}.ilike.*${searchQuery.trim()}*`)
+            .join(',');
+          queryParams.or = `(${searchConditions})`;
 
-      // Resume from where we left off if we have a page token
-      let pageToken = recordsState?.next_page_token;
-      let hasMore = true;
-
-      // Initial load if needed
-      if (!pageToken && (!records || records.items.length === 0)) {
-        const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-          params: {
-            limit: BATCH_SIZE,
-          },
-        });
-
-        const responseRecords = Array.isArray(response.data)
-          ? response.data
-          : response.data.records || [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: response.data.next_page_token,
-            isPagination: false,
-          }),
-        );
-
-        pageToken = response.data.next_page_token;
-        hasMore = !!pageToken;
-      }
-
-      // Load remaining records if we have more
-      while (hasMore) {
-        const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-          params: {
-            limit: BATCH_SIZE,
-            page_token: pageToken,
-          },
-        });
-
-        const responseRecords = Array.isArray(response.data)
-          ? response.data
-          : response.data.records || [];
-        dispatch(
-          slice.actions.setTableRecords({
-            tableId,
-            records: responseRecords,
-            total: response.data.total || responseRecords.length,
-            next_page_token: response.data.next_page_token,
-            isPagination: true,
-          }),
-        );
-
-        pageToken = response.data.next_page_token;
-        hasMore = !!pageToken;
-
-        if (hasMore) {
-          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+          // eslint-disable-next-line no-console
+          console.log('🔍 Search query params:', queryParams);
+        } else {
+          // eslint-disable-next-line no-console
+          console.log('⚠️ No text fields found for search');
         }
       }
 
-      // Mark this table's records as fully cached when all are loaded
-      if (!hasMore) {
-        dispatch(
-          slice.actions.setTableRecordsState({
-            tableId,
-            loading: false,
-            lastFetched: Date.now(),
-            cached: true,
-          }),
-        );
+      // Add custom filters if provided
+      if (filters) {
+        Object.assign(queryParams, filters);
       }
+
+      // Use existing total count, we'll get it from the actual data response
+      let totalCount = records?.total || recordsState?.totalRecords || 0;
+
+      // Fetch the actual records
+      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+        params: queryParams,
+      });
+
+      const responseRecords = Array.isArray(response.data)
+        ? response.data
+        : response.data.records || [];
+
+      // If we don't have a count yet, get it using select=count(*)
+      if (!totalCount || totalCount === 0) {
+        try {
+          const countResponse = await optimai_database.head(
+            `/admin/records/${baseId}/${tableName}`,
+            {
+              headers: {
+                Prefer: 'count=exact',
+              },
+            },
+          );
+
+          // PostgREST returns count in Content-Range header: "0-49/12345"
+          const contentRange =
+            countResponse.headers['content-range'] || countResponse.headers['Content-Range'];
+          if (contentRange) {
+            const match = contentRange.match(/\/(\d+)$/);
+            if (match) {
+              totalCount = parseInt(match[1], 10);
+              // eslint-disable-next-line no-console
+              console.log('✅ Got count using HEAD request:', totalCount);
+            }
+          }
+        } catch (countError) {
+          // eslint-disable-next-line no-console
+          console.log('Count query failed, estimating from data:', countError);
+
+          // Fallback: estimate from the data we got
+          if (responseRecords.length < limit) {
+            totalCount = responseRecords.length;
+          } else {
+            totalCount = Math.max(responseRecords.length * 20, 1000);
+          }
+          // eslint-disable-next-line no-console
+          console.log('📊 Using estimated count:', totalCount);
+        }
+      }
+
+      dispatch(
+        slice.actions.setTableRecords({
+          tableId,
+          records: responseRecords,
+          total: totalCount,
+          next_page_token: responseRecords.length === limit ? offset + limit : null,
+          isPagination: append,
+        }),
+      );
+
+      dispatch(
+        slice.actions.setTableRecordsState({
+          tableId,
+          loading: false,
+          lastFetched: Date.now(),
+          cached: false, // Never cache paginated or searched results
+          searchQuery,
+          currentPage: page,
+          pageSize: limit,
+          totalPages: Math.ceil(Math.max(totalCount, 1) / limit),
+          totalRecords: totalCount,
+        }),
+      );
 
       return getState().bases.records[tableId];
     } catch (error) {
@@ -1223,6 +1407,302 @@ export const loadAllTableRecords =
       dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
     }
   };
+
+// Get total record count for a table using PostgREST select=count(*)
+export const getTableRecordCount = (tableId) => async (dispatch, getState) => {
+  try {
+    const state = getState();
+
+    // Find the base that contains this table
+    const baseId = Object.keys(state.bases.bases).find((baseId) =>
+      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+    );
+    if (!baseId) {
+      throw new Error(`Could not find base containing table ${tableId}`);
+    }
+
+    // Find the table to get its name
+    const base = state.bases.bases[baseId];
+    const table = base.tables?.items?.find((t) => t.id === tableId);
+    const tableName = table?.db_name || table?.name;
+
+    if (!tableName) {
+      throw new Error(`Could not find table name for table ${tableId}`);
+    }
+
+    // Use PostgREST HEAD request with Prefer: count=exact (most optimal)
+    const response = await optimai_database.head(`/admin/records/${baseId}/${tableName}`, {
+      headers: {
+        Prefer: 'count=exact',
+      },
+    });
+
+    // PostgREST returns count in Content-Range header: "0-49/12345"
+    const contentRange = response.headers['content-range'] || response.headers['Content-Range'];
+    // eslint-disable-next-line no-console
+    console.log('🔍 Count function - Content-Range header:', contentRange);
+
+    if (contentRange) {
+      const match = contentRange.match(/\/(\d+)$/);
+      if (match) {
+        const count = parseInt(match[1], 10);
+        // eslint-disable-next-line no-console
+        console.log('✅ Count function extracted count:', count);
+        return count;
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to get table record count:', error);
+    return 0;
+  }
+};
+
+// Legacy function for backward compatibility - now just calls loadTableRecords
+export const loadAllTableRecords = (tableId, forceReload = false) =>
+  loadTableRecords(tableId, { limit: 50, forceReload });
+
+// High-frequency real-time update handler for WebSocket integration
+export const handleRealTimeUpdates = (tableId, updates) => async (dispatch) => {
+  try {
+    // Process updates in batches for better performance
+    const { additions = [], updates: modifications = [], deletions = [] } = updates;
+
+    // Apply all changes in one action for optimal Redux performance
+    if (additions.length > 0 || modifications.length > 0 || deletions.length > 0) {
+      dispatch(
+        integrateRealTimeUpdates({
+          tableId,
+          updates: modifications.length > 0 ? modifications : undefined,
+          additions: additions.length > 0 ? additions : undefined,
+          deletions:
+            deletions.length > 0
+              ? deletions.map((id) => (typeof id === 'string' ? id : id.id))
+              : undefined,
+        }),
+      );
+    }
+
+    return Promise.resolve({
+      success: true,
+      processed: additions.length + modifications.length + deletions.length,
+    });
+  } catch (error) {
+    console.error('Error handling real-time updates:', error);
+    throw error;
+  }
+};
+
+// Optimized pagination reload that preserves real-time updates
+export const reloadTablePageWithRealTime =
+  (tableId, page = 0) =>
+  async (dispatch, getState) => {
+    const state = getState();
+    const recordsState = state.bases.recordsState[tableId];
+
+    if (!recordsState) {
+      // If no state exists, do a normal load
+      return dispatch(loadTableRecords(tableId, { page, forceReload: true }));
+    }
+
+    const pageSize = recordsState.pageSize || 50;
+    const hasRealTimeUpdates = recordsState.hasRealTimeUpdates;
+
+    try {
+      // Load fresh data from server
+      const result = await dispatch(
+        loadTableRecords(tableId, {
+          page,
+          limit: pageSize,
+          forceReload: true,
+        }),
+      );
+
+      // If we had real-time updates, clear the flag since we've refreshed
+      if (hasRealTimeUpdates) {
+        dispatch(clearRealTimeUpdateFlags({ tableId }));
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error reloading table page:', error);
+      throw error;
+    }
+  };
+
+// Enhanced database search that integrates with pagination and real-time updates
+export const searchTableRecords = (tableId, query) => async (dispatch, getState) => {
+  if (!query || !query.trim()) {
+    // Clear search and reload current page
+    dispatch(clearDatabaseSearchResults({ tableId }));
+    dispatch(setDatabaseSearching(false));
+
+    // Reload the current page to restore original pagination
+    const state = getState();
+    const recordsState = state.bases.recordsState[tableId];
+    const currentPage = recordsState?.currentPage || 0;
+    const pageSize = recordsState?.pageSize || 50;
+
+    await dispatch(
+      loadTableRecords(tableId, {
+        page: currentPage,
+        limit: pageSize,
+        forceReload: true,
+      }),
+    );
+
+    return;
+  }
+
+  dispatch(setDatabaseSearching(true));
+
+  try {
+    const state = getState();
+    const recordsState = state.bases.recordsState[tableId];
+    // Find the base that contains this table
+    const baseId = Object.keys(state.bases.bases).find((baseId) =>
+      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+    );
+    if (!baseId) {
+      throw new Error(`Could not find base containing table ${tableId}`);
+    }
+
+    // Find the table to get its name and fields for search
+    const base = state.bases.bases[baseId];
+    const table = base.tables?.items?.find((t) => t.id === tableId);
+    const tableName = table?.db_name || table?.name;
+    if (!tableName) {
+      throw new Error(`Could not find table name for table ${tableId}`);
+    }
+
+    // Build comprehensive search query using PostgREST
+    const searchQuery = query.trim();
+
+    const textFields =
+      table.fields?.items?.filter((field) =>
+        ['text', 'longText', 'email', 'url', 'phone', 'singleLineText', 'number'].includes(
+          field.type,
+        ),
+      ) || [];
+
+    if (textFields.length === 0) {
+      dispatch(setDatabaseSearching(false));
+      return;
+    }
+
+    // Create PostgREST search conditions across all text fields
+    const searchConditions = textFields
+      .map((field) => `${field.db_field_name}.ilike.*${searchQuery}*`)
+      .join(',');
+
+    const queryParams = {
+      or: `(${searchConditions})`,
+      limit: 500, // Higher limit for comprehensive search
+      order: 'created_at.desc', // Order by most recent
+    };
+
+    // Perform the database search
+    const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
+      params: queryParams,
+    });
+
+    const searchRecords = Array.isArray(response.data)
+      ? response.data
+      : response.data.records || [];
+
+    // Merge search results with current records, avoiding duplicates
+    const currentRecords = state.bases.records[tableId]?.items || [];
+    const existingIds = new Set(currentRecords.map((record) => record.id));
+    const newSearchRecords = searchRecords.filter((record) => !existingIds.has(record.id));
+
+    // Combine: current records + new search results
+    const mergedRecords = [...currentRecords, ...newSearchRecords];
+
+    dispatch(
+      slice.actions.setTableRecords({
+        tableId,
+        records: mergedRecords,
+        total: mergedRecords.length,
+        next_page_token: null,
+        isPagination: false,
+      }),
+    );
+
+    // Store search metadata - only the NEW records found by search
+    dispatch(
+      setDatabaseSearchResults({
+        tableId,
+        results: newSearchRecords, // Only new records, not duplicates
+        query: searchQuery,
+        totalSearchResults: searchRecords.length, // Total from database
+        newRecordsFound: newSearchRecords.length, // New records added
+      }),
+    );
+
+    // Update records state to indicate we're in search mode
+    if (recordsState) {
+      dispatch(
+        slice.actions.setTableRecordsState({
+          tableId,
+          isSearchMode: true,
+          searchQuery,
+          originalPage: recordsState.currentPage || 0,
+          originalPageSize: recordsState.pageSize || 50,
+        }),
+      );
+    }
+
+    return { items: searchRecords, isSearch: true };
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(setDatabaseSearching(false));
+  }
+};
+
+// Load specific page of records
+export const loadTablePage = (tableId, page) => async (dispatch, getState) => {
+  // eslint-disable-next-line no-console
+  console.log('📄 loadTablePage called for table:', tableId, 'page:', page);
+
+  const state = getState();
+  const recordsState = state.bases.recordsState[tableId];
+
+  // eslint-disable-next-line no-console
+  console.log('📊 Current recordsState:', recordsState);
+
+  if (!recordsState || recordsState.loading) {
+    // eslint-disable-next-line no-console
+    console.log('⚠️ Cannot load page - no recordsState or already loading');
+    return;
+  }
+
+  const pageSize = recordsState.pageSize || 50;
+  const searchQuery = recordsState.searchQuery;
+
+  // eslint-disable-next-line no-console
+  console.log('📄 Loading page with params:', { page, pageSize, searchQuery });
+
+  try {
+    await dispatch(
+      loadTableRecords(tableId, {
+        page,
+        limit: pageSize,
+        searchQuery, // Maintain search context
+        forceReload: true, // Always reload when changing pages
+      }),
+    );
+    // eslint-disable-next-line no-console
+    console.log('✅ Successfully loaded page:', page);
+  } catch (loadError) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load table page:', loadError);
+    throw loadError;
+  }
+};
 
 // Base selectors
 export const selectBaseState = (state) => state.bases;
@@ -1300,6 +1780,27 @@ export const selectTableRecordById = createSelector(
   (records, recordId) => records.find((record) => record.id === recordId),
 );
 
+export const selectTablePaginationInfo = createSelector(
+  [selectTableRecordsState],
+  (recordsState) => {
+    if (!recordsState) return null;
+
+    return {
+      currentPage: recordsState.currentPage || 0,
+      totalPages: recordsState.totalPages || 1,
+      pageSize: recordsState.pageSize || 50,
+      totalRecords: recordsState.totalRecords || 0,
+      isLastPageFound: true, // We always know the total with database count
+      hasNewRecordsOnPreviousPages: recordsState.hasNewRecordsOnPreviousPages || false,
+    };
+  },
+);
+
+export const selectTableTotalRecords = createSelector(
+  [selectTableRecordsState],
+  (recordsState) => recordsState?.totalRecords || 0,
+);
+
 export const createRecordPrimaryValueSelector = (baseId, tableId, recordId) =>
   createSelector(
     [
@@ -1340,6 +1841,16 @@ export const selectDatabaseRefreshing = createSelector(
 export const selectDatabaseRecordCount = createSelector(
   [selectDatabaseNavigation],
   (navigation) => navigation.recordCount,
+);
+
+export const selectDatabaseSearching = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.isSearching,
+);
+
+export const selectDatabaseSearchResults = createSelector(
+  [selectDatabaseNavigation, (_, tableId) => tableId],
+  (navigation, tableId) => navigation.searchResults[tableId] || null,
 );
 
 // User cache selectors

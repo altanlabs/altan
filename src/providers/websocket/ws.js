@@ -29,6 +29,7 @@ import {
   addTableRecord,
   updateTableRecord,
   deleteTableRecord,
+  integrateRealTimeUpdates,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -171,8 +172,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('data', data.type);
-
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -558,43 +557,40 @@ export const handleWebSocketEvent = async (data, user_id) => {
       const newTableId = data.table_id || data.data.table_id || data.data.id;
       const newTableName = data.table_db_name || data.data.table_name;
       if (data.data.records && Array.isArray(data.data.records)) {
-        data.data.records.forEach((record) => {
-          dispatch(
-            addTableRecord({
-              tableId: newTableId,
-              tableName: newTableName,
-              record: record,
-            }),
-          );
-        });
+        // Use batched real-time updates for better performance
+        dispatch(
+          integrateRealTimeUpdates({
+            tableId: newTableId,
+            additions: data.data.records,
+          }),
+        );
       }
       break;
     case 'RecordsUpdate':
       const updateTableId = data.data.table_id || data.data.id;
       const tableName = data.data.table_name;
-      data.data.records.forEach((record) => {
+      if (data.data.records && Array.isArray(data.data.records)) {
+        // Use batched real-time updates for better performance
         dispatch(
-          updateTableRecord({
+          integrateRealTimeUpdates({
             tableId: updateTableId,
-            tableName: tableName,
-            recordId: record.id,
-            changes: record,
+            updates: data.data.records,
           }),
         );
-      });
+      }
       break;
     case 'RecordsDelete':
       const deleteRecordsTableId = data.data.table_id || data.data.id;
       const deleteTableName = data.data.table_name;
-      data.data.ids.forEach((recordId) => {
+      if (data.data.ids && Array.isArray(data.data.ids)) {
+        // Use batched real-time updates for better performance
         dispatch(
-          deleteTableRecord({
+          integrateRealTimeUpdates({
             tableId: deleteRecordsTableId,
-            tableName: deleteTableName,
-            recordId: recordId,
+            deletions: data.data.ids,
           }),
         );
-      });
+      }
       break;
     case 'FileUpdate' | 'FileDelete' | 'FileCreate':
       // console.log('data', data);

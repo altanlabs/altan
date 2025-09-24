@@ -14,6 +14,7 @@ import {
   selectDisplayMode,
   getAltanerById,
   clearCurrentAltaner,
+  loadDisplayModeForProject,
 } from '../../redux/slices/altaners';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
@@ -40,6 +41,7 @@ const transformProps = (type, props) => {
 const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
+  console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
   const history = useHistory();
@@ -65,6 +67,13 @@ export default function ProjectPage() {
     return () => {
       dispatch(clearCurrentAltaner());
     };
+  }, [altanerId]);
+
+  // Load display mode preference for this project
+  useEffect(() => {
+    if (altanerId) {
+      dispatch(loadDisplayModeForProject(altanerId));
+    }
   }, [altanerId]);
 
   // Get the current component based on the active ID

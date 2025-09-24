@@ -14,7 +14,7 @@ import { RowGroupingModule } from '@ag-grid-enterprise/row-grouping';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
 import { useTheme } from '@mui/material';
-import { debounce, maxBy } from 'lodash';
+import { debounce, maxBy } from 'lodash-es';
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -24,19 +24,21 @@ import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
 import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
+import { useWebSocketIntegration } from './helpers/useWebSocketIntegration.js';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { headerHeight, defaultColDef } from './utils/settings.js';
 import {
   queryTableRecords,
   selectDatabaseQuickFilter,
-  setDatabaseRecordCount,
-  loadAllTableRecords,
+  selectDatabaseSearching,
+  loadTableRecords,
   importCSVToTable,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
 import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
+import Iconify from '../../../iconify';
 import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
 import EditFieldDrawer from '../../fields/EditFieldDrawer.jsx';
 import ImportCSVDrawer from '../../import/ImportCSVDrawer';
@@ -92,29 +94,22 @@ export const GridView = memo(
     onUpdateRecord,
     onDeleteRecords,
     onDuplicateRecord,
-    // Pagination props to pass up to parent
-    onPaginationChange,
     triggerImport,
   }) => {
     const theme = useTheme();
     const gridRef = useRef();
     const history = useHistory();
     const location = useLocation();
-    const members = useSelector((state) => selectAccount(state)?.members || []);
-    const quickFilterText = useSelector(selectDatabaseQuickFilter);
+  const members = useSelector((state) => selectAccount(state)?.members || []);
+  const quickFilterText = useSelector(selectDatabaseQuickFilter);
+  const isSearching = useSelector(selectDatabaseSearching);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showImportDrawer, setShowImportDrawer] = useState(false);
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
-    const [isReady, setIsReady] = useState(false);
-    const [paginationInfo, setPaginationInfo] = useState({
-      currentPage: 0,
-      totalPages: 0,
-      pageSize: 50,
-      isLastPageFound: false,
-    });
+  const [isReady, setIsReady] = useState(false);
 
     // Use ref for cols to avoid unnecessary re-renders
     const colsRef = useRef([]);
@@ -125,13 +120,13 @@ export const GridView = memo(
     // Track initial grid setup to prevent flushSync issues
     const initialGridSetupComplete = useRef(false);
 
-    // Use ref for tracking when component is mounted to avoid updates during unmount
-    const isMounted = useRef(true);
+  // Use ref for tracking when component is mounted to avoid updates during unmount
+  const isMounted = useRef(true);
 
-    // Use optimized row data hook
-    const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
+  // Use optimized row data hook
+  const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
 
-    // Calculate max width for email fields
+  // Calculate max width for email fields
     const getEmailColumnWidths = useCallback(
       (rowData) => {
         if (!rowData?.length) return {};
@@ -170,49 +165,174 @@ export const GridView = memo(
       [optimizedRowData, getEmailColumnWidths],
     );
 
-    // Add a batch update manager
-    const batchUpdateRef = useRef({
-      updates: new Map(),
-      timeoutId: null,
+    // High-frequency async transaction manager for real-time updates
+    const asyncTransactionManager = useRef({
+      pendingUpdates: new Map(),
+      pendingAdds: [],
+      pendingRemoves: [],
+      isProcessing: false,
+      transactionCount: 0,
     });
 
-    // Batch process grid updates with optimized transaction
-    const processBatchUpdates = useCallback(() => {
-      if (!gridRef.current?.api || batchUpdateRef.current.updates.size === 0) return;
-
-      const updates = Array.from(batchUpdateRef.current.updates.values());
-
-      // Apply updates in a single transaction with optimized settings
-      gridRef.current.api.applyTransaction({
-        update: updates,
-        suppressFlash: true,
-        suppressVerticalScroll: true,
-        suppressColumnVirtualisation: true,
-      });
-
-      batchUpdateRef.current.updates.clear();
-    }, []);
-
-    // Handle record updates in batches
-    const handleRecordUpdate = useCallback(
-      (recordId, changes) => {
-        if (!isMounted.current) return;
-
-        // Add update to batch
-        batchUpdateRef.current.updates.set(recordId, changes);
-
-        // Clear existing timeout
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
+    // Apply async transactions for high-frequency updates
+    const applyAsyncTransaction = useCallback(
+      (transaction, callback) => {
+        if (!gridRef.current?.api || !isMounted.current) {
+          callback?.(null);
+          return;
         }
 
-        // Schedule batch update
-        batchUpdateRef.current.timeoutId = setTimeout(() => {
-          processBatchUpdates();
-        }, 50); // 50ms batch window
+        try {
+          gridRef.current.api.applyTransactionAsync(
+            {
+              ...transaction,
+              suppressFlash: true,
+              suppressVerticalScroll: true,
+            },
+            (result) => {
+              asyncTransactionManager.current.transactionCount++;
+              callback?.(result);
+            }
+          );
+        } catch (error) {
+          console.error('Error applying async transaction:', error);
+          callback?.(null);
+        }
       },
-      [processBatchUpdates],
+      []
     );
+
+    // Handle record updates using async transactions
+    const handleRecordUpdate = useCallback(
+      (recordId, changes, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+
+        if (isHighFrequency) {
+          // For high-frequency updates, batch them
+          manager.pendingUpdates.set(recordId, { ...changes, id: recordId });
+        } else {
+          // For single updates, apply immediately with async transaction
+          applyAsyncTransaction({
+            update: [{ ...changes, id: recordId }]
+          });
+        }
+      },
+      [applyAsyncTransaction]
+    );
+
+    // Handle record additions using async transactions
+    const handleRecordAdd = useCallback(
+      (record, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+
+        if (isHighFrequency) {
+          // For high-frequency adds, batch them
+          manager.pendingAdds.push(record);
+        } else {
+          // For single adds, apply immediately with async transaction
+          applyAsyncTransaction({
+            add: [record]
+          });
+        }
+      },
+      [applyAsyncTransaction]
+    );
+
+    // Handle record deletions using async transactions
+    const handleRecordDelete = useCallback(
+      (recordIds, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+        const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+
+        if (isHighFrequency) {
+          // For high-frequency deletes, batch them
+          manager.pendingRemoves.push(...ids.map(id => ({ id })));
+        } else {
+          // For single deletes, apply immediately with async transaction
+          applyAsyncTransaction({
+            remove: ids.map(id => ({ id }))
+          });
+        }
+      },
+      [applyAsyncTransaction]
+    );
+
+    // WebSocket integration for real-time updates
+    const {
+      handleWebSocketUpdate,
+      handleWebSocketAdd,
+      handleWebSocketDelete,
+      forceFlush: flushWebSocketUpdates,
+      clearUpdateFlags,
+      getBufferStats,
+    } = useWebSocketIntegration(
+      table?.id,
+      handleRecordUpdate,
+      handleRecordAdd,
+      handleRecordDelete,
+    );
+
+    // Flush pending high-frequency transactions
+    const flushPendingTransactions = useCallback(() => {
+      if (!gridRef.current?.api || !isMounted.current) return;
+
+      const manager = asyncTransactionManager.current;
+      if (manager.isProcessing) return;
+
+      const hasUpdates = manager.pendingUpdates.size > 0;
+      const hasAdds = manager.pendingAdds.length > 0;
+      const hasRemoves = manager.pendingRemoves.length > 0;
+
+      if (!hasUpdates && !hasAdds && !hasRemoves) return;
+
+      manager.isProcessing = true;
+
+      const transaction = {};
+      
+      if (hasUpdates) {
+        transaction.update = Array.from(manager.pendingUpdates.values());
+        manager.pendingUpdates.clear();
+      }
+      
+      if (hasAdds) {
+        transaction.add = [...manager.pendingAdds];
+        manager.pendingAdds.length = 0;
+      }
+      
+      if (hasRemoves) {
+        transaction.remove = [...manager.pendingRemoves];
+        manager.pendingRemoves.length = 0;
+      }
+
+      applyAsyncTransaction(transaction, () => {
+        manager.isProcessing = false;
+      });
+    }, [applyAsyncTransaction]);
+
+    // Auto-flush pending transactions every 100ms for high-frequency updates
+    useEffect(() => {
+      const interval = setInterval(() => {
+        flushPendingTransactions();
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+        // Flush any remaining transactions on cleanup
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions:', error);
+          }
+        }
+      };
+    }, [flushPendingTransactions]);
 
     useEffect(() => {
       isMounted.current = true;
@@ -220,6 +340,8 @@ export const GridView = memo(
         isMounted.current = false;
       };
     }, []);
+
+    // Use AG-Grid's built-in client-side filtering - much simpler and no server loops
 
     // Simplified initial data loading logic
     useEffect(() => {
@@ -246,7 +368,7 @@ export const GridView = memo(
         setEditRecordId(recordId);
         history.push(`${location.pathname}/records/${recordId}`);
       },
-      [history.push, location.pathname],
+      [history, location.pathname],
     );
 
     const getContextMenuItems = useCallback(
@@ -271,45 +393,14 @@ export const GridView = memo(
     );
 
     const getCommonFieldMenuItems = useCallback((field, params) => {
-      return createFieldContextMenuItems(field, params, setEditField, table.id);
-    }, []);
+      return createFieldContextMenuItems(field, params, setEditField, table?.id);
+    }, [table?.id]);
 
     const onGridReady = useCallback((params) => {
       gridRef.current = params;
       initialGridSetupComplete.current = true;
-      const api = params.api;
-      if (!api) return;
-
-      // Add direct keyboard shortcut handler for copy
-      document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-          const selectedCells = api.getCellRanges();
-          const focusedCell = api.getFocusedCell();
-
-          if (selectedCells?.length > 0 || focusedCell) {
-            setTimeout(() => {
-              api.copySelectedRangeToClipboard(false);
-            }, 0);
-          }
-        }
-      });
-
-      // Initial focus setup
-      // In newer AG-Grid, columnApi is available directly from api
-      // Set initial column sizes once
-      api.sizeColumnsToFit();
-
-      api.addEventListener('firstDataRendered', () => {
-        const displayedColumns = api.getAllDisplayedColumns();
-        if (displayedColumns?.length) {
-          api.setFocusedCell(0, displayedColumns[0]);
-        }
-        // Lock column sizes after initial render
-        displayedColumns.forEach((col) => {
-          const width = col.getActualWidth();
-          api.setColumnWidth(col, width, true);
-        });
-      });
+      // Remove all immediate API calls that cause flushSync issues
+      // Grid will work fine without these optimizations
     }, []);
 
     // Modified handler for cell value changes
@@ -329,7 +420,13 @@ export const GridView = memo(
             if (Object.keys(fieldsPayload).length > 0) {
               const result = await onAddRecord({ records: [{ fields: fieldsPayload }] });
               if (result?.records?.[0] && gridRef.current?.api) {
-                handleRecordUpdate(result.records[0].id, result.records[0]);
+                // Use async transaction for the new record
+                handleRecordAdd(result.records[0]);
+                // Also update the local row data to reflect the change from '+' to actual record
+                const updatedRowData = localRowData.map(row => 
+                  row.id === '+' ? result.records[0] : row
+                );
+                setLocalRowData(updatedRowData);
               }
             }
           } else {
@@ -337,11 +434,13 @@ export const GridView = memo(
             try {
               const updatedRecord = await onUpdateRecord(params.data.id, changes);
               if (updatedRecord && gridRef.current?.api) {
+                // Use async transaction for the update
                 handleRecordUpdate(params.data.id, { ...params.data, ...changes });
               }
-            } catch (error) {
-              // console.error('Error updating record:', error);
+            } catch {
+              // console.error('Error updating record');
               if (gridRef.current?.api) {
+                // Revert the change using async transaction
                 handleRecordUpdate(params.data.id, {
                   ...params.data,
                   [params.column.colId]: params.oldValue,
@@ -349,8 +448,8 @@ export const GridView = memo(
               }
             }
           }
-        } catch (error) {
-          // console.error('Error in cell value change handler:', error);
+        } catch {
+          // console.error('Error in cell value change handler');
         }
       },
       [onAddRecord, onUpdateRecord, handleRecordUpdate],
@@ -364,39 +463,6 @@ export const GridView = memo(
       },
       [onCellValueChanged],
     );
-
-    // Pagination functions
-    const onPaginationChanged = useCallback(() => {
-      if (!gridRef.current?.api) return;
-
-      const api = gridRef.current.api;
-      setPaginationInfo({
-        currentPage: api.paginationGetCurrentPage(),
-        totalPages: api.paginationGetTotalPages(),
-        pageSize: api.paginationGetPageSize(),
-        isLastPageFound: api.paginationIsLastPageFound(),
-      });
-    }, []);
-
-    const paginationGoToFirstPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToFirstPage();
-    }, []);
-
-    const paginationGoToLastPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToLastPage();
-    }, []);
-
-    const paginationGoToNextPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToNextPage();
-    }, []);
-
-    const paginationGoToPreviousPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToPreviousPage();
-    }, []);
 
     const columnDefs = useMemo(() => {
       const defs = createColumnDefs({
@@ -456,7 +522,7 @@ export const GridView = memo(
 
     // Extract reference fields when the table schema changes
     const referenceFields = useMemo(() => {
-      if (!table || !table.fields || !table.fields.items) return [];
+      if (!table?.fields?.items) return [];
       return table.fields.items.filter((field) => {
         return (
           field.type === 'reference' &&
@@ -465,7 +531,7 @@ export const GridView = memo(
           field.options.reference_options.foreign_table
         );
       });
-    }, [table && table.fields && table.fields.items]);
+    }, [table?.fields?.items]);
 
     // Only dispatch queries for *new* related IDs
     const fetchRelatedRecords = useCallback(
@@ -514,7 +580,7 @@ export const GridView = memo(
           }
         });
       },
-      [dispatch, referenceFields],
+      [referenceFields],
     );
 
     // Create a stable debounced function just once
@@ -531,45 +597,36 @@ export const GridView = memo(
       };
     }, [records, debouncedFetch]);
 
+    // Listen for async transactions applied event for debugging
+    const onAsyncTransactionsApplied = useCallback((event) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Async transactions applied:', {
+          results: event.results?.length || 0,
+          totalTransactions: asyncTransactionManager.current.transactionCount
+        });
+      }
+    }, []);
+
+    // Cleanup async transactions on unmount
     useEffect(() => {
       return () => {
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions on cleanup:', error);
+          }
         }
+        // Clear any pending transactions
+        const manager = asyncTransactionManager.current;
+        manager.pendingUpdates.clear();
+        manager.pendingAdds.length = 0;
+        manager.pendingRemoves.length = 0;
       };
     }, []);
 
     // Add data loading states to show in the UI
     // const isDataLoading = !isReady || !initialGridSetupComplete.current;
-
-    // Pass pagination info up to parent components
-    useEffect(() => {
-      if (onPaginationChange) {
-        onPaginationChange({
-          paginationInfo,
-          handlers: {
-            onGoToFirstPage: paginationGoToFirstPage,
-            onGoToLastPage: paginationGoToLastPage,
-            onGoToNextPage: paginationGoToNextPage,
-            onGoToPreviousPage: paginationGoToPreviousPage,
-          },
-        });
-      }
-    }, [
-      paginationInfo,
-      onPaginationChange,
-      paginationGoToFirstPage,
-      paginationGoToLastPage,
-      paginationGoToNextPage,
-      paginationGoToPreviousPage,
-    ]);
-
-    // Update record count in Redux when data changes
-    useEffect(() => {
-      if (localRowData?.length !== undefined) {
-        dispatch(setDatabaseRecordCount(localRowData.length));
-      }
-    }, [localRowData?.length]);
 
     // Check if table is empty (no real records, only the '+' row for new records)
     const hasRealRecords = useMemo(() => {
@@ -628,7 +685,7 @@ export const GridView = memo(
         const response = await dispatch(importCSVToTable(table.id, importData));
 
         // Refresh the table records after successful import
-        await dispatch(loadAllTableRecords(table.id, true));
+        await dispatch(loadTableRecords(table.id, { forceReload: true }));
 
         return response;
       } catch (error) {
@@ -715,6 +772,9 @@ export const GridView = memo(
               suppressRowHoverAnimation={true}
               suppressColumnMoveAnimation={true}
               suppressColumnResizeAnimation={true}
+              // Async transaction settings for high-frequency updates
+              asyncTransactionWaitMillis={50}
+              onAsyncTransactionsApplied={onAsyncTransactionsApplied}
               suppressCellFocus={false}
               suppressMovableColumns={false}
               suppressDragLeaveHidesColumns={true}
@@ -744,11 +804,7 @@ export const GridView = memo(
               suppressClipboardPaste={false}
               includeHiddenColumnsInQuickFilter={true}
               suppressNoRowsOverlay={true}
-              pagination={true}
-              paginationPageSize={50}
-              paginationPageSizeSelector={[50, 100, 500, 1000]}
-              suppressPaginationPanel={true}
-              onPaginationChanged={onPaginationChanged}
+              pagination={false}
               initialState={{
                 sort: {
                   sortModel: [
@@ -797,7 +853,7 @@ export const GridView = memo(
                 defaultToolPanelWidth: 0,
               }}
             />
-            {!hasRealRecords && isReady && (
+            {!hasRealRecords && isReady && !isSearching && (
               <div
                 style={{
                   position: 'absolute',
@@ -814,6 +870,32 @@ export const GridView = memo(
                     tableName={table?.name || 'table'}
                   />
                 </div>
+              </div>
+            )}
+            {isSearching && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: theme.shape.borderRadius,
+                  boxShadow: theme.shadows[4],
+                }}
+              >
+                <Iconify
+                  icon="svg-spinners:blocks-shuffle-3"
+                  sx={{ width: 20, height: 20, color: theme.palette.primary.main }}
+                />
+                <span style={{ color: theme.palette.text.primary, fontSize: '0.875rem' }}>
+                  Searching...
+                </span>
               </div>
             )}
           </div>
