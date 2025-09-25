@@ -1,7 +1,7 @@
 import { Box, TextField, IconButton, Tooltip, Stack, Chip, useMediaQuery } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { debounce } from 'lodash-es';
@@ -14,24 +14,38 @@ import {
   searchTableRecords,
   selectDatabaseSearching,
   selectDatabaseSearchResults,
+  selectBaseById,
+  setDatabaseRefreshing,
+  loadTableRecords,
 } from '../../../redux/slices/bases';
 import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
+import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
+import CreateRecordDialog from '../records/CreateRecordDialog.jsx';
+import RLSSettingsDialog from '../table/RLSSettingsDialog.jsx';
+import PostgRESTProxyDialog from '../dialogs/PostgRESTProxyDialog.jsx';
 
 function DatabaseNavigationBar({
-  database,
-  onQuickFilterChange,
   disabled = false,
-  recordCount = 0, // Keep as prop for backward compatibility, but use internal state
-  isLoading = false, // Keep as prop for backward compatibility, but use internal state
-  onRefresh,
-  onRLSSettings,
-  onDatabaseInfo,
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const inputRef = useRef(null);
-  const { tableId } = useParams();
+  const { baseId: routeBaseId, tableId, componentId } = useParams();
+  
+  // Dialog states
+  const [openCreateRecord, setOpenCreateRecord] = useState(false);
+  const [openRLSSettings, setOpenRLSSettings] = useState(false);
+  const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
+  const [openPostgRESTProxy, setOpenPostgRESTProxy] = useState(false);
+
+  // Get baseId from route params
+  const baseId = routeBaseId;
+  
+  // Get database from Redux using the baseId
+  const database = useSelector((state) => 
+    baseId ? selectBaseById(state, baseId) : null
+  );
 
   // Get values from Redux - only when this component is actually rendered for database
   const quickFilter = useSelector(selectDatabaseQuickFilter);
@@ -44,9 +58,9 @@ function DatabaseNavigationBar({
     tableId ? selectTableTotalRecords(state, tableId) : 0,
   );
 
-  // Use internal state over props for better performance
-  const actualRecordCount = currentTableRecordCount || recordCount;
-  const actualIsLoading = databaseRefreshing || databaseSearching || isLoading;
+  // Use internal state for better performance
+  const actualRecordCount = currentTableRecordCount;
+  const actualIsLoading = databaseRefreshing || databaseSearching;
 
   // Create debounced search function to avoid excessive API calls
   const debouncedSearch = useCallback(
@@ -81,12 +95,44 @@ function DatabaseNavigationBar({
     // eslint-disable-next-line no-console
     console.log('🚀 Calling debouncedSearch with value:', value);
     debouncedSearch(value);
-    
-    // Also call the callback if provided (for backward compatibility)
-    if (onQuickFilterChange) {
-      onQuickFilterChange(value);
-    }
   };
+
+  // Database operation handlers
+  const handleDatabaseRefresh = useCallback(() => {
+    const currentTableId = tableId;
+    if (baseId && currentTableId) {
+      dispatch(setDatabaseRefreshing(true));
+      // Refresh the current table
+      dispatch(loadTableRecords(currentTableId, { forceReload: true })).finally(() =>
+        dispatch(setDatabaseRefreshing(false)),
+      );
+    } else if (baseId && database?.tables?.items?.length > 0) {
+      dispatch(setDatabaseRefreshing(true));
+      // Fallback: refresh the first table
+      const fallbackTableId = database.tables.items[0]?.id;
+      if (fallbackTableId) {
+        dispatch(loadTableRecords(fallbackTableId, { forceReload: true })).finally(() =>
+          dispatch(setDatabaseRefreshing(false)),
+        );
+      }
+    }
+  }, [baseId, tableId, database]);
+
+  const handleDatabaseAddRecord = useCallback(() => {
+    setOpenCreateRecord(true);
+  }, []);
+
+  const handleDatabaseRLSSettings = useCallback(() => {
+    setOpenRLSSettings(true);
+  }, []);
+
+  const handleDatabaseInfo = useCallback(() => {
+    setOpenDatabaseInfo(true);
+  }, []);
+
+  const handlePostgRESTProxy = useCallback(() => {
+    setOpenPostgRESTProxy(true);
+  }, []);
 
   // Cleanup debounced function on unmount
   useEffect(() => {
@@ -95,11 +141,6 @@ function DatabaseNavigationBar({
     };
   }, [debouncedSearch]);
 
-  const handleRefresh = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
-  };
 
   return (
     <Box
@@ -145,7 +186,7 @@ function DatabaseNavigationBar({
           <Tooltip title="Database settings">
             <IconButton
               size="small"
-              onClick={onDatabaseInfo}
+              onClick={handleDatabaseInfo}
               disabled={disabled || !database}
               sx={{
                 width: 32,
@@ -160,30 +201,6 @@ function DatabaseNavigationBar({
             >
               <Iconify
                 icon="mdi:cog-outline"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
-
-          {/* Refresh */}
-          <Tooltip title="Refresh data">
-            <IconButton
-              size="small"
-              onClick={handleRefresh}
-              disabled={disabled || actualIsLoading}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.text.primary,
-                },
-              }}
-            >
-              <Iconify
-                icon={actualIsLoading ? 'svg-spinners:blocks-shuffle-3' : 'mdi:refresh'}
                 sx={{ width: 16, height: 16 }}
               />
             </IconButton>
@@ -213,7 +230,7 @@ function DatabaseNavigationBar({
             ref={inputRef}
             value={quickFilter}
             onChange={handleFilterChange}
-            placeholder={isMobile ? 'Search...' : 'Search across all records...'}
+            placeholder="Search..."
             size="small"
             disabled={disabled}
             sx={{
@@ -222,8 +239,8 @@ function DatabaseNavigationBar({
                 height: 32,
                 borderRadius: 1.5,
                 backgroundColor: 'transparent',
-                border: databaseSearching 
-                  ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}` 
+                border: databaseSearching
+                  ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
                   : 'none',
                 '& fieldset': {
                   border: 'none',
@@ -239,9 +256,7 @@ function DatabaseNavigationBar({
                 fontSize: '0.875rem',
                 py: 0,
                 px: 0,
-                color: quickFilter && !databaseSearching 
-                  ? theme.palette.primary.main 
-                  : 'inherit',
+                color: quickFilter && !databaseSearching ? theme.palette.primary.main : 'inherit',
                 '&::placeholder': {
                   color: alpha(theme.palette.text.secondary, 0.5),
                   opacity: 1,
@@ -266,8 +281,8 @@ function DatabaseNavigationBar({
                     searchResults.newRecordsFound > 0
                       ? `+${searchResults.newRecordsFound} new found`
                       : searchResults.totalSearchResults > 0
-                      ? `${searchResults.totalSearchResults} matches (all shown)`
-                      : 'No matches found'
+                        ? `${searchResults.totalSearchResults} matches (all shown)`
+                        : 'No matches found'
                   }
                   size="small"
                   sx={{
@@ -306,7 +321,7 @@ function DatabaseNavigationBar({
           <Tooltip title="RLS Settings">
             <IconButton
               size="small"
-              onClick={onRLSSettings}
+              onClick={handleDatabaseRLSSettings}
               disabled={disabled}
               sx={{
                 width: 32,
@@ -321,6 +336,30 @@ function DatabaseNavigationBar({
             >
               <Iconify
                 icon="mdi:shield-account"
+                sx={{ width: 16, height: 16 }}
+              />
+            </IconButton>
+          </Tooltip>
+
+          {/* PostgREST Proxy */}
+          <Tooltip title="PostgREST Admin Proxy">
+            <IconButton
+              size="small"
+              onClick={handlePostgRESTProxy}
+              disabled={disabled || !baseId}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                color: theme.palette.text.secondary,
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.warning.main, 0.08),
+                  color: theme.palette.warning.main,
+                },
+              }}
+            >
+              <Iconify
+                icon="mdi:api"
                 sx={{ width: 16, height: 16 }}
               />
             </IconButton>
@@ -365,20 +404,45 @@ function DatabaseNavigationBar({
           </Button> */}
         </Stack>
       </Box>
+
+      {/* Database Dialogs */}
+      {baseId && (
+        <>
+          <DatabaseInfoDialog
+            open={openDatabaseInfo}
+            onClose={() => setOpenDatabaseInfo(false)}
+            database={database}
+          />
+          <PostgRESTProxyDialog
+            open={openPostgRESTProxy}
+            onClose={() => setOpenPostgRESTProxy(false)}
+            baseId={baseId}
+            database={database}
+          />
+          {database?.tables?.items?.[0] && (
+            <>
+              <CreateRecordDialog
+                baseId={baseId}
+                tableId={database.tables.items[0].id}
+                open={openCreateRecord}
+                onClose={() => setOpenCreateRecord(false)}
+              />
+              <RLSSettingsDialog
+                baseId={baseId}
+                table={database.tables.items[0]}
+                open={openRLSSettings}
+                onClose={() => setOpenRLSSettings(false)}
+              />
+            </>
+          )}
+        </>
+      )}
     </Box>
   );
 }
 
 DatabaseNavigationBar.propTypes = {
-  database: PropTypes.object,
-  table: PropTypes.object,
-  onQuickFilterChange: PropTypes.func,
   disabled: PropTypes.bool,
-  recordCount: PropTypes.number,
-  isLoading: PropTypes.bool,
-  onRefresh: PropTypes.func,
-  onRLSSettings: PropTypes.func,
-  onDatabaseInfo: PropTypes.func,
 };
 
 export default DatabaseNavigationBar;
