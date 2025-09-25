@@ -251,7 +251,7 @@ export default function ProjectPage() {
               containerRef={mobileContainerRef}
               mobileActiveView={mobileActiveView}
               onMobileToggle={handleMobileToggle}
-              renderCredits={false}
+              renderCredits={true}
             />
           </div>
         </div>
@@ -297,7 +297,7 @@ export default function ProjectPage() {
                       key={altaner?.room_id}
                       roomId={altaner?.room_id}
                       header={false}
-                      renderCredits={false}
+                      renderCredits={true}
                       renderFeedback={true}
                       settings={false}
                       tabs={true}

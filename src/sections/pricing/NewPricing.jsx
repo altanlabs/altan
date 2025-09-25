@@ -35,7 +35,7 @@ import { optimai, optimai_shop } from '../../utils/axios';
 // Discount Configuration
 const DISCOUNT_CONFIG = {
   // Set to true to show the Pro plan discount (€25 -> €5)
-  showProDiscount: false,
+  showProDiscount: true,
   originalPrice: 25,
   discountPrice: 5,
   discountLabel: 'First month offer',
