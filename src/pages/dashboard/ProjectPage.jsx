@@ -219,112 +219,38 @@ export default function ProjectPage() {
     return <LoadingScreen />;
   }
 
-  // Mobile layout
+  // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {
     const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
 
-    if (isFullscreenMobile) {
-      // Fullscreen preview mode - render as portal to escape layout completely
-      const fullscreenContent = (
-        <div 
-          className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900"
-          style={{ 
-            zIndex: 9999,
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            position: 'fixed',
+    // Always render mobile as portal with single Room instance
+    const mobileContent = (
+      <div 
+        className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900"
+        style={{ 
+          zIndex: isFullscreenMobile ? 9999 : 1000,
+          position: 'fixed',
+          width: '100vw',
+          height: isFullscreenMobile ? '100dvh' : 'calc(100dvh - 64px)',
+          overflow: 'hidden',
+          top: isFullscreenMobile ? 0 : '64px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      >
+        <div
+          className="relative h-full w-full"
+          ref={mobileContainerRef}
+          style={{
+            height: '100%',
             width: '100vw',
-            height: '100dvh',
-            minHeight: '100vh',
-            maxHeight: '100vh',
+            position: 'relative',
             overflow: 'hidden',
           }}
         >
-          <div
-            className="relative h-full w-full"
-            ref={mobileContainerRef}
-            style={{
-              height: '100dvh',
-              width: '100vw',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <Room
-              key={altaner?.room_id}
-              roomId={altaner?.room_id}
-              header={false}
-              previewComponent={previewComponent}
-              isMobile={true}
-              mobileActiveView={mobileActiveView}
-              renderCredits={true}
-              renderFeedback={true}
-              settings={false}
-              tabs={true}
-            />
-            <div
-              className="absolute bottom-0 left-0 right-0"
-              style={{
-                zIndex: 1000,
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                position: 'absolute',
-                width: '100%',
-              }}
-            >
-              <FloatingTextArea
-                threadId={mainThreadId}
-                roomId={altaner.room_id}
-                mode="mobile"
-                containerRef={mobileContainerRef}
-                mobileActiveView={mobileActiveView}
-                onMobileToggle={handleMobileToggle}
-                renderCredits={true}
-                activeComponent={currentComponent}
-                allComponents={sortedComponents}
-                isFullscreen={true}
-                currentItemId={itemId}
-                onItemSelect={handleItemSelect}
-              />
-            </div>
-          </div>
-        </div>
-      );
-
-      // Render both normal layout AND fullscreen portal
-      return (
-        <>
-          {/* Normal layout (hidden but maintains state) */}
-          <CompactLayout
-            title={altaner?.name || 'Project'}
-            noPadding
-            drawerVisible={false}
-            style={{ display: 'none' }}
-          >
-            <div style={{ display: 'none' }} />
-          </CompactLayout>
-          
-          {/* Fullscreen portal */}
-          {createPortal(fullscreenContent, document.body)}
-        </>
-      );
-    }
-
-    // Regular chat mode - with header and layout
-    return (
-      <CompactLayout
-        title={altaner?.name || 'Project'}
-        noPadding
-        drawerVisible={false}
-      >
-        <div
-          className="relative h-full"
-          ref={mobileContainerRef}
-        >
           <Room
-            key={altaner?.room_id}
+            key={`mobile-room-${altaner?.room_id}`}
             roomId={altaner?.room_id}
             header={false}
             previewComponent={previewComponent}
@@ -341,6 +267,8 @@ export default function ProjectPage() {
               zIndex: 1000,
               transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
+              position: 'absolute',
+              width: '100%',
             }}
           >
             <FloatingTextArea
@@ -353,13 +281,24 @@ export default function ProjectPage() {
               renderCredits={true}
               activeComponent={currentComponent}
               allComponents={sortedComponents}
-              isFullscreen={false}
+              isFullscreen={isFullscreenMobile}
               currentItemId={itemId}
               onItemSelect={handleItemSelect}
             />
           </div>
         </div>
-      </CompactLayout>
+      </div>
+    );
+
+    // Always render as portal to maintain consistent state
+    return (
+      <>
+        {/* Empty placeholder for routing */}
+        <div style={{ display: 'none' }} />
+        
+        {/* Single mobile portal - maintains Room state */}
+        {createPortal(mobileContent, document.body)}
+      </>
     );
   }
 
