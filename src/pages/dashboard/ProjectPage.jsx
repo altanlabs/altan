@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import React, { useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory } from 'react-router-dom';
 
@@ -62,6 +63,9 @@ export default function ProjectPage() {
   const handleItemSelect = React.useCallback((selectedItemId) => {
     history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
   }, [history, altanerId, componentId]);
+
+  // Check if we're in fullscreen mobile mode
+  const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
   // Get active component from URL path param
   const activeComponentId = componentId || null;
   // Fetch the altaner on component mount
@@ -218,15 +222,35 @@ export default function ProjectPage() {
   // Mobile layout
   if (isMobile && altaner?.room_id) {
     const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
-    const isFullscreen = mobileActiveView === 'preview';
 
-    if (isFullscreen) {
-      // Fullscreen preview mode - no header, no layout wrapper
-      return (
-        <div className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900 z-50">
+    if (isFullscreenMobile) {
+      // Fullscreen preview mode - render as portal to escape layout completely
+      const fullscreenContent = (
+        <div 
+          className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900"
+          style={{ 
+            zIndex: 9999,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            position: 'fixed',
+            width: '100vw',
+            height: '100dvh',
+            minHeight: '100vh',
+            maxHeight: '100vh',
+            overflow: 'hidden',
+          }}
+        >
           <div
             className="relative h-full w-full"
             ref={mobileContainerRef}
+            style={{
+              height: '100dvh',
+              width: '100vw',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
             <Room
               key={altaner?.room_id}
@@ -246,25 +270,45 @@ export default function ProjectPage() {
                 zIndex: 1000,
                 transform: 'translate3d(0, 0, 0)',
                 WebkitTransform: 'translate3d(0, 0, 0)',
+                position: 'absolute',
+                width: '100%',
               }}
             >
-            <FloatingTextArea
-              threadId={mainThreadId}
-              roomId={altaner.room_id}
-              mode="mobile"
-              containerRef={mobileContainerRef}
-              mobileActiveView={mobileActiveView}
-              onMobileToggle={handleMobileToggle}
-              renderCredits={true}
-              activeComponent={currentComponent}
-              allComponents={sortedComponents}
-              isFullscreen={true}
-              currentItemId={itemId}
-              onItemSelect={handleItemSelect}
-            />
+              <FloatingTextArea
+                threadId={mainThreadId}
+                roomId={altaner.room_id}
+                mode="mobile"
+                containerRef={mobileContainerRef}
+                mobileActiveView={mobileActiveView}
+                onMobileToggle={handleMobileToggle}
+                renderCredits={true}
+                activeComponent={currentComponent}
+                allComponents={sortedComponents}
+                isFullscreen={true}
+                currentItemId={itemId}
+                onItemSelect={handleItemSelect}
+              />
             </div>
           </div>
         </div>
+      );
+
+      // Render both normal layout AND fullscreen portal
+      return (
+        <>
+          {/* Normal layout (hidden but maintains state) */}
+          <CompactLayout
+            title={altaner?.name || 'Project'}
+            noPadding
+            drawerVisible={false}
+            style={{ display: 'none' }}
+          >
+            <div style={{ display: 'none' }} />
+          </CompactLayout>
+          
+          {/* Fullscreen portal */}
+          {createPortal(fullscreenContent, document.body)}
+        </>
       );
     }
 
