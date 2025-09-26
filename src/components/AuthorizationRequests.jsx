@@ -1,7 +1,8 @@
 import { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectAccountId, selectAuthorizationRequests } from '../redux/slices/room.js';
+import { selectAccountId } from '../redux/slices/general.js';
+import { selectAuthorizationRequests } from '../redux/slices/room.js';
 import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
 import CreateConnection from './tools/CreateConnection.jsx';
@@ -11,6 +12,11 @@ const AuthorizationRequests = () => {
   const authorizations = useSelector(selectAuthorizationRequests);
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Don't render if no account ID (prevents crashes during loading)
+  if (!accountId) {
+    return null;
+  }
 
   const handleAccept = (request) => {
     setExpandedRequest(request);

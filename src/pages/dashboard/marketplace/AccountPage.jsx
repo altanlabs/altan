@@ -7,6 +7,8 @@ import TemplateCard from './components/card/TemplateCard';
 import EmptyContent from '../../../components/empty-content';
 import { CompactLayout } from '../../../layouts/dashboard';
 import TemplateDetailsDialog from '../../../components/templates/TemplateDetailsDialog';
+import SuperAdminAccountPanel from '../../../components/superadmin/SuperAdminAccountPanel';
+import { useAuthContext } from '../../../auth/useAuthContext';
 import {
   fetchAccountData,
   loadMoreAccountTemplates,
@@ -21,13 +23,16 @@ const AccountPage = () => {
   const { accountId } = useParams();
   const dispatch = useDispatch();
   const loadMoreRef = useRef(null);
+  const { user } = useAuthContext();
 
   // Get data from Redux store
   const accountState = useSelector(selectAccountState(accountId));
   const loading = useSelector(selectAccountLoading(accountId));
   const error = useSelector(selectAccountError(accountId));
-  
+
   const { templates, account, hasMore, initialized } = accountState;
+
+  console.log(account);
 
   // Local UI state
   const [searchTerm] = useState('');
@@ -251,8 +256,8 @@ const AccountPage = () => {
                     md={4}
                     lg={3}
                   >
-                    <TemplateCard 
-                      template={template} 
+                    <TemplateCard
+                      template={template}
                       onClick={() => handleTemplateClick(template)}
                     />
                   </Grid>
@@ -286,6 +291,9 @@ const AccountPage = () => {
           )}
         </Box>
       </Container>
+
+      {/* SuperAdmin Sidebar */}
+      {user?.xsup && <SuperAdminAccountPanel accountId={accountId} />}
 
       {/* Template Details Dialog */}
       <TemplateDetailsDialog

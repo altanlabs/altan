@@ -1167,7 +1167,7 @@ export const selectThreadsById = (state) => selectThreads(state).byId;
 
 export const selectAccount = (state) => selectRoomState(state).account;
 
-export const selectAccountId = (state) => selectRoomState(state).account.id;
+export const selectAccountId = (state) => selectRoomState(state).account?.id;
 
 export const selectMessagesById = (state) => selectRoomState(state)?.messages?.byId;
 

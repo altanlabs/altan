@@ -2,6 +2,7 @@ import { useMediaQuery, useTheme, DialogContent } from '@mui/material';
 import { memo, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
+import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import { useSnackbar } from '../snackbar';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
@@ -14,8 +15,8 @@ import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
 import { BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM } from './utils/constants';
 import { fetchAltanerData } from './utils/fetchAltanerData';
-import ConnectionManager from '../tools/ConnectionManager';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
+import ConnectionManager from '../tools/ConnectionManager';
 
 const AttachmentHandler = ({
   threadId = null,
@@ -30,6 +31,11 @@ const AttachmentHandler = ({
   selectedAgent = null,
   setSelectedAgent = null,
   agents = [],
+  activeComponent = null,
+  allComponents = null,
+  isFullscreen = false,
+  currentItemId = null,
+  onItemSelect = null,
 }) => {
   // Mobile detection
   const theme = useTheme();
@@ -212,32 +218,20 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
         {/* CENTER: Mobile toggle buttons */}
         {mode === 'mobile' && onMobileToggle && (
-          <div className="flex items-center gap-1 p-1 rounded-full bg-gray-200/50 dark:bg-gray-800/50">
-            <button
-              onClick={() => onMobileToggle('chat')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                mobileActiveView === 'chat'
-                  ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => onMobileToggle('preview')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                mobileActiveView === 'preview'
-                  ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
+          <MobileViewToggle
+            mobileActiveView={mobileActiveView}
+            onMobileToggle={onMobileToggle}
+            activeComponent={activeComponent}
+            allComponents={allComponents}
+            isFullscreen={isFullscreen}
+            currentItemId={currentItemId}
+            onItemSelect={onItemSelect}
+          />
         )}
 
         {/* RIGHT: Voice/Send button and Speech Recognition */}
         <div className="flex items-center gap-2">
+
           {/* Speech Recognition Button - Always available */}
           {/* <button
             onClick={(e) => {

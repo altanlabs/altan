@@ -41,7 +41,7 @@ const transformProps = (type, props) => {
 const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
-  console.log('ProjectPage re-render');
+  // console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
   const history = useHistory();
@@ -57,6 +57,11 @@ export default function ProjectPage() {
   const handleMobileToggle = React.useCallback((view) => {
     setMobileActiveView(view);
   }, []);
+
+  // Handle item selection for flows/agents
+  const handleItemSelect = React.useCallback((selectedItemId) => {
+    history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
+  }, [history, altanerId, componentId]);
   // Get active component from URL path param
   const activeComponentId = componentId || null;
   // Fetch the altaner on component mount
@@ -213,7 +218,57 @@ export default function ProjectPage() {
   // Mobile layout
   if (isMobile && altaner?.room_id) {
     const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
+    const isFullscreen = mobileActiveView === 'preview';
 
+    if (isFullscreen) {
+      // Fullscreen preview mode - no header, no layout wrapper
+      return (
+        <div className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900 z-50">
+          <div
+            className="relative h-full w-full"
+            ref={mobileContainerRef}
+          >
+            <Room
+              key={altaner?.room_id}
+              roomId={altaner?.room_id}
+              header={false}
+              previewComponent={previewComponent}
+              isMobile={true}
+              mobileActiveView={mobileActiveView}
+              renderCredits={true}
+              renderFeedback={true}
+              settings={false}
+              tabs={true}
+            />
+            <div
+              className="absolute bottom-0 left-0 right-0"
+              style={{
+                zIndex: 1000,
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+              }}
+            >
+            <FloatingTextArea
+              threadId={mainThreadId}
+              roomId={altaner.room_id}
+              mode="mobile"
+              containerRef={mobileContainerRef}
+              mobileActiveView={mobileActiveView}
+              onMobileToggle={handleMobileToggle}
+              renderCredits={true}
+              activeComponent={currentComponent}
+              allComponents={sortedComponents}
+              isFullscreen={true}
+              currentItemId={itemId}
+              onItemSelect={handleItemSelect}
+            />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular chat mode - with header and layout
     return (
       <CompactLayout
         title={altaner?.name || 'Project'}
@@ -252,6 +307,11 @@ export default function ProjectPage() {
               mobileActiveView={mobileActiveView}
               onMobileToggle={handleMobileToggle}
               renderCredits={true}
+              activeComponent={currentComponent}
+              allComponents={sortedComponents}
+              isFullscreen={false}
+              currentItemId={itemId}
+              onItemSelect={handleItemSelect}
             />
           </div>
         </div>

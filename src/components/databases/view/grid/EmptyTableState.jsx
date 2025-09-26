@@ -8,7 +8,7 @@ const EmptyTableState = memo(({ onImportCSV, tableName = 'table' }) => {
     <Box
       sx={{
         textAlign: 'center',
-        py: 4,
+        py: 16,
         px: 3,
         maxWidth: '380px',
         mx: 'auto',

@@ -22,6 +22,7 @@ import { useHistory, useParams } from 'react-router-dom';
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
+import MobileNavigation from './components/MobileNavigation.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
@@ -50,18 +51,11 @@ import {
   selectDisplayMode,
   setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
-import { selectBaseById } from '../../../redux/slices/bases';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
-import {
-  navigateToPath,
-  refreshIframe,
-  openInNewTab,
-  toggleIframeViewMode,
-  selectIframeViewMode,
-} from '../../../redux/slices/previewControl';
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -178,23 +172,15 @@ function ProjectHeader() {
   const dispatch = useDispatch();
   const isIOS = isIOSCapacitor();
 
-  // Get iframe view mode from Redux
-  const iframeViewMode = useSelector(selectIframeViewMode);
-
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const isDatabaseComponent = currentComponent?.type === 'base';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
-  const baseId = isDatabaseComponent ? currentComponent?.params?.ids?.[0] : null;
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
 
-  // Database selectors - only get database info, not dynamic state
-  const database = useSelector((state) =>
-    isDatabaseComponent && baseId ? selectBaseById(state, baseId) : null,
-  );
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -233,25 +219,6 @@ function ProjectHeader() {
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
 
-  // Navigation handlers for URLNavigationBar using Redux
-  const handleNavigateToPath = useCallback(
-    (path) => {
-      dispatch(navigateToPath(path));
-    },
-    [dispatch],
-  );
-
-  const handleToggleIframeViewMode = useCallback(() => {
-    dispatch(toggleIframeViewMode());
-  }, [dispatch]);
-
-  const handleOpenIframeInNewTab = useCallback(() => {
-    dispatch(openInNewTab());
-  }, [dispatch]);
-
-  const handleRefreshIframe = useCallback(() => {
-    dispatch(refreshIframe());
-  }, [dispatch]);
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat' && altanerId) {
@@ -370,15 +337,22 @@ function ProjectHeader() {
             {altaner?.id ? (
               <>
                 {sortedComponents && (
-                  <ProjectNav
-                    components={sortedComponents}
-                    altanerId={altanerId}
-                    onEditAltaner={() => {
-                      if (altaner?.id) {
-                        setOpenEditAltaner(true);
-                      }
-                    }}
-                  />
+                  isMobile ? (
+                    <MobileNavigation
+                      altaner={altaner}
+                      onBackToDashboard={() => history.push('/')}
+                    />
+                  ) : (
+                    <ProjectNav
+                      components={sortedComponents}
+                      altanerId={altanerId}
+                      onEditAltaner={() => {
+                        if (altaner?.id) {
+                          setOpenEditAltaner(true);
+                        }
+                      }}
+                    />
+                  )
                 )}
               </>
             ) : (
@@ -406,11 +380,6 @@ function ProjectHeader() {
 
           {altaner?.id && isInterfaceComponent && !isMobile && (
             <URLNavigationBar
-              onNavigate={handleNavigateToPath}
-              onToggleViewMode={handleToggleIframeViewMode}
-              onOpenInNewTab={handleOpenIframeInNewTab}
-              onRefresh={handleRefreshIframe}
-              viewMode={iframeViewMode}
               productionUrl={productionUrl}
               disabled={!ui || viewType === 'code'}
             />
@@ -458,6 +427,7 @@ function ProjectHeader() {
                       </HeaderIconButton>
                     </Tooltip>
                   )}
+                  <InvitationMenuPopover isDashboard={true} />
                   <Tooltip title="Publish">
                     <HeaderIconButton
                       onClick={() => setOpenPublishDialog(true)}
@@ -521,6 +491,7 @@ function ProjectHeader() {
                       </HeaderIconButton>
                     </Tooltip>
                   )}
+                  <InvitationMenuPopover isDashboard={true} />
 
                   <Button
                     size="small"
