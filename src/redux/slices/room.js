@@ -61,6 +61,103 @@ export function fetchCurrentMember(memberId, members) {
   return found;
 }
 
+// ---------- helpers ----------
+const isFiniteNumber = (n) => typeof n === 'number' && Number.isFinite(n);
+
+// Strict ordering: order → block_order → created_at → id
+const comparePartOrder = (aIdOrObj, bIdOrObj, byId) => {
+  const a = typeof aIdOrObj === 'string' ? byId[aIdOrObj] : aIdOrObj;
+  const b = typeof bIdOrObj === 'string' ? byId[bIdOrObj] : bIdOrObj;
+
+  const ao = isFiniteNumber(a?.order) ? a.order : Number.POSITIVE_INFINITY;
+  const bo = isFiniteNumber(b?.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
+
+  const ab = isFiniteNumber(a?.block_order) ? a.block_order : Number.POSITIVE_INFINITY;
+  const bb = isFiniteNumber(b?.block_order) ? b.block_order : Number.POSITIVE_INFINITY;
+  if (ab !== bb) return ab - bb;
+
+  const ac = a?.created_at ? Date.parse(a.created_at) || 0 : 0;
+  const bc = b?.created_at ? Date.parse(b.created_at) || 0 : 0;
+  if (ac !== bc) return ac - bc;
+
+  return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
+};
+
+// Ensure the message has an array; return it
+const ensureMessageIndex = (state, messageId) => {
+  if (!state.messageParts.byMessageId[messageId]) {
+    state.messageParts.byMessageId[messageId] = [];
+  }
+  return state.messageParts.byMessageId[messageId];
+};
+
+// Re-sort the message’s parts after any add/update impacting order
+const resortMessageParts = (state, messageId) => {
+  const arr = state.messageParts.byMessageId[messageId];
+  if (!arr || arr.length <= 1) return;
+  arr.sort((a, b) => comparePartOrder(a, b, state.messageParts.byId));
+};
+
+// Normalize incoming raw part
+const normalizePart = (raw) => {
+  const type = raw?.type || raw?.part_type || 'text';
+
+  // Defaults: missing order/block_order sort last (Infinity)
+  const order = isFiniteNumber(raw?.order) ? raw.order : Number.POSITIVE_INFINITY;
+  const block_order = isFiniteNumber(raw?.block_order) ? raw.block_order : Number.POSITIVE_INFINITY;
+
+  return {
+    ...raw,
+    id: raw?.id,
+    message_id: raw?.message_id,
+    type,
+    part_type: type, // keep both keys for compatibility
+    order,
+    block_order,
+    is_done: !!raw?.is_done,
+    created_at: raw?.created_at || new Date().toISOString(),
+
+    // Streaming helpers (non-serializable/run-time):
+    // Plain objects to remain Immer-friendly without Map/Set semantics.
+    deltaBuffer: raw?.deltaBuffer ?? Object.create(null),      // index -> string
+    receivedIndices: raw?.receivedIndices ?? Object.create(null), // index -> true
+    lastProcessedIndex: isFiniteNumber(raw?.lastProcessedIndex) ? raw.lastProcessedIndex : -1,
+
+    // Tool-specific streaming helpers for arguments
+    argumentsDeltaBuffer: raw?.argumentsDeltaBuffer ?? Object.create(null),      // index -> string
+    argumentsReceivedIndices: raw?.argumentsReceivedIndices ?? Object.create(null), // index -> true
+    argumentsLastProcessedIndex: isFiniteNumber(raw?.argumentsLastProcessedIndex) ? raw.argumentsLastProcessedIndex : -1,
+
+    // Text default
+    text: type === 'text' ? (raw?.text ?? '') : raw?.text,
+    // Tool parts: initialize arguments as string for streaming, or preserve existing
+    arguments: type === 'tool' ? (raw?.arguments ?? '') : raw?.arguments,
+  };
+};
+
+// Merge without nuking streaming helpers
+const mergeIntoExistingPart = (existing, incoming) => {
+  // Keep streaming fields from existing unless incoming explicitly carries them (rare)
+  const {
+    deltaBuffer = existing.deltaBuffer,
+    receivedIndices = existing.receivedIndices,
+    lastProcessedIndex = existing.lastProcessedIndex,
+    argumentsDeltaBuffer = existing.argumentsDeltaBuffer,
+    argumentsReceivedIndices = existing.argumentsReceivedIndices,
+    argumentsLastProcessedIndex = existing.argumentsLastProcessedIndex,
+    ...restIncoming
+  } = incoming;
+
+  Object.assign(existing, restIncoming);
+  existing.deltaBuffer = deltaBuffer;
+  existing.receivedIndices = receivedIndices;
+  existing.lastProcessedIndex = lastProcessedIndex;
+  existing.argumentsDeltaBuffer = argumentsDeltaBuffer;
+  existing.argumentsReceivedIndices = argumentsReceivedIndices;
+  existing.argumentsLastProcessedIndex = argumentsLastProcessedIndex;
+};
+
 const handleThread = (thread) => {
   const { messages, events, media, read_status, ...rest } = thread;
   return {
@@ -1136,112 +1233,177 @@ const slice = createSlice({
     },
     // Message Parts reducers
     addMessagePart: (state, action) => {
-      const part = action.payload;
-      if (!part?.id || !part?.message_id) {
-        console.error('Invalid message part data');
+      const raw = action.payload;
+      if (!raw?.id || !raw?.message_id) {
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+          console.error('Invalid message part data', raw);
+        }
         return;
       }
 
-      // Normalize the part data structure
-      const normalizedPart = {
-        ...part,
-        part_type: part.type || part.part_type || 'text',
-        text: part.text || '',
-        order: part.order || part.block_order || 0,
-        is_done: part.is_done || false,
-      };
+      const normalized = normalizePart(raw);
+      const existing = state.messageParts.byId[normalized.id];
 
-      // Add part to global parts collection
-      state.messageParts.byId[part.id] = normalizedPart;
-      if (!state.messageParts.allIds.includes(part.id)) {
-        state.messageParts.allIds.push(part.id);
+      if (existing) {
+        // Upsert behavior: do not duplicate, just merge fields & potentially resort
+        const prevOrder = existing.order;
+        const prevBlock = existing.block_order;
+        const prevMsgId = existing.message_id;
+
+        mergeIntoExistingPart(existing, normalized);
+
+        // If message_id changed (shouldn't, but be safe), move the id
+        if (prevMsgId && prevMsgId !== existing.message_id) {
+          const prevArr = state.messageParts.byMessageId[prevMsgId];
+          if (prevArr) {
+            state.messageParts.byMessageId[prevMsgId] = prevArr.filter((id) => id !== existing.id);
+          }
+          ensureMessageIndex(state, existing.message_id).push(existing.id);
+        }
+
+        // Re-sort if order keys changed
+        if (prevOrder !== existing.order || prevBlock !== existing.block_order) {
+          resortMessageParts(state, existing.message_id);
+        }
+        return;
       }
 
-      // Associate part with message
-      if (!state.messageParts.byMessageId[part.message_id]) {
-        state.messageParts.byMessageId[part.message_id] = [];
+      // New part
+      state.messageParts.byId[normalized.id] = normalized;
+      if (!state.messageParts.allIds.includes(normalized.id)) {
+        state.messageParts.allIds.push(normalized.id);
       }
-      if (!state.messageParts.byMessageId[part.message_id].includes(part.id)) {
-        state.messageParts.byMessageId[part.message_id].push(part.id);
-        // Sort parts by order
-        state.messageParts.byMessageId[part.message_id].sort((a, b) => {
-          const partA = state.messageParts.byId[a];
-          const partB = state.messageParts.byId[b];
-          const orderA = partA?.order || partA?.block_order || 0;
-          const orderB = partB?.order || partB?.block_order || 0;
-          console.log(`Sorting parts: ${partA?.type} (order: ${orderA}) vs ${partB?.type} (order: ${orderB})`);
-          return orderA - orderB;
-        });
-        console.log('Final part order for message:', part.message_id, 
-          state.messageParts.byMessageId[part.message_id].map(id => {
-            const p = state.messageParts.byId[id];
-            return { id, type: p?.type || p?.part_type, order: p?.order || p?.block_order };
-          })
-        );
+
+      const arr = ensureMessageIndex(state, normalized.message_id);
+      if (!arr.includes(normalized.id)) {
+        arr.push(normalized.id);
+        resortMessageParts(state, normalized.message_id);
       }
     },
+
     updateMessagePart: (state, action) => {
-      const { id, delta, index, ...updates } = action.payload;
-      if (!id || !state.messageParts.byId[id]) {
-        console.error('Message part not found for update:', id);
-        console.error('Available parts:', Object.keys(state.messageParts.byId));
-        console.error('Payload:', action.payload);
+      const { id, delta, index, ...updates } = action.payload || {};
+      const part = id ? state.messageParts.byId[id] : null;
+
+      if (!part) {
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+          console.error('Message part not found for update:', id, 'payload:', action.payload);
+        }
         return;
       }
 
-      const part = state.messageParts.byId[id];
-      // Handle delta updates for text parts with proper ordering
       const partType = part.type || part.part_type || 'text';
+
+      // Streaming text updates with (id, index, delta)
       if (delta !== undefined && partType === 'text') {
+        // If index provided, do ordered buffering + dedup
         if (index !== undefined && index >= 0) {
-          // Initialize buffer for ordered streaming
-          if (!part.deltaBuffer) {
-            part.deltaBuffer = {}; // index -> delta (using plain object instead of Map)
-            part.lastProcessedIndex = index - 1; // Start from one before the first index
+          // Deduplicate by (id, index)
+          if (part.receivedIndices[index]) {
+            // Duplicate chunk → ignore safely
+          } else if (index <= part.lastProcessedIndex) {
+            // Late/duplicate chunk behind the cursor → ignore safely
+          } else {
+            part.receivedIndices[index] = true;
+            // Store delta even if empty; presence is what matters
+            part.deltaBuffer[index] = (part.deltaBuffer[index] ?? '') + String(delta);
+
+            // Consume as many consecutive chunks as possible
+            let next = part.lastProcessedIndex + 1;
+            while (Object.prototype.hasOwnProperty.call(part.deltaBuffer, next)) {
+              part.text = (part.text || '') + part.deltaBuffer[next];
+              delete part.deltaBuffer[next];
+              part.lastProcessedIndex = next;
+              next += 1;
+            }
           }
-
-          // Store the delta at the specified index
-          part.deltaBuffer[index] = delta;
-
-          // Process all consecutive deltas starting from lastProcessedIndex + 1
-          let currentIndex = part.lastProcessedIndex + 1;
-          let newText = part.text || '';
-
-          while (part.deltaBuffer[currentIndex] !== undefined) {
-            newText += part.deltaBuffer[currentIndex];
-            delete part.deltaBuffer[currentIndex];
-            part.lastProcessedIndex = currentIndex;
-            currentIndex++;
-          }
-
-          part.text = newText;
         } else {
-          // Fallback: simple append if no index provided
-          part.text = (part.text || '') + delta;
+          // No index → fallback to simple append (still idempotent if caller repeats exact same delta only when upstream avoids repeats)
+          part.text = (part.text || '') + String(delta);
         }
       }
 
-      // Apply other updates
-      Object.keys(updates).forEach((key) => {
-        if (updates[key] !== undefined) {
-          part[key] = updates[key];
+      // Streaming tool arguments updates with (id, index, delta)
+      if (delta !== undefined && partType === 'tool') {
+        // If index provided, do ordered buffering + dedup for arguments
+        if (index !== undefined && index >= 0) {
+          // Deduplicate by (id, index)
+          if (part.argumentsReceivedIndices[index]) {
+            // Duplicate chunk → ignore safely
+          } else if (index <= part.argumentsLastProcessedIndex) {
+            // Late/duplicate chunk behind the cursor → ignore safely
+          } else {
+            part.argumentsReceivedIndices[index] = true;
+            // Store delta even if empty; presence is what matters
+            part.argumentsDeltaBuffer[index] = (part.argumentsDeltaBuffer[index] ?? '') + String(delta);
+
+            // Consume as many consecutive chunks as possible
+            let next = part.argumentsLastProcessedIndex + 1;
+            while (Object.prototype.hasOwnProperty.call(part.argumentsDeltaBuffer, next)) {
+              part.arguments = (part.arguments || '') + part.argumentsDeltaBuffer[next];
+              delete part.argumentsDeltaBuffer[next];
+              part.argumentsLastProcessedIndex = next;
+              next += 1;
+            }
+          }
+        } else {
+          // No index → fallback to simple append for arguments
+          part.arguments = (part.arguments || '') + String(delta);
+        }
+      }
+
+      // Apply other field updates (including order/block_order/is_done/etc.)
+      let needsResort = false;
+      const prevOrder = part.order;
+      const prevBlock = part.block_order;
+
+      Object.keys(updates).forEach((k) => {
+        const v = updates[k];
+        if (v === undefined) return;
+
+        if (k === 'order' || k === 'block_order') {
+          part[k] = isFiniteNumber(v) ? v : Number.POSITIVE_INFINITY;
+          needsResort = true;
+        } else if (k === 'type' || k === 'part_type') {
+          part.type = v;
+          part.part_type = v;
+        } else if (k === 'text' && partType === 'text') {
+          // Direct text replacement (rare), allowed
+          part.text = v ?? '';
+        } else if (k === 'arguments' && partType === 'tool') {
+          // Direct arguments replacement (when final object is received), allowed
+          part.arguments = v ?? '';
+        } else {
+          part[k] = v;
         }
       });
+
+      // Re-sort if ordering keys changed
+      if (needsResort || prevOrder !== part.order || prevBlock !== part.block_order) {
+        resortMessageParts(state, part.message_id);
+      }
     },
+
     markMessagePartDone: (state, action) => {
-      const { id } = action.payload;
-      if (!id || !state.messageParts.byId[id]) {
-        console.error('Message part not found');
+      const { id } = action.payload || {};
+      const part = id ? state.messageParts.byId[id] : null;
+      if (!part) {
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+          console.error('Message part not found for mark done:', id);
+        }
         return;
       }
-
-      const part = state.messageParts.byId[id];
       part.is_done = true;
 
-      // Clean up the text buffer when streaming is complete
-      if (part.textBuffer) {
-        delete part.textBuffer;
-      }
+      // Cleanup streaming helpers (idempotent)
+      if (part.deltaBuffer) part.deltaBuffer = Object.create(null);
+      if (part.receivedIndices) part.receivedIndices = Object.create(null);
+      if (isFiniteNumber(part.lastProcessedIndex)) part.lastProcessedIndex = part.lastProcessedIndex; // keep as a watermark
+
+      // Cleanup tool arguments streaming helpers
+      if (part.argumentsDeltaBuffer) part.argumentsDeltaBuffer = Object.create(null);
+      if (part.argumentsReceivedIndices) part.argumentsReceivedIndices = Object.create(null);
+      if (isFiniteNumber(part.argumentsLastProcessedIndex)) part.argumentsLastProcessedIndex = part.argumentsLastProcessedIndex; // keep as a watermark
     },
     deleteMessagePart: (state, action) => {
       const { id } = action.payload;
@@ -1294,12 +1456,29 @@ const slice = createSlice({
       }
 
       const part = state.messageParts.byId[id];
+      const partType = part.type || part.part_type || 'text';
 
       // Reset streaming state
-      part.text = '';
+      if (partType === 'text') {
+        part.text = '';
+      } else if (partType === 'tool') {
+        part.arguments = '';
+      }
       part.is_done = false;
 
-      // Clear any existing text buffer
+      // Clear streaming buffers
+      part.deltaBuffer = Object.create(null);
+      part.receivedIndices = Object.create(null);
+      part.lastProcessedIndex = -1;
+
+      // Clear tool arguments streaming buffers
+      if (partType === 'tool') {
+        part.argumentsDeltaBuffer = Object.create(null);
+        part.argumentsReceivedIndices = Object.create(null);
+        part.argumentsLastProcessedIndex = -1;
+      }
+
+      // Clear any existing text buffer (legacy)
       if (part.textBuffer) {
         delete part.textBuffer;
       }

@@ -68,12 +68,9 @@ import {
   deleteAccountAltaner,
   addWebhook,
   deleteWebhook,
-  addForm,
-  deleteForm,
   addSubscription,
   updateSubscription,
   deleteSubscription,
-  patchForm,
   addInterface,
   updateInterface,
   deleteInterface,
@@ -98,8 +95,6 @@ import {
   addThread,
   threadUpdate,
   changeThreadReadState,
-  addMessageDelta,
-  setMessageError,
   addMessageExecution,
   updateMessageExecution,
   removeThread,
@@ -496,7 +491,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       const vercelDeploymentId = data.data.changes.meta_data?.deployment_info?.id;
 
       // Get interface_id from changes, or try to find it from existing deployment
-      let interfaceId = data.data.changes.interface_id;
+      const interfaceId = data.data.changes.interface_id;
 
       // If interface_id is not in changes, we need to find it by searching all interfaces
       if (!interfaceId) {
@@ -681,18 +676,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
           dispatch(addRunningResponse(agentEvent.event_data));
           break;
         case 'MessagePartAdded':
-          console.log('added part:', agentEvent.event_data);
+          console.log('[AGENT_RESPONSE] MessagePartAdded:', agentEvent.event_data);
           dispatch(addMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartUpdated':
-          console.log('MessagePartUpdated:', agentEvent.event_data);
-          console.log('index:', agentEvent.event_data.index);
+          console.log('[AGENT_RESPONSE] MessagePartUpdated:', agentEvent.event_data);
+          // console.log('index:', agentEvent.event_data.index);
           dispatch(updateMessagePart(agentEvent.event_data));
           break;
         case 'MessagePartDone':
+          console.log('[AGENT_RESPONSE] MessagePartDone:', agentEvent.event_data);
           dispatch(markMessagePartDone(agentEvent.event_data));
           break;
         case 'MessagePartDeleted':
+          console.log('[AGENT_RESPONSE] MessagePartDeleted:', agentEvent.event_data);
           dispatch(deleteMessagePart(agentEvent.event_data));
           break;
 

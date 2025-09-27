@@ -6,6 +6,7 @@ import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import CustomMarkdown from './CustomMarkdown.jsx';
 import MessageError from './MessageError.jsx';
 import MessageThoughtAccordion from './MessageThoughtAccordion.jsx';
+import ToolPartCard from './ToolPartCard.jsx';
 import MessageMedia from './wrapper/MessageMedia.jsx';
 import MessageTaskExecutions from './wrapper/MessageTaskExecutions.jsx';
 import {
@@ -162,13 +163,10 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
             key={part.id}
             className="message-part-tool mb-2"
           >
-            <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-              🔧 Tool: {part.tool_id || 'Unknown'}
-              {part.name && <span className="ml-2 font-medium">({part.name})</span>}
-              {part.result && <div className="mt-1 text-xs text-gray-500">Completed</div>}
-              {!part.result && part.error && <div className="mt-1 text-xs text-red-500">Error occurred</div>}
-              {!part.result && !part.error && <div className="mt-1 text-xs text-blue-500">Running...</div>}
-            </div>
+            <ToolPartCard
+              partId={part.id}
+              noClick={true}
+            />
           </div>
         ));
 

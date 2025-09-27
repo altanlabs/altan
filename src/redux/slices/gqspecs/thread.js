@@ -12,6 +12,21 @@ const MESSAGE_FIELDS = {
       '@fields': ['id', 'file_name', 'mime_type'],
     },
   },
+  parts: {
+    '@fields': ['id', 'type', 'part_type', 'order', 'block_order', 'is_done', 'created_at', 'text'],
+    media: {
+      '@fields': ['id', 'file_name', 'mime_type'],
+    },
+    execution: {
+      '@fields': ['@base@exc:meta_data', 'name', 'arguments', 'input', 'content', 'error', 'status', 'finished_at'],
+      action_type: {
+        '@fields': ['id', 'name'],
+        connection_type: {
+          '@fields': ['icon'],
+        },
+      },
+    },
+  },
   executions: {
     '@fields': [
       '@base@exc:meta_data',
