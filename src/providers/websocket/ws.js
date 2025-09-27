@@ -172,6 +172,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('handleWebSocketEvent', data.type);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -632,10 +633,15 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'AuthorizationRequestNew':
+      console.log('AuthorizationRequestNew', data.data);
       dispatch(addAuthorizationRequest(data.data.attributes));
       break;
     case 'AuthorizationRequestUpdate':
-      dispatch(updateAuthorizationRequest(data.data));
+      const { id, ...changes } = data.data;
+      dispatch(updateAuthorizationRequest({
+        ids: [id],
+        changes: changes,
+      }));
       break;
     case 'RoomNew':
       dispatch(addGateRoom(data.data.attributes));
