@@ -1,4 +1,5 @@
-import { Avatar, Box, Container, Grid, Skeleton, Typography } from '@mui/material';
+import { Avatar, Box, Container, Grid, Skeleton, Typography, Fab, Drawer } from '@mui/material';
+import { AdminPanelSettings } from '@mui/icons-material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -39,6 +40,7 @@ const AccountPage = () => {
   const [sorting] = useState('newest');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Template dialog handlers
   const handleTemplateClick = useCallback((template) => {
@@ -49,6 +51,15 @@ const AccountPage = () => {
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
     setSelectedTemplate(null);
+  }, []);
+
+  // Drawer handlers
+  const handleToggleDrawer = useCallback(() => {
+    setDrawerOpen(prev => !prev);
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerOpen(false);
   }, []);
 
   // Initial data fetch
@@ -292,8 +303,54 @@ const AccountPage = () => {
         </Box>
       </Container>
 
-      {/* SuperAdmin Sidebar */}
-      {user?.xsup && <SuperAdminAccountPanel accountId={accountId} />}
+      {/* SuperAdmin Floating Button */}
+      {user?.xsup && (
+        <Fab
+          color="primary"
+          aria-label="admin panel"
+          onClick={handleToggleDrawer}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            backdropFilter: 'blur(20px)',
+            backgroundColor: 'rgba(25, 118, 210, 0.9)',
+            '&:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 1)',
+            },
+          }}
+        >
+          <AdminPanelSettings />
+        </Fab>
+      )}
+
+      {/* SuperAdmin Drawer */}
+      {user?.xsup && (
+        <Drawer
+          anchor="right"
+          open={drawerOpen}
+          onClose={handleCloseDrawer}
+          PaperProps={{
+            sx: {
+              width: 400,
+              backdropFilter: 'blur(20px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              ...(theme) =>
+                theme.palette.mode === 'dark' && {
+                  backgroundColor: 'rgba(18, 18, 18, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                },
+            },
+          }}
+        >
+          <SuperAdminAccountPanel 
+            accountId={accountId} 
+            onClose={handleCloseDrawer}
+          />
+        </Drawer>
+      )}
 
       {/* Template Details Dialog */}
       <TemplateDetailsDialog

@@ -26,6 +26,7 @@ export const ChatPage = Loadable(lazy(() => import('../pages/ChatPage.jsx')));
 export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));
 export const UsagePage = Loadable(lazy(() => import('../pages/dashboard/UsagePage.jsx')));
 export const ExecutionsPage = Loadable(lazy(() => import('../pages/dashboard/ExecutionsPage.jsx')));
+export const UsageDatabasePage = Loadable(lazy(() => import('../pages/dashboard/UsageDatabasePage.jsx')));
 export const Onboarding = Loadable(lazy(() => import('../pages/dashboard/Onboarding.jsx')));
 
 export const UserProfilePage = Loadable(

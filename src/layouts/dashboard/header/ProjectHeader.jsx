@@ -160,7 +160,6 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
 };
 
 function ProjectHeader() {
-  console.log('ProjectHeader re-render');
   const theme = useTheme();
   const history = useHistory();
   const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();

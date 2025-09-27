@@ -22,6 +22,7 @@ import {
   ExecutionsPage,
   DashboardPage,
   UsagePage,
+  UsageDatabasePage,
   IntegrationCreator,
   MemberPage,
   MediaPage,
@@ -654,6 +655,17 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <ExecutionsPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/usage/databases"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <UsageDatabasePage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

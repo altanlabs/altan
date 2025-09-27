@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
-import useCookieConsent, { executeWithConsent, loadScriptWithConsent } from '../../hooks/useCookieConsent';
+import useCookieConsent, {
+  executeWithConsent,
+  loadScriptWithConsent,
+} from '../../hooks/useCookieConsent';
 
 // ----------------------------------------------------------------------
 
@@ -15,20 +18,31 @@ export default function CookieManager() {
     if (isLoading || !hasConsent) return;
 
     // Initialize analytics services (Google Analytics, PostHog, etc.)
-    executeWithConsent(() => {
-      initializeAnalytics();
-    }, 'analytics', preferences);
+    executeWithConsent(
+      () => {
+        initializeAnalytics();
+      },
+      'analytics',
+      preferences,
+    );
 
     // Initialize marketing services (Facebook Pixel, Google Ads, etc.)
-    executeWithConsent(() => {
-      initializeMarketing();
-    }, 'marketing', preferences);
+    executeWithConsent(
+      () => {
+        initializeMarketing();
+      },
+      'marketing',
+      preferences,
+    );
 
     // Initialize functional services (Chat widgets, etc.)
-    executeWithConsent(() => {
-      initializeFunctional();
-    }, 'functional', preferences);
-
+    executeWithConsent(
+      () => {
+        initializeFunctional();
+      },
+      'functional',
+      preferences,
+    );
   }, [hasConsent, preferences, isLoading]);
 
   return null; // This component doesn't render anything
@@ -40,7 +54,7 @@ function initializeAnalytics() {
   // Google Analytics 4
   if (window.gtag) {
     window.gtag('consent', 'update', {
-      analytics_storage: 'granted'
+      analytics_storage: 'granted',
     });
   }
 
@@ -63,7 +77,7 @@ function initializeMarketing() {
     window.gtag('consent', 'update', {
       ad_storage: 'granted',
       ad_user_data: 'granted',
-      ad_personalization: 'granted'
+      ad_personalization: 'granted',
     });
   }
 
@@ -77,7 +91,7 @@ function initializeMarketing() {
 
 function initializeFunctional() {
   // Initialize functional cookies like preferences, chat widgets, etc.
-  
+
   // Example: Load chat widget
   // loadScriptWithConsent('https://widget.intercom.io/widget/app_id', 'functional', preferences)
   //   .then(() => console.log('Chat widget loaded'))
@@ -108,4 +122,3 @@ export function withCookieConsent(callback, category) {
     callback();
   }
 }
-

@@ -179,6 +179,9 @@ const FlowCanvasToolbar = ({
   // altanerComponentType = null,
   onGoBack = null,
   isCompact = false,
+  isCodeFlow = false,
+  viewMode = 'canvas',
+  onViewModeChange = null,
   // top = 0
 }) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -493,6 +496,58 @@ const FlowCanvasToolbar = ({
           )}
         </AnimatePresence>
       </Stack>
+
+      {/* View Mode Switcher for Code Flows */}
+      {isCodeFlow && onViewModeChange && (
+        <Stack
+          direction="row"
+          spacing={1}
+          padding={2}
+          className="absolute left-1/2 bottom-0 z-[99] transform -translate-x-1/2"
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              bgcolor: 'background.paper',
+              borderRadius: '50px',
+              border: 1,
+              borderColor: 'divider',
+              p: 0.5,
+              boxShadow: 1,
+            }}
+          >
+            <Button
+              size="small"
+              color="inherit"
+              variant={viewMode === 'canvas' ? 'soft' : 'text'}
+              onClick={() => onViewModeChange('canvas')}
+              startIcon={<Iconify icon="mdi:sitemap" />}
+              sx={{
+                borderRadius: '50px',
+                minWidth: 100,
+                textTransform: 'none',
+              }}
+            >
+              Canvas
+            </Button>
+            <Button
+              size="small"
+              color="inherit"
+              variant={viewMode === 'code' ? 'soft' : 'text'}
+              onClick={() => onViewModeChange('code')}
+              startIcon={<Iconify icon="mdi:code" />}
+              sx={{
+                borderRadius: '50px',
+                minWidth: 100,
+                textTransform: 'none',
+              }}
+            >
+              Code
+            </Button>
+          </Box>
+        </Stack>
+      )}
+
       <Stack
         direction="row"
         spacing={1}

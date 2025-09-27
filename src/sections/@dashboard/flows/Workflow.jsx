@@ -10,6 +10,7 @@ import FlowCanvas from './FlowCanvas.jsx';
 import FlowCanvasToolbar from './FlowCanvasToolbar.jsx';
 import ModuleMenu from './ModuleMenu.jsx';
 import NewWorkflow from './NewWorkflow.jsx';
+import CodeWorkflow from './CodeWorkflow.jsx';
 import FloatingChatWindow from '../../../components/chat-widget/FloatingChatWindow.jsx';
 import ModuleExecutionOverviewModal from '../../../components/flows/canvas/nodes/executions/ModuleExecutionOverviewModal.jsx';
 import GlobalVarsMenu from '../../../components/flows/menuvars/GlobalVarsMenu.jsx';
@@ -19,6 +20,7 @@ import useCompactMode from '../../../hooks/useCompactMode';
 import { CompactLayout } from '../../../layouts/dashboard/index.js';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import {
+  selectFlow,
   selectFlowDetails,
   selectInitializedFlow,
   selectIsLoadingFlow,
@@ -29,6 +31,7 @@ import {
   selectMustCreateTrigger,
   selectMustCreateModuleAfterTriggers,
   createModulesAfterTriggers,
+  setInitializedNodes,
 } from '../../../redux/slices/flows';
 
 const FlowProviderWrapped = memo((props) => (
@@ -69,6 +72,8 @@ const Workflow = ({
 
   const id = propId || routeId;
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('canvas'); // 'canvas' or 'code'
+  const [hasAutoSwitched, setHasAutoSwitched] = useState(false);
 
   const mustCreateTrigger = useSelector(selectMustCreateTrigger);
   const mustCreateModuleAfterTriggers = useSelector(selectMustCreateModuleAfterTriggers);
@@ -76,6 +81,7 @@ const Workflow = ({
   const isLoading = useSelector(selectIsLoadingFlow);
   const initializedNodes = useSelector(selectInitializedNodes);
   const flow = useSelector(selectFlowDetails);
+  const fullFlow = useSelector(selectFlow);
 
   useEffect(() => {
     if (id) {
@@ -125,6 +131,36 @@ const Workflow = ({
   const toggleChat = useCallback(() => setIsChatOpen((prev) => !prev), []);
   const closeChat = useCallback(() => setIsChatOpen(false), []);
 
+  // Determine if this is a code flow
+  const isCodeFlow = fullFlow?.meta_data?.is_code_flow === true;
+
+  // Auto-switch to code view for code flows (only once)
+  useEffect(() => {
+    if (isCodeFlow && viewMode === 'canvas' && !hasAutoSwitched) {
+      setViewMode('code');
+      setHasAutoSwitched(true);
+    }
+  }, [isCodeFlow, viewMode, hasAutoSwitched]);
+
+  // Reset auto-switch when navigating to a different flow
+  useEffect(() => {
+    setHasAutoSwitched(false);
+    setViewMode('canvas');
+  }, [id]);
+
+  // When switching to canvas view, ensure nodes get initialized if they aren't already
+  useEffect(() => {
+    if (viewMode === 'canvas' && initialized && !initializedNodes) {
+      // Give a small delay to allow the FlowLayoutedNodes component to initialize
+      const timer = setTimeout(() => {
+        if (!initializedNodes) {
+          dispatch(setInitializedNodes());
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, initialized, initializedNodes]);
+
   if (!flow?.id && altanerComponentId && !isLoading) {
     return useCompactLayout ? (
       <CompactLayout noPadding overflowHidden>
@@ -161,6 +197,9 @@ const Workflow = ({
             // top={top}
             onGoBack={effectiveOnGoBack}
             isCompact={isCompact}
+            isCodeFlow={isCodeFlow}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
           {/* Toggle Button */}
           <button
@@ -186,11 +225,12 @@ const Workflow = ({
           }}
         >
           <AssemblingWorkflow
-            open={!initialized || !initializedNodes}
+            open={!initialized || (viewMode === 'canvas' && !initializedNodes)}
             message="Loading workflow data... Please wait..."
             icon="project_management"
           />
-          {!!initialized && <FlowProviderWrapped {...(altanerProps ?? {})} />}
+          {!!initialized && viewMode === 'canvas' && !!initializedNodes && <FlowProviderWrapped {...(altanerProps ?? {})} />}
+          {!!initialized && viewMode === 'code' && <CodeWorkflow />}
         </div>
       </Stack>
 

@@ -30,7 +30,7 @@ import { selectAccountState } from '../../redux/slices/accountTemplates';
 import { clearAccountState, setAccount } from '../../redux/slices/general';
 import { optimai_shop } from '../../utils/axios';
 
-const SuperAdminAccountPanel = ({ accountId }) => {
+const SuperAdminAccountPanel = ({ accountId, onClose }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const location = useLocation();
@@ -166,47 +166,41 @@ const SuperAdminAccountPanel = ({ accountId }) => {
 
   return (
     <>
-      <Card
-      sx={{
-        position: 'fixed',
-        top: 42,
-        right: 24,
-        width: 380,
-        height: 'calc(100vh - 48px)',
-        overflowY: 'auto',
-        zIndex: 1200,
-        backdropFilter: 'blur(20px)',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: 2,
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        ...(theme) =>
-          theme.palette.mode === 'dark' && {
-            backgroundColor: 'rgba(18, 18, 18, 0.8)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          },
-      }}
-    >
-      {/* Header */}
       <Box
         sx={{
-          p: 3,
-          pb: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderTopLeftRadius: 8,
-          borderTopRightRadius: 8,
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <Typography
-          variant="h6"
-          fontWeight="600"
+        {/* Header */}
+        <Box
+          sx={{
+            p: 3,
+            pb: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          Account Admin Panel
-        </Typography>
-      </Box>
+          <Typography
+            variant="h6"
+            fontWeight="600"
+          >
+            Account Admin Panel
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={onClose}
+            sx={{ color: 'text.secondary' }}
+          >
+            <Close />
+          </IconButton>
+        </Box>
 
-      <Box sx={{ px: 3, py: 3 }}>
+        <Box sx={{ px: 3, py: 3, flex: 1, overflowY: 'auto' }}>
         {/* Account ID - Copyable */}
         <Box sx={{ mb: 3 }}>
           <Typography
@@ -429,8 +423,8 @@ const SuperAdminAccountPanel = ({ accountId }) => {
             Created: {formatDate(accountData.joinedDate)}
           </Typography>
         </Box>
+        </Box>
       </Box>
-      </Card>
 
       {/* Give Credits Dialog */}
     <Dialog

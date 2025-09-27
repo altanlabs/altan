@@ -231,7 +231,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                   onClick={handleClone}
                   disabled={loading}
                   sx={{
-                    minWidth: { xs: 80, sm: 100, md: 120 },
+                    minWidth: { xs: 85, sm: 100, md: 250 },
                     height: 28,
                     fontSize: '0.75rem',
                   }}

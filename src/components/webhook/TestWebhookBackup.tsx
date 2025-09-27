@@ -1,10 +1,24 @@
 // TestWebhook.tsx  –  a fully self-contained refactor (TS-flavoured React 18 + MUI v5)
 
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Tabs, Tab, Stack, Box, Typography, Divider,
-  TextField, Select, MenuItem, FormControl, InputLabel,
-  FormHelperText, IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Tabs,
+  Tab,
+  Stack,
+  Box,
+  Typography,
+  Divider,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  IconButton,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { memo } from 'react';
@@ -29,30 +43,33 @@ const buildDefault = (schema?: Record<string, any>, parentRequired: boolean = fa
 
   const required = new Set(schema.required || []);
 
-  return Object.entries(schema.properties).reduce((acc, [key, prop]: [string, any]) => {
-    const isRequired = required.has(key);
+  return Object.entries(schema.properties).reduce(
+    (acc, [key, prop]: [string, any]) => {
+      const isRequired = required.has(key);
 
-    if (!isRequired) {
-      acc[key] = null;
+      if (!isRequired) {
+        acc[key] = null;
+        return acc;
+      }
+
+      if ('default' in prop) {
+        acc[key] = prop.default;
+      } else if (prop.type === 'object') {
+        acc[key] = buildDefault(prop, isRequired);
+      } else if (prop.type === 'array') {
+        acc[key] = [];
+      } else if (prop.type === 'boolean') {
+        acc[key] = false;
+      } else if (['number', 'integer'].includes(prop.type)) {
+        acc[key] = 0;
+      } else {
+        acc[key] = '';
+      }
+
       return acc;
-    }
-
-    if ('default' in prop) {
-      acc[key] = prop.default;
-    } else if (prop.type === 'object') {
-      acc[key] = buildDefault(prop, isRequired);
-    } else if (prop.type === 'array') {
-      acc[key] = [];
-    } else if (prop.type === 'boolean') {
-      acc[key] = false;
-    } else if (['number', 'integer'].includes(prop.type)) {
-      acc[key] = 0;
-    } else {
-      acc[key] = '';
-    }
-
-    return acc;
-  }, {} as Record<string, any>);
+    },
+    {} as Record<string, any>,
+  );
 };
 
 // ---------- 2. generic, reusable editors -------------------------------------
@@ -74,7 +91,12 @@ const KeyValueEditor = memo(({ rows, onChange, label }: KeyValueEditorProps) => 
   return (
     <Stack spacing={1}>
       {rows.map((r, i) => (
-        <Stack key={i} direction="row" spacing={1} alignItems="center">
+        <Stack
+          key={i}
+          direction="row"
+          spacing={1}
+          alignItems="center"
+        >
           <TextField
             size="small"
             placeholder={`${label} name`}
@@ -94,7 +116,10 @@ const KeyValueEditor = memo(({ rows, onChange, label }: KeyValueEditorProps) => 
             disabled={rows.length === 1}
             onClick={() => removeRow(i)}
           >
-            <Iconify icon="mdi:delete-outline" width={20} />
+            <Iconify
+              icon="mdi:delete-outline"
+              width={20}
+            />
           </IconButton>
         </Stack>
       ))}
@@ -123,9 +148,7 @@ const JsonSchemaForm = memo(({ schema, data, onChange }: JsonSchemaFormProps) =>
     <Box sx={{ overflowY: 'auto', maxHeight: '50vh', pr: 1 }}>
       {Object.entries(schema.properties).map(([k, p]: any) => {
         const fieldId = `field-${k}`;
-        const desc = p.description ? (
-          <FormHelperText>{p.description}</FormHelperText>
-        ) : null;
+        const desc = p.description ? <FormHelperText>{p.description}</FormHelperText> : null;
 
         // ---- enums -----------------------------------------------------------
         if (p.enum) {
@@ -143,12 +166,13 @@ const JsonSchemaForm = memo(({ schema, data, onChange }: JsonSchemaFormProps) =>
                 id={fieldId}
                 value={data[k] ?? ''}
                 label={p.title || k}
-                onChange={(e) =>
-                  onChange({ ...data, [k]: e.target.value })
-                }
+                onChange={(e) => onChange({ ...data, [k]: e.target.value })}
               >
                 {p.enum.map((val: any, idx: number) => (
-                  <MenuItem key={val} value={val}>
+                  <MenuItem
+                    key={val}
+                    value={val}
+                  >
                     {p.enumDescriptions?.[idx] ?? val}
                   </MenuItem>
                 ))}
@@ -160,7 +184,10 @@ const JsonSchemaForm = memo(({ schema, data, onChange }: JsonSchemaFormProps) =>
 
         // ---- primitives ------------------------------------------------------
         return (
-          <Box key={k} sx={{ mb: 2 }}>
+          <Box
+            key={k}
+            sx={{ mb: 2 }}
+          >
             <TextField
               fullWidth
               required={required.includes(k)}
@@ -179,9 +206,7 @@ const JsonSchemaForm = memo(({ schema, data, onChange }: JsonSchemaFormProps) =>
                 step: p.type === 'number' ? 'any' : undefined,
               }}
               value={data[k] ?? ''}
-              onChange={(e) =>
-                onChange({ ...data, [k]: e.target.value })
-              }
+              onChange={(e) => onChange({ ...data, [k]: e.target.value })}
             />
             {desc}
           </Box>
@@ -200,13 +225,7 @@ const useWebhookTester = (webhook?: Webhook) => {
   const schema = webhook?.details?.schema;
   const bodySchema = schema?.body;
   const querySchema = schema?.query_params;
-  const methods = schema?.methods ?? [
-    'POST',
-    'GET',
-    'PUT',
-    'DELETE',
-    'PATCH',
-  ];
+  const methods = schema?.methods ?? ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'];
 
   const [tab, setTab] = React.useState<TabKey>('body');
   const [busy, setBusy] = React.useState(false);
@@ -214,9 +233,7 @@ const useWebhookTester = (webhook?: Webhook) => {
 
   const [req, setReq] = React.useState(() => ({
     method: methods[0],
-    url: webhook?.url
-      ? `https://api.altan.ai/galaxia/hook/${webhook.url}`
-      : '',
+    url: webhook?.url ? `https://api.altan.ai/galaxia/hook/${webhook.url}` : '',
     headers: [{ key: 'Content-Type', value: 'application/json' }] as KeyValue[],
     query: querySchema?.properties
       ? Object.keys(querySchema.properties).map((k) => ({ key: k, value: '' }))
@@ -224,10 +241,8 @@ const useWebhookTester = (webhook?: Webhook) => {
     rawBody: '{}',
   }));
 
-  const updateKV =
-    (field: 'headers' | 'query') =>
-      (rows: KeyValue[]) =>
-        setReq((r) => ({ ...r, [field]: rows }));
+  const updateKV = (field: 'headers' | 'query') => (rows: KeyValue[]) =>
+    setReq((r) => ({ ...r, [field]: rows }));
 
   const send = async () => {
     if (!req.url) {
@@ -238,14 +253,10 @@ const useWebhookTester = (webhook?: Webhook) => {
     // ---- validate required fields -----------------------------------------
     if (tab === 'body' && bodySchema?.required?.length) {
       const missing = bodySchema.required.filter(
-        (f: string) =>
-          form[f] === undefined || form[f] === '' || form[f] === null
+        (f: string) => form[f] === undefined || form[f] === '' || form[f] === null,
       );
       if (missing.length) {
-        enqueueSnackbar(
-          `Missing required fields: ${missing.join(', ')}`,
-          { variant: 'error' }
-        );
+        enqueueSnackbar(`Missing required fields: ${missing.join(', ')}`, { variant: 'error' });
         return;
       }
     }
@@ -253,7 +264,7 @@ const useWebhookTester = (webhook?: Webhook) => {
     try {
       setBusy(true);
       const headers = Object.fromEntries(
-        req.headers.filter(({ key }) => key).map(({ key, value }) => [key, value])
+        req.headers.filter(({ key }) => key).map(({ key, value }) => [key, value]),
       );
 
       const qs = new URLSearchParams();
@@ -264,14 +275,12 @@ const useWebhookTester = (webhook?: Webhook) => {
         tab === 'body' && bodySchema
           ? form
           : (() => {
-            try {
-              return req.rawBody?.trim()
-                ? JSON.parse(req.rawBody)
-                : undefined;
-            } catch (e) {
-              throw new Error('Invalid JSON in raw body');
-            }
-          })();
+              try {
+                return req.rawBody?.trim() ? JSON.parse(req.rawBody) : undefined;
+              } catch (e) {
+                throw new Error('Invalid JSON in raw body');
+              }
+            })();
 
       const res = await fetch(url, {
         method: req.method,
@@ -280,8 +289,10 @@ const useWebhookTester = (webhook?: Webhook) => {
       });
 
       const resData =
-        (await res.clone().json().catch(() => null)) ??
-        `${res.status} ${res.statusText}`;
+        (await res
+          .clone()
+          .json()
+          .catch(() => null)) ?? `${res.status} ${res.statusText}`;
 
       enqueueSnackbar(`Status ${res.status}`, {
         variant: res.ok ? 'success' : 'warning',
@@ -325,7 +336,7 @@ function TestWebhook({ webhook }: Props) {
     <>
       <InteractiveButton
         icon="uil:bolt"
-        title="Send a request to this webhook"
+        title="Send request"
         onClick={() => t.setTab('body')} // open first, tab is managed in the dialog
         duration={8000}
         containerClassName="h-[40] border-transparent"
@@ -351,28 +362,49 @@ function TestWebhook({ webhook }: Props) {
       >
         {/* ---------- header -------------------------------------------------- */}
         <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Iconify icon="mdi:webhook" width={24} />
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+          >
+            <Iconify
+              icon="mdi:webhook"
+              width={24}
+            />
             <span>Test Webhook&nbsp;·&nbsp;{webhook.name}</span>
           </Stack>
         </DialogTitle>
 
         {/* ---------- main content ------------------------------------------- */}
-        <DialogContent dividers sx={{ flex: 1, overflow: 'hidden' }}>
-          <Stack spacing={2} sx={{ height: '100%' }}>
+        <DialogContent
+          dividers
+          sx={{ flex: 1, overflow: 'hidden' }}
+        >
+          <Stack
+            spacing={2}
+            sx={{ height: '100%' }}
+          >
             {/* row: method & url */}
-            <Stack direction="row" spacing={2} alignItems="flex-start">
-              <FormControl size="small" sx={{ minWidth: 110 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="flex-start"
+            >
+              <FormControl
+                size="small"
+                sx={{ minWidth: 110 }}
+              >
                 <InputLabel>Method</InputLabel>
                 <Select
                   label="Method"
                   value={t.req.method}
-                  onChange={(e) =>
-                    t.setReq({ ...t.req, method: e.target.value })
-                  }
+                  onChange={(e) => t.setReq({ ...t.req, method: e.target.value })}
                 >
                   {t.methods.map((m) => (
-                    <MenuItem key={m} value={m}>
+                    <MenuItem
+                      key={m}
+                      value={m}
+                    >
                       {m}
                     </MenuItem>
                   ))}
@@ -380,16 +412,17 @@ function TestWebhook({ webhook }: Props) {
               </FormControl>
 
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography
+                  variant="subtitle2"
+                  gutterBottom
+                >
                   Request URL
                 </Typography>
                 <TextField
                   fullWidth
                   size="small"
                   value={t.req.url}
-                  onChange={(e) =>
-                    t.setReq({ ...t.req, url: e.target.value })
-                  }
+                  onChange={(e) => t.setReq({ ...t.req, url: e.target.value })}
                 />
               </Box>
             </Stack>
@@ -400,9 +433,18 @@ function TestWebhook({ webhook }: Props) {
               onChange={(_, v) => t.setTab(v)}
               sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
-              <Tab value="body" label="Body" />
-              <Tab value="headers" label="Headers" />
-              <Tab value="params" label="Query&nbsp;Params" />
+              <Tab
+                value="body"
+                label="Body"
+              />
+              <Tab
+                value="headers"
+                label="Headers"
+              />
+              <Tab
+                value="params"
+                label="Query&nbsp;Params"
+              />
             </Tabs>
 
             {/* row: tab content */}
@@ -410,7 +452,10 @@ function TestWebhook({ webhook }: Props) {
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {t.schema.bodySchema?.properties && (
                   <>
-                    <Typography variant="subtitle2" gutterBottom>
+                    <Typography
+                      variant="subtitle2"
+                      gutterBottom
+                    >
                       Request Body (via Schema)
                     </Typography>
                     <JsonSchemaForm
@@ -419,18 +464,17 @@ function TestWebhook({ webhook }: Props) {
                       onChange={t.setForm}
                     />
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle2" gutterBottom>
+                    <Typography
+                      variant="subtitle2"
+                      gutterBottom
+                    >
                       Raw JSON
                     </Typography>
                   </>
                 )}
                 <AceWrapper
                   name="webhook-raw-body"
-                  value={
-                    t.schema.bodySchema
-                      ? JSON.stringify(t.form, null, 2)
-                      : t.req.rawBody
-                  }
+                  value={t.schema.bodySchema ? JSON.stringify(t.form, null, 2) : t.req.rawBody}
                   onChange={(val: any) => t.setReq({ ...t.req, rawBody: val })}
                   fieldType="string"
                   style={{
