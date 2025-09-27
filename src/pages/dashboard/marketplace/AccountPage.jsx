@@ -10,6 +10,7 @@ import { CompactLayout } from '../../../layouts/dashboard';
 import TemplateDetailsDialog from '../../../components/templates/TemplateDetailsDialog';
 import SuperAdminAccountPanel from '../../../components/superadmin/SuperAdminAccountPanel';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 import {
   fetchAccountData,
   loadMoreAccountTemplates,
@@ -25,6 +26,7 @@ const AccountPage = () => {
   const dispatch = useDispatch();
   const loadMoreRef = useRef(null);
   const { user } = useAuthContext();
+  const { trackAccountViewed } = useAnalytics();
 
   // Get data from Redux store
   const accountState = useSelector(selectAccountState(accountId));
@@ -68,6 +70,22 @@ const AccountPage = () => {
       dispatch(fetchAccountData(accountId));
     }
   }, [dispatch, accountId, initialized, loading]);
+
+  // Track account view when data is successfully loaded
+  useEffect(() => {
+    if (account && !loading && initialized && user) {
+      trackAccountViewed(accountId, account.name, {
+        user_id: user.id,
+        user_email: user.email,
+        account_id: user.account_id,
+        view_source: 'marketplace',
+        viewed_account_type: account.type || 'unknown',
+        has_templates: templates.length > 0,
+        template_count: templates.length,
+        page_url: window.location.href,
+      });
+    }
+  }, [account, loading, initialized, user, accountId, trackAccountViewed, templates]);
 
   // Handle infinite scroll
   useEffect(() => {

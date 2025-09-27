@@ -128,6 +128,9 @@ const AltanerTemplateMarketplace = () => {
 
       {/* Template Categories */}
       <Box>
+        <Box sx={{ mb: 2 }}>
+          <PopularAccounts initialExpanded={false} />
+        </Box>
         <Stack spacing={1}>
           {ALTANER_CATEGORIES.map((category) => (
             <Box key={category.key}>
@@ -150,10 +153,6 @@ const AltanerTemplateMarketplace = () => {
               initialExpanded={false}
               onTemplateClick={handleTemplateClick}
             />
-          </Box>
-
-          <Box sx={{ mb: 4 }}>
-            <PopularAccounts initialExpanded={false} />
           </Box>
         </Stack>
       </Box>

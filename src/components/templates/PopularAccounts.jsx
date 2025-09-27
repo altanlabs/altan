@@ -1,12 +1,16 @@
-import { Box, Skeleton, Typography, Button, Avatar, Chip, IconButton } from '@mui/material';
-import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { Box, Skeleton, Typography, Button, Avatar, IconButton } from '@mui/material';
+import { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import Iconify from '../iconify';
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { useAuthContext } from '../../auth/useAuthContext';
 import { optimai } from '../../utils/axios';
+import Iconify from '../iconify';
 
 const PopularAccounts = memo(({ initialExpanded = false }) => {
   const history = useHistory();
+  const { trackAccountViewed } = useAnalytics();
+  const { user } = useAuthContext();
 
   // State management
   const [accounts, setAccounts] = useState([]);
@@ -25,9 +29,26 @@ const PopularAccounts = memo(({ initialExpanded = false }) => {
 
   const handleAccountClick = useCallback(
     (accountId) => {
+      // Find the account data for analytics
+      const account = accounts.find(acc => acc.id === accountId);
+
+      // Track account view event
+      if (account && user) {
+        trackAccountViewed(accountId, account.name, {
+          user_id: user.id,
+          user_email: user.email,
+          account_id: user.account_id,
+          view_source: 'popular_accounts_carousel',
+          viewed_account_type: account.type || 'unknown',
+          template_count: account.template_count || 0,
+          account_position: accounts.findIndex(acc => acc.id === accountId) + 1,
+          total_accounts_shown: accounts.length,
+        });
+      }
+
       history.push(`/accounts/${accountId}`);
     },
-    [history],
+    [history, trackAccountViewed, user, accounts],
   );
 
   // Scroll functionality
@@ -64,7 +85,7 @@ const PopularAccounts = memo(({ initialExpanded = false }) => {
 
     try {
       const response = await optimai.get(
-        '/templates/accounts?limit=20&offset=0&template_type=altaner',
+        '/templates/accounts?limit=99&offset=0&template_type=altaner',
       );
       setAccounts(response.data.accounts || []);
     } catch (err) {
