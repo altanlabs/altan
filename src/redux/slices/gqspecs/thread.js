@@ -1,5 +1,5 @@
 const MESSAGE_FIELDS = {
-  '@fields': '@all@exc:cost,tokens',
+  '@fields': '@all@exc:cost,tokens,meta_data',
   replied: {
     '@fields': ['@base@exc:meta_data', 'member_id', 'text'],
   },
@@ -13,16 +13,21 @@ const MESSAGE_FIELDS = {
     },
   },
   parts: {
-    '@fields': ['id', 'type', 'part_type', 'order', 'block_order', 'is_done', 'created_at', 'text'],
+    '@fields': '@all',
     media: {
       '@fields': ['id', 'file_name', 'mime_type'],
     },
-    execution: {
-      '@fields': ['@base@exc:meta_data', 'name', 'arguments', 'input', 'content', 'error', 'status', 'finished_at'],
-      action_type: {
+    task_execution: {
+      '@fields': [
+        '@all@exc:meta_data',
+      ],
+      tool: {
         '@fields': ['id', 'name'],
-        connection_type: {
-          '@fields': ['icon'],
+        action_type: {
+          '@fields': ['id', 'name'],
+          connection_type: {
+            '@fields': ['icon'],
+          },
         },
       },
     },

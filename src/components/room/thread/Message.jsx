@@ -76,6 +76,7 @@ const Message = ({
   const sender = members.byId[message?.member_id];
   const is_me = sender?.member?.id === memberMe?.id;
 
+
   if (!message || !!message.space) return null;
   return (
     <m.div

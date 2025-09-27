@@ -5,8 +5,8 @@ import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 
 import CustomMarkdown from './CustomMarkdown.jsx';
 import MessageError from './MessageError.jsx';
+import MessagePartRenderer from './MessagePartRenderer.jsx';
 import MessageThoughtAccordion from './MessageThoughtAccordion.jsx';
-import ToolPartCard from './ToolPartCard.jsx';
 import MessageMedia from './wrapper/MessageMedia.jsx';
 import MessageTaskExecutions from './wrapper/MessageTaskExecutions.jsx';
 import {
@@ -81,14 +81,6 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
   const partsContent = useSelector((state) => selectors.partsContent(state, message.id));
   const partsById = useSelector(selectMessagePartsById);
-  // Debug logging for message parts
-  const partsWithData = messageParts.map((partId) => partsById[partId]).filter(Boolean);
-  console.log('MessageContent Debug:', {
-    messageId: message.id,
-    messageParts: messageParts,
-    partsWithData: partsWithData.map(p => ({ id: p.id, type: p.type || p.part_type, order: p.order || p.block_order, text: p.text?.substring(0, 50) })),
-    hasContent: hasContent,
-  });
 
   // Use message parts content if available, otherwise fall back to legacy content
   const effectiveContent = useMemo(() => {
@@ -137,56 +129,16 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       .join('\n\n');
   }, [allWidgetResources]);
 
-  // Component to render message parts of different types
-  const MessagePartRenderer = ({ parts, partType }) => {
-    if (!parts || parts.length === 0) return null;
+  // Create sorted parts with fresh data on every render
+  // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
+  const sortedParts = useMemo(() => {
+    if (messageParts.length === 0) return [];
 
-    switch (partType) {
-      case 'text':
-        return parts.map((part) => (
-          <div
-            key={part.id}
-            className="message-part-text"
-          >
-            {part.text && (
-              <CustomMarkdown
-                text={part.text}
-                threadId={threadId}
-                minified={mode === 'mini'}
-              />
-            )}
-          </div>
-        ));
-      case 'tool':
-        return parts.map((part) => (
-          <div
-            key={part.id}
-            className="message-part-tool mb-2"
-          >
-            <ToolPartCard
-              partId={part.id}
-              noClick={true}
-            />
-          </div>
-        ));
-
-      default:
-        // Only show unknown part types in development
-        if (import.meta.env.DEV) {
-          return parts.map((part) => (
-            <div
-              key={part.id}
-              className="message-part-unknown"
-            >
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Unknown part type: {partType}
-              </div>
-            </div>
-          ));
-        }
-        return null;
-    }
-  };
+    return messageParts
+      .map((partId) => partsById[partId])
+      .filter(Boolean)
+      .sort((a, b) => (a.order || a.block_order || 0) - (b.order || b.block_order || 0));
+  }, [messageParts, partsById]);
 
   // Show "Thinking..." only if there's no content, no message parts, no media, and no error
   const hasMessageParts = messageParts.length > 0;
@@ -232,20 +184,17 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
 
       {/* Main content area */}
       <div>
-        {messageParts.length > 0 ? (
+        {hasMessageParts ? (
           // Render message parts in order
           <div className="message-parts-container">
-            {messageParts
-              .map((partId) => partsById[partId])
-              .filter(Boolean)
-              .sort((a, b) => (a.order || a.block_order || 0) - (b.order || b.block_order || 0))
-              .map((part) => (
-                <MessagePartRenderer
-                  key={part.id}
-                  parts={[part]}
-                  partType={part.type || part.part_type || 'text'}
-                />
-              ))}
+            {sortedParts.map((part) => (
+              <MessagePartRenderer
+                key={part.id}
+                part={part}
+                threadId={threadId}
+                mode={mode}
+              />
+            ))}
           </div>
         ) : hasAnyWidgets ? (
           // Show only commit widgets as main content (legacy)
@@ -263,16 +212,8 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
           />
         )}
       </div>
-
       <MessageError message={message} />
       <MessageMedia messageId={message.id} />
-
-      {!hasAnyWidgets && message?.thread_id === threadId && (
-        <MessageTaskExecutions
-          messageId={message.id}
-          date_creation={message.date_creation}
-        />
-      )}
     </Stack>
   );
 };

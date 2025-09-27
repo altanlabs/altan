@@ -1,9 +1,11 @@
 import { createSelector, createSlice } from '@reduxjs/toolkit';
+// eslint-disable-next-line import/no-unresolved
 import { truncate } from 'lodash';
 import { createCachedSelector } from 're-reselect';
 
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
+import { setPreviewMode } from './previewControl';
 import {
   // checkArraysEqualShallow,
   checkArraysEqualsProperties,
@@ -11,7 +13,6 @@ import {
   getNestedProperty,
 } from '../helpers/memoize';
 import { paginateCollection } from './utils/collections';
-import { setPreviewMode } from './previewControl';
 import { optimai, optimai_room, optimai_agent } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
@@ -107,6 +108,33 @@ const normalizePart = (raw) => {
   const order = isFiniteNumber(raw?.order) ? raw.order : Number.POSITIVE_INFINITY;
   const block_order = isFiniteNumber(raw?.block_order) ? raw.block_order : Number.POSITIVE_INFINITY;
 
+  // For tool parts, extract data from task_execution if available
+  let toolData = {};
+  if (type === 'tool' && raw?.task_execution) {
+    const execution = raw.task_execution;
+    const executionStatus = execution.status || 'pending';
+    toolData = {
+      name: execution.tool?.name || 'Tool',
+      arguments: execution.arguments ? JSON.stringify(execution.arguments) : '',
+      result: execution.content,
+      error: execution.error,
+      status: executionStatus,
+      finished_at: execution.finished_at,
+      input: execution.input,
+      // Store execution ID for dialog access
+      task_execution_id: execution.id,
+      // Keep the full task_execution reference for accessing nested data like icons
+      task_execution: execution,
+      // For tool parts, use the execution status to determine if done (don't override raw is_done)
+      // is_done will be handled by the main logic below
+    };
+  } else if (type === 'tool' && raw?.task_execution_id) {
+    // If we only have the execution ID, store it for later access
+    toolData = {
+      task_execution_id: raw.task_execution_id,
+    };
+  }
+
   return {
     ...raw,
     id: raw?.id,
@@ -120,19 +148,24 @@ const normalizePart = (raw) => {
 
     // Streaming helpers (non-serializable/run-time):
     // Plain objects to remain Immer-friendly without Map/Set semantics.
-    deltaBuffer: raw?.deltaBuffer ?? Object.create(null),      // index -> string
+    deltaBuffer: raw?.deltaBuffer ?? Object.create(null), // index -> string
     receivedIndices: raw?.receivedIndices ?? Object.create(null), // index -> true
     lastProcessedIndex: isFiniteNumber(raw?.lastProcessedIndex) ? raw.lastProcessedIndex : -1,
 
     // Tool-specific streaming helpers for arguments
-    argumentsDeltaBuffer: raw?.argumentsDeltaBuffer ?? Object.create(null),      // index -> string
+    argumentsDeltaBuffer: raw?.argumentsDeltaBuffer ?? Object.create(null), // index -> string
     argumentsReceivedIndices: raw?.argumentsReceivedIndices ?? Object.create(null), // index -> true
-    argumentsLastProcessedIndex: isFiniteNumber(raw?.argumentsLastProcessedIndex) ? raw.argumentsLastProcessedIndex : -1,
+    argumentsLastProcessedIndex: isFiniteNumber(raw?.argumentsLastProcessedIndex)
+      ? raw.argumentsLastProcessedIndex
+      : -1,
 
     // Text default
     text: type === 'text' ? (raw?.text ?? '') : raw?.text,
-    // Tool parts: initialize arguments as string for streaming, or preserve existing
-    arguments: type === 'tool' ? (raw?.arguments ?? '') : raw?.arguments,
+    // Tool parts: use extracted tool data or fallback to raw arguments
+    arguments: type === 'tool' ? toolData.arguments || raw?.arguments || '' : raw?.arguments,
+
+    // Add tool-specific fields (but don't override is_done since we handled it above)
+    ...Object.fromEntries(Object.entries(toolData).filter(([key]) => key !== 'is_done')),
   };
 };
 
@@ -296,6 +329,8 @@ const extractMessagesFromThread = (state, thread) => {
     const message = threadMessages.byId[messageId];
     // Add the message to messages.byId
     messagesContentById[messageId] = message.text;
+
+    // Process executions
     const executions = message.executions?.items ?? null;
     if (executions) {
       messagesExecutions[messageId] = [];
@@ -304,8 +339,38 @@ const extractMessagesFromThread = (state, thread) => {
         messagesExecutions[messageId].push(execution.id);
       }
     }
+
+    // Process message parts
+    const parts = message.parts?.items ?? null;
+    if (parts) {
+      for (const rawPart of parts) {
+        // Set message_id if not present
+        if (!rawPart.message_id) {
+          rawPart.message_id = messageId;
+        }
+
+        const normalized = normalizePart(rawPart);
+
+        // Add to global parts collection
+        state.messageParts.byId[normalized.id] = normalized;
+        if (!state.messageParts.allIds.includes(normalized.id)) {
+          state.messageParts.allIds.push(normalized.id);
+        }
+
+        // Add to message association
+        const arr = ensureMessageIndex(state, messageId);
+        if (!arr.includes(normalized.id)) {
+          arr.push(normalized.id);
+        }
+      }
+
+      // Sort the parts for this message
+      resortMessageParts(state, messageId);
+    }
+
     delete message.text;
     delete message.executions;
+    delete message.parts; // Also clean up parts from the message object
     messagesById[message.id] = message;
   }
   state.messages.byId = { ...state.messages.byId, ...messagesById };
@@ -1235,7 +1300,11 @@ const slice = createSlice({
     addMessagePart: (state, action) => {
       const raw = action.payload;
       if (!raw?.id || !raw?.message_id) {
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
           console.error('Invalid message part data', raw);
         }
         return;
@@ -1286,7 +1355,11 @@ const slice = createSlice({
       const part = id ? state.messageParts.byId[id] : null;
 
       if (!part) {
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
           console.error('Message part not found for update:', id, 'payload:', action.payload);
         }
         return;
@@ -1335,7 +1408,8 @@ const slice = createSlice({
           } else {
             part.argumentsReceivedIndices[index] = true;
             // Store delta even if empty; presence is what matters
-            part.argumentsDeltaBuffer[index] = (part.argumentsDeltaBuffer[index] ?? '') + String(delta);
+            part.argumentsDeltaBuffer[index] =
+              (part.argumentsDeltaBuffer[index] ?? '') + String(delta);
 
             // Consume as many consecutive chunks as possible
             let next = part.argumentsLastProcessedIndex + 1;
@@ -1385,25 +1459,116 @@ const slice = createSlice({
     },
 
     markMessagePartDone: (state, action) => {
-      const { id } = action.payload || {};
+      const payload = action.payload || {};
+      const { id } = payload;
       const part = id ? state.messageParts.byId[id] : null;
       if (!part) {
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
           console.error('Message part not found for mark done:', id);
         }
         return;
       }
+
+      // Mark as done
       part.is_done = true;
+
+      // If this is a tool part, apply the execution data from the payload
+      const partType = part.type || part.part_type || 'text';
+      if (partType === 'tool') {
+        // Update tool part with final execution data
+        if (payload.result !== undefined) part.result = payload.result;
+        if (payload.error !== undefined) part.error = payload.error;
+        if (payload.name) part.name = payload.name;
+        if (payload.input !== undefined) part.input = payload.input;
+        if (payload.created_at) part.finished_at = payload.created_at;
+
+        // Determine status based on result/error
+        if (payload.result && !payload.error) {
+          part.status = 'success';
+        } else if (payload.error) {
+          part.status = 'error';
+        }
+
+        // Store execution ID for dialog access
+        if (payload.id) {
+          part.task_execution_id = payload.id;
+        }
+
+        // Create/update execution in state for dialog access
+        if (payload.id) {
+          const executionData = {
+            id: payload.id,
+            date_creation: payload.created_at,
+            arguments: payload.arguments,
+            input: payload.input,
+            content: payload.result,
+            error: payload.error,
+            status: part.status,
+            finished_at: payload.created_at,
+            tool: {
+              id: payload.tool_id,
+              name: payload.name,
+            },
+          };
+
+          // Add to executions state
+          state.executions.byId[payload.id] = executionData;
+          if (!state.executions.allIds.includes(payload.id)) {
+            state.executions.allIds.push(payload.id);
+          }
+        }
+
+        // Update or create task_execution structure for ToolPartCard compatibility
+        if (!part.task_execution) {
+          part.task_execution = {};
+        }
+
+        // Try to find the execution data from the message's executions if we have tool_id
+        let toolInfo = part.task_execution.tool;
+        if (payload.tool_id && !toolInfo) {
+          // Look for the execution in the state to get tool information
+          const execution =
+            state.executions.byId[payload.tool_id] ||
+            Object.values(state.executions.byId).find((exec) => exec.tool?.id === payload.tool_id);
+          if (execution?.tool) {
+            toolInfo = execution.tool;
+          }
+        }
+
+        // Update task_execution with the latest data
+        Object.assign(part.task_execution, {
+          tool: toolInfo || {
+            name: payload.name,
+            action_type: {
+              connection_type: {
+                icon: 'ri:hammer-fill', // fallback icon
+              },
+            },
+          },
+          arguments: payload.arguments,
+          content: payload.result,
+          error: payload.error,
+          status: part.status,
+          finished_at: payload.created_at,
+          input: payload.input,
+        });
+      }
 
       // Cleanup streaming helpers (idempotent)
       if (part.deltaBuffer) part.deltaBuffer = Object.create(null);
       if (part.receivedIndices) part.receivedIndices = Object.create(null);
-      if (isFiniteNumber(part.lastProcessedIndex)) part.lastProcessedIndex = part.lastProcessedIndex; // keep as a watermark
+      if (isFiniteNumber(part.lastProcessedIndex))
+        part.lastProcessedIndex = part.lastProcessedIndex; // keep as a watermark
 
       // Cleanup tool arguments streaming helpers
       if (part.argumentsDeltaBuffer) part.argumentsDeltaBuffer = Object.create(null);
       if (part.argumentsReceivedIndices) part.argumentsReceivedIndices = Object.create(null);
-      if (isFiniteNumber(part.argumentsLastProcessedIndex)) part.argumentsLastProcessedIndex = part.argumentsLastProcessedIndex; // keep as a watermark
+      if (isFiniteNumber(part.argumentsLastProcessedIndex))
+        part.argumentsLastProcessedIndex = part.argumentsLastProcessedIndex; // keep as a watermark
     },
     deleteMessagePart: (state, action) => {
       const { id } = action.payload;

@@ -2,11 +2,12 @@ import { Tooltip } from '@mui/material';
 import { differenceInMilliseconds } from 'date-fns';
 import { AnimatePresence, m } from 'framer-motion';
 import { truncate } from 'lodash';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
 
+import { useExecutionDialog } from '../../providers/ExecutionDialogProvider.jsx';
 import { makeSelectMessagePartById } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store.js';
 import IconRenderer from '../icons/IconRenderer.jsx';
@@ -15,7 +16,7 @@ function getBorderColor(status, isStreaming) {
   if (isStreaming) {
     return 'border-blue-500 animate-pulse';
   }
-  
+
   switch (status) {
     case 'preparing':
       return 'border-orange-500 animate-pulse';
@@ -50,7 +51,7 @@ function getTaskIconColor(status, hasResult, hasError, isStreaming) {
   if (isStreaming) {
     return 'text-blue-400';
   }
-  
+
   switch (status) {
     case 'preparing':
       return 'text-orange-400';
@@ -90,7 +91,7 @@ function parseArguments(argumentsStr) {
 
 function formatArgumentsPreview(argumentsStr) {
   if (!argumentsStr) return 'Preparing...';
-  
+
   const parsed = parseArguments(argumentsStr);
   if (typeof parsed === 'object' && parsed !== null) {
     // Show a preview of the object
@@ -104,7 +105,7 @@ function formatArgumentsPreview(argumentsStr) {
     }
     return `{${keys.slice(0, 2).join(', ')}${keys.length > 2 ? '...' : ''}}`;
   }
-  
+
   return truncate(String(parsed), { length: 50 });
 }
 
@@ -120,15 +121,37 @@ const ToolPartCard = ({
   noDuration = false,
   children,
 }) => {
+  const { setExecutionId } = useExecutionDialog() || {};
   const partSelector = useMemo(() => makeSelectMessagePartById(), []);
   const part = useSelector((state) => partSelector(state, partId));
 
   const textContent = useMemo(() => extractAndCapitalize(part?.name), [part?.name]);
-  
+
   const isStreaming = !part?.is_done && part?.arguments !== undefined;
   const hasResult = !!part?.result;
   const hasError = !!part?.error;
   const hasInput = !!part?.input;
+  const isSuccessful = part?.status === 'success';
+
+  // Get tool icon from task_execution if available
+  const toolIcon = useMemo(() => {
+    const icon = part?.task_execution?.tool?.action_type?.connection_type?.icon;
+    return icon || 'ri:hammer-fill'; // fallback to hammer icon
+  }, [part?.task_execution?.tool?.action_type?.connection_type?.icon]);
+
+  // Get execution ID for the dialog - try multiple possible sources
+  const executionId = useMemo(() => {
+    return part?.task_execution_id || part?.task_execution?.id || part?.execution?.id || null;
+  }, [part?.task_execution_id, part?.task_execution?.id, part?.execution?.id]);
+
+  // Click handler to open execution dialog
+  const handleClick = useCallback(() => {
+    if (!noClick && executionId && setExecutionId) {
+      setExecutionId(executionId);
+    } else {
+      console.log('Click blocked:', { noClick, executionId: !!executionId, setExecutionId: !!setExecutionId });
+    }
+  }, [noClick, executionId, setExecutionId]);
 
   if (!part) {
     return null;
@@ -146,88 +169,84 @@ const ToolPartCard = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={noClick ? undefined : undefined} // No click handler for now
+      onClick={handleClick}
       className={cn(
         'relative p-3 w-full min-w-[200px] rounded-lg',
-        !noClick && 'transition-transform hover:shadow-lg',
+        !noClick &&
+          executionId &&
+          'cursor-pointer transition-transform hover:shadow-lg hover:scale-[1.02]',
         !noBorder && 'border border-dashed',
         !noBorder && borderColor,
       )}
     >
       {/* Status Icon */}
       <AnimatePresence>
-        {
-          !noBorder && (hasError || hasResult) ? (
-            <Tooltip
-              placement="right"
-              arrow
-              enterDelay={500}
-              title={
-                <p
-                  className={cn('text-xs font-bold uppercase', {
-                    'text-red-500': hasError,
-                    'text-green-500': hasResult,
-                  })}
-                >
-                  {hasError ? 'error' : 'completed'}
-                </p>
-              }
-            >
-              <m.div
-                className="absolute -top-2 -left-1 rounded-full shadow"
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                variants={variants}
+        {!noBorder && (hasError || hasResult) ? (
+          <Tooltip
+            placement="right"
+            arrow
+            enterDelay={500}
+            title={
+              <p
+                className={cn('text-xs font-bold uppercase', {
+                  'text-red-500': hasError,
+                  'text-green-500': hasResult,
+                })}
               >
-                <IconRenderer
-                  icon={getTaskIcon(part.status, hasResult, hasError)}
-                  className={getTaskIconColor(part.status, hasResult, hasError, isStreaming)}
-                />
-              </m.div>
-            </Tooltip>
-          ) : null
-        }
+                {hasError ? 'error' : 'completed'}
+              </p>
+            }
+          >
+            <m.div
+              className="absolute -top-2 -left-1 rounded-full shadow"
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              variants={variants}
+            >
+              <IconRenderer
+                icon={getTaskIcon(part.status, hasResult, hasError)}
+                className={getTaskIconColor(part.status, hasResult, hasError, isStreaming)}
+              />
+            </m.div>
+          </Tooltip>
+        ) : null}
       </AnimatePresence>
-      
+
       {/* Main Content */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <IconRenderer
-              icon="ri:hammer-fill"
+              icon={toolIcon}
               className="text-lg text-gray-600"
             />
-            {
-              isExecuting ? (
-                <TextShimmer className="text-sm font-semibold truncate" duration={2}>
-                  {textContent}
-                </TextShimmer>
-              ) : (
-                <p className="text-sm font-semibold truncate">
-                  {textContent}
-                </p>
-              )
-            }
+            {isExecuting ? (
+              <TextShimmer
+                className="text-sm font-semibold truncate"
+                duration={2}
+              >
+                {textContent}
+              </TextShimmer>
+            ) : (
+              <p className="text-sm font-semibold truncate">{textContent}</p>
+            )}
           </div>
-          {
-            !noDuration && !isExecuting && duration && (
-              <span className="text-xs text-gray-400">Duration: {duration}</span>
-            )
-          }
-          {
-            isExecuting && duration && (
-              <span className="text-xs text-gray-400">{duration}...</span>
-            )
-          }
+          {!noDuration && !isExecuting && duration && (
+            <span className="text-xs text-gray-400">Duration: {duration}</span>
+          )}
+          {isExecuting && duration && <span className="text-xs text-gray-400">{duration}...</span>}
         </div>
 
-        {/* Arguments Preview */}
-        {part.arguments && (
+        {/* Arguments Preview - only show if not successful or if streaming */}
+        {part.arguments && (!isSuccessful || isStreaming) && (
           <div className="text-xs text-gray-600 dark:text-gray-400">
             <span className="font-medium">Arguments: </span>
             {isStreaming ? (
-              <TextShimmer className="inline" duration={1.5}>
+              <TextShimmer
+                className="inline"
+                duration={1.5}
+              >
                 {argumentsPreview}
               </TextShimmer>
             ) : (
@@ -236,27 +255,34 @@ const ToolPartCard = ({
           </div>
         )}
 
-        {/* Input Preview */}
-        {hasInput && (
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            <span className="font-medium">Input: </span>
-            <span>{truncate(JSON.stringify(part.input), { length: 100 })}</span>
-          </div>
-        )}
+        {/* For completed tools, don't show any details - the design already indicates completion */}
+        {!(isSuccessful && !isStreaming) && (
+          <>
+            {/* Input Preview - only for non-successful or streaming */}
+            {hasInput && (
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Input: </span>
+                <span>{truncate(JSON.stringify(part.input), { length: 100 })}</span>
+              </div>
+            )}
 
-        {/* Error Display */}
-        {hasError && (
-          <p className="text-xs text-red-500 max-h-[55px] overflow-y-auto">
-            {truncate(part.error?.content || part.error?.message || 'An error occurred', { length: 200 })}
-          </p>
-        )}
+            {/* Error Display */}
+            {hasError && (
+              <p className="text-xs text-red-500 max-h-[55px] overflow-y-auto">
+                {truncate(part.error?.content || part.error?.message || 'An error occurred', {
+                  length: 200,
+                })}
+              </p>
+            )}
 
-        {/* Result Preview */}
-        {hasResult && !hasError && (
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            <span className="font-medium">Result: </span>
-            <span>{truncate(JSON.stringify(part.result), { length: 100 })}</span>
-          </div>
+            {/* Result Preview - only for non-successful */}
+            {hasResult && !hasError && !isSuccessful && (
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Result: </span>
+                <span>{truncate(JSON.stringify(part.result), { length: 100 })}</span>
+              </div>
+            )}
+          </>
         )}
 
         {children}
