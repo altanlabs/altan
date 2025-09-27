@@ -381,6 +381,16 @@ export const analytics = {
     });
   },
 
+  // Account viewing events
+  accountViewed: async (viewedAccountId, accountName, properties = {}) => {
+    return trackEvent('account_viewed', properties.user_id, properties.user_email, properties.account_id, {
+      viewed_account_id: viewedAccountId,
+      viewed_account_name: accountName,
+      view_source: properties.view_source || 'direct', // marketplace, search, direct, etc.
+      ...properties,
+    });
+  },
+
   // Enhanced voice conversation tracking
   voiceConversationStart: async (agentId, properties = {}) => {
     return trackEvent('voice_conversation_start', null, null, null, {

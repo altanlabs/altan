@@ -60,6 +60,10 @@ export const useAnalytics = () => {
     trackOpenTemplate: (templateId, templateName, properties) => 
       analytics.openTemplate(templateId, templateName, properties),
 
+    // Account viewing events
+    trackAccountViewed: (viewedAccountId, accountName, properties) => 
+      analytics.accountViewed(viewedAccountId, accountName, properties),
+
     // Enhanced voice events
     trackVoiceConversationStart: (agentId, properties) => 
       analytics.voiceConversationStart(agentId, properties),
