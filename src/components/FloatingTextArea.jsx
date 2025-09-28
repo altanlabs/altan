@@ -12,6 +12,7 @@ import Iconify from './iconify/Iconify.jsx';
 import FileUpload from './room/thread/FileUpload.jsx';
 import MessageMinified from './room/thread/MessageMinified.jsx';
 import { useSnackbar } from './snackbar';
+import ResponseStatusBar from './response/ResponseStatusBar.jsx';
 import TodoWidget from './TodoWidget.jsx';
 import useLocales from '../locales/useLocales';
 import { useVoiceConversation } from '../providers/voice/VoiceConversationProvider';
@@ -279,6 +280,9 @@ const FloatingTextArea = ({
 
           {/* Todo Widget integrated with text field */}
           <TodoWidget threadId={threadId} mode={mode} />
+
+          {/* Response Status Bar - shows active agent responses */}
+          <ResponseStatusBar threadId={threadId} className="mb-2" />
 
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${

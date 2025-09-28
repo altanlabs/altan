@@ -108,6 +108,9 @@ import {
   markMessagePartDone,
   deleteMessagePart,
   updateMessageStreamingState,
+  // Response lifecycle actions
+  addResponseLifecycle,
+  completeResponseLifecycle,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -664,52 +667,81 @@ export const handleWebSocketEvent = async (data, user_id) => {
         console.error('AGENT_RESPONSE missing agent_event:', data);
         break;
       }
-      switch (agentEvent.event_type) {
-        case 'StreamingMessageStart':
+
+      const eventData = agentEvent.event_data;
+      const eventType = agentEvent.event_type;
+      const timestamp = agentEvent.event_extras?.timestamp || new Date().toISOString();
+
+      if (!eventType) {
+        console.error('[AGENT_RESPONSE] missing event_type:', data);
+        break;
+      }
+
+      // Handle activation and response lifecycle events
+      if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
+        console.log('[AGENT_RESPONSE] Lifecycle:', eventType, eventData, timestamp);
+        dispatch(addResponseLifecycle({
+          response_id: eventData.response_id,
+          agent_id: eventData.agent_id,
+          thread_id: eventData.thread_id,
+          event_type: eventType,
+          event_data: eventData,
+          timestamp,
+        }));
+
+        // Handle response completion events
+        if (['response.completed', 'response.failed', 'response.empty'].includes(eventType)) {
+          dispatch(completeResponseLifecycle({
+            response_id: eventData.response_id,
+            thread_id: eventData.thread_id,
+          }));
+        }
+      }
+
+      // Handle specific events
+      switch (eventType) {
+        case 'response.started':
           const messageData = {
-            id: agentEvent.event_data.message_id,
-            thread_id: agentEvent.event_data.thread_id,
-            member_id: agentEvent.event_data.room_member_id, // Will be determined by agent response
-            date_creation: agentEvent.event_extras?.timestamp || new Date().toISOString(),
-            text: '', // Empty initially, will be filled by message parts
+            id: eventData.message_id,
+            thread_id: eventData.thread_id,
+            member_id: eventData.room_member_id,
+            date_creation: timestamp,
+            text: '',
             is_streaming: true,
           };
-
-          // Add the message to the thread
           dispatch(addMessage(messageData));
-
-          // Track the running response
-          dispatch(addRunningResponse(agentEvent.event_data));
+          dispatch(addRunningResponse(eventData));
           break;
+
+        case 'response.completed':
+        case 'response.failed':
+        case 'response.empty':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            dispatch(updateMessageStreamingState({
+              messageId: eventData.message_id,
+              isStreaming: false,
+            }));
+          }
+          break;
+
         case 'MessagePartAdded':
-          console.log('[AGENT_RESPONSE] MessagePartAdded:', agentEvent.event_data);
-          dispatch(addMessagePart(agentEvent.event_data));
+          dispatch(addMessagePart(eventData));
           break;
         case 'MessagePartUpdated':
-          console.log('[AGENT_RESPONSE] MessagePartUpdated:', agentEvent.event_data);
-          // console.log('index:', agentEvent.event_data.index);
-          dispatch(updateMessagePart(agentEvent.event_data));
+          dispatch(updateMessagePart(eventData));
           break;
         case 'MessagePartDone':
-          console.log('[AGENT_RESPONSE] MessagePartDone:', agentEvent.event_data);
-          dispatch(markMessagePartDone(agentEvent.event_data));
+          dispatch(markMessagePartDone(eventData));
           break;
         case 'MessagePartDeleted':
-          console.log('[AGENT_RESPONSE] MessagePartDeleted:', agentEvent.event_data);
-          dispatch(deleteMessagePart(agentEvent.event_data));
+          dispatch(deleteMessagePart(eventData));
           break;
 
-        case 'StreamingMessageEnd':
-          // Clean up running response when streaming ends
-          dispatch(deleteRunningResponse(agentEvent.event_data));
-          // Mark message as no longer streaming
-          dispatch(updateMessageStreamingState({
-            messageId: agentEvent.event_data.message_id,
-            is_streaming: false,
-          }));
-          break;
         default:
-          console.log('Unknown AGENT_RESPONSE event:', agentEvent.event_type, agentEvent);
+          if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
+            console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
+          }
       }
       break;
     case 'RoomMemberUpdate':

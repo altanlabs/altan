@@ -157,8 +157,10 @@ const ToolPartCard = ({
     return null;
   }
 
+  const partCreatedAt = part.created_at || part.date_creation;
+
   const borderColor = getBorderColor(part.status, isStreaming);
-  const duration = part.created_at ? formatDuration(part.created_at, part.finished_at) : null;
+  const duration = partCreatedAt ? formatDuration(partCreatedAt, part.finished_at) : null;
   const isExecuting = isStreaming || ['running', 'preparing'].includes(part.status);
 
   const argumentsPreview = formatArgumentsPreview(part.arguments);

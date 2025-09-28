@@ -143,8 +143,8 @@ const normalizePart = (raw) => {
     part_type: type, // keep both keys for compatibility
     order,
     block_order,
-    is_done: !!raw?.is_done,
-    created_at: raw?.created_at || new Date().toISOString(),
+    is_done: !!toolData?.status && ['success', 'error'].includes(toolData.status),
+    created_at: raw?.created_at || raw?.date_creation || new Date().toISOString(),
 
     // Streaming helpers (non-serializable/run-time):
     // Plain objects to remain Immer-friendly without Map/Set semantics.
@@ -207,10 +207,11 @@ function Object_assign(target, ...sources) {
     Object.keys(source).forEach((key) => {
       const s_val = source[key];
       const t_val = target[key];
-      target[key] =
-        t_val && s_val && typeof t_val === 'object' && typeof s_val === 'object'
-          ? Object_assign(t_val, s_val)
-          : s_val;
+      if (t_val && s_val && typeof t_val === 'object' && typeof s_val === 'object') {
+        target[key] = Object_assign(t_val, s_val);
+      } else {
+        target[key] = s_val;
+      }
     });
   });
   return target;
@@ -256,6 +257,11 @@ const initialState = {
   voiceConversations: {
     byThreadId: {}, // threadId -> { isActive, agentId, elevenlabsId, conversation }
     isConnecting: false,
+  },
+  // Minimal response lifecycle tracking
+  responseLifecycles: {
+    byId: {}, // response_id -> { response_id, agent_id, thread_id, status, events: [], message_id?, created_at, updated_at }
+    activeByThread: {}, // thread_id -> [response_id1, response_id2, ...] (active responses)
   },
   thread: {
     drawer: {
@@ -1648,6 +1654,87 @@ const slice = createSlice({
         delete part.textBuffer;
       }
     },
+    // Response lifecycle management
+    addResponseLifecycle: (state, action) => {
+      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
+      
+      if (!state.responseLifecycles.byId[response_id]) {
+        // Create new response lifecycle
+        state.responseLifecycles.byId[response_id] = {
+          response_id,
+          agent_id,
+          thread_id,
+          status: 'submitted',
+          events: [],
+          created_at: timestamp || new Date().toISOString(),
+          updated_at: timestamp || new Date().toISOString(),
+        };
+        
+        // Add to active responses for thread
+        if (!state.responseLifecycles.activeByThread[thread_id]) {
+          state.responseLifecycles.activeByThread[thread_id] = [];
+        }
+        state.responseLifecycles.activeByThread[thread_id].push(response_id);
+      }
+      
+      const lifecycle = state.responseLifecycles.byId[response_id];
+      
+      // Add event to timeline
+      lifecycle.events.push({
+        type: event_type,
+        data: event_data,
+        timestamp: timestamp || new Date().toISOString(),
+      });
+      
+      // Update status based on event
+      if (event_type.startsWith('activation.')) {
+        lifecycle.status = event_type.replace('activation.', '');
+      } else if (event_type.startsWith('response.')) {
+        lifecycle.status = event_type.replace('response.', '');
+        
+        // Set message_id when response starts
+        if (event_type === 'response.started' && event_data.message_id) {
+          lifecycle.message_id = event_data.message_id;
+        }
+      }
+      
+      lifecycle.updated_at = timestamp || new Date().toISOString();
+    },
+    
+    completeResponseLifecycle: (state, action) => {
+      const { response_id, thread_id } = action.payload;
+      
+      // Remove from active responses
+      if (state.responseLifecycles.activeByThread[thread_id]) {
+        state.responseLifecycles.activeByThread[thread_id] = 
+          state.responseLifecycles.activeByThread[thread_id].filter(id => id !== response_id);
+        
+        // Clean up empty arrays
+        if (state.responseLifecycles.activeByThread[thread_id].length === 0) {
+          delete state.responseLifecycles.activeByThread[thread_id];
+        }
+      }
+      
+      // Keep completed responses for a while (they'll be cleaned up later)
+      if (state.responseLifecycles.byId[response_id]) {
+        state.responseLifecycles.byId[response_id].completed_at = new Date().toISOString();
+      }
+    },
+    
+    cleanupResponseLifecycles: (state, action) => {
+      const { olderThan = 300000 } = action.payload || {}; // 5 minutes default
+      const cutoff = Date.now() - olderThan;
+      
+      Object.keys(state.responseLifecycles.byId).forEach(response_id => {
+        const lifecycle = state.responseLifecycles.byId[response_id];
+        if (lifecycle.completed_at) {
+          const completedTime = new Date(lifecycle.completed_at).getTime();
+          if (completedTime < cutoff) {
+            delete state.responseLifecycles.byId[response_id];
+          }
+        }
+      });
+    },
   },
 });
 
@@ -1720,6 +1807,10 @@ export const {
   deleteMessagePart,
   clearMessageParts,
   resetMessagePartStreaming,
+  // Response lifecycle actions
+  addResponseLifecycle,
+  completeResponseLifecycle,
+  cleanupResponseLifecycles,
 } = slice.actions;
 
 // SELECTORS
@@ -2287,6 +2378,45 @@ export const makeSelectMessageHasStreamingParts = () =>
       return part && !part.is_done;
     });
   });
+
+// Response lifecycle selectors
+export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
+
+export const selectActiveResponsesByThread = (threadId) =>
+  createSelector(
+    [selectResponseLifecycles, selectMembers],
+    (lifecycles, members) => {
+      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+      return activeResponseIds
+        .map(responseId => {
+          const lifecycle = lifecycles.byId[responseId];
+          if (!lifecycle) return null;
+          
+          // Get agent details
+          const agent = Object.values(members.byId || {}).find(
+            member => member.member?.id === lifecycle.agent_id
+          );
+          
+          return {
+            ...lifecycle,
+            agent: agent ? {
+              id: agent.member.id,
+              name: agent.member?.name || 'Agent',
+              avatar: agent.member?.picture,
+              member_type: agent.member?.member_type,
+            } : null,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+  );
+
+export const selectResponseLifecycleById = (responseId) =>
+  createSelector(
+    [selectResponseLifecycles],
+    (lifecycles) => lifecycles.byId[responseId] || null
+  );
 
 // ACTIONS
 
