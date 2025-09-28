@@ -5,7 +5,9 @@ import ReactPlayer from 'react-player/youtube';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
+import { useAuthContext } from '../../auth/useAuthContext';
 import { selectAccount } from '../../redux/slices/general';
+import { PATH_AUTH } from '../../routes/paths';
 import { optimai_shop } from '../../utils/axios';
 import InteractiveHoverButton from '../agents/InteractiveHoverButton';
 import { CustomAvatar } from '../custom-avatar';
@@ -13,6 +15,7 @@ import CustomDialog from '../dialogs/CustomDialog';
 
 const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   const history = useHistory();
+  const { isAuthenticated } = useAuthContext();
   const account = useSelector(selectAccount);
   const [fullTemplate, setFullTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -74,6 +77,14 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   };
 
   const handleClone = async () => {
+    // Check if user is authenticated first
+    if (!isAuthenticated) {
+      // Close the dialog and redirect to sign up
+      onClose();
+      history.push(PATH_AUTH.register);
+      return;
+    }
+
     // Track clone event
     try {
       if (typeof window !== 'undefined' && window.gtag) {
