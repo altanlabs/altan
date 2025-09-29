@@ -2,10 +2,10 @@ import { Box, Typography, Stack, TextField, Chip, Button, Card } from '@mui/mate
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
-import { useAnalytics } from '../../hooks/useAnalytics';
 
 // Credit packages with their Stripe price IDs
 const CREDIT_PACKAGES = [
@@ -110,7 +110,7 @@ export default function CreditPurchaseSection({ title = 'Pay as you go', compact
 
   const content = (
     <Box sx={{ p: 2 }}>
-      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb:2 }}>
+      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 2 }}>
         {title}
       </Typography>
 
