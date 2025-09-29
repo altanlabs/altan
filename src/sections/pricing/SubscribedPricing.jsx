@@ -7,6 +7,10 @@ import {
   Grid,
   Chip,
   Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Select,
   MenuItem,
   FormControl,
@@ -15,7 +19,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import Iconify from '../../components/iconify';
-import PayAsYouGoOptions from '../../components/pricing/PayAsYouGoOptions';
+import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
 import {
   selectAccountId,
   selectAccountSubscriptions,
@@ -160,10 +164,10 @@ export default function SubscribedPricing() {
   const growthBillingOption = getBillingOption(currentGrowthPlan, 'monthly');
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
+    <Box>
       <Grid
         container
-        spacing={3}
+        spacing={2}
       >
         {/* Left side - Upgrade Options */}
         <Grid
@@ -171,162 +175,149 @@ export default function SubscribedPricing() {
           xs={12}
           md={8}
         >
+          <Typography
+            variant="h4"
+            sx={{ mb: 2, fontWeight: 700 }}
+          >
+            Upgrade Your Plan
+          </Typography>
+
           {/* Growth Plan */}
           {filteredGrowthPlans.length > 0 && (
-            <Card sx={{ mb: 3, overflow: 'hidden' }}>
-              <Box sx={{ p: 3, pb: 2 }}>
+            <Card sx={{ p: 4, mb: 4 }}>
+              <Typography
+                variant="h5"
+                sx={{ mb: 3, fontWeight: 600 }}
+              >
+                Growth Plan
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3 }}
+              >
+                Scale your operations with more credits and advanced features.
+              </Typography>
+
+              <Box sx={{ mb: 3 }}>
                 <Typography
-                  variant="h6"
-                  sx={{ mb: 1, fontWeight: 600 }}
+                  variant="subtitle2"
+                  sx={{ mb: 2, fontWeight: 600 }}
                 >
-                  Growth Plan
+                  Choose your credit tier:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
+                <FormControl
+                  fullWidth
                   sx={{ mb: 3 }}
                 >
-                  Scale your operations with more credits and advanced features.
-                </Typography>
-
-                <Box sx={{ mb: 2 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1.5, fontWeight: 600 }}
+                  <Select
+                    value={selectedGrowthTier}
+                    onChange={handleGrowthTierChange}
+                    sx={{
+                      '& .MuiSelect-select': {
+                        py: 1.5,
+                      },
+                    }}
                   >
-                    Choose your credit tier:
-                  </Typography>
-                  <FormControl fullWidth>
-                    <Select
-                      value={selectedGrowthTier}
-                      onChange={handleGrowthTierChange}
-                      sx={{
-                        '& .MuiSelect-select': { py: 1.2 },
-                        backgroundColor: 'background.paper',
-                      }}
-                    >
-                      {filteredGrowthPlans.map((plan, index) => {
-                        const billingOption = getBillingOption(plan, 'monthly');
-                        const price = billingOption
-                          ? formatPrice(billingOption.price, 'monthly')
-                          : 0;
+                    {filteredGrowthPlans.map((plan, index) => {
+                      const billingOption = getBillingOption(plan, 'monthly');
+                      const price = billingOption ? formatPrice(billingOption.price, 'monthly') : 0;
 
-                        return (
-                          <MenuItem
-                            key={plan.id}
-                            value={index}
+                      return (
+                        <MenuItem
+                          key={plan.id}
+                          value={index}
+                        >
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            width="100%"
                           >
-                            <Stack
-                              direction="row"
-                              justifyContent="space-between"
-                              width="100%"
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
                             >
-                              <Typography
-                                variant="body2"
-                                fontWeight={600}
-                              >
-                                €{plan.credits / 100} credits
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="success.main"
-                                fontWeight={600}
-                              >
-                                €{price}/mo
-                              </Typography>
-                            </Stack>
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>
-                </Box>
+                              €{plan.credits / 100} credits
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="success.main"
+                              fontWeight={600}
+                            >
+                              €{price}/mo
+                            </Typography>
+                          </Stack>
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
               </Box>
 
               {/* Current Selection Details */}
               {currentGrowthPlan && growthBillingOption && (
-                <Box sx={{ px: 3, pb: 3 }}>
-                  <Grid
-                    container
-                    spacing={3}
-                    alignItems="center"
+                <Box sx={{ mb: 4 }}>
+                  <Stack
+                    direction="row"
+                    alignItems="baseline"
+                    spacing={0.5}
+                    sx={{ mb: 2 }}
                   >
-                    <Grid
-                      item
-                      xs={12}
-                      sm={8}
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: 700 }}
                     >
-                      <Stack
-                        direction="row"
-                        alignItems="baseline"
-                        spacing={0.5}
-                        sx={{ mb: 1 }}
-                      >
-                        <Typography
-                          variant="h4"
-                          sx={{ fontWeight: 700 }}
-                        >
-                          €{formatPrice(growthBillingOption.price, 'monthly')}
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          color="text.secondary"
-                        >
-                          /mo
-                        </Typography>
-                      </Stack>
-
-                      <Typography
-                        variant="body2"
-                        color="primary.main"
-                        sx={{ mb: 2, fontWeight: 600 }}
-                      >
-                        €{currentGrowthPlan.credits / 100} in monthly credits
-                      </Typography>
-
-                      <Stack spacing={0.5}>
-                        {GROWTH_FEATURES.slice(0, 4).map((feature, index) => (
-                          <Stack
-                            key={index}
-                            direction="row"
-                            alignItems="center"
-                            spacing={1}
-                          >
-                            <Iconify
-                              icon="eva:checkmark-circle-2-fill"
-                              sx={{ color: 'success.main', width: 18, height: 18 }}
-                            />
-                            <Typography variant="body2">{feature.text}</Typography>
-                          </Stack>
-                        ))}
-                        {GROWTH_FEATURES.length > 4 && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ ml: 3 }}
-                          >
-                            +{GROWTH_FEATURES.length - 4} more features
-                          </Typography>
-                        )}
-                      </Stack>
-                    </Grid>
-
-                    <Grid
-                      item
-                      xs={12}
-                      sm={4}
+                      €{formatPrice(growthBillingOption.price, 'monthly')}
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
                     >
-                      <Button
-                        variant="contained"
-                        onClick={handleUpgradeGrowth}
-                        fullWidth
-                        size="large"
-                        sx={{ py: 1.5, fontWeight: 600 }}
+                      /mo
+                    </Typography>
+                  </Stack>
+
+                  <Typography
+                    variant="body2"
+                    color="primary.main"
+                    sx={{ mb: 3, fontWeight: 600 }}
+                  >
+                    €{currentGrowthPlan.credits / 100} in monthly credits
+                  </Typography>
+
+                  <List
+                    disablePadding
+                    sx={{ mb: 3 }}
+                  >
+                    {GROWTH_FEATURES.map((feature, index) => (
+                      <ListItem
+                        key={index}
+                        disablePadding
+                        sx={{ py: 0.5 }}
                       >
-                        Upgrade To Growth
-                      </Button>
-                    </Grid>
-                  </Grid>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Iconify
+                            icon="eva:checkmark-circle-2-fill"
+                            sx={{ color: 'success.main', width: 20, height: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={feature.text}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+
+                  <Button
+                    variant="contained"
+                    onClick={handleUpgradeGrowth}
+                    size="large"
+                    sx={{ px: 4, py: 1.5, fontWeight: 600 }}
+                  >
+                    Upgrade to Growth
+                  </Button>
                 </Box>
               )}
             </Card>
@@ -334,10 +325,10 @@ export default function SubscribedPricing() {
 
           {/* No Growth upgrades available */}
           {filteredGrowthPlans.length === 0 && (
-            <Card sx={{ p: 3, mb: 3, textAlign: 'center' }}>
+            <Card sx={{ p: 4, mb: 4, textAlign: 'center' }}>
               <Typography
                 variant="h6"
-                sx={{ mb: 1, fontWeight: 600 }}
+                sx={{ mb: 2, fontWeight: 600 }}
               >
                 You&apos;re on our highest Growth plan!
               </Typography>
@@ -352,58 +343,52 @@ export default function SubscribedPricing() {
 
           {/* Enterprise Plan */}
           {enterprisePlan && (
-            <Card sx={{ p: 3, overflow: 'hidden' }}>
+            <Card sx={{ p: 4 }}>
               <Typography
-                variant="h6"
-                sx={{ mb: 1, fontWeight: 600 }}
+                variant="h5"
+                sx={{ mb: 3, fontWeight: 600 }}
               >
                 Enterprise
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3 }}
-              >
-                {enterprisePlan.description}
               </Typography>
 
               <Grid
                 container
-                spacing={3}
-                alignItems="center"
+                spacing={4}
               >
                 <Grid
                   item
                   xs={12}
                   md={8}
                 >
-                  <Stack spacing={0.5}>
-                    {ENTERPRISE_FEATURES.slice(0, 4).map((feature, index) => (
-                      <Stack
-                        key={index}
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                      >
-                        <Iconify
-                          icon="eva:checkmark-circle-2-fill"
-                          sx={{ color: 'success.main', width: 18, height: 18 }}
-                        />
-                        <Typography variant="body2">{feature.text}</Typography>
-                      </Stack>
-                    ))}
-                    {ENTERPRISE_FEATURES.length > 4 && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ ml: 3 }}
-                      >
-                        +{ENTERPRISE_FEATURES.length - 4} more features
-                      </Typography>
-                    )}
-                  </Stack>
-                </Grid>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3 }}
+                  >
+                    {enterprisePlan.description}
+                  </Typography>
 
+                  <List disablePadding>
+                    {ENTERPRISE_FEATURES.map((feature, index) => (
+                      <ListItem
+                        key={index}
+                        disablePadding
+                        sx={{ py: 0.5 }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Iconify
+                            icon="eva:checkmark-circle-2-fill"
+                            sx={{ color: 'success.main', width: 20, height: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={feature.text}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Grid>
                 <Grid
                   item
                   xs={12}
@@ -412,23 +397,21 @@ export default function SubscribedPricing() {
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography
                       variant="h4"
-                      sx={{ fontWeight: 700, mb: 0.5 }}
+                      sx={{ fontWeight: 700, mb: 1 }}
                     >
                       Custom
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mb: 2 }}
+                      sx={{ mb: 3 }}
                     >
                       Custom credit allocation
                     </Typography>
                     <Button
                       variant="contained"
                       onClick={handleEnterpriseContact}
-                      fullWidth
-                      size="large"
-                      sx={{ py: 1.5, fontWeight: 600 }}
+                      sx={{ px: 4, py: 1.5, fontWeight: 600 }}
                     >
                       Contact Sales
                     </Button>
@@ -439,128 +422,129 @@ export default function SubscribedPricing() {
           )}
         </Grid>
 
-        {/* Right side - Current Plan Info & Pay as you go */}
+        {/* Right side - Current Plan Info & Credit Purchase */}
         <Grid
           item
           xs={12}
           md={4}
         >
-          <Box sx={{ position: 'sticky', top: 20 }}>
-            <Card sx={{ p: 3, mb: 2 }}>
-              <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Card sx={{ p: 2, position: 'sticky', top: 20 }}>
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 600 }}
+              >
+                Your Current Plan
+              </Typography>
+              <Chip
+                label={currentPlan?.name || 'Unknown Plan'}
+                color="primary"
+                variant="filled"
+                sx={{ px: 2, py: 1, fontWeight: 600 }}
+              />
+            </Box>
+
+            <Divider sx={{ my: 1 }} />
+
+            {/* Subscription Credits */}
+            <Box sx={{ mb: 2 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ mb: 1 }}
+              >
                 <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 600, mb: 1 }}
+                  variant="body2"
+                  color="text.secondary"
                 >
-                  Your Current Plan
+                  Subscription credits
                 </Typography>
-                <Chip
-                  label={currentPlan?.name || 'Unknown Plan'}
-                  color="primary"
-                  variant="filled"
-                  sx={{ px: 2, py: 0.5, fontWeight: 600 }}
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                >
+                  {usagePercentage}%
+                </Typography>
+              </Stack>
+
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 8,
+                  borderRadius: 1,
+                  bgcolor: 'grey.200',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: `${usagePercentage}%`,
+                    height: '100%',
+                    bgcolor: usagePercentage > 80 ? 'warning.main' : 'primary.main',
+                    transition: 'width 0.3s ease',
+                  }}
                 />
               </Box>
 
-              <Divider sx={{ my: 2 }} />
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ mt: 1 }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  €{Math.round((totalCredits - remainingCredits) / 100)} used
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  €{Math.round(remainingCredits / 100)} remaining
+                </Typography>
+              </Stack>
+            </Box>
 
-              {/* Subscription Credits */}
+            {/* Additional Credits */}
+            {creditBalance > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Stack
                   direction="row"
                   justifyContent="space-between"
+                  alignItems="center"
                   sx={{ mb: 1 }}
                 >
                   <Typography
                     variant="body2"
                     color="text.secondary"
                   >
-                    Subscription credits
+                    Additional credits
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    fontWeight={600}
-                  >
-                    {usagePercentage}%
-                  </Typography>
-                </Stack>
-
-                <Box
-                  sx={{
-                    width: '100%',
-                    height: 6,
-                    borderRadius: 1,
-                    bgcolor: 'grey.200',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: `${usagePercentage}%`,
-                      height: '100%',
-                      bgcolor: usagePercentage > 80 ? 'warning.main' : 'success.main',
-                      transition: 'width 0.3s ease',
-                    }}
+                  <Chip
+                    label="Never expire"
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                    sx={{ fontSize: '0.7rem' }}
                   />
-                </Box>
-
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  sx={{ mt: 1 }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    €{Math.round((totalCredits - remainingCredits) / 100)} used
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    €{Math.round(remainingCredits / 100)} remaining
-                  </Typography>
                 </Stack>
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 600, color: 'success.main' }}
+                >
+                  €{Math.round(creditBalance / 100)} available
+                </Typography>
               </Box>
+            )}
 
-              {/* Additional Credits */}
-              {creditBalance > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      Additional credits
-                    </Typography>
-                    <Chip
-                      label="Never expire"
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      sx={{ fontSize: '0.65rem', height: 20 }}
-                    />
-                  </Stack>
-                  <Typography
-                    variant="body1"
-                    sx={{ fontWeight: 600, color: 'success.main' }}
-                  >
-                    €{Math.round(creditBalance / 100)} available
-                  </Typography>
-                </Box>
-              )}
-            </Card>
+            <Divider sx={{ my: 1 }} />
 
-            <Card>
-              <PayAsYouGoOptions compact />
-            </Card>
-          </Box>
+            <CreditPurchaseSection
+              title="Buy More Credits"
+              compact
+            />
+          </Card>
         </Grid>
       </Grid>
     </Box>
