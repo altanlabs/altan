@@ -10,10 +10,6 @@ import { optimai_shop } from '../../utils/axios';
 // Credit packages with their Stripe price IDs
 const CREDIT_PACKAGES = [
   {
-    id: 'price_1Qr6FbKUsA7CGHPx2phx9KQS',
-    price: 10,
-  },
-  {
     id: 'price_1Qr6FbKUsA7CGHPxHYMOIVD9',
     price: 20,
   },
@@ -24,6 +20,14 @@ const CREDIT_PACKAGES = [
   {
     id: 'price_1RiD6vKUsA7CGHPxMJt2D9Bg',
     price: 100,
+  },
+  {
+    id: 'price_1S8RdTKUsA7CGHPx4lLkUHci',
+    price: 250,
+  },
+  {
+    id: 'price_1S8RdvKUsA7CGHPxtRG9QOio',
+    price: 500,
   },
 ];
 
