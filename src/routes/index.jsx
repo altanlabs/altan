@@ -22,6 +22,7 @@ import {
   ExecutionsPage,
   DashboardPage,
   UsagePage,
+  UsageDatabasePage,
   IntegrationCreator,
   MemberPage,
   MediaPage,
@@ -60,12 +61,12 @@ import {
   Privacy,
   ContactPage,
   DemoTextVoicePage,
-  AdvancedEditorPage,
   SDKTestPage,
   SupportPage,
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
+import PageTracker from '../components/analytics/PageTracker.jsx';
 import CompactLayout from '../layouts/compact';
 import DashboardLayout from '../layouts/dashboard';
 import ProjectLayout from '../layouts/dashboard/ProjectLayout.jsx';
@@ -76,6 +77,7 @@ import SuperAdminLayout from '../layouts/superadmin/SuperAdminLayout.jsx';
 const Router = () => {
   return (
     <BrowserRouter>
+      <PageTracker />
       <Switch>
         {/* Auth Routes */}
         <Route
@@ -285,6 +287,73 @@ const Router = () => {
 
         <Route
           path="/project/:altanerId/c/:componentId/b/:baseId/tables/:tableId/views/:viewId/records/:recordId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Simplified Project Component Routes */}
+        <Route
+          path="/project/:altanerId/database"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/interface"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/flows"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/flows/:flowId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/agents"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/agents/:agentId"
           exact
         >
           <AuthGuard requireAuth={true}>
@@ -586,6 +655,17 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <ExecutionsPage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/usage/databases"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <UsageDatabasePage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

@@ -76,7 +76,7 @@ export class AltanSDK {
     this.config = {
       apiBaseUrl: 'https://api.altan.ai/platform/guest',
       authBaseUrl: 'https://auth.altan.ai/login/guest',
-      roomBaseUrl: 'https://altan.ai/r',
+      roomBaseUrl: 'https://www.altan.ai/r',
       enableStorage: true,
       debug: false,
       requestTimeout: 30000,

@@ -1,22 +1,30 @@
 import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip, Button } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
 
 import CodeToggleButton from './buttons/CodeToggleButton';
 import EditToggleButton from './buttons/EditToggleButton';
 import Iconify from './iconify';
-import { selectPreviewMode, selectEditMode, togglePreviewMode, toggleEditMode } from '../redux/slices/previewControl';
-import { useSelector, dispatch } from '../redux/store';
+import { 
+  selectPreviewMode, 
+  selectEditMode, 
+  togglePreviewMode, 
+  toggleEditMode,
+  navigateToPath,
+  refreshIframe,
+  openInNewTab,
+  toggleIframeViewMode 
+} from '../redux/slices/previewControl';
+import { useSelector } from '../redux/store';
 
 function URLNavigationBar({
-  onNavigate,
-  onOpenInNewTab,
-  onRefresh,
   productionUrl,
   disabled = false,
 }) {
   const theme = useTheme();
+  const dispatch = useDispatch();
   const [inputValue, setInputValue] = useState('');
   const [showPublishedTooltip, setShowPublishedTooltip] = useState(false);
   const inputRef = useRef(null);
@@ -24,6 +32,26 @@ function URLNavigationBar({
   // Get preview mode and edit mode from Redux
   const previewMode = useSelector(selectPreviewMode);
   const editMode = useSelector(selectEditMode);
+
+  // Navigation handlers using Redux actions directly
+  const handleNavigateToPath = useCallback(
+    (path) => {
+      dispatch(navigateToPath(path));
+    },
+    [dispatch],
+  );
+
+  const handleToggleIframeViewMode = useCallback(() => {
+    dispatch(toggleIframeViewMode());
+  }, [dispatch]);
+
+  const handleOpenIframeInNewTab = useCallback(() => {
+    dispatch(openInNewTab());
+  }, [dispatch]);
+
+  const handleRefreshIframe = useCallback(() => {
+    dispatch(refreshIframe());
+  }, [dispatch]);
 
   // Show tooltip when in production mode for the first time
   useEffect(() => {
@@ -64,9 +92,9 @@ function URLNavigationBar({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (inputValue.trim() && onNavigate) {
+    if (inputValue.trim()) {
       const path = `/${inputValue.trim()}`;
-      onNavigate(path);
+      handleNavigateToPath(path);
       setInputValue('');
       inputRef.current?.blur();
     }
@@ -116,7 +144,7 @@ function URLNavigationBar({
         <Tooltip title="Refresh">
           <IconButton
             size="small"
-            onClick={onRefresh}
+            onClick={handleRefreshIframe}
             disabled={disabled}
             sx={{
               width: 32,
@@ -139,7 +167,7 @@ function URLNavigationBar({
         <Tooltip title="Open in New Tab">
           <IconButton
             size="small"
-            onClick={onOpenInNewTab}
+            onClick={handleOpenIframeInNewTab}
             disabled={disabled}
             sx={{
               width: 32,
@@ -336,9 +364,6 @@ function URLNavigationBar({
 }
 
 URLNavigationBar.propTypes = {
-  onNavigate: PropTypes.func.isRequired,
-  onOpenInNewTab: PropTypes.func.isRequired,
-  onRefresh: PropTypes.func.isRequired,
   productionUrl: PropTypes.string,
   disabled: PropTypes.bool,
 };

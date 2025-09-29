@@ -39,6 +39,39 @@ export default forwardRef((props, ref) => {
     }
   };
 
+  const copyToClipboard = async () => {
+    try {
+      if (!editorRef.current) return;
+      
+      const currentValue = editorRef.current.getValue();
+      // Try to parse and format the JSON for better readability
+      let jsonToCopy;
+      try {
+        const parsed = JSON.parse(currentValue);
+        jsonToCopy = JSON.stringify(parsed, null, 2);
+      } catch {
+        // If parsing fails, copy the raw value
+        jsonToCopy = currentValue;
+      }
+      
+      await navigator.clipboard.writeText(jsonToCopy);
+      console.log('JSON copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = editorRef.current.getValue();
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch (fallbackError) {
+        console.error('Fallback copy also failed:', fallbackError);
+      }
+    }
+  };
+
   // Handle editor mount
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
@@ -75,6 +108,20 @@ export default forwardRef((props, ref) => {
       window.monaco.KeyMod.chord(window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.KeyS),
       () => {
         saveChanges();
+      },
+    );
+
+    // Handle Ctrl+C / Cmd+C to copy formatted JSON
+    editor.addCommand(
+      window.monaco.KeyMod.chord(window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.KeyC),
+      () => {
+        const selection = editor.getSelection();
+        // If there's a selection, let Monaco handle it normally
+        if (!selection.isEmpty()) {
+          return false; // Let Monaco handle the default copy behavior
+        }
+        // If no selection, copy the entire formatted JSON
+        copyToClipboard();
       },
     );
   };
@@ -153,21 +200,34 @@ export default forwardRef((props, ref) => {
           className="text-sm"
           style={{ color: secondaryTextColor }}
         >
-          Press Escape to cancel, Enter for new line, Ctrl+S to save
+          Press Escape to cancel, Enter for new line, Ctrl+S to save, Ctrl+C to copy
         </div>
-        <button
-          onClick={saveChanges}
-          disabled={!isValidJson}
-          className={`px-3 py-1 text-sm rounded transition-colors ${
-            isValidJson
-              ? 'bg-blue-500 hover:bg-blue-600 text-white'
-              : isDarkMode
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Save
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={copyToClipboard}
+            className={`px-3 py-1 text-sm rounded transition-colors ${
+              isDarkMode
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+            title="Copy JSON to clipboard"
+          >
+            Copy
+          </button>
+          <button
+            onClick={saveChanges}
+            disabled={!isValidJson}
+            className={`px-3 py-1 text-sm rounded transition-colors ${
+              isValidJson
+                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                : isDarkMode
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Save
+          </button>
+        </div>
       </div>
       <Editor
         height="300px"

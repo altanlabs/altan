@@ -10,6 +10,7 @@ import { clearMediaState } from './media';
 import { clearNotificationsState } from './notifications';
 import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
+import { analytics } from '../../lib/analytics';
 import { optimai, optimai_integration } from '../../utils/axios';
 import { ALTAN_AGENT_TEMPLATE_IDS } from '../../utils/constants';
 import { checkArraysEqualsProperties, checkObjectsEqual } from '../helpers/memoize';
@@ -556,37 +557,49 @@ const slice = createSlice({
       }
     },
     updateInterfaceDeployment(state, action) {
-      const { id, interface_id, vercel_deployment_id, search_all_interfaces, ...changes } = action.payload;
-      console.log('Redux updateInterfaceDeployment called with:', { id, interface_id, vercel_deployment_id, search_all_interfaces, changes });
-      
+      const { id, interface_id, vercel_deployment_id, search_all_interfaces, ...changes } =
+        action.payload;
+      console.log('Redux updateInterfaceDeployment called with:', {
+        id,
+        interface_id,
+        vercel_deployment_id,
+        search_all_interfaces,
+        changes,
+      });
+
       let interface_ = null;
       let deploymentIndex = -1;
-      
+
       // If we need to search all interfaces (interface_id is null)
       if (search_all_interfaces && !interface_id) {
         console.log('Searching all interfaces for deployment...');
-        
+
         for (const iface of state.account.interfaces) {
           if (iface.deployments?.items) {
             // Try to find deployment by primary ID first
             let idx = iface.deployments.items.findIndex((d) => d.id === id);
-            
+
             // If not found by primary ID, try to find by vercel deployment ID
             if (idx === -1 && vercel_deployment_id) {
               idx = iface.deployments.items.findIndex(
                 (d) => d.meta_data?.deployment_info?.id === vercel_deployment_id,
               );
             }
-            
+
             // If not found by either ID, try to find by deployment_id field
             if (idx === -1) {
               idx = iface.deployments.items.findIndex((d) => d.deployment_id === id);
             }
-            
+
             if (idx !== -1) {
               interface_ = iface;
               deploymentIndex = idx;
-              console.log('Found deployment in interface:', interface_.name, 'at index:', deploymentIndex);
+              console.log(
+                'Found deployment in interface:',
+                interface_.name,
+                'at index:',
+                deploymentIndex,
+              );
               break;
             }
           }
@@ -595,10 +608,17 @@ const slice = createSlice({
         // Normal case: we have interface_id
         interface_ = state.account.interfaces.find((i) => i.id === interface_id);
         console.log('Found interface:', interface_?.name || 'NOT FOUND');
-        
+
         if (interface_?.deployments?.items) {
-          console.log('Existing deployments:', interface_.deployments.items.map(d => ({ id: d.id, deployment_id: d.deployment_id, vercel_id: d.meta_data?.deployment_info?.id })));
-          
+          console.log(
+            'Existing deployments:',
+            interface_.deployments.items.map((d) => ({
+              id: d.id,
+              deployment_id: d.deployment_id,
+              vercel_id: d.meta_data?.deployment_info?.id,
+            })),
+          );
+
           // Try to find deployment by primary ID first
           deploymentIndex = interface_.deployments.items.findIndex((d) => d.id === id);
           console.log('Search by primary ID result:', deploymentIndex);
@@ -618,7 +638,7 @@ const slice = createSlice({
           }
         }
       }
-      
+
       if (interface_ && deploymentIndex !== -1) {
         console.log('Updating existing deployment at index:', deploymentIndex);
         interface_.deployments.items[deploymentIndex] = {
@@ -871,9 +891,10 @@ export const selectHeaderVisible = (state) => selectGeneralState(state).headerVi
 
 export const selectAccount = (state) => selectGeneralState(state).account;
 
-export const selectAccountId = (state) => selectGeneralState(state).account.id;
+export const selectAccountId = (state) => selectGeneralState(state).account?.id;
 
-export const selectAccountCreditBalance = (state) => selectGeneralState(state).account.credit_balance;
+export const selectAccountCreditBalance = (state) =>
+  selectGeneralState(state).account?.credit_balance;
 
 export const selectAccountAssetsInitialized = (key) => (state) =>
   selectGeneralState(state).accountAssetsInitialized[key];
@@ -1031,7 +1052,10 @@ export const selectForms = createSelector(
   (account) => {
     // Defensive check: ensure account and forms exist
     if (!account || !Array.isArray(account.forms)) {
-      console.warn('selectForms: account.forms is not available or not an array:', { account, forms: account?.forms });
+      console.warn('selectForms: account.forms is not available or not an array:', {
+        account,
+        forms: account?.forms,
+      });
       return [];
     }
 
@@ -1049,7 +1073,10 @@ export const selectTables = createSelector(
   (account) => {
     // Defensive check: ensure account and bases exist
     if (!account || !Array.isArray(account.bases)) {
-      console.warn('selectTables: account.bases is not available or not an array:', { account, bases: account?.bases });
+      console.warn('selectTables: account.bases is not available or not an array:', {
+        account,
+        bases: account?.bases,
+      });
       return [];
     }
 
@@ -1085,7 +1112,10 @@ export const selectRooms = createSelector(
   (account) => {
     // Defensive check: ensure account and rooms exist
     if (!account || !Array.isArray(account.rooms)) {
-      console.warn('selectRooms: account.rooms is not available or not an array:', { account, rooms: account?.rooms });
+      console.warn('selectRooms: account.rooms is not available or not an array:', {
+        account,
+        rooms: account?.rooms,
+      });
       return [];
     }
 
@@ -1103,7 +1133,10 @@ export const selectGates = createSelector(
   (account) => {
     // Defensive check: ensure account and gates exist
     if (!account || !Array.isArray(account.gates)) {
-      console.warn('selectGates: account.gates is not available or not an array:', { account, gates: account?.gates });
+      console.warn('selectGates: account.gates is not available or not an array:', {
+        account,
+        gates: account?.gates,
+      });
       return [];
     }
 
@@ -1121,7 +1154,10 @@ export const selectApps = createSelector(
   (account) => {
     // Defensive check: ensure account and apps exist
     if (!account || !Array.isArray(account.apps)) {
-      console.warn('selectApps: account.apps is not available or not an array:', { account, apps: account?.apps });
+      console.warn('selectApps: account.apps is not available or not an array:', {
+        account,
+        apps: account?.apps,
+      });
       return [];
     }
 
@@ -1684,25 +1720,59 @@ export const createInvitation =
   };
 // ... existing code ...
 export const createFlow = (data, prompt, altaner_component_id) => async (dispatch, getState) => {
-  const { account } = getState().general;
-  let url = `/account/${account.id}/flow`;
+  try {
+    const { account } = getState().general;
+    let url = `/account/${account.id}/flow`;
 
-  // Build query parameters
-  const params = [];
-  if (prompt) {
-    params.push(`prompt=${encodeURIComponent(prompt)}`);
-  }
-  if (altaner_component_id) {
-    params.push(`altaner_component_id=${encodeURIComponent(altaner_component_id)}`);
-  }
+    // Build query parameters
+    const params = [];
+    if (prompt) {
+      params.push(`prompt=${encodeURIComponent(prompt)}`);
+    }
+    if (altaner_component_id) {
+      params.push(`altaner_component_id=${encodeURIComponent(altaner_component_id)}`);
+    }
 
-  // Add query parameters to URL if any exist
-  if (params.length > 0) {
-    url = `${url}?${params.join('&')}`;
-  }
+    // Add query parameters to URL if any exist
+    if (params.length > 0) {
+      url = `${url}?${params.join('&')}`;
+    }
 
-  const response = await optimai.post(url, data);
-  return response.data.flow;
+    const response = await optimai.post(url, data);
+    const flow = response.data.flow;
+
+    // Track flow creation (non-blocking)
+    try {
+      analytics.flowCreated(flow, {
+        prompt,
+        altaner_component_id,
+        account_id: account.id,
+      });
+    } catch (trackingError) {
+      // Silently fail to avoid impacting user experience
+      console.warn('Failed to track flow creation:', trackingError);
+    }
+
+    return flow;
+  } catch (e) {
+    console.error(`error: could not create flow: ${e}`);
+
+    // Track the error with more context
+    try {
+      analytics.trackError(e, {
+        source: 'redux_action',
+        action: 'createFlow',
+        account_id: getState().general.account?.id,
+        flow_data: data,
+        prompt,
+        altaner_component_id,
+      });
+    } catch (trackingError) {
+      console.warn('Failed to track createFlow error:', trackingError);
+    }
+
+    return Promise.reject(e.toString());
+  }
 };
 
 //  API Tokens -----------------------------------------------------------------------------------------
@@ -1745,9 +1815,37 @@ export const createAgent = (data) => async (dispatch, getState) => {
     const response = await optimai.post(`/account/${account.id}/agent`, data);
     const { agent } = response.data;
     dispatch(slice.actions.addAgent(agent));
+
+    // Track agent creation (non-blocking)
+    try {
+      analytics.agentCreated(agent.type || 'custom', {
+        agent_id: agent.id,
+        agent_name: agent.name,
+        account_id: account.id,
+        has_voice: !!(agent.voice_enabled || agent.voice_settings),
+        template_id: agent.template_id,
+      });
+    } catch (trackingError) {
+      // Silently fail to avoid impacting user experience
+      console.warn('Failed to track agent creation:', trackingError);
+    }
+
     return agent;
   } catch (e) {
     console.error(`error: could not create agent: ${e}`);
+
+    // Track the error with more context
+    try {
+      analytics.trackError(e, {
+        source: 'redux_action',
+        action: 'createAgent',
+        account_id: account.id,
+        agent_data: data,
+      });
+    } catch (trackingError) {
+      console.warn('Failed to track createAgent error:', trackingError);
+    }
+
     dispatch(slice.actions.hasError({ fileId: null, error: e.toString() }));
     return Promise.reject(e.toString());
   } finally {
@@ -2161,7 +2259,7 @@ export const getInterfaceById = (interfaceId) => async (dispatch, getState) => {
   const interfaces = state.general.account?.interfaces || [];
 
   // Check if interface already exists in store
-  const existingInterface = interfaces.find(i => i.id === interfaceId);
+  const existingInterface = interfaces.find((i) => i.id === interfaceId);
   if (existingInterface) {
     return Promise.resolve(existingInterface);
   }
@@ -2215,14 +2313,45 @@ export const clearAccountState = () => async (dispatch) =>
 export const switchAccount =
   ({ accountId }) =>
   async (dispatch, getState) => {
-    const accounts = selectAccounts(getState());
+    const state = getState();
+    const accounts = selectAccounts(state);
     const account = accounts.find((a) => a.id === accountId);
+    const user = state.general.user;
+
     if (account) {
+      const previousAccountId = state.general.account?.id;
+
       batch(() => {
         dispatch(clearAccountState());
         dispatch(setAccount(account));
       });
       localStorage.setItem('OAIPTACC', accountId);
+
+      // Track account switch and re-identify user with new account context
+      try {
+        if (user) {
+          // Track the account switch event
+          analytics.accountSwitched(previousAccountId, accountId, {
+            user_id: user.id,
+            user_email: user.email,
+            account_name: account.name,
+            previous_account_name: state.general.account?.name,
+          });
+
+          // Re-identify user with new account context for proper attribution
+          analytics.identify(user.id, {
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            account_id: accountId,
+            method: 'account_switch',
+            is_superadmin: user.xsup,
+          });
+        }
+      } catch (trackingError) {
+        console.warn('Failed to track account switch:', trackingError);
+      }
+
       return Promise.resolve('success');
     }
     return Promise.reject('user has no access to account');

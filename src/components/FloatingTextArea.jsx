@@ -72,6 +72,11 @@ const FloatingTextArea = ({
   mobileActiveView = 'chat',
   onMobileToggle = null,
   renderCredits = false,
+  activeComponent = null,
+  allComponents = null,
+  isFullscreen = false,
+  currentItemId = null,
+  onItemSelect = null,
 }) => {
   const { altanerId } = useParams();
   const me = useSelector(selectMe);
@@ -106,8 +111,9 @@ const FloatingTextArea = ({
 
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => {
-    const viewer = !me || (!!me && ['viewer', 'listener'].includes(me.role));
-    return viewer;
+    // Don't show viewer state during loading/switching - only when explicitly a viewer
+    if (!me) return false; // Loading state, don't show join room
+    return ['viewer', 'listener'].includes(me.role);
   }, [me]);
   const sendContent = useCallback(
     (content) => {
@@ -283,7 +289,9 @@ const FloatingTextArea = ({
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${
               mode === 'mobile'
-                ? 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
+                ? isFullscreen 
+                  ? 'w-full max-w-full bg-transparent' // Transparent in fullscreen
+                  : 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
                 : `w-full max-w-[700px] mx-auto pb-2 pt-3 ${
                   hasTasks ? 'rounded-b-3xl border-x border-b' : 'rounded-3xl border'
                 } bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30`
@@ -300,7 +308,7 @@ const FloatingTextArea = ({
                     transform: 'translate3d(0, 0, 0)',
                     WebkitTransform: 'translate3d(0, 0, 0)',
                     willChange: 'transform',
-                    WebkitBackdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: isFullscreen ? 'none' : 'blur(20px)', // No blur in fullscreen
                   }
                 : undefined
             }
@@ -453,6 +461,11 @@ const FloatingTextArea = ({
                   selectedAgent={selectedAgent}
                   setSelectedAgent={setSelectedAgent}
                   agents={agents}
+                  activeComponent={activeComponent}
+                  allComponents={allComponents}
+                  isFullscreen={isFullscreen}
+                  currentItemId={currentItemId}
+                  onItemSelect={onItemSelect}
                 />
               </div>
             )}

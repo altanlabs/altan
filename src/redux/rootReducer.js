@@ -3,6 +3,8 @@ import { combineReducers } from 'redux';
 import storage from 'redux-persist/lib/storage';
 
 // slices
+import accountsTemplatesReducer from './slices/accountsTemplates';
+import accountTemplatesReducer from './slices/accountTemplates';
 import agentsReducer from './slices/agents';
 import altanersReducer from './slices/altaners';
 import basesReducer from './slices/bases';
@@ -42,6 +44,8 @@ export const productPersistConfig = {
 };
 
 const rootReducer = combineReducers({
+  accountsTemplates: accountsTemplatesReducer,
+  accountTemplates: accountTemplatesReducer,
   agents: agentsReducer,
   general: generalReducer,
   spaces: spaceReducer,

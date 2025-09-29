@@ -260,7 +260,7 @@ const TabsList = memo(
           </Tooltip>
         </div>
 
-        {sortedTables.map((table, index) => (
+        {sortedTables.filter(table => table && table.id).map((table, index) => (
           <Draggable
             key={table.id}
             draggableId={table.id}
@@ -318,40 +318,82 @@ const PaginationControls = ({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 0.5,
-        px: 1,
+        gap: { xs: 0.25, sm: 0.5 }, // Tighter gap on mobile
+        px: { xs: 0.5, sm: 1 }, // Less padding on mobile
         py: 0.5,
       }}
     >
+      {/* First Page - Hidden on mobile to save space */}
       <IconButton
         size="small"
         onClick={onGoToFirstPage}
         disabled={paginationInfo.currentPage === 0 || isLoading}
-        sx={{ width: 28, height: 28 }}
+        sx={{ 
+          width: { xs: 24, sm: 28 }, 
+          height: { xs: 24, sm: 28 },
+          display: { xs: 'none', sm: 'inline-flex' } // Hide on mobile
+        }}
       >
-        <FirstPageIcon sx={{ fontSize: 16 }} />
+        <FirstPageIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
       </IconButton>
 
       <IconButton
         size="small"
         onClick={onGoToPreviousPage}
         disabled={paginationInfo.currentPage === 0 || isLoading}
-        sx={{ width: 28, height: 28 }}
+        sx={{ 
+          width: { xs: 24, sm: 28 }, 
+          height: { xs: 24, sm: 28 }
+        }}
       >
-        <NavigateBeforeIcon sx={{ fontSize: 16 }} />
+        <NavigateBeforeIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
       </IconButton>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mx: 1 }}>
-        <Typography variant="caption" color="text.secondary">
+      {/* Compact page info for mobile */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: { xs: 0.25, sm: 0.5 }, 
+        mx: { xs: 0.5, sm: 1 },
+        minWidth: { xs: 'auto', sm: 'auto' }
+      }}>
+        <Typography 
+          variant="caption" 
+          color="text.secondary"
+          sx={{ 
+            display: { xs: 'none', sm: 'inline' }, // Hide "Page" text on mobile
+            fontSize: { xs: '11px', sm: '12px' }
+          }}
+        >
           Page
         </Typography>
-        <Typography variant="body2" fontWeight={600}>
+        <Typography 
+          variant="body2" 
+          fontWeight={600}
+          sx={{ 
+            fontSize: { xs: '12px', sm: '14px' },
+            lineHeight: 1
+          }}
+        >
           {paginationInfo.currentPage + 1}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          of
+        <Typography 
+          variant="caption" 
+          color="text.secondary"
+          sx={{ 
+            fontSize: { xs: '11px', sm: '12px' }
+          }}
+        >
+          /
         </Typography>
-        <Typography variant="body2" fontWeight={600}>
+        <Typography 
+          variant="body2" 
+          fontWeight={600}
+          sx={{ 
+            fontSize: { xs: '12px', sm: '14px' },
+            lineHeight: 1
+          }}
+        >
           {paginationInfo.totalPages || 1}
         </Typography>
       </Box>
@@ -364,11 +406,15 @@ const PaginationControls = ({
           !paginationInfo.isLastPageFound ||
           isLoading
         }
-        sx={{ width: 28, height: 28 }}
+        sx={{ 
+          width: { xs: 24, sm: 28 }, 
+          height: { xs: 24, sm: 28 }
+        }}
       >
-        <NavigateNextIcon sx={{ fontSize: 16 }} />
+        <NavigateNextIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
       </IconButton>
 
+      {/* Last Page - Hidden on mobile to save space */}
       <IconButton
         size="small"
         onClick={onGoToLastPage}
@@ -377,9 +423,13 @@ const PaginationControls = ({
           paginationInfo.currentPage === paginationInfo.totalPages - 1 ||
           isLoading
         }
-        sx={{ width: 28, height: 28 }}
+        sx={{ 
+          width: { xs: 24, sm: 28 }, 
+          height: { xs: 24, sm: 28 },
+          display: { xs: 'none', sm: 'inline-flex' } // Hide on mobile
+        }}
       >
-        <LastPageIcon sx={{ fontSize: 16 }} />
+        <LastPageIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
       </IconButton>
     </Box>
   );
@@ -417,7 +467,10 @@ function TableTabs({
 
   // Ensure activeTableId is valid
   const effectiveTableId = useMemo(() => {
-    const isValidId = validTables.some((table) => table.id === activeTableId);
+    if (!activeTableId || validTables.length === 0) {
+      return validTables[0]?.id || null;
+    }
+    const isValidId = validTables.some((table) => table?.id === activeTableId);
     return isValidId ? activeTableId : validTables[0]?.id || null;
   }, [activeTableId, validTables]);
 
@@ -502,6 +555,30 @@ function TableTabs({
     handleCloseTableDropdown();
   };
 
+  // Don't render if we don't have any valid tables and no effective table ID
+  if (validTables.length === 0 && !effectiveTableId) {
+    return (
+      <div className="relative w-full min-w-0 p-0">
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            width: '100%',
+            minWidth: 0,
+            overflowX: 'auto',
+            minHeight: '30px',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            No tables available
+          </Typography>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full min-w-0 p-0">
       <DragDropContext
@@ -526,7 +603,7 @@ function TableTabs({
               }}
             >
               <StyledTabs
-                value={effectiveTableId}
+                value={effectiveTableId || false}
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile

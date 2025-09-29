@@ -29,6 +29,7 @@ import {
   addTableRecord,
   updateTableRecord,
   deleteTableRecord,
+  integrateRealTimeUpdates,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -172,7 +173,6 @@ const TEMPLATE_ACTIONS = {
 
 export const handleWebSocketEvent = async (data, user_id) => {
   console.log('data', data.type);
-
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -558,43 +558,40 @@ export const handleWebSocketEvent = async (data, user_id) => {
       const newTableId = data.table_id || data.data.table_id || data.data.id;
       const newTableName = data.table_db_name || data.data.table_name;
       if (data.data.records && Array.isArray(data.data.records)) {
-        data.data.records.forEach((record) => {
-          dispatch(
-            addTableRecord({
-              tableId: newTableId,
-              tableName: newTableName,
-              record: record,
-            }),
-          );
-        });
+        // Use batched real-time updates for better performance
+        dispatch(
+          integrateRealTimeUpdates({
+            tableId: newTableId,
+            additions: data.data.records,
+          }),
+        );
       }
       break;
     case 'RecordsUpdate':
       const updateTableId = data.data.table_id || data.data.id;
       const tableName = data.data.table_name;
-      data.data.records.forEach((record) => {
+      if (data.data.records && Array.isArray(data.data.records)) {
+        // Use batched real-time updates for better performance
         dispatch(
-          updateTableRecord({
+          integrateRealTimeUpdates({
             tableId: updateTableId,
-            tableName: tableName,
-            recordId: record.id,
-            changes: record,
+            updates: data.data.records,
           }),
         );
-      });
+      }
       break;
     case 'RecordsDelete':
       const deleteRecordsTableId = data.data.table_id || data.data.id;
       const deleteTableName = data.data.table_name;
-      data.data.ids.forEach((recordId) => {
+      if (data.data.ids && Array.isArray(data.data.ids)) {
+        // Use batched real-time updates for better performance
         dispatch(
-          deleteTableRecord({
+          integrateRealTimeUpdates({
             tableId: deleteRecordsTableId,
-            tableName: deleteTableName,
-            recordId: recordId,
+            deletions: data.data.ids,
           }),
         );
-      });
+      }
       break;
     case 'FileUpdate' | 'FileDelete' | 'FileCreate':
       // console.log('data', data);
@@ -736,32 +733,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       // console.log('AIgentToolChosenArgumentsDelta:', data.data);
       // dispatch(updateMessageExecution(data.data));
       break;
-    /**
-       * TODO:
-       * {
-            "event": "update",
-            "type": "AIgentToolChosen",
-            "data": {
-                "content": "send_mail_fdce",
-                "tool_call_id": "call_HJmddc70lDvZ4SIIIWebY9CP",
-                "id": "8e70dc0d-b9b6-40da-a4df-3f9e92cad17a",
-                "thread_id": "40df92fe-2d2d-422d-81fe-83a3a7eb1407",
-                "room_id": "31062768-1d46-47e1-b40f-ad868f6f1856"
-            },
-            "entity": "Message",
-            "timestamp": "2024-07-12T21:00:16.861033"
-        }
-        */
-    /**
-       * AIgentToolChosenArgumentsDelta
-       * {
-            "tool_call_id": null,
-            "content": " Robot",
-            "id": "b13907f0-d0c8-4fd1-b35e-c520ceee55b4",
-            "thread_id": "40d06eb6-f20e-4ffc-ab85-41e8b31ea352",
-            "room_id": "31062768-1d46-47e1-b40f-ad868f6f1856"
-        }
-      */
     case 'TaskUpdate':
       // console.log('TaskUpdate:', data);
       dispatch(updateMessageExecution(data.data));

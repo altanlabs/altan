@@ -11,7 +11,6 @@ import { createTemplate, updateTemplate, selectIsAccountFree } from '../../../..
 
 const Distribution = ({ altaner }) => {
   const hasTemplate = !!altaner?.template;
-  console.log(altaner.template);
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [openPaywallDialog, setOpenPaywallDialog] = useState(false);
   const isAccountFree = useSelector(selectIsAccountFree);
@@ -99,6 +98,35 @@ const Distribution = ({ altaner }) => {
               />
             </IconButton>
           </Stack>
+          
+          {altaner.template.selected_version_id && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 2 }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: 'monospace' }}
+              >
+                Version Id: {altaner.template.selected_version_id.slice(0, 5)}
+              </Typography>
+
+              <IconButton
+                size="small"
+                onClick={() => {
+                  navigator.clipboard.writeText(altaner.template.selected_version_id);
+                }}
+              >
+                <Iconify
+                  icon="mdi:content-copy"
+                  width={12}
+                />
+              </IconButton>
+            </Stack>
+          )}
           <Box
             sx={{
               p: 1.5,

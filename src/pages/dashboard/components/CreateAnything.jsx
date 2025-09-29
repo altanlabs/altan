@@ -5,23 +5,36 @@ import { useHistory } from 'react-router-dom';
 import { chipCategories } from './create/chipData';
 import TextAreaWithButtons from './create/TextAreaWithButtons';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 
 /**
  * Track project creation events
  */
-const trackCreateProject = (projectData) => {
+const trackCreateProject = (projectData, analytics) => {
   try {
+    const properties = {
+      has_attachments: projectData.hasAttachments || false,
+      attachment_count: projectData.attachmentCount || 0,
+      has_github_integration: projectData.hasGithub || false,
+      is_public: projectData.isPublic !== undefined ? projectData.isPublic : true,
+      user_authenticated: projectData.userAuthenticated || false,
+      prompt_length: projectData.promptLength || 0,
+      creation_source: 'dashboard',
+    };
+
+    // Track with PostHog
+    analytics.trackCreateProject(
+      projectData.name || 'Untitled Project',
+      projectData.type || 'App',
+      properties
+    );
+
+    // Track with Google Analytics (existing)
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'create_project', {
         project_name: projectData.name || 'Untitled Project',
         project_type: projectData.type || 'App',
-        has_attachments: projectData.hasAttachments || false,
-        attachment_count: projectData.attachmentCount || 0,
-        has_github_integration: projectData.hasGithub || false,
-        is_public: projectData.isPublic !== undefined ? projectData.isPublic : true,
-        user_authenticated: projectData.userAuthenticated || false,
-        prompt_length: projectData.promptLength || 0,
-        creation_source: 'dashboard',
+        ...properties,
       });
     }
   } catch (error) {
@@ -33,6 +46,7 @@ function CreateAnything({ handleVoice }) {
   const theme = useTheme();
   const history = useHistory();
   const { isAuthenticated } = useAuthContext();
+  const analytics = useAnalytics();
   const [inputValue, setInputValue] = useState('');
   const [resourceName, setResourceName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -127,7 +141,7 @@ function CreateAnything({ handleVoice }) {
           isPublic: isPublic,
           userAuthenticated: false,
           promptLength: promptToUse.length,
-        });
+        }, analytics);
 
         // Redirect to signup with the idea ID
         history.push(`/auth/register?idea=${data.id}`);
@@ -189,7 +203,7 @@ function CreateAnything({ handleVoice }) {
         isPublic: isPublic,
         userAuthenticated: true,
         promptLength: promptToUse.length,
-      });
+      }, analytics);
 
       history.push(`/?idea=${data.id}`);
     } catch (error) {

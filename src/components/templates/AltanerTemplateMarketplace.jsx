@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import AltanerSectionCategory from './AltanerSectionCategory';
+import PopularAccounts from './PopularAccounts';
 import TemplateDetailsDialog from './TemplateDetailsDialog';
 
 // Altaner categories with display configuration based on the constants
@@ -123,8 +124,13 @@ const AltanerTemplateMarketplace = () => {
         </Typography>
       </Box>
 
+      {/* Popular Accounts Section */}
+
       {/* Template Categories */}
       <Box>
+        <Box sx={{ mb: 2 }}>
+          <PopularAccounts initialExpanded={false} />
+        </Box>
         <Stack spacing={1}>
           {ALTANER_CATEGORIES.map((category) => (
             <Box key={category.key}>

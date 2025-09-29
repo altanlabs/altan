@@ -4,15 +4,16 @@ import { createCachedSelector } from 're-reselect';
 
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
+import { setPreviewMode } from './previewControl';
 import {
   // checkArraysEqualShallow,
   checkArraysEqualsProperties,
   checkObjectsEqual,
   getNestedProperty,
 } from '../helpers/memoize';
+import { analytics } from '../../lib/analytics';
 import { paginateCollection } from './utils/collections';
-import { setPreviewMode } from './previewControl';
-import { optimai, optimai_room, optimai_agent } from '../../utils/axios';
+import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
 const SOUND_IN = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/in.mp3');
@@ -355,14 +356,11 @@ const slice = createSlice({
       };
       state.account = account;
       state.members = paginateCollection(members);
-      state.authorization_requests = roomObject.authorization_requests.items || [];
+      // Authorization requests are now fetched separately via API
 
       const memberId = guest?.member.id || user?.member.id;
-      console.log('memberId', memberId);
-      console.log('guest', guest);
 
       state.me = fetchCurrentMember(memberId, state.members);
-      console.log('state.me', state.me);
 
       if (threads?.items) {
         threads.items = threads.items.map(handleThread);
@@ -607,15 +605,7 @@ const slice = createSlice({
       state.members.byId[roomMember.id] = roomMember;
       state.members.allIds.push(roomMember.id);
 
-      // Update the me state if the member being added is the current user
-      console.log(
-        'addMember: currentUserId:',
-        currentUserId,
-        'roomMember.member.user.id:',
-        roomMember.member?.user?.id,
-      );
       if (currentUserId && roomMember.member?.user?.id === currentUserId) {
-        console.log('addMember: Updating me state for current user');
         state.me = roomMember;
       }
     },
@@ -789,6 +779,9 @@ const slice = createSlice({
           ...changes,
         };
       }
+    },
+    setAuthorizationRequests: (state, action) => {
+      state.authorization_requests = action.payload;
     },
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;
@@ -1097,6 +1090,7 @@ export const {
   updateMessageContent,
   addAuthorizationRequest,
   updateAuthorizationRequest,
+  setAuthorizationRequests,
   setPublicRooms,
   setUserRooms,
   setUserRoomsLoadingMore,
@@ -1173,7 +1167,7 @@ export const selectThreadsById = (state) => selectThreads(state).byId;
 
 export const selectAccount = (state) => selectRoomState(state).account;
 
-export const selectAccountId = (state) => selectRoomState(state).account.id;
+export const selectAccountId = (state) => selectRoomState(state).account?.id;
 
 export const selectMessagesById = (state) => selectRoomState(state)?.messages?.byId;
 
@@ -1680,6 +1674,27 @@ export const searchUserRooms = (query) => async (dispatch) => {
   }
 };
 
+// Fetch authorization requests from the API
+export const fetchAuthorizationRequests =
+  (roomId = null) =>
+  async (dispatch) => {
+    try {
+      const params = new URLSearchParams();
+      if (roomId) {
+        params.append('room_id', roomId);
+      }
+      params.append('is_completed', 'false');
+
+      const response = await optimai_integration.get(`/authorization-request?${params.toString()}`);
+
+      if (response.status === 200 && response.data?.authorization_requests) {
+        dispatch(setAuthorizationRequests(response.data.authorization_requests));
+      }
+    } catch (error) {
+      console.error('Failed to fetch authorization requests:', error);
+    }
+  };
+
 export const fetchRoom =
   ({ roomId, user, guest }) =>
   async (dispatch) => {
@@ -1688,6 +1703,9 @@ export const fetchRoom =
       const response = await optimai_room.post(`/${roomId}`, ROOM_GENERAL_GQ);
       const room = response.data;
       dispatch(slice.actions.setRoom({ room, guest, user }));
+
+      // Fetch authorization requests for this room
+      dispatch(fetchAuthorizationRequests(roomId));
       return room;
     } catch (e) {
       console.error('error fetching room', e);
@@ -1857,7 +1875,6 @@ export const createMedia =
         mime_type: fileType,
         file_content: fileContent,
       });
-      console.log('response', response.data);
       const { media_url } = response.data;
       return media_url;
     } catch (e) {
@@ -1983,6 +2000,28 @@ export const sendMessage =
       if (respond && respond[threadId]) {
         dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
       }
+
+      // Track message sent event
+      try {
+        const trackingProperties = {
+          has_attachments: !!(attachments?.length > 0),
+          attachment_count: attachments?.length || 0,
+          content_length: content?.length || 0,
+          is_reply: !!(respond && respond[threadId]),
+        };
+
+        // Extract project ID from URL (/project/{project-id}/c/{conversation-id})
+        const urlParts = window.location.pathname.split('/');
+        const projectIndex = urlParts.indexOf('project');
+        if (projectIndex !== -1 && urlParts[projectIndex + 1]) {
+          trackingProperties.project_id = urlParts[projectIndex + 1];
+        }
+
+        analytics.messageSent(threadId, trackingProperties);
+      } catch (trackingError) {
+        console.warn('Failed to track message sent event:', trackingError);
+      }
+
       return response.data;
     } catch (e) {
       console.error('Failed to send message:', e);

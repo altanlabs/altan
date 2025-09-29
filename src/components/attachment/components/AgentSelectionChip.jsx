@@ -8,9 +8,9 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
-import { selectMembers } from '../../../redux/slices/room';
+import { selectMembers, selectRoomId } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store';
 import Iconify from '../../iconify/Iconify.jsx';
 
@@ -22,44 +22,34 @@ const AgentSelectionChip = ({
   isVoiceActive = false,
 }) => {
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
-  const [userHasCleared, setUserHasCleared] = useState(false);
-  const hasAutoSelected = useRef(false);
-  const lastAgentIds = useRef('');
   const members = useSelector(selectMembers);
+  const roomId = useSelector(selectRoomId);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Auto-select agent with "always" interaction when available
-  useEffect(() => {
-    // Only auto-select once and only if user hasn't manually cleared
-    if (!selectedAgent && agents.length > 1 && !userHasCleared && !hasAutoSelected.current) {
-      const alwaysAgent = agents.find((agent) => {
-        const originalMember = members.byId[agent.id];
-        const interaction = originalMember?.agent_interaction;
-        return interaction === 'always';
-      });
+  // LocalStorage key for this room's selected agent
+  const getStorageKey = () => `selectedAgent_${roomId}`;
 
-      if (alwaysAgent) {
-        onAgentSelect(alwaysAgent);
-        hasAutoSelected.current = true;
-      }
-    } else {
-    }
-  }, [agents, selectedAgent, members, onAgentSelect, userHasCleared]);
-
-  // Reset flags when entering a new room (when agents list changes significantly)
+  // Load persisted agent selection for this room
   useEffect(() => {
-    const agentIds = agents.map(agent => agent.id).sort().join(',');
-    // Only reset if we have a completely different set of agents (new room)
-    if (agentIds && agentIds !== lastAgentIds.current && agents.length > 0) {
-      // Only reset if this is truly a different room, not just the first load
-      if (lastAgentIds.current !== '') {
-        setUserHasCleared(false);
-        hasAutoSelected.current = false;
+    if (roomId && agents.length > 0 && !selectedAgent) {
+      try {
+        const savedAgentId = localStorage.getItem(getStorageKey());
+        if (savedAgentId) {
+          const savedAgent = agents.find(agent => agent.id === savedAgentId);
+          if (savedAgent) {
+            onAgentSelect(savedAgent);
+          } else {
+            // Clean up invalid stored agent ID
+            localStorage.removeItem(getStorageKey());
+          }
+        }
+      } catch (error) {
+        console.warn('Error loading saved agent selection:', error);
       }
-      lastAgentIds.current = agentIds;
     }
-  }, [agents]);
+  }, [roomId, agents, selectedAgent, onAgentSelect]);
+
 
   const handleAgentMenuOpen = (event) => {
     event.preventDefault();
@@ -71,14 +61,23 @@ const AgentSelectionChip = ({
   };
 
   const handleAgentSelect = (agent) => {
-    setUserHasCleared(false); // Reset flag when user selects an agent
-    hasAutoSelected.current = true; // Mark as having a selection
+    // Save selection to localStorage for this room
+    try {
+      localStorage.setItem(getStorageKey(), agent.id);
+    } catch (error) {
+      console.warn('Error saving agent selection:', error);
+    }
     onAgentSelect(agent);
     setAgentMenuAnchor(null);
   };
 
   const handleAgentClear = () => {
-    setUserHasCleared(true); // Mark that user has manually cleared
+    // Remove selection from localStorage for this room
+    try {
+      localStorage.removeItem(getStorageKey());
+    } catch (error) {
+      console.warn('Error clearing agent selection:', error);
+    }
     onAgentClear();
   };
 

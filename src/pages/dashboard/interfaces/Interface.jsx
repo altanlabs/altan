@@ -15,7 +15,7 @@ import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } fr
 // import { optimai } from '../../../utils/axios';
 import { dispatch, useSelector } from '../../../redux/store.js';
 
-function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
+function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const theme = useTheme();
   const ws = useWebSocket();
   const { enqueueSnackbar } = useSnackbar();
@@ -248,4 +248,4 @@ function InterfacePage({ id, chatIframeRef: chatIframeRefProp = null }) {
   );
 }
 
-export default memo(InterfacePage);
+export default memo(Interface);

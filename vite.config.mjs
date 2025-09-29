@@ -1,4 +1,4 @@
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import fs from 'fs/promises';
 import { createRequire } from 'module';
@@ -76,7 +76,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      react({ jsxRuntime: 'automatic' }),
+      react(),
       reactVirtualized(),
       wasm(),
       ...(isDev ? [mkcert()] : []),

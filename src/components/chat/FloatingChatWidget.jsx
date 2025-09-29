@@ -1,18 +1,22 @@
+import { useTheme } from '@mui/material';
 import { memo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTheme } from '@mui/material';
+import { useParams } from 'react-router-dom';
 
-import { setDisplayMode, selectDisplayMode } from '../../redux/slices/altaners';
+import { setDisplayModeForProject, selectDisplayMode } from '../../redux/slices/altaners';
 
 const FloatingChatWidget = memo(() => {
+  const { altanerId } = useParams();
   const theme = useTheme();
   const dispatch = useDispatch();
   const displayMode = useSelector(selectDisplayMode);
 
   const handleClick = useCallback(() => {
     // Open the sidebar by switching to 'both' mode
-    dispatch(setDisplayMode('both'));
-  }, [dispatch]);
+    if (altanerId) {
+      dispatch(setDisplayModeForProject({ altanerId, displayMode: 'both' }));
+    }
+  }, [dispatch, altanerId]);
 
   // Only show when in preview mode (sidebar is closed)
   if (displayMode !== 'preview') {
@@ -21,9 +25,6 @@ const FloatingChatWidget = memo(() => {
 
   // Theme-aware colors
   const isDarkMode = theme.palette.mode === 'dark';
-  const primaryColor = theme.palette.primary.main;
-  const textColor = theme.palette.text.primary;
-  const textSecondaryColor = theme.palette.text.secondary;
 
   return (
     <div
@@ -40,13 +41,13 @@ const FloatingChatWidget = memo(() => {
         padding: '10px 16px',
         borderRadius: '24px',
         // Glassmorphic effect without displacement issues
-        background: isDarkMode 
-          ? 'rgba(255, 255, 255, 0.1)' 
+        background: isDarkMode
+          ? 'rgba(255, 255, 255, 0.1)'
           : 'rgba(255, 255, 255, 0.8)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: isDarkMode 
-          ? '1px solid rgba(255, 255, 255, 0.2)' 
+        border: isDarkMode
+          ? '1px solid rgba(255, 255, 255, 0.2)'
           : '1px solid rgba(255, 255, 255, 0.3)',
         boxShadow: isDarkMode
           ? '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
@@ -60,11 +61,9 @@ const FloatingChatWidget = memo(() => {
           display: 'flex',
           alignItems: 'center',
           width: '100%',
-          padding: 2
+          padding: 2,
         }}
       >
-
-
         {/* Placeholder text - theme-aware */}
         <span
           style={{

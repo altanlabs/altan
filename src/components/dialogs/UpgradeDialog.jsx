@@ -8,11 +8,12 @@ import {
   ListItemText,
   Divider,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import CustomDialog from './CustomDialog';
+import { analytics } from '../../lib/analytics';
 import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
 import SubscribedPricing from '../../sections/pricing/SubscribedPricing';
 import { openUrl } from '../../utils/auth';
@@ -36,6 +37,17 @@ const UpgradeDialog = ({ open, onClose }) => {
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
 
+  // Track when upgrade dialog is viewed
+  useEffect(() => {
+    if (open && isAccountFree) {
+      analytics.upgradeDialogViewed({
+        source: 'upgrade_dialog',
+        account_id: accountId,
+        is_authenticated: !!accountId,
+      });
+    }
+  }, [open, isAccountFree, accountId]);
+
   const handleUpgrade = async () => {
     // Check if user is authenticated
     if (!accountId) {
@@ -46,6 +58,15 @@ const UpgradeDialog = ({ open, onClose }) => {
 
     setLoading(true);
     try {
+      // Track checkout initiation
+      analytics.checkoutInitiated('pro', {
+        billing_frequency: 'monthly',
+        price: 500, // 5€ in cents
+      }, {
+        source: 'upgrade_dialog',
+        account_id: accountId,
+      });
+
       const response = await optimai_shop.get('/stripe/subscribe', {
         params: {
           account_id: accountId,

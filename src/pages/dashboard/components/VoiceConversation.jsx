@@ -6,21 +6,34 @@ import React, { memo, useState, useCallback, useEffect } from 'react';
 import Iconify from '../../../components/iconify';
 import { useLocales } from '../../../locales';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
+import { useAnalytics } from '../../../hooks/useAnalytics';
 
 /**
  * Track voice conversation events
  */
-const trackVoiceConversation = (action, agentData = {}) => {
+const trackVoiceConversation = (action, agentData = {}, analytics, duration = null) => {
   try {
+    const properties = {
+      agent_id: agentData.agentId || 'unknown',
+      agent_name: agentData.agentName || 'unknown',
+      language: agentData.language || 'unknown',
+      platform: agentData.platform || 'unknown',
+      agent_type: agentData.altanAgentId ? 'altan_agent' : 'elevenlabs_agent',
+      altan_agent_id: agentData.altanAgentId || null,
+    };
+
+    // Track with PostHog
+    if (action === 'start') {
+      analytics.trackVoiceConversationStart(agentData.agentId || 'unknown', properties);
+    } else if (action === 'end') {
+      analytics.trackVoiceConversationEnd(agentData.agentId || 'unknown', duration, properties);
+    }
+
+    // Track with Google Analytics (existing)
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'voice_conversation', {
-        action, // 'start' or 'end'
-        agent_id: agentData.agentId || 'unknown',
-        agent_name: agentData.agentName || 'unknown',
-        language: agentData.language || 'unknown',
-        platform: agentData.platform || 'unknown',
-        agent_type: agentData.altanAgentId ? 'altan_agent' : 'elevenlabs_agent',
-        altan_agent_id: agentData.altanAgentId || null,
+        action,
+        ...properties,
       });
     }
   } catch (error) {
@@ -100,6 +113,7 @@ const VoiceConversation = ({
   onError,
 }) => {
   const { currentLang, onChangeLang, allLangs, translate } = useLocales();
+  const analytics = useAnalytics();
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
   const [fetchedAgent, setFetchedAgent] = useState(null);
   const [fetchingAgent, setFetchingAgent] = useState(false);
@@ -225,7 +239,7 @@ const VoiceConversation = ({
             language: effectiveLanguage,
             platform: isCapacitorNative() ? Capacitor.getPlatform() : 'web',
             altanAgentId: altanAgentId,
-          });
+          }, analytics);
         },
         onDisconnect: () => {
           onDisconnect?.();
@@ -235,7 +249,7 @@ const VoiceConversation = ({
             language: effectiveLanguage,
             platform: isCapacitorNative() ? Capacitor.getPlatform() : 'web',
             altanAgentId: altanAgentId,
-          });
+          }, analytics);
         },
         onMessage: (message) => {
           onMessage?.(message);

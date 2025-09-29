@@ -7,6 +7,7 @@ import { useHistory } from 'react-router-dom';
 
 import { selectAccount } from '../../redux/slices/general';
 import { optimai_shop } from '../../utils/axios';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import InteractiveHoverButton from '../agents/InteractiveHoverButton';
 import { CustomAvatar } from '../custom-avatar';
 import CustomDialog from '../dialogs/CustomDialog';
@@ -14,6 +15,7 @@ import CustomDialog from '../dialogs/CustomDialog';
 const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   const history = useHistory();
   const account = useSelector(selectAccount);
+  const analytics = useAnalytics();
   const [fullTemplate, setFullTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -76,6 +78,13 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   const handleClone = async () => {
     // Track clone event
     try {
+      // Track with PostHog
+      analytics.trackCloneTemplate(template.id, name, {
+        template_price: price,
+        template_category: template.category,
+      });
+
+      // Track with Google Analytics (existing)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'clone_template', {
           template_id: template.id,
@@ -222,7 +231,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
                   onClick={handleClone}
                   disabled={loading}
                   sx={{
-                    minWidth: { xs: 80, sm: 100, md: 120 },
+                    minWidth: { xs: 85, sm: 100, md: 250 },
                     height: 28,
                     fontSize: '0.75rem',
                   }}

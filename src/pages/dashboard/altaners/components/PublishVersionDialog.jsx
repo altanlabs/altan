@@ -21,7 +21,6 @@ import AddDomainDialog from '../../../dashboard/interfaces/components/AddDomainD
 const versionTypes = ['major', 'minor', 'patch'];
 
 function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
-  console.log('open', open);
   const dispatch = useDispatch();
   const [name, setName] = useState('');
   const [versionType, setVersionType] = useState('patch');

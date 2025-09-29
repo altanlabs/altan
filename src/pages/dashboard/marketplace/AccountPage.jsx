@@ -1,93 +1,99 @@
-import { Avatar, Box, Container, Grid, Skeleton, Typography } from '@mui/material';
+import { Avatar, Box, Container, Grid, Skeleton, Typography, Fab, Drawer } from '@mui/material';
+import { AdminPanelSettings } from '@mui/icons-material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
 import TemplateCard from './components/card/TemplateCard';
 import EmptyContent from '../../../components/empty-content';
 import { CompactLayout } from '../../../layouts/dashboard';
-import { optimai_shop, optimai } from '../../../utils/axios';
+import TemplateDetailsDialog from '../../../components/templates/TemplateDetailsDialog';
+import SuperAdminAccountPanel from '../../../components/superadmin/SuperAdminAccountPanel';
+import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAnalytics } from '../../../hooks/useAnalytics';
+import {
+  fetchAccountData,
+  loadMoreAccountTemplates,
+  selectAccountState,
+  selectAccountLoading,
+  selectAccountError,
+} from '../../../redux/slices/accountTemplates';
 
 const ITEMS_PER_PAGE = 25;
 
 const AccountPage = () => {
   const { accountId } = useParams();
+  const dispatch = useDispatch();
   const loadMoreRef = useRef(null);
+  const { user } = useAuthContext();
+  const { trackAccountViewed } = useAnalytics();
 
-  const [templates, setTemplates] = useState([]);
-  const [account, setAccount] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
+  // Get data from Redux store
+  const accountState = useSelector(selectAccountState(accountId));
+  const loading = useSelector(selectAccountLoading(accountId));
+  const error = useSelector(selectAccountError(accountId));
+
+  const { templates, account, hasMore, initialized } = accountState;
+
+  console.log(account);
+
+  // Local UI state
   const [searchTerm] = useState('');
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [sorting] = useState('newest');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Fetch account details
-  const fetchAccount = useCallback(async () => {
-    try {
-      const response = await optimai.get(`/account/${accountId}/public`);
-      setAccount(response.data.account);
-    } catch (err) {
-      // Log error in a production-appropriate way
-      console.error('Failed to fetch account:', err); // eslint-disable-line no-console
-      setError('Failed to load account details');
-    }
-  }, [accountId]);
+  // Template dialog handlers
+  const handleTemplateClick = useCallback((template) => {
+    setSelectedTemplate(template);
+    setDialogOpen(true);
+  }, []);
 
-  // Fetch templates for the account
-  const fetchTemplates = useCallback(
-    async (currentOffset = 0, isLoadMore = false) => {
-      if (isLoadMore) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
+  const handleCloseDialog = useCallback(() => {
+    setDialogOpen(false);
+    setSelectedTemplate(null);
+  }, []);
 
-      try {
-        const response = await optimai_shop.get(
-          `/v2/templates/list?limit=${ITEMS_PER_PAGE}&offset=${currentOffset}&account_id=${accountId}`,
-        );
+  // Drawer handlers
+  const handleToggleDrawer = useCallback(() => {
+    setDrawerOpen(prev => !prev);
+  }, []);
 
-        const newTemplates = response?.data?.templates || [];
-        const totalCount = response?.data?.total_count || 0;
-
-        if (isLoadMore) {
-          setTemplates((prev) => [...prev, ...newTemplates]);
-        } else {
-          setTemplates(newTemplates);
-        }
-
-        setHasMore(currentOffset + ITEMS_PER_PAGE < totalCount);
-      } catch (err) {
-        // Log error in a production-appropriate way
-        console.error('Failed to fetch templates:', err); // eslint-disable-line no-console
-        setError('Failed to load templates. Please try again later');
-        setTemplates([]);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [accountId],
-  );
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
-    fetchAccount();
-    fetchTemplates(0, false);
-  }, [fetchAccount, fetchTemplates]);
+    if (!initialized && !loading) {
+      dispatch(fetchAccountData(accountId));
+    }
+  }, [dispatch, accountId, initialized, loading]);
+
+  // Track account view when data is successfully loaded
+  useEffect(() => {
+    if (account && !loading && initialized && user) {
+      trackAccountViewed(accountId, account.name, {
+        user_id: user.id,
+        user_email: user.email,
+        account_id: user.account_id,
+        view_source: 'marketplace',
+        viewed_account_type: account.type || 'unknown',
+        has_templates: templates.length > 0,
+        template_count: templates.length,
+        page_url: window.location.href,
+      });
+    }
+  }, [account, loading, initialized, user, accountId, trackAccountViewed, templates]);
 
   // Handle infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && !loading && !loadingMore && hasMore) {
-          const newOffset = offset + ITEMS_PER_PAGE;
-          setOffset(newOffset);
-          fetchTemplates(newOffset, true);
+        if (entry.isIntersecting && !loading && hasMore) {
+          dispatch(loadMoreAccountTemplates(accountId));
         }
       },
       { threshold: 0.1 },
@@ -103,7 +109,7 @@ const AccountPage = () => {
         observer.unobserve(currentRef);
       }
     };
-  }, [loading, loadingMore, hasMore, offset, fetchTemplates]);
+  }, [dispatch, accountId, loading, hasMore]);
 
   const filteredTemplates = templates.filter(
     (template) =>
@@ -279,7 +285,10 @@ const AccountPage = () => {
                     md={4}
                     lg={3}
                   >
-                    <TemplateCard template={template} />
+                    <TemplateCard
+                      template={template}
+                      onClick={() => handleTemplateClick(template)}
+                    />
                   </Grid>
                 ))}
               </Grid>
@@ -290,7 +299,7 @@ const AccountPage = () => {
                   ref={loadMoreRef}
                   sx={{ py: 5, textAlign: 'center' }}
                 >
-                  {loadingMore ? (
+                  {loading ? (
                     <Skeleton
                       variant="rectangular"
                       width="100%"
@@ -311,6 +320,62 @@ const AccountPage = () => {
           )}
         </Box>
       </Container>
+
+      {/* SuperAdmin Floating Button */}
+      {user?.xsup && (
+        <Fab
+          color="primary"
+          aria-label="admin panel"
+          onClick={handleToggleDrawer}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            backdropFilter: 'blur(20px)',
+            backgroundColor: 'rgba(25, 118, 210, 0.9)',
+            '&:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 1)',
+            },
+          }}
+        >
+          <AdminPanelSettings />
+        </Fab>
+      )}
+
+      {/* SuperAdmin Drawer */}
+      {user?.xsup && (
+        <Drawer
+          anchor="right"
+          open={drawerOpen}
+          onClose={handleCloseDrawer}
+          PaperProps={{
+            sx: {
+              width: 400,
+              backdropFilter: 'blur(20px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              ...(theme) =>
+                theme.palette.mode === 'dark' && {
+                  backgroundColor: 'rgba(18, 18, 18, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                },
+            },
+          }}
+        >
+          <SuperAdminAccountPanel 
+            accountId={accountId} 
+            onClose={handleCloseDrawer}
+          />
+        </Drawer>
+      )}
+
+      {/* Template Details Dialog */}
+      <TemplateDetailsDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        templateData={selectedTemplate}
+      />
     </CompactLayout>
   );
 };

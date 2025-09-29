@@ -24,12 +24,22 @@ import { useHistory } from 'react-router-dom';
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { SkeletonPricingCard } from '../../components/skeleton';
+import { analytics } from '../../lib/analytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { openUrl } from '../../utils/auth';
 import { optimai, optimai_shop } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
+
+// Discount Configuration
+const DISCOUNT_CONFIG = {
+  // Set to true to show the Pro plan discount (€25 -> €5)
+  showProDiscount: true,
+  originalPrice: 25,
+  discountPrice: 5,
+  discountLabel: 'First month offer',
+};
 
 const PRO_FEATURES = [
   { text: '25€ in credits included', available: true },
@@ -69,10 +79,19 @@ const ENTERPRISE_FEATURES = [
  */
 const trackCheckoutEvent = (plan, billingOption, planType) => {
   try {
-    if (typeof window !== 'undefined' && window.gtag) {
-      const value = billingOption.price / 100; // Convert cents to euros
-      const currency = 'EUR';
+    const value = billingOption.price / 100; // Convert cents to euros
+    const currency = 'EUR';
 
+    // Track with PostHog
+    analytics.checkoutInitiated(planType, billingOption, {
+      source: 'pricing_page',
+      plan_id: plan.id,
+      plan_name: plan.name,
+      credits_included: plan.credits,
+    });
+
+    // Track with GA4 (existing)
+    if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'begin_checkout', {
         currency,
         value,
@@ -92,8 +111,8 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
       });
     }
 
+    // Track with Facebook Pixel (existing)
     if (typeof window !== 'undefined' && window.fbq) {
-      const value = billingOption.price / 100;
       window.fbq('track', 'InitiateCheckout', {
         value,
         currency: 'EUR',
@@ -267,6 +286,14 @@ export default function NewPricing() {
   const { isAuthenticated } = useAuthContext();
   const history = useHistory();
 
+  // Track pricing page view
+  useEffect(() => {
+    analytics.pageView('pricing_page', {
+      is_authenticated: isAuthenticated,
+      account_id: accountId,
+    });
+  }, [isAuthenticated, accountId]);
+
   useEffect(() => {
     const fetchPricing = async () => {
       try {
@@ -383,7 +410,15 @@ export default function NewPricing() {
     setLoadingStates(prev => ({ ...prev, enterprise: true }));
 
     try {
-      // Track lead generation for enterprise plan
+      // Track lead generation for enterprise plan with PostHog
+      analytics.generateLead('enterprise', {
+        source: 'pricing_page',
+        action: 'book_call',
+        account_id: accountId,
+        is_authenticated: isAuthenticated,
+      });
+
+      // Track lead generation with GA4 (existing)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'generate_lead', {
           currency: 'EUR',
@@ -393,6 +428,7 @@ export default function NewPricing() {
           action: 'book_call',
         });
       }
+
       window.open('https://calendar.app.google/UUVqnW9zmS8kzHvZA', '_blank');
     } catch (error) {
       console.error('Error tracking lead generation:', error);
@@ -493,7 +529,9 @@ export default function NewPricing() {
           price={
             isAuthenticated && proBillingOption && isYearlyBilling
               ? formatPrice(proBillingOption.price, billingFrequency)
-              : 5
+              : DISCOUNT_CONFIG.showProDiscount
+                ? DISCOUNT_CONFIG.discountPrice
+                : DISCOUNT_CONFIG.originalPrice
           }
           description={proPlan?.description}
           priceSubtext={
@@ -507,7 +545,7 @@ export default function NewPricing() {
                     €{Math.round(proBillingOption.price / 100 / 12)}/mo billed yearly
                   </Typography>
                 )}
-                {!isYearlyBilling && (
+                {!isYearlyBilling && DISCOUNT_CONFIG.showProDiscount && (
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Typography
                       variant="body2"
@@ -516,7 +554,7 @@ export default function NewPricing() {
                         textDecoration: 'line-through',
                       }}
                     >
-                      €25/mo
+                      €{DISCOUNT_CONFIG.originalPrice}/mo
                     </Typography>
                     <Typography
                       variant="caption"
@@ -528,36 +566,38 @@ export default function NewPricing() {
                         borderRadius: 1,
                       }}
                     >
-                      First month offer
+                      {DISCOUNT_CONFIG.discountLabel}
                     </Typography>
                   </Stack>
                 )}
               </Stack>
             ) : (
               <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      textDecoration: 'line-through',
-                    }}
-                  >
-                    €25/mo
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      backgroundColor: 'primary.lighter',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                    }}
-                  >
-                    First month offer
-                  </Typography>
-                </Stack>
+                {DISCOUNT_CONFIG.showProDiscount && (
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      €{DISCOUNT_CONFIG.originalPrice}/mo
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        backgroundColor: 'primary.lighter',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                      }}
+                    >
+                      {DISCOUNT_CONFIG.discountLabel}
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
             )
           }

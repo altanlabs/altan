@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../../components/iconify';
 
-const ProjectTemplateCard = ({ template }) => {
+const ProjectTemplateCard = ({ template, onClick }) => {
   const history = useHistory();
   const name = template.name || template.public_name || 'Unnamed Template';
   const iconUrl =
@@ -45,7 +45,12 @@ const ProjectTemplateCard = ({ template }) => {
       console.error('Error tracking project click:', error);
     }
 
-    history.push(`/template/${template.id}`);
+    // Use custom onClick if provided, otherwise navigate to template page
+    if (onClick) {
+      onClick(template);
+    } else {
+      history.push(`/template/${template.id}`);
+    }
   };
 
   return (
@@ -104,6 +109,7 @@ const ProjectTemplateCard = ({ template }) => {
 
 ProjectTemplateCard.propTypes = {
   template: PropTypes.object.isRequired,
+  onClick: PropTypes.func,
 };
 
 export default ProjectTemplateCard;

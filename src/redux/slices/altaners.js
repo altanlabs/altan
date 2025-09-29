@@ -3,6 +3,7 @@ import { batch } from 'react-redux';
 
 import { switchAccount } from './general';
 import { optimai } from '../../utils/axios';
+import { getDisplayModeForProject, setDisplayModeForProject as saveDisplayModeToStorage } from '../../utils/displayModeStorage';
 import { checkObjectsEqual } from '../helpers/memoize';
 
 const initialState = {
@@ -48,6 +49,22 @@ const slice = createSlice({
     },
     setDisplayMode(state, action) {
       state.displayMode = action.payload;
+    },
+    setDisplayModeForProject(state, action) {
+      const { altanerId, displayMode } = action.payload;
+      state.displayMode = displayMode;
+      // Persist to localStorage
+      saveDisplayModeToStorage(altanerId, displayMode);
+    },
+    loadDisplayModeForProject(state, action) {
+      const altanerId = action.payload;
+      const savedDisplayMode = getDisplayModeForProject(altanerId);
+      if (savedDisplayMode) {
+        state.displayMode = savedDisplayMode;
+      } else {
+        // Default to 'both' if no preference is saved
+        state.displayMode = 'both';
+      }
     },
     updateAltaner(state, action) {
       const { id, ...changes } = action.payload;
@@ -225,6 +242,8 @@ export const {
   clearState: clearAltanerState,
   setViewType,
   setDisplayMode,
+  setDisplayModeForProject,
+  loadDisplayModeForProject,
   // TEMPLATES
   addTemplate: addAltanerTemplate,
   updateTemplate: updateAltanerTemplate,

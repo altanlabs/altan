@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { selectAccountId } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
+import { useAnalytics } from '../../hooks/useAnalytics';
 
 // Credit packages with their Stripe price IDs
 const CREDIT_PACKAGES = [
@@ -29,19 +30,28 @@ const CREDIT_PACKAGES = [
 /**
  * Track credit purchase event
  */
-const trackCreditPurchaseEvent = (packageInfo) => {
+const trackCreditPurchaseEvent = (packageInfo, analytics) => {
   try {
+    const items = [{
+      item_id: packageInfo.id,
+      item_name: `€${packageInfo.price} Credits`,
+      item_category: 'credits',
+      price: packageInfo.price,
+      quantity: 1,
+    }];
+
+    // Track with PostHog
+    analytics.trackBeginCheckout(packageInfo.price, 'EUR', items, {
+      purchase_type: 'credits',
+      amount: packageInfo.price,
+    });
+
+    // Track with Google Analytics (existing)
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'begin_checkout', {
         currency: 'EUR',
         value: packageInfo.price,
-        items: [{
-          item_id: packageInfo.id,
-          item_name: `€${packageInfo.price} Credits`,
-          item_category: 'credits',
-          price: packageInfo.price,
-          quantity: 1,
-        }],
+        items,
         purchase_type: 'credits',
         amount: packageInfo.price,
       });
@@ -58,9 +68,10 @@ const trackCreditPurchaseEvent = (packageInfo) => {
   }
 };
 
-export default function CreditPurchaseSection({ title = 'Purchase credits', compact = false }) {
+export default function CreditPurchaseSection({ title = 'Pay as you go', compact = false }) {
   const [selectedAmount, setSelectedAmount] = useState(10);
   const accountId = useSelector(selectAccountId);
+  const analytics = useAnalytics();
 
   const handleAmountSelect = (amount) => {
     setSelectedAmount(amount);
@@ -81,7 +92,7 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
       }
 
       // Track credit purchase event
-      trackCreditPurchaseEvent(packageInfo);
+      trackCreditPurchaseEvent(packageInfo, analytics);
 
       const response = await optimai_shop.get('/stripe/buy-credits', {
         params: {
