@@ -1,7 +1,7 @@
 describe('Testing login...', () => {
     it('Dashboard loads correctly', () => {
       // Intercept the API request and give it an alias
-      cy.intercept('POST', 'https://api.altan.ai/platform/auth/token').as('getToken');
+      cy.intercept('POST', 'https://auth.altan.ai/token/platform').as('getToken');
       
       cy.visit('/auth/login');
       

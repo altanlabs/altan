@@ -31,7 +31,7 @@
   const WIDGET_CONFIG = {
     API_BASE_URL: 'https://api.altan.ai/platform/guest',
     AGENT_API_BASE_URL: 'https://api.altan.ai/platform/agent',
-    AUTH_BASE_URL: 'https://api.altan.ai/auth/login/guest',
+    AUTH_BASE_URL: 'https://auth.altan.ai/login/guest',
     ROOM_BASE_URL: 'https://altan.ai/r'
   };
 
@@ -468,7 +468,7 @@
       guestId: authState.guest?.id
     });
     
-    const response = await fetch('https://api.altan.ai/auth/token/guest', {
+    const response = await fetch('https://auth.altan.ai/token/guest', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

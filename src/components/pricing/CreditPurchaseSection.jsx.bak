@@ -68,7 +68,7 @@ const trackCreditPurchaseEvent = (packageInfo, analytics) => {
   }
 };
 
-export default function CreditPurchaseSection({ title = 'Purchase credits', compact = false }) {
+export default function CreditPurchaseSection({ title = 'Pay as you go', compact = false }) {
   const [selectedAmount, setSelectedAmount] = useState(10);
   const accountId = useSelector(selectAccountId);
   const analytics = useAnalytics();

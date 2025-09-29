@@ -27,7 +27,7 @@ const TEST_CONFIG = {
   agentId: '10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11', // Agent to chat with
   roomId: 'your-group-chat-room-id', // Example room ID for group chat
   apiBaseUrl: 'https://api.altan.ai/platform/guest',
-  authBaseUrl: 'https://api.altan.ai/auth/login/guest',
+  authBaseUrl: 'https://auth.altan.ai/login/guest',
   roomBaseUrl: 'https://www.altan.ai/r', // Use production room server
 };
 

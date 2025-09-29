@@ -39,32 +39,34 @@ export const openUrl = async (url, options = {}) => {
 
 export const API_BASE = 'api.altan.ai';
 export const API_BASE_URL = `https://${API_BASE}`;
-
+export const AUTH_API = 'https://auth.altan.ai';
 
 const AUTH_API_ENDPOINTS = {
-  optimai: `${API_BASE_URL}/auth/token/platform`,
-  optimai_shop: `${API_BASE_URL}/auth/token/platform`,
-  optimai_integration: `${API_BASE_URL}/auth/token/platform`,
-  optimai_galaxia: `${API_BASE_URL}/auth/token/platform`,
-  optimai_root: `${API_BASE_URL}/auth/token/platform`,
-  optimai_room: `${API_BASE_URL}/auth/token/platform`,
-  optimai_tables: `${API_BASE_URL}/auth/token/platform`,
-  optimai_tables_legacy: `${API_BASE_URL}/auth/token/platform`,
-  optimai_agent: `${API_BASE_URL}/auth/token/platform`,
-  optimai_database: `${API_BASE_URL}/auth/token/platform`,
+  optimai: `${AUTH_API}/token/platform`,
+  optimai_shop: `${AUTH_API}/token/platform`,
+  optimai_integration: `${AUTH_API}/token/platform`,
+  optimai_galaxia: `${AUTH_API}/token/platform`,
+  optimai_root: `${AUTH_API}/token/platform`,
+  optimai_room: `${AUTH_API}/token/platform`,
+  optimai_tables: `${AUTH_API}/token/platform`,
+  optimai_tables_legacy: `${AUTH_API}/token/platform`,
+  optimai_agent: `${AUTH_API}/token/platform`,
+  optimai_database: `${AUTH_API}/token/platform`,
+  optimai_auth: `${AUTH_API}/token/platform`,
 };
 
 const MOBILE_AUTH_API_ENDPOINTS = {
-  optimai: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_shop: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_integration: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_galaxia: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_root: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_room: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_tables: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_tables_legacy: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_agent: `${API_BASE_URL}/auth/token/mobile`,
-  optimai_database: `${API_BASE_URL}/auth/token/mobile`,
+  optimai: `${AUTH_API}/token/mobile`,
+  optimai_shop: `${AUTH_API}/token/mobile`,
+  optimai_integration: `${AUTH_API}/token/mobile`,
+  optimai_galaxia: `${AUTH_API}/token/mobile`,
+  optimai_root: `${AUTH_API}/token/mobile`,
+  optimai_room: `${AUTH_API}/token/mobile`,
+  optimai_tables: `${AUTH_API}/token/mobile`,
+  optimai_tables_legacy: `${AUTH_API}/token/mobile`,
+  optimai_agent: `${AUTH_API}/token/mobile`,
+  optimai_database: `${AUTH_API}/token/mobile`,
+  optimai_auth: `${AUTH_API}/token/mobile`,
 };
 
 // Mobile refresh token storage
