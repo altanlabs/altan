@@ -31,9 +31,6 @@ const CREDIT_PACKAGES = [
   },
 ];
 
-/**
- * Track credit purchase event
- */
 const trackCreditPurchaseEvent = (packageInfo, analytics) => {
   try {
     const items = [{
@@ -73,7 +70,7 @@ const trackCreditPurchaseEvent = (packageInfo, analytics) => {
 };
 
 export default function CreditPurchaseSection({ title = 'Pay as you go', compact = false }) {
-  const [selectedAmount, setSelectedAmount] = useState(10);
+  const [selectedAmount, setSelectedAmount] = useState(50);
   const accountId = useSelector(selectAccountId);
   const analytics = useAnalytics();
 
@@ -119,7 +116,7 @@ export default function CreditPurchaseSection({ title = 'Pay as you go', compact
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        {[10, 20, 50, 100].map((amount) => (
+        {[20, 50, 100, 250, 500].map((amount) => (
           <Chip
             key={amount}
             label={`€${amount}`}
