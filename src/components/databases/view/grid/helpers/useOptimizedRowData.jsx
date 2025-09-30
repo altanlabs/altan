@@ -12,7 +12,7 @@ const useOptimizedRowData = (records, fields, recentlyAddedIds) => {
     // Create the blank record once
     const safeFields = Array.isArray(fields) ? fields : [];
     const blankRecord = {
-      id: '+',
+      id: '__new__', // Use __new__ instead of '+' (AG-Grid might sanitize '+')
       ...Object.fromEntries(
         safeFields
           .filter((field) => field && field.db_field_name)

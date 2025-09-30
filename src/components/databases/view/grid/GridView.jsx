@@ -100,16 +100,16 @@ export const GridView = memo(
     const gridRef = useRef();
     const history = useHistory();
     const location = useLocation();
-  const members = useSelector((state) => selectAccount(state)?.members || []);
-  const quickFilterText = useSelector(selectDatabaseQuickFilter);
-  const isSearching = useSelector(selectDatabaseSearching);
+    const members = useSelector((state) => selectAccount(state)?.members || []);
+    const quickFilterText = useSelector(selectDatabaseQuickFilter);
+    const isSearching = useSelector(selectDatabaseSearching);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showImportDrawer, setShowImportDrawer] = useState(false);
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
-  const [isReady, setIsReady] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
     // Use ref for cols to avoid unnecessary re-renders
     const colsRef = useRef([]);
@@ -120,18 +120,25 @@ export const GridView = memo(
     // Track initial grid setup to prevent flushSync issues
     const initialGridSetupComplete = useRef(false);
 
-  // Use ref for tracking when component is mounted to avoid updates during unmount
-  const isMounted = useRef(true);
+    // Use ref for tracking when component is mounted to avoid updates during unmount
+    const isMounted = useRef(true);
 
-  // Use optimized row data hook
-  const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
+    // Use optimized row data hook
+    const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
 
-  // Calculate max width for email fields
+    // Calculate max width for email fields
     const getEmailColumnWidths = useCallback(
       (rowData) => {
         if (!rowData?.length) return {};
 
-        const emailFields = fields.filter((field) => field.type === 'email');
+        // Check for fields named 'email' or containing 'email' (PostgreSQL types)
+        const emailFields = fields.filter(
+          (field) =>
+            field.name === 'email' ||
+            field.name.includes('email') ||
+            field.db_field_name === 'email' ||
+            field.db_field_name.includes('email'),
+        );
         if (!emailFields.length) return {};
 
         const widths = {};
@@ -175,32 +182,29 @@ export const GridView = memo(
     });
 
     // Apply async transactions for high-frequency updates
-    const applyAsyncTransaction = useCallback(
-      (transaction, callback) => {
-        if (!gridRef.current?.api || !isMounted.current) {
-          callback?.(null);
-          return;
-        }
+    const applyAsyncTransaction = useCallback((transaction, callback) => {
+      if (!gridRef.current?.api || !isMounted.current) {
+        callback?.(null);
+        return;
+      }
 
-        try {
-          gridRef.current.api.applyTransactionAsync(
-            {
-              ...transaction,
-              suppressFlash: true,
-              suppressVerticalScroll: true,
-            },
-            (result) => {
-              asyncTransactionManager.current.transactionCount++;
-              callback?.(result);
-            }
-          );
-        } catch (error) {
-          console.error('Error applying async transaction:', error);
-          callback?.(null);
-        }
-      },
-      []
-    );
+      try {
+        gridRef.current.api.applyTransactionAsync(
+          {
+            ...transaction,
+            suppressFlash: true,
+            suppressVerticalScroll: true,
+          },
+          (result) => {
+            asyncTransactionManager.current.transactionCount++;
+            callback?.(result);
+          },
+        );
+      } catch (error) {
+        console.error('Error applying async transaction:', error);
+        callback?.(null);
+      }
+    }, []);
 
     // Handle record updates using async transactions
     const handleRecordUpdate = useCallback(
@@ -215,11 +219,11 @@ export const GridView = memo(
         } else {
           // For single updates, apply immediately with async transaction
           applyAsyncTransaction({
-            update: [{ ...changes, id: recordId }]
+            update: [{ ...changes, id: recordId }],
           });
         }
       },
-      [applyAsyncTransaction]
+      [applyAsyncTransaction],
     );
 
     // Handle record additions using async transactions
@@ -235,11 +239,11 @@ export const GridView = memo(
         } else {
           // For single adds, apply immediately with async transaction
           applyAsyncTransaction({
-            add: [record]
+            add: [record],
           });
         }
       },
-      [applyAsyncTransaction]
+      [applyAsyncTransaction],
     );
 
     // Handle record deletions using async transactions
@@ -252,15 +256,15 @@ export const GridView = memo(
 
         if (isHighFrequency) {
           // For high-frequency deletes, batch them
-          manager.pendingRemoves.push(...ids.map(id => ({ id })));
+          manager.pendingRemoves.push(...ids.map((id) => ({ id })));
         } else {
           // For single deletes, apply immediately with async transaction
           applyAsyncTransaction({
-            remove: ids.map(id => ({ id }))
+            remove: ids.map((id) => ({ id })),
           });
         }
       },
-      [applyAsyncTransaction]
+      [applyAsyncTransaction],
     );
 
     // WebSocket integration for real-time updates
@@ -271,12 +275,7 @@ export const GridView = memo(
       forceFlush: flushWebSocketUpdates,
       clearUpdateFlags,
       getBufferStats,
-    } = useWebSocketIntegration(
-      table?.id,
-      handleRecordUpdate,
-      handleRecordAdd,
-      handleRecordDelete,
-    );
+    } = useWebSocketIntegration(table?.id, handleRecordUpdate, handleRecordAdd, handleRecordDelete);
 
     // Flush pending high-frequency transactions
     const flushPendingTransactions = useCallback(() => {
@@ -294,17 +293,17 @@ export const GridView = memo(
       manager.isProcessing = true;
 
       const transaction = {};
-      
+
       if (hasUpdates) {
         transaction.update = Array.from(manager.pendingUpdates.values());
         manager.pendingUpdates.clear();
       }
-      
+
       if (hasAdds) {
         transaction.add = [...manager.pendingAdds];
         manager.pendingAdds.length = 0;
       }
-      
+
       if (hasRemoves) {
         transaction.remove = [...manager.pendingRemoves];
         manager.pendingRemoves.length = 0;
@@ -392,9 +391,12 @@ export const GridView = memo(
       [onDeleteRecords, onDuplicateRecord, handleExpandRecord, onAddRecord, onUpdateRecord],
     );
 
-    const getCommonFieldMenuItems = useCallback((field, params) => {
-      return createFieldContextMenuItems(field, params, setEditField, table?.id);
-    }, [table?.id]);
+    const getCommonFieldMenuItems = useCallback(
+      (field, params) => {
+        return createFieldContextMenuItems(field, params, setEditField, table?.id);
+      },
+      [table?.id],
+    );
 
     const onGridReady = useCallback((params) => {
       gridRef.current = params;
@@ -408,8 +410,23 @@ export const GridView = memo(
       async (params) => {
         if (!isMounted.current || !params?.data) return;
 
+        // eslint-disable-next-line no-console
+        console.log('🔄 onCellValueChanged:', {
+          rowId: params.data.id,
+          isNewRow: params.data.id === '+',
+          column: params.column.colId,
+          newValue: params.newValue,
+        });
+
         try {
-          if (params.data.id === '+') {
+          // Check if this is the new record row
+          const isNewRecord =
+            params.data.id === '__new__' ||
+            params.data.id === '+' ||
+            !params.data.id ||
+            params.data.id === '';
+
+          if (isNewRecord) {
             const fieldsPayload = {};
             Object.entries(params.data).forEach(([key, value]) => {
               if (key !== 'id' && value !== '' && value !== null && value !== undefined) {
@@ -422,9 +439,12 @@ export const GridView = memo(
               if (result?.records?.[0] && gridRef.current?.api) {
                 // Use async transaction for the new record
                 handleRecordAdd(result.records[0]);
-                // Also update the local row data to reflect the change from '+' to actual record
-                const updatedRowData = localRowData.map(row => 
-                  row.id === '+' ? result.records[0] : row
+                // Also update the local row data to reflect the change from new row to actual record
+                setLocalRowData((prevRowData) =>
+                  prevRowData.map((row) => {
+                    const isNewRow = row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
+                    return isNewRow ? result.records[0] : row;
+                  }),
                 );
                 setLocalRowData(updatedRowData);
               }
@@ -457,7 +477,12 @@ export const GridView = memo(
 
     const onCellKeyPress = useCallback(
       (e) => {
-        if (e.event.key === 'Enter' && e.data.id === '+') {
+        const isNewRecord =
+          e.data.id === '__new__' ||
+          e.data.id === '+' ||
+          !e.data.id ||
+          e.data.id === '';
+        if (e.event.key === 'Enter' && isNewRecord) {
           onCellValueChanged(e);
         }
       },
@@ -475,7 +500,13 @@ export const GridView = memo(
         onEditField: setEditField, // Add direct edit field handler
         // Add email column widths to column definitions
         getAdditionalColumnProps: (field) => {
-          if (field.type === 'email' && emailColumnWidths[field.db_field_name]) {
+          // Check for email fields by name (PostgreSQL doesn't have 'email' type)
+          const isEmailField =
+            field.name === 'email' ||
+            field.name.includes('email') ||
+            field.db_field_name === 'email' ||
+            field.db_field_name.includes('email');
+          if (isEmailField && emailColumnWidths[field.db_field_name]) {
             return {
               width: emailColumnWidths[field.db_field_name],
               suppressSizeToFit: true, // Prevent auto-resizing
@@ -496,8 +527,15 @@ export const GridView = memo(
           headerCheckboxSelection: true,
           // Only filter checked rows when filtering
           headerCheckboxSelectionFilteredOnly: true,
-          // Don't allow selecting the '+' row
-          checkboxSelectionDisabled: (params) => params.data?.id === '+',
+          // Don't allow selecting the new record row
+          checkboxSelectionDisabled: (params) => {
+            const isNewRecord =
+              params.data?.id === '__new__' ||
+              params.data?.id === '+' ||
+              !params.data?.id ||
+              params.data?.id === '';
+            return isNewRecord;
+          },
           // Make the column a bit wider to fit the checkbox
           width: (firstCol.width || 100) + 20,
         };
@@ -521,16 +559,12 @@ export const GridView = memo(
     const fetchedRef = useRef(new Map());
 
     // Extract reference fields when the table schema changes
+    // Note: Reference fields are now identified by foreign key relationships in pg-meta
     const referenceFields = useMemo(() => {
       if (!table?.fields?.items) return [];
-      return table.fields.items.filter((field) => {
-        return (
-          field.type === 'reference' &&
-          field.options &&
-          field.options.reference_options &&
-          field.options.reference_options.foreign_table
-        );
-      });
+      // For now, disable reference field prefetching until we implement proper FK detection
+      // TODO: Use table.relationships from pg-meta to identify reference fields
+      return [];
     }, [table?.fields?.items]);
 
     // Only dispatch queries for *new* related IDs
@@ -602,7 +636,7 @@ export const GridView = memo(
       if (process.env.NODE_ENV === 'development') {
         console.log('Async transactions applied:', {
           results: event.results?.length || 0,
-          totalTransactions: asyncTransactionManager.current.transactionCount
+          totalTransactions: asyncTransactionManager.current.transactionCount,
         });
       }
     }, []);
@@ -631,7 +665,7 @@ export const GridView = memo(
     // Check if table is empty (no real records, only the '+' row for new records)
     const hasRealRecords = useMemo(() => {
       if (!Array.isArray(records)) return false;
-      return records.some(record => record && record.id !== '+');
+      return records.some((record) => record && record.id !== '+');
     }, [records]);
 
     // Handler for CSV import
@@ -640,59 +674,65 @@ export const GridView = memo(
     }, []);
 
     // Handler for actual import process
-    const handleCSVImport = useCallback(async (file, previewData) => {
-      try {
-        // Step 1: Upload the CSV file as media to get a URL
-        const mediaUrl = await dispatch(createMedia({
-          fileName: file.name,
-          fileContent: await fileToBase64(file),
-          fileType: file.type || 'text/csv',
-        }));
-
-        if (!mediaUrl) {
-          throw new Error('Failed to upload CSV file');
-        }
-
-        // Step 2: Create column mapping from CSV headers to table fields
-        const columnMapping = {};
-        const tableFields = fields || [];
-        // Map CSV headers to database field names
-        previewData.headers.forEach((csvHeader, index) => {
-          // Try to find a matching field by name (case insensitive)
-          const matchingField = tableFields.find((field) =>
-            field.name.toLowerCase() === csvHeader.toLowerCase() ||
-            field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
+    const handleCSVImport = useCallback(
+      async (file, previewData) => {
+        try {
+          // Step 1: Upload the CSV file as media to get a URL
+          const mediaUrl = await dispatch(
+            createMedia({
+              fileName: file.name,
+              fileContent: await fileToBase64(file),
+              fileType: file.type || 'text/csv',
+            }),
           );
 
-          if (matchingField) {
-            columnMapping[csvHeader] = matchingField.db_field_name;
-          } else {
-            // If no exact match, use index-based mapping
-            columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
+          if (!mediaUrl) {
+            throw new Error('Failed to upload CSV file');
           }
-        });
 
-        // Step 3: Call the import endpoint
-        const importData = {
-          file_url: mediaUrl,
-          column_mapping: columnMapping,
-          has_header: true,
-          batch_size: 1000,
-          use_staging: false,
-          validate_only: false,
-        };
+          // Step 2: Create column mapping from CSV headers to table fields
+          const columnMapping = {};
+          const tableFields = fields || [];
+          // Map CSV headers to database field names
+          previewData.headers.forEach((csvHeader, index) => {
+            // Try to find a matching field by name (case insensitive)
+            const matchingField = tableFields.find(
+              (field) =>
+                field.name.toLowerCase() === csvHeader.toLowerCase() ||
+                field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
+            );
 
-        const response = await dispatch(importCSVToTable(table.id, importData));
+            if (matchingField) {
+              columnMapping[csvHeader] = matchingField.db_field_name;
+            } else {
+              // If no exact match, use index-based mapping
+              columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
+            }
+          });
 
-        // Refresh the table records after successful import
-        await dispatch(loadTableRecords(table.id, { forceReload: true }));
+          // Step 3: Call the import endpoint
+          const importData = {
+            file_url: mediaUrl,
+            column_mapping: columnMapping,
+            has_header: true,
+            batch_size: 1000,
+            use_staging: false,
+            validate_only: false,
+          };
 
-        return response;
-      } catch (error) {
-        // console.error('CSV import error:', error);
-        throw error;
-      }
-    }, [fields, table?.id]);
+          const response = await dispatch(importCSVToTable(table.id, importData));
+
+          // Refresh the table records after successful import
+          await dispatch(loadTableRecords(table.id, { forceReload: true }));
+
+          return response;
+        } catch (error) {
+          // console.error('CSV import error:', error);
+          throw error;
+        }
+      },
+      [fields, table?.id],
+    );
 
     // Watch for import trigger from context menu
     useEffect(() => {
@@ -789,7 +829,15 @@ export const GridView = memo(
               suppressRowClickSelection={true}
               rowMultiSelectWithClick={true}
               suppressRowDeselection={false}
-              isRowSelectable={(params) => params.data && params.data.id !== '+'}
+              isRowSelectable={(params) => {
+                if (!params.data) return false;
+                const isNewRecord =
+                  params.data.id === '__new__' ||
+                  params.data.id === '+' ||
+                  !params.data.id ||
+                  params.data.id === '';
+                return !isNewRecord;
+              }}
               getContextMenuItems={getContextMenuItems}
               suppressPropertyNamesCheck={true}
               suppressAnimationFrame={true}

@@ -221,13 +221,14 @@ const TabsList = memo(
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     }, [tables]);
 
-    // Validate activeTableId exists in tables
+    // Validate activeTableId exists in tables (convert to number for comparison)
+    const numericActiveId = typeof activeTableId === 'string' ? parseInt(activeTableId, 10) : activeTableId;
     const isValidTableId = useMemo(() => {
-      return sortedTables.some((table) => table.id === activeTableId);
-    }, [sortedTables, activeTableId]);
+      return sortedTables.some((table) => table.id === numericActiveId);
+    }, [sortedTables, numericActiveId]);
 
     // If activeTableId is invalid, use first table or null
-    const effectiveTableId = isValidTableId ? activeTableId : sortedTables[0]?.id || null;
+    const effectiveTableId = isValidTableId ? numericActiveId : sortedTables[0]?.id || null;
 
     // No need to get active table name since we're only showing an icon in the dropdown
     return (
@@ -262,8 +263,8 @@ const TabsList = memo(
 
         {sortedTables.filter(table => table && table.id).map((table, index) => (
           <Draggable
-            key={table.id}
-            draggableId={table.id}
+            key={String(table.id)}
+            draggableId={String(table.id)}
             index={index}
             disableInteractiveElementBlocking={true}
           >
@@ -465,13 +466,15 @@ function TableTabs({
     return tables.filter((table) => table && typeof table === 'object' && table.id);
   }, [tables]);
 
-  // Ensure activeTableId is valid
+  // Ensure activeTableId is valid (convert to number for comparison)
   const effectiveTableId = useMemo(() => {
     if (!activeTableId || validTables.length === 0) {
       return validTables[0]?.id || null;
     }
-    const isValidId = validTables.some((table) => table?.id === activeTableId);
-    return isValidId ? activeTableId : validTables[0]?.id || null;
+    // Convert activeTableId to number for comparison (pg-meta IDs are numeric)
+    const numericActiveId = typeof activeTableId === 'string' ? parseInt(activeTableId, 10) : activeTableId;
+    const isValidId = validTables.some((table) => table?.id === numericActiveId);
+    return isValidId ? numericActiveId : validTables[0]?.id || null;
   }, [activeTableId, validTables]);
 
   const handleContextMenu = useCallback((event, tableId) => {
@@ -524,12 +527,17 @@ function TableTabs({
       const movedTable = tables[sourceIndex];
 
       try {
-        await dispatch(
-          updateTableById(movedTable.base_id, movedTable.id, {
-            order: destinationIndex,
-          }),
-        );
+        // Note: pg-meta doesn't support table ordering directly
+        // We'll need to store this in a separate metadata table or use RLS policies
+        // For now, skip the API call and just update local state
+        // TODO: Implement table ordering via metadata table
+        // await dispatch(
+        //   updateTableById(movedTable.base_id, movedTable.id, {
+        //     order: destinationIndex,
+        //   }),
+        // );
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Failed to update table order:', error);
       }
     },

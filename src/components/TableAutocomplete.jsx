@@ -14,9 +14,13 @@ import {
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { selectBases, getBasesByAccountID } from '../redux/slices/bases';
+import {
+  selectBases,
+  getBasesByAccountID,
+  selectTableById,
+  fetchColumns,
+} from '../redux/slices/bases';
 import { selectAccount } from '../redux/slices/general';
-import { optimai_tables } from '../utils/axios';
 import { FIELD_TYPES } from './databases/fields/utils/fieldTypes';
 
 function TableAutocomplete({ value, onChange }) {
@@ -39,22 +43,30 @@ function TableAutocomplete({ value, onChange }) {
     }
   }, [dispatch, account?.id, bases, loadingBases]);
 
-  // Fetch table fields from backend
-  const fetchTableFields = useCallback(async (tableId) => {
-    if (!tableId) return;
-    setIsLoadingFields(true);
-    try {
-      const response = await optimai_tables.get(`/table/${tableId}`);
-      const table = response.data.table;
-      if (table && table.fields) {
-        setTableFields(table.fields.items || []);
+  // Fetch table fields from Redux state or fetch if needed
+  const fetchTableFields = useCallback(
+    async (baseId, tableId) => {
+      if (!tableId || !baseId) return;
+      setIsLoadingFields(true);
+      try {
+        // First try to get from Redux state
+        const table = selectTableById({ bases: { bases } }, baseId, tableId);
+        if (table?.fields?.items?.length > 0) {
+          setTableFields(table.fields.items);
+        } else {
+          // Fetch from API if not in state
+          await dispatch(fetchColumns(baseId, tableId));
+          const updatedTable = selectTableById({ bases: { bases } }, baseId, tableId);
+          setTableFields(updatedTable?.fields?.items || []);
+        }
+      } catch (error) {
+        setTableFields([]);
+      } finally {
+        setIsLoadingFields(false);
       }
-    } catch (error) {
-      setTableFields([]);
-    } finally {
-      setIsLoadingFields(false);
-    }
-  }, []);
+    },
+    [dispatch, bases],
+  );
 
   // Convert bases object to array
   const basesArray = useMemo(() => Object.values(bases), [bases]);
@@ -67,7 +79,7 @@ function TableAutocomplete({ value, onChange }) {
         const tableExists = base.tables?.items?.some((table) => table.id === value);
         if (tableExists) {
           setSelectedBase(base);
-          fetchTableFields(value);
+          fetchTableFields(base.id, value);
           break;
         }
       }
@@ -99,9 +111,10 @@ function TableAutocomplete({ value, onChange }) {
 
   const handleTableChange = (event, newValue) => {
     const tableId = newValue?.details?.id ?? null;
+    const baseId = newValue?.details?.base_id ?? selectedBase?.id;
     onChange(tableId);
-    if (tableId) {
-      fetchTableFields(tableId);
+    if (tableId && baseId) {
+      fetchTableFields(baseId, tableId);
     } else {
       setTableFields([]);
     }

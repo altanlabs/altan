@@ -96,33 +96,39 @@ function Base({
     [altanerId, altanerComponentId, baseId, onNavigate, history],
   );
 
-  // Load base data and handle initial navigation
+  // Load base data
   useEffect(() => {
     if (baseId) {
-      dispatch(getBaseById(baseId)).then((response) => {
-        const tables = response?.base?.tables?.items || [];
-
-        // Preload users for this base to avoid redundant API calls
-        // This runs in parallel with navigation, so it won't block the UI
-        dispatch(preloadUsersForBase(baseId)).catch(() => {
-          // Silently handle errors - user cache is an optimization, not critical
-        });
-
-        if (tables.length > 0) {
-          const firstTable = tables[0];
-          const firstView = firstTable.views?.items?.[0]?.id || 'default';
-
-          if (!tableId) {
-            navigateToPath(firstTable.id, firstView);
-          } else if (!viewId) {
-            const currentTable = tables.find((table) => table.id === tableId);
-            const defaultView = currentTable?.views?.items?.[0]?.id || 'default';
-            navigateToPath(tableId, defaultView);
-          }
-        }
+      dispatch(getBaseById(baseId));
+      // Preload users for this base to avoid redundant API calls
+      dispatch(preloadUsersForBase(baseId)).catch(() => {
+        // Silently handle errors - user cache is an optimization, not critical
       });
     }
-  }, [baseId, tableId, viewId, navigateToPath]);
+  }, [baseId]);
+
+  // Handle initial navigation once base and tables are loaded
+  useEffect(() => {
+    if (!base || !base.tables?.items || base.tables.items.length === 0) return;
+
+    const tables = base.tables.items;
+    const firstTable = tables[0];
+    const firstView = firstTable.views?.items?.[0]?.id || 'default';
+
+    // Only navigate if we don't have a tableId yet
+    if (!tableId) {
+      navigateToPath(firstTable.id, firstView);
+    }
+    // Only set viewId if we have tableId but no viewId
+    else if (tableId && !viewId) {
+      const currentTable = tables.find((table) => table.id === tableId);
+      if (currentTable) {
+        const defaultView = currentTable.views?.items?.[0]?.id || 'default';
+        navigateToPath(tableId, defaultView);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base?.tables?.items?.length, baseId]);
 
   // Clear table switching state when table or loading state changes
   useEffect(() => {

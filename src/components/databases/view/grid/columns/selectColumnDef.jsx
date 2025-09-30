@@ -37,7 +37,8 @@ class SelectOptionRenderer {
 }
 
 export const getSelectColumnDef = ({ field, getCommonFieldMenuItems }) => {
-  const isMultiSelect = field.type === 'multiSelect';
+  // Check if it's an array type (multi-select in PostgreSQL)
+  const isMultiSelect = field.data_type?.includes('[]') || field.format?.includes('[]');
   const selectOptions = field.options?.select_options || [];
 
   return {

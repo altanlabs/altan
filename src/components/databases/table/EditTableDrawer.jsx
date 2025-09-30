@@ -7,7 +7,6 @@ import {
   ListItemButton,
   ListItemText,
   Typography,
-  Divider,
   IconButton,
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -21,21 +20,14 @@ import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';
 import EditFieldDrawer from '../fields/EditFieldDrawer';
 
-// Available ID field types based on the SystemFieldConfig
-const ID_FIELD_TYPES = [
-  { value: 'UUID', label: 'UUID' },
-  { value: 'BIGSERIAL', label: 'BIGSERIAL' },
-  { value: 'SERIAL', label: 'SERIAL' },
-  { value: 'INTEGER', label: 'INTEGER' },
-  { value: 'BIGINT', label: 'BIGINT' },
-];
+// Note: ID field types are now managed directly in PostgreSQL via pg-meta
+// This component only handles table name and provides access to field editing
 
 const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
   const theme = useTheme();
   const methods = useForm({
     defaultValues: {
       name: '',
-      id_type: 'UUID',
     },
   });
 
@@ -48,7 +40,6 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
   } = methods;
 
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const [idTypeDrawerOpen, setIdTypeDrawerOpen] = useState(false);
   const [fieldEditDrawerOpen, setFieldEditDrawerOpen] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
 
@@ -57,18 +48,17 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
     if (table && open) {
       reset({
         name: table.name || '',
-        id_type: table.system_field_config?.id_type || 'UUID',
       });
     }
   }, [table, open, reset]);
 
   const onSubmit = useCallback(
     async (data) => {
+      if (!table) return;
+      
       const updateData = {
         name: data.name,
-        system_field_config: {
-          id_type: data.id_type,
-        },
+        comment: table.comment || null,
       };
 
       dispatchWithFeedback(updateTableById(baseId, tableId, updateData), {
@@ -77,30 +67,13 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
         errorMessage: 'Could not update table',
       }).then(() => onClose());
     },
-    [baseId, tableId, onClose, dispatchWithFeedback],
+    [baseId, tableId, table, onClose, dispatchWithFeedback],
   );
 
   const handleClose = useCallback(() => {
     reset();
-    setIdTypeDrawerOpen(false);
     onClose();
   }, [reset, onClose]);
-
-  const handleOpenIdTypeDrawer = useCallback(() => {
-    setIdTypeDrawerOpen(true);
-  }, []);
-
-  const handleCloseIdTypeDrawer = useCallback(() => {
-    setIdTypeDrawerOpen(false);
-  }, []);
-
-  const handleSelectIdType = useCallback(
-    (idType) => {
-      setValue('id_type', idType, { shouldDirty: true });
-      setIdTypeDrawerOpen(false);
-    },
-    [setValue],
-  );
 
   const handleFieldClick = useCallback((field) => {
     setSelectedField(field);
@@ -113,8 +86,12 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
   }, []);
 
   const watchedValues = watch();
-  const selectedIdType = ID_FIELD_TYPES.find((type) => type.value === watchedValues.id_type);
   const isUsersTable = table?.name?.toLowerCase() === 'users';
+
+  // Don't render if table is not provided
+  if (!table && open) {
+    return null;
+  }
 
   return (
     <>
@@ -189,68 +166,6 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                 }}
               />
 
-              {/* ID Field Type Selection */}
-              <Stack spacing={1}>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  ID Field Type
-                </Typography>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  onClick={isUsersTable ? undefined : handleOpenIdTypeDrawer}
-                  sx={{
-                    padding: 2,
-                    backgroundColor: isUsersTable
-                      ? alpha(theme.palette.action.disabled, 0.08)
-                      : alpha(theme.palette.background.paper, 0.6),
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '12px',
-                    border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-                    cursor: isUsersTable ? 'not-allowed' : 'pointer',
-                    opacity: isUsersTable ? 0.6 : 1,
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      backgroundColor: isUsersTable
-                        ? alpha(theme.palette.action.disabled, 0.08)
-                        : alpha(theme.palette.background.paper, 0.8),
-                      borderColor: alpha(theme.palette.divider, 0.2),
-                    },
-                  }}
-                >
-                  <Stack
-                    direction="column"
-                    spacing={0.5}
-                  >
-                    <Typography
-                      variant="body1"
-                      fontWeight={600}
-                    >
-                      {selectedIdType?.label || 'UUID'}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      {watchedValues.id_type === 'UUID' &&
-                        'Universally unique identifier (recommended)'}
-                      {watchedValues.id_type === 'BIGSERIAL' && 'Auto-incrementing 64-bit integer'}
-                      {watchedValues.id_type === 'SERIAL' && 'Auto-incrementing 32-bit integer'}
-                      {watchedValues.id_type === 'INTEGER' && 'Manual 32-bit integer'}
-                      {watchedValues.id_type === 'BIGINT' && 'Manual 64-bit integer'}
-                    </Typography>
-                  </Stack>
-                  <Iconify
-                    icon="mdi:chevron-right"
-                    width={24}
-                    height={24}
-                  />
-                </Stack>
-              </Stack>
-
               {/* Info Text */}
               <Stack
                 sx={{
@@ -279,8 +194,8 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                     </>
                   ) : (
                     <>
-                      💡 Changing the ID field type will affect how new records are created.
-                      Existing records will not be modified.
+                      💡 Click on any field to edit its configuration. Field types and constraints
+                      are managed directly in PostgreSQL.
                     </>
                   )}
                 </Typography>
@@ -432,144 +347,6 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
             </Stack>
           </Stack>
         </FormProvider>
-      </Drawer>
-
-      {/* ID Type Selection Drawer */}
-      <Drawer
-        anchor="bottom"
-        open={idTypeDrawerOpen}
-        onClose={handleCloseIdTypeDrawer}
-        PaperProps={{
-          sx: {
-            backgroundColor: alpha(theme.palette.background.paper, 0.95),
-            backdropFilter: 'blur(20px)',
-            borderTopLeftRadius: '16px',
-            borderTopRightRadius: '16px',
-            maxHeight: '70vh',
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            borderBottom: 'none',
-          },
-        }}
-      >
-        <Stack
-          spacing={2}
-          sx={{ p: 3 }}
-        >
-          {/* Header */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Typography
-              variant="h6"
-              fontWeight={600}
-            >
-              Select ID Field Type
-            </Typography>
-            <IconButton
-              onClick={handleCloseIdTypeDrawer}
-              size="small"
-            >
-              <Iconify
-                icon="mdi:close"
-                width={20}
-                height={20}
-              />
-            </IconButton>
-          </Stack>
-
-          <Divider />
-
-          {/* Options List */}
-          <List sx={{ p: 0 }}>
-            {ID_FIELD_TYPES.map((type) => (
-              <ListItem
-                key={type.value}
-                disablePadding
-              >
-                <ListItemButton
-                  onClick={() => handleSelectIdType(type.value)}
-                  selected={watchedValues.id_type === type.value}
-                  sx={{
-                    borderRadius: '12px',
-                    mb: 1,
-                    backgroundColor:
-                      watchedValues.id_type === type.value
-                        ? alpha(theme.palette.primary.main, 0.08)
-                        : 'transparent',
-                    '&:hover': {
-                      backgroundColor:
-                        watchedValues.id_type === type.value
-                          ? alpha(theme.palette.primary.main, 0.12)
-                          : alpha(theme.palette.action.hover, 0.08),
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                      },
-                    },
-                  }}
-                >
-                  <ListItemText
-                    primary={
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                      >
-                        <Typography
-                          variant="body1"
-                          fontWeight={600}
-                        >
-                          {type.label}
-                        </Typography>
-                        {type.value === 'UUID' && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              backgroundColor: alpha(theme.palette.success.main, 0.1),
-                              color: theme.palette.success.main,
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
-                            }}
-                          >
-                            RECOMMENDED
-                          </Typography>
-                        )}
-                        {watchedValues.id_type === type.value && (
-                          <Iconify
-                            icon="mdi:check"
-                            width={20}
-                            height={20}
-                            sx={{ color: 'primary.main', ml: 'auto' }}
-                          />
-                        )}
-                      </Stack>
-                    }
-                    secondary={
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        {type.value === 'UUID' && 'Universally unique identifier (recommended)'}
-                        {type.value === 'BIGSERIAL' && 'Auto-incrementing 64-bit integer'}
-                        {type.value === 'SERIAL' && 'Auto-incrementing 32-bit integer'}
-                        {type.value === 'INTEGER' && 'Manual 32-bit integer'}
-                        {type.value === 'BIGINT' && 'Manual 64-bit integer'}
-                      </Typography>
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Stack>
       </Drawer>
 
       {/* Edit Field Drawer - Stacked */}

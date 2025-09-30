@@ -85,7 +85,8 @@ class UserOptionRenderer {
 
 export const getUserColumnDef = ({ field, getCommonFieldMenuItems, members = [] }) => {
   const formattedMembers = formatMembers(members);
-  const isMultiSelect = field?.type === 'multiSelect';
+  // Check if it's an array type (multi-select in PostgreSQL)
+  const isMultiSelect = field?.data_type?.includes('[]') || field?.format?.includes('[]');
 
   return {
     field: field?.db_field_name || field?.name || 'user',

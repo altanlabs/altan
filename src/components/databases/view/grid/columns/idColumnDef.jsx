@@ -24,7 +24,13 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
   editable: false,
   sortable: true,
   valueGetter: (params) => {
-    if (params.data?.id === '+') return '';
+    // Check if it's the new record row
+    const isNewRecord =
+      params.data?.id === '__new__' ||
+      params.data?.id === '+' ||
+      !params.data?.id ||
+      params.data?.id === '';
+    if (isNewRecord) return '';
     return params.data?.id || '';
   },
   sort: 'asc',
@@ -42,7 +48,13 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
     'autoSizeAll',
   ],
   cellRenderer: (params) => {
-    if (params.data.id === '+') return null;
+    // Check if it's the new record row
+    const isNewRecord =
+      params.data.id === '__new__' ||
+      params.data.id === '+' ||
+      !params.data.id ||
+      params.data.id === '';
+    if (isNewRecord) return null;
     const truncatedId = typeof params.value === 'string' ? params.value.slice(0, 4) : params.value;
     return (
       <div className="flex items-center justify-center w-full h-full group relative">

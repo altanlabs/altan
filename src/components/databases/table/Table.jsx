@@ -36,6 +36,12 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   // Use refs to avoid re-renders on pagination changes
   const paginationHandlersRef = useRef({});
 
+  // Reset loading states when tableId changes
+  useEffect(() => {
+    setIsInitialLoad(true);
+    setRecordCountFetched(false);
+  }, [tableId]);
+
   const recordsState = useSelector((state) => selectTableRecordsState(state, tableId));
   const records = useSelector((state) => selectTableRecords(state, tableId));
   const hasRecords = records?.length > 0;
@@ -72,9 +78,6 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   const totalRecords = useSelector(tableOnlySelectors.totalRecordsSelector);
   const isLoading = useSelector(tableOnlySelectors.isLoadingSelector);
   const paginationInfo = useSelector(tableOnlySelectors.paginationInfoSelector);
-
-  // Check if the table exists in the state (base is loaded)
-  const tableExists = !!table;
 
   // Stable pagination handlers - memoized to prevent re-renders
   const handleGoToFirstPage = useCallback(() => {
@@ -114,8 +117,9 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
   // Smarter loading management - only load records if they aren't already loaded
   useEffect(() => {
-    if (!tableId || !baseId || !tableExists) return;
+    if (!tableId || !baseId) return;
 
+    // Don't wait for tableExists - it might not be set yet
     const loadRecords = async () => {
       try {
         await dispatch(loadTableRecords(tableId, { limit: 50 }));
@@ -125,11 +129,11 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
     };
 
     loadRecords();
-  }, [tableId, baseId, tableExists]);
+  }, [tableId, baseId]);
 
   // Get accurate record count separately using PostgREST - only once per table
   useEffect(() => {
-    if (!tableId || !tableExists || recordCountFetched) return;
+    if (!tableId || recordCountFetched) return;
 
     const getCount = async () => {
       try {
@@ -154,7 +158,7 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
     };
 
     getCount();
-  }, [tableId, tableExists, recordCountFetched, paginationInfo?.pageSize]);
+  }, [tableId, recordCountFetched, paginationInfo?.pageSize]);
 
   // Stable pagination callback - memoized to prevent re-renders
   const stablePaginationCallback = useCallback(() => {
@@ -228,6 +232,10 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
   // Memoize loading state calculation
   const displayLoading = useMemo(() => {
+    // Show loading if:
+    // 1. Initial load (first time loading this table)
+    // 2. Loading and no records yet
+    // 3. RecordsState explicitly says loading
     return isInitialLoad || (isLoading && !hasRecords) || recordsState?.loading;
   }, [isInitialLoad, isLoading, hasRecords, recordsState?.loading]);
 
