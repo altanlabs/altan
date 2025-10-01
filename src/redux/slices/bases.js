@@ -6,7 +6,7 @@ import {
   setAccountAttribute,
   setAccountAttributeError,
 } from './general';
-import { optimai_tables, optimai_database } from '../../utils/axios';
+import { optimai_tables, optimai_database, optimai_pg_meta } from '../../utils/axios';
 
 const initialState = {
   isLoading: false,
@@ -15,6 +15,8 @@ const initialState = {
   bases: {},
   records: {},
   recordsState: {},
+  // Schema metadata from pg-meta
+  schemas: {}, // { [baseId]: { items: [], loading: false, error: null } }
   // Database navigation state
   databaseNavigation: {
     quickFilter: '',
@@ -65,7 +67,108 @@ const slice = createSlice({
         delete state.bases[baseId];
       }
     },
-    // Table reducers
+    // Schema reducers (pg-meta)
+    setSchemasLoading(state, action) {
+      const { baseId, loading } = action.payload;
+      if (!state.schemas[baseId]) {
+        state.schemas[baseId] = { items: [], loading: false, error: null };
+      }
+      state.schemas[baseId].loading = loading;
+    },
+    setSchemas(state, action) {
+      const { baseId, schemas } = action.payload;
+      if (!state.schemas[baseId]) {
+        state.schemas[baseId] = { items: [], loading: false, error: null };
+      }
+      state.schemas[baseId].items = schemas;
+      state.schemas[baseId].loading = false;
+      state.schemas[baseId].error = null;
+    },
+    setSchemasError(state, action) {
+      const { baseId, error } = action.payload;
+      if (!state.schemas[baseId]) {
+        state.schemas[baseId] = { items: [], loading: false, error: null };
+      }
+      state.schemas[baseId].error = error;
+      state.schemas[baseId].loading = false;
+    },
+    addSchema(state, action) {
+      const { baseId, schema } = action.payload;
+      if (!state.schemas[baseId]) {
+        state.schemas[baseId] = { items: [], loading: false, error: null };
+      }
+      state.schemas[baseId].items.push(schema);
+    },
+    updateSchema(state, action) {
+      const { baseId, schemaId, changes } = action.payload;
+      if (state.schemas[baseId]?.items) {
+        const index = state.schemas[baseId].items.findIndex((s) => s.id === schemaId);
+        if (index !== -1) {
+          state.schemas[baseId].items[index] = {
+            ...state.schemas[baseId].items[index],
+            ...changes,
+          };
+        }
+      }
+    },
+    deleteSchema(state, action) {
+      const { baseId, schemaId } = action.payload;
+      if (state.schemas[baseId]?.items) {
+        state.schemas[baseId].items = state.schemas[baseId].items.filter((s) => s.id !== schemaId);
+      }
+    },
+    // Table reducers (using pg-meta structure)
+    setTablesFromPgMeta(state, action) {
+      const { baseId, tables } = action.payload;
+      if (state.bases[baseId]) {
+        // Store pg-meta tables directly without type mapping
+        state.bases[baseId].tables = {
+          items: tables.map((table) => ({
+            id: table.id,
+            name: table.name,
+            db_name: table.name,
+            schema: table.schema,
+            rls_enabled: table.rls_enabled,
+            rls_forced: table.rls_forced,
+            replica_identity: table.replica_identity,
+            comment: table.comment,
+            bytes: table.bytes,
+            size: table.size,
+            live_rows_estimate: table.live_rows_estimate,
+            dead_rows_estimate: table.dead_rows_estimate,
+            // Add columns if included - use PostgreSQL types directly
+            fields: table.columns
+              ? {
+                  items: table.columns.map((col) => ({
+                    id: col.id,
+                    name: col.name,
+                    db_field_name: col.name,
+                    data_type: col.data_type, // PostgreSQL type (no mapping)
+                    format: col.format,
+                    is_nullable: col.is_nullable,
+                    is_unique: col.is_unique,
+                    is_identity: col.is_identity,
+                    identity_generation: col.identity_generation,
+                    is_generated: col.is_generated,
+                    is_updatable: col.is_updatable,
+                    default_value: col.default_value,
+                    comment: col.comment,
+                    ordinal_position: col.ordinal_position,
+                    enums: col.enums,
+                    check: col.check,
+                    table_id: col.table_id,
+                    schema: col.schema,
+                    table: col.table,
+                  })),
+                }
+              : { items: [] },
+            // Add primary keys and relationships if available
+            primary_keys: table.primary_keys || [],
+            relationships: table.relationships || [],
+          })),
+        };
+      }
+    },
     addTable(state, action) {
       const { baseId, table } = action.payload;
       if (state.bases[baseId]) {
@@ -93,7 +196,38 @@ const slice = createSlice({
         );
       }
     },
-    // Field reducers
+    // Field/Column reducers (using pg-meta)
+    setColumnsForTable(state, action) {
+      const { baseId, tableId, columns } = action.payload;
+      if (state.bases[baseId]) {
+        const table = state.bases[baseId].tables.items.find((t) => t.id === tableId);
+        if (table) {
+          table.fields = {
+            items: columns.map((col) => ({
+              id: col.id,
+              name: col.name,
+              db_field_name: col.name,
+              data_type: col.data_type, // PostgreSQL type (no mapping)
+              format: col.format,
+              is_nullable: col.is_nullable,
+              is_unique: col.is_unique,
+              is_identity: col.is_identity,
+              identity_generation: col.identity_generation,
+              is_generated: col.is_generated,
+              is_updatable: col.is_updatable,
+              default_value: col.default_value,
+              comment: col.comment,
+              ordinal_position: col.ordinal_position,
+              enums: col.enums,
+              check: col.check,
+              table_id: col.table_id,
+              schema: col.schema,
+              table: col.table,
+            })),
+          };
+        }
+      }
+    },
     addField(state, action) {
       const { baseId, tableId, field } = action.payload;
       if (state.bases[baseId]) {
@@ -134,7 +268,6 @@ const slice = createSlice({
       if (baseId) {
         const table = state.bases[baseId].tables.items.find((t) => t.id === tableId);
         if (table && table.fields?.items) {
-          // Add null check for fields.items
           table.fields.items = table.fields.items.filter((f) => f.id !== fieldId);
 
           // Also remove the field from any records that might have it
@@ -143,10 +276,8 @@ const slice = createSlice({
               if (record) {
                 const fieldName = table.fields.items.find((f) => f.id === fieldId)?.db_field_name;
                 if (fieldName && record[fieldName] !== undefined) {
-                  // Create a shallow copy to avoid modifying the parameter directly
                   const recordCopy = { ...record };
                   delete recordCopy[fieldName];
-                  // Replace the original record with our modified copy
                   Object.assign(record, recordCopy);
                 }
               }
@@ -190,7 +321,7 @@ const slice = createSlice({
         }
       }
     },
-    // Records reducers
+    // Records reducers (unchanged - using postgREST)
     setTableRecordsLoading(state, action) {
       const { tableId, loading } = action.payload;
       if (!state.recordsState[tableId]) {
@@ -203,7 +334,6 @@ const slice = createSlice({
     setTableRecords(state, action) {
       const { tableId, records, total, next_page_token, isPagination } = action.payload;
 
-      // Helper function to deduplicate records by ID
       const deduplicateRecords = (recordsArray) => {
         const seen = new Map();
         return recordsArray.filter((record) => {
@@ -214,14 +344,12 @@ const slice = createSlice({
         });
       };
 
-      // Initialize if needed or handle first load
       if (!state.records[tableId] || !isPagination) {
         state.records[tableId] = {
           items: deduplicateRecords(records.filter((record) => record !== undefined)),
           total,
         };
       } else {
-        // Append new records for pagination, ensuring no duplicates
         const combinedRecords = [...state.records[tableId].items, ...records];
         state.records[tableId] = {
           items: deduplicateRecords(combinedRecords),
@@ -229,7 +357,6 @@ const slice = createSlice({
         };
       }
 
-      // Update records state
       state.recordsState[tableId] = {
         ...state.recordsState[tableId],
         loading: false,
@@ -241,13 +368,10 @@ const slice = createSlice({
     updateTableRecord(state, action) {
       const { tableId, tableName, recordId, changes, isRealTime = false } = action.payload;
 
-      // First try to find by exact tableId
       let targetTableId = tableId;
       let tableRecords = state.records[tableId]?.items;
 
-      // If not found by tableId and we have a tableName, try to find by table name
       if (!tableRecords && tableName) {
-        // Look through all bases to find a table with matching name
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
           if (base.tables?.items) {
@@ -270,14 +394,12 @@ const slice = createSlice({
         if (recordIndex !== -1) {
           tableRecords[recordIndex] = { ...tableRecords[recordIndex], ...changes };
 
-          // For real-time updates, mark that we have new data
           if (isRealTime && state.recordsState[targetTableId]) {
             state.recordsState[targetTableId].hasRealTimeUpdates = true;
             state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
           }
         }
       } else {
-        // Last resort: Try to find the record in any available table
         const availableTables = Object.keys(state.records);
         for (const availableTableId of availableTables) {
           const availableTableRecords = state.records[availableTableId]?.items;
@@ -289,7 +411,6 @@ const slice = createSlice({
                 ...changes,
               };
 
-              // For real-time updates, mark that we have new data
               if (isRealTime && state.recordsState[availableTableId]) {
                 state.recordsState[availableTableId].hasRealTimeUpdates = true;
                 state.recordsState[availableTableId].lastRealTimeUpdate = Date.now();
@@ -310,7 +431,6 @@ const slice = createSlice({
       } = action.payload;
       let targetTableId = tableId;
 
-      // If tableId doesn't exist in records but we have a tableName, try to find by name
       if (!state.records[tableId] && tableName) {
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
@@ -330,16 +450,13 @@ const slice = createSlice({
         state.records[targetTableId] = { items: [], total: 0 };
       }
 
-      // Check if record already exists to prevent duplicates
       const existingIndex = state.records[targetTableId].items.findIndex(
         (existingRecord) => existingRecord.id === record.id,
       );
 
       if (existingIndex !== -1) {
-        // Update existing record instead of adding duplicate
         state.records[targetTableId].items[existingIndex] = record;
       } else {
-        // Add new record - for real-time updates, add at beginning to maintain order
         if (insertAtBeginning || isRealTime) {
           state.records[targetTableId].items.unshift(record);
         } else {
@@ -347,14 +464,11 @@ const slice = createSlice({
         }
         state.records[targetTableId].total += 1;
 
-        // For real-time updates, mark that we have new data and may need pagination adjustment
         if (isRealTime && state.recordsState[targetTableId]) {
           state.recordsState[targetTableId].hasRealTimeUpdates = true;
           state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
-          // Increment total records count for pagination
           if (state.recordsState[targetTableId].totalRecords !== undefined) {
             state.recordsState[targetTableId].totalRecords += 1;
-            // Recalculate total pages
             const pageSize = state.recordsState[targetTableId].pageSize || 50;
             state.recordsState[targetTableId].totalPages = Math.ceil(
               state.recordsState[targetTableId].totalRecords / pageSize,
@@ -367,7 +481,6 @@ const slice = createSlice({
       const { tableId, tableName, recordId, isRealTime = false } = action.payload;
       let targetTableId = tableId;
 
-      // If tableId doesn't exist in records but we have a tableName, try to find by name
       if (!state.records[tableId] && tableName) {
         for (const baseId of Object.keys(state.bases)) {
           const base = state.bases[baseId];
@@ -390,18 +503,14 @@ const slice = createSlice({
         );
         const finalLength = state.records[targetTableId].items.length;
 
-        // Only decrement if we actually removed a record
         if (finalLength < initialLength) {
           state.records[targetTableId].total -= 1;
 
-          // For real-time updates, mark that we have changes and update pagination
           if (isRealTime && state.recordsState[targetTableId]) {
             state.recordsState[targetTableId].hasRealTimeUpdates = true;
             state.recordsState[targetTableId].lastRealTimeUpdate = Date.now();
-            // Decrement total records count for pagination
             if (state.recordsState[targetTableId].totalRecords !== undefined) {
               state.recordsState[targetTableId].totalRecords -= 1;
-              // Recalculate total pages
               const pageSize = state.recordsState[targetTableId].pageSize || 50;
               state.recordsState[targetTableId].totalPages = Math.ceil(
                 Math.max(state.recordsState[targetTableId].totalRecords, 1) / pageSize,
@@ -423,10 +532,8 @@ const slice = createSlice({
           lastRealTimeUpdate: null,
         };
       }
-      // Merge with existing state instead of overwriting
       Object.assign(state.recordsState[tableId], updates);
     },
-    // New action to handle real-time data integration with pagination boundaries
     integrateRealTimeUpdates(state, action) {
       const { tableId, updates, additions, deletions } = action.payload;
 
@@ -440,7 +547,6 @@ const slice = createSlice({
       const currentPage = recordsState?.currentPage || 0;
       let totalChanged = 0;
 
-      // Handle deletions first
       if (deletions && deletions.length > 0) {
         const initialLength = tableRecords.items.length;
         tableRecords.items = tableRecords.items.filter((record) => !deletions.includes(record.id));
@@ -448,7 +554,6 @@ const slice = createSlice({
         totalChanged -= deletedCount;
       }
 
-      // Handle updates (these don't affect pagination)
       if (updates && updates.length > 0) {
         updates.forEach((update) => {
           const index = tableRecords.items.findIndex((r) => r.id === update.id);
@@ -458,51 +563,38 @@ const slice = createSlice({
         });
       }
 
-      // Handle additions with pagination boundaries
       if (additions && additions.length > 0) {
         additions.forEach((addition) => {
           const existingIndex = tableRecords.items.findIndex((r) => r.id === addition.id);
           if (existingIndex === -1) {
-            // Only add to current page if we're on the first page
-            // Otherwise, just update the total count (records will appear when user navigates)
             if (currentPage === 0) {
-              // Add at beginning for chronological order
               tableRecords.items.unshift(addition);
 
-              // Maintain page size boundary - remove excess records from the end
               if (tableRecords.items.length > pageSize) {
                 tableRecords.items = tableRecords.items.slice(0, pageSize);
               }
             }
-            // Always increment the total count regardless of which page we're on
             totalChanged += 1;
           }
         });
       }
 
-      // Update totals
       tableRecords.total = Math.max(tableRecords.total + totalChanged, 0);
 
-      // Update records state
       if (recordsState) {
         recordsState.hasRealTimeUpdates = true;
         recordsState.lastRealTimeUpdate = Date.now();
 
         if (recordsState.totalRecords !== undefined) {
           recordsState.totalRecords = Math.max(recordsState.totalRecords + totalChanged, 0);
-
-          // Recalculate pagination
           recordsState.totalPages = Math.ceil(Math.max(recordsState.totalRecords, 1) / pageSize);
 
-          // If we're not on the first page and there are new additions,
-          // mark that there might be new records available on previous pages
           if (currentPage > 0 && additions && additions.length > 0) {
             recordsState.hasNewRecordsOnPreviousPages = true;
           }
         }
       }
     },
-    // Action to clear real-time update flags
     clearRealTimeUpdateFlags(state, action) {
       const { tableId } = action.payload;
       if (state.recordsState[tableId]) {
@@ -562,7 +654,6 @@ const slice = createSlice({
     setUserCache(state, action) {
       const { users, baseId } = action.payload;
 
-      // Store users by ID for quick lookup
       if (!state.userCache[baseId]) {
         state.userCache[baseId] = {};
       }
@@ -605,15 +696,28 @@ export const {
   updateBase,
   deleteBase,
   clearState: clearBaseState,
+  // Schema actions
+  setSchemasLoading,
+  setSchemas,
+  setSchemasError,
+  addSchema,
+  updateSchema,
+  deleteSchema,
+  // Table actions
+  setTablesFromPgMeta,
   addTable,
   updateTable,
   deleteTable,
+  // Field actions
+  setColumnsForTable,
   addField,
   updateField,
   deleteField,
+  // View actions
   addView,
   updateView,
   deleteView,
+  // Record actions
   setTableRecords,
   updateTableRecord,
   addTableRecord,
@@ -639,14 +743,476 @@ export const {
   clearRealTimeUpdateFlags,
 } = slice.actions;
 
-// Thunk actions for bases
+// ============================================================================
+// PG-META THUNKS FOR SCHEMA MANAGEMENT
+// ============================================================================
+
+/**
+ * Fetch all schemas for a base using pg-meta
+ */
+export const fetchSchemas = (baseId) => async (dispatch) => {
+  dispatch(setSchemasLoading({ baseId, loading: true }));
+  try {
+    const response = await optimai_pg_meta.get(`/${baseId}/schemas/`, {
+      params: {
+        include_system_schemas: false,
+      },
+    });
+    const schemas = response.data || [];
+    dispatch(setSchemas({ baseId, schemas }));
+    return schemas;
+  } catch (error) {
+    dispatch(setSchemasError({ baseId, error: error.message }));
+    throw error;
+  }
+};
+
+/**
+ * Create a schema using pg-meta
+ */
+export const createSchema = (baseId, schemaData) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_pg_meta.post(`/${baseId}/schemas/`, schemaData);
+    const schema = response.data;
+    dispatch(addSchema({ baseId, schema }));
+    return schema;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Update a schema using pg-meta
+ */
+export const updateSchemaById = (baseId, schemaId, changes) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_pg_meta.patch(`/${baseId}/schemas/${schemaId}`, changes);
+    const schema = response.data;
+    dispatch(updateSchema({ baseId, schemaId, changes: schema }));
+    return schema;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Delete a schema using pg-meta
+ */
+export const deleteSchemaById =
+  (baseId, schemaId, cascade = false) =>
+  async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      await optimai_pg_meta.delete(`/${baseId}/schemas/${schemaId}`, {
+        params: { cascade },
+      });
+      dispatch(deleteSchema({ baseId, schemaId }));
+      return Promise.resolve();
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+      throw error;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+  };
+
+/**
+ * Fetch all tables for a base using pg-meta
+ * Each base has its own PostgreSQL schema: tenant_{base_id} with hyphens replaced by underscores
+ */
+export const fetchTables =
+  (baseId, options = {}) =>
+  async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+    try {
+      const {
+        include_columns = true,
+        include_relationships = true,
+        excluded_schemas = 'pg_catalog,information_schema',
+      } = options;
+
+      const response = await optimai_pg_meta.get(`/${baseId}/tables/`, {
+        params: {
+          include_columns,
+          include_relationships,
+          excluded_schemas,
+          include_system_schemas: false,
+        },
+      });
+
+      const tables = response.data || [];
+      dispatch(setTablesFromPgMeta({ baseId, tables }));
+      return tables;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+      throw error;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+  };
+
+/**
+ * Create a table using pg-meta
+ * Tables are created in the tenant-specific schema
+ */
+export const createTable = (baseId, tableData) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    // Generate tenant schema name: tenant_{base_id} with hyphens → underscores
+    const tenantSchema = `tenant_${baseId.replace(/-/g, '_')}`;
+
+    // Ensure table is created in the tenant schema
+    const tablePayload = {
+      ...tableData,
+      schema: tenantSchema, // Override to ensure correct schema
+    };
+
+    const response = await optimai_pg_meta.post(`/${baseId}/tables/`, tablePayload);
+    const table = response.data;
+
+    // Transform to our internal format
+    const transformedTable = {
+      id: table.id,
+      name: table.name,
+      db_name: table.name,
+      schema: table.schema,
+      comment: table.comment,
+      rls_enabled: table.rls_enabled || false,
+      rls_forced: table.rls_forced || false,
+      replica_identity: table.replica_identity || 'DEFAULT',
+      bytes: table.bytes || 0,
+      size: table.size || '0 bytes',
+      fields: { items: [] },
+      views: { items: [] },
+      primary_keys: table.primary_keys || [],
+      relationships: table.relationships || [],
+    };
+
+    dispatch(addTable({ baseId, table: transformedTable }));
+    return transformedTable;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Update a table using pg-meta
+ */
+export const updateTableById = (baseId, tableId, changes) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const response = await optimai_pg_meta.patch(`/${baseId}/tables/${tableId}`, changes);
+    const table = response.data;
+
+    dispatch(
+      updateTable({
+        baseId,
+        tableId,
+        changes: {
+          name: table.name,
+          db_name: table.name,
+          schema: table.schema,
+          comment: table.comment,
+          rls_enabled: table.rls_enabled,
+          rls_forced: table.rls_forced,
+        },
+      }),
+    );
+    return table;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Delete a table using pg-meta
+ */
+export const deleteTableById =
+  (baseId, tableId, cascade = false) =>
+  async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    await optimai_pg_meta.delete(`/${baseId}/tables/${tableId}`, {
+      params: { cascade },
+    });
+    dispatch(deleteTable({ baseId, tableId }));
+    return Promise.resolve();
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Fetch RLS policies for a table using pg-meta
+ * @param {string} baseId - Base ID
+ * @param {string} tableId - Table ID (numeric)
+ * @param {string} tableName - Table name (for pg-meta lookup)
+ * @param {string} schemaName - Schema name (e.g., tenant_xxx)
+ */
+export const fetchTablePolicies = (baseId, tableId, tableName, schemaName) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    console.log('🔐 Fetching RLS policies for table:', { baseId, tableId, tableName, schemaName });
+
+    const response = await optimai_pg_meta.get(`/${baseId}/policies/`, {
+      params: {
+        table_name: tableName,
+      },
+    });
+
+    const policies = response.data || [];
+    console.log('🔐 Policies fetched:', {
+      count: policies.length,
+      policies,
+      structure: policies[0] ? Object.keys(policies[0]) : 'no policies',
+    });
+
+    return policies;
+  } catch (error) {
+    console.error('❌ Error fetching policies:', error);
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Fetch columns for a table using pg-meta
+ */
+export const fetchColumns = (baseId, tableId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    // Generate tenant schema name: tenant_{base_id} with hyphens → underscores
+    const tenantSchema = `tenant_${baseId.replace(/-/g, '_')}`;
+
+    const response = await optimai_pg_meta.get(`/${baseId}/columns/`, {
+      params: {
+        included_schemas: tenantSchema,
+        exclude_system_schemas: true,
+      },
+    });
+
+    // Filter columns for this specific table
+    const allColumns = response.data || [];
+    const columns = allColumns.filter((col) => col.table_id === tableId);
+
+    dispatch(setColumnsForTable({ baseId, tableId, columns }));
+    return columns;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Create a column/field using pg-meta
+ * @param {Object} table - Table object with id and base_id
+ * @param {Object} fieldData - Field data with PostgreSQL types
+ * @param {string} fieldData.name - Column name
+ * @param {string} fieldData.type - PostgreSQL type (text, integer, boolean, etc.)
+ * @param {boolean} fieldData.is_nullable - Allow NULL values
+ * @param {boolean} fieldData.is_unique - Enforce unique constraint
+ * @param {*} fieldData.default_value - Default value
+ * @param {string} fieldData.comment - Column comment
+ */
+export const createField = (table, fieldData) => async (dispatch, getState) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    // Find the base ID for this table
+    const state = getState();
+    const baseId = Object.keys(state.bases.bases).find((bId) =>
+      state.bases.bases[bId].tables?.items?.some((t) => t.id === table.id),
+    );
+
+    if (!baseId) {
+      throw new Error(`Could not find base for table ${table.id}`);
+    }
+
+    // Use PostgreSQL types directly - no mapping
+    const columnData = {
+      table_id: table.id,
+      name: fieldData.db_field_name || fieldData.name,
+      type: fieldData.type || 'text', // PostgreSQL type directly
+      is_nullable: fieldData.is_nullable !== false,
+      is_unique: fieldData.is_unique || false,
+      default_value: fieldData.default_value,
+      comment: fieldData.description || fieldData.comment,
+    };
+
+    const response = await optimai_pg_meta.post(`/${baseId}/columns/`, columnData);
+    const column = response.data;
+
+    // Store column data directly from pg-meta
+    const field = {
+      id: column.id,
+      name: column.name,
+      db_field_name: column.name,
+      data_type: column.data_type, // PostgreSQL type
+      format: column.format,
+      is_nullable: column.is_nullable,
+      is_unique: column.is_unique,
+      is_identity: column.is_identity,
+      identity_generation: column.identity_generation,
+      is_generated: column.is_generated,
+      is_updatable: column.is_updatable,
+      default_value: column.default_value,
+      comment: column.comment,
+      ordinal_position: column.ordinal_position,
+      enums: column.enums,
+      check: column.check,
+      table_id: column.table_id,
+      schema: column.schema,
+      table: column.table,
+    };
+
+    dispatch(addField({ baseId, tableId: table.id, field }));
+    return field;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Update a column/field using pg-meta
+ * @param {string} tableId - Table ID
+ * @param {string} fieldId - Column ID
+ * @param {Object} changes - Changes to apply (using PostgreSQL types)
+ * @param {string} changes.name - New column name
+ * @param {string} changes.type - PostgreSQL type (text, integer, boolean, etc.)
+ * @param {boolean} changes.is_nullable - Allow NULL values
+ * @param {boolean} changes.is_unique - Enforce unique constraint
+ * @param {*} changes.default_value - Default value
+ * @param {string} changes.comment - Column comment
+ */
+export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, getState) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    // Find the base ID for this table
+    const state = getState();
+    const baseId = Object.keys(state.bases.bases).find((bId) =>
+      state.bases.bases[bId].tables?.items?.some((t) => t.id === tableId),
+    );
+
+    if (!baseId) {
+      throw new Error(`Could not find base for table ${tableId}`);
+    }
+
+    // Use PostgreSQL types directly - no mapping
+    const columnChanges = {};
+    if (changes.name) columnChanges.name = changes.name;
+    if (changes.type) columnChanges.type = changes.type; // PostgreSQL type directly
+    if (changes.is_nullable !== undefined) columnChanges.is_nullable = changes.is_nullable;
+    if (changes.is_unique !== undefined) columnChanges.is_unique = changes.is_unique;
+    if (changes.default_value !== undefined) columnChanges.default_value = changes.default_value;
+    if (changes.comment !== undefined) columnChanges.comment = changes.comment;
+
+    const response = await optimai_pg_meta.patch(`/${baseId}/columns/${fieldId}`, columnChanges);
+    const column = response.data;
+
+    // Store column data directly from pg-meta
+    const fieldChanges = {
+      name: column.name,
+      db_field_name: column.name,
+      data_type: column.data_type, // PostgreSQL type
+      format: column.format,
+      is_nullable: column.is_nullable,
+      is_unique: column.is_unique,
+      is_identity: column.is_identity,
+      identity_generation: column.identity_generation,
+      is_generated: column.is_generated,
+      is_updatable: column.is_updatable,
+      default_value: column.default_value,
+      comment: column.comment,
+      ordinal_position: column.ordinal_position,
+      enums: column.enums,
+      check: column.check,
+    };
+
+    dispatch(updateField({ tableId, fieldId, changes: fieldChanges }));
+    return fieldChanges;
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Delete a column/field using pg-meta
+ */
+export const deleteFieldThunk =
+  (tableId, fieldId, cascade = false) =>
+  async (dispatch, getState) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      // Find the base ID for this table
+      const state = getState();
+      const baseId = Object.keys(state.bases.bases).find((bId) =>
+        state.bases.bases[bId].tables?.items?.some((t) => t.id === tableId),
+      );
+
+      if (!baseId) {
+        throw new Error(`Could not find base for table ${tableId}`);
+      }
+
+      await optimai_pg_meta.delete(`/${baseId}/columns/${fieldId}`, {
+        params: { cascade },
+      });
+
+      dispatch(deleteField({ tableId, fieldId }));
+      return Promise.resolve();
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+      throw error;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+};
+
+// ============================================================================
+// BASE OPERATIONS
+// ============================================================================
+
+/**
+ * Get base by ID and fetch its tables using pg-meta
+ */
 export const getBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Use legacy API first to check if this is a v2 base
-    const response = await optimai_tables.get(`/base/${baseId}`);
-    const base = response.data;
-    dispatch(slice.actions.addBase(base.base));
+    // Get base metadata from legacy API (base info only)
+    const response = await optimai_tables.get(`/base/get-database/${baseId}`);
+    const base = response.data.base;
+
+    // Add base to state
+    dispatch(slice.actions.addBase(base));
+
+    // Fetch tables and columns using pg-meta
+    await dispatch(fetchTables(baseId, { include_columns: true }));
+
     return Promise.resolve(base);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -656,17 +1222,31 @@ export const getBaseById = (baseId) => async (dispatch) => {
   }
 };
 
-// Thunk actions for bases
+/**
+ * Get all bases for an account and fetch their tables using pg-meta
+ */
 export const getBasesByAccountID = (accountId) => async (dispatch) => {
   dispatch(startAccountAttributeLoading('bases'));
   try {
     const response = await optimai_tables.get(`/base/list/${accountId}`);
-    // La estructura parece ser response.data.data.bases
     const bases = response.data?.data?.bases || response.data?.bases || [];
+
+    // Add all bases to state
     bases.forEach((base) => {
       dispatch(slice.actions.addBase(base));
     });
-    // Establecer las bases en el estado de la cuenta y marcar como inicializado
+
+    // Fetch tables for each base using pg-meta
+    await Promise.all(
+      bases.map((base) =>
+        dispatch(fetchTables(base.id, { include_columns: true })).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error(`Failed to fetch tables for base ${base.id}:`, err);
+          // Don't fail the entire operation if one base fails
+        }),
+      ),
+    );
+
     dispatch(setAccountAttribute({ key: 'bases', value: bases }));
     return Promise.resolve(bases);
   } catch (e) {
@@ -685,13 +1265,11 @@ export const createBase = (baseData, altanerComponentId) => async (dispatch, get
     const { prompt, ...restBaseData } = baseData;
     const augmentedBaseData = { ...restBaseData, account_id: accountId };
 
-    // Construct query params
     const params = new URLSearchParams();
     if (altanerComponentId) params.append('altaner_component_id', altanerComponentId);
     if (prompt) params.append('prompt', prompt);
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
-    // For new bases, use the current version of the API (v2)
     const response = await optimai_tables.post(`/base${queryString}`, augmentedBaseData);
     return response.data.base;
   } catch (e) {
@@ -702,14 +1280,20 @@ export const createBase = (baseData, altanerComponentId) => async (dispatch, get
   }
 };
 
+/**
+ * Fetch base by ID and load its schema using pg-meta
+ */
 export const fetchBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    // First get the base with legacy API to determine which API to use for future calls
+    // Get base metadata from legacy API
     const response = await optimai_tables.get(`/base/${baseId}`);
     const base = response.data.base;
     dispatch(slice.actions.addBase(base));
-    // Store the API version in the state so we have it for future reference
+
+    // Fetch tables and columns using pg-meta
+    await dispatch(fetchTables(baseId, { include_columns: true }));
+
     return base;
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -758,88 +1342,7 @@ export const deleteBaseById = (baseId) => async (dispatch) => {
   }
 };
 
-// Thunk actions for tables
-export const createTable = (baseId, tableData) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.post(`/base/${baseId}/table`, tableData);
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-export const updateTableById = (baseId, tableId, changes) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.patch(`/table/${tableId}`, changes);
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-export const deleteTableById = (baseId, tableId) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    await optimai_tables.delete(`/table/${tableId}`);
-    return Promise.resolve();
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-// Thunk actions for fields
-export const createField = (table, fieldData) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.post(`/table/${table.id}/field`, fieldData);
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai_tables.patch(`/table/${tableId}/field/${fieldId}`, changes);
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-export const deleteFieldThunk = (tableId, fieldId) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    await optimai_tables.delete(`/table/${tableId}/field/${fieldId}`);
-    dispatch(slice.actions.deleteField({ tableId, fieldId }));
-    return Promise.resolve();
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
-// Thunk actions for views
+// View thunks - keeping legacy for now
 export const createViewThunk = (baseId, tableId, viewData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
@@ -882,36 +1385,37 @@ export const deleteViewThunk = (baseId, tableId, viewId) => async (dispatch) => 
   }
 };
 
-// Record thunks
+// ============================================================================
+// RECORD OPERATIONS (using postgREST - UNCHANGED)
+// ============================================================================
+
 export const queryTableRecords =
   (tableId, queryParams = {}) =>
   async (dispatch, getState) => {
     try {
-      // Find the base that contains this table
       const state = getState();
+      // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
       const baseId = Object.keys(state.bases.bases).find((baseId) =>
-        state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+        state.bases.bases[baseId].tables?.items?.some((t) => t.id === numericTableId),
       );
       if (!baseId) {
         throw new Error(`Could not find base containing table ${tableId}`);
       }
 
-      // Find the table to get its name for Supabase-style endpoint
       const base = state.bases.bases[baseId];
-      const table = base.tables?.items?.find((t) => t.id === tableId);
+      const table = base.tables?.items?.find((t) => t.id === numericTableId);
       const tableName = table?.db_name || table?.name;
 
       if (!tableName) {
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
-      // Use Supabase-style endpoint: /admin/records/{baseId}/{tableName}
-      // GET request with query parameters following Supabase pattern
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
         params: queryParams,
       });
 
-      // Process response data following Supabase format
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
       const total = response.data.total || records.length;
       const next_page_token = response.data.next_page_token || null;
@@ -928,7 +1432,6 @@ export const queryTableRecords =
 
       return response.data;
     } catch (e) {
-      // Error occurred when querying table records via database API
       throw e;
     }
   };
@@ -939,12 +1442,13 @@ export const getTableRecord =
     dispatch(slice.actions.startLoading());
     try {
       const state = getState();
+      // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-      // Find the base and table info
       let baseId, tableName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
-          const table = base.tables.items.find((t) => t.id === tableId);
+          const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = customTableName || table.name || table.db_name;
@@ -957,9 +1461,8 @@ export const getTableRecord =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: { id: `eq.${recordId}` }, // PostgREST format for exact match
+        params: { id: `eq.${recordId}` },
       });
 
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];
@@ -984,12 +1487,14 @@ export const createTableRecords =
     }
 
     try {
-      // Find the base that contains this table
       const state = getState();
+      // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
       let baseId, tableName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
-          const table = base.tables.items.find((t) => t.id === tableId);
+          const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = table.db_name || table.name;
@@ -1002,38 +1507,20 @@ export const createTableRecords =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      // Transform data for PostgREST format
       let postgreSQLData;
       if (recordData.records && recordData.records.length > 0) {
-        // Extract the fields from the Altan API format
         postgreSQLData = recordData.records[0].fields;
       } else {
-        // If it's already in the correct format, use as is
         postgreSQLData = recordData;
       }
 
-      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.post(
         `/admin/records/${baseId}/${tableName}`,
         postgreSQLData,
       );
-
-      // Add to local state with real-time flag
-      if (response.data) {
-        const newRecord = Array.isArray(response.data) ? response.data[0] : response.data;
-        if (newRecord) {
-          dispatch(
-            slice.actions.addTableRecord({
-              tableId,
-              record: newRecord,
-              isRealTime,
-              insertAtBeginning: isRealTime,
-            }),
-          );
-        }
-      }
-
-      return Promise.resolve(response.data);
+      // Return in format expected by GridView: { records: [...] }
+      const records = Array.isArray(response.data) ? response.data : [response.data];
+      return Promise.resolve({ records });
     } catch (e) {
       if (!suppressLoading) {
         dispatch(slice.actions.hasError(e.message));
@@ -1056,12 +1543,14 @@ export const updateTableRecordThunk =
     }
 
     try {
-      // Find the base that contains this table
       const state = getState();
+      // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
       let baseId, tableName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
-          const table = base.tables.items.find((t) => t.id === tableId);
+          const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = table.db_name || table.name;
@@ -1074,13 +1563,11 @@ export const updateTableRecordThunk =
         throw new Error(`Could not find base or table name for table ${tableId}`);
       }
 
-      // Use admin proxy for all tables (including auth tables)
       const response = await optimai_database.patch(
         `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
         changes,
       );
 
-      // Update local state with real-time flag
       dispatch(
         slice.actions.updateTableRecord({
           tableId,
@@ -1106,12 +1593,14 @@ export const updateTableRecordThunk =
 export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
-    // Find the base that contains this table
     const state = getState();
+    // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
     let baseId, tableName;
     for (const [bId, base] of Object.entries(state.bases.bases)) {
       if (base.tables?.items) {
-        const table = base.tables.items.find((t) => t.id === tableId);
+        const table = base.tables.items.find((t) => t.id === numericTableId);
         if (table) {
           baseId = bId;
           tableName = table.db_name || table.name;
@@ -1124,11 +1613,9 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
       throw new Error(`Could not find base or table name for table ${tableId}`);
     }
 
-    // Pass recordIds in the request body
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
 
-    // Use admin proxy for all tables (including auth tables)
-    const BATCH_SIZE = 50; // Reasonable batch size to avoid URL length issues
+    const BATCH_SIZE = 50;
     for (let i = 0; i < ids.length; i += BATCH_SIZE) {
       const batchIds = ids.slice(i, i + BATCH_SIZE);
       const idFilter =
@@ -1136,7 +1623,6 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
       await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
     }
 
-    // Update state for each deleted record
     ids.forEach((recordId) => {
       dispatch(slice.actions.deleteTableRecord({ tableId, recordId }));
     });
@@ -1150,13 +1636,11 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
   }
 };
 
-// Thunk action to preload users for a base
 export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
   const state = getState();
   const userCacheState = state.bases.userCacheState;
   const existingUsers = state.bases.userCache[baseId];
 
-  // Don't fetch if we already have users cached and it's not too old (1 hour)
   const ONE_HOUR = 60 * 60 * 1000;
   if (
     existingUsers &&
@@ -1167,7 +1651,6 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     return Promise.resolve(existingUsers);
   }
 
-  // Don't fetch if already loading
   if (userCacheState.loading) {
     return Promise.resolve({});
   }
@@ -1175,12 +1658,11 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
   dispatch(setUserCacheLoading(true));
 
   try {
-    // Find auth.users table in this base
     const base = state.bases.bases[baseId];
     if (!base || !base.tables || !base.tables.items) {
       throw new Error(`Base ${baseId} not found or has no tables`);
     }
-    // Look for user table with various possible names
+
     const authUsersTable = base.tables.items.find(
       (table) =>
         table.db_name === 'auth.users' ||
@@ -1193,16 +1675,14 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     );
 
     if (!authUsersTable) {
-      // If no user table, just mark as complete
       dispatch(setUserCache({ users: [], baseId }));
       return Promise.resolve({});
     }
 
-    // Fetch all users from auth.users table using admin proxy
     const response = await optimai_database.get(
       `/admin/records/${baseId}/${authUsersTable.db_name || authUsersTable.name}`,
       {
-        params: { limit: 1000 }, // Should be enough for most use cases
+        params: { limit: 1000 },
       },
     );
 
@@ -1217,7 +1697,6 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
   }
 };
 
-// CSV Import thunk
 export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
@@ -1231,7 +1710,6 @@ export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   }
 };
 
-// Load initial records with pagination support
 export const loadTableRecords =
   (tableId, options = {}) =>
   async (dispatch, getState) => {
@@ -1250,12 +1728,10 @@ export const loadTableRecords =
     const recordsState = state.bases.recordsState[tableId];
     const records = state.bases.records[tableId];
 
-    // If we already have records and not forcing reload or searching, return existing
     if (!forceReload && !searchQuery && !filters && records?.items?.length > 0 && !append) {
       return Promise.resolve(records);
     }
 
-    // If loading is already in progress, don't start another load
     if (recordsState?.loading) {
       return;
     }
@@ -1263,72 +1739,56 @@ export const loadTableRecords =
     dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: true }));
 
     try {
-      // Find the base that contains this table
+      // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
       const baseId = Object.keys(state.bases.bases).find((baseId) =>
-        state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+        state.bases.bases[baseId].tables?.items?.some((t) => t.id === numericTableId),
       );
       if (!baseId) {
         throw new Error(`Could not find base containing table ${tableId}`);
       }
 
-      // Find the table to get its name for Supabase-style endpoint
       const base = state.bases.bases[baseId];
-      const table = base.tables?.items?.find((t) => t.id === tableId);
+      const table = base.tables?.items?.find((t) => t.id === numericTableId);
       const tableName = table?.db_name || table?.name;
 
       if (!tableName) {
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
-      // Handle auth tables the same way as regular tables using admin proxy
-      // No special case needed anymore
-
-      // Build query parameters for regular tables
       const queryParams = {
         limit,
         offset,
       };
 
-      // Add search functionality using PostgREST text search
       if (searchQuery && searchQuery.trim()) {
-        // eslint-disable-next-line no-console
-        console.log('🔍 Building search query for:', searchQuery.trim());
-
-        // Get all text-based fields for full-text search
-        const textFields = table.fields?.items?.filter((field) =>
-          ['text', 'long_text', 'email', 'url', 'phone', 'single_line_text'].includes(field.type),
-        );
-
-        // eslint-disable-next-line no-console
-        console.log(
-          '📝 Text fields for search:',
-          textFields?.map((f) => f.db_field_name),
-        );
+        // Filter text-based PostgreSQL types for search
+        const textFields = table.fields?.items?.filter((field) => {
+          const dataType = field.data_type?.toLowerCase() || '';
+          return (
+            dataType === 'text' ||
+            dataType === 'character varying' ||
+            dataType === 'varchar' ||
+            dataType === 'char' ||
+            dataType === 'character'
+          );
+        });
 
         if (textFields && textFields.length > 0) {
-          // Create OR conditions for text search across multiple fields
           const searchConditions = textFields
             .map((field) => `${field.db_field_name}.ilike.*${searchQuery.trim()}*`)
             .join(',');
           queryParams.or = `(${searchConditions})`;
-
-          // eslint-disable-next-line no-console
-          console.log('🔍 Search query params:', queryParams);
-        } else {
-          // eslint-disable-next-line no-console
-          console.log('⚠️ No text fields found for search');
         }
       }
 
-      // Add custom filters if provided
       if (filters) {
         Object.assign(queryParams, filters);
       }
 
-      // Use existing total count, we'll get it from the actual data response
       let totalCount = records?.total || recordsState?.totalRecords || 0;
 
-      // Fetch the actual records
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
         params: queryParams,
       });
@@ -1337,7 +1797,6 @@ export const loadTableRecords =
         ? response.data
         : response.data.records || [];
 
-      // If we don't have a count yet, get it using select=count(*)
       if (!totalCount || totalCount === 0) {
         try {
           const countResponse = await optimai_database.head(
@@ -1349,29 +1808,20 @@ export const loadTableRecords =
             },
           );
 
-          // PostgREST returns count in Content-Range header: "0-49/12345"
           const contentRange =
             countResponse.headers['content-range'] || countResponse.headers['Content-Range'];
           if (contentRange) {
             const match = contentRange.match(/\/(\d+)$/);
             if (match) {
               totalCount = parseInt(match[1], 10);
-              // eslint-disable-next-line no-console
-              console.log('✅ Got count using HEAD request:', totalCount);
             }
           }
-        } catch (countError) {
-          // eslint-disable-next-line no-console
-          console.log('Count query failed, estimating from data:', countError);
-
-          // Fallback: estimate from the data we got
+        } catch {
           if (responseRecords.length < limit) {
             totalCount = responseRecords.length;
           } else {
             totalCount = Math.max(responseRecords.length * 20, 1000);
           }
-          // eslint-disable-next-line no-console
-          console.log('📊 Using estimated count:', totalCount);
         }
       }
 
@@ -1390,7 +1840,7 @@ export const loadTableRecords =
           tableId,
           loading: false,
           lastFetched: Date.now(),
-          cached: false, // Never cache paginated or searched results
+          cached: false,
           searchQuery,
           currentPage: page,
           pageSize: limit,
@@ -1408,69 +1858,56 @@ export const loadTableRecords =
     }
   };
 
-// Get total record count for a table using PostgREST select=count(*)
 export const getTableRecordCount = (tableId) => async (dispatch, getState) => {
   try {
     const state = getState();
+    // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-    // Find the base that contains this table
     const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+      state.bases.bases[baseId].tables?.items?.some((t) => t.id === numericTableId),
     );
     if (!baseId) {
       throw new Error(`Could not find base containing table ${tableId}`);
     }
 
-    // Find the table to get its name
     const base = state.bases.bases[baseId];
-    const table = base.tables?.items?.find((t) => t.id === tableId);
+    const table = base.tables?.items?.find((t) => t.id === numericTableId);
     const tableName = table?.db_name || table?.name;
 
     if (!tableName) {
       throw new Error(`Could not find table name for table ${tableId}`);
     }
 
-    // Use PostgREST HEAD request with Prefer: count=exact (most optimal)
     const response = await optimai_database.head(`/admin/records/${baseId}/${tableName}`, {
       headers: {
         Prefer: 'count=exact',
       },
     });
 
-    // PostgREST returns count in Content-Range header: "0-49/12345"
     const contentRange = response.headers['content-range'] || response.headers['Content-Range'];
-    // eslint-disable-next-line no-console
-    console.log('🔍 Count function - Content-Range header:', contentRange);
 
     if (contentRange) {
       const match = contentRange.match(/\/(\d+)$/);
       if (match) {
         const count = parseInt(match[1], 10);
-        // eslint-disable-next-line no-console
-        console.log('✅ Count function extracted count:', count);
         return count;
       }
     }
 
     return 0;
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to get table record count:', error);
+  } catch {
     return 0;
   }
 };
 
-// Legacy function for backward compatibility - now just calls loadTableRecords
 export const loadAllTableRecords = (tableId, forceReload = false) =>
   loadTableRecords(tableId, { limit: 50, forceReload });
 
-// High-frequency real-time update handler for WebSocket integration
 export const handleRealTimeUpdates = (tableId, updates) => async (dispatch) => {
   try {
-    // Process updates in batches for better performance
     const { additions = [], updates: modifications = [], deletions = [] } = updates;
 
-    // Apply all changes in one action for optimal Redux performance
     if (additions.length > 0 || modifications.length > 0 || deletions.length > 0) {
       dispatch(
         integrateRealTimeUpdates({
@@ -1490,12 +1927,12 @@ export const handleRealTimeUpdates = (tableId, updates) => async (dispatch) => {
       processed: additions.length + modifications.length + deletions.length,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error handling real-time updates:', error);
     throw error;
   }
 };
 
-// Optimized pagination reload that preserves real-time updates
 export const reloadTablePageWithRealTime =
   (tableId, page = 0) =>
   async (dispatch, getState) => {
@@ -1503,7 +1940,6 @@ export const reloadTablePageWithRealTime =
     const recordsState = state.bases.recordsState[tableId];
 
     if (!recordsState) {
-      // If no state exists, do a normal load
       return dispatch(loadTableRecords(tableId, { page, forceReload: true }));
     }
 
@@ -1511,7 +1947,6 @@ export const reloadTablePageWithRealTime =
     const hasRealTimeUpdates = recordsState.hasRealTimeUpdates;
 
     try {
-      // Load fresh data from server
       const result = await dispatch(
         loadTableRecords(tableId, {
           page,
@@ -1520,26 +1955,23 @@ export const reloadTablePageWithRealTime =
         }),
       );
 
-      // If we had real-time updates, clear the flag since we've refreshed
       if (hasRealTimeUpdates) {
         dispatch(clearRealTimeUpdateFlags({ tableId }));
       }
 
       return result;
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error reloading table page:', error);
       throw error;
     }
   };
 
-// Enhanced database search that integrates with pagination and real-time updates
 export const searchTableRecords = (tableId, query) => async (dispatch, getState) => {
   if (!query || !query.trim()) {
-    // Clear search and reload current page
     dispatch(clearDatabaseSearchResults({ tableId }));
     dispatch(setDatabaseSearching(false));
 
-    // Reload the current page to restore original pagination
     const state = getState();
     const recordsState = state.bases.recordsState[tableId];
     const currentPage = recordsState?.currentPage || 0;
@@ -1560,50 +1992,54 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
 
   try {
     const state = getState();
+    // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+
     const recordsState = state.bases.recordsState[tableId];
-    // Find the base that contains this table
     const baseId = Object.keys(state.bases.bases).find((baseId) =>
-      state.bases.bases[baseId].tables?.items?.some((t) => t.id === tableId),
+      state.bases.bases[baseId].tables?.items?.some((t) => t.id === numericTableId),
     );
     if (!baseId) {
       throw new Error(`Could not find base containing table ${tableId}`);
     }
 
-    // Find the table to get its name and fields for search
     const base = state.bases.bases[baseId];
-    const table = base.tables?.items?.find((t) => t.id === tableId);
+    const table = base.tables?.items?.find((t) => t.id === numericTableId);
     const tableName = table?.db_name || table?.name;
     if (!tableName) {
       throw new Error(`Could not find table name for table ${tableId}`);
     }
 
-    // Build comprehensive search query using PostgREST
     const searchQuery = query.trim();
 
+    // Filter text-based PostgreSQL types for search
     const textFields =
-      table.fields?.items?.filter((field) =>
-        ['text', 'longText', 'email', 'url', 'phone', 'singleLineText', 'number'].includes(
-          field.type,
-        ),
-      ) || [];
+      table.fields?.items?.filter((field) => {
+        const dataType = field.data_type?.toLowerCase() || '';
+        return (
+          dataType === 'text' ||
+          dataType === 'character varying' ||
+          dataType === 'varchar' ||
+          dataType === 'char' ||
+          dataType === 'character'
+        );
+      }) || [];
 
     if (textFields.length === 0) {
       dispatch(setDatabaseSearching(false));
       return;
     }
 
-    // Create PostgREST search conditions across all text fields
     const searchConditions = textFields
       .map((field) => `${field.db_field_name}.ilike.*${searchQuery}*`)
       .join(',');
 
     const queryParams = {
       or: `(${searchConditions})`,
-      limit: 500, // Higher limit for comprehensive search
-      order: 'created_at.desc', // Order by most recent
+      limit: 500,
+      order: 'created_at.desc',
     };
 
-    // Perform the database search
     const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
       params: queryParams,
     });
@@ -1612,12 +2048,10 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
       ? response.data
       : response.data.records || [];
 
-    // Merge search results with current records, avoiding duplicates
     const currentRecords = state.bases.records[tableId]?.items || [];
     const existingIds = new Set(currentRecords.map((record) => record.id));
     const newSearchRecords = searchRecords.filter((record) => !existingIds.has(record.id));
 
-    // Combine: current records + new search results
     const mergedRecords = [...currentRecords, ...newSearchRecords];
 
     dispatch(
@@ -1630,18 +2064,16 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
       }),
     );
 
-    // Store search metadata - only the NEW records found by search
     dispatch(
       setDatabaseSearchResults({
         tableId,
-        results: newSearchRecords, // Only new records, not duplicates
+        results: newSearchRecords,
         query: searchQuery,
-        totalSearchResults: searchRecords.length, // Total from database
-        newRecordsFound: newSearchRecords.length, // New records added
+        totalSearchResults: searchRecords.length,
+        newRecordsFound: newSearchRecords.length,
       }),
     );
 
-    // Update records state to indicate we're in search mode
     if (recordsState) {
       dispatch(
         slice.actions.setTableRecordsState({
@@ -1663,52 +2095,38 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
   }
 };
 
-// Load specific page of records
 export const loadTablePage = (tableId, page) => async (dispatch, getState) => {
-  // eslint-disable-next-line no-console
-  console.log('📄 loadTablePage called for table:', tableId, 'page:', page);
-
   const state = getState();
   const recordsState = state.bases.recordsState[tableId];
 
-  // eslint-disable-next-line no-console
-  console.log('📊 Current recordsState:', recordsState);
-
   if (!recordsState || recordsState.loading) {
-    // eslint-disable-next-line no-console
-    console.log('⚠️ Cannot load page - no recordsState or already loading');
     return;
   }
 
   const pageSize = recordsState.pageSize || 50;
   const searchQuery = recordsState.searchQuery;
 
-  // eslint-disable-next-line no-console
-  console.log('📄 Loading page with params:', { page, pageSize, searchQuery });
-
   try {
     await dispatch(
       loadTableRecords(tableId, {
         page,
         limit: pageSize,
-        searchQuery, // Maintain search context
-        forceReload: true, // Always reload when changing pages
+        searchQuery,
+        forceReload: true,
       }),
     );
-    // eslint-disable-next-line no-console
-    console.log('✅ Successfully loaded page:', page);
   } catch (loadError) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load table page:', loadError);
     throw loadError;
   }
 };
 
-// Base selectors
+// ============================================================================
+// SELECTORS (unchanged)
+// ============================================================================
+
 export const selectBaseState = (state) => state.bases;
 export const selectBases = (state) => selectBaseState(state).bases;
 
-// Memoized complex selectors
 export const selectBaseById = createSelector(
   [selectBases, (_, baseId) => baseId],
   (bases, baseId) => bases[baseId],
@@ -1721,7 +2139,11 @@ export const selectTablesByBaseId = createSelector(
 
 export const selectTableById = createSelector(
   [selectTablesByBaseId, (_, __, tableId) => tableId],
-  (tables, tableId) => tables.find((table) => table.id === tableId),
+  (tables, tableId) => {
+    // Convert tableId to number for comparison (pg-meta returns numeric IDs)
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    return tables.find((table) => table.id === numericTableId);
+  },
 );
 
 export const selectFieldsByTableId = createSelector(
@@ -1737,7 +2159,6 @@ export const selectViewsByTableId = createSelector(
 export const selectCurrentView = createSelector(
   [selectViewsByTableId, (_, __, ___, viewId) => viewId],
   (views, viewId) => {
-    // Si no hay vistas, crear una vista por defecto
     if (!views || views.length === 0) {
       return {
         id: 'default',
@@ -1747,12 +2168,10 @@ export const selectCurrentView = createSelector(
       };
     }
 
-    // Buscar la vista por ID o usar la primera disponible
     return views.find((v) => v.id === viewId) || views[0];
   },
 );
 
-// Records selectors
 export const selectRecordsState = createSelector([selectBaseState], (state) => state.records);
 
 export const selectTableRecords = createSelector(
@@ -1790,7 +2209,7 @@ export const selectTablePaginationInfo = createSelector(
       totalPages: recordsState.totalPages || 1,
       pageSize: recordsState.pageSize || 50,
       totalRecords: recordsState.totalRecords || 0,
-      isLastPageFound: true, // We always know the total with database count
+      isLastPageFound: true,
       hasNewRecordsOnPreviousPages: recordsState.hasNewRecordsOnPreviousPages || false,
     };
   },
@@ -1811,13 +2230,11 @@ export const createRecordPrimaryValueSelector = (baseId, tableId, recordId) =>
       const record = records.find((r) => r.id === recordId);
       if (!record) return `Record ${recordId}`;
 
-      // Try to find primary field first, fallback to first field
       const fieldToUse = fields.find((field) => field.is_primary) || fields[0];
       return record[fieldToUse?.db_field_name] || `Record ${recordId}`;
     },
   );
 
-// Database navigation selectors
 export const selectDatabaseNavigation = createSelector(
   [selectBaseState],
   (state) => state.databaseNavigation,
@@ -1853,7 +2270,6 @@ export const selectDatabaseSearchResults = createSelector(
   (navigation, tableId) => navigation.searchResults[tableId] || null,
 );
 
-// User cache selectors
 export const selectUserCache = createSelector([selectBaseState], (state) => state.userCache);
 
 export const selectUserCacheState = createSelector(
@@ -1875,11 +2291,9 @@ export const createUserDisplayValueSelector = (baseId, userId) =>
   createSelector([(state) => selectUserCacheForBase(state, baseId)], (users) => {
     const user = users[userId];
     if (!user) {
-      return userId; // Fallback to ID if user not found
+      return userId;
     }
 
-    // Try different possible field names for display value
-    // Common field names in auth systems: email, username, name, first_name, last_name, display_name, etc.
     const displayValue =
       user.email ||
       user.username ||
@@ -1892,7 +2306,6 @@ export const createUserDisplayValueSelector = (baseId, userId) =>
       user.displayName ||
       user.firstName ||
       user.lastName ||
-      // Try concatenating first and last name
       (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
       (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null) ||
       userId;

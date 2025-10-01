@@ -16,6 +16,12 @@ const directCopy = (text) => {
   document.body.removeChild(textarea);
 };
 
+// Helper function to check if a row is a new record row
+const isNewRecordRow = (data) => {
+  if (!data || !data.id) return true;
+  return data.id === '__new__' || data.id === '+' || data.id === '';
+};
+
 const createRecordContextMenuItems = ({
   selectedNodes,
   currentNode,
@@ -83,9 +89,9 @@ const createRecordContextMenuItems = ({
 
       if (rows.length === 0) return;
 
-      if (params.node?.data.id === '+') {
+      if (isNewRecordRow(params.node?.data)) {
         handlePasteIntoNewRow(rows, params, onAddRecord);
-      } else if (params.node?.data.id !== '+') {
+      } else {
         handlePasteIntoExistingRow(rows, params, onUpdateRecord);
       }
     } catch (err) {
@@ -104,7 +110,7 @@ const createRecordContextMenuItems = ({
           onDuplicateRecord(currentNode.data.id);
         }
       },
-      disabled: !hasSelection && (!currentNode || currentNode.data.id === '+'),
+      disabled: !hasSelection && (!currentNode || isNewRecordRow(currentNode.data)),
     },
     {
       name: 'Apply template',
@@ -114,7 +120,7 @@ const createRecordContextMenuItems = ({
     {
       name: 'Expand record',
       icon: '<span class="ag-icon ag-icon-maximize"></span>',
-      disabled: !params.node || params.node.data.id === '+',
+      disabled: !params.node || isNewRecordRow(params.node.data),
       action: () => handleExpandRecord(params.node.data.id),
     },
     'separator',
@@ -144,11 +150,11 @@ const createRecordContextMenuItems = ({
         if (hasSelection) {
           const selectedIds = selectedNodes.map((node) => node.data.id);
           onDeleteRecords(selectedIds);
-        } else if (currentNode && currentNode.data.id !== '+') {
+        } else if (currentNode && !isNewRecordRow(currentNode.data)) {
           onDeleteRecords([currentNode.data.id]);
         }
       },
-      disabled: !hasSelection && (!currentNode || currentNode.data.id === '+'),
+      disabled: !hasSelection && (!currentNode || isNewRecordRow(currentNode.data)),
     },
   ];
 };

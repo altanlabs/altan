@@ -17,7 +17,7 @@ export default function CookieManager() {
   useEffect(() => {
     if (isLoading || !hasConsent) return;
 
-    // Initialize analytics services (Google Analytics, PostHog, etc.)
+    // Initialize analytics services (Google Analytics, etc.)
     executeWithConsent(
       () => {
         initializeAnalytics();
@@ -56,11 +56,6 @@ function initializeAnalytics() {
     window.gtag('consent', 'update', {
       analytics_storage: 'granted',
     });
-  }
-
-  // PostHog
-  if (window.posthog) {
-    window.posthog.opt_in_capturing();
   }
 
   // Microsoft Clarity

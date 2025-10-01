@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo } from 'react';
 
 import TableTabs from './TableTabs.jsx';
 import LoadingFallback from '../../LoadingFallback.jsx';
@@ -16,16 +16,6 @@ function BaseLayout({
   viewId,
   triggerImport,
 }) {
-  // Local pagination state
-  const [paginationInfo, setPaginationInfo] = useState(null);
-  const [paginationHandlers, setPaginationHandlers] = useState(null);
-
-  // Handle pagination changes from child components
-  const handlePaginationChange = useCallback((paginationData) => {
-    setPaginationInfo(paginationData.paginationInfo);
-    setPaginationHandlers(paginationData.handlers);
-  }, []);
-
   // ------------------
   // Main Content Block: TableTabs on top and Table view below.
   // Uses min-w-0 to allow flex sizing without overflow.
@@ -40,11 +30,6 @@ function BaseLayout({
           onImportTable={handleImportTable}
           isLoading={state.isTableSwitching}
           baseId={baseId}
-          paginationInfo={paginationInfo}
-          onGoToFirstPage={paginationHandlers?.onGoToFirstPage}
-          onGoToLastPage={paginationHandlers?.onGoToLastPage}
-          onGoToNextPage={paginationHandlers?.onGoToNextPage}
-          onGoToPreviousPage={paginationHandlers?.onGoToPreviousPage}
         />
       </div>
       <div className="flex-1 relative overflow-auto min-w-0">
@@ -54,7 +39,6 @@ function BaseLayout({
             tableId={tableId}
             viewId={viewId}
             baseId={baseId}
-            onPaginationChange={handlePaginationChange}
             triggerImport={triggerImport}
           />
         )}

@@ -20,10 +20,19 @@ export const getDefaultColumnDef = ({
   cellEditorPopup: true,
 
   // Simple cell style that doesn't interfere with AG-Grid's layout
-  cellStyle: (params) => {
+  cellStyle: () => {
     const fieldName = field.name?.toLowerCase() || field.db_field_name?.toLowerCase() || '';
+    // Check if it's a numeric type (PostgreSQL)
+    const isNumericType =
+      field.data_type === 'numeric' ||
+      field.data_type === 'decimal' ||
+      field.data_type === 'integer' ||
+      field.data_type === 'bigint' ||
+      field.data_type === 'smallint' ||
+      field.data_type === 'real' ||
+      field.data_type === 'double precision';
     const isCurrencyField =
-      field.type === 'number' &&
+      isNumericType &&
       (fieldName.includes('price') ||
         fieldName.includes('cost') ||
         fieldName.includes('revenue') ||
@@ -52,7 +61,17 @@ export const getDefaultColumnDef = ({
   tooltipField: field.db_field_name,
 
   valueFormatter: (params) => {
-    if (field.type === 'number') {
+    // Check if it's a numeric type (PostgreSQL)
+    const isNumericType =
+      field.data_type === 'numeric' ||
+      field.data_type === 'decimal' ||
+      field.data_type === 'integer' ||
+      field.data_type === 'bigint' ||
+      field.data_type === 'smallint' ||
+      field.data_type === 'real' ||
+      field.data_type === 'double precision';
+
+    if (isNumericType) {
       const value = params.value;
       if (value === null || value === undefined || value === '') return '';
 
@@ -90,8 +109,17 @@ export const getDefaultColumnDef = ({
 
     // Check if this looks like a currency field for number types
     const fieldName = field.name?.toLowerCase() || field.db_field_name?.toLowerCase() || '';
+    // Check if it's a numeric type (PostgreSQL)
+    const isNumericType =
+      field.data_type === 'numeric' ||
+      field.data_type === 'decimal' ||
+      field.data_type === 'integer' ||
+      field.data_type === 'bigint' ||
+      field.data_type === 'smallint' ||
+      field.data_type === 'real' ||
+      field.data_type === 'double precision';
     const isCurrencyField =
-      field.type === 'number' &&
+      isNumericType &&
       (fieldName.includes('price') ||
         fieldName.includes('cost') ||
         fieldName.includes('revenue') ||

@@ -64,8 +64,6 @@ const trackEvent = async (
 
     if (error) {
       console.error('Error tracking event:', error);
-    } else {
-      console.log('Event tracked successfully:', eventName, eventData);
     }
 
     return { data, error };

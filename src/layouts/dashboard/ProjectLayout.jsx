@@ -1,12 +1,11 @@
 /* eslint-disable react/display-name */
-import { Box } from '@mui/material';
+import { Box, Tooltip, IconButton } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useEffect, memo, useMemo } from 'react';
+import { useEffect, memo, useMemo, useCallback } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
 
 import ProjectHeader from './header/ProjectHeader.jsx';
 import Main from './Main.jsx';
-import FloatingChatWidget from '../../components/chat/FloatingChatWidget.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
@@ -17,6 +16,8 @@ import {
   getAltanerById,
   selectCurrentAltaner,
   selectSortedAltanerComponents,
+  setDisplayModeForProject,
+  selectDisplayMode,
 } from '../../redux/slices/altaners';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
 import { getFlows } from '../../redux/slices/flows';
@@ -76,6 +77,7 @@ const ProjectLayout = ({ children }) => {
   const { altanerId, componentId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
+  const displayMode = useSelector(selectDisplayMode);
 
   // Get current component and interface ID
   const currentComponent = sortedComponents?.[componentId];
@@ -162,6 +164,12 @@ const ProjectLayout = ({ children }) => {
     dispatch(getRoles());
   }, []);
 
+  const handleOpenSidebar = useCallback(() => {
+    if (altanerId) {
+      dispatch(setDisplayModeForProject({ altanerId, displayMode: 'both' }));
+    }
+  }, [altanerId]);
+
   if (!accountInitialized || !!accountLoading) return <LoadingScreen />;
 
   return (
@@ -177,8 +185,74 @@ const ProjectLayout = ({ children }) => {
         <Main>{children}</Main>
       </Box>
 
-      {/* Floating Chat Widget - only show when altaner has room_id */}
-      {altaner?.room_id && <FloatingChatWidget />}
+      {/* Floating Sidebar Toggle - only show when in preview mode and altaner has room_id */}
+      {altaner?.room_id && displayMode === 'preview' && (
+        <Tooltip title="Open Sidebar" placement="right" arrow>
+          <IconButton
+            onClick={handleOpenSidebar}
+            sx={{
+              position: 'fixed',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1001,
+              width: 12,
+              height: 56,
+              minWidth: 'unset',
+              padding: 0,
+              borderRadius: '0 8px 8px 0',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.15)'
+                  : 'rgba(0, 0, 0, 0.12)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: 'none',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 2px 8px rgba(0, 0, 0, 0.2)'
+                  : '0 2px 8px rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                width: 28,
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(0, 0, 0, 0.16)',
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? '0 4px 16px rgba(0, 0, 0, 0.3)'
+                    : '0 4px 16px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                opacity: 0,
+                transition: 'opacity 0.2s ease-in-out',
+              }}
+              className="chevron-icon"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+            <style>
+              {`
+                .MuiIconButton-root:hover .chevron-icon {
+                  opacity: 0.7;
+                }
+              `}
+            </style>
+          </IconButton>
+        </Tooltip>
+      )}
     </VoiceConversationProvider>
   );
 };

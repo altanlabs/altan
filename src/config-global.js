@@ -28,10 +28,11 @@ export const AUTH0_API = {
 
 export const MAP_API = import.meta.env.VITE_MAPBOX_API;
 
-export const POSTHOG_API = {
-  key: import.meta.env.VITE_PUBLIC_POSTHOG_KEY,
-  host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-};
+// PostHog has been deprecated - now using Supabase analytics
+// export const POSTHOG_API = {
+//   key: import.meta.env.VITE_PUBLIC_POSTHOG_KEY,
+//   host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+// };
 
 // ROOT PATH AFTER LOGIN SUCCESSFUL
 export const PATH_AFTER_LOGIN = PATH_DASHBOARD.general.dashboard;

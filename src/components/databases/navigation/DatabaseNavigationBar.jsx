@@ -21,9 +21,7 @@ import {
 import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
 import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
-import CreateRecordDialog from '../records/CreateRecordDialog.jsx';
-import RLSSettingsDialog from '../table/RLSSettingsDialog.jsx';
-import PostgRESTProxyDialog from '../dialogs/PostgRESTProxyDialog.jsx';
+import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
 
 function DatabaseNavigationBar({
   disabled = false,
@@ -35,9 +33,7 @@ function DatabaseNavigationBar({
   
   // Dialog states
   const [openCreateRecord, setOpenCreateRecord] = useState(false);
-  const [openRLSSettings, setOpenRLSSettings] = useState(false);
   const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
-  const [openPostgRESTProxy, setOpenPostgRESTProxy] = useState(false);
 
   // Get baseId from route params
   const baseId = routeBaseId;
@@ -122,17 +118,57 @@ function DatabaseNavigationBar({
     setOpenCreateRecord(true);
   }, []);
 
-  const handleDatabaseRLSSettings = useCallback(() => {
-    setOpenRLSSettings(true);
-  }, []);
-
   const handleDatabaseInfo = useCallback(() => {
     setOpenDatabaseInfo(true);
   }, []);
 
-  const handlePostgRESTProxy = useCallback(() => {
-    setOpenPostgRESTProxy(true);
-  }, []);
+  const handleExportCSV = useCallback(() => {
+    if (!database || !tableId) return;
+
+    // Find current table
+    const currentTable = database.tables?.items?.find(t => t.id === tableId);
+    if (!currentTable) return;
+
+    // Get records from the current table
+    const records = currentTable.records?.items || [];
+    if (records.length === 0) {
+      // eslint-disable-next-line no-console
+      console.warn('No records to export');
+      return;
+    }
+
+    // Get column headers from the first record
+    const headers = Object.keys(records[0]);
+    
+    // Create CSV content
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    
+    records.forEach(record => {
+      const values = headers.map(header => {
+        const value = record[header];
+        // Escape commas and quotes in values
+        const escaped = String(value ?? '').replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [database, tableId]);
 
   // Cleanup debounced function on unmount
   useEffect(() => {
@@ -149,10 +185,10 @@ function DatabaseNavigationBar({
         alignItems: 'center',
         height: 42,
         px: 2,
-        gap: 1,
+        gap: 1.5,
       }}
     >
-      {/* Glassmorphic Container */}
+      {/* Search Bar - Glassmorphic Container */}
       <Box
         sx={{
           display: 'flex',
@@ -169,241 +205,203 @@ function DatabaseNavigationBar({
               ? `1px solid ${alpha(theme.palette.divider, 0.12)}`
               : 'none',
           overflow: 'hidden',
-          px: 1,
-          gap: 1,
+          px: 1.5,
+          gap: 1.5,
           transition: theme.transitions.create(['background-color', 'border-color'], {
             duration: theme.transitions.duration.shorter,
           }),
         }}
       >
-        {/* Left Section - View Controls */}
-        <Stack
-          direction="row"
-          spacing={0.5}
-          alignItems="center"
-        >
-          {/* Database Info */}
-          <Tooltip title="Database settings">
-            <IconButton
-              size="small"
-              onClick={handleDatabaseInfo}
-              disabled={disabled || !database}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.info.main, 0.08),
-                  color: theme.palette.info.main,
-                },
-              }}
-            >
-              <Iconify
-                icon="mdi:cog-outline"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-
-        {/* Center Section - Search */}
-        <Box
+        {/* Search Icon */}
+        <Iconify
+          icon="mdi:magnify"
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            flex: 1,
-            minWidth: isMobile ? 120 : 200,
-            maxWidth: isMobile ? 200 : 400,
+            width: 18,
+            height: 18,
+            color: alpha(theme.palette.text.secondary, 0.6),
+            flexShrink: 0,
           }}
-        >
-          <Iconify
-            icon="mdi:magnify"
-            sx={{
-              width: 16,
-              height: 16,
-              color: alpha(theme.palette.text.secondary, 0.5),
-              mr: 1,
-            }}
-          />
-          <TextField
-            ref={inputRef}
-            value={quickFilter}
-            onChange={handleFilterChange}
-            placeholder="Search..."
-            size="small"
-            disabled={disabled}
-            sx={{
-              flex: 1,
-              '& .MuiOutlinedInput-root': {
-                height: 32,
-                borderRadius: 1.5,
-                backgroundColor: 'transparent',
-                border: databaseSearching
-                  ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
-                  : 'none',
-                '& fieldset': {
-                  border: 'none',
-                },
-                '&:hover fieldset': {
-                  border: 'none',
-                },
-                '&.Mui-focused fieldset': {
-                  border: 'none',
-                },
-              },
-              '& .MuiInputBase-input': {
-                fontSize: '0.875rem',
-                py: 0,
-                px: 0,
-                color: quickFilter && !databaseSearching ? theme.palette.primary.main : 'inherit',
-                '&::placeholder': {
-                  color: alpha(theme.palette.text.secondary, 0.5),
-                  opacity: 1,
-                },
-              },
-            }}
-          />
-        </Box>
+        />
 
-        {/* Right Section - Record Count & Actions */}
-        <Stack
-          direction="row"
-          spacing={0.5}
-          alignItems="center"
-        >
-          {/* Record Count or Search Results - Hide on mobile */}
-          {!isMobile && (
-            <>
-              {searchResults && quickFilter ? (
-                <Chip
-                  label={
-                    searchResults.newRecordsFound > 0
-                      ? `+${searchResults.newRecordsFound} new found`
-                      : searchResults.totalSearchResults > 0
-                        ? `${searchResults.totalSearchResults} matches (all shown)`
-                        : 'No matches found'
-                  }
-                  size="small"
-                  sx={{
-                    height: 24,
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                    color: theme.palette.primary.main,
-                    border: 'none',
-                    '& .MuiChip-label': {
-                      px: 1,
-                    },
-                  }}
-                />
-              ) : actualRecordCount > 0 ? (
-                <Chip
-                  label={`${actualRecordCount.toLocaleString()} records`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    backgroundColor: alpha(theme.palette.text.secondary, 0.08),
-                    color: theme.palette.text.secondary,
-                    border: 'none',
-                    '& .MuiChip-label': {
-                      px: 1,
-                    },
-                  }}
-                />
-              ) : null}
-            </>
-          )}
-
-          {/* RLS Settings */}
-          <Tooltip title="RLS Settings">
-            <IconButton
-              size="small"
-              onClick={handleDatabaseRLSSettings}
-              disabled={disabled}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.text.primary,
-                },
-              }}
-            >
-              <Iconify
-                icon="mdi:shield-account"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
-
-          {/* PostgREST Proxy */}
-          <Tooltip title="PostgREST Admin Proxy">
-            <IconButton
-              size="small"
-              onClick={handlePostgRESTProxy}
-              disabled={disabled || !baseId}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.warning.main, 0.08),
-                  color: theme.palette.warning.main,
-                },
-              }}
-            >
-              <Iconify
-                icon="mdi:api"
-                sx={{ width: 16, height: 16 }}
-              />
-            </IconButton>
-          </Tooltip>
-
-          {/* Add Record - Primary Action */}
-          {/* <Button
-            size="small"
-            variant="contained"
-            startIcon={
-              !isMobile ? (
-                <Iconify
-                  icon="mdi:plus"
-                  sx={{ width: 16, height: 16 }}
-                />
-              ) : null
-            }
-            onClick={onAddRecord}
-            disabled={disabled}
-            sx={{
+        {/* Search Input */}
+        <TextField
+          ref={inputRef}
+          value={quickFilter}
+          onChange={handleFilterChange}
+          placeholder="Search records..."
+          size="small"
+          disabled={disabled}
+          sx={{
+            flex: 1,
+            minWidth: isMobile ? 100 : 180,
+            '& .MuiOutlinedInput-root': {
               height: 32,
-              borderRadius: 1.5,
-              px: isMobile ? 1.5 : 2,
-              minWidth: isMobile ? 32 : 'auto',
+              backgroundColor: 'transparent',
+              '& fieldset': {
+                border: 'none',
+              },
+            },
+            '& .MuiInputBase-input': {
               fontSize: '0.875rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: 'none',
+              py: 0,
+              px: 0,
+              color: quickFilter ? theme.palette.primary.main : 'inherit',
+              fontWeight: quickFilter ? 500 : 400,
+              '&::placeholder': {
+                color: alpha(theme.palette.text.secondary, 0.5),
+                opacity: 1,
+              },
+            },
+          }}
+        />
+
+        {/* Record Count - Inside search bar */}
+        {!isMobile && (
+          <>
+            {searchResults && quickFilter ? (
+              <Chip
+                label={
+                  searchResults.newRecordsFound > 0
+                    ? `+${searchResults.newRecordsFound} new`
+                    : searchResults.totalSearchResults > 0
+                      ? `${searchResults.totalSearchResults} found`
+                      : 'No matches'
+                }
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                  color: theme.palette.primary.main,
+                  border: 'none',
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
+                }}
+              />
+            ) : actualRecordCount > 0 ? (
+              <Chip
+                label={`${actualRecordCount.toLocaleString()}`}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  backgroundColor: alpha(theme.palette.text.secondary, 0.1),
+                  color: theme.palette.text.secondary,
+                  border: 'none',
+                  '& .MuiChip-label': {
+                    px: 1,
+                  },
+                }}
+              />
+            ) : null}
+          </>
+        )}
+      </Box>
+
+      {/* Action Buttons - Outside search bar */}
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+      >
+        {/* Settings Button */}
+        <Tooltip title="Database settings">
+          <IconButton
+            size="small"
+            onClick={handleDatabaseInfo}
+            disabled={disabled || !database}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              color: theme.palette.text.secondary,
+              backgroundColor: alpha(theme.palette.background.paper, 0.6),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
               '&:hover': {
-                boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
+                backgroundColor: alpha(theme.palette.info.main, 0.12),
+                color: theme.palette.info.main,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                transform: 'translateY(-1px)',
               },
             }}
           >
-            {isMobile ? (
-              <Iconify
-                icon="mdi:plus"
-                sx={{ width: 16, height: 16 }}
-              />
-            ) : (
-              'Add'
-            )}
-          </Button> */}
-        </Stack>
-      </Box>
+            <Iconify
+              icon="mdi:cog-outline"
+              sx={{ width: 18, height: 18 }}
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* Export CSV Button */}
+        <Tooltip title="Export to CSV">
+          <IconButton
+            size="small"
+            onClick={handleExportCSV}
+            disabled={disabled || !tableId || actualRecordCount === 0}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              color: theme.palette.success.main,
+              backgroundColor: alpha(theme.palette.success.main, 0.12),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.success.main, 0.2),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:download"
+              sx={{ width: 18, height: 18 }}
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* Create Record Button - Primary */}
+        <Tooltip title="Create new record">
+          <IconButton
+            size="small"
+            onClick={handleDatabaseAddRecord}
+            disabled={disabled || !tableId}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              color: theme.palette.mode === 'dark' ? theme.palette.primary.lighter : '#fff',
+              backgroundColor: theme.palette.primary.main,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
+              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                border: `1px solid ${alpha(theme.palette.primary.dark, 0.5)}`,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:plus"
+              sx={{ width: 20, height: 20 }}
+            />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
       {/* Database Dialogs */}
       {baseId && (
@@ -412,28 +410,15 @@ function DatabaseNavigationBar({
             open={openDatabaseInfo}
             onClose={() => setOpenDatabaseInfo(false)}
             database={database}
-          />
-          <PostgRESTProxyDialog
-            open={openPostgRESTProxy}
-            onClose={() => setOpenPostgRESTProxy(false)}
             baseId={baseId}
-            database={database}
           />
-          {database?.tables?.items?.[0] && (
-            <>
-              <CreateRecordDialog
-                baseId={baseId}
-                tableId={database.tables.items[0].id}
-                open={openCreateRecord}
-                onClose={() => setOpenCreateRecord(false)}
-              />
-              <RLSSettingsDialog
-                baseId={baseId}
-                table={database.tables.items[0]}
-                open={openRLSSettings}
-                onClose={() => setOpenRLSSettings(false)}
-              />
-            </>
+          {tableId && (
+            <CreateRecordDrawer
+              baseId={baseId}
+              tableId={tableId}
+              open={openCreateRecord}
+              onClose={() => setOpenCreateRecord(false)}
+            />
           )}
         </>
       )}

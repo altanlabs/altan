@@ -24,13 +24,10 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
   editable: false,
   sortable: true,
   valueGetter: (params) => {
-    if (params.data?.id === '+') return '';
     return params.data?.id || '';
   },
   sort: 'asc',
   comparator: (valueA, valueB) => {
-    if (valueA === '+') return 1;
-    if (valueB === '+') return -1;
     return String(valueA).localeCompare(String(valueB));
   },
   mainMenuItems: [
@@ -42,7 +39,7 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
     'autoSizeAll',
   ],
   cellRenderer: (params) => {
-    if (params.data.id === '+') return null;
+    if (!params.value) return null;
     const truncatedId = typeof params.value === 'string' ? params.value.slice(0, 4) : params.value;
     return (
       <div className="flex items-center justify-center w-full h-full group relative">

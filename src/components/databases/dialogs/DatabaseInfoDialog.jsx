@@ -29,7 +29,7 @@ import { updateBaseById } from '../../../redux/slices/bases';
 import Iconify from '../../iconify';
 import EditTableDrawer from '../table/EditTableDrawer';
 
-function DatabaseInfoDialog({ open, onClose, database, onDatabaseUpdate }) {
+function DatabaseInfoDialog({ open, onClose, database, onDatabaseUpdate, baseId }) {
   const theme = useTheme();
   const dispatch = useDispatch();
 
@@ -533,6 +533,7 @@ DatabaseInfoDialog.propTypes = {
   onClose: PropTypes.func.isRequired,
   database: PropTypes.object,
   onDatabaseUpdate: PropTypes.func,
+  baseId: PropTypes.string,
 };
 
 export default DatabaseInfoDialog;

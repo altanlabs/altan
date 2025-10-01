@@ -2,7 +2,7 @@ import { analytics } from '../lib/analytics';
 
 /**
  * React hook for analytics tracking
- * Provides easy access to PostHog analytics throughout the app
+ * Provides easy access to Supabase analytics throughout the app
  */
 export const useAnalytics = () => {
   return {

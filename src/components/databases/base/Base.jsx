@@ -31,11 +31,13 @@ function Base({
   baseId: explicitBaseId,
 }) {
   console.log('Base re-render');
-  const { altanerId, altanerComponentId, tableId, viewId, baseId: routeBaseId } = useParams();
+  const { altanerId, altanerComponentId, tableId, viewId: urlViewId, baseId: routeBaseId } = useParams();
   const history = useHistory();
   const ws = useHermesWebSocket();
 
   const baseId = explicitBaseId || routeBaseId || ids[0];
+  // Default to "default" view if not in URL
+  const viewId = urlViewId || 'default';
 
   const baseSelector = useMemo(
     () => (state) => (baseId ? selectBaseById(state, baseId) : null),
@@ -63,7 +65,7 @@ function Base({
   }, [ids, baseId, altanerId, altanerComponentId, onNavigate]);
 
   const navigateToPath = useCallback(
-    (newTableId, newViewId) => {
+    (newTableId) => {
       // Set table switching state to true when navigation starts
       setState((prev) => ({
         ...prev,
@@ -75,17 +77,15 @@ function Base({
         onNavigate?.(altanerComponentId, {
           baseId,
           tableId: newTableId,
-          viewId: newViewId,
         });
       } else if (onNavigate) {
         onNavigate(null, {
           baseId,
           tableId: newTableId,
-          viewId: newViewId,
         });
       } else {
         const currentSearch = window.location.search;
-        history.push(`/bases/${baseId}/tables/${newTableId}/views/${newViewId}${currentSearch}`);
+        history.push(`/bases/${baseId}/tables/${newTableId}${currentSearch}`);
       }
 
       // Pre-fetch the table records to improve loading performance
@@ -96,33 +96,38 @@ function Base({
     [altanerId, altanerComponentId, baseId, onNavigate, history],
   );
 
-  // Load base data and handle initial navigation
+  // Load base data
   useEffect(() => {
     if (baseId) {
-      dispatch(getBaseById(baseId)).then((response) => {
-        const tables = response?.base?.tables?.items || [];
-
-        // Preload users for this base to avoid redundant API calls
-        // This runs in parallel with navigation, so it won't block the UI
-        dispatch(preloadUsersForBase(baseId)).catch(() => {
-          // Silently handle errors - user cache is an optimization, not critical
-        });
-
-        if (tables.length > 0) {
-          const firstTable = tables[0];
-          const firstView = firstTable.views?.items?.[0]?.id || 'default';
-
-          if (!tableId) {
-            navigateToPath(firstTable.id, firstView);
-          } else if (!viewId) {
-            const currentTable = tables.find((table) => table.id === tableId);
-            const defaultView = currentTable?.views?.items?.[0]?.id || 'default';
-            navigateToPath(tableId, defaultView);
-          }
-        }
+      dispatch(getBaseById(baseId));
+      // Preload users for this base to avoid redundant API calls
+      dispatch(preloadUsersForBase(baseId)).catch(() => {
+        // Silently handle errors - user cache is an optimization, not critical
       });
     }
-  }, [baseId, tableId, viewId, navigateToPath]);
+  }, [baseId]);
+
+  // Handle initial navigation once base and tables are loaded
+  useEffect(() => {
+    if (!base || !base.tables?.items || base.tables.items.length === 0) return;
+
+    const tables = base.tables.items;
+    const firstTable = tables[0];
+
+    // Only navigate if we don't have a tableId yet
+    if (!tableId) {
+      // Use simplified URL without viewId
+      if (altanerId) {
+        onNavigate?.(altanerComponentId, { baseId, tableId: firstTable.id });
+      } else {
+        const currentSearch = window.location.search;
+        history.push(`/bases/${baseId}/tables/${firstTable.id}${currentSearch}`);
+      }
+    }
+    // Note: viewId is now optional - we use "default" internally without it being in the URL
+    // Note: Record loading is handled by Table.jsx component
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base?.tables?.items?.length, baseId]);
 
   // Clear table switching state when table or loading state changes
   useEffect(() => {
@@ -141,8 +146,7 @@ function Base({
             const remainingTables = base?.tables?.items?.filter((t) => t.id !== tableId);
             if (remainingTables?.length > 0) {
               const nextTable = remainingTables[0];
-              const nextView = nextTable.views?.items?.[0]?.id || 'default';
-              navigateToPath(nextTable.id, nextView);
+              navigateToPath(nextTable.id);
             } else {
               if (altanerId) {
                 onNavigate?.(altanerComponentId, { baseId });
@@ -178,9 +182,6 @@ function Base({
     (newTableId) => {
       if (newTableId === tableId) return; // Don't history.push if already on this tab
 
-      const targetTable = base?.tables?.items?.find((table) => table.id === newTableId);
-      const defaultView = targetTable?.views?.items?.[0]?.id || viewId || 'default';
-
       setState((prev) => ({
         ...prev,
         isTableSwitching: true,
@@ -188,9 +189,9 @@ function Base({
 
       dispatch(loadTableRecords(newTableId, { limit: 50 }));
 
-      navigateToPath(newTableId, defaultView);
+      navigateToPath(newTableId);
     },
-    [base?.tables?.items, viewId, navigateToPath, tableId],
+    [navigateToPath, tableId],
   );
 
   const handleOpenCreateTable = useCallback(
@@ -268,7 +269,13 @@ function Base({
     };
   }, [baseId]); // Only depend on baseId for cleanup
 
-  if (isBaseLoading) {
+  // Show loading skeleton while base or tables are loading
+  // Show loading if:
+  // 1. Base is loading from API
+  // 2. Base exists but tables haven't loaded yet (waiting for pg-meta)
+  const isLoadingSchema = baseId && (!base || !base.tables || !base.tables.items);
+
+  if (isBaseLoading || isLoadingSchema) {
     return <LoadingFallback />;
   }
   if (!baseId) {

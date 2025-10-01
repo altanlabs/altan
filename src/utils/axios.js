@@ -22,6 +22,12 @@ const optimai_database = axios.create({
   baseURL: 'https://database.altan.ai',
 });
 
+// pg-meta API for schema management (tables, columns, views, etc.)
+const optimai_pg_meta = axios.create({
+  name: 'optimai_pg_meta',
+  baseURL: 'https://database-api.altan.ai/v4/pg-meta',
+});
+
 const optimai_root = axios.create({
   name: 'optimai_root',
   baseURL: OPTIMAI_BASE_URL,
@@ -76,6 +82,7 @@ addResponseInterceptor(optimai_tables);
 addResponseInterceptor(optimai_agent);
 addResponseInterceptor(optimai_tables_legacy);
 addResponseInterceptor(optimai_database);
+addResponseInterceptor(optimai_pg_meta);
 addResponseInterceptor(optimai_auth);
 
 const authorizeUser = () => {
@@ -91,6 +98,7 @@ const authorizeUser = () => {
       setSession(accessToken, optimai_agent);
       setSession(accessToken, optimai_tables_legacy);
       setSession(accessToken, optimai_database);
+      setSession(accessToken, optimai_pg_meta);
       setSession(accessToken, optimai_auth);
       resolve({ accessToken });
     } catch (error) {
@@ -129,6 +137,7 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_integration);
           setSession(tokenString, optimai_agent);
           setSession(tokenString, optimai_database);
+          setSession(tokenString, optimai_pg_meta);
           setSession(tokenString, optimai_auth);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
@@ -157,6 +166,7 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_tables_legacy, originalRequest);
   setSession(accessToken, optimai_agent, originalRequest);
   setSession(accessToken, optimai_database, originalRequest);
+  setSession(accessToken, optimai_pg_meta, originalRequest);
   setSession(accessToken, optimai_auth, originalRequest);
 };
 
@@ -175,6 +185,7 @@ const axiosInstances = {
   optimai_agent,
   optimai_tables_legacy,
   optimai_database,
+  optimai_pg_meta,
   optimai_auth,
 };
 
@@ -198,6 +209,7 @@ export {
   optimai_agent,
   optimai_tables_legacy,
   optimai_database,
+  optimai_pg_meta,
   optimai_auth,
   authorizeUser,
   authorizeGuest,
@@ -251,3 +263,4 @@ setupAxiosErrorTracking(optimai_tables, 'optimai_tables');
 setupAxiosErrorTracking(optimai_agent, 'optimai_agent');
 setupAxiosErrorTracking(optimai_tables_legacy, 'optimai_tables_legacy');
 setupAxiosErrorTracking(optimai_database, 'optimai_database');
+setupAxiosErrorTracking(optimai_pg_meta, 'optimai_pg_meta');
