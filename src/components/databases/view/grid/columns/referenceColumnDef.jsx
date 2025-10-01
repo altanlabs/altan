@@ -1,6 +1,6 @@
 import RecordChip from '../../../records/RecordChip';
 
-export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems }) => ({
+export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems, baseId }) => ({
   field: field.db_field_name,
   headerName: field.name,
   editable: true,
@@ -23,15 +23,15 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems })
   cellRenderer: (params) => {
     if (!params.value) return null;
     const referenceOptions = field.options?.reference_options;
-    const foreignTableId = referenceOptions?.foreign_table;
+    const foreignTableName = referenceOptions?.foreign_table || referenceOptions?.foreign_table_name;
 
     return (
       <div className="h-full w-full flex items-center overflow-visible p-1">
         <div className="flex flex-wrap gap-1 min-w-0 w-full">
           <RecordChip
-            key={`${foreignTableId}-${params.value}`}
-            baseId={table.base_id}
-            tableId={foreignTableId}
+            key={`${foreignTableName}-${params.value}`}
+            baseId={baseId}
+            rawTableId={foreignTableName}
             recordId={params.value}
           />
         </div>
@@ -52,7 +52,7 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems })
   },
   cellEditorParams: {
     referenceOptions: field.options,
-    baseId: table.base_id,
+    baseId: baseId,
     tableId: table.id,
   },
   minWidth: 200,

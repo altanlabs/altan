@@ -835,16 +835,14 @@ export const fetchTables =
     try {
       const {
         include_columns = true,
+        include_relationships = true,
         excluded_schemas = 'pg_catalog,information_schema',
       } = options;
-
-      // Generate tenant schema name: tenant_{base_id} with hyphens → underscores
-      const tenantSchema = `tenant_${baseId.replace(/-/g, '_')}`;
 
       const response = await optimai_pg_meta.get(`/${baseId}/tables/`, {
         params: {
           include_columns,
-          included_schemas: tenantSchema, // Always use tenant-specific schema
+          include_relationships,
           excluded_schemas,
           include_system_schemas: false,
         },
@@ -954,6 +952,41 @@ export const deleteTableById =
     dispatch(deleteTable({ baseId, tableId }));
     return Promise.resolve();
   } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Fetch RLS policies for a table using pg-meta
+ * @param {string} baseId - Base ID
+ * @param {string} tableId - Table ID (numeric)
+ * @param {string} tableName - Table name (for pg-meta lookup)
+ * @param {string} schemaName - Schema name (e.g., tenant_xxx)
+ */
+export const fetchTablePolicies = (baseId, tableId, tableName, schemaName) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    console.log('🔐 Fetching RLS policies for table:', { baseId, tableId, tableName, schemaName });
+
+    const response = await optimai_pg_meta.get(`/${baseId}/policies/`, {
+      params: {
+        table_name: tableName,
+      },
+    });
+
+    const policies = response.data || [];
+    console.log('🔐 Policies fetched:', {
+      count: policies.length,
+      policies,
+      structure: policies[0] ? Object.keys(policies[0]) : 'no policies',
+    });
+
+    return policies;
+  } catch (error) {
+    console.error('❌ Error fetching policies:', error);
     dispatch(slice.actions.hasError(error.message));
     throw error;
   } finally {

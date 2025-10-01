@@ -62,12 +62,7 @@ export const getCreatedByColumnDef = ({ table }) => ({
   filter: true,
   mainMenuItems: ['sortAscending', 'sortDescending', 'separator', 'autoSizeThis', 'autoSizeAll'],
   cellRenderer: (params) => {
-    const isNewRecord =
-      params.data.id === '__new__' ||
-      params.data.id === '+' ||
-      !params.data.id ||
-      params.data.id === '';
-    if (isNewRecord) return null;
+    if (!params.value) return null;
 
     // Use cached user data instead of making individual API calls
     return (

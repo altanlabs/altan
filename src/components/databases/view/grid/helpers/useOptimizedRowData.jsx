@@ -7,21 +7,8 @@ const useOptimizedRowData = (records, fields, recentlyAddedIds) => {
 
   // Use memo to cache the processed records
   return useMemo(() => {
-    if (!Array.isArray(fields)) return [];
-
-    // Create the blank record once
-    const safeFields = Array.isArray(fields) ? fields : [];
-    const blankRecord = {
-      id: '__new__', // Use __new__ instead of '+' (AG-Grid might sanitize '+')
-      ...Object.fromEntries(
-        safeFields
-          .filter((field) => field && field.db_field_name)
-          .map((field) => [field.db_field_name, '']),
-      ),
-    };
-
-    // If records is not an array, return just the blank record
-    if (!Array.isArray(records)) return [blankRecord];
+    // If records is not an array, return empty array
+    if (!Array.isArray(records)) return [];
 
     // Filter out undefined records and deduplicate by ID
     const recordsMap = new Map();
@@ -38,14 +25,14 @@ const useOptimizedRowData = (records, fields, recentlyAddedIds) => {
       if (a.created_at && b.created_at) {
         return new Date(a.created_at) - new Date(b.created_at);
       }
-      return a.id.localeCompare(b.id);
+      return String(a.id).localeCompare(String(b.id));
     });
 
     // Store processed data for future comparisons
     prevProcessedDataRef.current = deduplicatedRecords;
 
-    // Return our final rows with the blank record at the end
-    return [...deduplicatedRecords, blankRecord];
+    // Return just the records (no blank row for inline creation)
+    return deduplicatedRecords;
   }, [records, fields, recentlyAddedIds]);
 };
 

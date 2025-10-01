@@ -1,6 +1,6 @@
 // src/components/databases/table/Table.jsx
-import { Typography, Button, Alert, Box } from '@mui/material';
-import { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
+import { Typography } from '@mui/material';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 
 import {
   selectTableById,
@@ -18,23 +18,16 @@ import {
   selectTableRecordsState,
   setTableRecordsState,
   loadTableRecords,
-  loadTablePage,
   getTableRecordCount,
-  clearRealTimeUpdateFlags,
 } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
 import Iconify from '../../iconify';
 import View from '../View';
 
-const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) => {
-  // eslint-disable-next-line no-console
-  console.log('Table re-render');
+const Table = ({ tableId, viewId, baseId, triggerImport }) => {
   // Track loading state
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [recordCountFetched, setRecordCountFetched] = useState(false);
-
-  // Use refs to avoid re-renders on pagination changes
-  const paginationHandlersRef = useRef({});
 
   // Reset loading states when tableId changes
   useEffect(() => {
@@ -79,57 +72,21 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
   const isLoading = useSelector(tableOnlySelectors.isLoadingSelector);
   const paginationInfo = useSelector(tableOnlySelectors.paginationInfoSelector);
 
-  // Stable pagination handlers - memoized to prevent re-renders
-  const handleGoToFirstPage = useCallback(() => {
-    dispatch(loadTablePage(tableId, 0));
-  }, [tableId]);
-
-  const handleGoToLastPage = useCallback(() => {
-    const totalPages = paginationHandlersRef.current.totalPages;
-    if (totalPages > 0) {
-      dispatch(loadTablePage(tableId, totalPages - 1));
-    }
-  }, [tableId]);
-
-  const handleGoToNextPage = useCallback(() => {
-    const { currentPage, totalPages } = paginationHandlersRef.current;
-    if (currentPage < totalPages - 1) {
-      dispatch(loadTablePage(tableId, currentPage + 1));
-    }
-  }, [tableId]);
-
-  const handleGoToPreviousPage = useCallback(() => {
-    const { currentPage } = paginationHandlersRef.current;
-    if (currentPage > 0) {
-      dispatch(loadTablePage(tableId, currentPage - 1));
-    }
-  }, [tableId]);
-
-  // Update pagination handlers ref when pagination info changes
+  // Smarter loading management - load records when table is available
   useEffect(() => {
-    if (paginationInfo) {
-      paginationHandlersRef.current = {
-        currentPage: paginationInfo.currentPage || 0,
-        totalPages: paginationInfo.totalPages || 1,
-      };
-    }
-  }, [paginationInfo]);
+    if (!tableId || !baseId || !table) return; // Wait for table to be in Redux state
 
-  // Smarter loading management - only load records if they aren't already loaded
-  useEffect(() => {
-    if (!tableId || !baseId) return;
-
-    // Don't wait for tableExists - it might not be set yet
+    // Load records for this table (only if not already loaded)
     const loadRecords = async () => {
       try {
-        await dispatch(loadTableRecords(tableId, { limit: 50 }));
+        await dispatch(loadTableRecords(tableId, { limit: 50, forceReload: false }));
       } finally {
         setIsInitialLoad(false);
       }
     };
 
     loadRecords();
-  }, [tableId, baseId]);
+  }, [tableId, baseId, table]);
 
   // Get accurate record count separately using PostgREST - only once per table
   useEffect(() => {
@@ -159,42 +116,6 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
     getCount();
   }, [tableId, recordCountFetched, paginationInfo?.pageSize]);
-
-  // Stable pagination callback - memoized to prevent re-renders
-  const stablePaginationCallback = useCallback(() => {
-    if (!onPaginationChange || !paginationInfo) return;
-
-    onPaginationChange({
-      paginationInfo,
-      handlers: {
-        onGoToFirstPage: handleGoToFirstPage,
-        onGoToLastPage: handleGoToLastPage,
-        onGoToNextPage: handleGoToNextPage,
-        onGoToPreviousPage: handleGoToPreviousPage,
-      },
-    });
-  }, [
-    onPaginationChange,
-    paginationInfo,
-    handleGoToFirstPage,
-    handleGoToLastPage,
-    handleGoToNextPage,
-    handleGoToPreviousPage,
-  ]);
-
-  // Pass pagination info up to parent components - debounced
-  useEffect(() => {
-    // Use a small delay to batch pagination updates
-    const timeoutId = setTimeout(stablePaginationCallback, 10);
-    return () => clearTimeout(timeoutId);
-  }, [stablePaginationCallback]);
-
-  // Handle new records notification
-  const handleGoToFirstPageForNewRecords = useCallback(() => {
-    dispatch(loadTablePage(tableId, 0));
-    // Clear the new records flag
-    dispatch(clearRealTimeUpdateFlags({ tableId }));
-  }, [tableId]);
 
   // Stable record handlers - memoized to prevent re-renders
   const handleAddField = useCallback(
@@ -255,8 +176,8 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
       onDeleteRecords: handleDeleteRecords,
       hasMore: false,
       isLoadingMore: false,
-      onPaginationChange,
       triggerImport,
+      baseId,
     }),
     [
       table,
@@ -269,8 +190,8 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
       handleAddRecord,
       handleUpdateRecord,
       handleDeleteRecords,
-      onPaginationChange,
       triggerImport,
+      baseId,
     ],
   );
 
@@ -290,25 +211,6 @@ const Table = ({ tableId, viewId, baseId, onPaginationChange, triggerImport }) =
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col">
-      {/* New Records Notification */}
-      {paginationInfo?.hasNewRecordsOnPreviousPages && paginationInfo?.currentPage > 0 && (
-        <Box sx={{ p: 1 }}>
-          <Alert
-            severity="info"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={handleGoToFirstPageForNewRecords}
-              >
-                View New Records
-              </Button>
-            }
-          >
-            New records have been added. Go to the first page to see them.
-          </Alert>
-        </Box>
-      )}
       <View {...viewProps} />
     </div>
   );

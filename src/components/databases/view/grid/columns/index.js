@@ -76,6 +76,7 @@ export const createColumnDefs = ({
   getCommonFieldMenuItems,
   onEditField,
   getAdditionalColumnProps,
+  baseId,
 }) => {
   const getFieldIcon = (dataType) => {
     // Map PostgreSQL types to icons
@@ -111,6 +112,20 @@ export const createColumnDefs = ({
 
     // 2. Regular user-defined fields (middle)
     ...regularFields.map((field) => {
+      // Check if this field is a foreign key by looking at table relationships
+      const isForeignKey = table.relationships?.some(
+        (rel) =>
+          rel.source_column_name === field.db_field_name && rel.constraint_type === 'FOREIGN KEY',
+      );
+      // If it's a foreign key, find the target table info
+      const foreignKeyRelationship = isForeignKey
+        ? table.relationships.find(
+            (rel) =>
+              rel.source_column_name === field.db_field_name &&
+              rel.constraint_type === 'FOREIGN KEY',
+          )
+        : null;
+
       // Determine column type based on PostgreSQL data_type
       const columnType = getColumnDefForPostgresType(field.data_type, field.format);
 
@@ -124,6 +139,29 @@ export const createColumnDefs = ({
 
       // Get additional column props if provided
       const additionalProps = getAdditionalColumnProps ? getAdditionalColumnProps(field) : {};
+
+      // If this is a foreign key, use reference column definition
+      if (isForeignKey && foreignKeyRelationship) {
+        const fieldWithFKOptions = {
+          ...fieldWithIcon,
+          options: {
+            reference_options: {
+              foreign_table: foreignKeyRelationship.target_table_name,
+              foreign_table_name: foreignKeyRelationship.target_table_name,
+              relationship_name: foreignKeyRelationship.constraint_name,
+              target_column_name: foreignKeyRelationship.target_column_name,
+            },
+          },
+        };
+        return getReferenceColumnDef({
+          field: fieldWithFKOptions,
+          table,
+          getCommonFieldMenuItems,
+          onEditField,
+          additionalProps,
+          baseId,
+        });
+      }
 
       // Map PostgreSQL types to column definitions
       switch (columnType) {

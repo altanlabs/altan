@@ -314,75 +314,60 @@ export default function ProjectPage() {
           component="main"
           sx={{ flexGrow: 1, display: 'flex', height: '100%' }}
         >
-          {displayMode === 'both' ? (
-            // Both mode: Use resizable panels
-            <PanelGroup
-              direction="horizontal"
-              className="w-full h-full"
+          {/* Always use PanelGroup layout to prevent re-renders when toggling display mode */}
+          <PanelGroup
+            direction="horizontal"
+            className="w-full h-full"
+          >
+            {/* Chat Panel - collapsed when in preview mode to avoid re-renders */}
+            <Panel
+              defaultSize={40}
+              minSize={20}
+              maxSize={65}
+              collapsible={true}
+              collapsed={displayMode === 'preview'}
+              collapsedSize={0}
+              className="overflow-hidden"
             >
-              {/* Chat Panel */}
-              <Panel
-                defaultSize={40}
-                minSize={20}
-                maxSize={65}
-                className="overflow-hidden"
-              >
-                {altaner?.room_id && (
-                  <Box
-                    sx={{
-                      height: '100%',
-                      position: 'relative',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Room
-                      key={altaner?.room_id}
-                      roomId={altaner?.room_id}
-                      header={false}
-                      renderCredits={true}
-                      renderFeedback={true}
-                      settings={false}
-                      tabs={true}
-                    />
-                  </Box>
-                )}
-              </Panel>
-
-              {/* Resize Handle */}
-              <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
-              {/* Preview Panel */}
-              <Panel
-                defaultSize={70}
-                minSize={35}
-                className="overflow-auto min-w-0"
-              >
-                <Box sx={{ height: '100%', position: 'relative' }}>
-                  {activeComponentId && currentComponent && renderComponent()}
+              {altaner?.room_id && (
+                <Box
+                  sx={{
+                    height: '100%',
+                    position: 'relative',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    visibility: displayMode === 'preview' ? 'hidden' : 'visible',
+                  }}
+                >
+                  <Room
+                    key={altaner?.room_id}
+                    roomId={altaner?.room_id}
+                    header={false}
+                    renderCredits={true}
+                    renderFeedback={true}
+                    settings={false}
+                    tabs={true}
+                  />
                 </Box>
-              </Panel>
-            </PanelGroup>
-          ) : displayMode === 'chat' ? (
-            // Chat only mode: Full screen Room
-            altaner?.room_id && (
-              <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                <Room
-                  key={altaner?.room_id}
-                  roomId={altaner?.room_id}
-                  header={false}
-                  renderCredits={true}
-                  renderFeedback={true}
-                  settings={false}
-                  tabs={true}
-                />
+              )}
+            </Panel>
+
+            {/* Resize Handle - hide when in preview mode */}
+            {displayMode === 'both' && (
+              <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
+            )}
+
+            {/* Preview Panel */}
+            <Panel
+              defaultSize={60}
+              minSize={35}
+              className="overflow-auto min-w-0"
+            >
+              <Box sx={{ height: '100%', position: 'relative' }}>
+                {activeComponentId && currentComponent && renderComponent()}
               </Box>
-            )
-          ) : (
-            // Preview only mode: Full screen preview
-            <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-              {activeComponentId && currentComponent && renderComponent()}
-            </Box>
-          )}
+            </Panel>
+          </PanelGroup>
         </Box>
       </Box>
     </CompactLayout>

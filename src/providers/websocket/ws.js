@@ -26,9 +26,6 @@ import {
   addField,
   updateField,
   deleteField,
-  addTableRecord,
-  updateTableRecord,
-  deleteTableRecord,
   integrateRealTimeUpdates,
 } from '../../redux/slices/bases';
 import {
@@ -69,12 +66,9 @@ import {
   deleteAccountAltaner,
   addWebhook,
   deleteWebhook,
-  addForm,
-  deleteForm,
   addSubscription,
   updateSubscription,
   deleteSubscription,
-  patchForm,
   addInterface,
   updateInterface,
   deleteInterface,
@@ -554,43 +548,71 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
     case 'RecordsNew':
-      // Extract table_id from data structure
-      const newTableId = data.table_id || data.data.table_id || data.data.id;
-      const newTableName = data.table_db_name || data.data.table_name;
-      if (data.data.records && Array.isArray(data.data.records)) {
-        // Use batched real-time updates for better performance
-        dispatch(
-          integrateRealTimeUpdates({
-            tableId: newTableId,
-            additions: data.data.records,
-          }),
-        );
+      const newTableName = data.table_name || data.data?.table_name;
+      const newBaseId = data.base_id || data.data?.base_id;
+
+      if (newTableName && newBaseId && data.records && Array.isArray(data.records)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[newBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === newTableName || t.name === newTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                additions: data.records,
+              }),
+            );
+          } else {
+            console.warn('Could not find table ID for:', { newTableName, newBaseId });
+          }
+        });
       }
       break;
     case 'RecordsUpdate':
-      const updateTableId = data.data.table_id || data.data.id;
-      const tableName = data.data.table_name;
-      if (data.data.records && Array.isArray(data.data.records)) {
-        // Use batched real-time updates for better performance
-        dispatch(
-          integrateRealTimeUpdates({
-            tableId: updateTableId,
-            updates: data.data.records,
-          }),
-        );
+      const updateTableName = data.table_name || data.data?.table_name;
+      const updateBaseId = data.base_id || data.data?.base_id;
+
+      if (updateTableName && updateBaseId && data.records && Array.isArray(data.records)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[updateBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === updateTableName || t.name === updateTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                updates: data.records,
+              }),
+            );
+          }
+        });
       }
       break;
     case 'RecordsDelete':
-      const deleteRecordsTableId = data.data.table_id || data.data.id;
-      const deleteTableName = data.data.table_name;
-      if (data.data.ids && Array.isArray(data.data.ids)) {
-        // Use batched real-time updates for better performance
-        dispatch(
-          integrateRealTimeUpdates({
-            tableId: deleteRecordsTableId,
-            deletions: data.data.ids,
-          }),
-        );
+      const deleteTableName = data.table_name || data.data?.table_name;
+      const deleteBaseId = data.base_id || data.data?.base_id;
+
+      if (deleteTableName && deleteBaseId && data.ids && Array.isArray(data.ids)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[deleteBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === deleteTableName || t.name === deleteTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                deletions: data.ids,
+              }),
+            );
+          }
+        });
       }
       break;
     case 'FileUpdate' | 'FileDelete' | 'FileCreate':

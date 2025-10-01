@@ -3,10 +3,6 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import {
   Tabs,
   Tab,
@@ -15,7 +11,6 @@ import {
   MenuItem,
   CircularProgress,
   Tooltip,
-  Box,
   Typography,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -70,50 +65,60 @@ const StyledTabs = styled(Tabs)(() => ({
   },
 }));
 
-const StyledTab = styled(Tab)(() => ({
+const StyledTab = styled(Tab)(({ theme }) => ({
   height: '30px',
   padding: '0 16px',
   textTransform: 'none',
-  fontSize: '18px',
-  fontWeight: 600,
+  fontSize: '13px',
+  fontWeight: 500,
   letterSpacing: '0.01em',
-  color: '#5f6368',
-  borderRadius: '0',
-  margin: '0 !important',
+  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+  borderRadius: '6px 6px 0 0',
+  margin: '0 2px !important',
   minWidth: '0 !important',
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
-  transition: 'all 0.1s ease-in-out',
+  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   backgroundColor: 'transparent',
   position: 'relative',
   overflow: 'hidden',
 
   '&:hover': {
-    backgroundColor: 'rgba(32, 33, 36, 0.039)',
-    color: '#202124',
+    backgroundColor: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.05)' 
+      : 'rgba(0, 0, 0, 0.03)',
+    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
   },
 
   '&.Mui-selected': {
-    color: '#1967d2',
-    backgroundColor: 'rgba(26, 115, 232, 0.078)',
-    fontWeight: 700,
+    color: theme.palette.mode === 'dark' ? '#fff' : '#000',
+    backgroundColor: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.08)' 
+      : 'rgba(255, 255, 255, 0.9)',
+    fontWeight: 600,
+    backdropFilter: 'blur(10px)',
+    borderBottom: theme.palette.mode === 'dark' 
+      ? '2px solid rgba(255, 255, 255, 0.2)' 
+      : '2px solid rgba(0, 0, 0, 0.1)',
 
     '&:hover': {
-      backgroundColor: 'rgba(26, 115, 232, 0.11)',
+      backgroundColor: theme.palette.mode === 'dark' 
+        ? 'rgba(255, 255, 255, 0.12)' 
+        : 'rgba(255, 255, 255, 1)',
     },
   },
 
   '& .drag-handle': {
     cursor: 'grab',
-    opacity: 0.5,
+    opacity: 0.3,
     fontSize: '14px',
     marginRight: '4px',
     display: 'inline-flex',
     alignItems: 'center',
     transition: 'opacity 0.2s ease',
     '&:hover': {
-      opacity: 0.8,
+      opacity: 0.6,
     },
     '&:active': {
       cursor: 'grabbing',
@@ -124,17 +129,16 @@ const StyledTab = styled(Tab)(() => ({
 const AddButton = styled(IconButton)(({ theme }) => ({
   padding: '6px',
   marginRight: '4px',
-  borderRadius: '4px',
-  color: theme.palette.text.primary,
-  transition: 'all 0.15s ease-in-out',
+  borderRadius: '6px',
+  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   backgroundColor: 'transparent',
   height: '28px',
   width: '28px',
 
   '&:hover': {
-    backgroundColor:
-      theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-    color: theme.palette.primary.dark,
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
     transform: 'scale(1.05)',
   },
 
@@ -144,15 +148,17 @@ const AddButton = styled(IconButton)(({ theme }) => ({
 }));
 
 const TableDropdownButton = styled(IconButton)(({ theme }) => ({
-  borderRadius: '4px',
+  borderRadius: '6px',
   padding: '4px',
   minWidth: 'auto',
-  color: theme.palette.text.primary,
+  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
   marginRight: '8px',
   height: '28px',
   width: '28px',
+  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#3d3d3d' : '#e8e8e8',
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
   },
 }));
 
@@ -303,139 +309,6 @@ const TabsList = memo(
 
 TabsList.displayName = 'TabsList';
 
-// Pagination Controls Component
-const PaginationControls = ({
-  paginationInfo,
-  onGoToFirstPage,
-  onGoToLastPage,
-  onGoToNextPage,
-  onGoToPreviousPage,
-  isLoading = false,
-}) => {
-  if (!paginationInfo) return null;
-
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: { xs: 0.25, sm: 0.5 }, // Tighter gap on mobile
-        px: { xs: 0.5, sm: 1 }, // Less padding on mobile
-        py: 0.5,
-      }}
-    >
-      {/* First Page - Hidden on mobile to save space */}
-      <IconButton
-        size="small"
-        onClick={onGoToFirstPage}
-        disabled={paginationInfo.currentPage === 0 || isLoading}
-        sx={{ 
-          width: { xs: 24, sm: 28 }, 
-          height: { xs: 24, sm: 28 },
-          display: { xs: 'none', sm: 'inline-flex' } // Hide on mobile
-        }}
-      >
-        <FirstPageIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
-      </IconButton>
-
-      <IconButton
-        size="small"
-        onClick={onGoToPreviousPage}
-        disabled={paginationInfo.currentPage === 0 || isLoading}
-        sx={{ 
-          width: { xs: 24, sm: 28 }, 
-          height: { xs: 24, sm: 28 }
-        }}
-      >
-        <NavigateBeforeIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
-      </IconButton>
-
-      {/* Compact page info for mobile */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: { xs: 0.25, sm: 0.5 }, 
-        mx: { xs: 0.5, sm: 1 },
-        minWidth: { xs: 'auto', sm: 'auto' }
-      }}>
-        <Typography 
-          variant="caption" 
-          color="text.secondary"
-          sx={{ 
-            display: { xs: 'none', sm: 'inline' }, // Hide "Page" text on mobile
-            fontSize: { xs: '11px', sm: '12px' }
-          }}
-        >
-          Page
-        </Typography>
-        <Typography 
-          variant="body2" 
-          fontWeight={600}
-          sx={{ 
-            fontSize: { xs: '12px', sm: '14px' },
-            lineHeight: 1
-          }}
-        >
-          {paginationInfo.currentPage + 1}
-        </Typography>
-        <Typography 
-          variant="caption" 
-          color="text.secondary"
-          sx={{ 
-            fontSize: { xs: '11px', sm: '12px' }
-          }}
-        >
-          /
-        </Typography>
-        <Typography 
-          variant="body2" 
-          fontWeight={600}
-          sx={{ 
-            fontSize: { xs: '12px', sm: '14px' },
-            lineHeight: 1
-          }}
-        >
-          {paginationInfo.totalPages || 1}
-        </Typography>
-      </Box>
-
-      <IconButton
-        size="small"
-        onClick={onGoToNextPage}
-        disabled={
-          paginationInfo.currentPage === paginationInfo.totalPages - 1 ||
-          !paginationInfo.isLastPageFound ||
-          isLoading
-        }
-        sx={{ 
-          width: { xs: 24, sm: 28 }, 
-          height: { xs: 24, sm: 28 }
-        }}
-      >
-        <NavigateNextIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
-      </IconButton>
-
-      {/* Last Page - Hidden on mobile to save space */}
-      <IconButton
-        size="small"
-        onClick={onGoToLastPage}
-        disabled={
-          !paginationInfo.isLastPageFound ||
-          paginationInfo.currentPage === paginationInfo.totalPages - 1 ||
-          isLoading
-        }
-        sx={{ 
-          width: { xs: 24, sm: 28 }, 
-          height: { xs: 24, sm: 28 },
-          display: { xs: 'none', sm: 'inline-flex' } // Hide on mobile
-        }}
-      >
-        <LastPageIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
-      </IconButton>
-    </Box>
-  );
-};
-
 // Main component using the memoized TabsList
 function TableTabs({
   activeTableId,
@@ -444,12 +317,6 @@ function TableTabs({
   onImportTable,
   isLoading = false,
   baseId = null,
-  // Pagination props
-  paginationInfo,
-  onGoToFirstPage,
-  onGoToLastPage,
-  onGoToNextPage,
-  onGoToPreviousPage,
 }) {
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedTableId, setSelectedTableId] = useState(null);
@@ -641,20 +508,6 @@ function TableTabs({
                 />
                 {provided.placeholder}
               </StyledTabs>
-
-              {/* Pagination Controls - Right Side */}
-              {paginationInfo && (
-                <>
-                  <PaginationControls
-                    paginationInfo={paginationInfo}
-                    onGoToFirstPage={onGoToFirstPage}
-                    onGoToLastPage={onGoToLastPage}
-                    onGoToNextPage={onGoToNextPage}
-                    onGoToPreviousPage={onGoToPreviousPage}
-                    isLoading={isLoading}
-                  />
-                </>
-              )}
             </div>
           )}
         </Droppable>

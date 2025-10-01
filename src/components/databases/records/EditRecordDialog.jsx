@@ -23,7 +23,7 @@ import CustomDialog from '../../dialogs/CustomDialog.jsx';
 import Iconify from '../../iconify';
 import Room from '../../Room';
 import FormParameter from '../../tools/form/FormParameter';
-import CreateFieldDialog from '../fields/CreateFieldDialog';
+import CreateFieldDrawer from '../fields/CreateFieldDrawer';
 
 const getSchemaType = (fieldType) => {
   switch (fieldType) {
@@ -310,7 +310,7 @@ const EditRecordDialog = ({ baseId, tableId, recordId, open, onClose }) => {
           </Box>
         </Box>
         {table && (
-          <CreateFieldDialog
+          <CreateFieldDrawer
             table={table}
             open={isCreateFieldOpen}
             onClose={handleCreateFieldClose}

@@ -3,7 +3,7 @@ import { memo } from 'react';
 
 import Iconify from '../../../iconify';
 
-const EmptyTableState = memo(({ onImportCSV, tableName = 'table' }) => {
+const EmptyTableState = memo(({ onImportCSV, onCreateRecord, tableName = 'table' }) => {
   return (
     <Box
       sx={{
@@ -14,7 +14,6 @@ const EmptyTableState = memo(({ onImportCSV, tableName = 'table' }) => {
         mx: 'auto',
       }}
     >
-
       {/* Clean typography - Supabase style */}
       <Typography
         variant="body1"
@@ -41,16 +40,38 @@ const EmptyTableState = memo(({ onImportCSV, tableName = 'table' }) => {
         Click on any cell in the first row to start adding data
       </Typography>
 
-      {/* Minimal button */}
-      <Button
-        variant="soft"
-        size="small"
-        color="secondary"
-        startIcon={<Iconify icon="mdi:upload" width={14} height={14} />}
-        onClick={onImportCSV}
-      >
-        Import CSV
-      </Button>
+      {/* Action buttons */}
+      <Stack direction="row" spacing={2} justifyContent="center">
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={
+            <Iconify
+              icon="mdi:plus"
+              width={14}
+              height={14}
+            />
+          }
+          onClick={onCreateRecord}
+        >
+          Create Record
+        </Button>
+        <Button
+          variant="soft"
+          size="small"
+          color="secondary"
+          startIcon={
+            <Iconify
+              icon="mdi:upload"
+              width={14}
+              height={14}
+            />
+          }
+          onClick={onImportCSV}
+        >
+          Import CSV
+        </Button>
+      </Stack>
     </Box>
   );
 });

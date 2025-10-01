@@ -8,13 +8,21 @@ import {
   ListItemText,
   Typography,
   IconButton,
+  FormControlLabel,
+  Switch,
+  Divider,
+  Box,
+  Button,
+  CircularProgress,
+  Chip,
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useCallback, memo, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { updateTableById } from '../../../redux/slices/bases';
+import { updateTableById, fetchTablePolicies } from '../../../redux/slices/bases';
+import { dispatch as reduxDispatch } from '../../../redux/store';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';
@@ -42,6 +50,10 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const [fieldEditDrawerOpen, setFieldEditDrawerOpen] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
+  const [rlsEnabled, setRlsEnabled] = useState(false);
+  const [policies, setPolicies] = useState([]);
+  const [loadingPolicies, setLoadingPolicies] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
 
   // Reset form when table changes or dialog opens
   useEffect(() => {
@@ -49,8 +61,42 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
       reset({
         name: table.name || '',
       });
+      setRlsEnabled(table.rls_enabled ?? false);
     }
   }, [table, open, reset]);
+
+  // Fetch policies when drawer opens or when RLS is enabled
+  useEffect(() => {
+    if (open && table && baseId && (table.rls_enabled || rlsEnabled)) {
+      setLoadingPolicies(true);
+      console.log('📋 Fetching policies for table:', {
+        baseId,
+        tableId: table.id,
+        tableName: table.name || table.db_name,
+        schema: table.schema,
+      });
+
+      reduxDispatch(
+        fetchTablePolicies(
+          baseId,
+          table.id,
+          table.name || table.db_name,
+          table.schema,
+        ),
+      )
+        .then((fetchedPolicies) => {
+          setPolicies(fetchedPolicies || []);
+          console.log('✅ Policies set in state:', fetchedPolicies);
+        })
+        .catch((error) => {
+          console.error('❌ Failed to fetch policies:', error);
+          setPolicies([]);
+        })
+        .finally(() => {
+          setLoadingPolicies(false);
+        });
+    }
+  }, [open, table, baseId, rlsEnabled]);
 
   const onSubmit = useCallback(
     async (data) => {
@@ -59,6 +105,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
       const updateData = {
         name: data.name,
         comment: table.comment || null,
+        rls_enabled: rlsEnabled,
       };
 
       dispatchWithFeedback(updateTableById(baseId, tableId, updateData), {
@@ -67,7 +114,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
         errorMessage: 'Could not update table',
       }).then(() => onClose());
     },
-    [baseId, tableId, table, onClose, dispatchWithFeedback],
+    [baseId, tableId, table, onClose, dispatchWithFeedback, rlsEnabled],
   );
 
   const handleClose = useCallback(() => {
@@ -132,7 +179,7 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
             </Stack>
 
             {/* Content */}
-            <Stack sx={{ flex: 1, p: 3, gap: 3 }}>
+            <Stack sx={{ flex: 1, p: 3, gap: 3, overflow: 'auto' }}>
               {/* Table Name Field */}
               <TextField
                 label="Table Name"
@@ -299,6 +346,203 @@ const EditTableDrawer = ({ baseId, tableId, table, open, onClose }) => {
                   </List>
                 </Stack>
               )}
+
+              {/* RLS Settings Section */}
+              <Stack spacing={2}>
+                <Divider />
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    fontWeight={600}
+                  >
+                    Row Level Security (RLS)
+                  </Typography>
+                  {loadingPolicies && (
+                    <CircularProgress size={16} thickness={4} />
+                  )}
+                </Stack>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={rlsEnabled}
+                      onChange={(e) => setRlsEnabled(e.target.checked)}
+                      disabled={isUsersTable}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2">Enable RLS</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Restrict row access based on policies
+                      </Typography>
+                    </Box>
+                  }
+                />
+                {rlsEnabled && (
+                  <Stack spacing={1.5}>
+                    <Box
+                      sx={{
+                        p: 2,
+                        backgroundColor: alpha(theme.palette.info.main, 0.08),
+                        borderRadius: '12px',
+                        border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                      }}
+                    >
+                      <Stack spacing={1}>
+                        <Typography variant="caption" color="info.main" fontWeight={600}>
+                          💡 {policies.length} {policies.length === 1 ? 'policy' : 'policies'} configured - Click to view details
+                        </Typography>
+                        {policies.length > 0 && (
+                          <Box>
+                            {policies.map((policy) => (
+                              <Chip
+                                key={policy.id}
+                                label={policy.name || `Policy ${policy.id}`}
+                                size="small"
+                                onClick={() => setSelectedPolicy(selectedPolicy?.id === policy.id ? null : policy)}
+                                sx={{
+                                  mr: 0.5,
+                                  mb: 0.5,
+                                  cursor: 'pointer',
+                                  backgroundColor: selectedPolicy?.id === policy.id
+                                    ? alpha(theme.palette.primary.main, 0.2)
+                                    : alpha(theme.palette.info.main, 0.15),
+                                  '&:hover': {
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.25),
+                                  },
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        )}
+                      </Stack>
+                    </Box>
+
+                    {/* Selected Policy Details */}
+                    {selectedPolicy && (
+                      <Box
+                        sx={{
+                          p: 2,
+                          backgroundColor: alpha(theme.palette.background.paper, 0.6),
+                          borderRadius: '12px',
+                          border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                        }}
+                      >
+                        <Stack spacing={1.5}>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between">
+                            <Typography variant="body2" fontWeight={600}>
+                              {selectedPolicy.name}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedPolicy(null)}
+                            >
+                              <Iconify icon="mdi:close" width={14} height={14} />
+                            </IconButton>
+                          </Stack>
+                          
+                          <Stack spacing={1}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                Command
+                              </Typography>
+                              <Chip
+                                label={selectedPolicy.command}
+                                size="small"
+                                color={
+                                  selectedPolicy.command === 'SELECT' ? 'success' :
+                                  selectedPolicy.command === 'INSERT' ? 'primary' :
+                                  selectedPolicy.command === 'UPDATE' ? 'warning' :
+                                  selectedPolicy.command === 'DELETE' ? 'error' : 'default'
+                                }
+                                sx={{ ml: 1, height: 20, fontSize: '11px' }}
+                              />
+                            </Box>
+
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                Type
+                              </Typography>
+                              <Typography variant="caption" sx={{ ml: 1 }}>
+                                {selectedPolicy.action}
+                              </Typography>
+                            </Box>
+
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                Roles
+                              </Typography>
+                              <Box sx={{ mt: 0.5 }}>
+                                {selectedPolicy.roles?.map((role, idx) => (
+                                  <Chip
+                                    key={idx}
+                                    label={role}
+                                    size="small"
+                                    sx={{ mr: 0.5, mb: 0.5, height: 18, fontSize: '10px' }}
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+
+                            {selectedPolicy.definition && (
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                  USING Expression
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    mt: 0.5,
+                                    p: 1,
+                                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                                    borderRadius: '8px',
+                                    fontFamily: 'monospace',
+                                    fontSize: '11px',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                  }}
+                                >
+                                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                                    {selectedPolicy.definition}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            )}
+
+                            {selectedPolicy.check && selectedPolicy.check !== 'true' && (
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                  WITH CHECK Expression
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    mt: 0.5,
+                                    p: 1,
+                                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                                    borderRadius: '8px',
+                                    fontFamily: 'monospace',
+                                    fontSize: '11px',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                  }}
+                                >
+                                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                                    {selectedPolicy.check}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            )}
+                          </Stack>
+                        </Stack>
+                      </Box>
+                    )}
+
+                    <Typography variant="caption" color="text.secondary">
+                      💡 Policies are managed via PostgreSQL. Use SQL or pg-meta API to create/edit.
+                    </Typography>
+                  </Stack>
+                )}
+              </Stack>
             </Stack>
 
             {/* Footer Actions */}
