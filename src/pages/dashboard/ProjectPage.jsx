@@ -45,6 +45,7 @@ export default function ProjectPage() {
   // console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
+  const chatPanelRef = React.useRef(null);
   const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
@@ -54,6 +55,17 @@ export default function ProjectPage() {
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
+
+  // Programmatically collapse/expand chat panel based on display mode
+  React.useEffect(() => {
+    if (chatPanelRef.current) {
+      if (displayMode === 'preview') {
+        chatPanelRef.current.collapse();
+      } else {
+        chatPanelRef.current.expand();
+      }
+    }
+  }, [displayMode]);
 
   const handleMobileToggle = React.useCallback((view) => {
     setMobileActiveView(view);
@@ -226,7 +238,7 @@ export default function ProjectPage() {
     // Always render mobile as portal with single Room instance
     const mobileContent = (
       <div 
-        className="fixed inset-0 w-full h-full bg-white dark:bg-gray-900"
+        className="fixed inset-0 w-full h-full"
         style={{ 
           zIndex: isFullscreenMobile ? 9999 : 1000,
           position: 'fixed',
@@ -319,13 +331,16 @@ export default function ProjectPage() {
             direction="horizontal"
             className="w-full h-full"
           >
-            {/* Chat Panel - collapsed when in preview mode to avoid re-renders */}
+            {/* Chat Panel - collapses to 0 when in preview mode */}
             <Panel
+              ref={chatPanelRef}
+              id="chat-panel"
+              order={1}
               defaultSize={40}
               minSize={20}
               maxSize={65}
               collapsible={true}
-              collapsed={displayMode === 'preview'}
+              defaultCollapsed={displayMode === 'preview'}
               collapsedSize={0}
               className="overflow-hidden"
             >
@@ -336,7 +351,6 @@ export default function ProjectPage() {
                     position: 'relative',
                     borderRadius: 1,
                     overflow: 'hidden',
-                    visibility: displayMode === 'preview' ? 'hidden' : 'visible',
                   }}
                 >
                   <Room
@@ -352,13 +366,15 @@ export default function ProjectPage() {
               )}
             </Panel>
 
-            {/* Resize Handle - hide when in preview mode */}
+            {/* Resize Handle - only show in both mode */}
             {displayMode === 'both' && (
               <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
             )}
 
             {/* Preview Panel */}
             <Panel
+              id="preview-panel"
+              order={2}
               defaultSize={60}
               minSize={35}
               className="overflow-auto min-w-0"

@@ -27,6 +27,8 @@ import {
   updateField,
   deleteField,
   integrateRealTimeUpdates,
+  fetchTables,
+  fetchSchemas,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -166,8 +168,30 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('data', data.type);
   switch (data.type) {
+    case 'SchemaUpdate':
+      // Handle schema updates with targeted refetching
+      const { base_id, path } = data.data || {};
+
+      // Dispatch targeted refetch based on the path
+      try {
+        if (path.startsWith('columns/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else if (path.startsWith('tables/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else if (path.startsWith('schemas/')) {
+          dispatch(fetchSchemas(base_id));
+        } else if (path.startsWith('policies/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else {
+          dispatch(fetchSchemas(base_id));
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        }
+      } catch (error) {
+        console.error('❌ SchemaUpdate: Error during refetch', error);
+      }
+
+      break;
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
       break;
