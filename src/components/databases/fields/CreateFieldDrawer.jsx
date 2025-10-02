@@ -43,6 +43,17 @@ const CreateFieldDrawer = ({ table, open, onClose }) => {
     return '';
   };
 
+  const handleClose = useCallback(() => {
+    setFieldName('');
+    setPostgresType(null);
+    setIsNullable(true);
+    setIsUnique(false);
+    setDefaultValue('');
+    setComment('');
+    setFieldNameError('');
+    onClose();
+  }, [onClose]);
+
   const handleSubmit = useCallback(async () => {
     if (!fieldName.trim() || !postgresType || fieldNameError || !table) return;
 
@@ -65,26 +76,16 @@ const CreateFieldDrawer = ({ table, open, onClose }) => {
       handleClose();
     } catch (error) {
       // Error will be handled by Redux
+      // eslint-disable-next-line no-console
       console.error('Error creating field:', error);
     }
-  }, [fieldName, postgresType, isNullable, isUnique, defaultValue, comment, fieldNameError, table]);
+  }, [fieldName, postgresType, isNullable, isUnique, defaultValue, comment, fieldNameError, table, handleClose]);
 
   const handleFieldNameChange = (e) => {
     const newName = e.target.value;
     setFieldName(newName);
     setFieldNameError(validateFieldName(newName));
   };
-
-  const handleClose = useCallback(() => {
-    setFieldName('');
-    setPostgresType(null);
-    setIsNullable(true);
-    setIsUnique(false);
-    setDefaultValue('');
-    setComment('');
-    setFieldNameError('');
-    onClose();
-  }, [onClose]);
 
   return (
     <Drawer

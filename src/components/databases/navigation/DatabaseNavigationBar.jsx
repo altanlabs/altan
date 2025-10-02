@@ -22,6 +22,8 @@ import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
 import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
 import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
+import { optimai_database } from '../../../utils/axios';
+import { optimai_tables_v4 } from '../../../utils/axios.js';
 
 function DatabaseNavigationBar({
   disabled = false,
@@ -122,53 +124,63 @@ function DatabaseNavigationBar({
     setOpenDatabaseInfo(true);
   }, []);
 
-  const handleExportCSV = useCallback(() => {
-    if (!database || !tableId) return;
-
-    // Find current table
-    const currentTable = database.tables?.items?.find(t => t.id === tableId);
-    if (!currentTable) return;
-
-    // Get records from the current table
-    const records = currentTable.records?.items || [];
-    if (records.length === 0) {
+  const handleExportCSV = useCallback(async () => {
+    // eslint-disable-next-line no-console
+    console.log('🔹 Export CSV clicked', { baseId, tableId, database });
+    
+    if (!baseId || !tableId) {
       // eslint-disable-next-line no-console
-      console.warn('No records to export');
+      console.warn('❌ Missing baseId or tableId', { baseId, tableId });
       return;
     }
 
-    // Get column headers from the first record
-    const headers = Object.keys(records[0]);
-    
-    // Create CSV content
-    const csvRows = [];
-    csvRows.push(headers.join(','));
-    
-    records.forEach(record => {
-      const values = headers.map(header => {
-        const value = record[header];
-        // Escape commas and quotes in values
-        const escaped = String(value ?? '').replace(/"/g, '""');
-        return `"${escaped}"`;
-      });
-      csvRows.push(values.join(','));
-    });
+    // Find current table to get its name (convert tableId to number for comparison)
+    const currentTable = database?.tables?.items?.find(t => t.id === Number(tableId));
+    if (!currentTable) {
+      // eslint-disable-next-line no-console
+      console.warn('❌ Current table not found', { tableId, tableIdAsNumber: Number(tableId), tables: database?.tables?.items });
+      return;
+    }
 
-    const csvContent = csvRows.join('\n');
-    
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [database, tableId]);
+    // eslint-disable-next-line no-console
+    console.log('✅ Found table, exporting:', currentTable.name);
+
+    try {
+      
+      // Call the export API endpoint
+      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
+        params: {
+          table_name: currentTable.name,
+        },
+        responseType: 'blob',
+      });
+
+      // eslint-disable-next-line no-console
+      console.log('✅ API response received', response);
+
+      // Create a download link and trigger download
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+      
+      // eslint-disable-next-line no-console
+      console.log('✅ CSV download triggered');
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('❌ Error exporting CSV:', error);
+    }
+  }, [baseId, database, tableId]);
 
   // Cleanup debounced function on unmount
   useEffect(() => {

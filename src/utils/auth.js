@@ -76,7 +76,6 @@ export const iframeState = {
   activated: false,
 };
 
-
 export const storeRefreshToken = (refreshToken) => {
   if (isCapacitorPlatform()) {
     try {
@@ -186,10 +185,10 @@ export const requestRefreshFromParent = (group) => {
 
         if (data.success && data.token) {
           // The parent might send back user, token, guest, etc. Adjust as needed
-          resolve({ 
-            user: data.user, 
+          resolve({
+            user: data.user,
             guest: data.guest,
-            accessToken: data.token 
+            accessToken: data.token,
           });
         } else {
           reject(new Error(data.error || 'No token in parent response'));
