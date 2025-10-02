@@ -86,6 +86,7 @@ export const createColumnDefs = ({
       checkbox: 'checkbox',
       number: 'number',
       timestamp: 'date',
+      uuid: 'text', // UUID fields default to text icon
       text: 'text',
     };
     const mappedType = typeMapping[columnType] || 'text';
@@ -113,18 +114,11 @@ export const createColumnDefs = ({
     // 2. Regular user-defined fields (middle)
     ...regularFields.map((field) => {
       // Check if this field is a foreign key by looking at table relationships
-      const isForeignKey = table.relationships?.some(
-        (rel) =>
-          rel.source_column_name === field.db_field_name && rel.constraint_type === 'FOREIGN KEY',
+      // Note: pg-meta relationships don't have constraint_type, but all relationships are foreign keys
+      const foreignKeyRelationship = table.relationships?.find(
+        (rel) => rel.source_column_name === field.db_field_name,
       );
-      // If it's a foreign key, find the target table info
-      const foreignKeyRelationship = isForeignKey
-        ? table.relationships.find(
-            (rel) =>
-              rel.source_column_name === field.db_field_name &&
-              rel.constraint_type === 'FOREIGN KEY',
-          )
-        : null;
+      const isForeignKey = !!foreignKeyRelationship;
 
       // Determine column type based on PostgreSQL data_type
       const columnType = getColumnDefForPostgresType(field.data_type, field.format);
@@ -229,7 +223,6 @@ export const createColumnDefs = ({
     // 3. System fields (right side, before "New Column")
     // Order: created_at, updated_at, created_by, updated_by
     ...sortedSystemFields.map((field) => {
-      const columnType = getColumnDefForPostgresType(field.data_type, field.format);
       const fieldWithIcon = {
         ...field,
         icon: getFieldIcon(field.data_type),

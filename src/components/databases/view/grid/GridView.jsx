@@ -454,7 +454,8 @@ export const GridView = memo(
                 // Also update the local row data to reflect the change from new row to actual record
                 setLocalRowData((prevRowData) =>
                   prevRowData.map((row) => {
-                    const isNewRow = row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
+                    const isNewRow =
+                      row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
                     return isNewRow ? result.records[0] : row;
                   }),
                 );
@@ -490,10 +491,7 @@ export const GridView = memo(
     const onCellKeyPress = useCallback(
       (e) => {
         const isNewRecord =
-          e.data.id === '__new__' ||
-          e.data.id === '+' ||
-          !e.data.id ||
-          e.data.id === '';
+          e.data.id === '__new__' || e.data.id === '+' || !e.data.id || e.data.id === '';
         if (e.event.key === 'Enter' && isNewRecord) {
           onCellValueChanged(e);
         }
@@ -763,17 +761,25 @@ export const GridView = memo(
     }, [urlRecordId, editRecordId]);
 
     // Pagination handlers
-    const handlePageChange = useCallback((newPage) => {
-      if (table?.id) {
-        dispatch(loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50 }));
-      }
-    }, [table?.id, paginationInfo?.pageSize]);
+    const handlePageChange = useCallback(
+      (newPage) => {
+        if (table?.id) {
+          dispatch(
+            loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50 }),
+          );
+        }
+      },
+      [table?.id, paginationInfo?.pageSize],
+    );
 
-    const handlePageSizeChange = useCallback((newPageSize) => {
-      if (table?.id) {
-        dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize }));
-      }
-    }, [table?.id]);
+    const handlePageSizeChange = useCallback(
+      (newPageSize) => {
+        if (table?.id) {
+          dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize }));
+        }
+      },
+      [table?.id],
+    );
 
     return (
       <div className="h-full w-full flex flex-col min-w-0">
@@ -819,9 +825,7 @@ export const GridView = memo(
 
               // Pagination panel
               '--ag-paging-panel-background-color':
-                theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.02)'
-                  : 'rgba(0, 0, 0, 0.01)',
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
 
               // Custom dark mode enhancements
               '--ag-control-panel-background-color':
@@ -1003,7 +1007,10 @@ export const GridView = memo(
           >
             {/* Left side - Page size selector */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
                 Rows per page:
               </Typography>
               <Select
@@ -1027,7 +1034,10 @@ export const GridView = memo(
 
             {/* Center - Page info and navigation */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
                 {`${paginationInfo.currentPage * paginationInfo.pageSize + 1}-${Math.min((paginationInfo.currentPage + 1) * paginationInfo.pageSize, paginationInfo.totalRecords)} of ${paginationInfo.totalRecords.toLocaleString()}`}
               </Typography>
 
@@ -1057,13 +1067,24 @@ export const GridView = memo(
                     mx: 1,
                   }}
                 >
-                  <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ fontSize: '14px' }}
+                  >
                     {paginationInfo.currentPage + 1}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
                     of
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} sx={{ fontSize: '14px' }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ fontSize: '14px' }}
+                  >
                     {paginationInfo.totalPages}
                   </Typography>
                 </Box>
@@ -1112,7 +1133,9 @@ export const GridView = memo(
             onClose={() => {
               setEditRecordId(null);
               // Simplify URL: go back to table view without /views/viewId
-              const basePath = location.pathname.replace(/\/records\/[^/]+/, '').replace(/\/views\/[^/]+/, '');
+              const basePath = location.pathname
+                .replace(/\/records\/[^/]+/, '')
+                .replace(/\/views\/[^/]+/, '');
               history.push(basePath);
             }}
           />

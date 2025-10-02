@@ -11,19 +11,20 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
+  Alert,
 } from '@mui/material';
 import { useCallback, memo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { POSTGRES_TYPES } from './utils/postgresTypes';
 import { RESERVED_WORDS } from './utils/reservedWords';
-import { updateFieldThunk, selectTableRecordsTotal } from '../../../redux/slices/bases';
+import { updateFieldThunk, selectTableRecordsTotal, selectTableById } from '../../../redux/slices/bases';
 import { dispatch } from '../../../redux/store.js';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';
 
-const EditFieldDrawer = ({ tableId, field, open, onClose }) => {
+const EditFieldDrawer = ({ tableId, baseId, field, open, onClose }) => {
   const [fieldName, setFieldName] = useState('');
   const [postgresType, setPostgresType] = useState(null);
   const [isNullable, setIsNullable] = useState(true);
@@ -34,6 +35,14 @@ const EditFieldDrawer = ({ tableId, field, open, onClose }) => {
 
   // Get the total number of records in the table
   const recordsTotal = useSelector((state) => selectTableRecordsTotal(state, tableId));
+
+  // Get the table object to access relationships
+  const table = useSelector((state) => selectTableById(state, baseId, tableId));
+  // Check if this field is a foreign key
+  // Note: pg-meta relationships don't have constraint_type, but all relationships from pg-meta are foreign keys
+  const foreignKeyRelationship = table?.relationships?.find(
+    (rel) => rel.source_column_name === field?.db_field_name,
+  );
 
   useEffect(() => {
     if (field) {
@@ -368,33 +377,43 @@ const EditFieldDrawer = ({ tableId, field, open, onClose }) => {
             }}
           />
 
-          {/* Field Info */}
-          <Stack
-            sx={{
-              padding: 2,
-              backgroundColor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'rgba(144, 202, 249, 0.08)'
-                  : 'rgba(25, 118, 210, 0.08)',
-              borderRadius: '12px',
-              border: (theme) =>
-                `1px solid ${theme.palette.mode === 'dark'
-                  ? 'rgba(144, 202, 249, 0.2)'
-                  : 'rgba(25, 118, 210, 0.2)'}`,
-            }}
-          >
-            <Typography
-              variant="body2"
+          {/* Foreign Key Relationship Info */}
+          {foreignKeyRelationship && (
+            <Alert
+              severity="info"
+              icon={<Iconify icon="mdi:link-variant" width={20} />}
               sx={{
-                color: (theme) =>
+                backgroundColor: (theme) =>
                   theme.palette.mode === 'dark'
-                    ? 'rgba(144, 202, 249, 0.9)'
-                    : 'rgba(25, 118, 210, 0.9)',
+                    ? 'rgba(33, 150, 243, 0.08)'
+                    : 'rgba(33, 150, 243, 0.08)',
+                border: (theme) =>
+                  `1px solid ${theme.palette.mode === 'dark'
+                    ? 'rgba(33, 150, 243, 0.2)'
+                    : 'rgba(33, 150, 243, 0.2)'}`,
+                borderRadius: '12px',
+                '& .MuiAlert-message': {
+                  width: '100%',
+                },
               }}
             >
-              💡 Editing fields with native PostgreSQL types gives you full control and better performance.
-            </Typography>
-          </Stack>
+              <Stack spacing={1}>
+                <Typography variant="body2" fontWeight={600}>
+                  Foreign Key Relationship
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    <strong>References:</strong> {foreignKeyRelationship.target_table_schema}.
+                    {foreignKeyRelationship.target_table_name} ({foreignKeyRelationship.target_column_name})
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    <strong>Constraint:</strong> {foreignKeyRelationship.constraint_name}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Alert>
+          )}
+
         </Stack>
 
         {/* Footer Actions */}

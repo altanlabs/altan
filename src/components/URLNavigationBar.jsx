@@ -1,37 +1,37 @@
-import { Box, TextField, IconButton, Tooltip, Stack, Typography, Chip, Button } from '@mui/material';
+import {
+  Box,
+  TextField,
+  IconButton,
+  Tooltip,
+  Stack,
+  Typography,
+  Button,
+} from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 
 import CodeToggleButton from './buttons/CodeToggleButton';
-import EditToggleButton from './buttons/EditToggleButton';
 import Iconify from './iconify';
-import { 
-  selectPreviewMode, 
-  selectEditMode, 
-  togglePreviewMode, 
-  toggleEditMode,
+import {
+  selectPreviewMode,
+  togglePreviewMode,
   navigateToPath,
   refreshIframe,
   openInNewTab,
-  toggleIframeViewMode 
 } from '../redux/slices/previewControl';
 import { useSelector } from '../redux/store';
 
-function URLNavigationBar({
-  productionUrl,
-  disabled = false,
-}) {
+function URLNavigationBar({ productionUrl, disabled = false }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const [inputValue, setInputValue] = useState('');
   const [showPublishedTooltip, setShowPublishedTooltip] = useState(false);
   const inputRef = useRef(null);
 
-  // Get preview mode and edit mode from Redux
+  // Get preview mode from Redux
   const previewMode = useSelector(selectPreviewMode);
-  const editMode = useSelector(selectEditMode);
 
   // Navigation handlers using Redux actions directly
   const handleNavigateToPath = useCallback(
@@ -40,10 +40,6 @@ function URLNavigationBar({
     },
     [dispatch],
   );
-
-  const handleToggleIframeViewMode = useCallback(() => {
-    dispatch(toggleIframeViewMode());
-  }, [dispatch]);
 
   const handleOpenIframeInNewTab = useCallback(() => {
     dispatch(openInNewTab());
@@ -86,10 +82,6 @@ function URLNavigationBar({
     setShowPublishedTooltip(false);
   };
 
-  const handleToggleEditMode = () => {
-    dispatch(toggleEditMode());
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim()) {
@@ -113,28 +105,30 @@ function URLNavigationBar({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        height: 40,
-        gap: 0.5,
+        height: 42,
+        px: 2,
+        gap: 1.5,
       }}
     >
+      {/* Navigation Bar - Glassmorphic Container */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          borderRadius: 2,
-          marginTop: 0.5,
+          flex: 1,
+          height: 38,
+          borderRadius: 3,
           background: `linear-gradient(135deg, 
             ${alpha(theme.palette.background.paper, 0.8)} 0%, 
             ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
           backdropFilter: 'blur(10px)',
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          border:
+            theme.palette.mode === 'light'
+              ? `1px solid ${alpha(theme.palette.divider, 0.12)}`
+              : 'none',
           overflow: 'hidden',
-          p: 0.25,
-          gap: 0.25,
-          '&:hover': {
-            backgroundColor: alpha(theme.palette.background.paper, 0.9),
-            border: `1px solid ${alpha(theme.palette.divider, 0.24)}`,
-          },
+          px: 1.5,
+          gap: 1.5,
           transition: theme.transitions.create(['background-color', 'border-color'], {
             duration: theme.transitions.duration.shorter,
           }),
@@ -147,10 +141,12 @@ function URLNavigationBar({
             onClick={handleRefreshIframe}
             disabled={disabled}
             sx={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               borderRadius: 1.5,
               color: theme.palette.text.secondary,
+              p: 0,
+              minWidth: 28,
               '&:hover': {
                 backgroundColor: alpha(theme.palette.primary.main, 0.08),
                 color: theme.palette.text.primary,
@@ -163,6 +159,7 @@ function URLNavigationBar({
             />
           </IconButton>
         </Tooltip>
+
         {/* Open in New Tab */}
         <Tooltip title="Open in New Tab">
           <IconButton
@@ -170,10 +167,12 @@ function URLNavigationBar({
             onClick={handleOpenIframeInNewTab}
             disabled={disabled}
             sx={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               borderRadius: 1.5,
               color: theme.palette.text.secondary,
+              p: 0,
+              minWidth: 28,
               '&:hover': {
                 backgroundColor: alpha(theme.palette.primary.main, 0.08),
                 color: theme.palette.text.primary,
@@ -187,178 +186,184 @@ function URLNavigationBar({
           </IconButton>
         </Tooltip>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, maxWidth: 200 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              color: theme.palette.text.primary,
+        {/* URL Path Input */}
+        <Typography
+          variant="body2"
+          sx={{
+            color: theme.palette.text.primary,
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            flexShrink: 0,
+          }}
+        >
+          /
+        </Typography>
+        <TextField
+          ref={inputRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="about-us"
+          size="small"
+          disabled={disabled}
+          sx={{
+            flex: 1,
+            minWidth: 120,
+            '& .MuiOutlinedInput-root': {
+              height: 32,
+              backgroundColor: 'transparent',
+              '& fieldset': {
+                border: 'none',
+              },
+            },
+            '& .MuiInputBase-input': {
               fontSize: '0.875rem',
-              fontWeight: 500,
-              mx: 1,
+              py: 0,
+              px: 0,
+              '&::placeholder': {
+                color: alpha(theme.palette.text.secondary, 0.5),
+                opacity: 1,
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {/* Action Buttons - Outside navigation bar */}
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+      >
+        {/* Preview Mode Toggle - Only show if production URL is available */}
+        {productionUrl && (
+          <Tooltip
+            open={showPublishedTooltip}
+            disableFocusListener
+            disableHoverListener
+            disableTouchListener
+            placement="bottom"
+            arrow
+            title={
+              <Box sx={{ p: 1, maxWidth: 280 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 1,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Showing the last published version
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mb: 2,
+                    lineHeight: 1.4,
+                    fontSize: '0.8rem',
+                    opacity: 0.9,
+                  }}
+                >
+                  This is your live version that users see. Click the &quot;Live&quot; button to
+                  switch to development mode.
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleUnderstoodTooltip}
+                  startIcon={
+                    <Iconify
+                      icon="mdi:check"
+                      sx={{ width: 14, height: 14 }}
+                    />
+                  }
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '0.75rem',
+                    py: 0.5,
+                    px: 1.5,
+                    borderRadius: 1.5,
+                    background: `linear-gradient(135deg, 
+                      ${theme.palette.primary.main} 0%, 
+                      ${theme.palette.primary.dark} 100%)`,
+                    '&:hover': {
+                      background: `linear-gradient(135deg, 
+                        ${theme.palette.primary.dark} 0%, 
+                        ${theme.palette.primary.main} 100%)`,
+                    },
+                  }}
+                >
+                  Understood
+                </Button>
+              </Box>
+            }
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.background.paper, 0.95),
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  borderRadius: 2,
+                  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
+                  color: theme.palette.text.primary,
+                  fontSize: '0.875rem',
+                  maxWidth: 320,
+                  p: 0,
+                },
+              },
             }}
           >
-            /
-          </Typography>
-          <TextField
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="about-us"
-            size="small"
-            disabled={disabled}
-            sx={{
-              flex: 1,
-              '& .MuiOutlinedInput-root': {
-                height: 32,
-                borderRadius: 1.5,
-                backgroundColor: 'transparent',
-                '& fieldset': {
-                  border: 'none',
-                },
-                '&:hover fieldset': {
-                  border: 'none',
-                },
-                '&.Mui-focused fieldset': {
-                  border: 'none',
-                },
-              },
-              '& .MuiInputBase-input': {
-                fontSize: '0.875rem',
-                py: 0,
-                px: 0,
-                '&::placeholder': {
-                  color: alpha(theme.palette.text.secondary, 0.5),
-                  opacity: 1,
-                },
-              },
-            }}
-          />
-        </Box>
-
-        <Stack
-          direction="row"
-          spacing={0.25}
-          alignItems="center"
-        >
-          {/* Preview Mode Toggle - Only show if production URL is available */}
-          {productionUrl && (
-            <Tooltip
-              open={showPublishedTooltip}
-              disableFocusListener
-              disableHoverListener
-              disableTouchListener
-              placement="bottom"
-              arrow
-              title={
-                <Box sx={{ p: 1, maxWidth: 280 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: 600,
-                      mb: 1,
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Showing the last published version
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      mb: 2,
-                      lineHeight: 1.4,
-                      fontSize: '0.8rem',
-                      opacity: 0.9,
-                    }}
-                  >
-                    This is your live version that users see. Click the &quot;Live&quot; button to switch to development mode.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={handleUnderstoodTooltip}
-                    startIcon={<Iconify icon="mdi:check" sx={{ width: 14, height: 14 }} />}
-                    sx={{
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      fontSize: '0.75rem',
-                      py: 0.5,
-                      px: 1.5,
-                      borderRadius: 1.5,
-                      background: `linear-gradient(135deg, 
-                        ${theme.palette.primary.main} 0%, 
-                        ${theme.palette.primary.dark} 100%)`,
-                      '&:hover': {
-                        background: `linear-gradient(135deg, 
-                          ${theme.palette.primary.dark} 0%, 
-                          ${theme.palette.primary.main} 100%)`,
-                      },
-                    }}
-                  >
-                    Understood
-                  </Button>
-                </Box>
-              }
-              componentsProps={{
-                tooltip: {
-                  sx: {
-                    bgcolor: alpha(theme.palette.background.paper, 0.95),
-                    backdropFilter: 'blur(10px)',
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    borderRadius: 2,
-                    boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
-                    color: theme.palette.text.primary,
-                    fontSize: '0.875rem',
-                    maxWidth: 320,
-                    p: 0,
-                  },
+            <IconButton
+              size="small"
+              onClick={handleTogglePreviewMode}
+              disabled={disabled}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                color: previewMode === 'production'
+                  ? theme.palette.success.main
+                  : theme.palette.warning.main,
+                backgroundColor: previewMode === 'production'
+                  ? alpha(theme.palette.success.main, 0.12)
+                  : alpha(theme.palette.warning.main, 0.12),
+                backdropFilter: 'blur(10px)',
+                border: previewMode === 'production'
+                  ? `1px solid ${alpha(theme.palette.success.main, 0.2)}`
+                  : `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                transition: theme.transitions.create(['all'], {
+                  duration: theme.transitions.duration.shorter,
+                }),
+                '&:hover': {
+                  backgroundColor: previewMode === 'production'
+                    ? alpha(theme.palette.success.main, 0.2)
+                    : alpha(theme.palette.warning.main, 0.2),
+                  border: previewMode === 'production'
+                    ? `1px solid ${alpha(theme.palette.success.main, 0.3)}`
+                    : `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                  transform: 'translateY(-1px)',
                 },
               }}
             >
-              <Chip
-                label={previewMode === 'production' ? 'Live' : 'Dev'}
-                size="small"
-                onClick={handleTogglePreviewMode}
-                disabled={disabled}
+              <Typography
+                variant="caption"
                 sx={{
-                  height: 24,
                   fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor:
-                    previewMode === 'production'
-                      ? alpha(theme.palette.success.main, 0.12)
-                      : alpha(theme.palette.warning.main, 0.12),
-                  color:
-                    previewMode === 'production'
-                      ? theme.palette.success.main
-                      : theme.palette.warning.main,
-                  border: `1px solid ${
-                    previewMode === 'production'
-                      ? alpha(theme.palette.success.main, 0.24)
-                      : alpha(theme.palette.warning.main, 0.24)
-                  }`,
-                  '&:hover': {
-                    backgroundColor:
-                      previewMode === 'production'
-                        ? alpha(theme.palette.success.main, 0.16)
-                        : alpha(theme.palette.warning.main, 0.16),
-                  },
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
                 }}
-              />
-            </Tooltip>
-          )}
-          {/* <EditToggleButton
-            editMode={editMode}
-            onToggle={handleToggleEditMode}
-            disabled={disabled}
-          /> */}
-          <CodeToggleButton />
-        </Stack>
-      </Box>
+              >
+                {previewMode === 'production' ? 'Live' : 'Dev'}
+              </Typography>
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Code Toggle Button */}
+        <CodeToggleButton />
+      </Stack>
     </Box>
   );
 }

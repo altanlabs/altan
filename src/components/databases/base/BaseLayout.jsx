@@ -1,7 +1,10 @@
 import React, { memo } from 'react';
+import { useSelector } from 'react-redux';
 
 import TableTabs from './TableTabs.jsx';
+import { selectSQLTerminalMode } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
+import SQLTerminal from '../sql/SQLTerminal.jsx';
 import Table from '../table/Table.jsx';
 
 function BaseLayout({
@@ -16,9 +19,22 @@ function BaseLayout({
   viewId,
   triggerImport,
 }) {
+  const sqlTerminalMode = useSelector(selectSQLTerminalMode);
+
   // ------------------
-  // Main Content Block: TableTabs on top and Table view below.
+  // Main Content Block: TableTabs on top and Table/SQL Terminal view below.
   // Uses min-w-0 to allow flex sizing without overflow.
+
+  if (sqlTerminalMode) {
+    return (
+      <div className="flex flex-col h-full w-full min-w-0">
+        <div className="flex-1 relative overflow-auto min-w-0">
+          <SQLTerminal baseId={baseId} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full min-w-0">
       <div className="shrink-0 min-w-0 w-full">

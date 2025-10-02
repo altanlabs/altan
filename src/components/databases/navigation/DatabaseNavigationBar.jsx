@@ -17,33 +17,30 @@ import {
   selectBaseById,
   setDatabaseRefreshing,
   loadTableRecords,
+  selectSQLTerminalMode,
+  setSQLTerminalMode,
 } from '../../../redux/slices/bases';
 import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
 import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
 import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
-import { optimai_database } from '../../../utils/axios';
 import { optimai_tables_v4 } from '../../../utils/axios.js';
 
-function DatabaseNavigationBar({
-  disabled = false,
-}) {
+function DatabaseNavigationBar({ disabled = false }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const inputRef = useRef(null);
   const { baseId: routeBaseId, tableId, componentId } = useParams();
-  
+
   // Dialog states
   const [openCreateRecord, setOpenCreateRecord] = useState(false);
   const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
 
   // Get baseId from route params
   const baseId = routeBaseId;
-  
+
   // Get database from Redux using the baseId
-  const database = useSelector((state) => 
-    baseId ? selectBaseById(state, baseId) : null
-  );
+  const database = useSelector((state) => (baseId ? selectBaseById(state, baseId) : null));
 
   // Get values from Redux - only when this component is actually rendered for database
   const quickFilter = useSelector(selectDatabaseQuickFilter);
@@ -55,6 +52,7 @@ function DatabaseNavigationBar({
   const currentTableRecordCount = useSelector((state) =>
     tableId ? selectTableTotalRecords(state, tableId) : 0,
   );
+  const sqlTerminalMode = useSelector(selectSQLTerminalMode);
 
   // Use internal state for better performance
   const actualRecordCount = currentTableRecordCount;
@@ -65,7 +63,7 @@ function DatabaseNavigationBar({
     debounce((searchQuery) => {
       // eslint-disable-next-line no-console
       console.log('🎯 DatabaseNavigationBar debouncedSearch triggered:', { tableId, searchQuery });
-      
+
       if (tableId && searchQuery.trim()) {
         // eslint-disable-next-line no-console
         console.log('🔍 Dispatching searchTableRecords...');
@@ -78,17 +76,17 @@ function DatabaseNavigationBar({
         dispatch(searchTableRecords(tableId, ''));
       }
     }, 300), // 300ms delay for better UX
-    [tableId]
+    [tableId],
   );
 
   const handleFilterChange = (e) => {
     const value = e.target.value;
     // eslint-disable-next-line no-console
     console.log('📝 DatabaseNavigationBar handleFilterChange:', { value, tableId });
-    
+
     // Update Redux state directly for immediate UI feedback
     dispatch(setDatabaseQuickFilter(value));
-    
+
     // Trigger debounced database search
     // eslint-disable-next-line no-console
     console.log('🚀 Calling debouncedSearch with value:', value);
@@ -125,28 +123,17 @@ function DatabaseNavigationBar({
   }, []);
 
   const handleExportCSV = useCallback(async () => {
-    // eslint-disable-next-line no-console
-    console.log('🔹 Export CSV clicked', { baseId, tableId, database });
-    
     if (!baseId || !tableId) {
-      // eslint-disable-next-line no-console
-      console.warn('❌ Missing baseId or tableId', { baseId, tableId });
       return;
     }
 
     // Find current table to get its name (convert tableId to number for comparison)
-    const currentTable = database?.tables?.items?.find(t => t.id === Number(tableId));
+    const currentTable = database?.tables?.items?.find((t) => t.id === Number(tableId));
     if (!currentTable) {
-      // eslint-disable-next-line no-console
-      console.warn('❌ Current table not found', { tableId, tableIdAsNumber: Number(tableId), tables: database?.tables?.items });
       return;
     }
 
-    // eslint-disable-next-line no-console
-    console.log('✅ Found table, exporting:', currentTable.name);
-
     try {
-      
       // Call the export API endpoint
       const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
         params: {
@@ -155,32 +142,32 @@ function DatabaseNavigationBar({
         responseType: 'blob',
       });
 
-      // eslint-disable-next-line no-console
-      console.log('✅ API response received', response);
-
       // Create a download link and trigger download
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      
+
       link.setAttribute('href', url);
-      link.setAttribute('download', `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        'download',
+        `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`,
+      );
       link.style.visibility = 'hidden';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up the URL object
       URL.revokeObjectURL(url);
-      
-      // eslint-disable-next-line no-console
-      console.log('✅ CSV download triggered');
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('❌ Error exporting CSV:', error);
+      console.error('Error exporting CSV:', error);
     }
   }, [baseId, database, tableId]);
+
+  const handleToggleSQLTerminal = useCallback(() => {
+    dispatch(setSQLTerminalMode(!sqlTerminalMode));
+  }, [sqlTerminalMode]);
 
   // Cleanup debounced function on unmount
   useEffect(() => {
@@ -188,7 +175,6 @@ function DatabaseNavigationBar({
       debouncedSearch.cancel();
     };
   }, [debouncedSearch]);
-
 
   return (
     <Box
@@ -200,6 +186,38 @@ function DatabaseNavigationBar({
         gap: 1.5,
       }}
     >
+      {/* Settings Button */}
+      <Tooltip title="Database settings">
+        <IconButton
+          size="small"
+          onClick={handleDatabaseInfo}
+          disabled={disabled || !database}
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            color: theme.palette.text.secondary,
+            backgroundColor: alpha(theme.palette.background.paper, 0.6),
+            backdropFilter: 'blur(10px)',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            transition: theme.transitions.create(['all'], {
+              duration: theme.transitions.duration.shorter,
+            }),
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.info.main, 0.12),
+              color: theme.palette.info.main,
+              border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+              transform: 'translateY(-1px)',
+            },
+          }}
+        >
+          <Iconify
+            icon="mdi:cog-outline"
+            sx={{ width: 18, height: 18 }}
+          />
+        </IconButton>
+      </Tooltip>
+      
       {/* Search Bar - Glassmorphic Container */}
       <Box
         sx={{
@@ -319,38 +337,6 @@ function DatabaseNavigationBar({
         spacing={1}
         alignItems="center"
       >
-        {/* Settings Button */}
-        <Tooltip title="Database settings">
-          <IconButton
-            size="small"
-            onClick={handleDatabaseInfo}
-            disabled={disabled || !database}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              color: theme.palette.text.secondary,
-              backgroundColor: alpha(theme.palette.background.paper, 0.6),
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              transition: theme.transitions.create(['all'], {
-                duration: theme.transitions.duration.shorter,
-              }),
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.info.main, 0.12),
-                color: theme.palette.info.main,
-                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <Iconify
-              icon="mdi:cog-outline"
-              sx={{ width: 18, height: 18 }}
-            />
-          </IconButton>
-        </Tooltip>
-
         {/* Export CSV Button */}
         <Tooltip title="Export to CSV">
           <IconButton
@@ -377,6 +363,42 @@ function DatabaseNavigationBar({
           >
             <Iconify
               icon="mdi:download"
+              sx={{ width: 18, height: 18 }}
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* SQL Terminal Button */}
+        <Tooltip title={sqlTerminalMode ? "Close SQL Terminal" : "Open SQL Terminal"}>
+          <IconButton
+            size="small"
+            onClick={handleToggleSQLTerminal}
+            disabled={disabled || !baseId}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              color: sqlTerminalMode ? theme.palette.warning.main : theme.palette.text.secondary,
+              backgroundColor: sqlTerminalMode 
+                ? alpha(theme.palette.warning.main, 0.15)
+                : alpha(theme.palette.background.paper, 0.6),
+              backdropFilter: 'blur(10px)',
+              border: sqlTerminalMode
+                ? `1px solid ${alpha(theme.palette.warning.main, 0.3)}`
+                : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.warning.main, 0.2),
+                color: theme.palette.warning.main,
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:console"
               sx={{ width: 18, height: 18 }}
             />
           </IconButton>

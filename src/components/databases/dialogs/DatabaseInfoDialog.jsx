@@ -285,41 +285,6 @@ function DatabaseInfoDialog({ open, onClose, database, onDatabaseUpdate, baseId 
               )}
             </Box>
 
-            {/* Database Description */}
-            <Box>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Description
-              </Typography>
-
-              {editMode ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={editedDescription}
-                  onChange={(e) => setEditedDescription(e.target.value)}
-                  placeholder="Enter database description"
-                  size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {database.description || 'No description provided'}
-                </Typography>
-              )}
-            </Box>
-
             <Divider />
 
             {/* Tables List */}

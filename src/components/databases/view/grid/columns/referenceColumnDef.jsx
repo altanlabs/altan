@@ -21,9 +21,24 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems, b
     return `${tableName} ${params.value}`;
   },
   cellRenderer: (params) => {
+    // If no value, show empty cell
     if (!params.value) return null;
+
     const referenceOptions = field.options?.reference_options;
-    const foreignTableName = referenceOptions?.foreign_table || referenceOptions?.foreign_table_name;
+    const foreignTableName =
+      referenceOptions?.foreign_table || referenceOptions?.foreign_table_name;
+
+    // Fallback: if we can't render a chip, at least show the UUID
+    if (!foreignTableName || !baseId) {
+      console.warn('⚠️ Missing foreignTableName or baseId, showing fallback');
+      return (
+        <div className="h-full w-full flex items-center p-1">
+          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', opacity: 0.7 }}>
+            {params.value}
+          </span>
+        </div>
+      );
+    }
 
     return (
       <div className="h-full w-full flex items-center overflow-visible p-1">
@@ -31,7 +46,7 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems, b
           <RecordChip
             key={`${foreignTableName}-${params.value}`}
             baseId={baseId}
-            rawTableId={foreignTableName}
+            tableId={foreignTableName}
             recordId={params.value}
           />
         </div>
@@ -42,10 +57,12 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems, b
     const IconComponent = field.icon;
     return (
       <div className="flex items-center gap-2">
-        <IconComponent
-          fontSize="small"
-          sx={{ opacity: 0.7 }}
-        />
+        {IconComponent && (
+          <IconComponent
+            fontSize="small"
+            sx={{ opacity: 0.7 }}
+          />
+        )}
         <span>{params.displayName}</span>
       </div>
     );

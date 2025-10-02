@@ -123,12 +123,29 @@ export const getUserColumnDef = ({ field, getCommonFieldMenuItems, members = [] 
             ? [params.value]
             : [];
 
+      // If no values, return null
+      if (!values || values.length === 0) {
+        return null;
+      }
+
       return (
         <div className="h-full flex items-center">
           <div className="flex flex-wrap gap-1">
             {values.map((userId) => {
               const member = formattedMembers?.find((m) => m?.id === userId);
-              if (!member) return null;
+              
+              // If member not found, show the UUID value instead of returning null
+              if (!member) {
+                return (
+                  <div
+                    key={userId}
+                    className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded px-2 py-0.5"
+                    style={{ fontFamily: 'monospace', fontSize: '0.75rem', opacity: 0.7 }}
+                  >
+                    <span>{userId}</span>
+                  </div>
+                );
+              }
 
               return (
                 <div

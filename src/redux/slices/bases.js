@@ -25,6 +25,7 @@ const initialState = {
     recordCount: 0,
     isSearching: false,
     searchResults: {},
+    sqlTerminalMode: false,
   },
   // User cache for auth.users table to avoid redundant API calls
   userCache: {},
@@ -634,6 +635,9 @@ const slice = createSlice({
         state.databaseNavigation.searchResults = {};
       }
     },
+    setSQLTerminalMode(state, action) {
+      state.databaseNavigation.sqlTerminalMode = action.payload;
+    },
     clearDatabaseNavigation(state) {
       state.databaseNavigation = {
         quickFilter: '',
@@ -642,6 +646,7 @@ const slice = createSlice({
         recordCount: 0,
         isSearching: false,
         searchResults: {},
+        sqlTerminalMode: false,
       };
     },
     // User cache reducers
@@ -733,6 +738,7 @@ export const {
   setDatabaseSearching,
   setDatabaseSearchResults,
   clearDatabaseSearchResults,
+  setSQLTerminalMode,
   clearDatabaseNavigation,
   // User cache actions
   setUserCacheLoading,
@@ -1239,7 +1245,7 @@ export const getBasesByAccountID = (accountId) => async (dispatch) => {
     // Fetch tables for each base using pg-meta
     await Promise.all(
       bases.map((base) =>
-        dispatch(fetchTables(base.id, { include_columns: true })).catch((err) => {
+        dispatch(fetchTables(base.id, { include_columns: true, include_relationships: true })).catch((err) => {
           // eslint-disable-next-line no-console
           console.error(`Failed to fetch tables for base ${base.id}:`, err);
           // Don't fail the entire operation if one base fails
@@ -2268,6 +2274,11 @@ export const selectDatabaseSearching = createSelector(
 export const selectDatabaseSearchResults = createSelector(
   [selectDatabaseNavigation, (_, tableId) => tableId],
   (navigation, tableId) => navigation.searchResults[tableId] || null,
+);
+
+export const selectSQLTerminalMode = createSelector(
+  [selectDatabaseNavigation],
+  (navigation) => navigation.sqlTerminalMode,
 );
 
 export const selectUserCache = createSelector([selectBaseState], (state) => state.userCache);

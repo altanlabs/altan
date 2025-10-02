@@ -100,9 +100,7 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
               py: 0,
             },
             backgroundColor:
-              theme.palette.mode === 'dark'
-                ? 'rgba(76, 175, 80, 0.08)'
-                : 'rgba(76, 175, 80, 0.08)',
+              theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(76, 175, 80, 0.08)',
             borderColor:
               theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.2)',
             color: theme.palette.mode === 'dark' ? '#4CAF50' : '#4CAF50',
@@ -128,9 +126,7 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
             py: 0,
           },
           backgroundColor:
-            theme.palette.mode === 'dark'
-              ? 'rgba(76, 175, 80, 0.08)'
-              : 'rgba(76, 175, 80, 0.08)',
+            theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(76, 175, 80, 0.08)',
           borderColor:
             theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.2)',
           color: theme.palette.mode === 'dark' ? '#4CAF50' : '#4CAF50',
@@ -167,7 +163,38 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
   }
 
   // Don't render anything if we don't have valid data
+  // But show the recordId as fallback if we have an ID but no record loaded yet
   if (!record || primaryValue === null) {
+    // If we have a recordId but no record, show the UUID as a fallback
+    if (recordId) {
+      return (
+        <Chip
+          size="small"
+          variant="outlined"
+          label={recordId}
+          sx={{
+            height: '20px',
+            '& .MuiChip-label': {
+              fontSize: '0.65rem',
+              lineHeight: '20px',
+              px: 1,
+              py: 0,
+              fontFamily: 'monospace',
+            },
+            backgroundColor:
+              theme.palette.mode === 'dark'
+                ? 'rgba(144, 202, 249, 0.08)'
+                : 'rgba(25, 118, 210, 0.08)',
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? 'rgba(144, 202, 249, 0.2)'
+                : 'rgba(25, 118, 210, 0.2)',
+            color: theme.palette.mode === 'dark' ? '#90CAF9' : '#1976D2',
+            opacity: 0.7,
+          }}
+        />
+      );
+    }
     return null;
   }
 

@@ -511,7 +511,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       const vercelDeploymentId = data.data.changes.meta_data?.deployment_info?.id;
 
       // Get interface_id from changes, or try to find it from existing deployment
-      let interfaceId = data.data.changes.interface_id;
+      const interfaceId = data.data.changes.interface_id;
 
       // If interface_id is not in changes, we need to find it by searching all interfaces
       if (!interfaceId) {
@@ -573,10 +573,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
     case 'RecordsNew':
+      console.log('RecordsNew WS', data);
       const newTableName = data.table_name || data.data?.table_name;
       const newBaseId = data.base_id || data.data?.base_id;
+      const newRecords = data.records || data.data?.records;
 
-      if (newTableName && newBaseId && data.records && Array.isArray(data.records)) {
+      if (newTableName && newBaseId && newRecords && Array.isArray(newRecords)) {
         // Dispatch a thunk to access state and integrate updates
         dispatch((dispatch, getState) => {
           const state = getState();
@@ -587,7 +589,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
             dispatch(
               integrateRealTimeUpdates({
                 tableId: table.id,
-                additions: data.records,
+                additions: newRecords,
               }),
             );
           } else {
@@ -599,8 +601,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'RecordsUpdate':
       const updateTableName = data.table_name || data.data?.table_name;
       const updateBaseId = data.base_id || data.data?.base_id;
+      const updateRecords = data.records || data.data?.records;
 
-      if (updateTableName && updateBaseId && data.records && Array.isArray(data.records)) {
+      if (updateTableName && updateBaseId && updateRecords && Array.isArray(updateRecords)) {
         // Dispatch a thunk to access state and integrate updates
         dispatch((dispatch, getState) => {
           const state = getState();
@@ -611,7 +614,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
             dispatch(
               integrateRealTimeUpdates({
                 tableId: table.id,
-                updates: data.records,
+                updates: updateRecords,
               }),
             );
           }
@@ -621,8 +624,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'RecordsDelete':
       const deleteTableName = data.table_name || data.data?.table_name;
       const deleteBaseId = data.base_id || data.data?.base_id;
+      const deleteIds = data.ids || data.data?.ids;
 
-      if (deleteTableName && deleteBaseId && data.ids && Array.isArray(data.ids)) {
+      if (deleteTableName && deleteBaseId && deleteIds && Array.isArray(deleteIds)) {
         // Dispatch a thunk to access state and integrate updates
         dispatch((dispatch, getState) => {
           const state = getState();
@@ -633,7 +637,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
             dispatch(
               integrateRealTimeUpdates({
                 tableId: table.id,
-                deletions: data.ids,
+                deletions: deleteIds,
               }),
             );
           }
