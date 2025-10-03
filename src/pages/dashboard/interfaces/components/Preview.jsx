@@ -43,13 +43,15 @@ function Preview({
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
 
   // Effect to automatically adjust preview mode when switching interfaces (projects)
+  // Only force development mode if there's NO production URL
   useEffect(() => {
     if (!productionUrl) {
+      // No production URL means we can only use development
       dispatch(setPreviewMode('development'));
-    } else {
-      dispatch(setPreviewMode('production'));
     }
-  }, [interfaceId, productionUrl]); // Added productionUrl to dependencies
+    // If productionUrl exists, respect the user's localStorage preference
+    // Don't force it to production anymore
+  }, [interfaceId, productionUrl]);
 
   // Effect to update iframe src when currentUrl changes
   useEffect(() => {

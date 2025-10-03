@@ -1,12 +1,22 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Load preview mode from localStorage or default to production
+const getInitialPreviewMode = () => {
+  try {
+    const saved = localStorage.getItem('previewMode');
+    return saved === 'development' ? 'development' : 'production';
+  } catch {
+    return 'production';
+  }
+};
+
 // Initial state
 const initialState = {
   navigationPath: null,
   shouldRefresh: false,
   shouldOpenInNewTab: false,
   iframeViewMode: 'desktop', // 'mobile' or 'desktop'
-  previewMode: 'production', // 'production' or 'development'
+  previewMode: getInitialPreviewMode(), // Load from localStorage
   editMode: false, // Edit mode for component editing
   actionId: null, // Used to trigger actions
 };
