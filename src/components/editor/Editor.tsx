@@ -10,15 +10,9 @@ import {
   $createParagraphNode,
 } from 'lexical';
 import React, { memo, RefObject, useMemo, useEffect, useCallback } from 'react';
-
-import useMessageListener from '@hooks/useMessageListener';
-
 import EditorPlugins from './EditorPlugins';
 import { $createCodeFileTargetNode, CodeFileTargetDetails } from './nodes/CodeFileTargetNode';
-import {
-  $createComponentTargetNode,
-  ComponentTargetDetails,
-} from './nodes/ComponentTargetNode';
+import { $createComponentTargetNode, ComponentTargetDetails } from './nodes/ComponentTargetNode';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import editorTheme from '../../theme/editorTheme.js';
 // import './editor.css';
@@ -155,20 +149,20 @@ const Editor = ({
   // Listen for custom insertComponentTarget events with debounce to prevent duplicates
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     const handleInsertComponent = (event: CustomEvent) => {
       const componentDetails = event.detail as ComponentTargetDetails;
       console.log('🎯 TypeScript Editor received custom event:', componentDetails);
-      
+
       // Clear any existing timeout to debounce rapid events
       clearTimeout(timeoutId);
-      
+
       // Add a small delay to prevent duplicate insertions
       timeoutId = setTimeout(() => {
         insertComponentTargetNode(componentDetails);
       }, 100);
     };
-    
+
     window.addEventListener('insertComponentTarget', handleInsertComponent as EventListener);
     return () => {
       window.removeEventListener('insertComponentTarget', handleInsertComponent as EventListener);
@@ -183,9 +177,10 @@ const Editor = ({
       console.log('📝 TypeScript Editor received code snippet:', codeDetails);
       insertCodeFileTargetNode(codeDetails);
     };
-    
+
     window.addEventListener('insertCodeSnippet', handleInsertCodeSnippet as EventListener);
-    return () => window.removeEventListener('insertCodeSnippet', handleInsertCodeSnippet as EventListener);
+    return () =>
+      window.removeEventListener('insertCodeSnippet', handleInsertCodeSnippet as EventListener);
   }, [insertCodeFileTargetNode]);
 
   // Use the stable function in useEffect

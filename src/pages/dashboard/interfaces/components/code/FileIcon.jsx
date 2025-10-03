@@ -2,69 +2,65 @@ import { memo } from 'react';
 
 import Iconify from '../../../../../components/iconify';
 
-// Get icon based on file extension
+// Get icon based on file extension - minimal monochrome icons
 const getFileIcon = (fileName) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
   const fullName = fileName.toLowerCase();
   
   // Special files by full name
   const specialFiles = {
-    'package.json': 'vscode-icons:file-type-npm',
-    'tsconfig.json': 'vscode-icons:file-type-tsconfig',
-    'tailwind.config.js': 'vscode-icons:file-type-tailwind',
-    'postcss.config.js': 'vscode-icons:file-type-postcss',
-    'vite.config.js': 'vscode-icons:file-type-vite',
-    'vite.config.ts': 'vscode-icons:file-type-vite',
-    '.gitignore': 'vscode-icons:file-type-git',
-    '.env': 'vscode-icons:file-type-env',
-    'dockerfile': 'vscode-icons:file-type-docker',
-    'readme.md': 'vscode-icons:file-type-readme',
+    'package.json': 'mdi:package-variant',
+    'tsconfig.json': 'mdi:language-typescript',
+    '.gitignore': 'mdi:git',
+    '.env': 'mdi:key-variant',
+    'readme.md': 'mdi:information-outline',
   };
 
   if (specialFiles[fullName]) {
     return specialFiles[fullName];
   }
 
-  // File extensions
+  // File extensions - using minimal monochrome icons
   const iconMap = {
     // JavaScript/TypeScript
-    js: 'vscode-icons:file-type-js',
-    jsx: 'vscode-icons:file-type-reactjs',
-    ts: 'vscode-icons:file-type-typescript',
-    tsx: 'vscode-icons:file-type-reactts',
+    js: 'mdi:language-javascript',
+    jsx: 'mdi:react',
+    ts: 'mdi:language-typescript',
+    tsx: 'mdi:react',
     
     // Styles
-    css: 'vscode-icons:file-type-css',
-    scss: 'vscode-icons:file-type-scss',
+    css: 'mdi:language-css3',
+    scss: 'mdi:sass',
     
     // Markup
-    html: 'vscode-icons:file-type-html',
-    svg: 'vscode-icons:file-type-svg',
+    html: 'mdi:language-html5',
+    svg: 'mdi:svg',
     
     // Data
-    json: 'vscode-icons:file-type-json',
-    yaml: 'vscode-icons:file-type-yaml',
-    yml: 'vscode-icons:file-type-yaml',
+    json: 'mdi:code-json',
+    yaml: 'mdi:code-braces',
+    yml: 'mdi:code-braces',
     
     // Documentation
-    md: 'vscode-icons:file-type-markdown',
-    txt: 'vscode-icons:file-type-text',
+    md: 'mdi:language-markdown',
+    txt: 'mdi:text-box-outline',
     
     // Images
-    png: 'vscode-icons:file-type-image',
-    jpg: 'vscode-icons:file-type-image',
-    jpeg: 'vscode-icons:file-type-image',
-    gif: 'vscode-icons:file-type-image',
-    ico: 'vscode-icons:file-type-favicon',
+    png: 'mdi:file-image-outline',
+    jpg: 'mdi:file-image-outline',
+    jpeg: 'mdi:file-image-outline',
+    gif: 'mdi:file-image-outline',
+    ico: 'mdi:image-outline',
   };
   
-  return iconMap[ext] || 'vscode-icons:default-file';
+  return iconMap[ext] || 'mdi:file-document-outline';
 };
 
-const FileIcon = ({ fileName, ...other }) => {
+const FileIcon = ({ fileName, className = '', ...other }) => {
   return (
     <Iconify
       icon={getFileIcon(fileName)}
+      className={`text-gray-500 dark:text-gray-500 ${className}`}
       {...other}
     />
   );

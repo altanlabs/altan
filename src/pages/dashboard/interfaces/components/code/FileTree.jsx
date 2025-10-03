@@ -198,10 +198,10 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
     return (
       <div key={node.path}>
         <div
-          className={`flex items-center py-0.5 pl-1 pr-2 cursor-pointer select-none group transition-colors duration-100 \
+          className={`flex items-center px-2 py-1 cursor-pointer select-none group transition-colors \
             ${isSelected 
-              ? 'bg-[#094771] dark:bg-[#094771] text-white' 
-              : 'hover:bg-gray-100 dark:hover:bg-[#2a2a2a]'
+              ? 'bg-gray-700/30 dark:bg-gray-700/30' 
+              : 'hover:bg-gray-100/50 dark:hover:bg-white/[0.03]'
             }`}
           onClick={() => {
             if (isDirectory) {
@@ -212,37 +212,35 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
           }}
           onContextMenu={(e) => handleContextMenu(e, node)}
         >
-          <div className="flex items-center min-w-0 flex-1">
+          <div className="flex items-center min-w-0 flex-1 gap-1.5">
             {/* Chevron for folders only */}
-            <div className="w-4 h-4 flex items-center justify-center mr-1">
-              {isDirectory && (
-                <Iconify
-                  icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
-                  className={`w-3.5 h-3.5 transition-transform duration-100 \
-                    ${isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
-                />
-              )}
-            </div>
+            {isDirectory ? (
+              <Iconify
+                icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+                className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+              />
+            ) : (
+              <div className="w-3.5 h-3.5 flex-shrink-0" />
+            )}
 
             {/* File Icon only (no folder icons) */}
             {!isDirectory && (
-              <div className="w-4 h-4 flex items-center justify-center mr-2">
-                <FileIcon
-                  fileName={node.name}
-                  width={16}
-                  className={isSelected ? 'brightness-110' : ''}
-                />
-              </div>
+              <FileIcon
+                fileName={node.name}
+                width={15}
+                className="flex-shrink-0"
+              />
             )}
 
             {/* File/Folder Name */}
             <span
-              className={`truncate text-[13px] font-normal \
+              className={`truncate text-[13px] \
                 ${isSelected 
-                  ? 'text-white' 
-                  : 'text-gray-800 dark:text-gray-200'
-                } \
-                ${isDirectory ? (isExpanded ? '' : '') : ''}`}
+                  ? 'text-gray-900 dark:text-gray-200' 
+                  : isDirectory 
+                    ? 'text-gray-700 dark:text-gray-300'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
             >
               {node.name}
             </span>
@@ -251,25 +249,23 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
 
         {/* Children */}
         {hasChildren && isExpanded && (
-          <div className="ml-4">
+          <div className="ml-3.5 border-l border-gray-200/30 dark:border-gray-700/30 pl-0">
             {node.children?.map((childNode) => renderTree(childNode))}
             {isCreatingNew?.path === node.path && (
-              <div className="flex items-center py-[3px] px-2">
-                <div className="w-4 h-4 mr-0.5" />
-                <div className="w-5 h-5 flex items-center justify-center mr-1.5">
-                  <Iconify
-                    icon={
-                      isCreatingNew.type === 'directory'
-                        ? 'fluent:folder-24-filled'
-                        : 'mdi:file-document-outline'
-                    }
-                    className={`w-[18px] h-[18px] ${isCreatingNew.type === 'directory' ? 'text-[#64D2FF]' : 'text-gray-400'}`}
-                  />
-                </div>
+              <div className="flex items-center px-2 py-1 gap-1.5">
+                <div className="w-3.5 h-3.5 flex-shrink-0" />
+                <Iconify
+                  icon={
+                    isCreatingNew.type === 'directory'
+                      ? 'mdi:folder-outline'
+                      : 'mdi:file-document-outline'
+                  }
+                  className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+                />
                 <input
                   ref={newItemInputRef}
                   type="text"
-                  className="bg-transparent border-none outline-none text-sm text-gray-300 w-full"
+                  className="bg-transparent border-none outline-none text-[13px] text-gray-700 dark:text-gray-300 w-full placeholder:text-gray-400 dark:placeholder:text-gray-600"
                   placeholder={`New ${isCreatingNew.type}...`}
                   onKeyDown={(e) => handleNewItemKeyDown(e, node.path, isCreatingNew.type)}
                   autoFocus

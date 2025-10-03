@@ -103,13 +103,13 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
             maxSize={50}
             className="flex flex-col bg-gray-100/50 dark:bg-[#131313]"
           >
-            <div className="p-2 flex items-center justify-between border-b border-gray-200 dark:border-gray-600 flex-shrink-0">
-              <span className="text-xs font-medium text-gray-900 dark:text-gray-500 uppercase tracking-wider">
-                Files
+            <div className="px-2 py-2 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0">
+              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider">
+                Explorer
               </span>
               <div className="flex items-center gap-1">
                 <button
-                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-colors"
                   onClick={() => setSearchDialogOpen(true)}
                   title="Search in Files"
                 >
@@ -119,7 +119,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
                   />
                 </button>
                 <button
-                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-colors"
                   onClick={() => handleCreateNew('file')}
                   title="New File"
                 >
@@ -129,7 +129,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
                   />
                 </button>
                 <button
-                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-colors"
                   onClick={() => handleCreateNew('folder')}
                   title="New Folder"
                 >
@@ -139,7 +139,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
                   />
                 </button>
                 <button
-                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-colors"
                   onClick={() => dispatch(fetchFileTree(interfaceId))}
                   title="Refresh"
                 >
@@ -150,7 +150,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto pt-2">
+            <div className="flex-1 overflow-auto pt-1.5">
               {fileTree && (
                 <FileTree
                   treeData={fileTree}
@@ -171,31 +171,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
           {/* Editor Panel */}
           <Panel className="flex-1 flex flex-col bg-gray-100 dark:bg-[#1d1d1d]">
             <FilesToolbar interfaceId={interfaceId} />
-            <div className="h-9 flex items-center justify-between px-4 bg-gray-100 dark:bg-[#1d1d1d] border-b border-gray-100 dark:border-gray-600">
-              {selectedFile ? (
-                <div className="flex items-center text-sm text-gray-400 dark:text-gray-500">
-                  {selectedFile.split('/').map((part, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center"
-                    >
-                      {idx > 0 && (
-                        <Iconify
-                          icon="mdi:chevron-right"
-                          className="w-4 h-4 mx-1"
-                        />
-                      )}
-                      <span>{part}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500 dark:text-gray-600">
-                  Select a file to edit
-                </div>
-              )}
-            </div>
-            <div className="flex-1 pt-2 relative">
+            <div className="flex-1 relative">
               {selectedFile ? (
                 <>
                   <CodeEditor
