@@ -337,8 +337,8 @@ function DatabaseNavigationBar({ disabled = false }) {
         spacing={1}
         alignItems="center"
       >
-        {/* Export CSV Button */}
-        <Tooltip title="Export to CSV">
+        {/* Export CSV Button (Current Table) */}
+        <Tooltip title="Export table to CSV">
           <IconButton
             size="small"
             onClick={handleExportCSV}

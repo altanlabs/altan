@@ -6,7 +6,12 @@ import {
   setAccountAttribute,
   setAccountAttributeError,
 } from './general';
-import { optimai_tables, optimai_database, optimai_pg_meta } from '../../utils/axios';
+import {
+  optimai_tables,
+  optimai_database,
+  optimai_pg_meta,
+  optimai_tables_v4,
+} from '../../utils/axios';
 
 const initialState = {
   isLoading: false,
@@ -1210,8 +1215,8 @@ export const getBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     // Get base metadata from legacy API (base info only)
-    const response = await optimai_tables.get(`/base/get-database/${baseId}`);
-    const base = response.data.base;
+    const response = await optimai_tables_v4.get(`/databases/${baseId}`);
+    const base = response.data;
 
     // Add base to state
     dispatch(slice.actions.addBase(base));
@@ -1707,6 +1712,52 @@ export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     const response = await optimai_tables.post(`/table/${tableId}/import-csv`, importData);
+    return Promise.resolve(response.data);
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Export database to CSV (single table) or ZIP (all tables)
+ * @param {string} baseId - Database ID
+ * @param {string} tableName - Optional. If provided, exports single table. If omitted, exports all tables to ZIP
+ */
+export const exportDatabaseToCSV = (baseId, tableName = null) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const params = tableName ? { table_name: tableName } : {};
+    const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
+      params,
+      responseType: 'blob',
+    });
+
+    return Promise.resolve(response.data);
+  } catch (e) {
+    dispatch(slice.actions.hasError(e.message));
+    throw e;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
+/**
+ * Export database schema as SQL dump using pg_dump
+ * @param {string} baseId - Database ID
+ * @param {boolean} includeData - If true, exports both schema and data. Default: false (schema only)
+ */
+export const exportDatabaseToSQL = (baseId, includeData = false) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const params = includeData ? { include_data: true } : {};
+    const response = await optimai_pg_meta.get(`/${baseId}/export/schema`, {
+      params,
+      responseType: 'blob',
+    });
+
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));

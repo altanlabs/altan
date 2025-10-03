@@ -7,7 +7,7 @@ const models = [
     provider: 'Anthropic',
     models: [
       'claude-4.1-opus-latest',
-      'claude-4.1-sonnet-latest',
+      'claude-4.5-sonnet-latest',
       'claude-4-opus-latest',
       'claude-4-sonnet-latest',
     ],
