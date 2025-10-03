@@ -368,7 +368,10 @@ export default function ProjectPage() {
 
             {/* Resize Handle - only show in both mode */}
             {displayMode === 'both' && (
-              <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
+              <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
+                <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
+                <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
+              </PanelResizeHandle>
             )}
 
             {/* Preview Panel */}

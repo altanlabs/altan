@@ -300,11 +300,23 @@ const SQLTerminal = memo(({ baseId }) => {
               minWidth: 'auto',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               backgroundColor: 'transparent',
-              borderRight: theme.palette.mode === 'dark'
-                ? '1px solid rgba(255, 255, 255, 0.08)'
-                : '1px solid rgba(0, 0, 0, 0.08)',
-              '&:last-child': {
-                borderRight: 'none',
+              position: 'relative',
+              '&:not(:last-child)::after': {
+                content: '""',
+                position: 'absolute',
+                right: 0,
+                top: '25%',
+                height: '50%',
+                width: '1px',
+                backgroundColor: theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.08)',
+              },
+              '&.Mui-selected::after': {
+                display: 'none',
+              },
+              '&.Mui-selected + .MuiTab-root::after': {
+                display: 'none',
               },
               '&:hover': {
                 backgroundColor: theme.palette.mode === 'dark'
