@@ -459,7 +459,6 @@ export const GridView = memo(
                     return isNewRow ? result.records[0] : row;
                   }),
                 );
-                setLocalRowData(updatedRowData);
               }
             }
           } else {
@@ -902,13 +901,13 @@ export const GridView = memo(
                   sortModel: [
                     {
                       colId: 'created_at',
-                      sort: 'asc',
+                      sort: 'desc',
                       nullsLast: true,
                     },
                   ],
                 },
               }}
-              sortingOrder={['asc', 'desc', null]}
+              sortingOrder={['desc', 'asc', null]}
               sideBar={{
                 toolPanels: [
                   {

@@ -842,7 +842,7 @@ export const deleteSchemaById =
 export const fetchTables =
   (baseId, options = {}) =>
   async (dispatch) => {
-  dispatch(slice.actions.startLoading());
+    dispatch(slice.actions.startLoading());
     try {
       const {
         include_columns = true,
@@ -955,20 +955,20 @@ export const updateTableById = (baseId, tableId, changes) => async (dispatch) =>
 export const deleteTableById =
   (baseId, tableId, cascade = false) =>
   async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    await optimai_pg_meta.delete(`/${baseId}/tables/${tableId}`, {
-      params: { cascade },
-    });
-    dispatch(deleteTable({ baseId, tableId }));
-    return Promise.resolve();
-  } catch (error) {
-    dispatch(slice.actions.hasError(error.message));
-    throw error;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
+    dispatch(slice.actions.startLoading());
+    try {
+      await optimai_pg_meta.delete(`/${baseId}/tables/${tableId}`, {
+        params: { cascade },
+      });
+      dispatch(deleteTable({ baseId, tableId }));
+      return Promise.resolve();
+    } catch (error) {
+      dispatch(slice.actions.hasError(error.message));
+      throw error;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+  };
 
 /**
  * Fetch RLS policies for a table using pg-meta
@@ -1202,7 +1202,7 @@ export const deleteFieldThunk =
     } finally {
       dispatch(slice.actions.stopLoading());
     }
-};
+  };
 
 // ============================================================================
 // BASE OPERATIONS
@@ -1250,7 +1250,9 @@ export const getBasesByAccountID = (accountId) => async (dispatch) => {
     // Fetch tables for each base using pg-meta
     await Promise.all(
       bases.map((base) =>
-        dispatch(fetchTables(base.id, { include_columns: true, include_relationships: true })).catch((err) => {
+        dispatch(
+          fetchTables(base.id, { include_columns: true, include_relationships: true }),
+        ).catch((err) => {
           // eslint-disable-next-line no-console
           console.error(`Failed to fetch tables for base ${base.id}:`, err);
           // Don't fail the entire operation if one base fails
@@ -1705,7 +1707,10 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
     const response = await optimai_database.get(
       `/admin/records/${baseId}/${authUsersTable.db_name || authUsersTable.name}`,
       {
-        params: { limit: 1000 },
+        params: {
+          limit: 10000,
+          order: 'created_at.desc',
+        },
       },
     );
 
@@ -1738,46 +1743,50 @@ export const importCSVToTable = (tableId, importData) => async (dispatch) => {
  * @param {string} baseId - Database ID
  * @param {string} tableName - Optional. If provided, exports single table. If omitted, exports all tables to ZIP
  */
-export const exportDatabaseToCSV = (baseId, tableName = null) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const params = tableName ? { table_name: tableName } : {};
-    const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
-      params,
-      responseType: 'blob',
-    });
+export const exportDatabaseToCSV =
+  (baseId, tableName = null) =>
+  async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const params = tableName ? { table_name: tableName } : {};
+      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
+        params,
+        responseType: 'blob',
+      });
 
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
+      return Promise.resolve(response.data);
+    } catch (e) {
+      dispatch(slice.actions.hasError(e.message));
+      throw e;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+  };
 
 /**
  * Export database schema as SQL dump using pg_dump
  * @param {string} baseId - Database ID
  * @param {boolean} includeData - If true, exports both schema and data. Default: false (schema only)
  */
-export const exportDatabaseToSQL = (baseId, includeData = false) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const params = includeData ? { include_data: true } : {};
-    const response = await optimai_pg_meta.get(`/${baseId}/export/schema`, {
-      params,
-      responseType: 'blob',
-    });
+export const exportDatabaseToSQL =
+  (baseId, includeData = false) =>
+  async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const params = includeData ? { include_data: true } : {};
+      const response = await optimai_pg_meta.get(`/${baseId}/export/schema`, {
+        params,
+        responseType: 'blob',
+      });
 
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
+      return Promise.resolve(response.data);
+    } catch (e) {
+      dispatch(slice.actions.hasError(e.message));
+      throw e;
+    } finally {
+      dispatch(slice.actions.stopLoading());
+    }
+  };
 
 export const loadTableRecords =
   (tableId, options = {}) =>
@@ -1830,6 +1839,19 @@ export const loadTableRecords =
         limit,
         offset,
       };
+
+      // Check if table has a created_at field and auto-sort if no order is specified
+      const hasCreatedAtField = table?.fields?.items?.some((field) => {
+        const fieldName = (field.name || field.db_field_name || '').toLowerCase();
+        return fieldName === 'created_at' || fieldName === 'createdat';
+      });
+
+      // Add default sorting by created_at if field exists and no custom order in options
+      if (hasCreatedAtField && !options.order) {
+        queryParams.order = 'created_at.desc';
+      } else if (options.order) {
+        queryParams.order = options.order;
+      }
 
       if (searchQuery && searchQuery.trim()) {
         // Filter text-based PostgreSQL types for search

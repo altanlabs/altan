@@ -30,7 +30,6 @@ function Base({
   onNavigate,
   baseId: explicitBaseId,
 }) {
-  console.log('Base re-render');
   const { altanerId, altanerComponentId, tableId, viewId: urlViewId, baseId: routeBaseId } = useParams();
   const history = useHistory();
   const ws = useHermesWebSocket();
@@ -90,6 +89,7 @@ function Base({
 
       // Pre-fetch the table records to improve loading performance
       if (newTableId) {
+        console.log('🔍 Base: Pre-fetching table records for table', newTableId);
         dispatch(loadTableRecords(newTableId, { limit: 50 }));
       }
     },
