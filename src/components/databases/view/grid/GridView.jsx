@@ -765,7 +765,7 @@ export const GridView = memo(
       (newPage) => {
         if (table?.id) {
           dispatch(
-            loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50 }),
+            loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50, forceReload: true }),
           );
         }
       },
@@ -775,7 +775,7 @@ export const GridView = memo(
     const handlePageSizeChange = useCallback(
       (newPageSize) => {
         if (table?.id) {
-          dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize }));
+          dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize, forceReload: true }));
         }
       },
       [table?.id],

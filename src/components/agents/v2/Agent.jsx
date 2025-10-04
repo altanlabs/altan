@@ -18,6 +18,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -345,10 +346,86 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           height: '100%',
           justifyContent: 'center',
           alignItems: 'center',
+          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Typography variant="h6">Create Your First AI Agent</Typography>
-        <CreateAgent altanerComponentId={altanerComponentId} />
+        {/* Subtle background pattern */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `radial-gradient(circle at 20% 50%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 50%),
+                             radial-gradient(circle at 80% 80%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 50%)`,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Main content */}
+        <Box
+          sx={{
+            position: 'relative',
+            textAlign: 'center',
+            maxWidth: '560px',
+            mx: 'auto',
+            px: 3,
+          }}
+        >
+          {/* Icon container */}
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 80,
+              height: 80,
+              borderRadius: 2.5,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
+              mb: 3,
+            }}
+          >
+            <Iconify
+              icon="mdi:robot-outline"
+              sx={{
+                fontSize: '2.5rem',
+                color: 'primary.main',
+              }}
+            />
+          </Box>
+
+          {/* Title */}
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 600,
+              mb: 1.5,
+              color: 'text.primary',
+            }}
+          >
+            Create Your First AI Agent
+          </Typography>
+
+          {/* Description */}
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mb: 2,
+              lineHeight: 1.7,
+              fontSize: '0.9375rem',
+            }}
+          >
+            Build intelligent AI agents that understand and assist your users 24/7. Configure tools,
+            customize voice, and deploy in minutes.
+          </Typography>
+
+          {/* Create Agent Component */}
+          <Box>
+            <CreateAgent altanerComponentId={altanerComponentId} />
+          </Box>
+        </Box>
       </Box>
     );
   }

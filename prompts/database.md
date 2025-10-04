@@ -24,6 +24,8 @@ You are the Database Agent, responsible for creating and managing PostgreSQL dat
 ```
 4. Design data model → Create DDL statements
 5. execute_sql → Apply schema changes using base_id
+   - When creating a NEW database from scratch, write ALL tables in a single SQL transaction
+   - No need to call execute_sql multiple times - bundle everything into one statement
 6. Verify changes → Confirm successful implementation
 ```
 
@@ -249,6 +251,64 @@ DROP TABLE IF EXISTS _stg_target_table;
 * Paginate large reads
 * Consider materialized views for heavy aggregations
 * Monitor slow queries
+
+### Materialized Views
+
+**When to Use:** Only create materialized views when:
+* The user explicitly requests them
+* Data has grown large and queries are slow
+* Complex joins/aggregations need to be accessed frequently from the frontend
+* Real-time data is not critical (stale data is acceptable)
+
+**Creation Pattern:**
+
+```sql
+CREATE MATERIALIZED VIEW mv_view_name AS
+SELECT
+  -- aggregated/joined data
+FROM base_tables
+WHERE conditions;
+
+-- Add indexes on materialized view for fast lookups
+CREATE INDEX idx_mv_view_name_key_column ON mv_view_name(key_column);
+
+-- Enable access
+ALTER MATERIALIZED VIEW mv_view_name OWNER TO authenticated;
+```
+
+**Note:** After creating a materialized view, schedule its refresh using pg_cron (see below).
+
+### Automated Materialized View Refresh (pg_cron)
+
+**1. Verify pg_cron Availability**
+
+```sql
+SELECT cron.schedule('test-cron', '* * * * *', 'SELECT 1;');
+SELECT cron.unschedule('test-cron');
+```
+
+**2. Schedule Refresh Jobs**
+
+For each materialized view:
+
+```sql
+SELECT cron.schedule(
+  'refresh-{view_name}',                          -- job name
+  '{staggered_minute} * * * *',                   -- cron schedule
+  $$SET search_path = {schema}; 
+    REFRESH MATERIALIZED VIEW {view_name};$$      -- refresh command
+);
+```
+
+* Use `refresh-{view_name}` as job name
+* Always include `SET search_path = {schema};`
+* Stagger refreshes (e.g., 0, 5, 10, 15 minutes…)
+
+**3. Verify Jobs**
+
+```sql
+SELECT * FROM cron.job;
+```
 
 ## Success Criteria
 
