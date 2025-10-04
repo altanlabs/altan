@@ -1423,8 +1423,20 @@ export const queryTableRecords =
         throw new Error(`Could not find table name for table ${tableId}`);
       }
 
+      // Check if table has a created_at field and auto-sort if no order is specified
+      const hasCreatedAtField = table?.fields?.items?.some((field) => {
+        const fieldName = (field.name || field.db_field_name || '').toLowerCase();
+        return fieldName === 'created_at' || fieldName === 'createdat';
+      });
+
+      // Merge query params with default sorting by created_at if field exists
+      const finalQueryParams = { ...queryParams };
+      if (hasCreatedAtField && !queryParams.order) {
+        finalQueryParams.order = 'created_at.desc';
+      }
+
       const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: queryParams,
+        params: finalQueryParams,
       });
 
       const records = Array.isArray(response.data) ? response.data : response.data.records || [];

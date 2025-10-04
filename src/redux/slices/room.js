@@ -16,7 +16,6 @@ import { paginateCollection } from './utils/collections';
 import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
-const SOUND_IN = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/in.mp3');
 
 const handleReadState = (read_state) => {
   return (
@@ -664,14 +663,6 @@ const slice = createSlice({
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
-      }
-      if (message.member_id !== state.me?.id) {
-        // Don't play sound if voice is active for this thread
-        const isVoiceActiveForThread =
-          !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
-        if (!isVoiceActiveForThread) {
-          SOUND_IN.play();
-        }
       }
       extractMessagesFromThread(state, {
         messages: { byId: { [message.id]: message }, allIds: [message.id] },

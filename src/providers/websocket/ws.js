@@ -117,6 +117,10 @@ import {
 import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 
+const SOUND_IN = new Audio(
+  'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
+);
+
 // TODO: add other redux actions for agent, gate and form
 const TEMPLATE_ACTIONS = {
   template: {
@@ -773,6 +777,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'StreamingMessageEnd':
       dispatch(deleteRunningResponse(data.data));
+      SOUND_IN.play();
       // console.log('@handleWebSocketEvent: StreamingMessageEnd', data.data);
       break;
     case 'TaskStarted':
