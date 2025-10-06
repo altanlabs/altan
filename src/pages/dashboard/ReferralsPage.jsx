@@ -1,6 +1,7 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DoneIcon from '@mui/icons-material/Done';
-import ShareIcon from '@mui/icons-material/Share';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LinkIcon from '@mui/icons-material/Link';
 import {
   Box,
   Button,
@@ -12,6 +13,10 @@ import {
   Stack,
   TextField,
   Typography,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useState, memo } from 'react';
@@ -31,12 +36,9 @@ function ReferralsPage() {
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const { width, height } = useWindowSize();
+  const [postLink, setPostLink] = useState('');
 
   const referralUrl = user?.id ? `https://altan.ai?ref=${user.id}` : '';
-
-  // Mock data - replace with actual API calls
-  const earnedCredits = 0;
-  const referralsMade = 0;
 
   const handleCopy = async () => {
     try {
@@ -44,7 +46,6 @@ function ReferralsPage() {
       setCopied(true);
       setShowConfetti(true);
 
-      // Track referral link copied event
       analytics.track('referral_link_copied', {
         user_id: user?.id,
         referral_url: referralUrl,
@@ -57,6 +58,17 @@ function ReferralsPage() {
     }
   };
 
+  const handleSubmitPost = () => {
+    if (!postLink.trim()) return;
+
+    analytics.track('referral_post_submitted', {
+      user_id: user?.id,
+      post_link: postLink,
+    });
+
+    // TODO: Implement post submission logic
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -66,7 +78,6 @@ function ReferralsPage() {
           url: referralUrl,
         });
 
-        // Track referral link shared event
         analytics.track('referral_link_shared', {
           user_id: user?.id,
           referral_url: referralUrl,
@@ -95,197 +106,589 @@ function ReferralsPage() {
 
       <Container
         maxWidth="lg"
-        sx={{ pt: 3, pb: 6 }}
+        sx={{ pt: 4, pb: 8 }}
       >
         {/* Header */}
         <Stack
-          spacing={0.5}
-          sx={{ mb: 4, textAlign: 'center' }}
+          spacing={1}
+          sx={{ mb: 5 }}
         >
           <Typography
-            variant="h4"
+            variant="h3"
             sx={{ fontWeight: 600 }}
           >
-            Referrals
+            Earn $250+ in Free Credits
           </Typography>
           <Typography
-            variant="body2"
-            sx={{ color: 'text.secondary' }}
+            variant="body1"
+            color="text.secondary"
           >
-            Share and earn credits
+            Share your work or invite friends to get more credits
           </Typography>
         </Stack>
 
-        {/* Stats Cards */}
         <Grid
           container
-          spacing={2}
-          sx={{ mb: 4 }}
+          spacing={3}
         >
-          <Grid
-            item
-            xs={12}
-            md={6}
-          >
-            <Card
-              sx={{
-                p: 2.5,
-                height: '100%',
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-              >
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor:
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <Iconify
-                    icon="mdi:gift"
-                    width={22}
-                    sx={{ color: 'text.secondary' }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 600, mb: 0.25 }}
-                  >
-                    ${earnedCredits}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Earned from referrals
-                  </Typography>
-                </Box>
-              </Stack>
-            </Card>
-          </Grid>
-
-          <Grid
-            item
-            xs={12}
-            md={6}
-          >
-            <Card
-              sx={{
-                p: 2.5,
-                height: '100%',
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-              >
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor:
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <Iconify
-                    icon="mdi:account-multiple"
-                    width={22}
-                    sx={{ color: 'text.secondary' }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 600, mb: 0.25 }}
-                  >
-                    {referralsMade}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    People you've referred
-                  </Typography>
-                </Box>
-              </Stack>
-            </Card>
-          </Grid>
-        </Grid>
-
-        <Grid
-          container
-          spacing={2}
-        >
-          {/* Share & Earn Section */}
+          {/* Share what you're building Section */}
           <Grid
             item
             xs={12}
             lg={6}
           >
-            <Card sx={{ p: 3, height: '100%' }}>
-              <Stack spacing={2.5}>
+            <Card sx={{ p: 4, height: '100%', position: 'relative' }}>
+              <Stack spacing={3}>
                 <Box>
                   <Typography
-                    variant="h6"
-                    sx={{ mb: 0.5, fontWeight: 600 }}
+                    variant="h5"
+                    sx={{ mb: 1, fontWeight: 600 }}
                   >
-                    Share your link
+                    Share what you&apos;re building
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                   >
-                    Earn credits for each successful referral
+                    Get up to $250 in credits based on post quality and engagement
                   </Typography>
                 </Box>
 
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={referralUrl}
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={handleCopy}
-                          edge="end"
-                          size="small"
-                          color={copied ? 'success' : 'default'}
-                        >
-                          {copied ? <DoneIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
+                <Accordion
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor:
+                    bgcolor: 'transparent',
+                    boxShadow: 'none',
+                    '&:before': { display: 'none' },
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                    borderRadius: 1,
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      minHeight: 48,
+                      '&.Mui-expanded': { minHeight: 48 },
+                      '& .MuiAccordionSummary-content': {
+                        my: 1,
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      How to write a great post that earns max credits
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ pt: 0, pb: 2 }}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          Start with impact:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Lead with a compelling one-liner about your idea and your hands-on
+                          experience building it with Altan.
+                        </Typography>
+                      </Box>
+
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          Tell your story:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Share the &quot;why&quot; behind your project—your backstory, inspiration,
+                          and who you built it for.
+                        </Typography>
+                      </Box>
+
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          Keep it authentic:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Write as yourself, not as AI. Genuine posts outperform marketing copy.
+                        </Typography>
+                      </Box>
+
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          Show, don&apos;t tell:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Include screenshots or video demos of your project.
+                        </Typography>
+                      </Box>
+
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          Boost your reach:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Tag @altan_ai on X or @altan-ai on LinkedIn for bonus credits.
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Stack spacing={2}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <Iconify
+                        icon="mdi:message-text-outline"
+                        width={20}
+                      />
+                    </Box>
+                    <Typography variant="body2">
+                      Post about what you&apos;re building on social media
+                    </Typography>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <LinkIcon />
+                    </Box>
+                    <Typography variant="body2">Submit a link to your post</Typography>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <Iconify
+                        icon="mdi:gift-outline"
+                        width={20}
+                      />
+                    </Box>
+                    <Typography variant="body2">
+                      Get up to $250 in credits{' '}
+                      <Box component="span" sx={{ color: 'text.secondary' }}>
+                        (depending on account followers)
+                      </Box>
+                    </Typography>
+                  </Stack>
+                </Stack>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ mb: 2 }}
+                  >
+                    Your post link:
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="x.com/yourpost"
+                    value={postLink}
+                    onChange={(e) => setPostLink(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.03)'
+                            : 'rgba(0, 0, 0, 0.02)',
+                      },
+                    }}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
                         theme.palette.mode === 'dark'
-                          ? 'rgba(255, 255, 255, 0.03)'
-                          : 'rgba(0, 0, 0, 0.02)',
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:twitter"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:linkedin"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:instagram"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:facebook"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:reddit"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="ic:baseline-tiktok"
+                      width={20}
+                    />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="mdi:youtube"
+                      width={20}
+                    />
+                  </IconButton>
+                </Box>
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={handleSubmitPost}
+                  disabled={!postLink.trim()}
+                  sx={{
+                    bgcolor: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                    color: theme.palette.mode === 'dark' ? '#888' : '#666',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? '#666' : '#bbb',
+                    },
+                    '&:disabled': {
+                      bgcolor: theme.palette.mode === 'dark' ? '#444' : '#ddd',
+                      color: theme.palette.mode === 'dark' ? '#666' : '#999',
                     },
                   }}
-                />
+                >
+                  Submit post
+                </Button>
+              </Stack>
+            </Card>
+          </Grid>
+
+          {/* Invite friends Section */}
+          <Grid
+            item
+            xs={12}
+            lg={6}
+          >
+            <Card sx={{ p: 4, height: '100%' }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ mb: 1, fontWeight: 600 }}
+                  >
+                    Invite friends
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Share Altan with friends and both earn free credits
+                  </Typography>
+                </Box>
+
+                <Stack spacing={2}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <LinkIcon />
+                    </Box>
+                    <Typography variant="body2">Share your invite link</Typography>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <Iconify
+                        icon="mdi:account-plus-outline"
+                        width={20}
+                      />
+                    </Box>
+                    <Typography variant="body2">They sign up</Typography>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                      }}
+                    >
+                      <Iconify
+                        icon="mdi:star-outline"
+                        width={20}
+                      />
+                    </Box>
+                    <Typography variant="body2">
+                      Both get $10 in credits{' '}
+                      <Box
+                        component="span"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        once they upgrade to Pro
+                      </Box>
+                    </Typography>
+                  </Stack>
+                </Stack>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Box>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={referralUrl}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={handleCopy}
+                            edge="end"
+                            size="small"
+                            color={copied ? 'success' : 'default'}
+                          >
+                            {copied ? (
+                              <DoneIcon fontSize="small" />
+                            ) : (
+                              <ContentCopyIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.03)'
+                            : 'rgba(0, 0, 0, 0.02)',
+                      },
+                    }}
+                  />
+                </Box>
 
                 <Stack
                   direction="row"
@@ -294,16 +697,18 @@ function ReferralsPage() {
                   <Button
                     fullWidth
                     variant="contained"
+                    size="large"
                     startIcon={<ContentCopyIcon />}
                     onClick={handleCopy}
                   >
-                    Copy Link
+                    Copy link
                   </Button>
                   {navigator.share && (
                     <Button
                       fullWidth
                       variant="outlined"
-                      startIcon={<ShareIcon />}
+                      size="large"
+                      startIcon={<Iconify icon="mdi:share-variant" />}
                       onClick={handleShare}
                     >
                       Share
@@ -313,197 +718,7 @@ function ReferralsPage() {
               </Stack>
             </Card>
           </Grid>
-
-          {/* Claim Rewards Section */}
-          <Grid
-            item
-            xs={12}
-            lg={6}
-          >
-            <Card sx={{ p: 3, height: '100%' }}>
-              <Stack spacing={2.5}>
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 0.5, fontWeight: 600 }}
-                  >
-                    Claim rewards
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    Enter a referral link or user ID
-                  </Typography>
-                </Box>
-
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Paste link or user ID..."
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor:
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255, 255, 255, 0.03)'
-                          : 'rgba(0, 0, 0, 0.02)',
-                    },
-                  }}
-                />
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                >
-                  Claim Referral
-                </Button>
-              </Stack>
-            </Card>
-          </Grid>
         </Grid>
-
-        {/* How it Works Section */}
-        <Card
-          sx={{
-            mt: 3,
-            p: 3,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}
-          >
-            How it works
-          </Typography>
-          <Grid
-            container
-            spacing={3}
-          >
-            <Grid
-              item
-              xs={12}
-              md={4}
-            >
-              <Stack
-                spacing={1.5}
-                alignItems="center"
-                textAlign="center"
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor:
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <Typography variant="h6">1</Typography>
-                </Box>
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                >
-                  Share your link
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Copy and share your unique referral link
-                </Typography>
-              </Stack>
-            </Grid>
-
-            <Grid
-              item
-              xs={12}
-              md={4}
-            >
-              <Stack
-                spacing={1.5}
-                alignItems="center"
-                textAlign="center"
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor:
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <Typography variant="h6">2</Typography>
-                </Box>
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                >
-                  Friend signs up
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  They get extra $2.5 credits as a bonus
-                </Typography>
-              </Stack>
-            </Grid>
-
-            <Grid
-              item
-              xs={12}
-              md={4}
-            >
-              <Stack
-                spacing={1.5}
-                alignItems="center"
-                textAlign="center"
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor:
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <Typography variant="h6">3</Typography>
-                </Box>
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                >
-                  You earn credits
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Get $2.5 when they publish their first website
-                </Typography>
-              </Stack>
-            </Grid>
-          </Grid>
-        </Card>
       </Container>
     </CompactLayout>
   );
