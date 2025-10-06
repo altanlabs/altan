@@ -131,8 +131,8 @@ const PopularAccounts = memo(({ initialExpanded = false }) => {
         src={account.logo_url}
         alt={account.name}
         sx={{
-          width: 64,
-          height: 64,
+          width: 76,
+          height: 76,
           mb: 1,
           border: '2px solid',
           borderColor: 'divider',

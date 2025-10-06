@@ -16,7 +16,6 @@ import React, { memo, useState } from 'react';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import AltanerCard from '../../../components/AltanerCard';
-import { ProjectCarousel } from '../../../components/carousel';
 import SearchField from '../../../components/custom-input/SearchField';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
@@ -59,55 +58,10 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
   const isLoading = useSelector(selectAltanersLoading);
   const { isAuthenticated } = useAuthContext();
 
-  // Sample carousel cards data for projects
-  const projectCarouselCards = [
-    {
-      backgroundPath: '/videos/projects/project1.mp4',
-      title: 'Build Websites & Software',
-      description:
-        'Create complete websites, web applications, and end-to-end software solutions powered by the most advanced AI agents integrated directly into your projects.',
-      buttonText: 'Start Building',
-      navigateTo: '/auth/register',
-    },
-    {
-      backgroundPath: '/videos/projects/project1.mp4',
-      title: 'Collective AGI',
-      description:
-        'Experience our revolutionary multi-agent system embedded into all projects. Multiple AI agents work together intelligently to solve complex problems beyond single-agent capabilities.',
-      buttonText: 'Discover AGI',
-      navigateTo: '/auth/register',
-    },
-    {
-      backgroundPath: '/videos/projects/project1.mp4',
-      title: 'Built-in Databases',
-      description:
-        'Every project comes with powerful built-in database capabilities. Store, query, and manage data seamlessly without external dependencies or complex setup.',
-      buttonText: 'Explore Data',
-      navigateTo: '/auth/register',
-    },
-    {
-      backgroundPath: '/videos/projects/project1.mp4',
-      title: 'AI Code Generation',
-      description:
-        'Advanced codegen creates production-ready code automatically. Our AI agents write, test, and optimize code across multiple programming languages and frameworks.',
-      buttonText: 'Generate Code',
-      navigateTo: '/auth/register',
-    },
-    {
-      backgroundPath: '/videos/projects/project1.mp4',
-      title: 'End-to-End Solutions',
-      description:
-        'From concept to deployment - build complete software ecosystems with AI agents, databases, and code generation all working together in perfect harmony.',
-      buttonText: 'Build Complete',
-      navigateTo: '/auth/register',
-    },
-  ];
-
-  // If user is not authenticated, show carousel and marketplace
+  // If user is not authenticated, show marketplace
   if (!isAuthenticated) {
     return (
       <Box>
-        <ProjectCarousel cards={projectCarouselCards} />
         <AltanerTemplateMarketplace />
       </Box>
     );

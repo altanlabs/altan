@@ -101,7 +101,7 @@ const AltanerTemplateMarketplace = () => {
   }, [history, location.pathname, location.search]);
 
   return (
-    <Box sx={{ width: '100%', pt: 4 }}>
+    <Box sx={{ width: '100%', pt: 2 }}>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography
@@ -111,7 +111,7 @@ const AltanerTemplateMarketplace = () => {
             mb: 1,
           }}
         >
-          Marketplace
+          From the Community
         </Typography>
         <Typography
           variant="body1"
