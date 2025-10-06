@@ -1,255 +1,509 @@
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DoneIcon from '@mui/icons-material/Done';
+import ShareIcon from '@mui/icons-material/Share';
 import {
-  Container,
-  Paper,
-  Typography,
-  TextField,
-  Button,
   Box,
-  Alert,
-  CircularProgress,
+  Button,
+  Card,
+  Container,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { useState, useEffect, memo } from 'react';
+import { useTheme } from '@mui/material/styles';
+import { useState, memo } from 'react';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
+import { useAuthContext } from '../../auth/useAuthContext';
+import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
-import { optimai_shop } from '../../utils/axios';
+import { analytics } from '../../lib/analytics';
+
+// ----------------------------------------------------------------------
 
 function ReferralsPage() {
-  const [code, setCode] = useState('');
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState(null);
+  const theme = useTheme();
+  const { user } = useAuthContext();
+  const [copied, setCopied] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
 
-  const fetchStats = async () => {
+  const referralUrl = user?.id ? `https://altan.ai?ref=${user.id}` : '';
+
+  // Mock data - replace with actual API calls
+  const earnedCredits = 0;
+  const referralsMade = 0;
+
+  const handleCopy = async () => {
     try {
-      const response = await optimai_shop.get('/referral/stats');
-      setStats(response.data);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to fetch stats');
-    } finally {
-      setLoading(false);
-    }
-  };
+      await navigator.clipboard.writeText(referralUrl);
+      setCopied(true);
+      setShowConfetti(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const handleCreateCode = async () => {
-    setIsCreating(true);
-    setCreateError(null);
-    try {
-      await optimai_shop.post('/referral/create', null, {
-        params: {
-          code: code,
-        },
+      // Track referral link copied event
+      analytics.track('referral_link_copied', {
+        user_id: user?.id,
+        referral_url: referralUrl,
       });
-      setCode('');
-      fetchStats(); // Refresh stats after creating
+
+      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setShowConfetti(false), 5000);
     } catch (err) {
-      setCreateError(err.response?.data?.detail || 'Failed to create code');
-    } finally {
-      setIsCreating(false);
+      console.error('Failed to copy text: ', err);
     }
   };
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        p={4}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join Altan AI',
+          text: 'Check out Altan AI - Build AI agents and workflows!',
+          url: referralUrl,
+        });
 
-  const hasReferralCode = stats && stats.referral_stats !== null;
+        // Track referral link shared event
+        analytics.track('referral_link_shared', {
+          user_id: user?.id,
+          referral_url: referralUrl,
+          method: 'native_share',
+        });
+      } catch (err) {
+        // Only log if user didn't cancel the share
+        if (err.name !== 'AbortError') {
+          console.error('Failed to share: ', err);
+        }
+      }
+    }
+  };
 
   return (
-    <CompactLayout>
-      <Container>
-        <Box
-          textAlign="center"
-          mt={10}
+    <CompactLayout title="Referrals · Altan">
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={500}
+          gravity={0.3}
+        />
+      )}
+
+      <Container
+        maxWidth="lg"
+        sx={{ pt: 3, pb: 6 }}
+      >
+        {/* Header */}
+        <Stack
+          spacing={0.5}
+          sx={{ mb: 4, textAlign: 'center' }}
         >
           <Typography
             variant="h4"
-            component="h1"
-            gutterBottom
+            sx={{ fontWeight: 600 }}
           >
-            Referral Program
+            Referrals
           </Typography>
           <Typography
-            variant="subtitle1"
-            color="text.secondary"
-            sx={{ mb: 3 }}
+            variant="body2"
+            sx={{ color: 'text.secondary' }}
           >
-            Share Altan with your friends and colleagues. When they sign up using your referral
-            code, both of you will receive special benefits!
+            Share and earn credits
           </Typography>
-        </Box>
+        </Stack>
 
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3 }}
+        {/* Stats Cards */}
+        <Grid
+          container
+          spacing={2}
+          sx={{ mb: 4 }}
+        >
+          <Grid
+            item
+            xs={12}
+            md={6}
           >
-            {error}
-          </Alert>
-        )}
-
-        {hasReferralCode ? (
-          <Paper
-            elevation={3}
-            sx={{ p: 4, borderRadius: 2 }}
-          >
-            <Typography
-              variant="h5"
-              gutterBottom
+            <Card
+              sx={{
+                p: 2.5,
+                height: '100%',
+              }}
             >
-              Your Referral Dashboard
-            </Typography>
-            <Box sx={{ '& > *': { mb: 2 } }}>
-              <Box
-                sx={{
-                  bgcolor: 'primary.light',
-                  p: 3,
-                  borderRadius: 1,
-                  mb: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
               >
-                <Typography
-                  variant="subtitle2"
-                  color="primary.contrastText"
-                  gutterBottom
-                >
-                  Your Unique Referral Code
-                </Typography>
-                <Typography
-                  variant="h4"
-                  component="div"
+                <Box
                   sx={{
-                    fontFamily: 'monospace',
-                    fontWeight: 'bold',
-                    color: 'primary.contrastText',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.04)',
                   }}
                 >
-                  {stats?.referral_stats?.code || 'N/A'}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-                <Paper
-                  elevation={1}
-                  sx={{ p: 2, textAlign: 'center' }}
-                >
-                  <Typography variant="h6">{stats?.referral_stats?.times_redeemed || 0}</Typography>
+                  <Iconify
+                    icon="mdi:gift"
+                    width={22}
+                    sx={{ color: 'text.secondary' }}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
                   <Typography
-                    variant="body2"
+                    variant="h5"
+                    sx={{ fontWeight: 600, mb: 0.25 }}
+                  >
+                    ${earnedCredits}
+                  </Typography>
+                  <Typography
+                    variant="caption"
                     color="text.secondary"
                   >
-                    Successful Referrals
+                    Earned from referrals
                   </Typography>
-                </Paper>
-                <Paper
-                  elevation={1}
-                  sx={{ p: 2, textAlign: 'center' }}
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            md={6}
+          >
+            <Card
+              sx={{
+                p: 2.5,
+                height: '100%',
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+              >
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.04)',
+                  }}
                 >
+                  <Iconify
+                    icon="mdi:account-multiple"
+                    width={22}
+                    sx={{ color: 'text.secondary' }}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 600, mb: 0.25 }}
+                  >
+                    {referralsMade}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    People you've referred
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Grid
+          container
+          spacing={2}
+        >
+          {/* Share & Earn Section */}
+          <Grid
+            item
+            xs={12}
+            lg={6}
+          >
+            <Card sx={{ p: 3, height: '100%' }}>
+              <Stack spacing={2.5}>
+                <Box>
                   <Typography
                     variant="h6"
-                    color={stats?.referral_stats?.valid ? 'success.main' : 'error.main'}
+                    sx={{ mb: 0.5, fontWeight: 600 }}
                   >
-                    {stats?.referral_stats?.valid ? 'Active' : 'Inactive'}
+                    Share your link
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                   >
-                    Status
+                    Earn credits for each successful referral
                   </Typography>
-                </Paper>
-              </Box>
-            </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 3 }}
-            >
-              Share your code with others to help them get started with Altan. Each successful
-              referral brings rewards for both you and your referral!
-            </Typography>
-          </Paper>
-        ) : (
-          <Paper
-            elevation={3}
-            sx={{ p: 4, borderRadius: 2 }}
-          >
-            <Typography
-              variant="h5"
-              gutterBottom
-            >
-              Create Your Referral Code
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ mb: 3 }}
-            >
-              Start sharing Altan with others by creating your unique referral code. Make it
-              memorable and easy to share!
-            </Typography>
-            <Box sx={{ '& > *': { mb: 2 } }}>
-              <TextField
-                fullWidth
-                id="code"
-                label="Enter your desired referral code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="e.g., FRIEND20"
-                inputProps={{
-                  pattern: '^[a-zA-Z0-9_-]+$',
-                  minLength: 3,
-                  maxLength: 20,
-                }}
-                helperText="Code must be 3-20 characters long and can only contain letters, numbers, underscores, and hyphens."
-              />
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleCreateCode}
-                disabled={isCreating || !code.match(/^[a-zA-Z0-9_-]+$/)}
-                sx={{ mt: 2 }}
-              >
-                {isCreating ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CircularProgress
-                      size={20}
-                      color="inherit"
-                    />
-                    <span>Creating...</span>
-                  </Box>
-                ) : (
-                  'Create Referral Code'
-                )}
-              </Button>
-              {createError && (
-                <Alert
-                  severity="error"
-                  sx={{ mt: 2 }}
+                </Box>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={referralUrl}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleCopy}
+                          edge="end"
+                          size="small"
+                          color={copied ? 'success' : 'default'}
+                        >
+                          {copied ? <DoneIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.03)'
+                          : 'rgba(0, 0, 0, 0.02)',
+                    },
+                  }}
+                />
+
+                <Stack
+                  direction="row"
+                  spacing={1.5}
                 >
-                  Error: {createError}
-                </Alert>
-              )}
-            </Box>
-          </Paper>
-        )}
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<ContentCopyIcon />}
+                    onClick={handleCopy}
+                  >
+                    Copy Link
+                  </Button>
+                  {navigator.share && (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<ShareIcon />}
+                      onClick={handleShare}
+                    >
+                      Share
+                    </Button>
+                  )}
+                </Stack>
+              </Stack>
+            </Card>
+          </Grid>
+
+          {/* Claim Rewards Section */}
+          <Grid
+            item
+            xs={12}
+            lg={6}
+          >
+            <Card sx={{ p: 3, height: '100%' }}>
+              <Stack spacing={2.5}>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ mb: 0.5, fontWeight: 600 }}
+                  >
+                    Claim rewards
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Enter a referral link or user ID
+                  </Typography>
+                </Box>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Paste link or user ID..."
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor:
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.03)'
+                          : 'rgba(0, 0, 0, 0.02)',
+                    },
+                  }}
+                />
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                >
+                  Claim Referral
+                </Button>
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* How it Works Section */}
+        <Card
+          sx={{
+            mt: 3,
+            p: 3,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}
+          >
+            How it works
+          </Typography>
+          <Grid
+            container
+            spacing={3}
+          >
+            <Grid
+              item
+              xs={12}
+              md={4}
+            >
+              <Stack
+                spacing={1.5}
+                alignItems="center"
+                textAlign="center"
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.04)',
+                  }}
+                >
+                  <Typography variant="h6">1</Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                >
+                  Share your link
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  Copy and share your unique referral link
+                </Typography>
+              </Stack>
+            </Grid>
+
+            <Grid
+              item
+              xs={12}
+              md={4}
+            >
+              <Stack
+                spacing={1.5}
+                alignItems="center"
+                textAlign="center"
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.04)',
+                  }}
+                >
+                  <Typography variant="h6">2</Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                >
+                  Friend signs up
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  They get extra $2.5 credits as a bonus
+                </Typography>
+              </Stack>
+            </Grid>
+
+            <Grid
+              item
+              xs={12}
+              md={4}
+            >
+              <Stack
+                spacing={1.5}
+                alignItems="center"
+                textAlign="center"
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.04)',
+                  }}
+                >
+                  <Typography variant="h6">3</Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                >
+                  You earn credits
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  Get $2.5 when they publish their first website
+                </Typography>
+              </Stack>
+            </Grid>
+          </Grid>
+        </Card>
       </Container>
     </CompactLayout>
   );

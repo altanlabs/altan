@@ -1,4 +1,4 @@
-import { Stack, IconButton, Menu, MenuItem, Button } from '@mui/material';
+import { Stack, IconButton, Menu, MenuItem, Button, Tooltip } from '@mui/material';
 import { memo, useCallback, useState } from 'react';
 import { Link as RouterLink, useHistory } from 'react-router-dom';
 
@@ -54,6 +54,20 @@ const HeaderActions = ({ user, isDesktop }) => {
         />
 
         <InvitationMenuPopover isDashboard={true} />
+
+        <Tooltip
+          arrow
+          followCursor
+          title="Earn credits with referrals"
+        >
+          <HeaderIconButton onClick={() => history.push(PATH_DASHBOARD.referrals)}>
+            <Iconify
+              icon="mdi:gift-outline"
+              width={18}
+              height={18}
+            />
+          </HeaderIconButton>
+        </Tooltip>
 
         {/* <Tooltip
           arrow
