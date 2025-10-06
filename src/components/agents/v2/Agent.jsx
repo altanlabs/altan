@@ -346,7 +346,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           height: '100%',
           justifyContent: 'center',
           alignItems: 'center',
-          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -356,9 +355,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           sx={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `radial-gradient(circle at 20% 50%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 50%),
-                             radial-gradient(circle at 80% 80%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 50%)`,
-            pointerEvents: 'none',
           }}
         />
 

@@ -221,7 +221,6 @@ const ItemSwitcher = memo(
           sx={{
             display: 'flex',
             alignItems: 'center',
-            height: 42,
             gap: 0.5,
           }}
         >
@@ -229,7 +228,7 @@ const ItemSwitcher = memo(
             sx={{
               display: 'flex',
               alignItems: 'center',
-              borderRadius: 2,
+              borderRadius: 1.5,
               marginTop: 0.5,
               background: `linear-gradient(135deg, 
                 ${alpha(theme.palette.background.paper, 0.8)} 0%, 
@@ -252,9 +251,9 @@ const ItemSwitcher = memo(
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 40,
-              height: 32,
-              borderRadius: 1.5,
+              width: 36,
+              height: 28,
+              borderRadius: 1.25,
               backgroundColor: 'transparent',
             }}
           >
@@ -275,7 +274,7 @@ const ItemSwitcher = memo(
             sx={{
               display: { xs: 'none', sm: 'flex' },
               alignItems: 'center',
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               fontWeight: 500,
               color: theme.palette.text.primary,
               whiteSpace: 'nowrap',
@@ -294,9 +293,9 @@ const ItemSwitcher = memo(
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 40,
-              height: 32,
-              borderRadius: 1.5,
+              width: 36,
+              height: 28,
+              borderRadius: 1.25,
               backgroundColor: 'transparent',
               color: theme.palette.text.secondary,
             }}

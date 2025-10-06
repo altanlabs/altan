@@ -11,12 +11,12 @@ import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 
 // Default icons in case component doesn't provide one
 const DEFAULT_ICONS = {
-  interface: 'eva:monitor-outline',
-  base: 'eva:layers-outline',
+  interface: 'iconoir:web-window',
+  base: 'bxs:data',
   flows: 'eva:activity-outline',
   flow: 'eva:activity-outline',
-  agent: 'eva:person-outline',
-  agents: 'eva:person-outline',
+  agent: 'material-symbols:circle',
+  agents: 'material-symbols:circle',
   external_link: 'eva:link-outline',
 };
 
@@ -34,7 +34,7 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
       id,
       ...component,
       // Ensure icon is set
-      icon: component.icon || DEFAULT_ICONS[component.type.toLowerCase()] || 'eva:file-outline',
+      icon: DEFAULT_ICONS[component.type.toLowerCase()] || 'eva:file-outline',
     }));
     // Sort by position
     const sorted = [...componentsArray].sort((a, b) => {

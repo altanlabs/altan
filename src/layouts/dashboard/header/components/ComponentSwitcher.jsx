@@ -76,7 +76,7 @@ const ComponentSwitcher = memo(
                     width: 40,
                     height: 32,
                     border: 'none',
-                    borderRadius: 1.5,
+                    borderRadius: 2.5,
                     backgroundColor: 'transparent',
                     color: isActive
                       ? theme.palette.primary.main
