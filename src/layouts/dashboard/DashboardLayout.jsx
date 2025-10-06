@@ -6,13 +6,12 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
-import AltanAgentWidget from '../../components/AltanAgentWidget.jsx';
-import FloatingVoiceWidget from '../../components/FloatingVoiceWidget.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
+import { getFlows } from '../../redux/slices/flows.js';
 import {
   getAccount,
   getAccountAttribute,
@@ -22,7 +21,6 @@ import {
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
-import { getFlows } from '../../redux/slices/flows.js';
 
 const AltanLogoFixed = (
   <AltanLogo

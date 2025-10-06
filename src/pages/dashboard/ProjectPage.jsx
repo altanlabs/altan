@@ -336,7 +336,7 @@ export default function ProjectPage() {
               ref={chatPanelRef}
               id="chat-panel"
               order={1}
-              defaultSize={40}
+              defaultSize={30}
               minSize={20}
               maxSize={65}
               collapsible={true}

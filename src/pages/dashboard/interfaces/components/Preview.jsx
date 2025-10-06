@@ -137,9 +137,9 @@ function Preview({
       sx={{ position: 'relative' }}
     >
 
-      {(!status || status === 'stopped' || status === 'running:stalled') &&
+      {(!status || status === 'stopped') &&
         previewMode === 'development' && <LoadingFrame status={status} />}
-      {(status === 'running' || status === 'server_error' || previewMode === 'production') && (
+      {(status === 'running' || status === 'running:stalled' || status === 'server_error' || previewMode === 'production') && (
         <>
           <iframe
             id="preview-iframe"

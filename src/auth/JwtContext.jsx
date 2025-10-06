@@ -12,6 +12,7 @@ import { analytics } from '../lib/analytics';
 import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
 import { optimai, optimai_auth, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
+import { getAllTrackingParams, clearTrackingParams, formatTrackingParamsForAPI } from '../utils/queryParams';
 
 // ----------------------------------------------------------------------
 
@@ -455,6 +456,10 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = useCallback(async (invitation_id, idea_id) => {
     const isMobile = Capacitor.isNativePlatform();
 
+    // Get tracking params from localStorage or URL
+    const trackingParams = getAllTrackingParams(false);
+    const formattedTrackingParams = trackingParams ? formatTrackingParamsForAPI(trackingParams) : null;
+
     if (isMobile) {
       // Native mobile authentication using GenericOAuth2
       try {
@@ -486,7 +491,7 @@ export function AuthProvider({ children }) {
         });
 
         // Debug: Check what GenericOAuth2 is actually returning
-        console.log('✅ Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
+        console.log('Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
 
         // Extract tokens
         const idToken =
@@ -512,6 +517,7 @@ export function AuthProvider({ children }) {
             accessToken,
             invitation_id: invitation_id || null,
             idea_id: idea_id || null,
+            tracking_params: formattedTrackingParams,
           },
         );
 
@@ -546,6 +552,9 @@ export function AuthProvider({ children }) {
               type: 'LOGIN',
               payload: userProfile,
             });
+
+            // Clear tracking params after successful Google login
+            clearTrackingParams();
           } catch {
             throw new Error('Failed to complete mobile Google authentication');
           }
@@ -568,10 +577,20 @@ export function AuthProvider({ children }) {
       if (invitation_id) {
         params.iid = invitation_id;
       }
+
+      // Add tracking params to URL if they exist
+      if (formattedTrackingParams) {
+        // Encode tracking params as a JSON string to pass through URL
+        params.tracking_params = JSON.stringify(formattedTrackingParams);
+      }
+
       const url = constructBaseUrl(AUTH_API, '/login/google', params);
 
       // Track Google sign-up BEFORE opening popup
       trackSignUp('google');
+
+      // Clear tracking params before opening popup (they're included in the URL)
+      clearTrackingParams();
 
       const width = 600;
       const height = 600;
@@ -715,6 +734,10 @@ export function AuthProvider({ children }) {
     // Track email registration BEFORE backend call
     trackSignUp('email');
 
+    // Get tracking params from localStorage or URL
+    const trackingParams = getAllTrackingParams(false);
+    const formattedTrackingParams = trackingParams ? formatTrackingParamsForAPI(trackingParams) : null;
+
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
@@ -728,6 +751,7 @@ export function AuthProvider({ children }) {
         user_name: email,
         invitation_id: iid !== undefined ? iid : null,
         idea: idea !== undefined ? idea : null,
+        tracking_params: formattedTrackingParams,
       },
     );
 
@@ -770,6 +794,9 @@ export function AuthProvider({ children }) {
           type: 'REGISTER',
           payload: userProfile,
         });
+
+        // Clear tracking params after successful registration
+        clearTrackingParams();
       } catch (error) {
         console.error('Failed to get user profile after mobile registration:', error);
         // Try to authorize user as fallback
@@ -792,6 +819,9 @@ export function AuthProvider({ children }) {
             type: 'REGISTER',
             payload: userProfile,
           });
+
+          // Clear tracking params after successful registration
+          clearTrackingParams();
         } catch (fallbackError) {
           console.error('Mobile registration fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile registration');
@@ -799,6 +829,9 @@ export function AuthProvider({ children }) {
       }
     } else {
       // Web authentication flow (existing behavior)
+      // Clear tracking params before redirect (they're already sent to backend)
+      clearTrackingParams();
+
       // Convert the redirect string to URL object
       const redirectUrl = new URL(response.data.redirect);
 
