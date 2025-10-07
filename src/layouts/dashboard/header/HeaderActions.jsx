@@ -56,10 +56,9 @@ const HeaderActions = ({ user, isDesktop }) => {
         <InvitationMenuPopover isDashboard={true} />
 
         <Button
-          size="small"
           color="inherit"
           variant="soft"
-          startIcon={<Iconify icon="mdi:gift-outline" />}
+          startIcon={<Iconify icon="mdi:gift-outline"  />}
           onClick={() => history.push(PATH_DASHBOARD.referrals)}
         >
           Get free credits
