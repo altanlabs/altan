@@ -1,8 +1,5 @@
-import { Tooltip } from '@mui/material';
-import { differenceInMilliseconds } from 'date-fns';
-import { AnimatePresence, m } from 'framer-motion';
-import { truncate } from 'lodash';
-import React, { memo, useMemo, useCallback } from 'react';
+import { Icon } from '@iconify/react';
+import React, { memo, useMemo, useCallback, useState, useEffect, useRef } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
@@ -11,56 +8,6 @@ import { useExecutionDialog } from '../../providers/ExecutionDialogProvider.jsx'
 import { makeSelectMessagePartById } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store.js';
 import IconRenderer from '../icons/IconRenderer.jsx';
-
-function getBorderColor(status, isStreaming) {
-  if (isStreaming) {
-    return 'border-blue-500 animate-pulse';
-  }
-
-  switch (status) {
-    case 'preparing':
-      return 'border-orange-500 animate-pulse';
-    case 'running':
-      return 'border-blue-500 animate-pulse';
-    case 'success':
-      return 'border-green-500';
-    case 'error':
-      return 'border-red-500';
-    default:
-      return 'border-gray-300';
-  }
-}
-
-function getTaskIcon(status, hasResult, hasError) {
-  if (hasError) {
-    return 'fluent-mdl2:status-error-full';
-  }
-  if (hasResult) {
-    return 'ep:success-filled';
-  }
-  return 'ri:hammer-fill';
-}
-
-function getTaskIconColor(status, hasResult, hasError, isStreaming) {
-  if (hasError) {
-    return 'text-red-400';
-  }
-  if (hasResult) {
-    return 'text-green-400';
-  }
-  if (isStreaming) {
-    return 'text-blue-400';
-  }
-
-  switch (status) {
-    case 'preparing':
-      return 'text-orange-400';
-    case 'running':
-      return 'text-blue-400';
-    default:
-      return 'text-gray-400';
-  }
-}
 
 function extractAndCapitalize(str) {
   if (!str) return 'Tool';
@@ -71,225 +18,280 @@ function extractAndCapitalize(str) {
     .join(' ');
 }
 
-function formatDuration(start, end = null) {
-  const startDate = new Date(`${start}Z`);
-  const endDate = end ? new Date(`${end}Z`) : new Date(new Date().toISOString()); // Ensure UTC
-
-  const diff = differenceInMilliseconds(endDate, startDate);
-  const seconds = (diff / 1000).toFixed(2);
-  return `${seconds}s`;
-}
-
-function parseArguments(argumentsStr) {
-  if (!argumentsStr) return null;
-  try {
-    return JSON.parse(argumentsStr);
-  } catch (e) {
-    return argumentsStr; // Return raw string if not valid JSON
-  }
-}
-
-function formatArgumentsPreview(argumentsStr) {
-  if (!argumentsStr) return 'Preparing...';
-
-  const parsed = parseArguments(argumentsStr);
-  if (typeof parsed === 'object' && parsed !== null) {
-    // Show a preview of the object
-    const keys = Object.keys(parsed);
-    if (keys.length === 0) return '{}';
-    if (keys.length === 1) {
-      const value = parsed[keys[0]];
-      if (typeof value === 'string') {
-        return truncate(value, { length: 50 });
-      }
-    }
-    return `{${keys.slice(0, 2).join(', ')}${keys.length > 2 ? '...' : ''}}`;
-  }
-
-  return truncate(String(parsed), { length: 50 });
-}
-
-const variants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } },
-};
-
 const ToolPartCard = ({
   partId,
-  noBorder = false,
   noClick = false,
-  noDuration = false,
   children,
 }) => {
   const { setExecutionId } = useExecutionDialog() || {};
   const partSelector = useMemo(() => makeSelectMessagePartById(), []);
   const part = useSelector((state) => partSelector(state, partId));
+  const [manuallyCollapsed, setManuallyCollapsed] = useState(true);
+  const contentRef = useRef(null);
+  const isUserScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
-  const textContent = useMemo(() => extractAndCapitalize(part?.name), [part?.name]);
+  const isCompleted = part?.is_done;
+  const isExecuting = !isCompleted && (part?.arguments !== undefined || ['running', 'preparing'].includes(part?.status));
 
-  const isStreaming = !part?.is_done && part?.arguments !== undefined;
-  const hasResult = !!part?.result;
-  const hasError = !!part?.error;
-  const hasInput = !!part?.input;
-  const isSuccessful = part?.status === 'success';
+  // Reset manually collapsed when execution starts again
+  useEffect(() => {
+    if (!isCompleted) setManuallyCollapsed(false);
+  }, [isCompleted]);
+
+  // Auto-scroll to bottom when content changes (unless user is scrolling)
+  useEffect(() => {
+    const contentEl = contentRef.current;
+    if (!contentEl || isUserScrollingRef.current) return;
+
+    // Stick to bottom
+    contentEl.scrollTop = contentEl.scrollHeight;
+  }, [part?.arguments]);
+
+  // Determine what to display as the main text
+  const displayText = useMemo(() => {
+    if (!part) return '';
+    if (isExecuting && part.act_now) {
+      return part.act_now;
+    }
+    if (!isExecuting && part.act_done) {
+      return part.act_done;
+    }
+    return extractAndCapitalize(part.name);
+  }, [part, isExecuting]);
 
   // Get tool icon from task_execution if available
   const toolIcon = useMemo(() => {
     const icon = part?.task_execution?.tool?.action_type?.connection_type?.icon;
-    return icon || 'ri:hammer-fill'; // fallback to hammer icon
+    return icon || 'ri:hammer-fill';
   }, [part?.task_execution?.tool?.action_type?.connection_type?.icon]);
 
-  // Get execution ID for the dialog - try multiple possible sources
+  // Get execution ID for the dialog
   const executionId = useMemo(() => {
     return part?.task_execution_id || part?.task_execution?.id || part?.execution?.id || null;
   }, [part?.task_execution_id, part?.task_execution?.id, part?.execution?.id]);
 
-  // Click handler to open execution dialog
-  const handleClick = useCallback(() => {
+  const partCreatedAt = part?.created_at || part?.date_creation;
+  const duration = useMemo(() => {
+    if (!isCompleted || !partCreatedAt || !part?.finished_at) return null;
+    const start = new Date(partCreatedAt).getTime();
+    const end = new Date(part.finished_at).getTime();
+    const s = (end - start) / 1000;
+    return s < 10 ? s.toFixed(1) : Math.round(s);
+  }, [isCompleted, partCreatedAt, part?.finished_at]);
+
+  const isExpanded = useMemo(() => !isCompleted || !manuallyCollapsed, [isCompleted, manuallyCollapsed]);
+
+  const handleToggle = useCallback(() => {
+    if (isCompleted) setManuallyCollapsed((v) => !v);
+  }, [isCompleted]);
+
+  // Click handler to open execution dialog (only on icon, not on whole card)
+  const handleIconClick = useCallback((e) => {
+    e.stopPropagation();
     if (!noClick && executionId && setExecutionId) {
       setExecutionId(executionId);
-    } else {
-      console.log('Click blocked:', { noClick, executionId: !!executionId, setExecutionId: !!setExecutionId });
     }
   }, [noClick, executionId, setExecutionId]);
+
+  // Track user scrolling
+  const handleScroll = useCallback(() => {
+    isUserScrollingRef.current = true;
+
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Check if scrolled to bottom
+    const contentEl = contentRef.current;
+    if (contentEl) {
+      const isAtBottom = Math.abs(contentEl.scrollHeight - contentEl.scrollTop - contentEl.clientHeight) < 5;
+
+      if (isAtBottom) {
+        // Reset to auto-scroll mode when at bottom
+        scrollTimeoutRef.current = setTimeout(() => {
+          isUserScrollingRef.current = false;
+        }, 150);
+      } else {
+        // Set a longer timeout if not at bottom
+        scrollTimeoutRef.current = setTimeout(() => {
+          isUserScrollingRef.current = false;
+        }, 1000);
+      }
+    }
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Filter out special fields from arguments for display
+  const filteredArguments = useMemo(() => {
+    if (!part?.arguments) return '';
+    try {
+      const parsed = JSON.parse(part.arguments);
+      // Remove special fields
+      const { __act_now, __act_done, __intent, __use_intent, ...filtered } = parsed;
+      return Object.keys(filtered).length > 0 ? JSON.stringify(filtered, null, 2) : '';
+    } catch {
+      // If parsing fails (partial JSON during streaming), try to filter using regex
+      let filtered = part.arguments;
+      // Remove special fields using regex
+      filtered = filtered.replace(/"__act_now"\s*:\s*"[^"]*"\s*,?\s*/g, '');
+      filtered = filtered.replace(/"__act_done"\s*:\s*"[^"]*"\s*,?\s*/g, '');
+      filtered = filtered.replace(/"__intent"\s*:\s*"[^"]*"\s*,?\s*/g, '');
+      filtered = filtered.replace(/"__use_intent"\s*:\s*(true|false)\s*,?\s*/g, '');
+      // Clean up extra commas and whitespace
+      filtered = filtered.replace(/,\s*,/g, ',');
+      filtered = filtered.replace(/,\s*}/g, '}');
+      filtered = filtered.replace(/{\s*,/g, '{');
+      return filtered;
+    }
+  }, [part?.arguments]);
+
+  const hasDisplayableArguments = !!(filteredArguments && filteredArguments.length > 0);
+
+  // Get intent for tooltip
+  const intentText = useMemo(() => {
+    return part?.intent || part?.task_execution?.intent || null;
+  }, [part?.intent, part?.task_execution?.intent]);
+
+  const headerText = useMemo(() => {
+    if (duration) return `${displayText} (${duration}s)`;
+    return displayText;
+  }, [duration, displayText]);
+
+  const hasError = !!part?.error;
+  const [showError, setShowError] = useState(false);
+
+  const handleErrorClick = useCallback((e) => {
+    e.stopPropagation();
+    setShowError((v) => !v);
+  }, []);
+
+  // Format error for display
+  const formattedError = useMemo(() => {
+    if (!part?.error) return '';
+
+    // If error is a string, return it
+    if (typeof part.error === 'string') return part.error;
+
+    // If error has __stats property
+    if (part.error.__stats) {
+      const stats = part.error.__stats;
+      let errorMsg = '';
+
+      // Add the main error message
+      if (stats.error) {
+        errorMsg += `Error: ${stats.error}\n`;
+      }
+
+      // Add status code and URL
+      if (stats.status_code) {
+        errorMsg += `Status: ${stats.status_code}\n`;
+      }
+      if (stats.url) {
+        errorMsg += `URL: ${stats.url}\n`;
+      }
+
+      // Add detailed error data if available
+      if (stats.data) {
+        errorMsg += `\nDetails:\n${JSON.stringify(stats.data, null, 2)}`;
+      }
+
+      return errorMsg || JSON.stringify(part.error, null, 2);
+    }
+
+    // If error has content or message properties
+    if (part.error.content) return part.error.content;
+    if (part.error.message) return part.error.message;
+
+    // Fallback to JSON stringify
+    return JSON.stringify(part.error, null, 2);
+  }, [part?.error]);
 
   if (!part) {
     return null;
   }
 
-  const partCreatedAt = part.created_at || part.date_creation;
-
-  const borderColor = getBorderColor(part.status, isStreaming);
-  const duration = partCreatedAt ? formatDuration(partCreatedAt, part.finished_at) : null;
-  const isExecuting = isStreaming || ['running', 'preparing'].includes(part.status);
-
-  const argumentsPreview = formatArgumentsPreview(part.arguments);
-
   return (
-    <m.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      onClick={handleClick}
-      className={cn(
-        'relative p-3 w-full min-w-[200px] rounded-lg',
-        !noClick &&
-          executionId &&
-          'cursor-pointer transition-transform hover:shadow-lg hover:scale-[1.02]',
-        !noBorder && 'border border-dashed',
-        !noBorder && borderColor,
-      )}
-    >
-      {/* Status Icon */}
-      <AnimatePresence>
-        {!noBorder && (hasError || hasResult) ? (
-          <Tooltip
-            placement="right"
-            arrow
-            enterDelay={500}
-            title={
-              <p
-                className={cn('text-xs font-bold uppercase', {
-                  'text-red-500': hasError,
-                  'text-green-500': hasResult,
-                })}
-              >
-                {hasError ? 'error' : 'completed'}
-              </p>
-            }
-          >
-            <m.div
-              className="absolute -top-2 -left-1 rounded-full shadow"
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              variants={variants}
-            >
-              <IconRenderer
-                icon={getTaskIcon(part.status, hasResult, hasError)}
-                className={getTaskIconColor(part.status, hasResult, hasError, isStreaming)}
-              />
-            </m.div>
-          </Tooltip>
-        ) : null}
-      </AnimatePresence>
-
-      {/* Main Content */}
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <IconRenderer
-              icon={toolIcon}
-              className="text-lg text-gray-600"
-            />
-            {isExecuting ? (
-              <TextShimmer
-                className="text-sm font-semibold truncate"
-                duration={2}
-              >
-                {textContent}
-              </TextShimmer>
-            ) : (
-              <p className="text-sm font-semibold truncate">{textContent}</p>
+    <div className="w-full">
+      {/* Header */}
+      <button
+        onClick={handleToggle}
+        aria-expanded={isExpanded}
+        className="w-full flex items-center gap-1.5 px-1 py-1.5 text-[12px] text-gray-400 dark:text-gray-300 group"
+        title={intentText || undefined}
+      >
+        <span className="flex items-center gap-1">
+          <IconRenderer
+            icon={toolIcon}
+            className={cn(
+              'text-[11px] flex-shrink-0',
+              !isCompleted && 'animate-pulse',
             )}
-          </div>
-          {!noDuration && !isExecuting && duration && (
-            <span className="text-xs text-gray-400">Duration: {duration}</span>
-          )}
-          {isExecuting && duration && <span className="text-xs text-gray-400">{duration}...</span>}
+            onClick={handleIconClick}
+          />
+          {!isCompleted && <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />}
+        </span>
+
+        {!duration ? (
+          <TextShimmer className="inline-block">
+            {headerText}
+          </TextShimmer>
+        ) : (
+          <span className="font-medium">{headerText}</span>
+        )}
+
+        {hasDisplayableArguments && (
+          <Icon
+            icon="mdi:chevron-down"
+            className={cn(
+              'w-3.5 h-3.5 opacity-0 group-hover:opacity-70 transition-all duration-150',
+              isExpanded ? 'rotate-180' : 'rotate-0',
+            )}
+          />
+        )}
+
+        {hasError && (
+          <Icon
+            icon="mdi:alert-circle"
+            className="text-red-500 text-sm flex-shrink-0 cursor-pointer hover:text-red-600 ml-auto"
+            onClick={handleErrorClick}
+          />
+        )}
+      </button>
+
+      {/* Content: Arguments */}
+      {isExpanded && hasDisplayableArguments && (
+        <div
+          ref={contentRef}
+          onScroll={handleScroll}
+          className="px-3 pb-3 pt-0.5 max-h-[100px] overflow-y-auto"
+        >
+          <pre className="text-[11px] leading-relaxed opacity-60 whitespace-pre-wrap break-words font-mono">
+            {filteredArguments}
+          </pre>
         </div>
+      )}
 
-        {/* Arguments Preview - only show if not successful or if streaming */}
-        {part.arguments && (!isSuccessful || isStreaming) && (
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            <span className="font-medium">Arguments: </span>
-            {isStreaming ? (
-              <TextShimmer
-                className="inline"
-                duration={1.5}
-              >
-                {argumentsPreview}
-              </TextShimmer>
-            ) : (
-              <span>{argumentsPreview}</span>
-            )}
-          </div>
-        )}
+      {/* Error Display - Only show when clicked */}
+      {showError && hasError && (
+        <div className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto">
+          <pre className="text-[11px] text-red-600 dark:text-red-400 opacity-80 whitespace-pre-wrap break-words font-mono">
+            {formattedError}
+          </pre>
+        </div>
+      )}
 
-        {/* For completed tools, don't show any details - the design already indicates completion */}
-        {!(isSuccessful && !isStreaming) && (
-          <>
-            {/* Input Preview - only for non-successful or streaming */}
-            {hasInput && (
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Input: </span>
-                <span>{truncate(JSON.stringify(part.input), { length: 100 })}</span>
-              </div>
-            )}
-
-            {/* Error Display */}
-            {hasError && (
-              <p className="text-xs text-red-500 max-h-[55px] overflow-y-auto">
-                {truncate(part.error?.content || part.error?.message || 'An error occurred', {
-                  length: 200,
-                })}
-              </p>
-            )}
-
-            {/* Result Preview - only for non-successful */}
-            {hasResult && !hasError && !isSuccessful && (
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Result: </span>
-                <span>{truncate(JSON.stringify(part.result), { length: 100 })}</span>
-              </div>
-            )}
-          </>
-        )}
-
-        {children}
-      </div>
-    </m.div>
+      {children}
+    </div>
   );
 };
 

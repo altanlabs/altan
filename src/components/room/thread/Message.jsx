@@ -32,6 +32,7 @@ const makeSelectMessages = () =>
             member_id: m.member_id,
             thread_id: m.thread_id,
             error: m.error,
+            meta_data: m.meta_data,
             replied: m.replied,
           };
         }
@@ -75,7 +76,6 @@ const Message = ({
   const memberMe = me?.member;
   const sender = members.byId[message?.member_id];
   const is_me = sender?.member?.id === memberMe?.id;
-
 
   if (!message || !!message.space) return null;
   return (

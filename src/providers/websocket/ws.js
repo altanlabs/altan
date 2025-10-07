@@ -662,15 +662,25 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
 
     case 'AGENT_RESPONSE':
-      const agentEvent = data.data.agent_event;
+      // Handle different event structures:
+      // 1. agent_event at root level (e.g., activation.acknowledged)
+      // 2. agent_event nested under data (e.g., response.started, response.completed)
+      const agentEvent = data.agent_event || data.data?.agent_event;
       if (!agentEvent) {
         console.error('AGENT_RESPONSE missing agent_event:', data);
         break;
       }
 
-      const eventData = agentEvent.event_data;
+      // Use event_data if available, otherwise use data directly
+      const eventData = agentEvent.event_data || agentEvent.data;
       const eventType = agentEvent.event_type;
-      const timestamp = agentEvent.event_extras?.timestamp || new Date().toISOString();
+
+      // Try multiple timestamp sources in order of preference
+      const timestamp = agentEvent.event_extras?.timestamp ||
+                       agentEvent.extras?.timestamp ||
+                       agentEvent.timestamp ||
+                       eventData?.timestamp ||
+                       new Date().toISOString();
 
       if (!eventType) {
         console.error('[AGENT_RESPONSE] missing event_type:', data);
@@ -679,7 +689,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
       // Handle activation and response lifecycle events
       if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
-        console.log('[AGENT_RESPONSE] Lifecycle:', eventType, eventData, timestamp);
+        console.log('[AGENT_RESPONSE] Event:', eventType, data);
+
+        // console.log('[AGENT_RESPONSE] Lifecycle:', eventType, eventData, timestamp);
         dispatch(addResponseLifecycle({
           response_id: eventData.response_id,
           agent_id: eventData.agent_id,
@@ -714,14 +726,73 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
 
         case 'response.completed':
-        case 'response.failed':
-        case 'response.empty':
           dispatch(deleteRunningResponse(eventData));
           if (eventData.message_id) {
             dispatch(updateMessageStreamingState({
               messageId: eventData.message_id,
               isStreaming: false,
             }));
+          }
+          break;
+
+        case 'response.empty':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            batch(() => {
+              dispatch(updateMessageStreamingState({
+                messageId: eventData.message_id,
+                isStreaming: false,
+              }));
+
+              // Mark message as empty response
+              dispatch(addMessage({
+                id: eventData.message_id,
+                thread_id: eventData.thread_id,
+                meta_data: {
+                  is_empty: true,
+                },
+              }));
+            });
+          }
+          break;
+
+        case 'response.failed':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            batch(() => {
+              dispatch(updateMessageStreamingState({
+                messageId: eventData.message_id,
+                isStreaming: false,
+              }));
+
+              // Update message meta_data with error information
+              dispatch(addMessage({
+                id: eventData.message_id,
+                thread_id: eventData.thread_id,
+                meta_data: {
+                  error_code: eventData.error_code,
+                  error_message: eventData.error_message,
+                  error_type: eventData.error_type,
+                  failed_in: eventData.failed_in,
+                  retryable: eventData.retryable,
+                  total_attempts: eventData.total_attempts,
+                },
+              }));
+
+              // Add error message part to display the error
+              dispatch(addMessagePart({
+                message_id: eventData.message_id,
+                type: 'error',
+                error_code: eventData.error_code,
+                error_message: eventData.error_message,
+                error_type: eventData.error_type,
+                failed_in: eventData.failed_in,
+                retryable: eventData.retryable,
+                total_attempts: eventData.total_attempts,
+                order: 999, // Put error at the end
+                is_done: true,
+              }));
+            });
           }
           break;
 

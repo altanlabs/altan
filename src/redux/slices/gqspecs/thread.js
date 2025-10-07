@@ -1,5 +1,6 @@
 const MESSAGE_FIELDS = {
-  '@fields': '@all@exc:cost,tokens,meta_data',
+  '@fields': '@all@exc:cost,tokens',
+  meta_data: '@all',
   replied: {
     '@fields': ['@base@exc:meta_data', 'member_id', 'text'],
   },

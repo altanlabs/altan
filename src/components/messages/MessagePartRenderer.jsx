@@ -1,11 +1,12 @@
 import { memo } from 'react';
 
 import CustomMarkdown from './CustomMarkdown.jsx';
+import ErrorPartCard from './ErrorPartCard.jsx';
+import ThinkingPartCard from './ThinkingPartCard.jsx';
 import ToolPartCard from './ToolPartCard.jsx';
 
 const MessagePartRenderer = memo(({ part, threadId, mode }) => {
   const partType = part.type || part.part_type || 'text';
-  
   switch (partType) {
     case 'text':
       return (
@@ -25,6 +26,22 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
           <ToolPartCard
             partId={part.id}
             noClick={false}
+          />
+        </div>
+      );
+    case 'thinking':
+      return (
+        <div className="message-part-thinking mb-2">
+          <ThinkingPartCard
+            partId={part.id}
+          />
+        </div>
+      );
+    case 'error':
+      return (
+        <div className="message-part-error mb-2">
+          <ErrorPartCard
+            partId={part.id}
           />
         </div>
       );
@@ -73,6 +90,18 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
       prevPart.arguments === nextPart.arguments &&
       prevPart.name === nextPart.name &&
       prevPart.status === nextPart.status
+    );
+  } else if (partType === 'thinking') {
+    return (
+      prevPart.text === nextPart.text &&
+      prevPart.status === nextPart.status &&
+      prevPart.finished_at === nextPart.finished_at
+    );
+  } else if (partType === 'error') {
+    return (
+      prevPart.error_message === nextPart.error_message &&
+      prevPart.error_code === nextPart.error_code &&
+      prevPart.error_type === nextPart.error_type
     );
   }
 

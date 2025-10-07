@@ -113,9 +113,27 @@ const normalizePart = (raw) => {
   if (type === 'tool' && raw?.task_execution) {
     const execution = raw.task_execution;
     const executionStatus = execution.status || 'pending';
+
+    // Parse arguments to extract special fields
+    let parsedArgs = {};
+    let argumentsStr = '';
+    if (execution.arguments) {
+      if (typeof execution.arguments === 'string') {
+        try {
+          parsedArgs = JSON.parse(execution.arguments);
+          argumentsStr = execution.arguments;
+        } catch {
+          argumentsStr = execution.arguments;
+        }
+      } else {
+        parsedArgs = execution.arguments;
+        argumentsStr = JSON.stringify(execution.arguments);
+      }
+    }
+
     toolData = {
       name: execution.tool?.name || 'Tool',
-      arguments: execution.arguments ? JSON.stringify(execution.arguments) : '',
+      arguments: argumentsStr,
       result: execution.content,
       error: execution.error,
       status: executionStatus,
@@ -123,8 +141,13 @@ const normalizePart = (raw) => {
       input: execution.input,
       // Store execution ID for dialog access
       task_execution_id: execution.id,
-      // Keep the full task_execution reference for accessing nested data like icons
+      // Keep the full task_execution reference for accessing nested data like icons and intent
       task_execution: execution,
+      // Extract special fields - prioritize root level of execution, fallback to arguments
+      act_now: execution.act_now || parsedArgs.__act_now,
+      act_done: execution.act_done || parsedArgs.__act_done,
+      intent: execution.intent || parsedArgs.__intent,
+      use_intent: execution.use_intent ?? parsedArgs.__use_intent,
       // For tool parts, use the execution status to determine if done (don't override raw is_done)
       // is_done will be handled by the main logic below
     };
@@ -135,15 +158,31 @@ const normalizePart = (raw) => {
     };
   }
 
+  // Determine if part is done based on type
+  let isDone = raw?.is_done || false;
+  if (type === 'tool' && toolData?.status) {
+    isDone = ['success', 'error'].includes(toolData.status);
+  } else if (type === 'thinking') {
+    isDone = raw?.status === 'completed' || !!raw?.finished_at;
+  }
+
+  const thinkingProperties = {};
+  if (type === 'thinking') {
+    thinkingProperties.summary = raw?.meta_data?.summary ?? [];
+    thinkingProperties.provider = raw?.meta_data?.provider ?? '';
+    thinkingProperties.provider_id = raw?.meta_data?.provider_id ?? '';
+  }
+
   return {
     ...raw,
+    ...thinkingProperties,
     id: raw?.id,
     message_id: raw?.message_id,
     type,
     part_type: type, // keep both keys for compatibility
     order,
     block_order,
-    is_done: !!toolData?.status && ['success', 'error'].includes(toolData.status),
+    is_done: isDone,
     created_at: raw?.created_at || raw?.date_creation || new Date().toISOString(),
 
     // Streaming helpers (non-serializable/run-time):
@@ -159,10 +198,12 @@ const normalizePart = (raw) => {
       ? raw.argumentsLastProcessedIndex
       : -1,
 
-    // Text default
-    text: type === 'text' ? (raw?.text ?? '') : raw?.text,
+    // Text default for text and thinking parts
+    text: (type === 'text' || type === 'thinking') ? (raw?.text ?? '') : raw?.text,
     // Tool parts: use extracted tool data or fallback to raw arguments
     arguments: type === 'tool' ? toolData.arguments || raw?.arguments || '' : raw?.arguments,
+    // Thinking parts: ensure status field is present
+    status: type === 'thinking' ? (raw?.meta_data?.status || 'in_progress') : raw?.status,
 
     // Add tool-specific fields (but don't override is_done since we handled it above)
     ...Object.fromEntries(Object.entries(toolData).filter(([key]) => key !== 'is_done')),
@@ -377,7 +418,23 @@ const extractMessagesFromThread = (state, thread) => {
     delete message.text;
     delete message.executions;
     delete message.parts; // Also clean up parts from the message object
-    messagesById[message.id] = message;
+
+    // Merge with existing message if it exists, especially preserving meta_data
+    const existingMessage = state.messages.byId[message.id];
+    if (existingMessage) {
+      // Merge meta_data from both existing and new message
+      const mergedMetaData = {
+        ...(existingMessage.meta_data || {}),
+        ...(message.meta_data || {}),
+      };
+      messagesById[message.id] = {
+        ...existingMessage,
+        ...message,
+        meta_data: mergedMetaData,
+      };
+    } else {
+      messagesById[message.id] = message;
+    }
   }
   state.messages.byId = { ...state.messages.byId, ...messagesById };
   state.messages.allIds = [...state.messages.allIds, ...Object.keys(messagesById)];
@@ -861,19 +918,30 @@ const slice = createSlice({
 
       // Only play sound for non-streaming messages or when streaming starts
       // and it's not from the current user
-      if (message.member_id !== state.me?.id && !message.is_streaming) {
-        // Don't play sound if voice is active for this thread
-        const isVoiceActiveForThread =
-          !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
-        if (!isVoiceActiveForThread) {
-          SOUND_IN.play();
-        }
-      }
+      // if (message.member_id !== state.me?.id && !message.is_streaming) {
+      //   // Don't play sound if voice is active for this thread
+      //   const isVoiceActiveForThread =
+      //     !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
+      //   if (!isVoiceActiveForThread) {
+      //     SOUND_IN.play();
+      //   }
+      // }
+
+      console.log('[addMessage] Message:', message);
 
       // Check if message already exists to avoid duplicates
       if (state.messages.byId[message.id]) {
-        // Update existing message properties
-        Object.assign(state.messages.byId[message.id], message);
+        // Update existing message properties, merging meta_data
+        const existingMessage = state.messages.byId[message.id];
+        Object.assign(existingMessage, message);
+
+        // Ensure meta_data is properly merged (not replaced)
+        if (message.meta_data) {
+          existingMessage.meta_data = {
+            ...existingMessage.meta_data,
+            ...message.meta_data,
+          };
+        }
         return;
       }
 
@@ -1373,8 +1441,8 @@ const slice = createSlice({
 
       const partType = part.type || part.part_type || 'text';
 
-      // Streaming text updates with (id, index, delta)
-      if (delta !== undefined && partType === 'text') {
+      // Streaming text updates with (id, index, delta) - for text and thinking parts
+      if (delta !== undefined && (partType === 'text' || partType === 'thinking')) {
         // If index provided, do ordered buffering + dedup
         if (index !== undefined && index >= 0) {
           // Deduplicate by (id, index)
@@ -1425,14 +1493,87 @@ const slice = createSlice({
               part.argumentsLastProcessedIndex = next;
               next += 1;
             }
+
+            // Try to extract special fields from arguments as they stream
+            // Use partial extraction that doesn't require complete JSON
+            try {
+              const parsed = JSON.parse(part.arguments);
+              if (parsed.__act_now) part.act_now = parsed.__act_now;
+              if (parsed.__act_done) part.act_done = parsed.__act_done;
+              if (parsed.__intent) part.intent = parsed.__intent;
+              if (parsed.__use_intent !== undefined) part.use_intent = parsed.__use_intent;
+            } catch {
+              // If full JSON parse fails, try partial extraction with regex
+              const extractPartialField = (fieldName) => {
+                const regex = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]*)"`, 'i');
+                const match = part.arguments.match(regex);
+                return match ? match[1] : null;
+              };
+
+              const actNow = extractPartialField('__act_now');
+              const actDone = extractPartialField('__act_done');
+              const intent = extractPartialField('__intent');
+
+              if (actNow) part.act_now = actNow;
+              if (actDone) part.act_done = actDone;
+              if (intent) part.intent = intent;
+            }
           }
         } else {
           // No index → fallback to simple append for arguments
           part.arguments = (part.arguments || '') + String(delta);
+
+          // Try to extract special fields - use partial extraction
+          try {
+            const parsed = JSON.parse(part.arguments);
+            if (parsed.__act_now) part.act_now = parsed.__act_now;
+            if (parsed.__act_done) part.act_done = parsed.__act_done;
+            if (parsed.__intent) part.intent = parsed.__intent;
+            if (parsed.__use_intent !== undefined) part.use_intent = parsed.__use_intent;
+          } catch {
+            // If full JSON parse fails, try partial extraction with regex
+            const extractPartialField = (fieldName) => {
+              const regex = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]*)"`, 'i');
+              const match = part.arguments.match(regex);
+              return match ? match[1] : null;
+            };
+
+            const actNow = extractPartialField('__act_now');
+            const actDone = extractPartialField('__act_done');
+            const intent = extractPartialField('__intent');
+
+            if (actNow) part.act_now = actNow;
+            if (actDone) part.act_done = actDone;
+            if (intent) part.intent = intent;
+          }
         }
       }
 
       // Apply other field updates (including order/block_order/is_done/etc.)
+      // Whitelist of allowed update fields to prevent metadata pollution
+      const ALLOWED_UPDATE_FIELDS = [
+        'order',
+        'block_order',
+        'type',
+        'part_type',
+        'text',
+        'arguments',
+        'is_done',
+        'result',
+        'error',
+        'status',
+        'finished_at',
+        'input',
+        'act_now',
+        'act_done',
+        'intent',
+        'use_intent',
+        'task_execution',
+        'task_execution_id',
+        'created_at',
+        'message_id',
+      ];
+
       let needsResort = false;
       const prevOrder = part.order;
       const prevBlock = part.block_order;
@@ -1441,14 +1582,26 @@ const slice = createSlice({
         const v = updates[k];
         if (v === undefined) return;
 
+        // Skip fields that are not in the whitelist (prevents metadata like event_type, name from websocket from polluting the part)
+        if (!ALLOWED_UPDATE_FIELDS.includes(k)) {
+          if (
+            typeof process !== 'undefined' &&
+            process.env &&
+            process.env.NODE_ENV !== 'production'
+          ) {
+            console.warn(`Ignoring unexpected update field '${k}' for message part ${id}`);
+          }
+          return;
+        }
+
         if (k === 'order' || k === 'block_order') {
           part[k] = isFiniteNumber(v) ? v : Number.POSITIVE_INFINITY;
           needsResort = true;
         } else if (k === 'type' || k === 'part_type') {
           part.type = v;
           part.part_type = v;
-        } else if (k === 'text' && partType === 'text') {
-          // Direct text replacement (rare), allowed
+        } else if (k === 'text' && (partType === 'text' || partType === 'thinking')) {
+          // Direct text replacement (rare), allowed for text and thinking parts
           part.text = v ?? '';
         } else if (k === 'arguments' && partType === 'tool') {
           // Direct arguments replacement (when final object is received), allowed
@@ -1482,8 +1635,18 @@ const slice = createSlice({
       // Mark as done
       part.is_done = true;
 
-      // If this is a tool part, apply the execution data from the payload
+      // Determine part type
       const partType = part.type || part.part_type || 'text';
+
+      // If this is a thinking part, set finished_at and status
+      if (partType === 'thinking') {
+        if (!part.finished_at) {
+          part.finished_at = payload.finished_at || payload.created_at || new Date().toISOString();
+        }
+        part.status = 'completed';
+      }
+
+      // If this is a tool part, apply the execution data from the payload
       if (partType === 'tool') {
         // Update tool part with final execution data
         if (payload.result !== undefined) part.result = payload.result;
@@ -1502,6 +1665,29 @@ const slice = createSlice({
         // Store execution ID for dialog access
         if (payload.id) {
           part.task_execution_id = payload.id;
+        }
+
+        // Extract special fields - prioritize root level of payload, fallback to arguments
+        part.act_now = payload.act_now;
+        part.act_done = payload.act_done;
+        part.intent = payload.intent;
+        part.use_intent = payload.use_intent;
+
+        // Also check arguments for special fields if not found at root level
+        if (payload.arguments && (!part.act_now || !part.act_done || !part.intent)) {
+          try {
+            const parsed = typeof payload.arguments === 'string'
+              ? JSON.parse(payload.arguments)
+              : payload.arguments;
+            if (!part.act_now && parsed.__act_now) part.act_now = parsed.__act_now;
+            if (!part.act_done && parsed.__act_done) part.act_done = parsed.__act_done;
+            if (!part.intent && parsed.__intent) part.intent = parsed.__intent;
+            if (part.use_intent === undefined && parsed.__use_intent !== undefined) {
+              part.use_intent = parsed.__use_intent;
+            }
+          } catch {
+            // Invalid JSON, skip extraction
+          }
         }
 
         // Create/update execution in state for dialog access
@@ -1630,7 +1816,7 @@ const slice = createSlice({
       const partType = part.type || part.part_type || 'text';
 
       // Reset streaming state
-      if (partType === 'text') {
+      if (partType === 'text' || partType === 'thinking') {
         part.text = '';
       } else if (partType === 'tool') {
         part.arguments = '';
@@ -1657,7 +1843,7 @@ const slice = createSlice({
     // Response lifecycle management
     addResponseLifecycle: (state, action) => {
       const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
-      
+
       if (!state.responseLifecycles.byId[response_id]) {
         // Create new response lifecycle
         state.responseLifecycles.byId[response_id] = {
@@ -1669,63 +1855,63 @@ const slice = createSlice({
           created_at: timestamp || new Date().toISOString(),
           updated_at: timestamp || new Date().toISOString(),
         };
-        
+
         // Add to active responses for thread
         if (!state.responseLifecycles.activeByThread[thread_id]) {
           state.responseLifecycles.activeByThread[thread_id] = [];
         }
         state.responseLifecycles.activeByThread[thread_id].push(response_id);
       }
-      
+
       const lifecycle = state.responseLifecycles.byId[response_id];
-      
+
       // Add event to timeline
       lifecycle.events.push({
         type: event_type,
         data: event_data,
         timestamp: timestamp || new Date().toISOString(),
       });
-      
+
       // Update status based on event
       if (event_type.startsWith('activation.')) {
         lifecycle.status = event_type.replace('activation.', '');
       } else if (event_type.startsWith('response.')) {
         lifecycle.status = event_type.replace('response.', '');
-        
+
         // Set message_id when response starts
         if (event_type === 'response.started' && event_data.message_id) {
           lifecycle.message_id = event_data.message_id;
         }
       }
-      
+
       lifecycle.updated_at = timestamp || new Date().toISOString();
     },
-    
+
     completeResponseLifecycle: (state, action) => {
       const { response_id, thread_id } = action.payload;
-      
+
       // Remove from active responses
       if (state.responseLifecycles.activeByThread[thread_id]) {
-        state.responseLifecycles.activeByThread[thread_id] = 
-          state.responseLifecycles.activeByThread[thread_id].filter(id => id !== response_id);
-        
+        state.responseLifecycles.activeByThread[thread_id] =
+          state.responseLifecycles.activeByThread[thread_id].filter((id) => id !== response_id);
+
         // Clean up empty arrays
         if (state.responseLifecycles.activeByThread[thread_id].length === 0) {
           delete state.responseLifecycles.activeByThread[thread_id];
         }
       }
-      
+
       // Keep completed responses for a while (they'll be cleaned up later)
       if (state.responseLifecycles.byId[response_id]) {
         state.responseLifecycles.byId[response_id].completed_at = new Date().toISOString();
       }
     },
-    
+
     cleanupResponseLifecycles: (state, action) => {
       const { olderThan = 300000 } = action.payload || {}; // 5 minutes default
       const cutoff = Date.now() - olderThan;
-      
-      Object.keys(state.responseLifecycles.byId).forEach(response_id => {
+
+      Object.keys(state.responseLifecycles.byId).forEach((response_id) => {
         const lifecycle = state.responseLifecycles.byId[response_id];
         if (lifecycle.completed_at) {
           const completedTime = new Date(lifecycle.completed_at).getTime();
@@ -2388,34 +2574,36 @@ export const selectActiveResponsesByThread = (threadId) =>
     (lifecycles, members) => {
       const activeResponseIds = lifecycles.activeByThread[threadId] || [];
       return activeResponseIds
-        .map(responseId => {
+        .map((responseId) => {
           const lifecycle = lifecycles.byId[responseId];
           if (!lifecycle) return null;
-          
+
           // Get agent details
           const agent = Object.values(members.byId || {}).find(
-            member => member.member?.id === lifecycle.agent_id
+            (member) => member.member?.id === lifecycle.agent_id,
           );
-          
+
           return {
             ...lifecycle,
-            agent: agent ? {
-              id: agent.member.id,
-              name: agent.member?.name || 'Agent',
-              avatar: agent.member?.picture,
-              member_type: agent.member?.member_type,
-            } : null,
+            agent: agent
+              ? {
+                  id: agent.member.id,
+                  name: agent.member?.name || 'Agent',
+                  avatar: agent.member?.picture,
+                  member_type: agent.member?.member_type,
+                }
+              : null,
           };
         })
         .filter(Boolean)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    }
+    },
   );
 
 export const selectResponseLifecycleById = (responseId) =>
   createSelector(
     [selectResponseLifecycles],
-    (lifecycles) => lifecycles.byId[responseId] || null
+    (lifecycles) => lifecycles.byId[responseId] || null,
   );
 
 // ACTIONS

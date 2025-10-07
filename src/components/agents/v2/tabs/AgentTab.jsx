@@ -1,4 +1,4 @@
-import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider } from '@mui/material';
+import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider, Switch, FormControlLabel } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
@@ -6,8 +6,9 @@ const models = [
   {
     provider: 'Anthropic',
     models: [
-      'claude-4.1-opus-latest',
+      'claude-4-1-opus-latest',
       'claude-4-opus-latest',
+      'claude-4-5-sonnet-latest',
       'claude-4-sonnet-latest',
     ],
   },
@@ -32,7 +33,23 @@ const models = [
   },
 ];
 
-const reasoningModels = ['o1-mini', 'o1', 'o3-mini', 'o3', 'o4-mini'];
+// Models that always have reasoning enabled
+const alwaysReasoningModels = [
+  'o1-mini',
+  'o1',
+  'o3-mini',
+  'o3',
+  'o4-mini',
+];
+
+// Models that support optional reasoning (can be enabled/disabled)
+const optionalReasoningModels = [
+  'gpt-5',
+  'claude-4-1-opus-latest',
+  'claude-4-opus-latest',
+  'claude-4-5-sonnet-latest',
+  'claude-4-sonnet-latest',
+];
 
 const modelToProvider = {};
 models.forEach((providerData) => {
@@ -51,6 +68,9 @@ function AgentTab({ agentData, onFieldChange }) {
   const [tokenLimit, setTokenLimit] = useState(agentData?.llm_config?.settings?.token_limit ?? -1);
   const [reasoningEffort, setReasoningEffort] = useState(
     agentData?.llm_config?.settings?.reasoning_effort || 'medium',
+  );
+  const [reasoningEnabled, setReasoningEnabled] = useState(
+    agentData?.llm_config?.settings?.reasoning_enabled ?? false,
   );
 
   const handleSystemPromptChange = (value) => {
@@ -90,6 +110,14 @@ function AgentTab({ agentData, onFieldChange }) {
     onFieldChange('llm_config', {
       ...agentData.llm_config,
       settings: { ...agentData.llm_config?.settings, reasoning_effort: value },
+    });
+  };
+
+  const handleReasoningEnabledChange = (enabled) => {
+    setReasoningEnabled(enabled);
+    onFieldChange('llm_config', {
+      ...agentData.llm_config,
+      settings: { ...agentData.llm_config?.settings, reasoning_enabled: enabled },
     });
   };
 
@@ -167,7 +195,33 @@ function AgentTab({ agentData, onFieldChange }) {
               </Select>
             </FormControl>
 
-            {reasoningModels.includes(llmModel) && (
+            {/* Optional Reasoning Toggle (for GPT-5 and Claude models) */}
+            {optionalReasoningModels.includes(llmModel) && (
+              <Box sx={{ mb: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={reasoningEnabled}
+                      onChange={(e) => handleReasoningEnabledChange(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
+                        Enable Reasoning
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Enable extended thinking for more complex reasoning tasks
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Box>
+            )}
+
+            {/* Reasoning Effort Controls */}
+            {(alwaysReasoningModels.includes(llmModel) ||
+              (optionalReasoningModels.includes(llmModel) && reasoningEnabled)) && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
                   Reasoning Effort
