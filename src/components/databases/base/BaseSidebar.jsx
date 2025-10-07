@@ -1,17 +1,24 @@
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
+import { Database, Users, FolderOpen, Code, Key, LayoutGrid } from 'lucide-react';
 import React from 'react';
-import { Database, Users, FolderOpen, Code, Key, FileText, LayoutGrid } from 'lucide-react';
 
-const SIDEBAR_WIDTH = 200;
+const SIDEBAR_WIDTH = 175;
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'tables', label: 'Database', icon: Database },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'storage', label: 'Storage', icon: FolderOpen },
-  { id: 'functions', label: 'Edge Functions', icon: Code },
+  { id: 'functions', label: 'Functions', icon: Code },
   { id: 'secrets', label: 'Secrets', icon: Key },
-  { id: 'logs', label: 'Logs', icon: FileText },
 ];
 
 function BaseSidebar({ activeSection, onSectionChange, open }) {
@@ -33,19 +40,23 @@ function BaseSidebar({ activeSection, onSectionChange, open }) {
         },
       }}
     >
-      <Box sx={{ overflow: 'auto', pt: 2 }}>
+      <Box sx={{ overflow: 'auto', pt: 1 }}>
         <List>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
 
             return (
-              <ListItem key={item.id} disablePadding>
+              <ListItem
+                key={item.id}
+                disablePadding
+              >
                 <ListItemButton
                   selected={isActive}
                   onClick={() => onSectionChange(item.id)}
                   sx={{
                     mx: 1,
+                    mt: 1,
                     borderRadius: 1,
                     '&.Mui-selected': {
                       bgcolor: 'action.selected',
@@ -55,7 +66,7 @@ function BaseSidebar({ activeSection, onSectionChange, open }) {
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 20 }}>
                     <Icon size={20} />
                   </ListItemIcon>
                   <ListItemText

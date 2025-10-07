@@ -163,66 +163,80 @@ const UnifiedNavigation = memo(({
       )}
 
       {/* Component Switcher */}
-      {components && components.length > 0 && (
-        <>
-          {components.map((component) => {
-            const isActive = component.id === activeComponent?.id;
-            
-            return (
-              <Box
-                key={component.id}
-                component="button"
-                onClick={() => handleComponentClick(component.id)}
-                sx={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 0.5,
-                  height: 28,
-                  px: isActive ? 1 : 0.5,
-                  border: 'none',
-                  borderRadius: 10,
+      <Box 
+        data-tour="component-switcher" 
+        sx={{ 
+          display: 'flex', 
+          gap: 0.5,
+          alignItems: 'center',
+        }}
+      >
+        {components && components.length > 0 && components.map((component) => {
+          const isActive = component.id === activeComponent?.id;
+          
+          // Add data-tour attributes based on component type
+          const getTourAttribute = () => {
+            if (component.type === 'base') return 'component-cloud';
+            if (component.type === 'agents') return 'component-agents';
+            if (component.type === 'interface') return 'component-interface';
+            return null;
+          };
+          
+          return (
+            <Box
+              key={component.id}
+              component="button"
+              data-tour={getTourAttribute()}
+              onClick={() => handleComponentClick(component.id)}
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.5,
+                height: 28,
+                px: isActive ? 1 : 0.5,
+                border: 'none',
+                borderRadius: 10,
+                backgroundColor: isActive 
+                  ? alpha(theme.palette.primary.main, 0.12)
+                  : 'transparent',
+                color: isActive
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+
+                '&:hover': {
+                  color: theme.palette.text.primary,
                   backgroundColor: isActive 
-                    ? alpha(theme.palette.primary.main, 0.12)
-                    : 'transparent',
-                  color: isActive
-                    ? theme.palette.primary.main
-                    : theme.palette.text.secondary,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
+                    ? alpha(theme.palette.primary.main, 0.16)
+                    : alpha(theme.palette.text.primary, 0.05),
+                },
+              }}
+            >
+              {component.icon && (
+                <Iconify
+                  icon={component.icon}
+                  width={15}
+                  height={15}
+                />
+              )}
+              
+              {isActive && (
+                <Box component="span">
+                  {component.name === 'Database' ? 'Cloud' : component.name}
+                </Box>
+              )}
 
-                  '&:hover': {
-                    color: theme.palette.text.primary,
-                    backgroundColor: isActive 
-                      ? alpha(theme.palette.primary.main, 0.16)
-                      : alpha(theme.palette.text.primary, 0.05),
-                  },
-                }}
-              >
-                {component.icon && (
-                  <Iconify
-                    icon={component.icon}
-                    width={15}
-                    height={15}
-                  />
-                )}
-                
-                {isActive && (
-                  <Box component="span">
-                    {component.name === 'Database' ? 'Cloud' : component.name}
-                  </Box>
-                )}
-
-               
-              </Box>
-            );
-          })}
-        </>
-      )}
+             
+            </Box>
+          );
+        })}
+      </Box>
     </Box>
   );
 });

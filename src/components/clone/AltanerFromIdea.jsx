@@ -1,14 +1,14 @@
 import { useTheme } from '@mui/material/styles';
 import { m, AnimatePresence } from 'framer-motion';
 import React, { useEffect, useState, memo } from 'react';
-import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
+import { useAnalytics } from '../../hooks/useAnalytics.js';
 import { createAltaner } from '../../redux/slices/altaners.js';
+import { useDispatch, store } from '../../redux/store';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
 import Iconify from '../iconify';
-import { SpiralAnimation } from '../ui/SpiralAnimation.jsx';
-import { useAnalytics } from '../../hooks/useAnalytics.js';
+import { TeamAssemblyAnimation } from '../ui/TeamAssemblyAnimation.jsx';
 
 // Clean and minimal - removed all unused components and CSS
 
@@ -31,6 +31,10 @@ function AltanerFromIdea({ idea, onClose }) {
     setIsCreating(true);
 
     let isSubscribed = true;
+
+    // Check if this is the user's first project (before creating the new one)
+    const existingAltaners = store.getState()?.general?.account?.altaners || [];
+    const isFirstProject = existingAltaners.length === 0;
 
     // Start the actual creation process
     console.log('Starting project creation with idea:', idea); // Debug log
@@ -78,7 +82,8 @@ function AltanerFromIdea({ idea, onClose }) {
           
           try {
             // Try fast client-side navigation first
-            history.push(`/project/${altaner.id}`);
+            const projectUrl = `/project/${altaner.id}${isFirstProject ? '?onboarding=true' : ''}`;
+            history.push(projectUrl);
             console.log('React Router navigation successful');
             
             // Close dialog after successful navigation
@@ -87,8 +92,9 @@ function AltanerFromIdea({ idea, onClose }) {
           } catch (navError) {
             console.log('React Router failed, using window.location fallback');
             // Fallback to full page redirect if React Router fails
+            const projectUrl = `/project/${altaner.id}${isFirstProject ? '?onboarding=true' : ''}`;
             if (onClose) onClose();
-            window.location.href = `/project/${altaner.id}`;
+            window.location.href = projectUrl;
           }
       })
       .catch((error) => {
@@ -189,25 +195,10 @@ function AltanerFromIdea({ idea, onClose }) {
                   </div>
                 </m.div>
               ) : (
-                // Loading state with spiral animation
-                <>
-                  {/* Spiral Animation Background */}
-                  <div className="absolute inset-0">
-                    <SpiralAnimation />
-                  </div>
-
-                  {/* Simple Elegant Text with Pulsing Effect */}
-                  <m.div 
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1.5, ease: "easeOut", delay: 2 }}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
-                  >
-                    <div className="text-white text-2xl tracking-[0.2em] uppercase font-extralight animate-pulse">
-                      Creating your project...
-                    </div>
-                  </m.div>
-                </>
+                // Loading state with team assembly animation
+                <div className="absolute inset-0">
+                  <TeamAssemblyAnimation />
+                </div>
               )}
             </div>
           </div>

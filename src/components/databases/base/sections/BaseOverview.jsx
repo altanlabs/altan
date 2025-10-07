@@ -131,8 +131,10 @@ function BaseOverview({ baseId, onNavigate }) {
   const [cpuUsage, setCpuUsage] = useState(12);
   const [memoryUsage, setMemoryUsage] = useState(45);
   const [currentTier, setCurrentTier] = useState('nano');
-  const [isPaused, setIsPaused] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+
+  // Detect if instance is stopped (tables failed to load, likely 503)
+  const isPaused = !base?.tables;
 
   // Simulate real-time stats updates
   useEffect(() => {
@@ -181,6 +183,46 @@ function BaseOverview({ baseId, onNavigate }) {
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200 }}>
+      {/* No Database Alert */}
+      {!base && (
+        <Alert
+          severity="info"
+          sx={{ mb: 3 }}
+          icon={<Database size={20} />}
+        >
+          <Typography
+            variant="body2"
+            fontWeight="600"
+            gutterBottom
+          >
+            No Database Yet
+          </Typography>
+          <Typography variant="body2">
+            Ask the AI in the chat to create and activate a database for you. This is a preview of what
+            your database interface will look like.
+          </Typography>
+        </Alert>
+      )}
+
+      {/* Paused Database Alert */}
+      {base && isPaused && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 3 }}
+        >
+          <Typography
+            variant="body2"
+            fontWeight="600"
+            gutterBottom
+          >
+            Database Instance is Paused
+          </Typography>
+          <Typography variant="body2">
+            This database instance is currently stopped. Click the "Resume" button to start it.
+          </Typography>
+        </Alert>
+      )}
+
       {/* Header */}
       <Stack
         direction="row"
@@ -203,7 +245,7 @@ function BaseOverview({ baseId, onNavigate }) {
           </Typography>
         </Stack>
         <Box
-          onClick={handleToggleStatus}
+          onClick={base ? handleToggleStatus : undefined}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -211,15 +253,16 @@ function BaseOverview({ baseId, onNavigate }) {
             px: 2,
             py: 1,
             borderRadius: 2,
-            cursor: 'pointer',
+            cursor: base ? 'pointer' : 'not-allowed',
             transition: 'all 0.2s',
-            '&:hover': {
+            opacity: base ? 1 : 0.5,
+            '&:hover': base ? {
               bgcolor: 'action.hover',
               transform: 'scale(1.05)',
-            },
-            '&:active': {
+            } : {},
+            '&:active': base ? {
               transform: 'scale(0.98)',
-            },
+            } : {},
           }}
         >
           {isPaused ? (
@@ -235,7 +278,7 @@ function BaseOverview({ baseId, onNavigate }) {
                 height: 10,
                 borderRadius: '50%',
                 bgcolor: 'success.main',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                animation: base ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
                 '@keyframes pulse': {
                   '0%, 100%': {
                     opacity: 1,
@@ -244,7 +287,7 @@ function BaseOverview({ baseId, onNavigate }) {
                     opacity: 0.5,
                   },
                 },
-                '&::before': {
+                '&::before': base ? {
                   content: '""',
                   position: 'absolute',
                   width: '100%',
@@ -252,7 +295,7 @@ function BaseOverview({ baseId, onNavigate }) {
                   borderRadius: '50%',
                   bgcolor: 'success.main',
                   animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
-                },
+                } : {},
                 '@keyframes ping': {
                   '75%, 100%': {
                     transform: 'scale(2)',
@@ -291,14 +334,15 @@ function BaseOverview({ baseId, onNavigate }) {
                 >
                   <Card
                     sx={{
-                      cursor: 'pointer',
+                      cursor: base ? 'pointer' : 'not-allowed',
                       transition: 'all 0.2s',
-                      '&:hover': {
+                      opacity: base ? 1 : 0.6,
+                      '&:hover': base ? {
                         transform: 'translateY(-2px)',
                         boxShadow: 3,
-                      },
+                      } : {},
                     }}
-                    onClick={() => onNavigate?.(product.id === 'database' ? 'tables' : product.id)}
+                    onClick={() => base && onNavigate?.(product.id === 'database' ? 'tables' : product.id)}
                   >
                     <CardContent>
                       <Stack spacing={1.5}>
@@ -346,7 +390,7 @@ function BaseOverview({ baseId, onNavigate }) {
         </Box>
 
         {/* Compute Size Card */}
-        <Card>
+        <Card sx={{ opacity: base ? 1 : 0.6 }}>
           <CardContent>
             <Stack spacing={3}>
               <Stack
@@ -380,6 +424,7 @@ function BaseOverview({ baseId, onNavigate }) {
                 <Button
                   variant="outlined"
                   size="small"
+                  disabled={!base}
                   endIcon={expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   onClick={() => setExpanded(!expanded)}
                 >
@@ -488,16 +533,17 @@ function BaseOverview({ baseId, onNavigate }) {
           </CardContent>
         </Card>
 
-        {/* Infrastructure Activity */}
-        <Card>
-          <CardContent>
-            <Typography
-              variant="h6"
-              fontWeight="600"
-              sx={{ mb: 3 }}
-            >
-              Infrastructure Activity
-            </Typography>
+        {/* Infrastructure Activity - Only show when base exists */}
+        {base && (
+          <Card>
+            <CardContent>
+              <Typography
+                variant="h6"
+                fontWeight="600"
+                sx={{ mb: 3 }}
+              >
+                Infrastructure Activity
+              </Typography>
 
             <Grid
               container
@@ -625,6 +671,7 @@ function BaseOverview({ baseId, onNavigate }) {
             </Grid>
           </CardContent>
         </Card>
+        )}
       </Stack>
 
       {/* Confirmation Popover */}

@@ -230,10 +230,6 @@ function Base({
     [tableId, base?.tables?.items, navigateToPath],
   );
 
-  const handleOpenCreateBase = useCallback(
-    () => setState((prev) => ({ ...prev, createBaseOpen: true })),
-    [],
-  );
 
   const handleCloseCreateBase = useCallback(
     () => setState((prev) => ({ ...prev, createBaseOpen: false })),
@@ -244,7 +240,7 @@ function Base({
     setState((prev) => ({ ...prev, activeSection: section }));
   }, []);
 
-  const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
+  const shouldShowPlaceholder = base && base?.tables?.items?.length === 0;
 
   // Subscribe to base updates
   useEffect(() => {
@@ -276,39 +272,12 @@ function Base({
   // Show loading skeleton while base or tables are loading
   // Show loading if:
   // 1. Base is loading from API
-  // 2. Base exists but tables haven't loaded yet (waiting for pg-meta)
-  const isLoadingSchema = baseId && (!base || !base.tables || !base.tables.items);
+  // 2. Base exists but tables haven't loaded yet AND still loading (waiting for pg-meta)
+  // If loading is done but no tables, render anyway (could be 503/stopped instance or empty base)
+  const isLoadingSchema = baseId && (!base || (!base.tables && isBaseLoading));
 
   if (isBaseLoading || isLoadingSchema) {
     return <LoadingFallback />;
-  }
-  if (!baseId) {
-    return (
-      <>
-        <CreateBaseDialog
-          open={state.createBaseOpen}
-          onClose={handleCloseCreateBase}
-          altanerId={altanerId}
-          altanerComponentId={altanerComponentId}
-        />
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Typography
-            variant="h2"
-            sx={{
-              textAlign: 'center',
-              marginTop: 2,
-            }}
-          >No database yet</Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: 'center',
-              marginTop: 1,
-            }}
-          >Ask the AI to create a database for you</Typography>
-        </div>
-      </>
-    );
   }
 
   return (
