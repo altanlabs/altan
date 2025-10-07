@@ -13,6 +13,7 @@ import Logo from '../../components/logo/Logo';
 import { PATH_AUTH } from '../../routes/paths';
 //
 import { optimai } from '../../utils/axios';
+import { getAllTrackingParams } from '../../utils/queryParams';
 
 // ----------------------------------------------------------------------
 
@@ -55,6 +56,41 @@ const InvitationCard = ({ invitation }) => {
   );
 };
 
+const ReferralBanner = () => {
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        bgcolor: 'rgba(76, 175, 80, 0.1)',
+        border: '1px solid rgba(76, 175, 80, 0.3)',
+        borderRadius: 2,
+        p: 2,
+        mb: 1,
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Box
+          sx={{
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          🎁
+        </Box>
+        <Stack spacing={0.25}>
+          <Typography variant="body2" fontWeight={600}>
+            Sign up and redeem your free credits!
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            You are signing up through a referral link
+          </Typography>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+};
+
 const getUrlParameter = (name) => {
   const escapedName = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
   const regex = new RegExp('[\\?&]' + escapedName + '=([^&#]*)');
@@ -76,6 +112,7 @@ export const getInvitationInfo = async (invitationId) => {
 export default function Register() {
   const [invitation, setInvitation] = useState(null);
   const [idea, setIdea] = useState(null);
+  const [hasReferral, setHasReferral] = useState(false);
 
   useEffect(() => {
     const invitationId = getUrlParameter('iid');
@@ -91,6 +128,15 @@ export default function Register() {
           window.location.href = res.url;
         }
       });
+    }
+
+    // Check for referral code from URL or localStorage
+    const trackingParams = getAllTrackingParams(false);
+    const referrerId = trackingParams?.ref;
+
+    // Set hasReferral flag if ref is present
+    if (referrerId && !invitationId) {
+      setHasReferral(true);
     }
   }, []);
 
@@ -142,7 +188,13 @@ export default function Register() {
           />
           <Typography variant="h3">Welcome to Altan</Typography>
 
-          <Typography variant="body2">Get started absolutely free.</Typography>
+          {hasReferral && !invitation && (
+            <ReferralBanner />
+          )}
+
+          {!hasReferral && (
+            <Typography variant="body2">Get started absolutely free.</Typography>
+          )}
 
           {/* Google Auth first */}
           <AuthWithSocial
