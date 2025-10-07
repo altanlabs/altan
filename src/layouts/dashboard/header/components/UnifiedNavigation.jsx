@@ -213,7 +213,7 @@ const UnifiedNavigation = memo(({
                 
                 {isActive && (
                   <Box component="span">
-                    {component.name === 'Database' ? 'Data' : component.name}
+                    {component.name === 'Database' ? 'Cloud' : component.name}
                   </Box>
                 )}
 

@@ -764,7 +764,11 @@ export const GridView = memo(
       (newPage) => {
         if (table?.id) {
           dispatch(
-            loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50, forceReload: true }),
+            loadTableRecords(table.id, {
+              page: newPage,
+              limit: paginationInfo?.pageSize || 50,
+              forceReload: true,
+            }),
           );
         }
       },
@@ -816,7 +820,7 @@ export const GridView = memo(
               '--ag-font-size': theme.typography.body2.fontSize,
 
               // Layout
-              '--ag-border-radius': `${theme.shape.borderRadius}px`,
+              '--ag-border-radius': '0px',
               '--ag-grid-size': '4px',
               '--ag-list-item-height': '32px',
               '--ag-row-height': '56px',

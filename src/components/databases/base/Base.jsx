@@ -51,6 +51,7 @@ function Base({
     createTableOpen: false,
     createBaseOpen: false,
     isTableSwitching: false,
+    activeSection: 'overview', // Default to overview
   });
 
   // Initialize base and handle navigation
@@ -239,6 +240,10 @@ function Base({
     [],
   );
 
+  const handleSectionChange = useCallback((section) => {
+    setState((prev) => ({ ...prev, activeSection: section }));
+  }, []);
+
   const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
 
   // Subscribe to base updates
@@ -308,27 +313,20 @@ function Base({
 
   return (
     <>
-      {shouldShowPlaceholder ? (
-        <NoEntityPlaceholder
-          title="No tables found in this base"
-          description="Create your first table to get started"
-          buttonMessage="Create Table"
-          onButtonClick={handleOpenCreateTable}
-        />
-      ) : (
-        <BaseLayout
-          baseId={baseId}
-          tableId={tableId}
-          handleTabChange={handleTabChange}
-          handleOpenCreateTable={handleOpenCreateTable}
-          handleDeleteTable={handleDeleteTable}
-          handleImportTable={handleImportTable}
-          state={state}
-          isTableLoading={isTableLoading}
-          viewId={viewId}
-          triggerImport={state.triggerImport}
-        />
-      )}
+      <BaseLayout
+        baseId={baseId}
+        tableId={tableId}
+        handleTabChange={handleTabChange}
+        handleOpenCreateTable={handleOpenCreateTable}
+        handleDeleteTable={handleDeleteTable}
+        handleImportTable={handleImportTable}
+        state={state}
+        isTableLoading={isTableLoading}
+        viewId={viewId}
+        triggerImport={state.triggerImport}
+        activeSection={state.activeSection}
+        onSectionChange={handleSectionChange}
+      />
       <CreateTableDialog
         baseId={baseId}
         open={state.createTableOpen}

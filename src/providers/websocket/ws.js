@@ -28,7 +28,6 @@ import {
   deleteField,
   integrateRealTimeUpdates,
   fetchTables,
-  fetchSchemas,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -185,11 +184,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
         } else if (path.startsWith('tables/')) {
           dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
         } else if (path.startsWith('schemas/')) {
-          dispatch(fetchSchemas(base_id));
+          // Schemas are not needed for SQL queries - only fetch tables
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
         } else if (path.startsWith('policies/')) {
           dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
         } else {
-          dispatch(fetchSchemas(base_id));
+          // Only fetch tables, not schemas
           dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
         }
       } catch (error) {

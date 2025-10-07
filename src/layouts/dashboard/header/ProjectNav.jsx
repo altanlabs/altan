@@ -12,7 +12,7 @@ import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 // Default icons in case component doesn't provide one
 const DEFAULT_ICONS = {
   interface: 'iconoir:web-window',
-  base: 'bxs:data',
+  base: 'material-symbols:cloud',
   flows: 'eva:activity-outline',
   flow: 'eva:activity-outline',
   agent: 'material-symbols:circle',

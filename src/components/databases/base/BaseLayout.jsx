@@ -1,7 +1,13 @@
+import { Box } from '@mui/material';
 import React, { memo } from 'react';
 import { useSelector } from 'react-redux';
 
+import BaseSidebar from './BaseSidebar.jsx';
 import TableTabs from './TableTabs.jsx';
+import BaseOverview from './sections/BaseOverview.jsx';
+import BasePlaceholder from './sections/BasePlaceholder.jsx';
+import BaseUsers from './sections/BaseUsers.jsx';
+import useResponsive from '../../../hooks/useResponsive.js';
 import { selectSQLTerminalMode } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
 import SQLTerminal from '../sql/SQLTerminal.jsx';
@@ -18,25 +24,36 @@ function BaseLayout({
   isTableLoading,
   viewId,
   triggerImport,
+  activeSection = 'overview',
+  onSectionChange,
 }) {
   const sqlTerminalMode = useSelector(selectSQLTerminalMode);
+  const isMobile = useResponsive('down', 'md');
 
-  // ------------------
-  // Main Content Block: TableTabs on top and Table/SQL Terminal view below.
-  // Uses min-w-0 to allow flex sizing without overflow.
+  // Render content based on active section
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case 'overview':
+        return <BaseOverview baseId={baseId} onNavigate={onSectionChange} />;
+      case 'tables':
+        return renderTablesContent();
+      case 'users':
+        return <BaseUsers baseId={baseId} />;
+      case 'storage':
+        return <BasePlaceholder title="Storage" description="View and manage files, images, and documents." />;
+      case 'functions':
+        return <BasePlaceholder title="Edge Functions" description="Configure functions executed in your app." />;
+      case 'secrets':
+        return <BasePlaceholder title="Secrets" description="Store and manage environment variables securely." />;
+      case 'logs':
+        return <BasePlaceholder title="Logs" description="Monitor application logs to debug issues." />;
+      default:
+        return renderTablesContent();
+    }
+  };
 
-  if (sqlTerminalMode) {
-    return (
-      <div className="flex flex-col h-full w-full min-w-0">
-        <div className="flex-1 relative overflow-auto min-w-0">
-          <SQLTerminal baseId={baseId} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full w-full min-w-0">
+  const renderTablesContent = () => (
+    <>
       <div className="shrink-0 min-w-0 w-full">
         <TableTabs
           activeTableId={tableId}
@@ -59,7 +76,53 @@ function BaseLayout({
           />
         )}
       </div>
-    </div>
+    </>
+  );
+
+  // SQL Terminal mode content
+  if (sqlTerminalMode) {
+    return (
+      <Box
+        className={`w-full h-full relative overflow-hidden ${
+          isMobile ? '' : 'pb-2 px-2'
+        }`}
+      >
+        <Box
+          className={`flex flex-col h-full overflow-hidden`}
+        >
+          <div className="flex-1 relative overflow-auto min-w-0">
+            <SQLTerminal baseId={baseId} />
+          </div>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Main layout with sidebar and content
+  return (
+    <Box
+      className={`w-full h-full relative overflow-hidden ${
+        isMobile ? '' : 'pb-2 px-2'
+      }`}
+    >
+      <Box
+        className={`flex flex-row h-full overflow-hidden ${
+          isMobile ? '' : 'border border-divider rounded-xl'
+        }`}
+      >
+        {/* Left Sidebar */}
+        <BaseSidebar
+          activeSection={activeSection}
+          onSectionChange={onSectionChange}
+          open={!isMobile}
+        />
+
+        {/* Main Content Area */}
+        <Box className="flex-1 flex flex-col overflow-auto min-w-0">
+          {renderSectionContent()}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
