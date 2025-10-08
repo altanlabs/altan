@@ -2,8 +2,12 @@ import { useMediaQuery, useTheme, DialogContent } from '@mui/material';
 import { memo, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { selectActiveResponsesByThread, stopThreadGeneration } from '../../redux/slices/room';
+import { dispatch, useSelector } from '../../redux/store';
+import CustomDialog from '../dialogs/CustomDialog.jsx';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import { useSnackbar } from '../snackbar';
+import ConnectionManager from '../tools/ConnectionManager';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
@@ -15,8 +19,6 @@ import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
 import { BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM } from './utils/constants';
 import { fetchAltanerData } from './utils/fetchAltanerData';
-import CustomDialog from '../dialogs/CustomDialog.jsx';
-import ConnectionManager from '../tools/ConnectionManager';
 
 const AttachmentHandler = ({
   threadId = null,
@@ -45,6 +47,12 @@ const AttachmentHandler = ({
   const { enqueueSnackbar } = useSnackbar();
   const { isVoiceActive, isVoiceConnecting, startVoiceCall, stopVoiceCall } =
     useVoiceConversationHandler(threadId);
+
+  // Check for active agent generation
+  const activeResponses = useSelector((state) =>
+    threadId ? selectActiveResponsesByThread(threadId)(state) : [],
+  );
+  const hasActiveGeneration = activeResponses && activeResponses.length > 0;
 
   // File handling hooks
   const { dragOver, fileInputRef, handleFileChange, handleDrop, handleUrlUpload, setupDragEvents } =
@@ -95,6 +103,20 @@ const AttachmentHandler = ({
     agents,
     selectedAgent,
   ]);
+
+  // Handle stopping agent generation
+  const handleStopGeneration = useCallback(() => {
+    if (threadId) {
+      dispatch(stopThreadGeneration(threadId))
+        .then(() => {
+          enqueueSnackbar('Generation stopped', { variant: 'success' });
+        })
+        .catch((error) => {
+          enqueueSnackbar('Failed to stop generation', { variant: 'error' });
+          console.error('Failed to stop generation:', error);
+        });
+    }
+  }, [threadId, enqueueSnackbar]);
 
   // Handle file input click for different types
   const handleFileInputClick = useCallback(
@@ -255,6 +277,8 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
             isVoiceConnecting={isVoiceConnecting}
             isSendEnabled={isSendEnabled}
             onSendMessage={handleSendMessage}
+            hasActiveGeneration={hasActiveGeneration}
+            onStopGeneration={handleStopGeneration}
           />
         </div>
       </div>

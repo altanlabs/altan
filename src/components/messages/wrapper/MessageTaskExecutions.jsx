@@ -9,21 +9,6 @@ import { dispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
 import ExecutionCard from '../../tasks/ExecutionCard.jsx';
 
-// const usePrioritizeExecution = (executions) => {
-//   const executionsById = useSelector(selectExecutionsById);
-//   if (!executions || !executions.length) return null;
-
-//   const statusOrder = ['preparing', 'running', 'success', 'error'];
-//   return executionsById[[...executions].sort(
-//     (a, b) => statusOrder.indexOf(executionsById[a]?.status) - statusOrder.indexOf(executionsById[b]?.status),
-//   )[0]]; // Return the highest-priority execution
-// };
-
-// const runningExecutions = executions.filter((exec) => exec.status === 'running').length;
-// const preparingExecutions = executions.filter((exec) => exec.status === 'preparing').length;
-// const completedExecutions = executions.filter((exec) => exec.status === 'success').length;
-// const errorExecutions = executions.filter((exec) => exec.status === 'error').length;
-
 const usePrioritizeExecution = (executions) => {
   const executionsById = useSelector(selectExecutionsById);
 

@@ -34,9 +34,13 @@ const ToolPartCard = ({
   const isCompleted = part?.is_done;
   const isExecuting = !isCompleted && (part?.arguments !== undefined || ['running', 'preparing'].includes(part?.status));
 
-  // Reset manually collapsed when execution starts again
+  // Auto-expand when executing, auto-collapse when completed
   useEffect(() => {
-    if (!isCompleted) setManuallyCollapsed(false);
+    if (!isCompleted) {
+      setManuallyCollapsed(false); // Expand when executing
+    } else {
+      setManuallyCollapsed(true); // Collapse when completed
+    }
   }, [isCompleted]);
 
   // Auto-scroll to bottom when content changes (unless user is scrolling)
@@ -163,7 +167,7 @@ const ToolPartCard = ({
   }, [part?.intent, part?.task_execution?.intent]);
 
   const headerText = useMemo(() => {
-    if (duration) return `${displayText} (${duration}s)`;
+    if (duration && parseFloat(duration) > 0) return `${displayText} (${duration}s)`;
     return displayText;
   }, [duration, displayText]);
 

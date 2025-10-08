@@ -34,8 +34,13 @@ const ThinkingPartCard = ({ partId }) => {
 
   const isCompleted = part?.is_done || part?.status === 'completed';
 
+  // Expand when thinking starts, collapse when thinking completes
   useEffect(() => {
-    if (!isCompleted) setManuallyCollapsed(false);
+    if (!isCompleted) {
+      setManuallyCollapsed(false);
+    } else {
+      setManuallyCollapsed(true);
+    }
   }, [isCompleted]);
 
   // Auto-scroll to bottom when content changes (unless user is scrolling)
@@ -54,8 +59,6 @@ const ThinkingPartCard = ({ partId }) => {
     const s = (end - start) / 1000;
     return s < 10 ? s.toFixed(1) : Math.round(s);
   }, [isCompleted, part?.created_at, part?.finished_at]);
-
-  console.log('[ThinkingPartCard] part:', part);
 
   const hasContent = useMemo(() => {
     const hasText = !!(part?.text && part.text.length);

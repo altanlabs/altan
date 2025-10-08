@@ -102,8 +102,8 @@ const MessageBoxWrapper = ({
         <CustomAvatar
           alt={sender?.id}
           sx={{
-            width: mode === 'mini' ? 16 : 20,
-            height: mode === 'mini' ? 16 : 20,
+            width: mode === 'mini' ? 16 : 24,
+            height: mode === 'mini' ? 16 : 24,
             cursor: 'pointer',
             '&:hover': {
               opacity: 0.8,

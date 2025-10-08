@@ -6,14 +6,13 @@ import { createCachedSelector } from 're-reselect';
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
 import { setPreviewMode } from './previewControl';
-import { setPreviewMode } from './previewControl';
+import { analytics } from '../../lib/analytics';
 import {
   // checkArraysEqualShallow,
   checkArraysEqualsProperties,
   checkObjectsEqual,
   getNestedProperty,
 } from '../helpers/memoize';
-import { analytics } from '../../lib/analytics';
 import { paginateCollection } from './utils/collections';
 import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
@@ -3316,6 +3315,16 @@ export const stopAgentResponse = (messageId) => async (dispatch, getState) => {
     const { room } = response.data;
     return Promise.resolve(room);
   } catch (e) {
+    return Promise.reject(e);
+  }
+};
+
+export const stopThreadGeneration = (threadId) => async () => {
+  try {
+    const response = await optimai_room.post(`/thread/${threadId}/stop`);
+    return Promise.resolve(response.data);
+  } catch (e) {
+    console.error('Failed to stop thread generation:', e);
     return Promise.reject(e);
   }
 };

@@ -146,11 +146,8 @@ const Thread = ({
         .then((response) => {
           if (!response) {
             history.replace('/404');
-          } else {
-            // Set hasLoaded immediately when thread is fetched successfully
-            // The ThreadMessages component will handle its own loading state
-            setHasLoaded(true);
           }
+          // Let ThreadMessages handle setting hasLoaded when messages are ready
         })
         .catch((error) => {
           console.error('🧵 Error fetching thread:', error);

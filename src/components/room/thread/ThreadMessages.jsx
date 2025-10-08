@@ -14,6 +14,8 @@ import {
   makeSelectMoreMessages,
   selectMessagesById,
   selectMembers,
+  selectMe,
+  selectActiveResponsesByThread,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -42,7 +44,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
+const Footer = memo(({ threadId, messageIds, renderFeedback = false, showSpacer = false }) => {
   const messagesById = useSelector(selectMessagesById);
   const members = useSelector(selectMembers);
 
@@ -53,7 +55,10 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
   const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
 
   return (
-    <div className="pb-[20px]">
+    <div 
+      className="pb-[20px] transition-all duration-300" 
+      style={{ paddingBottom: showSpacer ? '70vh' : '25px' }}
+    >
       {/* Show ThreadActionBar if there are messages */}
       {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && (
         <ThreadActionBar
@@ -141,11 +146,17 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const threadId = useThreadIdAtLocation(mode, tId);
   const moreMessages = useSelector((state) => moreMessagesSelector(state, threadId));
   const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const messagesById = useSelector(selectMessagesById);
+  const me = useSelector(selectMe);
+  const activeResponses = useSelector((state) => selectActiveResponsesByThread(threadId)(state));
   // console.log('ThreadMessages render', mode, threadId, messageIds); // Keep for debugging, or remove
 
   // We only track "am I fetching?" in local state
   const [isFetching, setIsFetching] = useState(false);
   const [mustScroll, setMustScroll] = useState(false);
+  
+  // Track when to show spacer for user messages
+  const [showSpacerForUserMessage, setShowSpacerForUserMessage] = useState(false);
 
   // For scrolling to a specific message if needed
   const [, setMessageToScroll] = useState(null);
@@ -228,11 +239,12 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
         .finally(() => {
           setTimeout(() => setIsFetching(false), 1000);
         });
-    } else if (mode === 'main' && !!hasLoaded) {
+    } else if (mode === 'main' && !!hasLoaded && !showSpacerForUserMessage) {
+      // Only scroll to bottom if we're NOT showing spacer for user message
       scrollToBottom('instant');
     }
     hasLoadedRef.current = hasLoaded;
-  }, [threadId, hasLoaded]);
+  }, [threadId, hasLoaded, scrollToBottom, fetchMessages, mode, messageIds.length, showSpacerForUserMessage]);
 
   // Ensure hasLoaded is set when messages are available
   useEffect(() => {
@@ -244,6 +256,41 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   useEffect(() => {
     isCreationRef.current = isCreation;
   }, [isCreation]);
+  
+  // Track last user message to control spacer lifecycle
+  const lastUserMessageIdRef = useRef(null);
+  
+  // Detect when last message is from user to show spacer
+  useEffect(() => {
+    if (messageIds.length > 0 && hasLoaded && mode === 'main') {
+      const lastMessageId = messageIds[messageIds.length - 1];
+      const lastMessage = messagesById[lastMessageId];
+      const isUserMessage = lastMessage && lastMessage.member_id === me?.id;
+      const hasActiveGeneration = activeResponses && activeResponses.length > 0;
+      
+      if (isUserMessage) {
+        // New user message detected
+        if (lastUserMessageIdRef.current !== lastMessageId) {
+          // First, briefly turn off spacer to reset
+          setShowSpacerForUserMessage(false);
+          
+          // Then turn it on for this new user message
+          setTimeout(() => {
+            setShowSpacerForUserMessage(true);
+            lastUserMessageIdRef.current = lastMessageId;
+            
+            // Scroll to bottom to show the spacer
+            setTimeout(() => {
+              scrollToBottom('smooth');
+            }, 50);
+          }, 50);
+        }
+      } else if (!hasActiveGeneration && showSpacerForUserMessage) {
+        // Agent has finished generating - remove the spacer
+        setShowSpacerForUserMessage(false);
+      }
+    }
+  }, [messageIds, messagesById, me, hasLoaded, mode, scrollToBottom, activeResponses, showSpacerForUserMessage]);
 
   const handleScroll = useMemo(
     () =>
@@ -286,12 +333,17 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   // Let Virtuoso auto-scroll if near bottom
   // ----------------------------------------------
   const followOutput = useCallback(() => {
+    // Don't auto-scroll if we're showing spacer for user message
+    if (showSpacerForUserMessage) {
+      return false;
+    }
+    
     const { bottom, semiBottom } = scrollStateRef.current;
     if ((bottom || semiBottom) && !isFetching) {
       return 'smooth';
     }
     return false;
-  }, [isFetching]);
+  }, [isFetching, showSpacerForUserMessage]);
 
   // ----------------------------------------------
   // 4e) itemContent callback
@@ -376,6 +428,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   threadId={threadId}
                   messageIds={messageIds}
                   renderFeedback={renderFeedback}
+                  showSpacer={showSpacerForUserMessage}
                 />
               ),
             }}
