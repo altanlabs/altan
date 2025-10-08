@@ -33,20 +33,9 @@ const CreateTableDialog = ({ baseId, open, onClose }) => {
   const onSubmit = useCallback(
     handleSubmit(async (data) => {
       const formattedData = {
-        ...formatData(data, TABLE_CREATE_SCHEMA.properties),
-        fields: [
-          {
-            name: 'Name',
-            type: 'singleLineText',
-            cell_value_type: 'string',
-            db_field_type: 'TEXT',
-            db_field_name: 'name',
-            order: 1.0,
-            version: 1,
-            created_by: 'system',
-            is_primary: true,
-          },
-        ],
+        name: formatData(data, TABLE_CREATE_SCHEMA.properties).name,
+        comment: null,
+        // Note: schema will be set to tenant_{base_id} automatically in createTable thunk
       };
 
       dispatchWithFeedback(createTable(baseId, formattedData), {

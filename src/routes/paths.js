@@ -126,6 +126,7 @@ export const PATH_DASHBOARD = {
     settings: path(ROOTS_ACCOUNT, '/settings'),
     api: path(ROOTS_ACCOUNT, '/api'),
   },
+  referrals: path(ROOTS_DASHBOARD, '/referrals'),
   super: {
     root: ROOTS_SA,
     apps: path(ROOTS_SA, '/hub'),

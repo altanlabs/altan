@@ -184,8 +184,10 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
         </button>
       )}
 
-      <button
-        onClick={() => setShowExpertPackages(true)}
+      <a
+        href="https://partners.altan.ai"
+        target="_blank"
+        rel="noopener noreferrer"
         className="flex items-center justify-between w-full p-4 text-left border rounded-xl transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400"
       >
         <div className="flex items-center gap-3">
@@ -202,7 +204,7 @@ function HireAnExpert({ open, setOpen, iconSize = 20 }) {
           </div>
         </div>
         <span className="text-blue-500">→</span>
-      </button>
+      </a>
     </div>
   );
 

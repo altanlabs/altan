@@ -22,13 +22,11 @@ import { useHistory, useParams } from 'react-router-dom';
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
 import ProjectNav from './ProjectNav.jsx';
+import MobileNavigation from './components/MobileNavigation.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import CodeToggleButton from '../../../components/buttons/CodeToggleButton.jsx';
-import DatabaseInfoDialog from '../../../components/databases/dialogs/DatabaseInfoDialog.jsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
-import CreateRecordDialog from '../../../components/databases/records/CreateRecordDialog.jsx';
-import RLSSettingsDialog from '../../../components/databases/table/RLSSettingsDialog.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
@@ -52,27 +50,13 @@ import {
   selectSortedAltanerComponents,
   selectViewType,
   selectDisplayMode,
-  setDisplayMode,
+  setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
-import {
-  selectBaseById,
-  selectDatabaseRefreshing,
-  selectDatabaseRecordCount,
-  setDatabaseQuickFilter,
-  setDatabaseRefreshing,
-  loadAllTableRecords,
-} from '../../../redux/slices/bases';
 import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
-import {
-  navigateToPath,
-  refreshIframe,
-  openInNewTab,
-  toggleIframeViewMode,
-  selectIframeViewMode,
-} from '../../../redux/slices/previewControl';
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -179,7 +163,7 @@ const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade })
 function ProjectHeader() {
   const theme = useTheme();
   const history = useHistory();
-  const { altanerId, componentId } = useParams();
+  const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const viewType = useSelector(selectViewType);
@@ -188,25 +172,15 @@ function ProjectHeader() {
   const dispatch = useDispatch();
   const isIOS = isIOSCapacitor();
 
-  // Get iframe view mode from Redux
-  const iframeViewMode = useSelector(selectIframeViewMode);
-
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const isDatabaseComponent = currentComponent?.type === 'base';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
-  const baseId = isDatabaseComponent ? currentComponent?.params?.ids?.[0] : null;
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
 
-  // Database selectors
-  const database = useSelector((state) =>
-    isDatabaseComponent && baseId ? selectBaseById(state, baseId) : null,
-  );
-  const databaseRefreshing = useSelector(selectDatabaseRefreshing);
-  const databaseRecordCount = useSelector(selectDatabaseRecordCount);
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
     if (!ui) return null;
@@ -245,70 +219,12 @@ function ProjectHeader() {
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
 
-  // Database dialog states
-  const [openCreateRecord, setOpenCreateRecord] = useState(false);
-  const [openRLSSettings, setOpenRLSSettings] = useState(false);
-  const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
-
-  // Navigation handlers for URLNavigationBar using Redux
-  const handleNavigateToPath = useCallback(
-    (path) => {
-      dispatch(navigateToPath(path));
-    },
-    [dispatch],
-  );
-
-  const handleToggleIframeViewMode = useCallback(() => {
-    dispatch(toggleIframeViewMode());
-  }, [dispatch]);
-
-  const handleOpenIframeInNewTab = useCallback(() => {
-    dispatch(openInNewTab());
-  }, [dispatch]);
-
-  const handleRefreshIframe = useCallback(() => {
-    dispatch(refreshIframe());
-  }, [dispatch]);
-
-  // Database navigation handlers
-  const handleDatabaseQuickFilterChange = useCallback(
-    (filter) => {
-      dispatch(setDatabaseQuickFilter(filter));
-    },
-    [dispatch],
-  );
-
-  const handleDatabaseRefresh = useCallback(() => {
-    if (baseId && database?.tables?.items?.length > 0) {
-      dispatch(setDatabaseRefreshing(true));
-      // Refresh the current table (assuming first table for now)
-      const currentTableId = database.tables.items[0]?.id;
-      if (currentTableId) {
-        dispatch(loadAllTableRecords(currentTableId, true)).finally(() =>
-          dispatch(setDatabaseRefreshing(false)),
-        );
-      }
-    }
-  }, [dispatch, baseId, database]);
-
-  // Database dialog handlers
-  const handleDatabaseAddRecord = useCallback(() => {
-    setOpenCreateRecord(true);
-  }, []);
-
-  const handleDatabaseRLSSettings = useCallback(() => {
-    setOpenRLSSettings(true);
-  }, []);
-
-  const handleDatabaseInfo = useCallback(() => {
-    setOpenDatabaseInfo(true);
-  }, []);
 
   useEffect(() => {
-    if (isMobile && displayMode === 'chat') {
-      dispatch(setDisplayMode('both'));
+    if (isMobile && displayMode === 'chat' && altanerId) {
+      dispatch(setDisplayModeForProject({ altanerId, displayMode: 'both' }));
     }
-  }, [isMobile, displayMode, dispatch]);
+  }, [isMobile, displayMode, dispatch, altanerId]);
 
   useEffect(() => {
     const handleProjectComponentsUpdate = () => {
@@ -421,15 +337,22 @@ function ProjectHeader() {
             {altaner?.id ? (
               <>
                 {sortedComponents && (
-                  <ProjectNav
-                    components={sortedComponents}
-                    altanerId={altanerId}
-                    onEditAltaner={() => {
-                      if (altaner?.id) {
-                        setOpenEditAltaner(true);
-                      }
-                    }}
-                  />
+                  isMobile ? (
+                    <MobileNavigation
+                      altaner={altaner}
+                      onBackToDashboard={() => history.push('/')}
+                    />
+                  ) : (
+                    <ProjectNav
+                      components={sortedComponents}
+                      altanerId={altanerId}
+                      onEditAltaner={() => {
+                        if (altaner?.id) {
+                          setOpenEditAltaner(true);
+                        }
+                      }}
+                    />
+                  )
                 )}
               </>
             ) : (
@@ -457,30 +380,12 @@ function ProjectHeader() {
 
           {altaner?.id && isInterfaceComponent && !isMobile && (
             <URLNavigationBar
-              onNavigate={handleNavigateToPath}
-              onToggleViewMode={handleToggleIframeViewMode}
-              onOpenInNewTab={handleOpenIframeInNewTab}
-              onRefresh={handleRefreshIframe}
-              viewMode={iframeViewMode}
               productionUrl={productionUrl}
               disabled={!ui || viewType === 'code'}
             />
           )}
 
-          {altaner?.id && isDatabaseComponent && !isMobile && (
-            <DatabaseNavigationBar
-              database={database}
-              table={database?.tables?.items?.[0]} // Current table (simplified for now)
-              onQuickFilterChange={handleDatabaseQuickFilterChange}
-              onRefresh={handleDatabaseRefresh}
-              onAddRecord={handleDatabaseAddRecord}
-              onRLSSettings={handleDatabaseRLSSettings}
-              onDatabaseInfo={handleDatabaseInfo}
-              disabled={!database}
-              recordCount={databaseRecordCount}
-              isLoading={databaseRefreshing}
-            />
-          )}
+          {altaner?.id && isDatabaseComponent && !isMobile && <DatabaseNavigationBar />}
 
           {/* Middle section - URL Navigation Bar */}
 
@@ -525,6 +430,7 @@ function ProjectHeader() {
                       </HeaderIconButton>
                     </Tooltip>
                   )}
+                  <InvitationMenuPopover isDashboard={true} />
                   <Tooltip title="Publish">
                     <HeaderIconButton
                       onClick={() => setOpenPublishDialog(true)}
@@ -591,6 +497,7 @@ function ProjectHeader() {
                       </HeaderIconButton>
                     </Tooltip>
                   )}
+                  <InvitationMenuPopover isDashboard={true} />
 
                   <Button
                     size="small"
@@ -683,33 +590,6 @@ function ProjectHeader() {
         onClose={() => setOpenEditAltaner(false)}
         project={altaner}
       />
-
-      {/* Database Dialogs */}
-      {isDatabaseComponent && baseId && (
-        <>
-          <DatabaseInfoDialog
-            open={openDatabaseInfo}
-            onClose={() => setOpenDatabaseInfo(false)}
-            database={database}
-          />
-          {database?.tables?.items?.[0] && (
-            <>
-              <CreateRecordDialog
-                baseId={baseId}
-                tableId={database.tables.items[0].id}
-                open={openCreateRecord}
-                onClose={() => setOpenCreateRecord(false)}
-              />
-              <RLSSettingsDialog
-                baseId={baseId}
-                table={database.tables.items[0]}
-                open={openRLSSettings}
-                onClose={() => setOpenRLSSettings(false)}
-              />
-            </>
-          )}
-        </>
-      )}
 
       {/* Deployment History Drawer */}
       <Drawer

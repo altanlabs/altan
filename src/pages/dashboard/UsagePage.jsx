@@ -168,11 +168,17 @@ const UsageOverview = ({
 
   // Calculate billing cycle progress
   const now = new Date();
-  const cycleProgress = billingCycle.startDate && billingCycle.endDate
-    ? Math.min(100, Math.max(0,
-        ((now - billingCycle.startDate) / (billingCycle.endDate - billingCycle.startDate)) * 100,
-      ))
-    : 0;
+  const cycleProgress =
+    billingCycle.startDate && billingCycle.endDate
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            ((now - billingCycle.startDate) / (billingCycle.endDate - billingCycle.startDate)) *
+              100,
+          ),
+        )
+      : 0;
 
   return (
     <div
@@ -319,7 +325,8 @@ const UsageOverview = ({
               </button>
 
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                <span className="font-medium">Remaining Credits:</span> €{stats.remainingCreditsEuro}
+                <span className="font-medium">Remaining Credits:</span> €
+                {stats.remainingCreditsEuro}
               </div>
             </div>
           </div>
@@ -383,7 +390,11 @@ const UsagePage = () => {
       : startOfMonth(new Date());
     const expirationDate = subscription?.expiration_date
       ? parseISO(subscription.expiration_date)
-      : new Date(lastPaymentDate.getFullYear(), lastPaymentDate.getMonth() + 1, lastPaymentDate.getDate());
+      : new Date(
+          lastPaymentDate.getFullYear(),
+          lastPaymentDate.getMonth() + 1,
+          lastPaymentDate.getDate(),
+        );
 
     return {
       startDate: lastPaymentDate,
@@ -685,21 +696,33 @@ const UsagePage = () => {
         />
         {/* Header with title and controls */}
         <div className="flex flex-col gap-4 mb-6">
-          {/* Title and View Task Usage Button */}
+          {/* Title and Navigation Buttons */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               Detailed Usage Analytics
             </h2>
-            <button
-              onClick={() => history.push('/usage/tasks')}
-              className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md flex items-center gap-2 shadow-sm self-start sm:self-auto"
-            >
-              <span>View Task Usage</span>
-              <Iconify
-                icon="mdi:arrow-right"
-                width={16}
-              />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => history.push('/usage/tasks')}
+                className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md flex items-center gap-2 shadow-sm self-start sm:self-auto"
+              >
+                <span>View Task Usage</span>
+                <Iconify
+                  icon="mdi:arrow-right"
+                  width={16}
+                />
+              </button>
+              <button
+                onClick={() => history.push('/usage/databases')}
+                className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md flex items-center gap-2 shadow-sm self-start sm:self-auto"
+              >
+                <span>View Database Usage</span>
+                <Iconify
+                  icon="mdi:arrow-right"
+                  width={16}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Filters Section - Better Mobile Layout */}
@@ -835,7 +858,9 @@ const UsagePage = () => {
           <div
             className={`${getContainerStyles()} rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-700`}
           >
-            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-1">Total Tokens</div>
+            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-1">
+              Total Tokens
+            </div>
             <div className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white">
               {loading ? (
                 <div className="animate-pulse h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-24"></div>
@@ -847,7 +872,9 @@ const UsagePage = () => {
           <div
             className={`${getContainerStyles()} rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-700`}
           >
-            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-1">Total Tasks</div>
+            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-1">
+              Total Tasks
+            </div>
             <div className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white">
               {loading ? (
                 <div className="animate-pulse h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-24"></div>

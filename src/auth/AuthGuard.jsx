@@ -6,6 +6,7 @@ import { Redirect, useLocation, useHistory } from 'react-router-dom';
 
 // components
 import { useAuthContext } from './useAuthContext';
+import { analytics } from '../lib/analytics';
 //
 import Login from '../pages/auth/LoginPage.jsx';
 import HermesWebSocketProvider from '../providers/websocket/HermesWebSocketProvider.jsx';
@@ -14,6 +15,7 @@ import { setAccount, setAccounts, setUser } from '../redux/slices/general';
 import { dispatch } from '../redux/store';
 import { optimai } from '../utils/axios.js';
 import localStorageAvailable from '../utils/localStorageAvailable';
+import LoadingScreen from '../components/loading-screen/LoadingScreen.jsx';
 
 // Create a context for authentication requirements
 const AuthRequirementContext = createContext({
@@ -111,12 +113,22 @@ function AuthGuard({ children, requireAuth = false }) {
 
   useEffect(() => {
     if (isAuthenticated && user && !user.is_disabled) {
+      // Identify user in Microsoft Clarity
       Clarity.identify(
         user.id.toString(), // required: unique user ID
         undefined, // optional: session ID
         undefined, // optional: page ID
         `${user.email}`, // optional: friendly name
       );
+
+      // Identify user in PostHog
+      analytics.identify(user.id, {
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        method: 'auth_guard_session',
+        is_superadmin: user.xsup,
+      });
     }
   }, [isAuthenticated, user]);
 
@@ -143,7 +155,7 @@ function AuthGuard({ children, requireAuth = false }) {
   }, [isAuthenticated, searchParams]);
 
   if (!isInitialized) {
-    return null;
+    return <LoadingScreen />;
   }
 
   // Handle authenticated users with special states

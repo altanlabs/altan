@@ -3,6 +3,8 @@ import { combineReducers } from 'redux';
 import storage from 'redux-persist/lib/storage';
 
 // slices
+import accountsTemplatesReducer from './slices/accountsTemplates';
+import accountTemplatesReducer from './slices/accountTemplates';
 import agentsReducer from './slices/agents';
 import altanersReducer from './slices/altaners';
 import basesReducer from './slices/bases';
@@ -22,6 +24,7 @@ import spaceReducer from './slices/spaces';
 import subscriptionsReducer from './slices/subscriptions';
 import superadminReducer from './slices/superadmin';
 import tasksReducer from './slices/tasks';
+import templatesReducer from './slices/templates';
 import userReducer from './slices/user';
 
 // ----------------------------------------------------------------------
@@ -41,6 +44,8 @@ export const productPersistConfig = {
 };
 
 const rootReducer = combineReducers({
+  accountsTemplates: accountsTemplatesReducer,
+  accountTemplates: accountTemplatesReducer,
   agents: agentsReducer,
   general: generalReducer,
   spaces: spaceReducer,
@@ -61,6 +66,7 @@ const rootReducer = combineReducers({
   room: roomsReducer,
   gate: gateReducer,
   tasks: tasksReducer,
+  templates: templatesReducer,
 });
 
 export default rootReducer;

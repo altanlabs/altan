@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import AltanerSectionCategory from './AltanerSectionCategory';
+import PopularAccounts from './PopularAccounts';
 import TemplateDetailsDialog from './TemplateDetailsDialog';
 
 // Altaner categories with display configuration based on the constants
@@ -100,7 +101,7 @@ const AltanerTemplateMarketplace = () => {
   }, [history, location.pathname, location.search]);
 
   return (
-    <Box sx={{ width: '100%', pt: 4 }}>
+    <Box sx={{ width: '100%', pt: 2 }}>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography
@@ -110,7 +111,7 @@ const AltanerTemplateMarketplace = () => {
             mb: 1,
           }}
         >
-          Marketplace
+          From the Community
         </Typography>
         <Typography
           variant="body1"
@@ -123,8 +124,13 @@ const AltanerTemplateMarketplace = () => {
         </Typography>
       </Box>
 
+      {/* Popular Accounts Section */}
+
       {/* Template Categories */}
       <Box>
+        <Box sx={{ mb: 2 }}>
+          <PopularAccounts initialExpanded={false} />
+        </Box>
         <Stack spacing={1}>
           {ALTANER_CATEGORIES.map((category) => (
             <Box key={category.key}>
@@ -140,14 +146,14 @@ const AltanerTemplateMarketplace = () => {
 
           {/* Uncategorized section - for templates without a specific category */}
 
-          {/* <Box>
+          <Box>
             <AltanerSectionCategory
               category="uncategorized"
               title="From the community"
               initialExpanded={false}
               onTemplateClick={handleTemplateClick}
             />
-          </Box> */}
+          </Box>
         </Stack>
       </Box>
 

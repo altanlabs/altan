@@ -161,12 +161,10 @@ export const fetchTasks = (threadId) => async (dispatch, getState) => {
   dispatch(startLoadingTasks({ threadId }));
 
   try {
-    const response = await axios.post('https://api.altan.ai/galaxia/hook/IHsbsY', {
-      thread_id: threadId,
-    });
-
-    const tasks = response.data.tasks || [];
-
+    const response = await axios.get(
+      `https://cagi.altan.ai/tasks/?mainthread_id=${threadId}&order_by=created_at&ascending=false`,
+    );
+    const tasks = response.data.data || [];
     dispatch(setTasks({ threadId, tasks }));
     return tasks;
   } catch (error) {

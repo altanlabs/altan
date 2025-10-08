@@ -13,7 +13,7 @@ describe('Direct API Testing login...', () => {
       // Make a direct API call for authentication
       cy.request({
         method: 'POST',
-        url: `https://api.altan.ai/platform/auth/token?origin=${origin}&dev=${dev}`,
+        url: `https://auth.altan.ai/token/platform?origin=${origin}&dev=${dev}`,
         body: payload
       }).then((response) => {
         expect(response.status).to.eq(200);  // Expecting a 200 OK status

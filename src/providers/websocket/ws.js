@@ -26,9 +26,9 @@ import {
   addField,
   updateField,
   deleteField,
-  addTableRecord,
-  updateTableRecord,
-  deleteTableRecord,
+  integrateRealTimeUpdates,
+  fetchTables,
+  fetchSchemas,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -124,6 +124,10 @@ import {
 import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 
+const SOUND_IN = new Audio(
+  'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
+);
+
 // TODO: add other redux actions for agent, gate and form
 const TEMPLATE_ACTIONS = {
   template: {
@@ -177,6 +181,29 @@ const TEMPLATE_ACTIONS = {
 export const handleWebSocketEvent = async (data, user_id) => {
   console.log('handleWebSocketEvent', data.type);
   switch (data.type) {
+    case 'SchemaUpdate':
+      // Handle schema updates with targeted refetching
+      const { base_id, path } = data.data || {};
+
+      // Dispatch targeted refetch based on the path
+      try {
+        if (path.startsWith('columns/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else if (path.startsWith('tables/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else if (path.startsWith('schemas/')) {
+          dispatch(fetchSchemas(base_id));
+        } else if (path.startsWith('policies/')) {
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        } else {
+          dispatch(fetchSchemas(base_id));
+          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
+        }
+      } catch (error) {
+        console.error('❌ SchemaUpdate: Error during refetch', error);
+      }
+
+      break;
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
       break;
@@ -557,47 +584,76 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
     case 'RecordsNew':
-      // Extract table_id from data structure
-      const newTableId = data.table_id || data.data.table_id || data.data.id;
-      const newTableName = data.table_db_name || data.data.table_name;
-      if (data.data.records && Array.isArray(data.data.records)) {
-        data.data.records.forEach((record) => {
-          dispatch(
-            addTableRecord({
-              tableId: newTableId,
-              tableName: newTableName,
-              record: record,
-            }),
-          );
+      console.log('RecordsNew WS', data);
+      const newTableName = data.table_name || data.data?.table_name;
+      const newBaseId = data.base_id || data.data?.base_id;
+      const newRecords = data.records || data.data?.records;
+
+      if (newTableName && newBaseId && newRecords && Array.isArray(newRecords)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[newBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === newTableName || t.name === newTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                additions: newRecords,
+              }),
+            );
+          } else {
+            console.warn('Could not find table ID for:', { newTableName, newBaseId });
+          }
         });
       }
       break;
     case 'RecordsUpdate':
-      const updateTableId = data.data.table_id || data.data.id;
-      const tableName = data.data.table_name;
-      data.data.records.forEach((record) => {
-        dispatch(
-          updateTableRecord({
-            tableId: updateTableId,
-            tableName: tableName,
-            recordId: record.id,
-            changes: record,
-          }),
-        );
-      });
+      const updateTableName = data.table_name || data.data?.table_name;
+      const updateBaseId = data.base_id || data.data?.base_id;
+      const updateRecords = data.records || data.data?.records;
+
+      if (updateTableName && updateBaseId && updateRecords && Array.isArray(updateRecords)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[updateBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === updateTableName || t.name === updateTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                updates: updateRecords,
+              }),
+            );
+          }
+        });
+      }
       break;
     case 'RecordsDelete':
-      const deleteRecordsTableId = data.data.table_id || data.data.id;
-      const deleteTableName = data.data.table_name;
-      data.data.ids.forEach((recordId) => {
-        dispatch(
-          deleteTableRecord({
-            tableId: deleteRecordsTableId,
-            tableName: deleteTableName,
-            recordId: recordId,
-          }),
-        );
-      });
+      const deleteTableName = data.table_name || data.data?.table_name;
+      const deleteBaseId = data.base_id || data.data?.base_id;
+      const deleteIds = data.ids || data.data?.ids;
+
+      if (deleteTableName && deleteBaseId && deleteIds && Array.isArray(deleteIds)) {
+        // Dispatch a thunk to access state and integrate updates
+        dispatch((dispatch, getState) => {
+          const state = getState();
+          const base = state.bases?.bases?.[deleteBaseId];
+          const table = base?.tables?.items?.find(t => t.db_name === deleteTableName || t.name === deleteTableName);
+
+          if (table?.id) {
+            dispatch(
+              integrateRealTimeUpdates({
+                tableId: table.id,
+                deletions: deleteIds,
+              }),
+            );
+          }
+        });
+      }
       break;
     case 'FileUpdate' | 'FileDelete' | 'FileCreate':
       // console.log('data', data);

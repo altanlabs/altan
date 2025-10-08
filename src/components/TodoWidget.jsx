@@ -14,8 +14,6 @@ import {
   selectTasksError,
   selectTasksExpanded,
   setTasksExpanded,
-  selectThreadExpanded,
-  setThreadExpanded,
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
@@ -25,11 +23,18 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState(new Set());
 
+  // Agent avatar mapping
+  const agentAvatars = {
+    Database: 'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Genesis: 'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Flow: 'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Interface: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+  };
+
   const tasks = useSelector(selectTasksByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
   const isExpanded = useSelector(selectTasksExpanded(threadId));
-  const isThreadExpanded = useSelector(selectThreadExpanded(threadId));
 
   // Sort tasks by status priority: running -> ready -> to-do -> completed
   const sortedTasks = useMemo(() => {
@@ -79,6 +84,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   );
 
   // Only fetch tasks if we're inside an altaner context
+
   useEffect(() => {
     if (altanerId && threadId) {
       dispatch(fetchTasks(threadId));
@@ -205,46 +211,63 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
         {!isExpanded && runningTask && (
           <div className="flex items-center gap-1.5 ml-2">
             <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
-            {(() => {
-              try {
-                const taskName = runningTask?.task_name;
-                const safeTaskName =
-                  taskName !== null && taskName !== undefined && taskName !== ''
-                    ? String(taskName).trim()
-                    : 'Running task...';
 
-                if (!safeTaskName || safeTaskName.length === 0) {
+            {/* Assigned Agent Avatar in collapsed view */}
+            {runningTask.assigned_agent && agentAvatars[runningTask.assigned_agent] && (
+              <Tooltip title={`Assigned to: ${runningTask.assigned_agent}`}>
+                <div className="flex-shrink-0">
+                  <img
+                    src={agentAvatars[runningTask.assigned_agent]}
+                    alt={runningTask.assigned_agent}
+                    className="w-3.5 h-3.5 rounded-full border border-white/20 dark:border-gray-700/50 shadow-sm"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              </Tooltip>
+            )}
+
+            <div className="flex-1 min-w-0">
+              {(() => {
+                try {
+                  const taskName = runningTask?.task_name;
+                  const safeTaskName =
+                    taskName !== null && taskName !== undefined && taskName !== ''
+                      ? String(taskName).trim()
+                      : 'Running task...';
+
+                  if (!safeTaskName || safeTaskName.length === 0) {
+                    return (
+                      <span className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300">
+                        Running task...
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <TextShimmer
+                      className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300"
+                      duration={2}
+                    >
+                      {safeTaskName}
+                    </TextShimmer>
+                  );
+                } catch (error) {
+                  // eslint-disable-next-line no-console
+                  console.error('TextShimmer error in collapsed TodoWidget:', error, runningTask);
                   return (
                     <span className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300">
                       Running task...
                     </span>
                   );
                 }
-
-                return (
-                  <TextShimmer
-                    className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300"
-                    duration={2}
-                  >
-                    {safeTaskName}
-                  </TextShimmer>
-                );
-              } catch (error) {
-                // eslint-disable-next-line no-console
-                console.error('TextShimmer error in collapsed TodoWidget:', error, runningTask);
-                return (
-                  <span className="text-xs font-medium truncate leading-none text-gray-600 dark:text-gray-300">
-                    Running task...
-                  </span>
-                );
-              }
-            })()}
+              })()}
+            </div>
 
             {/* Compact action buttons */}
             {runningTask.subthread_id && (
               <div className="flex items-center gap-0.5 ml-1">
-
-
                 <Tooltip title={`Open task thread: ${runningTask.task_name}`}>
                   <button
                     onClick={(e) => {
@@ -264,7 +287,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
           </div>
         )}
       </div>
-
 
       {/* Compact Expandable Content */}
       <div
@@ -296,8 +318,24 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                     />
                   </div>
 
+                  {/* Assigned Agent Avatar */}
+                  {task.assigned_agent && agentAvatars[task.assigned_agent] && (
+                    <div className="flex-shrink-0">
+                      <Tooltip title={`Assigned to: ${task.assigned_agent}`}>
+                        <img
+                          src={agentAvatars[task.assigned_agent]}
+                          alt={task.assigned_agent}
+                          className="w-4 h-4 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm hover:shadow-md transition-shadow"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </Tooltip>
+                    </div>
+                  )}
+
                   {/* Task Content with Status-Based Styling */}
-                  <div className="flex-1 min-w-0 flex items-center">
+                  <div className="flex-1 min-w-0">
                     {task.status?.toLowerCase() === 'running' ? (
                       (() => {
                         try {

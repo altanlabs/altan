@@ -7,8 +7,18 @@ import reportWebVitals from './reportWebVitals';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import './index.css';
 
+// Initialize analytics
+import { initializeAnalytics } from './lib/analytics';
+import { setupGlobalErrorHandling } from './utils/errorTracking';
+
 // Initialize Microsoft Clarity
 Clarity.init('qdemnm0y9o');
+
+// Initialize Supabase Analytics
+initializeAnalytics();
+
+// Set up global error tracking
+setupGlobalErrorHandling();
 
 // ----------------------------------------------------------------------
 

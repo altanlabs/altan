@@ -9,6 +9,7 @@ import { useAuthContext } from '../../auth/useAuthContext';
 // config
 import { HEADER } from '../../config-global';
 // utils
+import useResponsive from '../../hooks/useResponsive';
 import { bgBlur } from '../../utils/cssStyles';
 
 // ----------------------------------------------------------------------
@@ -21,6 +22,8 @@ export default function Header({ isOffset }) {
   const theme = useTheme();
   const history = useHistory();
   const { logout } = useAuthContext();
+  const isDesktop = useResponsive('up', 'md');
+
   return (
     <AppBar
       color="transparent"
@@ -45,19 +48,26 @@ export default function Header({ isOffset }) {
           }),
         }}
       >
-        <Stack maxWidth={100}>
+        <div className="flex items-center max-w-[120px] px-1 mb-1">
           <img
             alt="Altan Logo Header"
             onClick={() => history.replace('/')}
-            style={{ cursor: 'pointer' }}
+            style={{
+              cursor: 'pointer',
+              height: '26px',
+              width: 'auto',
+            }}
             src={
               theme.palette.mode === 'dark'
-                ? '/logos/horizontalWhite.png'
-                : '/logos/horizontalBlack.png'
+                ? isDesktop
+                  ? '/logos/v2/bold/logoWhite.svg'
+                  : '/logos/v2/logoWhite.svg'
+                : isDesktop
+                  ? '/logos/v2/bold/logoBlack.svg'
+                  : '/logos/v2/logoBlack.svg'
             }
-            height={17}
           />
-        </Stack>
+        </div>
 
         <Stack
           direction="row"

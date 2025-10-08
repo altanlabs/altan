@@ -19,7 +19,7 @@ export const TestWebhook: React.FC<TestWebhookProps> = ({ webhook }) => {
     <>
       <InteractiveButton
         icon="uil:bolt"
-        title="Send a request to this webhook"
+        title="Send request"
         onClick={() => setOpen(true)}
         duration={8000}
         containerClassName="h-[40] border-transparent"

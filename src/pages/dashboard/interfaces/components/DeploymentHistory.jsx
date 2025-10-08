@@ -1,14 +1,14 @@
 import {
   Box,
-  List,
-  ListItem,
-  ListItemText,
   Typography,
   IconButton,
   Tooltip,
   ToggleButton,
   ToggleButtonGroup,
   Stack,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,11 +33,40 @@ const getStatusStyles = (status) => {
   }
 };
 
-const StyledListItem = styled(ListItem)(({ theme, status, isLive }) => ({
-  borderLeft: `4px solid ${getStatusStyles(status).color}`,
+const StyledDeploymentCard = styled(Card)(({ theme, isLive, coverUrl }) => ({
   marginBottom: theme.spacing(1),
-  paddingLeft: theme.spacing(2),
-  backgroundColor: isLive ? theme.palette.action.selected : 'transparent',
+  borderRadius: theme.spacing(2),
+  overflow: 'hidden',
+  position: 'relative',
+  minHeight: 120,
+  background: coverUrl
+    ? `linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%), url(${coverUrl})`
+    : isLive
+      ? 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'
+      : 'rgba(255,255,255,0.02)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  backdropFilter: 'blur(10px)',
+  border: isLive
+    ? `2px solid ${theme.palette.primary.main}20`
+    : `1px solid ${theme.palette.divider}`,
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[8],
+    border: `1px solid ${theme.palette.primary.main}40`,
+  },
+  '&::before': isLive ? {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+    zIndex: 1,
+  } : {},
 }));
 
 function DeploymentHistory({ ui, handleReload }) {
@@ -79,6 +108,22 @@ function DeploymentHistory({ ui, handleReload }) {
     }
   };
 
+  const handleCopyDeploymentId = async (deploymentId) => {
+    try {
+      await navigator.clipboard.writeText(deploymentId);
+      // Could add a toast notification here if available
+    } catch (error) {
+      console.error('Failed to copy deployment ID:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = deploymentId;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  };
+
   const VersionsList = () => {
     if (!ui?.deployments?.items) return null;
 
@@ -90,90 +135,199 @@ function DeploymentHistory({ ui, handleReload }) {
       .sort((a, b) => new Date(b.date_creation) - new Date(a.date_creation));
 
     return (
-      <List>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {filteredDeployments.map((deployment) => {
           const timeAgo = formatDistanceToNow(adjustDateForTimezone(deployment.date_creation), {
             addSuffix: true,
           });
           const commitMessage = deployment.meta_data?.message || 'No commit message';
           const isLive = deployment.id === liveDeploymentId;
+          const coverUrl = deployment.cover_url;
+          const deploymentUrl = deployment.meta_data?.deployment_info?.url;
+          const statusInfo = getStatusStyles(deployment.status);
 
           return (
-            <StyledListItem
+            <StyledDeploymentCard
               key={deployment.id}
               status={deployment.status}
               isLive={isLive}
+              coverUrl={coverUrl}
             >
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ color: 'inherit' }}>{commitMessage}</span>
-                    {isLive && (
-                      <Tooltip title="Current live version">
-                        <Iconify
-                          icon="mdi:radio-tower"
-                          width={16}
-                          sx={{ color: 'primary.main' }}
-                        />
-                      </Tooltip>
-                    )}
-                  </Box>
-                }
-                secondary={timeAgo}
-                primaryTypographyProps={{
-                  style: {
-                    fontSize: '0.875rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  },
+              <CardContent
+                sx={{
+                  p: 2.5,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  zIndex: 2,
+                  '&:last-child': { pb: 2.5 },
+                  cursor: deploymentUrl ? 'pointer' : 'default',
                 }}
-              />
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                {deployment.meta_data?.deployment_info?.url && (
-                  <Tooltip title="Preview deployment">
+                onClick={() => deploymentUrl && handlePreview(deploymentUrl)}
+              >
+                {/* Header */}
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          mb: 0.5,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          color: coverUrl ? 'white' : 'inherit',
+                          textShadow: coverUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none',
+                        }}
+                      >
+                        {commitMessage !== 'No commit message' ? commitMessage : 'Deployment'}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: '0.85rem',
+                          color: coverUrl ? 'rgba(255,255,255,0.9)' : 'text.secondary',
+                          textShadow: coverUrl ? '0 1px 2px rgba(0,0,0,0.8)' : 'none',
+                        }}
+                      >
+                        {timeAgo}
+                      </Typography>
+                    </Box>
+
+                    {/* Status and Live Indicator */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+                      {isLive && (
+                        <Chip
+                          label="LIVE"
+                          size="small"
+                          sx={{
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '0.7rem',
+                            height: 24,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                            '& .MuiChip-label': {
+                              px: 1,
+                            },
+                          }}
+                        />
+                      )}
+                      <Tooltip title={deployment.status}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            bgcolor: coverUrl ? 'rgba(255,255,255,0.2)' : `${statusInfo.color}20`,
+                            backdropFilter: coverUrl ? 'blur(10px)' : 'none',
+                            border: coverUrl ? '1px solid rgba(255,255,255,0.3)' : 'none',
+                          }}
+                        >
+                          <Iconify
+                            icon={statusInfo.icon}
+                            width={14}
+                            sx={{ color: coverUrl ? 'white' : statusInfo.color }}
+                          />
+                        </Box>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Actions */}
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', justifyContent: 'flex-end' }}>
+                  {deployment.meta_data?.deployment_info?.url && !coverUrl && (
+                    <Tooltip title="Preview deployment">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreview(deployment.meta_data.deployment_info.url);
+                        }}
+                        sx={{
+                          bgcolor: 'action.hover',
+                          '&:hover': { bgcolor: 'action.selected' },
+                        }}
+                      >
+                        <Iconify icon="mdi:eye" width={18} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title="Copy deployment ID">
                     <IconButton
                       size="small"
-                      onClick={() => handlePreview(deployment.meta_data.deployment_info.url)}
-                      color="inherit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyDeploymentId(deployment.id);
+                      }}
+                      sx={{
+                        bgcolor: coverUrl ? 'rgba(255,255,255,0.15)' : 'action.hover',
+                        backdropFilter: coverUrl ? 'blur(10px)' : 'none',
+                        border: coverUrl ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                        color: coverUrl ? 'white' : 'inherit',
+                        '&:hover': {
+                          bgcolor: coverUrl ? 'rgba(255,255,255,0.25)' : 'action.selected',
+                        },
+                      }}
                     >
-                      <Iconify
-                        icon="mdi:eye"
-                        width={20}
-                      />
+                      <Iconify icon="mdi:content-copy" width={18} />
                     </IconButton>
                   </Tooltip>
-                )}
-                <Tooltip title="Restore this version">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleRestore(deployment.deployment_id)}
-                    color="inherit"
-                    disabled={isRestoring}
-                  >
-                    <Iconify
-                      icon="mdi:restore"
-                      width={20}
-                    />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="View logs">
-                  <IconButton
-                    size="small"
-                    onClick={() => setSelectedDeploymentId(deployment.id)}
-                    color="inherit"
-                  >
-                    <Iconify
-                      icon="mdi:text-box-search"
-                      width={20}
-                    />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </StyledListItem>
+                  <Tooltip title="Restore this version">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRestore(deployment.deployment_id);
+                      }}
+                      disabled={isRestoring}
+                      sx={{
+                        bgcolor: coverUrl ? 'rgba(255,255,255,0.15)' : 'action.hover',
+                        backdropFilter: coverUrl ? 'blur(10px)' : 'none',
+                        border: coverUrl ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                        color: coverUrl ? 'white' : 'inherit',
+                        '&:hover': {
+                          bgcolor: coverUrl ? 'rgba(255,255,255,0.25)' : 'action.selected',
+                        },
+                      }}
+                    >
+                      <Iconify icon="mdi:restore" width={18} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="View logs">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDeploymentId(deployment.id);
+                      }}
+                      sx={{
+                        bgcolor: coverUrl ? 'rgba(255,255,255,0.15)' : 'action.hover',
+                        backdropFilter: coverUrl ? 'blur(10px)' : 'none',
+                        border: coverUrl ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                        color: coverUrl ? 'white' : 'inherit',
+                        '&:hover': {
+                          bgcolor: coverUrl ? 'rgba(255,255,255,0.25)' : 'action.selected',
+                        },
+                      }}
+                    >
+                      <Iconify icon="mdi:text-box-search" width={18} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </CardContent>
+            </StyledDeploymentCard>
           );
         })}
-      </List>
+      </Box>
     );
   };
 
@@ -186,61 +340,108 @@ function DeploymentHistory({ ui, handleReload }) {
     );
 
     return (
-      <List>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {sortedCommits.map((commit) => {
           const isCurrentCommit = commit.commit_hash === currentCommitSha;
+          const timeAgo = formatDistanceToNow(adjustDateForTimezone(commit.date_creation), {
+            addSuffix: true,
+          });
+
           return (
-            <StyledListItem
+            <StyledDeploymentCard
               key={commit.commit_hash}
               status="default"
               isLive={isCurrentCommit}
+              coverUrl={null}
             >
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{commit.message}</span>
-                    {isCurrentCommit && (
-                      <Tooltip title="Current commit">
-                        <Iconify
-                          icon="mdi:source-branch-check"
-                          width={16}
-                          sx={{ color: 'primary.main' }}
-                        />
-                      </Tooltip>
-                    )}
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {commit.message}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      {timeAgo}
+                    </Typography>
                   </Box>
-                }
-                secondary={formatDistanceToNow(adjustDateForTimezone(commit.date_creation), {
-                  addSuffix: true,
-                })}
-                primaryTypographyProps={{
-                  style: {
-                    fontSize: '0.875rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  },
-                }}
-              />
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <Tooltip title="Restore this version">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleRestore(commit.commit_hash, true)}
-                    color="inherit"
-                    disabled={isRestoring}
-                  >
-                    <Iconify
-                      icon="mdi:restore"
-                      width={20}
-                    />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </StyledListItem>
+
+                  {/* Current Commit Indicator */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+                    {isCurrentCommit && (
+                      <Chip
+                        label="CURRENT"
+                        size="small"
+                        sx={{
+                          bgcolor: 'primary.main',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.7rem',
+                          height: 24,
+                          '& .MuiChip-label': {
+                            px: 1,
+                          },
+                        }}
+                      />
+                    )}
+                    <Tooltip title="Git commit">
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          bgcolor: 'action.hover',
+                        }}
+                      >
+                        <Iconify
+                          icon="mdi:source-branch"
+                          width={14}
+                          sx={{ color: 'text.secondary' }}
+                        />
+                      </Box>
+                    </Tooltip>
+                  </Box>
+                </Box>
+
+                {/* Actions */}
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <Tooltip title="Restore this version">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRestore(commit.commit_hash, true)}
+                      disabled={isRestoring}
+                      sx={{
+                        bgcolor: 'action.hover',
+                        '&:hover': { bgcolor: 'action.selected' },
+                      }}
+                    >
+                      <Iconify icon="mdi:restore" width={18} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </CardContent>
+            </StyledDeploymentCard>
           );
         })}
-      </List>
+      </Box>
     );
   };
 

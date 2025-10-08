@@ -62,7 +62,7 @@ export const getUpdatedByColumnDef = ({ table }) => ({
   filter: true,
   mainMenuItems: ['sortAscending', 'sortDescending', 'separator', 'autoSizeThis', 'autoSizeAll'],
   cellRenderer: (params) => {
-    if (params.data.id === '+') return null;
+    if (!params.value) return null;
 
     // Use cached user data instead of making individual API calls
     return (

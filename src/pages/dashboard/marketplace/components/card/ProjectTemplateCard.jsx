@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../../components/iconify';
 
-const ProjectTemplateCard = ({ template }) => {
+const ProjectTemplateCard = ({ template, onClick }) => {
   const history = useHistory();
   const name = template.name || template.public_name || 'Unnamed Template';
   const iconUrl =
@@ -15,8 +15,17 @@ const ProjectTemplateCard = ({ template }) => {
 
   function getCoverUrl(template) {
     const selectedVersion = template.selected_version;
+    // Use the cover_url directly from selected_version if available (from new backend structure)
+    if (selectedVersion?.cover_url) {
+      return selectedVersion.cover_url;
+    }
+    // Fallback to deployment.cover_url for backward compatibility
     if (selectedVersion?.deployment?.cover_url) {
       return selectedVersion.deployment.cover_url;
+    }
+    // Fallback to build_metadata for backward compatibility
+    if (selectedVersion?.build_metadata?.meta_data?.cover_url) {
+      return selectedVersion.build_metadata.meta_data.cover_url;
     }
     return template.parent?.cover_url || '/assets/placeholder.svg';
   }
@@ -36,7 +45,12 @@ const ProjectTemplateCard = ({ template }) => {
       console.error('Error tracking project click:', error);
     }
 
-    history.push(`/template/${template.id}`);
+    // Use custom onClick if provided, otherwise navigate to template page
+    if (onClick) {
+      onClick(template);
+    } else {
+      history.push(`/template/${template.id}`);
+    }
   };
 
   return (
@@ -95,6 +109,7 @@ const ProjectTemplateCard = ({ template }) => {
 
 ProjectTemplateCard.propTypes = {
   template: PropTypes.object.isRequired,
+  onClick: PropTypes.func,
 };
 
 export default ProjectTemplateCard;

@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import React, { useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory } from 'react-router-dom';
 
@@ -14,6 +15,7 @@ import {
   selectDisplayMode,
   getAltanerById,
   clearCurrentAltaner,
+  loadDisplayModeForProject,
 } from '../../redux/slices/altaners';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
@@ -40,8 +42,10 @@ const transformProps = (type, props) => {
 const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
+  // console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
+  const chatPanelRef = React.useRef(null);
   const history = useHistory();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
@@ -52,9 +56,28 @@ export default function ProjectPage() {
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
 
+  // Programmatically collapse/expand chat panel based on display mode
+  React.useEffect(() => {
+    if (chatPanelRef.current) {
+      if (displayMode === 'preview') {
+        chatPanelRef.current.collapse();
+      } else {
+        chatPanelRef.current.expand();
+      }
+    }
+  }, [displayMode]);
+
   const handleMobileToggle = React.useCallback((view) => {
     setMobileActiveView(view);
   }, []);
+
+  // Handle item selection for flows/agents
+  const handleItemSelect = React.useCallback((selectedItemId) => {
+    history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
+  }, [history, altanerId, componentId]);
+
+  // Check if we're in fullscreen mobile mode
+  const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
   // Get active component from URL path param
   const activeComponentId = componentId || null;
   // Fetch the altaner on component mount
@@ -65,6 +88,13 @@ export default function ProjectPage() {
     return () => {
       dispatch(clearCurrentAltaner());
     };
+  }, [altanerId]);
+
+  // Load display mode preference for this project
+  useEffect(() => {
+    if (altanerId) {
+      dispatch(loadDisplayModeForProject(altanerId));
+    }
   }, [altanerId]);
 
   // Get the current component based on the active ID
@@ -201,22 +231,38 @@ export default function ProjectPage() {
     return <LoadingScreen />;
   }
 
-  // Mobile layout
+  // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {
     const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
 
-    return (
-      <CompactLayout
-        title={altaner?.name || 'Project'}
-        noPadding
-        drawerVisible={false}
+    // Always render mobile as portal with single Room instance
+    const mobileContent = (
+      <div 
+        className="fixed inset-0 w-full h-full"
+        style={{ 
+          zIndex: isFullscreenMobile ? 9999 : 1000,
+          position: 'fixed',
+          width: '100vw',
+          height: isFullscreenMobile ? '100dvh' : 'calc(100dvh - 64px)',
+          overflow: 'hidden',
+          top: isFullscreenMobile ? 0 : '64px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
       >
         <div
-          className="relative h-full"
+          className="relative h-full w-full"
           ref={mobileContainerRef}
+          style={{
+            height: '100%',
+            width: '100vw',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
         >
           <Room
-            key={altaner?.room_id}
+            key={`mobile-room-${altaner?.room_id}`}
             roomId={altaner?.room_id}
             header={false}
             previewComponent={previewComponent}
@@ -233,6 +279,8 @@ export default function ProjectPage() {
               zIndex: 1000,
               transform: 'translate3d(0, 0, 0)',
               WebkitTransform: 'translate3d(0, 0, 0)',
+              position: 'absolute',
+              width: '100%',
             }}
           >
             <FloatingTextArea
@@ -243,10 +291,26 @@ export default function ProjectPage() {
               mobileActiveView={mobileActiveView}
               onMobileToggle={handleMobileToggle}
               renderCredits={true}
+              activeComponent={currentComponent}
+              allComponents={sortedComponents}
+              isFullscreen={isFullscreenMobile}
+              currentItemId={itemId}
+              onItemSelect={handleItemSelect}
             />
           </div>
         </div>
-      </CompactLayout>
+      </div>
+    );
+
+    // Always render as portal to maintain consistent state
+    return (
+      <>
+        {/* Empty placeholder for routing */}
+        <div style={{ display: 'none' }} />
+        
+        {/* Single mobile portal - maintains Room state */}
+        {createPortal(mobileContent, document.body)}
+      </>
     );
   }
 
@@ -262,75 +326,67 @@ export default function ProjectPage() {
           component="main"
           sx={{ flexGrow: 1, display: 'flex', height: '100%' }}
         >
-          {displayMode === 'both' ? (
-            // Both mode: Use resizable panels
-            <PanelGroup
-              direction="horizontal"
-              className="w-full h-full"
+          {/* Always use PanelGroup layout to prevent re-renders when toggling display mode */}
+          <PanelGroup
+            direction="horizontal"
+            className="w-full h-full"
+          >
+            {/* Chat Panel - collapses to 0 when in preview mode */}
+            <Panel
+              ref={chatPanelRef}
+              id="chat-panel"
+              order={1}
+              defaultSize={30}
+              minSize={20}
+              maxSize={65}
+              collapsible={true}
+              defaultCollapsed={displayMode === 'preview'}
+              collapsedSize={0}
+              className="overflow-hidden"
             >
-              {/* Chat Panel */}
-              <Panel
-                defaultSize={40}
-                minSize={20}
-                maxSize={65}
-                className="overflow-hidden"
-              >
-                {altaner?.room_id && (
-                  <Box
-                    sx={{
-                      height: '100%',
-                      position: 'relative',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Room
-                      key={altaner?.room_id}
-                      roomId={altaner?.room_id}
-                      header={false}
-                      renderCredits={true}
-                      renderFeedback={true}
-                      settings={false}
-                      tabs={true}
-                    />
-                  </Box>
-                )}
-              </Panel>
-
-              {/* Resize Handle */}
-              <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
-              {/* Preview Panel */}
-              <Panel
-                defaultSize={70}
-                minSize={35}
-                className="overflow-auto min-w-0"
-              >
-                <Box sx={{ height: '100%', position: 'relative' }}>
-                  {activeComponentId && currentComponent && renderComponent()}
+              {altaner?.room_id && (
+                <Box
+                  sx={{
+                    height: '100%',
+                    position: 'relative',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Room
+                    key={altaner?.room_id}
+                    roomId={altaner?.room_id}
+                    header={false}
+                    renderCredits={true}
+                    renderFeedback={true}
+                    settings={false}
+                    tabs={true}
+                  />
                 </Box>
-              </Panel>
-            </PanelGroup>
-          ) : displayMode === 'chat' ? (
-            // Chat only mode: Full screen Room
-            altaner?.room_id && (
-              <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                <Room
-                  key={altaner?.room_id}
-                  roomId={altaner?.room_id}
-                  header={false}
-                  renderCredits={true}
-                  renderFeedback={true}
-                  settings={false}
-                  tabs={true}
-                />
+              )}
+            </Panel>
+
+            {/* Resize Handle - only show in both mode */}
+            {displayMode === 'both' && (
+              <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
+                <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
+                <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
+              </PanelResizeHandle>
+            )}
+
+            {/* Preview Panel */}
+            <Panel
+              id="preview-panel"
+              order={2}
+              defaultSize={60}
+              minSize={35}
+              className="overflow-auto min-w-0"
+            >
+              <Box sx={{ height: '100%', position: 'relative' }}>
+                {activeComponentId && currentComponent && renderComponent()}
               </Box>
-            )
-          ) : (
-            // Preview only mode: Full screen preview
-            <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-              {activeComponentId && currentComponent && renderComponent()}
-            </Box>
-          )}
+            </Panel>
+          </PanelGroup>
         </Box>
       </Box>
     </CompactLayout>

@@ -2,15 +2,29 @@ import { Box, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import React from 'react';
 
+import { useAnalytics } from '../../hooks/useAnalytics';
 import Iconify from '../iconify';
 
 const AltanerTemplateCard = ({ template, onClick }) => {
+  const { trackOpenTemplate } = useAnalytics();
   const name = template?.parent?.name || template.name || template.public_name || 'Unnamed Template';
   const coverUrl = template.cover_url || '/assets/placeholder.svg';
   const remixCount = template.remix_count || Math.floor(Math.random() * 500) + 10;
 
   const handleClick = () => {
-    // Track template click event
+    // Track template click event with Altan Analytics
+    try {
+      trackOpenTemplate(template.id, name, {
+        template_price: template.price || 0,
+        remix_count: remixCount,
+        template_category: template.category,
+        view_source: 'template_card',
+      });
+    } catch (error) {
+      console.error('Error tracking template open:', error);
+    }
+
+    // Keep Google Analytics for backward compatibility
     try {
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'open_template', {
@@ -21,7 +35,7 @@ const AltanerTemplateCard = ({ template, onClick }) => {
         });
       }
     } catch (error) {
-      console.error('Error tracking template click:', error);
+      console.error('Error tracking template click with GA:', error);
     }
 
     if (onClick) {

@@ -11,12 +11,17 @@ import { MenuModule } from '@ag-grid-enterprise/menu';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
 import { RowGroupingModule } from '@ag-grid-enterprise/row-grouping';
+import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
-import { useTheme } from '@mui/material';
-import { debounce, maxBy } from 'lodash';
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import LastPageIcon from '@mui/icons-material/LastPage';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { useTheme, Box, IconButton, Typography, Select, MenuItem } from '@mui/material';
+import { debounce, maxBy } from 'lodash-es';
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import { createColumnDefs } from './columns/index.js';
 import AttachmentEditor from './editors/AttachmentEditor';
@@ -24,24 +29,27 @@ import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
 import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
+import { useWebSocketIntegration } from './helpers/useWebSocketIntegration.js';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { headerHeight, defaultColDef } from './utils/settings.js';
 import {
   queryTableRecords,
   selectDatabaseQuickFilter,
-  setDatabaseRecordCount,
-  loadAllTableRecords,
+  selectDatabaseSearching,
+  loadTableRecords,
   importCSVToTable,
+  selectTablePaginationInfo,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
 import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
-import CreateFieldDialog from '../../fields/CreateFieldDialog.jsx';
+import Iconify from '../../../iconify';
+import CreateFieldDrawer from '../../fields/CreateFieldDrawer.jsx';
 import EditFieldDrawer from '../../fields/EditFieldDrawer.jsx';
 import ImportCSVDrawer from '../../import/ImportCSVDrawer';
-import CreateRecordDialog from '../../records/CreateRecordDialog';
-import EditRecordDialog from '../../records/EditRecordDialog';
+import CreateRecordDrawer from '../../records/CreateRecordDrawer';
+import EditRecordDrawer from '../../records/EditRecordDrawer';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 
@@ -60,6 +68,7 @@ const fileToBase64 = (file) => {
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
+  ServerSideRowModelModule,
   RowGroupingModule,
   GridChartsModule,
   MenuModule,
@@ -92,16 +101,18 @@ export const GridView = memo(
     onUpdateRecord,
     onDeleteRecords,
     onDuplicateRecord,
-    // Pagination props to pass up to parent
-    onPaginationChange,
     triggerImport,
+    baseId,
   }) => {
     const theme = useTheme();
     const gridRef = useRef();
     const history = useHistory();
     const location = useLocation();
+    const { recordId: urlRecordId } = useParams();
     const members = useSelector((state) => selectAccount(state)?.members || []);
     const quickFilterText = useSelector(selectDatabaseQuickFilter);
+    const isSearching = useSelector(selectDatabaseSearching);
+    const paginationInfo = useSelector((state) => selectTablePaginationInfo(state, table?.id));
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -109,12 +120,6 @@ export const GridView = memo(
     const [editRecordId, setEditRecordId] = useState(null);
     const [editField, setEditField] = useState(null);
     const [isReady, setIsReady] = useState(false);
-    const [paginationInfo, setPaginationInfo] = useState({
-      currentPage: 0,
-      totalPages: 0,
-      pageSize: 50,
-      isLastPageFound: false,
-    });
 
     // Use ref for cols to avoid unnecessary re-renders
     const colsRef = useRef([]);
@@ -136,7 +141,14 @@ export const GridView = memo(
       (rowData) => {
         if (!rowData?.length) return {};
 
-        const emailFields = fields.filter((field) => field.type === 'email');
+        // Check for fields named 'email' or containing 'email' (PostgreSQL types)
+        const emailFields = fields.filter(
+          (field) =>
+            field.name === 'email' ||
+            field.name.includes('email') ||
+            field.db_field_name === 'email' ||
+            field.db_field_name.includes('email'),
+        );
         if (!emailFields.length) return {};
 
         const widths = {};
@@ -170,49 +182,166 @@ export const GridView = memo(
       [optimizedRowData, getEmailColumnWidths],
     );
 
-    // Add a batch update manager
-    const batchUpdateRef = useRef({
-      updates: new Map(),
-      timeoutId: null,
+    // High-frequency async transaction manager for real-time updates
+    const asyncTransactionManager = useRef({
+      pendingUpdates: new Map(),
+      pendingAdds: [],
+      pendingRemoves: [],
+      isProcessing: false,
+      transactionCount: 0,
     });
 
-    // Batch process grid updates with optimized transaction
-    const processBatchUpdates = useCallback(() => {
-      if (!gridRef.current?.api || batchUpdateRef.current.updates.size === 0) return;
+    // Apply async transactions for high-frequency updates
+    const applyAsyncTransaction = useCallback((transaction, callback) => {
+      if (!gridRef.current?.api || !isMounted.current) {
+        callback?.(null);
+        return;
+      }
 
-      const updates = Array.from(batchUpdateRef.current.updates.values());
-
-      // Apply updates in a single transaction with optimized settings
-      gridRef.current.api.applyTransaction({
-        update: updates,
-        suppressFlash: true,
-        suppressVerticalScroll: true,
-        suppressColumnVirtualisation: true,
-      });
-
-      batchUpdateRef.current.updates.clear();
+      try {
+        gridRef.current.api.applyTransactionAsync(
+          {
+            ...transaction,
+            suppressFlash: true,
+            suppressVerticalScroll: true,
+          },
+          (result) => {
+            asyncTransactionManager.current.transactionCount++;
+            callback?.(result);
+          },
+        );
+      } catch (error) {
+        console.error('Error applying async transaction:', error);
+        callback?.(null);
+      }
     }, []);
 
-    // Handle record updates in batches
+    // Handle record updates using async transactions
     const handleRecordUpdate = useCallback(
-      (recordId, changes) => {
-        if (!isMounted.current) return;
+      (recordId, changes, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
 
-        // Add update to batch
-        batchUpdateRef.current.updates.set(recordId, changes);
+        const manager = asyncTransactionManager.current;
 
-        // Clear existing timeout
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
+        if (isHighFrequency) {
+          // For high-frequency updates, batch them
+          manager.pendingUpdates.set(recordId, { ...changes, id: recordId });
+        } else {
+          // For single updates, apply immediately with async transaction
+          applyAsyncTransaction({
+            update: [{ ...changes, id: recordId }],
+          });
         }
-
-        // Schedule batch update
-        batchUpdateRef.current.timeoutId = setTimeout(() => {
-          processBatchUpdates();
-        }, 50); // 50ms batch window
       },
-      [processBatchUpdates],
+      [applyAsyncTransaction],
     );
+
+    // Handle record additions using async transactions
+    const handleRecordAdd = useCallback(
+      (record, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+
+        if (isHighFrequency) {
+          // For high-frequency adds, batch them
+          manager.pendingAdds.push(record);
+        } else {
+          // For single adds, apply immediately with async transaction
+          applyAsyncTransaction({
+            add: [record],
+          });
+        }
+      },
+      [applyAsyncTransaction],
+    );
+
+    // Handle record deletions using async transactions
+    const handleRecordDelete = useCallback(
+      (recordIds, isHighFrequency = false) => {
+        if (!isMounted.current || !gridRef.current?.api) return;
+
+        const manager = asyncTransactionManager.current;
+        const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+
+        if (isHighFrequency) {
+          // For high-frequency deletes, batch them
+          manager.pendingRemoves.push(...ids.map((id) => ({ id })));
+        } else {
+          // For single deletes, apply immediately with async transaction
+          applyAsyncTransaction({
+            remove: ids.map((id) => ({ id })),
+          });
+        }
+      },
+      [applyAsyncTransaction],
+    );
+
+    // WebSocket integration for real-time updates
+    const {
+      handleWebSocketUpdate,
+      handleWebSocketAdd,
+      handleWebSocketDelete,
+      forceFlush: flushWebSocketUpdates,
+      clearUpdateFlags,
+      getBufferStats,
+    } = useWebSocketIntegration(table?.id, handleRecordUpdate, handleRecordAdd, handleRecordDelete);
+
+    // Flush pending high-frequency transactions
+    const flushPendingTransactions = useCallback(() => {
+      if (!gridRef.current?.api || !isMounted.current) return;
+
+      const manager = asyncTransactionManager.current;
+      if (manager.isProcessing) return;
+
+      const hasUpdates = manager.pendingUpdates.size > 0;
+      const hasAdds = manager.pendingAdds.length > 0;
+      const hasRemoves = manager.pendingRemoves.length > 0;
+
+      if (!hasUpdates && !hasAdds && !hasRemoves) return;
+
+      manager.isProcessing = true;
+
+      const transaction = {};
+
+      if (hasUpdates) {
+        transaction.update = Array.from(manager.pendingUpdates.values());
+        manager.pendingUpdates.clear();
+      }
+
+      if (hasAdds) {
+        transaction.add = [...manager.pendingAdds];
+        manager.pendingAdds.length = 0;
+      }
+
+      if (hasRemoves) {
+        transaction.remove = [...manager.pendingRemoves];
+        manager.pendingRemoves.length = 0;
+      }
+
+      applyAsyncTransaction(transaction, () => {
+        manager.isProcessing = false;
+      });
+    }, [applyAsyncTransaction]);
+
+    // Auto-flush pending transactions every 100ms for high-frequency updates
+    useEffect(() => {
+      const interval = setInterval(() => {
+        flushPendingTransactions();
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+        // Flush any remaining transactions on cleanup
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions:', error);
+          }
+        }
+      };
+    }, [flushPendingTransactions]);
 
     useEffect(() => {
       isMounted.current = true;
@@ -220,6 +349,8 @@ export const GridView = memo(
         isMounted.current = false;
       };
     }, []);
+
+    // Use AG-Grid's built-in client-side filtering - much simpler and no server loops
 
     // Simplified initial data loading logic
     useEffect(() => {
@@ -231,7 +362,7 @@ export const GridView = memo(
 
     // Separate effect for handling ready state
     useEffect(() => {
-      if (!isReady && Array.isArray(records) && Array.isArray(fields) && localRowData?.length > 0) {
+      if (!isReady && Array.isArray(records) && Array.isArray(fields)) {
         // Use requestAnimationFrame to ensure we're outside React's rendering phase
         requestAnimationFrame(() => {
           if (isMounted.current) {
@@ -239,14 +370,16 @@ export const GridView = memo(
           }
         });
       }
-    }, [isReady, records, fields, localRowData]);
+    }, [isReady, records, fields]);
 
     const handleExpandRecord = useCallback(
       (recordId) => {
         setEditRecordId(recordId);
-        history.push(`${location.pathname}/records/${recordId}`);
+        // Simplify URL: remove /views/viewId since it's redundant (always "default")
+        const basePath = location.pathname.replace(/\/views\/[^/]+/, '');
+        history.push(`${basePath}/records/${recordId}`);
       },
-      [history.push, location.pathname],
+      [history, location.pathname],
     );
 
     const getContextMenuItems = useCallback(
@@ -270,46 +403,18 @@ export const GridView = memo(
       [onDeleteRecords, onDuplicateRecord, handleExpandRecord, onAddRecord, onUpdateRecord],
     );
 
-    const getCommonFieldMenuItems = useCallback((field, params) => {
-      return createFieldContextMenuItems(field, params, setEditField, table.id);
-    }, []);
+    const getCommonFieldMenuItems = useCallback(
+      (field, params) => {
+        return createFieldContextMenuItems(field, params, setEditField, table?.id);
+      },
+      [table?.id],
+    );
 
     const onGridReady = useCallback((params) => {
       gridRef.current = params;
       initialGridSetupComplete.current = true;
-      const api = params.api;
-      if (!api) return;
-
-      // Add direct keyboard shortcut handler for copy
-      document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-          const selectedCells = api.getCellRanges();
-          const focusedCell = api.getFocusedCell();
-
-          if (selectedCells?.length > 0 || focusedCell) {
-            setTimeout(() => {
-              api.copySelectedRangeToClipboard(false);
-            }, 0);
-          }
-        }
-      });
-
-      // Initial focus setup
-      // In newer AG-Grid, columnApi is available directly from api
-      // Set initial column sizes once
-      api.sizeColumnsToFit();
-
-      api.addEventListener('firstDataRendered', () => {
-        const displayedColumns = api.getAllDisplayedColumns();
-        if (displayedColumns?.length) {
-          api.setFocusedCell(0, displayedColumns[0]);
-        }
-        // Lock column sizes after initial render
-        displayedColumns.forEach((col) => {
-          const width = col.getActualWidth();
-          api.setColumnWidth(col, width, true);
-        });
-      });
+      // Remove all immediate API calls that cause flushSync issues
+      // Grid will work fine without these optimizations
     }, []);
 
     // Modified handler for cell value changes
@@ -317,19 +422,43 @@ export const GridView = memo(
       async (params) => {
         if (!isMounted.current || !params?.data) return;
 
+        // eslint-disable-next-line no-console
+        console.log('🔄 onCellValueChanged:', {
+          rowId: params.data.id,
+          isNewRow: params.data.id === '+',
+          column: params.column.colId,
+          newValue: params.newValue,
+        });
+
         try {
-          if (params.data.id === '+') {
-            const fieldsPayload = {};
+          // Check if this is the new record row
+          const isNewRecord =
+            params.data.id === '__new__' ||
+            params.data.id === '+' ||
+            !params.data.id ||
+            params.data.id === '';
+
+          if (isNewRecord) {
+            const recordPayload = {};
             Object.entries(params.data).forEach(([key, value]) => {
               if (key !== 'id' && value !== '' && value !== null && value !== undefined) {
-                fieldsPayload[key] = value;
+                recordPayload[key] = value;
               }
             });
 
-            if (Object.keys(fieldsPayload).length > 0) {
-              const result = await onAddRecord({ records: [{ fields: fieldsPayload }] });
+            if (Object.keys(recordPayload).length > 0) {
+              const result = await onAddRecord([recordPayload]);
               if (result?.records?.[0] && gridRef.current?.api) {
-                handleRecordUpdate(result.records[0].id, result.records[0]);
+                // Use async transaction for the new record
+                handleRecordAdd(result.records[0]);
+                // Also update the local row data to reflect the change from new row to actual record
+                setLocalRowData((prevRowData) =>
+                  prevRowData.map((row) => {
+                    const isNewRow =
+                      row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
+                    return isNewRow ? result.records[0] : row;
+                  }),
+                );
               }
             }
           } else {
@@ -337,11 +466,13 @@ export const GridView = memo(
             try {
               const updatedRecord = await onUpdateRecord(params.data.id, changes);
               if (updatedRecord && gridRef.current?.api) {
+                // Use async transaction for the update
                 handleRecordUpdate(params.data.id, { ...params.data, ...changes });
               }
-            } catch (error) {
-              // console.error('Error updating record:', error);
+            } catch {
+              // console.error('Error updating record');
               if (gridRef.current?.api) {
+                // Revert the change using async transaction
                 handleRecordUpdate(params.data.id, {
                   ...params.data,
                   [params.column.colId]: params.oldValue,
@@ -349,8 +480,8 @@ export const GridView = memo(
               }
             }
           }
-        } catch (error) {
-          // console.error('Error in cell value change handler:', error);
+        } catch {
+          // console.error('Error in cell value change handler');
         }
       },
       [onAddRecord, onUpdateRecord, handleRecordUpdate],
@@ -358,45 +489,14 @@ export const GridView = memo(
 
     const onCellKeyPress = useCallback(
       (e) => {
-        if (e.event.key === 'Enter' && e.data.id === '+') {
+        const isNewRecord =
+          e.data.id === '__new__' || e.data.id === '+' || !e.data.id || e.data.id === '';
+        if (e.event.key === 'Enter' && isNewRecord) {
           onCellValueChanged(e);
         }
       },
       [onCellValueChanged],
     );
-
-    // Pagination functions
-    const onPaginationChanged = useCallback(() => {
-      if (!gridRef.current?.api) return;
-
-      const api = gridRef.current.api;
-      setPaginationInfo({
-        currentPage: api.paginationGetCurrentPage(),
-        totalPages: api.paginationGetTotalPages(),
-        pageSize: api.paginationGetPageSize(),
-        isLastPageFound: api.paginationIsLastPageFound(),
-      });
-    }, []);
-
-    const paginationGoToFirstPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToFirstPage();
-    }, []);
-
-    const paginationGoToLastPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToLastPage();
-    }, []);
-
-    const paginationGoToNextPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToNextPage();
-    }, []);
-
-    const paginationGoToPreviousPage = useCallback(() => {
-      if (!gridRef.current?.api) return;
-      gridRef.current.api.paginationGoToPreviousPage();
-    }, []);
 
     const columnDefs = useMemo(() => {
       const defs = createColumnDefs({
@@ -407,9 +507,16 @@ export const GridView = memo(
         setShowFieldDialog: () => setShowFieldDialog(true),
         getCommonFieldMenuItems,
         onEditField: setEditField, // Add direct edit field handler
+        baseId,
         // Add email column widths to column definitions
         getAdditionalColumnProps: (field) => {
-          if (field.type === 'email' && emailColumnWidths[field.db_field_name]) {
+          // Check for email fields by name (PostgreSQL doesn't have 'email' type)
+          const isEmailField =
+            field.name === 'email' ||
+            field.name.includes('email') ||
+            field.db_field_name === 'email' ||
+            field.db_field_name.includes('email');
+          if (isEmailField && emailColumnWidths[field.db_field_name]) {
             return {
               width: emailColumnWidths[field.db_field_name],
               suppressSizeToFit: true, // Prevent auto-resizing
@@ -430,8 +537,15 @@ export const GridView = memo(
           headerCheckboxSelection: true,
           // Only filter checked rows when filtering
           headerCheckboxSelectionFilteredOnly: true,
-          // Don't allow selecting the '+' row
-          checkboxSelectionDisabled: (params) => params.data?.id === '+',
+          // Don't allow selecting the new record row
+          checkboxSelectionDisabled: (params) => {
+            const isNewRecord =
+              params.data?.id === '__new__' ||
+              params.data?.id === '+' ||
+              !params.data?.id ||
+              params.data?.id === '';
+            return isNewRecord;
+          },
           // Make the column a bit wider to fit the checkbox
           width: (firstCol.width || 100) + 20,
         };
@@ -449,23 +563,20 @@ export const GridView = memo(
       getCommonFieldMenuItems,
       setEditField,
       emailColumnWidths,
+      baseId,
     ]);
 
     // Keep track of which record-IDs we’ve already fetched
     const fetchedRef = useRef(new Map());
 
     // Extract reference fields when the table schema changes
+    // Note: Reference fields are now identified by foreign key relationships in pg-meta
     const referenceFields = useMemo(() => {
-      if (!table || !table.fields || !table.fields.items) return [];
-      return table.fields.items.filter((field) => {
-        return (
-          field.type === 'reference' &&
-          field.options &&
-          field.options.reference_options &&
-          field.options.reference_options.foreign_table
-        );
-      });
-    }, [table && table.fields && table.fields.items]);
+      if (!table?.fields?.items) return [];
+      // For now, disable reference field prefetching until we implement proper FK detection
+      // TODO: Use table.relationships from pg-meta to identify reference fields
+      return [];
+    }, [table?.fields?.items]);
 
     // Only dispatch queries for *new* related IDs
     const fetchRelatedRecords = useCallback(
@@ -514,7 +625,7 @@ export const GridView = memo(
           }
         });
       },
-      [dispatch, referenceFields],
+      [referenceFields],
     );
 
     // Create a stable debounced function just once
@@ -531,50 +642,41 @@ export const GridView = memo(
       };
     }, [records, debouncedFetch]);
 
+    // Listen for async transactions applied event for debugging
+    const onAsyncTransactionsApplied = useCallback((event) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Async transactions applied:', {
+          results: event.results?.length || 0,
+          totalTransactions: asyncTransactionManager.current.transactionCount,
+        });
+      }
+    }, []);
+
+    // Cleanup async transactions on unmount
     useEffect(() => {
       return () => {
-        if (batchUpdateRef.current.timeoutId) {
-          clearTimeout(batchUpdateRef.current.timeoutId);
+        if (gridRef.current?.api) {
+          try {
+            gridRef.current.api.flushAsyncTransactions();
+          } catch (error) {
+            console.error('Error flushing async transactions on cleanup:', error);
+          }
         }
+        // Clear any pending transactions
+        const manager = asyncTransactionManager.current;
+        manager.pendingUpdates.clear();
+        manager.pendingAdds.length = 0;
+        manager.pendingRemoves.length = 0;
       };
     }, []);
 
     // Add data loading states to show in the UI
     // const isDataLoading = !isReady || !initialGridSetupComplete.current;
 
-    // Pass pagination info up to parent components
-    useEffect(() => {
-      if (onPaginationChange) {
-        onPaginationChange({
-          paginationInfo,
-          handlers: {
-            onGoToFirstPage: paginationGoToFirstPage,
-            onGoToLastPage: paginationGoToLastPage,
-            onGoToNextPage: paginationGoToNextPage,
-            onGoToPreviousPage: paginationGoToPreviousPage,
-          },
-        });
-      }
-    }, [
-      paginationInfo,
-      onPaginationChange,
-      paginationGoToFirstPage,
-      paginationGoToLastPage,
-      paginationGoToNextPage,
-      paginationGoToPreviousPage,
-    ]);
-
-    // Update record count in Redux when data changes
-    useEffect(() => {
-      if (localRowData?.length !== undefined) {
-        dispatch(setDatabaseRecordCount(localRowData.length));
-      }
-    }, [localRowData?.length]);
-
     // Check if table is empty (no real records, only the '+' row for new records)
     const hasRealRecords = useMemo(() => {
       if (!Array.isArray(records)) return false;
-      return records.some(record => record && record.id !== '+');
+      return records.some((record) => record && record.id !== '+');
     }, [records]);
 
     // Handler for CSV import
@@ -583,59 +685,65 @@ export const GridView = memo(
     }, []);
 
     // Handler for actual import process
-    const handleCSVImport = useCallback(async (file, previewData) => {
-      try {
-        // Step 1: Upload the CSV file as media to get a URL
-        const mediaUrl = await dispatch(createMedia({
-          fileName: file.name,
-          fileContent: await fileToBase64(file),
-          fileType: file.type || 'text/csv',
-        }));
-
-        if (!mediaUrl) {
-          throw new Error('Failed to upload CSV file');
-        }
-
-        // Step 2: Create column mapping from CSV headers to table fields
-        const columnMapping = {};
-        const tableFields = fields || [];
-        // Map CSV headers to database field names
-        previewData.headers.forEach((csvHeader, index) => {
-          // Try to find a matching field by name (case insensitive)
-          const matchingField = tableFields.find((field) =>
-            field.name.toLowerCase() === csvHeader.toLowerCase() ||
-            field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
+    const handleCSVImport = useCallback(
+      async (file, previewData) => {
+        try {
+          // Step 1: Upload the CSV file as media to get a URL
+          const mediaUrl = await dispatch(
+            createMedia({
+              fileName: file.name,
+              fileContent: await fileToBase64(file),
+              fileType: file.type || 'text/csv',
+            }),
           );
 
-          if (matchingField) {
-            columnMapping[csvHeader] = matchingField.db_field_name;
-          } else {
-            // If no exact match, use index-based mapping
-            columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
+          if (!mediaUrl) {
+            throw new Error('Failed to upload CSV file');
           }
-        });
 
-        // Step 3: Call the import endpoint
-        const importData = {
-          file_url: mediaUrl,
-          column_mapping: columnMapping,
-          has_header: true,
-          batch_size: 1000,
-          use_staging: false,
-          validate_only: false,
-        };
+          // Step 2: Create column mapping from CSV headers to table fields
+          const columnMapping = {};
+          const tableFields = fields || [];
+          // Map CSV headers to database field names
+          previewData.headers.forEach((csvHeader, index) => {
+            // Try to find a matching field by name (case insensitive)
+            const matchingField = tableFields.find(
+              (field) =>
+                field.name.toLowerCase() === csvHeader.toLowerCase() ||
+                field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
+            );
 
-        const response = await dispatch(importCSVToTable(table.id, importData));
+            if (matchingField) {
+              columnMapping[csvHeader] = matchingField.db_field_name;
+            } else {
+              // If no exact match, use index-based mapping
+              columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
+            }
+          });
 
-        // Refresh the table records after successful import
-        await dispatch(loadAllTableRecords(table.id, true));
+          // Step 3: Call the import endpoint
+          const importData = {
+            file_url: mediaUrl,
+            column_mapping: columnMapping,
+            has_header: true,
+            batch_size: 1000,
+            use_staging: false,
+            validate_only: false,
+          };
 
-        return response;
-      } catch (error) {
-        // console.error('CSV import error:', error);
-        throw error;
-      }
-    }, [fields, table?.id]);
+          const response = await dispatch(importCSVToTable(table.id, importData));
+
+          // Refresh the table records after successful import
+          await dispatch(loadTableRecords(table.id, { forceReload: true }));
+
+          return response;
+        } catch (error) {
+          // console.error('CSV import error:', error);
+          throw error;
+        }
+      },
+      [fields, table?.id],
+    );
 
     // Watch for import trigger from context menu
     useEffect(() => {
@@ -643,6 +751,34 @@ export const GridView = memo(
         setShowImportDrawer(true);
       }
     }, [triggerImport]);
+
+    // Auto-open edit drawer when recordId is in URL
+    useEffect(() => {
+      if (urlRecordId && urlRecordId !== editRecordId) {
+        setEditRecordId(urlRecordId);
+      }
+    }, [urlRecordId, editRecordId]);
+
+    // Pagination handlers
+    const handlePageChange = useCallback(
+      (newPage) => {
+        if (table?.id) {
+          dispatch(
+            loadTableRecords(table.id, { page: newPage, limit: paginationInfo?.pageSize || 50, forceReload: true }),
+          );
+        }
+      },
+      [table?.id, paginationInfo?.pageSize],
+    );
+
+    const handlePageSizeChange = useCallback(
+      (newPageSize) => {
+        if (table?.id) {
+          dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize, forceReload: true }));
+        }
+      },
+      [table?.id],
+    );
 
     return (
       <div className="h-full w-full flex flex-col min-w-0">
@@ -686,6 +822,10 @@ export const GridView = memo(
               '--ag-row-height': '56px',
               '--ag-header-height': '56px',
 
+              // Pagination panel
+              '--ag-paging-panel-background-color':
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
+
               // Custom dark mode enhancements
               '--ag-control-panel-background-color':
                 theme.palette.mode === 'dark'
@@ -715,6 +855,9 @@ export const GridView = memo(
               suppressRowHoverAnimation={true}
               suppressColumnMoveAnimation={true}
               suppressColumnResizeAnimation={true}
+              // Async transaction settings for high-frequency updates
+              asyncTransactionWaitMillis={50}
+              onAsyncTransactionsApplied={onAsyncTransactionsApplied}
               suppressCellFocus={false}
               suppressMovableColumns={false}
               suppressDragLeaveHidesColumns={true}
@@ -729,7 +872,15 @@ export const GridView = memo(
               suppressRowClickSelection={true}
               rowMultiSelectWithClick={true}
               suppressRowDeselection={false}
-              isRowSelectable={(params) => params.data && params.data.id !== '+'}
+              isRowSelectable={(params) => {
+                if (!params.data) return false;
+                const isNewRecord =
+                  params.data.id === '__new__' ||
+                  params.data.id === '+' ||
+                  !params.data.id ||
+                  params.data.id === '';
+                return !isNewRecord;
+              }}
               getContextMenuItems={getContextMenuItems}
               suppressPropertyNamesCheck={true}
               suppressAnimationFrame={true}
@@ -744,23 +895,19 @@ export const GridView = memo(
               suppressClipboardPaste={false}
               includeHiddenColumnsInQuickFilter={true}
               suppressNoRowsOverlay={true}
-              pagination={true}
-              paginationPageSize={50}
-              paginationPageSizeSelector={[50, 100, 500, 1000]}
-              suppressPaginationPanel={true}
-              onPaginationChanged={onPaginationChanged}
+              pagination={false}
               initialState={{
                 sort: {
                   sortModel: [
                     {
                       colId: 'created_at',
-                      sort: 'asc',
+                      sort: 'desc',
                       nullsLast: true,
                     },
                   ],
                 },
               }}
-              sortingOrder={['asc', 'desc', null]}
+              sortingOrder={['desc', 'asc', null]}
               sideBar={{
                 toolPanels: [
                   {
@@ -797,53 +944,204 @@ export const GridView = memo(
                 defaultToolPanelWidth: 0,
               }}
             />
-            {!hasRealRecords && isReady && (
+            {!hasRealRecords && isReady && !isSearching && (
               <div
                 style={{
                   position: 'absolute',
-                  top: '100px', // A bit below the header
+                  top: '100px',
                   left: '50%',
                   transform: 'translateX(-50%)',
                   zIndex: 10,
-                  pointerEvents: 'none', // Allow clicks through to the grid
+                  pointerEvents: 'none',
                 }}
               >
                 <div style={{ pointerEvents: 'auto' }}>
                   <EmptyTableState
                     onImportCSV={handleImportCSV}
+                    onCreateRecord={() => setShowCreateDialog(true)}
                     tableName={table?.name || 'table'}
                   />
                 </div>
               </div>
             )}
+            {isSearching && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: theme.shape.borderRadius,
+                  boxShadow: theme.shadows[4],
+                }}
+              >
+                <Iconify
+                  icon="svg-spinners:blocks-shuffle-3"
+                  sx={{ width: 20, height: 20, color: theme.palette.primary.main }}
+                />
+                <span style={{ color: theme.palette.text.primary, fontSize: '0.875rem' }}>
+                  Searching...
+                </span>
+              </div>
+            )}
           </div>
         </div>
-        <CreateFieldDialog
+
+        {/* Custom Pagination Controls */}
+        {paginationInfo && paginationInfo.totalRecords > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+            }}
+          >
+            {/* Left side - Page size selector */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Rows per page:
+              </Typography>
+              <Select
+                value={paginationInfo.pageSize}
+                onChange={(e) => handlePageSizeChange(e.target.value)}
+                size="small"
+                sx={{
+                  fontSize: '13px',
+                  '& .MuiSelect-select': {
+                    py: 0.5,
+                    px: 1,
+                  },
+                }}
+              >
+                <MenuItem value={20}>20</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+                <MenuItem value={200}>200</MenuItem>
+              </Select>
+            </Box>
+
+            {/* Center - Page info and navigation */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                {`${paginationInfo.currentPage * paginationInfo.pageSize + 1}-${Math.min((paginationInfo.currentPage + 1) * paginationInfo.pageSize, paginationInfo.totalRecords)} of ${paginationInfo.totalRecords.toLocaleString()}`}
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(0)}
+                  disabled={paginationInfo.currentPage === 0}
+                  sx={{ width: 28, height: 28 }}
+                >
+                  <FirstPageIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(paginationInfo.currentPage - 1)}
+                  disabled={paginationInfo.currentPage === 0}
+                  sx={{ width: 28, height: 28 }}
+                >
+                  <NavigateBeforeIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    mx: 1,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ fontSize: '14px' }}
+                  >
+                    {paginationInfo.currentPage + 1}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    of
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ fontSize: '14px' }}
+                  >
+                    {paginationInfo.totalPages}
+                  </Typography>
+                </Box>
+
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(paginationInfo.currentPage + 1)}
+                  disabled={paginationInfo.currentPage >= paginationInfo.totalPages - 1}
+                  sx={{ width: 28, height: 28 }}
+                >
+                  <NavigateNextIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(paginationInfo.totalPages - 1)}
+                  disabled={paginationInfo.currentPage >= paginationInfo.totalPages - 1}
+                  sx={{ width: 28, height: 28 }}
+                >
+                  <LastPageIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* Right side - empty spacer for balance */}
+            <Box sx={{ width: 140 }} />
+          </Box>
+        )}
+
+        <CreateFieldDrawer
           open={showFieldDialog}
           onClose={() => setShowFieldDialog(false)}
           table={table}
         />
-        <CreateRecordDialog
-          baseId={table.base_id}
+        <CreateRecordDrawer
+          baseId={baseId}
           tableId={table.id}
           open={showCreateDialog}
           onClose={() => setShowCreateDialog(false)}
         />
-        {editRecordId && table?.base_id && table?.id && (
-          <EditRecordDialog
-            baseId={table.base_id}
+        {editRecordId && baseId && table?.id && (
+          <EditRecordDrawer
+            baseId={baseId}
             tableId={table.id}
             recordId={editRecordId}
             open={true}
             onClose={() => {
               setEditRecordId(null);
-              history.push(location.pathname.split('/records/')[0]);
+              // Simplify URL: go back to table view without /views/viewId
+              const basePath = location.pathname
+                .replace(/\/records\/[^/]+/, '')
+                .replace(/\/views\/[^/]+/, '');
+              history.push(basePath);
             }}
           />
         )}
         <EditFieldDrawer
           field={editField}
-          baseId={table.base_id}
+          baseId={baseId}
           tableId={table.id}
           open={!!editField}
           onClose={() => setEditField(null)}

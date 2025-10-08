@@ -1,7 +1,10 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo } from 'react';
+import { useSelector } from 'react-redux';
 
 import TableTabs from './TableTabs.jsx';
+import { selectSQLTerminalMode } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
+import SQLTerminal from '../sql/SQLTerminal.jsx';
 import Table from '../table/Table.jsx';
 
 function BaseLayout({
@@ -16,19 +19,22 @@ function BaseLayout({
   viewId,
   triggerImport,
 }) {
-  // Local pagination state
-  const [paginationInfo, setPaginationInfo] = useState(null);
-  const [paginationHandlers, setPaginationHandlers] = useState(null);
-
-  // Handle pagination changes from child components
-  const handlePaginationChange = useCallback((paginationData) => {
-    setPaginationInfo(paginationData.paginationInfo);
-    setPaginationHandlers(paginationData.handlers);
-  }, []);
+  const sqlTerminalMode = useSelector(selectSQLTerminalMode);
 
   // ------------------
-  // Main Content Block: TableTabs on top and Table view below.
+  // Main Content Block: TableTabs on top and Table/SQL Terminal view below.
   // Uses min-w-0 to allow flex sizing without overflow.
+
+  if (sqlTerminalMode) {
+    return (
+      <div className="flex flex-col h-full w-full min-w-0">
+        <div className="flex-1 relative overflow-auto min-w-0">
+          <SQLTerminal baseId={baseId} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full min-w-0">
       <div className="shrink-0 min-w-0 w-full">
@@ -40,11 +46,6 @@ function BaseLayout({
           onImportTable={handleImportTable}
           isLoading={state.isTableSwitching}
           baseId={baseId}
-          paginationInfo={paginationInfo}
-          onGoToFirstPage={paginationHandlers?.onGoToFirstPage}
-          onGoToLastPage={paginationHandlers?.onGoToLastPage}
-          onGoToNextPage={paginationHandlers?.onGoToNextPage}
-          onGoToPreviousPage={paginationHandlers?.onGoToPreviousPage}
         />
       </div>
       <div className="flex-1 relative overflow-auto min-w-0">
@@ -54,7 +55,6 @@ function BaseLayout({
             tableId={tableId}
             viewId={viewId}
             baseId={baseId}
-            onPaginationChange={handlePaginationChange}
             triggerImport={triggerImport}
           />
         )}

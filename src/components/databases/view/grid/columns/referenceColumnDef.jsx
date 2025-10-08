@@ -1,6 +1,6 @@
 import RecordChip from '../../../records/RecordChip';
 
-export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems }) => ({
+export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems, baseId }) => ({
   field: field.db_field_name,
   headerName: field.name,
   editable: true,
@@ -21,17 +21,32 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems })
     return `${tableName} ${params.value}`;
   },
   cellRenderer: (params) => {
+    // If no value, show empty cell
     if (!params.value) return null;
+
     const referenceOptions = field.options?.reference_options;
-    const foreignTableId = referenceOptions?.foreign_table;
+    const foreignTableName =
+      referenceOptions?.foreign_table || referenceOptions?.foreign_table_name;
+
+    // Fallback: if we can't render a chip, at least show the UUID
+    if (!foreignTableName || !baseId) {
+      console.warn('⚠️ Missing foreignTableName or baseId, showing fallback');
+      return (
+        <div className="h-full w-full flex items-center p-1">
+          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', opacity: 0.7 }}>
+            {params.value}
+          </span>
+        </div>
+      );
+    }
 
     return (
       <div className="h-full w-full flex items-center overflow-visible p-1">
         <div className="flex flex-wrap gap-1 min-w-0 w-full">
           <RecordChip
-            key={`${foreignTableId}-${params.value}`}
-            baseId={table.base_id}
-            tableId={foreignTableId}
+            key={`${foreignTableName}-${params.value}`}
+            baseId={baseId}
+            tableId={foreignTableName}
             recordId={params.value}
           />
         </div>
@@ -42,17 +57,19 @@ export const getReferenceColumnDef = ({ field, table, getCommonFieldMenuItems })
     const IconComponent = field.icon;
     return (
       <div className="flex items-center gap-2">
-        <IconComponent
-          fontSize="small"
-          sx={{ opacity: 0.7 }}
-        />
+        {IconComponent && (
+          <IconComponent
+            fontSize="small"
+            sx={{ opacity: 0.7 }}
+          />
+        )}
         <span>{params.displayName}</span>
       </div>
     );
   },
   cellEditorParams: {
     referenceOptions: field.options,
-    baseId: table.base_id,
+    baseId: baseId,
     tableId: table.id,
   },
   minWidth: 200,

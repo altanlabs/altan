@@ -2,6 +2,7 @@ import { Box, Typography, Stack, TextField, Chip, Button, Card } from '@mui/mate
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
@@ -30,22 +31,28 @@ const CREDIT_PACKAGES = [
   },
 ];
 
-/**
- * Track credit purchase event
- */
-const trackCreditPurchaseEvent = (packageInfo) => {
+const trackCreditPurchaseEvent = (packageInfo, analytics) => {
   try {
+    const items = [{
+      item_id: packageInfo.id,
+      item_name: `€${packageInfo.price} Credits`,
+      item_category: 'credits',
+      price: packageInfo.price,
+      quantity: 1,
+    }];
+
+    // Track with PostHog
+    analytics.trackBeginCheckout(packageInfo.price, 'EUR', items, {
+      purchase_type: 'credits',
+      amount: packageInfo.price,
+    });
+
+    // Track with Google Analytics (existing)
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'begin_checkout', {
         currency: 'EUR',
         value: packageInfo.price,
-        items: [{
-          item_id: packageInfo.id,
-          item_name: `€${packageInfo.price} Credits`,
-          item_category: 'credits',
-          price: packageInfo.price,
-          quantity: 1,
-        }],
+        items,
         purchase_type: 'credits',
         amount: packageInfo.price,
       });
@@ -62,9 +69,10 @@ const trackCreditPurchaseEvent = (packageInfo) => {
   }
 };
 
-export default function CreditPurchaseSection({ title = 'Purchase credits', compact = false }) {
-  const [selectedAmount, setSelectedAmount] = useState(10);
+export default function CreditPurchaseSection({ title = 'Pay as you go', compact = false }) {
+  const [selectedAmount, setSelectedAmount] = useState(50);
   const accountId = useSelector(selectAccountId);
+  const analytics = useAnalytics();
 
   const handleAmountSelect = (amount) => {
     setSelectedAmount(amount);
@@ -85,7 +93,7 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
       }
 
       // Track credit purchase event
-      trackCreditPurchaseEvent(packageInfo);
+      trackCreditPurchaseEvent(packageInfo, analytics);
 
       const response = await optimai_shop.get('/stripe/buy-credits', {
         params: {
@@ -107,7 +115,7 @@ export default function CreditPurchaseSection({ title = 'Purchase credits', comp
         {title}
       </Typography>
 
-      <Stack direction="row" spacing={0} sx={{ mb: 1, flexWrap: 'wrap', gap: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
         {[20, 50, 100, 250, 500].map((amount) => (
           <Chip
             key={amount}

@@ -6,22 +6,23 @@ import AgentTemplateCard from './AgentTemplateCard';
 import ProjectTemplateCard from './ProjectTemplateCard';
 import WorkflowTemplateCard from './WorkflowTemplateCard';
 
-const TemplateCard = ({ template }) => {
+const TemplateCard = ({ template, onClick }) => {
   // Determine template type - prioritize template_type over entity_type
   const templateType = template.template_type || template.entity_type;
 
   switch (templateType) {
     case 'workflow':
-      return <WorkflowTemplateCard template={template} />;
+      return <WorkflowTemplateCard template={template} onClick={onClick} />;
     case 'agent':
-      return <AgentTemplateCard template={template} />;
+      return <AgentTemplateCard template={template} onClick={onClick} />;
     default:
-      return <ProjectTemplateCard template={template} />;
+      return <ProjectTemplateCard template={template} onClick={onClick} />;
   }
 };
 
 TemplateCard.propTypes = {
   template: PropTypes.object.isRequired,
+  onClick: PropTypes.func,
 };
 
 export default TemplateCard;

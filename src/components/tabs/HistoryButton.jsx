@@ -44,7 +44,7 @@ const HistoryButton = ({ disabled = false, size = 'small' }) => {
           disabled={disabled}
         >
           <Iconify
-            icon="solar:history-linear"
+            icon="fluent:chat-history-24-regular"
             width={20}
           />
         </IconButton>

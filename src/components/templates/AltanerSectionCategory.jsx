@@ -1,16 +1,21 @@
 import { Box, Skeleton } from '@mui/material';
 import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 import AltanerSection from './AltanerSection';
 import TemplateDetailsDialog from './TemplateDetailsDialog';
-import { optimai_shop } from '../../utils/axios';
+import { 
+  fetchCategoryTemplates, 
+  selectCategoryState,
+  invalidateCategory 
+} from '../../redux/slices/templates';
 
-// Transform marketplace template for display
+// Transform marketplace template for display (now handled in Redux)
 const transformTemplateForDisplay = (template) => ({
   id: template.id,
   name: template.name || template.public_name || 'Unnamed Template',
   description: template.description || template.meta_data?.description || '',
-  cover_url: getCoverUrl(template),
+  cover_url: template.cover_url || '/assets/placeholder.svg', // Already processed in Redux
   icon_url: template.account?.logo_url || template.parent?.icon_url || '/assets/placeholder.svg',
   template_id: template.id,
   template_type: 'altaner',
@@ -20,27 +25,22 @@ const transformTemplateForDisplay = (template) => ({
   selected_version: template.selected_version,
   parent: template.parent,
   account: template.account,
+  has_cover: template.has_cover, // Already processed in Redux
 });
-
-function getCoverUrl(template) {
-  const selectedVersion = template.selected_version;
-  if (selectedVersion?.deployment?.cover_url) {
-    return selectedVersion.deployment.cover_url;
-  }
-  return template.parent?.cover_url || '/assets/placeholder.svg';
-}
 
 const AltanerSectionCategory = memo(
   ({ category, title, initialExpanded = false, onTemplateClick }) => {
+    const dispatch = useDispatch();
+    
+    // Get category state from Redux
+    const categoryState = useSelector(selectCategoryState(category));
+    const { templates, loading, error, initialized, hasMore, isFresh } = categoryState;
+    
+    // Local UI state
     const [isExpanded, setIsExpanded] = useState(initialExpanded);
-    const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
-    const [hasMore, setHasMore] = useState(false);
-    const offsetRef = useRef(0);
 
     const handleToggleExpanded = useCallback(() => {
       setIsExpanded((prev) => !prev);
@@ -70,97 +70,51 @@ const AltanerSectionCategory = memo(
       [templates, onTemplateClick],
     );
 
-    // Fetch templates for this specific category
-    const fetchCategoryTemplates = useCallback(
-      async (loadMore = false) => {
+    // Fetch templates using Redux
+    const fetchTemplates = useCallback(
+      async (loadMore = false, forceRefresh = false) => {
         if (loadMore) {
           setLoadingMore(true);
-        } else {
-          setLoading(true);
-          offsetRef.current = 0;
         }
-        setError(null);
 
         try {
-          const currentOffset = loadMore ? offsetRef.current : 0;
-          const params = new URLSearchParams({
-            limit: '50',
-            offset: currentOffset.toString(),
-            template_type: 'altaner',
-          });
-
-          // Add category filter for specific categories
-          if (category && category !== 'uncategorized') {
-            params.append('category', category);
-          }
-
-          const response = await optimai_shop.get(`/v2/templates/list?${params}`);
-          const fetchedTemplates = response?.data?.templates || [];
-          const totalCount = response?.data?.total_count || 0;
-
-          // For uncategorized, we need to filter out templates that have categories
-          let filteredTemplates = fetchedTemplates;
-          if (category === 'uncategorized') {
-            filteredTemplates = fetchedTemplates.filter((template) => {
-              const templateCategory = template.meta_data?.category?.toLowerCase();
-              return !templateCategory || templateCategory === '';
-            });
-          }
-
-          // Filter templates that have cover_url for better display
-          // For uncategorized, be more lenient with cover images
-          const templatesWithCovers = filteredTemplates.filter((template) => {
-            if (category === 'uncategorized') {
-              return true; // Show all uncategorized templates regardless of cover
-            }
-            return getCoverUrl(template) !== '/assets/placeholder.svg';
-          });
-
-          if (loadMore) {
-            setTemplates((prev) => [...prev, ...templatesWithCovers]);
-            offsetRef.current += 50; // Always increment by API page size
-          } else {
-            setTemplates(templatesWithCovers);
-            offsetRef.current = 50; // Next page starts at 50
-          }
-
-          // Check if there are more templates to load
-          // We have more if we got a full batch of 50 from the API (indicating more pages exist)
-          setHasMore(fetchedTemplates.length === 50);
+          await dispatch(fetchCategoryTemplates(category, { loadMore, forceRefresh }));
         } catch (err) {
-          if (err.response && err.response.status === 404) {
-            if (!loadMore) setTemplates([]);
-            setHasMore(false);
-          } else {
-            setError('Failed to load templates');
-            if (!loadMore) setTemplates([]);
-            setHasMore(false);
-          }
+          console.error('Failed to fetch templates:', err);
         } finally {
           if (loadMore) {
             setLoadingMore(false);
-          } else {
-            setLoading(false);
           }
         }
       },
-      [category],
+      [dispatch, category],
     );
+
+    // Manual refresh function
+    const refreshTemplates = useCallback(() => {
+      fetchTemplates(false, true);
+    }, [fetchTemplates]);
 
     const handleLoadMore = useCallback(() => {
       if (!loadingMore && hasMore && category === 'uncategorized') {
-        fetchCategoryTemplates(true);
+        fetchTemplates(true);
       }
-    }, [loadingMore, hasMore, category, fetchCategoryTemplates]);
+    }, [loadingMore, hasMore, category, fetchTemplates]);
 
     useEffect(() => {
-      fetchCategoryTemplates(false);
-    }, [fetchCategoryTemplates]); // Include fetchCategoryTemplates to satisfy linter
+      // Only fetch if not initialized and not currently loading
+      if (!initialized && !loading) {
+        dispatch(fetchCategoryTemplates(category, { loadMore: false }));
+      }
+    }, [dispatch, category, initialized, loading]);
 
-    // Transform templates for display
-    const categoryTemplates = useMemo(() => {
-      return templates.map(transformTemplateForDisplay);
-    }, [templates]);
+    // Transform templates for display and filter out ones without covers
+    const categoryTemplates = useMemo(() => 
+      templates
+        .filter(template => template.has_cover) // Only show templates with actual covers
+        .map(transformTemplateForDisplay), 
+      [templates]
+    );
 
     // Loading skeleton
     if (loading) {

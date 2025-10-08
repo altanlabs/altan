@@ -1,7 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 // Generic OAuth2 Auth
 import { GenericOAuth2 } from '@capacitor-community/generic-oauth2';
-import axios from 'axios';
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 
@@ -9,9 +8,11 @@ import useMessageListener from '@hooks/useMessageListener.ts';
 
 // utils
 import { AUTH_API } from './utils';
+import { analytics } from '../lib/analytics';
 import { trackSignUp, trackLogin } from '../utils/analytics';
 import { storeRefreshToken, clearStoredRefreshToken, iframeState } from '../utils/auth';
-import { optimai, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
+import { optimai, optimai_auth, unauthorizeUser, authorizeUser, authorizeGuest } from '../utils/axios';
+import { getAllTrackingParams, clearTrackingParams, formatTrackingParamsForAPI } from '../utils/queryParams';
 
 // ----------------------------------------------------------------------
 
@@ -155,7 +156,7 @@ AuthProvider.propTypes = {
 
 const getUserProfile = async () => {
   try {
-    const res = await optimai.post('/user/me/gq', {
+    const res = await optimai_auth.post('/user/me/gq', {
       '@fields': '@all',
       member: {
         '@fields': 'id',
@@ -199,7 +200,7 @@ const getUserProfile = async () => {
 
 const verifyEmail = async (code) => {
   try {
-    const response = await optimai.post(`/user/verify-email?code=${code}`);
+    const response = await optimai_auth.post(`/user/verify-email?code=${code}`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to verify email');
@@ -208,7 +209,7 @@ const verifyEmail = async (code) => {
 
 const resendVerification = async () => {
   try {
-    const response = await optimai.post('/user/resend-verification');
+    const response = await optimai_auth.post('/user/resend-verification');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to resend verification');
@@ -363,10 +364,9 @@ export function AuthProvider({ children }) {
             throw new Error('Guest ID and Agent ID are required for direct authentication');
           }
 
-          const response = await axios.post(
-            `${AUTH_API}/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+          const response = await optimai_auth.post(
+            `/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
             {},
-            { withCredentials: true },
           );
 
           if (response.data && response.data.guest) {
@@ -424,6 +424,18 @@ export function AuthProvider({ children }) {
 
         // Only make API calls for regular (non-iframe) users
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog on initialization
+        if (userProfile.isAuthenticated && userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'existing_session',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'INITIAL',
           payload: userProfile,
@@ -443,6 +455,10 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async (invitation_id, idea_id) => {
     const isMobile = Capacitor.isNativePlatform();
+
+    // Get tracking params from localStorage or URL
+    const trackingParams = getAllTrackingParams(false);
+    const formattedTrackingParams = trackingParams ? formatTrackingParamsForAPI(trackingParams) : null;
 
     if (isMobile) {
       // Native mobile authentication using GenericOAuth2
@@ -475,7 +491,7 @@ export function AuthProvider({ children }) {
         });
 
         // Debug: Check what GenericOAuth2 is actually returning
-        console.log('✅ Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
+        console.log('Full GenericOAuth2 result:', JSON.stringify(result, null, 2));
 
         // Extract tokens
         const idToken =
@@ -494,15 +510,15 @@ export function AuthProvider({ children }) {
         trackSignUp('google');
 
         // Send the Google token to your backend for verification
-        const response = await axios.post(
-          `${AUTH_API}/oauth/google/mobile`,
+        const response = await optimai_auth.post(
+          `/oauth/google/mobile`,
           {
             idToken,
             accessToken,
             invitation_id: invitation_id || null,
             idea_id: idea_id || null,
+            tracking_params: formattedTrackingParams,
           },
-          { withCredentials: true },
         );
 
         if (response.data.status === 'success' || response.data.access_token) {
@@ -520,10 +536,25 @@ export function AuthProvider({ children }) {
           // Get user profile and update state
           try {
             const userProfile = await getUserProfile();
+
+            // Identify user in PostHog
+            if (userProfile.user) {
+              analytics.identify(userProfile.user.id, {
+                email: userProfile.user.email,
+                first_name: userProfile.user.first_name,
+                last_name: userProfile.user.last_name,
+                method: 'google',
+                is_superadmin: userProfile.user.xsup,
+              });
+            }
+
             dispatch({
               type: 'LOGIN',
               payload: userProfile,
             });
+
+            // Clear tracking params after successful Google login
+            clearTrackingParams();
           } catch {
             throw new Error('Failed to complete mobile Google authentication');
           }
@@ -546,10 +577,20 @@ export function AuthProvider({ children }) {
       if (invitation_id) {
         params.iid = invitation_id;
       }
+
+      // Add tracking params to URL if they exist
+      if (formattedTrackingParams) {
+        // Encode tracking params as a JSON string to pass through URL
+        params.tracking_params = JSON.stringify(formattedTrackingParams);
+      }
+
       const url = constructBaseUrl(AUTH_API, '/login/google', params);
 
       // Track Google sign-up BEFORE opening popup
       trackSignUp('google');
+
+      // Clear tracking params before opening popup (they're included in the URL)
+      clearTrackingParams();
 
       const width = 600;
       const height = 600;
@@ -583,12 +624,9 @@ export function AuthProvider({ children }) {
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
-    const response = await axios.post(
-      `${AUTH_API}/login?origin=${encodeURIComponent(baseUrl)}${dev}`,
+    const response = await optimai_auth.post(
+      `/login?origin=${encodeURIComponent(baseUrl)}${dev}`,
       payload,
-      {
-        withCredentials: true,
-      },
     );
 
     if (!response || !response.data) {
@@ -615,6 +653,18 @@ export function AuthProvider({ children }) {
       // Get user profile and update state
       try {
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog
+        if (userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'email',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'LOGIN',
           payload: userProfile,
@@ -625,6 +675,18 @@ export function AuthProvider({ children }) {
         try {
           await authorizeUser();
           const userProfile = await getUserProfile();
+
+          // Identify user in PostHog for fallback
+          if (userProfile.user) {
+            analytics.identify(userProfile.user.id, {
+              email: userProfile.user.email,
+              first_name: userProfile.user.first_name,
+              last_name: userProfile.user.last_name,
+              method: 'email',
+              is_superadmin: userProfile.user.xsup,
+            });
+          }
+
           dispatch({
             type: 'LOGIN',
             payload: userProfile,
@@ -672,11 +734,15 @@ export function AuthProvider({ children }) {
     // Track email registration BEFORE backend call
     trackSignUp('email');
 
+    // Get tracking params from localStorage or URL
+    const trackingParams = getAllTrackingParams(false);
+    const formattedTrackingParams = trackingParams ? formatTrackingParamsForAPI(trackingParams) : null;
+
     const { protocol, hostname, port } = window.location;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
     const dev = hostname === 'localhost' ? '&dev=345647hhnurhguiefiu5CHAOSDOVEtrbvmirotrmgi' : '';
-    const response = await axios.post(
-      `${AUTH_API}/register?origin=${baseUrl}${dev}`,
+    const response = await optimai_auth.post(
+      `/register?origin=${baseUrl}${dev}`,
       {
         first_name: firstName,
         last_name: lastName,
@@ -685,8 +751,8 @@ export function AuthProvider({ children }) {
         user_name: email,
         invitation_id: iid !== undefined ? iid : null,
         idea: idea !== undefined ? idea : null,
+        tracking_params: formattedTrackingParams,
       },
-      { withCredentials: true },
     );
 
     // Check if running on mobile platform
@@ -712,20 +778,50 @@ export function AuthProvider({ children }) {
       // Get user profile and update state
       try {
         const userProfile = await getUserProfile();
+
+        // Identify user in PostHog
+        if (userProfile.user) {
+          analytics.identify(userProfile.user.id, {
+            email: userProfile.user.email,
+            first_name: userProfile.user.first_name,
+            last_name: userProfile.user.last_name,
+            method: 'email',
+            is_superadmin: userProfile.user.xsup,
+          });
+        }
+
         dispatch({
           type: 'REGISTER',
           payload: userProfile,
         });
+
+        // Clear tracking params after successful registration
+        clearTrackingParams();
       } catch (error) {
         console.error('Failed to get user profile after mobile registration:', error);
         // Try to authorize user as fallback
         try {
           await authorizeUser();
           const userProfile = await getUserProfile();
+
+          // Identify user in PostHog for fallback
+          if (userProfile.user) {
+            analytics.identify(userProfile.user.id, {
+              email: userProfile.user.email,
+              first_name: userProfile.user.first_name,
+              last_name: userProfile.user.last_name,
+              method: 'email',
+              is_superadmin: userProfile.user.xsup,
+            });
+          }
+
           dispatch({
             type: 'REGISTER',
             payload: userProfile,
           });
+
+          // Clear tracking params after successful registration
+          clearTrackingParams();
         } catch (fallbackError) {
           console.error('Mobile registration fallback also failed:', fallbackError);
           throw new Error('Failed to complete mobile registration');
@@ -733,6 +829,9 @@ export function AuthProvider({ children }) {
       }
     } else {
       // Web authentication flow (existing behavior)
+      // Clear tracking params before redirect (they're already sent to backend)
+      clearTrackingParams();
+
       // Convert the redirect string to URL object
       const redirectUrl = new URL(response.data.redirect);
 
@@ -747,6 +846,9 @@ export function AuthProvider({ children }) {
 
   // LOGOUT
   const logout = useCallback(async () => {
+    // Track logout event
+    analytics.signOut();
+
     const isMobile = Capacitor.isNativePlatform();
 
     if (isMobile) {
@@ -760,9 +862,13 @@ export function AuthProvider({ children }) {
       }
     }
 
-    await axios.post(`${AUTH_API}/logout/user`, null, { withCredentials: true }).finally(() => {
+    await optimai_auth.post(`/logout/user`, null).finally(() => {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
+
+      // Reset PostHog session
+      analytics.reset();
+
       dispatch({
         type: 'LOGOUT',
       });

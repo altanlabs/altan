@@ -75,8 +75,8 @@ export class AltanSDK {
   constructor(config: AltanSDKConfig) {
     this.config = {
       apiBaseUrl: 'https://api.altan.ai/platform/guest',
-      authBaseUrl: 'https://api.altan.ai/auth/login/guest',
-      roomBaseUrl: 'https://altan.ai/r',
+      authBaseUrl: 'https://auth.altan.ai/login/guest',
+      roomBaseUrl: 'https://www.altan.ai/r',
       enableStorage: true,
       debug: false,
       requestTimeout: 30000,
@@ -381,7 +381,7 @@ export class AltanSDK {
     try {
       this.debug('Refreshing tokens');
       
-      const response = await this.fetchWithTimeout('https://api.altan.ai/auth/token/guest', {
+      const response = await this.fetchWithTimeout('https://auth.altan.ai/token/guest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

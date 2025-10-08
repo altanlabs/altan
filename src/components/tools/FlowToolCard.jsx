@@ -12,6 +12,7 @@ import CreateConnection from './CreateConnection';
 import Iconify from '../iconify';
 import FormParameter from './form/FormParameter';
 import FormParameters from './form/FormParameters';
+import ActionTypeDetails from './ActionTypeDetails';
 import {
   // currentToolSchemaSelector,
   selectAvailableFlowConnections,
@@ -272,6 +273,15 @@ const FlowToolCard = ({ moduleSchema }) => {
             )}
           </Stack>
           {/* <ExecutionResult actionExecution={actionExecution} /> */}
+          
+          {/* Developer Action Type Details - Very Bottom */}
+          {toolActionType && (
+            <ActionTypeDetails 
+              actionType={toolActionType}
+              metaData={metaData}
+              isVisible={false}
+            />
+          )}
         </>
       )}
     </div>

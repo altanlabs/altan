@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import Iconify from '../components/iconify';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { CompactLayout } from '../layouts/dashboard';
 import { selectAccountId } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
@@ -13,9 +14,9 @@ import { optimai_shop } from '../utils/axios';
 /**
  * Track purchase completion event
  */
-const trackPurchaseEvent = (sessionData) => {
+const trackPurchaseEvent = (sessionData, analytics) => {
   try {
-    if (typeof window !== 'undefined' && window.gtag && sessionData) {
+    if (sessionData) {
       const { plan, billing_option } = sessionData;
 
       // Get URL parameters for attribution
@@ -23,29 +24,43 @@ const trackPurchaseEvent = (sessionData) => {
 
       const value = billing_option?.price ? billing_option.price / 100 : 0;
       const currency = 'EUR';
+      const transactionId = sessionData?.subscription?.id || sessionData.session_id;
 
-      window.gtag('event', 'purchase', {
-        transaction_id: sessionData?.subscription?.id || sessionData.session_id,
-        value,
-        currency,
-        items: [
-          {
-            item_id: plan?.id,
-            item_name: plan?.name,
-            item_category: 'subscription',
-            item_variant: plan?.name?.toLowerCase().replace(' ', '_'),
-            price: value,
-            quantity: 1,
-          },
-        ],
-        // Include attribution data
-        ...urlParams,
-        // Additional metadata
-        plan_type: plan?.name?.toLowerCase(),
+      const items = [
+        {
+          item_id: plan?.id,
+          item_name: plan?.name,
+          item_category: 'subscription',
+          item_variant: plan?.name?.toLowerCase().replace(' ', '_'),
+          price: value,
+          quantity: 1,
+        },
+      ];
+
+      // Track with PostHog
+      analytics.trackPurchase(transactionId, value, currency, items, {
+        plan_type: plan?.name,
         billing_frequency: billing_option?.billing_frequency,
         credits_included: plan?.credits,
-        subscription_id: sessionData?.subscription?.id,
+        ...urlParams,
       });
+
+      // Track with Google Analytics (existing)
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          value,
+          currency,
+          items,
+          // Include attribution data
+          ...urlParams,
+          // Additional metadata
+          plan_type: plan?.name?.toLowerCase(),
+          billing_frequency: billing_option?.billing_frequency,
+          credits_included: plan?.credits,
+          subscription_id: sessionData?.subscription?.id,
+        });
+      }
 
       // console.debug('Purchase event tracked', {
       //   transaction_id: subscription?.id || sessionData.session_id,
@@ -68,8 +83,7 @@ const trackPurchaseEvent = (sessionData) => {
         content_type: 'product',
       });
     }
-  } catch {
-  }
+  } catch (error) {}
 };
 
 // ----------------------------------------------------------------------
@@ -80,6 +94,7 @@ export default function PurchaseSuccessPage() {
   const location = useLocation();
   const history = useHistory();
   const accountId = useSelector(selectAccountId);
+  const analytics = useAnalytics();
 
   useEffect(() => {
     const fetchSessionData = async () => {
@@ -101,10 +116,10 @@ export default function PurchaseSuccessPage() {
 
         const data = response.data;
         // Track purchase event
-        trackPurchaseEvent(data);
+        trackPurchaseEvent(data, analytics);
 
         setLoading(false);
-      } catch {
+      } catch (error) {
         setError('Failed to load purchase information');
         setLoading(false);
       }

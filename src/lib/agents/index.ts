@@ -44,13 +44,13 @@ export {
 // ============================================================================
 
 // Version information
-export const SDK_VERSION = '2.6.2';
+export const SDK_VERSION = '2.6.5';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {
   apiBaseUrl: 'https://api.altan.ai/platform/guest',
-  authBaseUrl: 'https://api.altan.ai/auth/login/guest',
-  roomBaseUrl: 'https://altan.ai/r',
+  authBaseUrl: 'https://auth.altan.ai/login/guest',
+  roomBaseUrl: 'https://www.altan.ai/r',
   enableStorage: true,
   debug: false,
 } as const; 

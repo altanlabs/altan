@@ -40,12 +40,27 @@ const _socials = [
 
 const LINKS = [
   {
-    headline: 'Altan',
+    headline: 'Company',
     children: [
-      // { key: 'about-us', name: 'About us', href: PATH_PAGE.about },
-      { key: 'contact', name: 'Contact us', href: PATH_PAGE.contact },
-      { key: 'docs', name: 'Docs', href: 'https://docs.altan.ai' },
+      { key: 'jobs', name: 'Jobs', href: 'https://jobs.altan.ai' },
+      { key: 'enterprise', name: 'Enterprise', href: 'https://enterprise.altan.ai/' },
+      { key: 'hire-partner', name: 'Hire a partner', href: 'https://partners.altan.ai/' },
+      { key: 'become-partner', name: 'Become a partner', href: 'https://partners.altan.ai/' },
+    ],
+  },
+  {
+    headline: 'Product',
+    children: [
+      { key: 'pricing', name: 'Pricing', href: '/pricing' },
       { key: 'status', name: 'Status', href: 'https://uptime.altan.ai/' },
+    ],
+  },
+  {
+    headline: 'Resources',
+    children: [
+      { key: 'support', name: 'Support', href: '/support' },
+      { key: 'blog', name: 'Blog', href: 'https://blog.altan.ai' },
+      { key: 'docs', name: 'Docs', href: 'https://docs.altan.ai' },
     ],
   },
   {
@@ -53,20 +68,6 @@ const LINKS = [
     children: [
       { key: 'terms', name: 'Terms & Conditions', href: PATH_PAGE.terms },
       { key: 'privacy', name: 'Privacy Policy', href: PATH_PAGE.privacy },
-    ],
-  },
-  {
-    headline: 'Contact',
-    children: [
-      { key: 'email', name: 'contact@altan-ai', href: '' },
-      {
-        key: 'us-title',
-        name: <Typography variant="subtitle2">United States</Typography>,
-        href: '',
-      },
-      { key: 'us-address', name: '2055 Limestone Rd, Wilmington, Delaware 19808', href: '' },
-      { key: 'eu-title', name: <Typography variant="subtitle2">Europe</Typography>, href: '' },
-      { key: 'eu-address', name: 'Barcelona, 08039 Pg. de Joan de Borbó, 99', href: '' },
     ],
   },
 ];

@@ -62,7 +62,6 @@ const StyledRoot = styled('div')(({ theme }) => ({
 function LoadingScreen() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  console.log("LoadingScreen")
 
   // const [progress, setProgress] = useState(0);
   // const [showText, setShowText] = useState(false);

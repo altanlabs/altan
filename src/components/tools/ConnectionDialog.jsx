@@ -10,7 +10,6 @@ import {
   IconButton,
   TextField,
   Box,
-  InputAdornment,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import React, { useState } from 'react';
@@ -27,6 +26,15 @@ function ConnectionDialog({ connection }) {
   const { enqueueSnackbar } = useSnackbar();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+  
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(connection.id).then(() => {
+      enqueueSnackbar('Connection ID copied to clipboard', { variant: 'success' });
+    }).catch(() => {
+      enqueueSnackbar('Failed to copy connection ID', { variant: 'error' });
+    });
+  };
+
   const handleRename = async () =>
     dispatch(renameConnection(connection.id, connection.account_id, newName))
       .then(() => enqueueSnackbar('Connection renamed successfully', { variant: 'success' }))
@@ -86,40 +94,25 @@ function ConnectionDialog({ connection }) {
             margin="normal"
           />
           
-          <TextField
-            variant="filled"
-            fullWidth
-            label="Connection ID"
-            value={connection.id}
-            margin="normal"
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={handleCopyId}
-                    edge="end"
-                    size="small"
-                    sx={{ 
-                      color: 'primary.main',
-                      '&:hover': { bgcolor: 'primary.lighter' }
-                    }}
-                  >
-                    <Iconify 
-                      icon={copyButtonText === 'Copied!' ? 'eva:checkmark-circle-2-fill' : 'solar:copy-bold'} 
-                      width={20}
-                    />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiInputBase-input': {
-                fontFamily: 'monospace',
-                fontSize: '0.875rem',
-              },
-            }}
-          />
+          {/* Connection ID with Copy Button */}
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                Connection ID: {connection.id}
+              </Typography>
+              <IconButton 
+                size="small" 
+                onClick={handleCopyId}
+                sx={{ 
+                  bgcolor: 'action.hover',
+                  '&:hover': { bgcolor: 'action.selected' }
+                }}
+              >
+                <Iconify icon="solar:copy-bold" width={16} />
+              </IconButton>
+            </Stack>
+          </Box>
+
           {connection.details && (
             <Stack
               direction="column"

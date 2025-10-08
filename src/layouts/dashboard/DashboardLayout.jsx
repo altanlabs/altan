@@ -11,6 +11,7 @@ import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
+import { getFlows } from '../../redux/slices/flows.js';
 import {
   getAccount,
   getAccountAttribute,
@@ -85,8 +86,6 @@ const DashboardLayout = ({ children }) => {
 
   const handleToggleNav = useCallback(() => setOpen((prev) => !prev), []);
 
-  const handleCloseNav = useCallback(() => setOpen(false), []);
-
   useEffect(() => {
     if (!!ws?.isOpen && !!accountId && !!user) {
       ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
@@ -127,6 +126,7 @@ const DashboardLayout = ({ children }) => {
           ['subscriptions'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(fetchNotifications());
+        dispatch(getFlows(accountId));
       });
     }
   }, [accountId, accountInitialized, accountLoading]);
