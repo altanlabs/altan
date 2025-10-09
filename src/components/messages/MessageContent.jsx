@@ -28,6 +28,7 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const hasMessageMedia = useSelector((state) => selectors.hasMedia(state, message.id));
   const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
   const partsById = useSelector(selectMessagePartsById);
+  console.log('messageParts', messageParts);
 
   // Create sorted parts with fresh data on every render
   // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
