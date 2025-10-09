@@ -2610,6 +2610,55 @@ export const selectResponseLifecycleById = (responseId) =>
     (lifecycles) => lifecycles.byId[responseId] || null,
   );
 
+// Selector for placeholder messages (active responses without message_id yet)
+export const makeSelectPlaceholderMessagesForThread = () =>
+  createSelector(
+    [
+      selectResponseLifecycles,
+      selectMembers,
+      (state, threadId) => threadId,
+    ],
+    (lifecycles, members, threadId) => {
+      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+
+      return activeResponseIds
+        .map((responseId) => {
+          const lifecycle = lifecycles.byId[responseId];
+          if (!lifecycle || lifecycle.message_id) return null; // Skip if real message exists
+
+          // Get agent details
+          const roomMember = Object.values(members.byId || {}).find(
+            (member) =>
+              member?.member?.member_type === 'agent' &&
+              member?.member?.agent_id === lifecycle.agent_id,
+          );
+
+          if (!roomMember) return null;
+
+          // Create placeholder message object
+          return {
+            id: `placeholder-${responseId}`,
+            response_id: responseId,
+            member_id: roomMember.id,
+            thread_id: lifecycle.thread_id,
+            date_creation: lifecycle.created_at,
+            isPlaceholder: true,
+            meta_data: {
+              loading: true,
+              status: lifecycle.status,
+            },
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(a.date_creation) - new Date(b.date_creation));
+    },
+    {
+      memoizeOptions: {
+        resultEqualityCheck: checkArraysEqualsProperties(['id', 'status', 'date_creation']),
+      },
+    },
+  );
+
 // ACTIONS
 
 export const fetchPublicRooms = () => async (dispatch) => {
@@ -3321,7 +3370,7 @@ export const stopAgentResponse = (messageId) => async (dispatch, getState) => {
 
 export const stopThreadGeneration = (threadId) => async () => {
   try {
-    const response = await optimai_room.post(`/thread/${threadId}/stop`);
+    const response = await optimai_agent.delete(`/api/v1/activations/threads/${threadId}/responses`);
     return Promise.resolve(response.data);
   } catch (e) {
     console.error('Failed to stop thread generation:', e);

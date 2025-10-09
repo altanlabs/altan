@@ -152,7 +152,7 @@ const ThinkingPartCard = ({ partId }) => {
         <div
           ref={contentRef}
           onScroll={handleScroll}
-          className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto"
+          className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto elegant-scrollbar"
         >
           <div className="opacity-60 [&_.markdown]:text-[11px] [&_.markdown]:leading-relaxed [&_p]:mb-1">
             {part?.text ? (

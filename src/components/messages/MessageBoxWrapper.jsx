@@ -216,6 +216,7 @@ const MessageBoxWrapper = ({
               paddingRight={0}
               paddingBottom={0}
               paddingTop={0.2}
+              paddingLeft={!is_me ? 3 : 0}
             >
               {children}
             </Stack>

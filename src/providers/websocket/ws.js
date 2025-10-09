@@ -836,8 +836,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
               }));
 
               // Add error message part to display the error
+              // Use a deterministic ID so multiple errors for the same message replace each other
+              const errorPartId = `${eventData.message_id}-error`;
               dispatch(addMessagePart({
+                id: errorPartId,
                 message_id: eventData.message_id,
+                thread_id: eventData.thread_id,
                 type: 'error',
                 error_code: eventData.error_code,
                 error_message: eventData.error_message,

@@ -20,16 +20,10 @@ import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
 import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
 import { useSelector } from '../../../../redux/store';
-import { optimai, optimai_integration } from '../../../../utils/axios';
+import { optimai } from '../../../../utils/axios';
 import { bgBlur } from '../../../../utils/cssStyles';
 
-const DATA_TYPES = [
-  'string',
-  'number',
-  'boolean',
-  'array',
-  'object',
-];
+const DATA_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 
 const VALUE_TYPES = [
   { value: 'ai', label: 'AI' },
@@ -94,9 +88,12 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
     });
   }, [append]);
 
-  const handleRemoveParameter = useCallback((index) => {
-    remove(index);
-  }, [remove]);
+  const handleRemoveParameter = useCallback(
+    (index) => {
+      remove(index);
+    },
+    [remove],
+  );
 
   const onSubmit = handleSubmit(async (data) => {
     if (!currentAgent?.id) {
@@ -116,13 +113,13 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
 
       // Call the appropriate API endpoint
       if (isEditMode) {
-        await optimai_integration.patch(`/tool/${toolToEdit.tool.id}`, payload);
+        await optimai.patch(`/tool/${toolToEdit.tool.id}`, payload);
         enqueueSnackbar('Client tool updated successfully!', { variant: 'success' });
       } else {
         await optimai.post(`/agent/${currentAgent.id}/add-tool`, payload);
         enqueueSnackbar('Client tool created successfully!', { variant: 'success' });
       }
-      
+
       handleClose();
     } catch (error) {
       console.error('Error creating client tool:', error);
@@ -139,8 +136,15 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
       justifyContent="space-between"
       sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}
     >
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <Iconify icon="mdi:desktop-classic" width={24} />
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+      >
+        <Iconify
+          icon="mdi:desktop-classic"
+          width={24}
+        />
         <Typography variant="h6">{isEditMode ? 'Edit' : 'Add'} client tool</Typography>
       </Stack>
       <IconButton onClick={handleClose}>
@@ -151,13 +155,20 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
 
   const renderConfigurationSection = (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>
+      <Typography
+        variant="h6"
+        gutterBottom
+      >
         Configuration
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mb: 2 }}
+      >
         Describe to the LLM how and when to use the tool.
       </Typography>
-      
+
       <Stack spacing={2}>
         <TextField
           variant="filled"
@@ -166,7 +177,7 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
           {...methods.register('name', { required: true })}
           fullWidth
         />
-        
+
         <TextField
           variant="filled"
           label="Description"
@@ -176,18 +187,17 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
           rows={3}
           fullWidth
         />
-        
+
         <FormControlLabel
-          control={
-            <Checkbox
-              {...methods.register('wait_for_response')}
-            />
-          }
+          control={<Checkbox {...methods.register('wait_for_response')} />}
           label="Wait for response"
         />
-        <Typography variant="caption" color="text.secondary">
-          Select this box to make the agent wait for the tool to finish executing
-          before resuming the conversation.
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          Select this box to make the agent wait for the tool to finish executing before resuming
+          the conversation.
         </Typography>
       </Stack>
     </Box>
@@ -203,7 +213,10 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
       >
         <Box>
           <Typography variant="h6">Parameters</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
             Define the parameters that will be sent with the event.
           </Typography>
         </Box>
@@ -244,8 +257,14 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
             </IconButton>
 
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Stack
+                direction="row"
+                spacing={2}
+              >
+                <FormControl
+                  size="small"
+                  sx={{ minWidth: 120 }}
+                >
                   <InputLabel>Data type</InputLabel>
                   <Select
                     {...methods.register(`parameters.${index}.type`)}
@@ -253,7 +272,10 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
                     variant="filled"
                   >
                     {DATA_TYPES.map((type) => (
-                      <MenuItem key={type} value={type}>
+                      <MenuItem
+                        key={type}
+                        value={type}
+                      >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </MenuItem>
                     ))}
@@ -279,7 +301,10 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
                 label="Required"
               />
 
-              <FormControl size="small" fullWidth>
+              <FormControl
+                size="small"
+                fullWidth
+              >
                 <InputLabel>Value Type</InputLabel>
                 <Select
                   {...methods.register(`parameters.${index}.value_type`)}
@@ -288,7 +313,10 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
                   variant="filled"
                 >
                   {VALUE_TYPES.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
+                    <MenuItem
+                      key={type.value}
+                      value={type.value}
+                    >
                       {type.label}
                     </MenuItem>
                   ))}
@@ -314,8 +342,16 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
 
   const renderActions = (
     <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-      <Stack direction="row" spacing={2} justifyContent="flex-end">
-        <Button variant="soft" color="inherit" onClick={handleClose}>
+      <Stack
+        direction="row"
+        spacing={2}
+        justifyContent="flex-end"
+      >
+        <Button
+          variant="soft"
+          color="inherit"
+          onClick={handleClose}
+        >
           Cancel
         </Button>
         <Button
@@ -361,13 +397,13 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
           }}
         >
           {renderHeader}
-          
+
           <Box sx={{ flex: 1, overflow: 'auto' }}>
             {renderConfigurationSection}
             <Divider />
             {renderParametersSection}
           </Box>
-          
+
           {renderActions}
         </Box>
       </FormProvider>
@@ -375,4 +411,4 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
   );
 };
 
-export default memo(ClientToolDrawer); 
+export default memo(ClientToolDrawer);

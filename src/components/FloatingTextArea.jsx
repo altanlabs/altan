@@ -287,8 +287,7 @@ const FloatingTextArea = ({
           {/* Todo Widget integrated with text field */}
           <TodoWidget threadId={threadId} mode={mode} />
 
-          {/* Response Status Bar - shows active agent responses */}
-          <ResponseStatusBar threadId={threadId} className="mb-2" />
+          {/* <ResponseStatusBar threadId={threadId} className="mb-2" /> */}
 
           <div
             className={`relative flex flex-col gap-2 transition-colors duration-200 ${

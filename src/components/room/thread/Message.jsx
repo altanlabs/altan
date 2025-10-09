@@ -63,14 +63,19 @@ const Message = ({
   disableEndButtons,
   scrollToMessage,
   threadId,
+  allMessagesById,
 }) => {
   const messageSelector = useMemo(makeSelectMessages, []);
-  const { message, previousMessage } = useSelector((state) =>
+  const messagesFromStore = useSelector((state) =>
     messageSelector(state, messageId, previousMessageId),
   );
 
   const me = useSelector(selectMe);
   const members = useSelector(selectMembers);
+
+  // If allMessagesById is provided (includes placeholders), use it instead
+  const message = allMessagesById?.[messageId] || messagesFromStore.message;
+  const previousMessage = allMessagesById?.[previousMessageId] || messagesFromStore.previousMessage;
 
   // Determine if this message is from the current user
   const memberMe = me?.member;

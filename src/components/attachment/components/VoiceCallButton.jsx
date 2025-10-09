@@ -83,7 +83,8 @@ const VoiceCallButton = ({
         onClick={buttonContent.onClick || onSendMessage}
         disabled={buttonContent.disabled}
         title={buttonContent.text}
-        className="rounded-full"
+        size="icon"
+        className="rounded-full aspect-square"
       >
         {buttonContent.icon}
       </Button>

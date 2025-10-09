@@ -16,6 +16,7 @@ import {
   selectMembers,
   selectMe,
   selectActiveResponsesByThread,
+  makeSelectPlaceholderMessagesForThread,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -44,7 +45,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds, renderFeedback = false, showSpacer = false }) => {
+const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
   const messagesById = useSelector(selectMessagesById);
   const members = useSelector(selectMembers);
 
@@ -55,10 +56,7 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false, showSpacer 
   const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
 
   return (
-    <div 
-      className="pb-[20px] transition-all duration-300" 
-      style={{ paddingBottom: showSpacer ? '70vh' : '25px' }}
-    >
+    <div className="pb-[32px]">
       {/* Show ThreadActionBar if there are messages */}
       {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && (
         <ThreadActionBar
@@ -72,7 +70,7 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false, showSpacer 
 });
 Footer.displayName = 'Footer';
 
-const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
+const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded, isFetching }) => (
   <div
     style={{
       paddingTop: isCreation ? '275px' : '85px',
@@ -83,7 +81,7 @@ const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
       paddingRight: 15,
     }}
   >
-    {moreMessages && !isCreation && hasLoaded && (
+    {moreMessages && !isCreation && hasLoaded && isFetching && (
       <>
         <ScrollSeekPlaceholder
           disableImage
@@ -142,21 +140,43 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const isCreation = useIsCreation(mode);
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
+  const placeholderMessagesSelector = useMemo(makeSelectPlaceholderMessagesForThread, []);
 
   const threadId = useThreadIdAtLocation(mode, tId);
   const moreMessages = useSelector((state) => moreMessagesSelector(state, threadId));
-  const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const realMessageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const placeholderMessages = useSelector((state) => placeholderMessagesSelector(state, threadId));
   const messagesById = useSelector(selectMessagesById);
   const me = useSelector(selectMe);
   const activeResponses = useSelector((state) => selectActiveResponsesByThread(threadId)(state));
+  
+  // Merge real messages with placeholder messages
+  const { messageIds, allMessagesById } = useMemo(() => {
+    // Create a map for placeholder messages
+    const placeholderMap = {};
+    placeholderMessages.forEach(msg => {
+      placeholderMap[msg.id] = msg;
+    });
+    
+    // Get placeholder IDs
+    const placeholderIds = placeholderMessages.map(p => p.id);
+    // Combine real and placeholder IDs
+    const combinedIds = [...realMessageIds, ...placeholderIds];
+    
+    // Merge messagesById with placeholder messages
+    const combined = { ...messagesById, ...placeholderMap };
+    
+    return { 
+      messageIds: combinedIds,
+      allMessagesById: combined
+    };
+  }, [realMessageIds, placeholderMessages, messagesById]);
+  
   // console.log('ThreadMessages render', mode, threadId, messageIds); // Keep for debugging, or remove
 
   // We only track "am I fetching?" in local state
   const [isFetching, setIsFetching] = useState(false);
   const [mustScroll, setMustScroll] = useState(false);
-  
-  // Track when to show spacer for user messages
-  const [showSpacerForUserMessage, setShowSpacerForUserMessage] = useState(false);
 
   // For scrolling to a specific message if needed
   const [, setMessageToScroll] = useState(null);
@@ -239,12 +259,10 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
         .finally(() => {
           setTimeout(() => setIsFetching(false), 1000);
         });
-    } else if (mode === 'main' && !!hasLoaded && !showSpacerForUserMessage) {
-      // Only scroll to bottom if we're NOT showing spacer for user message
-      scrollToBottom('instant');
     }
+    // Removed auto-scroll on hasLoaded - only scroll when user sends message
     hasLoadedRef.current = hasLoaded;
-  }, [threadId, hasLoaded, scrollToBottom, fetchMessages, mode, messageIds.length, showSpacerForUserMessage]);
+  }, [threadId, hasLoaded, fetchMessages, messageIds.length]);
 
   // Ensure hasLoaded is set when messages are available
   useEffect(() => {
@@ -257,40 +275,37 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
     isCreationRef.current = isCreation;
   }, [isCreation]);
   
-  // Track last user message to control spacer lifecycle
-  const lastUserMessageIdRef = useRef(null);
+  // Track message count and initialization to detect new messages only
+  const prevMessageCountRef = useRef(messageIds.length);
+  const isInitializedRef = useRef(false);
   
-  // Detect when last message is from user to show spacer
+  // Detect when a NEW user message is sent and scroll to bottom
   useEffect(() => {
     if (messageIds.length > 0 && hasLoaded && mode === 'main') {
       const lastMessageId = messageIds[messageIds.length - 1];
-      const lastMessage = messagesById[lastMessageId];
+      const lastMessage = allMessagesById[lastMessageId];
       const isUserMessage = lastMessage && lastMessage.member_id === me?.id;
-      const hasActiveGeneration = activeResponses && activeResponses.length > 0;
       
-      if (isUserMessage) {
-        // New user message detected
-        if (lastUserMessageIdRef.current !== lastMessageId) {
-          // First, briefly turn off spacer to reset
-          setShowSpacerForUserMessage(false);
-          
-          // Then turn it on for this new user message
-          setTimeout(() => {
-            setShowSpacerForUserMessage(true);
-            lastUserMessageIdRef.current = lastMessageId;
-            
-            // Scroll to bottom to show the spacer
-            setTimeout(() => {
-              scrollToBottom('smooth');
-            }, 50);
-          }, 50);
-        }
-      } else if (!hasActiveGeneration && showSpacerForUserMessage) {
-        // Agent has finished generating - remove the spacer
-        setShowSpacerForUserMessage(false);
+      // Mark as initialized after first load
+      if (!isInitializedRef.current && messageIds.length > 0) {
+        isInitializedRef.current = true;
+        prevMessageCountRef.current = messageIds.length;
+        return; // Skip scroll logic on initial load
       }
+      
+      // Only scroll if message count increased and last message is from user
+      const messageCountIncreased = messageIds.length > prevMessageCountRef.current;
+      
+      if (messageCountIncreased && isUserMessage && isInitializedRef.current) {
+        // New user message was just sent - scroll to bottom
+        setTimeout(() => {
+          scrollToBottom('smooth');
+        }, 50);
+      }
+      
+      prevMessageCountRef.current = messageIds.length;
     }
-  }, [messageIds, messagesById, me, hasLoaded, mode, scrollToBottom, activeResponses, showSpacerForUserMessage]);
+  }, [messageIds, allMessagesById, me, hasLoaded, mode, scrollToBottom]);
 
   const handleScroll = useMemo(
     () =>
@@ -330,20 +345,15 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
 
   // ----------------------------------------------
   // 4d) followOutput logic
-  // Let Virtuoso auto-scroll if near bottom
+  // Auto-scroll when near bottom
   // ----------------------------------------------
   const followOutput = useCallback(() => {
-    // Don't auto-scroll if we're showing spacer for user message
-    if (showSpacerForUserMessage) {
-      return false;
-    }
-    
     const { bottom, semiBottom } = scrollStateRef.current;
     if ((bottom || semiBottom) && !isFetching) {
       return 'smooth';
     }
     return false;
-  }, [isFetching, showSpacerForUserMessage]);
+  }, [isFetching]);
 
   // ----------------------------------------------
   // 4e) itemContent callback
@@ -360,11 +370,12 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
             threadId={threadId}
             mode={mode}
             scrollToMessage={setMessageToScroll}
+            allMessagesById={allMessagesById}
           />
         </div>
       );
     },
-    [mode, threadId, messageIds, isCreation],
+    [mode, threadId, messageIds, isCreation, allMessagesById],
   );
 
   // ----------------------------------------------
@@ -421,6 +432,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   hasLoaded={hasLoaded}
                   moreMessages={moreMessages}
                   isCreation={isCreation}
+                  isFetching={isFetching}
                 />
               ),
               Footer: () => (
@@ -428,7 +440,6 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   threadId={threadId}
                   messageIds={messageIds}
                   renderFeedback={renderFeedback}
-                  showSpacer={showSpacerForUserMessage}
                 />
               ),
             }}
