@@ -1,12 +1,11 @@
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
+import { useEffect, memo, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
-import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
@@ -22,21 +21,8 @@ import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
 
-const AltanLogoFixed = (
-  <AltanLogo
-    wrapped
-    fixed
-  />
-);
-
-// eslint-disable-next-line react/display-name
-const Loadable = (Component) => (props) => (
-  <Suspense fallback={AltanLogoFixed}>
-    <Component {...props} />
-  </Suspense>
-);
-
-const AltanerFromIdea = lazy(() => import('../../components/clone/AltanerFromIdea.jsx'));
+// Note: AltanerFromIdea logic has been moved to CompactLayout for bubble convergence animation
+// Project creation now happens through bubble convergence animation instead of a separate dialog
 
 const ACCOUNT_ENTITIES = [
   'altaner',
@@ -64,39 +50,30 @@ const selectAccountInitialized = (state) => state.general.generalInitialized.acc
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
-
-  // Parse search params manually for React Router v5
-  const searchParams = new URLSearchParams(location.search);
-  const setSearchParams = (newParams) => {
-    history.replace({
-      pathname: location.pathname,
-      search: newParams.toString(),
-    });
-  };
-
-  const [idea, setIdea] = useState('');
-  const [open, setOpen] = useState(false);
   const ws = useWebSocket();
 
+  const searchParams = new URLSearchParams(location.search);
   const hideHeader = searchParams.get('hideHeader') === 'true';
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
 
-  const handleToggleNav = useCallback(() => setOpen((prev) => !prev), []);
+  const handleToggleNav = useCallback(() => {
+    // Toggle navigation handler - kept for compatibility
+  }, []);
 
   useEffect(() => {
     if (!!ws?.isOpen && !!accountId && !!user) {
       ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
     }
-  }, [ws?.isOpen, accountId, user]);
+  }, [ws, accountId, user]);
 
   useEffect(() => {
     if ((!accountId || !user) && ws?.isOpen) {
       ws.disconnect();
     }
-  }, [accountId, user, ws?.isOpen]);
+  }, [accountId, user, ws]);
 
   useEffect(() => {
     if (user) {
@@ -132,24 +109,20 @@ const DashboardLayout = ({ children }) => {
   }, [accountId, accountInitialized, accountLoading]);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('cloned_template');
     if (!!id?.length) {
       // Remove the cloned_template param from current URL
       searchParams.delete('cloned_template');
-      setSearchParams(searchParams);
+      history.replace({
+        pathname: location.pathname,
+        search: searchParams.toString(),
+      });
       // Navigate to the new clone template page
       history.push(`/clone/${id}`);
     }
-
-    const ideaParam = searchParams.get('idea');
-    if (ideaParam) {
-      setIdea(ideaParam);
-      searchParams.delete('idea');
-      setSearchParams(searchParams);
-    }
-  }, [location.search, history, searchParams, setSearchParams]);
-
-  const handleClose = useCallback(() => setIdea(''), []);
+    // Note: ?idea= param is now handled by CompactLayout for bubble animation
+  }, [location.search, location.pathname, history]);
 
   useEffect(() => {
     if (accountId && user) {
@@ -187,7 +160,7 @@ const DashboardLayout = ({ children }) => {
       {!shouldHideFloatingNav && <FloatingNavigation />}
       {/* {shouldShowAgentWidget() && <AltanAgentWidget />} */}
 
-      {!!idea && !!user && Loadable(AltanerFromIdea)({ idea, onClose: handleClose })}
+      {/* Project creation animation now handled by CompactLayout bubble convergence */}
       <Box
         sx={{
           display: { lg: 'flex' },

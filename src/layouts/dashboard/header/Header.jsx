@@ -157,28 +157,6 @@ function Header() {
                 }
               />
             </div>
-
-            {/* Beta Preview Chip - Desktop Only */}
-            {isDesktop && (
-              <Chip
-                label="Beta"
-                variant="soft"
-                color="secondary"
-                size="small"
-                sx={{
-                  mt: .5,
-                  height: '20px',
-                  fontSize: '0.65rem',
-                  fontWeight: 500,
-                  textTransform: 'lowercase',
-                  letterSpacing: '0.2px',
-                  borderRadius: '10px',
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
-                }}
-              />
-            )}
           </Stack>
 
           <StyledChart />
