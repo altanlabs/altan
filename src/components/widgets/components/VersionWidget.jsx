@@ -15,7 +15,7 @@ import { optimai } from '../../../utils/axios.js';
 
 import Iconify from '../../iconify/Iconify.jsx';
 
-const VersionWidget = memo(({ id }) => {
+const VersionWidget = ({ id }) => {
   const [templateVersion, setTemplateVersion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -240,6 +240,9 @@ const VersionWidget = memo(({ id }) => {
       </Box>
     </Card>
   );
-});
+};
 
-export default VersionWidget;
+export default memo(VersionWidget, (prevProps, nextProps) => {
+  // Only re-render if id changes
+  return prevProps.id === nextProps.id;
+});

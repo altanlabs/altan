@@ -5,32 +5,40 @@ import { memo, useState, useEffect } from 'react';
 import { optimai } from '../../../utils/axios.js';
 import Iconify from '../../iconify/Iconify.jsx';
 
-const DatabaseVersionWidget = memo(({ id }) => {
+const DatabaseVersionWidget = ({ id }) => {
   const [templateVersion, setTemplateVersion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTemplateVersion = async () => {
       if (!id) {
-        setLoading(false);
+        if (isMounted) setLoading(false);
         return;
       }
 
       try {
-        setLoading(true);
+        if (isMounted) setLoading(true);
         const response = await optimai.get(`/templates/versions/${id}`);
-        setTemplateVersion(response.data.template_version);
-        setError(null);
+        if (isMounted) {
+          setTemplateVersion(response.data.template_version);
+          setError(null);
+        }
       } catch (error) {
         console.error('Error fetching template version:', error);
-        setError('Failed to load template version');
+        if (isMounted) setError('Failed to load template version');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchTemplateVersion();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const versionString = templateVersion?.version_string || templateVersion?.version || 'Unknown';
@@ -121,6 +129,9 @@ const DatabaseVersionWidget = memo(({ id }) => {
       )}
     </Box>
   );
-});
+};
 
-export default DatabaseVersionWidget;
+export default memo(DatabaseVersionWidget, (prevProps, nextProps) => {
+  // Only re-render if id changes
+  return prevProps.id === nextProps.id;
+});

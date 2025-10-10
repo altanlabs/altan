@@ -6,26 +6,41 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { optimai } from '../../../utils/axios.js';
 import Iconify from '../../iconify/Iconify.jsx';
 
-const CommitWidget = memo(({ hash }) => {
+const CommitWidget = ({ hash }) => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [showFileDetails, setShowFileDetails] = useState(false);
   const [dispatchWithFeedback] = useFeedbackDispatch();
 
-  const fetchCommitDetails = async () => {
-    if (loading || details) return;
+  // Auto-fetch details on mount - only when hash changes and not already loaded
+  useEffect(() => {
+    let isMounted = true;
 
-    setLoading(true);
-    try {
-      const response = await optimai.get(`/interfaces/commits/${hash}`);
-      setDetails(response.data);
-    } catch (error) {
-      console.error('Error fetching commit details:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchCommitDetails = async () => {
+      if (loading || details || !hash) return;
+
+      setLoading(true);
+      try {
+        const response = await optimai.get(`/interfaces/commits/${hash}`);
+        if (isMounted) {
+          setDetails(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching commit details:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCommitDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hash]); // Only re-fetch when hash changes
 
   const handleRestore = async () => {
     setRestoring(true);
@@ -42,11 +57,6 @@ const CommitWidget = memo(({ hash }) => {
       setRestoring(false);
     }
   };
-
-  // Auto-fetch details on mount
-  useEffect(() => {
-    fetchCommitDetails();
-  }, [hash]);
 
   return (
     <Box
@@ -204,6 +214,9 @@ const CommitWidget = memo(({ hash }) => {
       )}
     </Box>
   );
-});
+};
 
-export default CommitWidget;
+export default memo(CommitWidget, (prevProps, nextProps) => {
+  // Only re-render if hash changes
+  return prevProps.hash === nextProps.hash;
+});

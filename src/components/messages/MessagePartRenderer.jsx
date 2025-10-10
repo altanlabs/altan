@@ -60,37 +60,31 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
   }
 }, (prevProps, nextProps) => {
   // Custom comparison function for better memoization
-  // Only re-render if THIS specific part's relevant data has changed
+  // Since ToolPartCard now uses its own selectors, we can simplify this
   const prevPart = prevProps.part;
   const nextPart = nextProps.part;
 
+  // If part ID changed, definitely need to re-render
   if (!prevPart || !nextPart || prevPart.id !== nextPart.id) {
-    return false; // Different parts, need to re-render
+    return false;
+  }
+
+  // Check if context props changed
+  if (prevProps.threadId !== nextProps.threadId || prevProps.mode !== nextProps.mode) {
+    return false;
   }
 
   // For the same part, check if any render-relevant properties changed
   const partType = prevPart.type || prevPart.part_type || 'text';
 
-  // Common properties that always matter
-  const commonPropsEqual = (
-    prevPart.is_done === nextPart.is_done &&
-    prevPart.error === nextPart.error &&
-    prevPart.result === nextPart.result &&
-    prevProps.threadId === nextProps.threadId &&
-    prevProps.mode === nextProps.mode
-  );
-
-  if (!commonPropsEqual) return false;
-
   // Type-specific properties
   if (partType === 'text') {
+    // Text parts only need to check text content
     return prevPart.text === nextPart.text;
   } else if (partType === 'tool') {
-    return (
-      prevPart.arguments === nextPart.arguments &&
-      prevPart.name === nextPart.name &&
-      prevPart.status === nextPart.status
-    );
+    // Tool parts use their own selectors now, so we can just check the part ID
+    // The ToolPartCard sub-components will handle their own re-rendering
+    return true;
   } else if (partType === 'thinking') {
     return (
       prevPart.text === nextPart.text &&

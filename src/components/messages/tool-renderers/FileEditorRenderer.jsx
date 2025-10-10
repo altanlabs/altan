@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react';
 import Editor from '@monaco-editor/react';
-import React, { memo, useMemo, useCallback, useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import React, { useMemo, useCallback, useState } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
@@ -72,9 +73,11 @@ function getActionVerb(toolName, isCompleted) {
  * Custom renderer for file editing tools (edit_file, create_file, write_file)
  * Displays file content in a Monaco editor with glassmorphic styling
  */
-const FileEditorRenderer = memo(({ part, onScroll, isExpanded, onToggle }) => {
+const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
+  const theme = useTheme();
   const [copied, setCopied] = useState(false);
   const isCompleted = part?.is_done;
+  const isDarkMode = theme.palette.mode === 'dark';
 
   // Calculate duration
   const duration = useMemo(() => {
@@ -104,9 +107,79 @@ const FileEditorRenderer = memo(({ part, onScroll, isExpanded, onToggle }) => {
         language: getLanguageFromFilename(filename),
         lineCount: countLines(content),
       };
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to parse file arguments:', err);
+    } catch {
+      // During streaming, JSON might be incomplete - try to extract partial content
+      if (typeof part.arguments === 'string') {
+        const argsStr = part.arguments;
+
+        // Try to extract filename from partial JSON
+        const filenameMatch = argsStr.match(/"(?:file_name|file_path|target_file|path)"\s*:\s*"([^"]*)"/);
+        const filename = filenameMatch?.[1] || 'untitled';
+
+        // Try to extract content - look for the content field and capture everything after it
+        // We need to handle escaped quotes and newlines in the JSON string
+        const contentFieldMatch = argsStr.match(/"(?:content|code_edit|new_string|code)"\s*:\s*"/);
+
+        if (contentFieldMatch) {
+          // Find where the content value starts
+          const contentStartIndex = contentFieldMatch.index + contentFieldMatch[0].length;
+          const contentSubstring = argsStr.substring(contentStartIndex);
+
+          // Try to find the end of the string value
+          // We need to handle escaped characters properly
+          let content = '';
+          let i = 0;
+          let isEscaped = false;
+
+          while (i < contentSubstring.length) {
+            const char = contentSubstring[i];
+
+            if (isEscaped) {
+              // Handle escape sequences
+              switch (char) {
+                case 'n':
+                  content += '\n';
+                  break;
+                case 't':
+                  content += '\t';
+                  break;
+                case 'r':
+                  content += '\r';
+                  break;
+                case '\\':
+                  content += '\\';
+                  break;
+                case '"':
+                  content += '"';
+                  break;
+                default:
+                  content += char;
+              }
+              isEscaped = false;
+            } else if (char === '\\') {
+              isEscaped = true;
+            } else if (char === '"') {
+              // End of string value (unescaped quote)
+              break;
+            } else {
+              content += char;
+            }
+
+            i++;
+          }
+
+          return {
+            filename,
+            content,
+            oldContent: null,
+            language: getLanguageFromFilename(filename),
+            lineCount: countLines(content),
+            isPartial: true,
+          };
+        }
+      }
+
+      // If we can't extract anything, return null
       return null;
     }
   }, [part?.arguments]);
@@ -191,64 +264,60 @@ const FileEditorRenderer = memo(({ part, onScroll, isExpanded, onToggle }) => {
         </div>
       </button>
 
-      {/* Monaco Editor - Always show when expanded, even during streaming */}
-      {isExpanded && (
+      {/* Monaco Editor - Only show when there's content */}
+      {isExpanded && fileInfo?.content && (
         <div
-          className="bg-gray-900/40 dark:bg-black/40 backdrop-blur-sm border-b border-gray-700/20"
+          className={cn(
+            'backdrop-blur-sm border-b',
+            isDarkMode
+              ? 'bg-gray-900/40 border-gray-700/20'
+              : 'bg-gray-50/80 border-gray-200/40',
+          )}
           onScroll={onScroll}
         >
-          {fileInfo?.content ? (
-            <Editor
-              height="300px"
-              language={fileInfo.language}
-              value={fileInfo.content}
-              theme="vs-dark"
-              options={{
-                readOnly: true,
-                minimap: { enabled: false },
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-                fontSize: 12,
-                fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace",
-                automaticLayout: true,
-                scrollbar: {
-                  vertical: 'auto',
-                  horizontal: 'auto',
-                  useShadows: false,
-                  verticalScrollbarSize: 8,
-                  horizontalScrollbarSize: 8,
-                },
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                overviewRulerLanes: 0,
-                renderLineHighlight: 'none',
-                contextmenu: false,
-                links: false,
-                folding: true,
-                foldingStrategy: 'indentation',
-                showFoldingControls: 'mouseover',
-                padding: { top: 12, bottom: 12 },
-              }}
-              loading={
-                <div className="flex items-center justify-center h-full text-gray-400 text-xs">
-                  Loading editor...
-                </div>
-              }
-            />
-          ) : (
-            <div className="flex items-center justify-center h-[300px] text-gray-400 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />
-                <span>Streaming content...</span>
+          <Editor
+            height="300px"
+            language={fileInfo.language}
+            value={fileInfo.content}
+            theme={isDarkMode ? 'vs-dark' : 'light'}
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+              lineNumbers: 'on',
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              fontSize: 12,
+              fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace",
+              automaticLayout: true,
+              scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto',
+                useShadows: false,
+                verticalScrollbarSize: 8,
+                horizontalScrollbarSize: 8,
+              },
+              overviewRulerBorder: false,
+              hideCursorInOverviewRuler: true,
+              overviewRulerLanes: 0,
+              renderLineHighlight: 'none',
+              contextmenu: false,
+              links: false,
+              folding: true,
+              foldingStrategy: 'indentation',
+              showFoldingControls: 'mouseover',
+              padding: { top: 12, bottom: 12 },
+            }}
+            loading={
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-xs">
+                Loading editor...
               </div>
-            </div>
-          )}
+            }
+          />
         </div>
       )}
     </div>
   );
-});
+};
 
 FileEditorRenderer.displayName = 'FileEditorRenderer';
 

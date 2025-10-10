@@ -45,7 +45,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
+const Footer = memo(({ threadId, messageIds, renderFeedback = false, isStreaming = false }) => {
   const messagesById = useSelector(selectMessagesById);
   const members = useSelector(selectMembers);
 
@@ -57,8 +57,8 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
 
   return (
     <div className="pb-[32px]">
-      {/* Show ThreadActionBar if there are messages */}
-      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && (
+      {/* Show ThreadActionBar if there are messages and not streaming */}
+      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && !isStreaming && (
         <ThreadActionBar
           threadId={threadId}
           lastMessageId={lastMessageId}
@@ -440,6 +440,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   threadId={threadId}
                   messageIds={messageIds}
                   renderFeedback={renderFeedback}
+                  isStreaming={activeResponses && activeResponses.length > 0}
                 />
               ),
             }}

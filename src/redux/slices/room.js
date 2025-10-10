@@ -2524,6 +2524,69 @@ export const makeSelectMessagePartById = () =>
     (partsById, partId) => partsById[partId] || null,
   );
 
+// Granular selectors for tool parts to minimize re-renders
+export const makeSelectToolPartHeader = () =>
+  createCachedSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        name: part.name,
+        act_now: part.act_now,
+        act_done: part.act_done,
+        is_done: part.is_done,
+        status: part.status,
+        finished_at: part.finished_at,
+        created_at: part.created_at || part.date_creation,
+        intent: part.intent,
+      };
+    },
+  )((state, partId) => `toolPartHeader_${partId}`);
+
+export const makeSelectToolPartArguments = () =>
+  createCachedSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        arguments: part.arguments,
+        is_done: part.is_done,
+      };
+    },
+  )((state, partId) => `toolPartArgs_${partId}`);
+
+export const makeSelectToolPartError = () =>
+  createCachedSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        error: part.error,
+      };
+    },
+  )((state, partId) => `toolPartError_${partId}`);
+
+export const makeSelectToolPartExecution = () =>
+  createCachedSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        task_execution_id: part.task_execution_id,
+        task_execution: part.task_execution,
+        execution: part.execution,
+      };
+    },
+  )((state, partId) => `toolPartExec_${partId}`);
+
 export const makeSelectMessagePartsContent = () =>
   createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
     return partIds
