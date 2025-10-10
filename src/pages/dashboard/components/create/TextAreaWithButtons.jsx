@@ -149,10 +149,10 @@ function TextAreaWithButtons({
 
     let finalPrompt = inputValue.trim();
 
-
     // Append free account prompt when user is on free plan
     if (isAccountFree) {
-      finalPrompt += "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today .</hide>";
+      finalPrompt +=
+        "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today .</hide>";
     }
 
     // Pass the final prompt directly to handleCreate
@@ -545,7 +545,7 @@ function TextAreaWithButtons({
                   </TextShimmer>
                 </div>
               )}
-              
+
               {/* Subtle animated gradient overlay */}
               {!loading && inputValue.trim() && (
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] hover:translate-x-[100%] hover:transition-transform hover:duration-700" />

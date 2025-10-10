@@ -26,14 +26,6 @@ function ConnectionDialog({ connection }) {
   const { enqueueSnackbar } = useSnackbar();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(connection.id).then(() => {
-      enqueueSnackbar('Connection ID copied to clipboard', { variant: 'success' });
-    }).catch(() => {
-      enqueueSnackbar('Failed to copy connection ID', { variant: 'error' });
-    });
-  };
 
   const handleRename = async () =>
     dispatch(renameConnection(connection.id, connection.account_id, newName))

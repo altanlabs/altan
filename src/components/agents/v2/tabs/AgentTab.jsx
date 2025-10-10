@@ -1,4 +1,5 @@
-import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider, Switch, FormControlLabel } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Checkbox, ListItemText, OutlinedInput } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
@@ -58,6 +59,24 @@ models.forEach((providerData) => {
   });
 });
 
+const betaHeaderOptions = [
+  'message-batches-2024-09-24',
+  'prompt-caching-2024-07-31',
+  'computer-use-2024-10-22',
+  'computer-use-2025-01-24',
+  'pdfs-2024-09-25',
+  'token-counting-2024-11-01',
+  'token-efficient-tools-2025-02-19',
+  'output-128k-2025-02-19',
+  'files-api-2025-04-14',
+  'mcp-client-2025-04-04',
+  'dev-full-thinking-2025-05-14',
+  'interleaved-thinking-2025-05-14',
+  'code-execution-2025-05-22',
+  'extended-cache-ttl-2025-04-11',
+  'context-1m-2025-08-07',
+];
+
 function AgentTab({ agentData, onFieldChange }) {
   const [systemPrompt, setSystemPrompt] = useState(agentData?.prompt || 'I am a helpful assistant');
 
@@ -71,6 +90,9 @@ function AgentTab({ agentData, onFieldChange }) {
   );
   const [reasoningEnabled, setReasoningEnabled] = useState(
     agentData?.llm_config?.settings?.reasoning_enabled ?? false,
+  );
+  const [betaHeaders, setBetaHeaders] = useState(
+    agentData?.llm_config?.settings?.beta_headers ?? [],
   );
 
   const handleSystemPromptChange = (value) => {
@@ -118,6 +140,15 @@ function AgentTab({ agentData, onFieldChange }) {
     onFieldChange('llm_config', {
       ...agentData.llm_config,
       settings: { ...agentData.llm_config?.settings, reasoning_enabled: enabled },
+    });
+  };
+
+  const handleBetaHeadersChange = (event) => {
+    const value = event.target.value;
+    setBetaHeaders(typeof value === 'string' ? value.split(',') : value);
+    onFieldChange('llm_config', {
+      ...agentData.llm_config,
+      settings: { ...agentData.llm_config?.settings, beta_headers: typeof value === 'string' ? value.split(',') : value },
     });
   };
 
@@ -307,23 +338,90 @@ function AgentTab({ agentData, onFieldChange }) {
               </Box>
             </Box>
 
-            {/* Token Limit */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
-                Limit token usage
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                Configure the maximum number of tokens that the LLM can predict. A limit will be
-                applied if the value is greater than 0.
-              </Typography>
-              <TextField
-                size="small"
-                type="number"
-                fullWidth
-                value={tokenLimit}
-                onChange={(e) => handleTokenLimitChange(e.target.value)}
-              />
-            </Box>
+            {/* Advanced Settings */}
+            <Accordion
+              sx={{
+                boxShadow: 'none',
+                '&:before': { display: 'none' },
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: '8px !important',
+                '&:first-of-type': {
+                  borderRadius: '8px !important',
+                },
+                '&:last-of-type': {
+                  borderRadius: '8px !important',
+                },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  '& .MuiAccordionSummary-content': {
+                    my: 1,
+                  },
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
+                  Advanced
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                {/* Token Limit */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
+                    Limit token usage
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    Configure the maximum number of tokens that the LLM can predict. A limit will be
+                    applied if the value is greater than 0.
+                  </Typography>
+                  <TextField
+                    size="small"
+                    type="number"
+                    fullWidth
+                    value={tokenLimit}
+                    onChange={(e) => handleTokenLimitChange(e.target.value)}
+                  />
+                </Box>
+
+                {/* Beta Headers - Only for Anthropic */}
+                {agentData?.llm_config?.provider?.toLowerCase() === 'anthropic' && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
+                      Beta Headers
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                      Enable experimental Anthropic beta features for this agent
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        multiple
+                        size="small"
+                        value={betaHeaders}
+                        onChange={handleBetaHeadersChange}
+                        input={<OutlinedInput />}
+                        renderValue={(selected) => selected.join(', ')}
+                        MenuProps={{
+                          PaperProps: {
+                            style: {
+                              maxHeight: 300,
+                            },
+                          },
+                        }}
+                      >
+                        {betaHeaderOptions.map((option) => (
+                          <MenuItem key={option} value={option}>
+                            <Checkbox checked={betaHeaders.indexOf(option) > -1} />
+                            <ListItemText primary={option} />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
           </Box>
         </Box>
       </Box>
