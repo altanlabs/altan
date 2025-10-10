@@ -75,8 +75,6 @@ function URLNavigationBar({ productionUrl, disabled = false }) {
 
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
         display: 'flex',
         alignItems: 'center',

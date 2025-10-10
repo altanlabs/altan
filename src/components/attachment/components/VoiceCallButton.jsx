@@ -7,13 +7,36 @@ import Iconify from '../../iconify/Iconify.jsx';
 import SendButton from '../SendButton.jsx';
 import MicrophoneSvg from '../ui/MicrophoneSvg.jsx';
 
-const VoiceCallButton = ({ isVoiceActive, isVoiceConnecting, isSendEnabled, onSendMessage }) => {
+const VoiceCallButton = ({ 
+  isVoiceActive, 
+  isVoiceConnecting, 
+  isSendEnabled, 
+  onSendMessage,
+  hasActiveGeneration = false,
+  onStopGeneration = null,
+}) => {
   // Get room and check if voice is enabled
   const room = useSelector(selectRoom);
   const isVoiceEnabled = room?.policy?.voice_enabled;
 
   // Determine button appearance
   const buttonContent = useMemo(() => {
+    // If agent is generating, show stop button
+    if (hasActiveGeneration && onStopGeneration) {
+      return {
+        icon: (
+          <Iconify
+            icon="mdi:stop"
+            className="text-xl"
+          />
+        ),
+        text: 'Stop',
+        className: 'bg-red-500 hover:bg-red-600 text-white',
+        disabled: false,
+        onClick: onStopGeneration,
+      };
+    }
+    
     // If voice is not enabled, don't show voice-specific states
     if (!isVoiceEnabled) {
       return null; // Use regular SendButton
@@ -52,15 +75,16 @@ const VoiceCallButton = ({ isVoiceActive, isVoiceConnecting, isSendEnabled, onSe
     }
 
     return null; // Use regular SendButton
-  }, [isVoiceConnecting, isVoiceActive, isSendEnabled, isVoiceEnabled]);
+  }, [isVoiceConnecting, isVoiceActive, isSendEnabled, isVoiceEnabled, hasActiveGeneration, onStopGeneration]);
 
   if (buttonContent) {
     return (
       <Button
-        onClick={onSendMessage}
+        onClick={buttonContent.onClick || onSendMessage}
         disabled={buttonContent.disabled}
         title={buttonContent.text}
-        className="rounded-full"
+        size="icon"
+        className="rounded-full aspect-square"
       >
         {buttonContent.icon}
       </Button>

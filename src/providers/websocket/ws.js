@@ -95,8 +95,6 @@ import {
   addThread,
   threadUpdate,
   changeThreadReadState,
-  addMessageDelta,
-  setMessageError,
   addMessageExecution,
   updateMessageExecution,
   removeThread,
@@ -104,6 +102,15 @@ import {
   deleteRunningResponse,
   updateAuthorizationRequest,
   addAuthorizationRequest,
+  // Message parts actions
+  addMessagePart,
+  updateMessagePart,
+  markMessagePartDone,
+  deleteMessagePart,
+  updateMessageStreamingState,
+  // Response lifecycle actions
+  addResponseLifecycle,
+  completeResponseLifecycle,
 } from '../../redux/slices/room';
 import {
   addPlan,
@@ -172,7 +179,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('data', data);
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'SchemaUpdate':
       // Handle schema updates with targeted refetching
@@ -685,10 +692,15 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'AuthorizationRequestNew':
+      console.log('AuthorizationRequestNew', data.data);
       dispatch(addAuthorizationRequest(data.data.attributes));
       break;
     case 'AuthorizationRequestUpdate':
-      dispatch(updateAuthorizationRequest(data.data));
+      const { id, ...changes } = data.data;
+      dispatch(updateAuthorizationRequest({
+        ids: [id],
+        changes: changes,
+      }));
       break;
     case 'RoomNew':
       dispatch(addGateRoom(data.data.attributes));
@@ -703,6 +715,165 @@ export const handleWebSocketEvent = async (data, user_id) => {
           currentUserId: user_id,
         }),
       );
+      break;
+
+    case 'AGENT_RESPONSE':
+      // Handle different event structures:
+      // 1. agent_event at root level (e.g., activation.acknowledged)
+      // 2. agent_event nested under data (e.g., response.started, response.completed)
+      const agentEvent = data.agent_event || data.data?.agent_event;
+      if (!agentEvent) {
+        console.error('AGENT_RESPONSE missing agent_event:', data);
+        break;
+      }
+
+      // Use event_data if available, otherwise use data directly
+      const eventData = agentEvent.event_data || agentEvent.data;
+      const eventType = agentEvent.event_type;
+
+      // Try multiple timestamp sources in order of preference
+      const timestamp = agentEvent.event_extras?.timestamp ||
+                       agentEvent.extras?.timestamp ||
+                       agentEvent.timestamp ||
+                       eventData?.timestamp ||
+                       new Date().toISOString();
+
+      if (!eventType) {
+        console.error('[AGENT_RESPONSE] missing event_type:', data);
+        break;
+      }
+
+      // Handle activation and response lifecycle events
+      if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
+        console.log('[AGENT_RESPONSE] Event:', eventType, data);
+
+        // console.log('[AGENT_RESPONSE] Lifecycle:', eventType, eventData, timestamp);
+        dispatch(addResponseLifecycle({
+          response_id: eventData.response_id,
+          agent_id: eventData.agent_id,
+          thread_id: eventData.thread_id,
+          event_type: eventType,
+          event_data: eventData,
+          timestamp,
+        }));
+
+        // Handle response completion events
+        if (['response.completed', 'response.failed', 'response.empty'].includes(eventType)) {
+          dispatch(completeResponseLifecycle({
+            response_id: eventData.response_id,
+            thread_id: eventData.thread_id,
+          }));
+        }
+      }
+
+      // Handle specific events
+      switch (eventType) {
+        case 'response.started':
+          const messageData = {
+            id: eventData.message_id,
+            thread_id: eventData.thread_id,
+            member_id: eventData.room_member_id,
+            date_creation: timestamp,
+            text: '',
+            is_streaming: true,
+          };
+          dispatch(addMessage(messageData));
+          dispatch(addRunningResponse(eventData));
+          break;
+
+        case 'response.completed':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            dispatch(updateMessageStreamingState({
+              messageId: eventData.message_id,
+              isStreaming: false,
+            }));
+          }
+          break;
+
+        case 'response.empty':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            batch(() => {
+              dispatch(updateMessageStreamingState({
+                messageId: eventData.message_id,
+                isStreaming: false,
+              }));
+
+              // Mark message as empty response
+              dispatch(addMessage({
+                id: eventData.message_id,
+                thread_id: eventData.thread_id,
+                meta_data: {
+                  is_empty: true,
+                },
+              }));
+            });
+          }
+          break;
+
+        case 'response.failed':
+          dispatch(deleteRunningResponse(eventData));
+          if (eventData.message_id) {
+            batch(() => {
+              dispatch(updateMessageStreamingState({
+                messageId: eventData.message_id,
+                isStreaming: false,
+              }));
+
+              // Update message meta_data with error information
+              dispatch(addMessage({
+                id: eventData.message_id,
+                thread_id: eventData.thread_id,
+                meta_data: {
+                  error_code: eventData.error_code,
+                  error_message: eventData.error_message,
+                  error_type: eventData.error_type,
+                  failed_in: eventData.failed_in,
+                  retryable: eventData.retryable,
+                  total_attempts: eventData.total_attempts,
+                },
+              }));
+
+              // Add error message part to display the error
+              // Use a deterministic ID so multiple errors for the same message replace each other
+              const errorPartId = `${eventData.message_id}-error`;
+              dispatch(addMessagePart({
+                id: errorPartId,
+                message_id: eventData.message_id,
+                thread_id: eventData.thread_id,
+                type: 'error',
+                error_code: eventData.error_code,
+                error_message: eventData.error_message,
+                error_type: eventData.error_type,
+                failed_in: eventData.failed_in,
+                retryable: eventData.retryable,
+                total_attempts: eventData.total_attempts,
+                order: 999, // Put error at the end
+                is_done: true,
+              }));
+            });
+          }
+          break;
+
+        case 'MessagePartAdded':
+          dispatch(addMessagePart(eventData));
+          break;
+        case 'MessagePartUpdated':
+          dispatch(updateMessagePart(eventData));
+          break;
+        case 'MessagePartDone':
+          dispatch(markMessagePartDone(eventData));
+          break;
+        case 'MessagePartDeleted':
+          dispatch(deleteMessagePart(eventData));
+          break;
+
+        default:
+          if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
+            console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
+          }
+      }
       break;
     case 'RoomMemberUpdate':
       dispatch(roomMemberUpdate(data.data));
@@ -726,8 +897,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'ThreadTaskNew':
-      // eslint-disable-next-line no-console
-      console.log('🆕 ThreadTaskNew:', data);
       dispatch(
         addTask({
           threadId: data.data.mainthread_id,
@@ -756,6 +925,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
         }),
       );
       break;
+    case 'MESSAGE':
+      console.log('MESSAGE', data);
+      dispatch(addMessage(data.data.attributes));
+      break;
     case 'MessageNew':
       dispatch(addMessage(data.data.attributes));
       break;
@@ -771,23 +944,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'MessageMediaAdded':
       dispatch(addMessageAttachment(data.data.attributes));
       break;
-    case 'StreamingMessageStart':
-      dispatch(addRunningResponse(data.data));
-      // console.log('@handleWebSocketEvent: StreamingMessageStart', data.data);
-      break;
-    case 'StreamingMessageEnd':
-      dispatch(deleteRunningResponse(data.data));
-      SOUND_IN.play();
-      // console.log('@handleWebSocketEvent: StreamingMessageEnd', data.data);
-      break;
     case 'TaskStarted':
       // console.log('TaskStarted:', data);
       dispatch(addMessageExecution(data.data.attributes));
-      break;
-    case 'TaskExecutionArgumentsDelta':
-      // console.log('@handleWebSocketEvent: AIgentToolChosenArgumentsDelta', data.data);
-      // console.log('AIgentToolChosenArgumentsDelta:', data.data);
-      // dispatch(updateMessageExecution(data.data));
       break;
     case 'TaskUpdate':
       // console.log('TaskUpdate:', data);
@@ -814,16 +973,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
           id: 'credits-not-enough',
         }),
       );
-      break;
-    case 'StreamingMessageDataReceived':
-      // const { id, content } = data.data;
-      // batchQueue[id] = (batchQueue[id] || '').concat(content);
-      // debouncedDispatch();
-      dispatch(addMessageDelta(data.data));
-      break;
-    case 'StreamingMessageError':
-      console.log('@handleWebSocketEvent: StreamingMessageError', data.data);
-      dispatch(setMessageError(data.data));
       break;
     default:
       // console.log('Received unknown event type', data);

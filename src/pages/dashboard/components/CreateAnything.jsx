@@ -26,7 +26,7 @@ const trackCreateProject = (projectData, analytics) => {
     analytics.trackCreateProject(
       projectData.name || 'Untitled Project',
       projectData.type || 'App',
-      properties
+      properties,
     );
 
     // Track with Google Analytics (existing)
@@ -132,16 +132,19 @@ function CreateAnything({ handleVoice }) {
 
         const data = await response.json();
         // Track project creation for non-authenticated users
-        trackCreateProject({
-          name: resourceName,
-          type: selectedType,
-          hasAttachments: files.length > 0,
-          attachmentCount: files.length,
-          hasGithub: !!githubData?.url,
-          isPublic: isPublic,
-          userAuthenticated: false,
-          promptLength: promptToUse.length,
-        }, analytics);
+        trackCreateProject(
+          {
+            name: resourceName,
+            type: selectedType,
+            hasAttachments: files.length > 0,
+            attachmentCount: files.length,
+            hasGithub: !!githubData?.url,
+            isPublic: isPublic,
+            userAuthenticated: false,
+            promptLength: promptToUse.length,
+          },
+          analytics,
+        );
 
         // Redirect to signup with the idea ID
         history.push(`/auth/register?idea=${data.id}`);
@@ -194,16 +197,19 @@ function CreateAnything({ handleVoice }) {
       const data = await response.json();
 
       // Track project creation for authenticated users
-      trackCreateProject({
-        name: resourceName,
-        type: selectedType,
-        hasAttachments: files.length > 0,
-        attachmentCount: files.length,
-        hasGithub: !!githubData?.url,
-        isPublic: isPublic,
-        userAuthenticated: true,
-        promptLength: promptToUse.length,
-      }, analytics);
+      trackCreateProject(
+        {
+          name: resourceName,
+          type: selectedType,
+          hasAttachments: files.length > 0,
+          attachmentCount: files.length,
+          hasGithub: !!githubData?.url,
+          isPublic: isPublic,
+          userAuthenticated: true,
+          promptLength: promptToUse.length,
+        },
+        analytics,
+      );
 
       history.push(`/?idea=${data.id}`);
     } catch (error) {
@@ -234,110 +240,6 @@ function CreateAnything({ handleVoice }) {
               setSelectedIcon={setSelectedIcon}
               handleVoice={handleVoice}
             />
-
-            <div
-              className="mt-4 space-y-3"
-              data-chips-area
-            >
-              {!selectedCategory ? (
-                /* Categories View */
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {chipCategories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategoryClick(category.id)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-lg bg-white dark:bg-[#1c1c1c] hover:shadow-xl hover:scale-105"
-                      style={{
-                        color: theme.palette.text.primary,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                /* Category Detail View */
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-4">
-                  {/* Header with Category Name and Controls */}
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {chipCategories.find((cat) => cat.id === selectedCategory)?.name}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {/* <button
-                        onClick={handleRefreshUseCases}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        title="Show next 5 ideas"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-600 dark:text-gray-300"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                      </button> */}
-                      <button
-                        onClick={handleCloseCategoryView}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        title="Back to categories"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-600 dark:text-gray-300"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Use Cases List */}
-                  <div className="space-y-2">
-                    {getCurrentUseCases().map((useCase, index) => (
-                      <button
-                        key={`${selectedCategory}-${currentUseCaseIndex}-${index}`}
-                        onClick={() => handleChipClick(useCase)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all duration-200 text-left transform hover:scale-[1.02] group"
-                      >
-                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200">
-                          {useCase.title}
-                        </span>
-                        <svg
-                          className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-all duration-200 opacity-0 group-hover:opacity-100 ml-auto transform translate-x-2 group-hover:translate-x-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            
           </div>
         </div>
       </div>

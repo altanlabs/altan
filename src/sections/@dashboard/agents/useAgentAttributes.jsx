@@ -33,9 +33,6 @@ const models = [
       'claude-4-opus-latest',
       'claude-4-sonnet-latest',
       'claude-3-7-sonnet-latest',
-      'claude-3-5-sonnet-latest',
-      'claude-3-opus-latest',
-      'claude-3-5-haiku-latest',
     ],
   },
   {

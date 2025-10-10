@@ -33,7 +33,9 @@ const DashboardPage = () => {
     (state) => state.general.accountAssetsInitialized.altaners,
   );
   const altanersLoading = useSelector((state) => state.general.accountAssetsLoading.altaners);
-  const interfacesInitialized = useSelector((state) => state.general.accountAssetsInitialized.interfaces);
+  const interfacesInitialized = useSelector(
+    (state) => state.general.accountAssetsInitialized.interfaces,
+  );
   const interfacesLoading = useSelector((state) => state.general.accountAssetsLoading.interfaces);
   const flowsInitialized = useSelector((state) => state.flows.initialized);
   const flowsLoading = useSelector((state) => state.flows.isLoading);
@@ -197,34 +199,95 @@ const DashboardPage = () => {
       <CompactLayout title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} · Altan`}>
         <div>
           <m.div
-            className="grid grid-cols-1 mt-4 sm:mt-12 gap-4"
+            className="grid grid-cols-1 mt-10 sm:mt-12 gap-4"
             initial="hidden"
             animate="visible"
             variants={fadeIn}
           >
             <m.div
-              className="flex flex-col py-10 sm:py-20 mt-4"
+              className="flex flex-col py-20 sm:py-20 mt-20"
               variants={fadeIn}
             >
-              {/* VOICE WIDGET */}
               <div>
-                <div className="flex flex-col items-center text-center">
+                <div className="flex flex-col items-center text-center relative">
+                  {/* Animated particles breaking free */}
+                  <div className="absolute inset-0 pointer-events-none overflow-visible">
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full opacity-0"
+                        style={{
+                          background: `linear-gradient(135deg, ${i % 4 === 0 ? '#83FCB7' : i % 4 === 1 ? '#00E5FF' : i % 4 === 2 ? '#A0C1FF' : '#639CF2'}, transparent)`,
+                          animation: `particle-explode-${i} 2.5s ease-out ${1 + i * 0.12}s forwards`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      />
+                    ))}
+                  </div>
+
                   <Typography
                     variant="h2"
                     sx={{
                       textAlign: 'center',
                       margin: 0,
                       mb: 1,
-                      fontWeight: 550,
+                      fontWeight: 700,
+                      fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' },
+                      letterSpacing: '-0.02em',
                     }}
                   >
-                    {translate(
+                    <span className="relative inline-block">
+                      <span className="font-bold text-gray-900 dark:text-white">
+                        Build without{' '}
+                      </span>
+                      <span className="relative inline-block group">
+                        {/* Glowing background - more subtle */}
+                        <span
+                          className="absolute inset-0 blur-xl opacity-60"
+                          style={{
+                            background:
+                              'linear-gradient(90deg, rgba(131, 252, 183, 0.15), rgba(0, 229, 255, 0.15), rgba(160, 193, 255, 0.15), rgba(99, 156, 242, 0.15))',
+                            animation: 'breathe 4s ease-in-out infinite',
+                          }}
+                        />
+
+                        {/* Main text with gradient */}
+                        <span
+                          className="relative font-black bg-clip-text text-transparent animate-gradient-x"
+                          style={{
+                            backgroundImage:
+                              'linear-gradient(90deg, #83FCB7, #00E5FF, #A0C1FF, #639CF2)',
+                            backgroundSize: '200% 200%',
+                          }}
+                        >
+                          limits
+                        </span>
+
+                        {/* Breaking shards effect - smaller and more subtle */}
+                        <span
+                          className="absolute -top-1 -right-1 w-2 h-2 rotate-45 opacity-0"
+                          style={{
+                            background: 'linear-gradient(135deg, #00E5FF, transparent)',
+                            animation: 'shard-1 0.8s ease-out 1.4s forwards',
+                          }}
+                        />
+                        <span
+                          className="absolute -bottom-1 -left-1 w-1.5 h-1.5 rotate-12 opacity-0"
+                          style={{
+                            background: 'linear-gradient(135deg, #83FCB7, transparent)',
+                            animation: 'shard-2 0.8s ease-out 1.5s forwards',
+                          }}
+                        />
+                      </span>
+                    </span>
+
+                    {/* {translate(
                       mode === 'agents'
                         ? 'dashboard.agents.title'
                         : mode === 'flows'
                           ? 'dashboard.flows.title'
                           : 'dashboard.createAnything.title',
-                    )}
+                    )} */}
                   </Typography>
                   <Typography
                     variant="h6"
@@ -234,13 +297,14 @@ const DashboardPage = () => {
                       mb: 2,
                     }}
                   >
-                    {translate(
+                    Your AI team to build and run anything you imagine
+                    {/* {translate(
                       mode === 'agents'
                         ? 'dashboard.agents.subtitle'
                         : mode === 'flows'
                           ? 'dashboard.flows.subtitle'
                           : 'dashboard.createAnything.subtitle',
-                    )}
+                    )} */}
                   </Typography>
                   {/* Only show original voice component when not floating or when not in voice mode */}
                   {isVoice ? (
@@ -281,7 +345,7 @@ const DashboardPage = () => {
             </m.div>
 
             <m.div
-              className="flex flex-col pt-10"
+              className="flex flex-col pt-[200px]"
               variants={fadeIn}
             >
               <div className="w-full py-2 px-4 sm:px-6 rounded-t-2xl shadow-md bg-white dark:bg-[#1c1c1c] dark:border-gray-800 shadow-[0_2px_8px_rgba(0,0,0,0.1)] dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">

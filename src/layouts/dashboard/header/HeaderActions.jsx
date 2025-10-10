@@ -48,10 +48,10 @@ const HeaderActions = ({ user, isDesktop }) => {
             />
           </HeaderIconButton>
         )}
-        <HireAnExpert
+        {/* <HireAnExpert
           open={openHireExpert}
           setOpen={setOpenHireExpert}
-        />
+        /> */}
 
         <InvitationMenuPopover isDashboard={true} />
 

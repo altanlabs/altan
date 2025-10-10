@@ -105,7 +105,7 @@
   
   .animate-gradient-x {
     background-size: 200% 200%;
-    animation: gradient-x 3s ease infinite;
+    animation: gradient-x 6s ease-in-out infinite;
   }
 
   /* Fade-in gradient background inspired by Lovable.dev */
@@ -116,6 +116,194 @@
     100% {
       opacity: 1;
     }
+  }
+
+  /* Floating agent spheres animations - subtle, organic, living movement */
+  @keyframes floatAgentSubtle {
+    0% {
+      transform: translate(0px, 0px) rotate(0deg);
+    }
+    20% {
+      transform: translate(40px, -30px) rotate(3deg);
+    }
+    40% {
+      transform: translate(70px, -20px) rotate(1deg);
+    }
+    60% {
+      transform: translate(80px, 10px) rotate(-2deg);
+    }
+    80% {
+      transform: translate(40px, 20px) rotate(-3deg);
+    }
+    100% {
+      transform: translate(0px, 0px) rotate(0deg);
+    }
+  }
+
+  /* Breathing effect - subtle scale changes like living entities */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Fade in agents on page load */
+  @keyframes fadeInAgent {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Convergence animation - all bubbles move to center */
+  @keyframes convergeToCenter {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(50vw - 50%), calc(50vh - 50%)) scale(0);
+      opacity: 0;
+    }
+  }
+
+  /* Merge into single large sphere - smooth breathing effect */
+  @keyframes mergeAndPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+  }
+
+  /* Final burst effect */
+  @keyframes burstAndFade {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  /* Strikethrough animation for "limits" */
+  @keyframes strikethrough {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Shard break animations */
+  @keyframes shard-1 {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(45deg) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(30px, -30px) rotate(90deg) scale(0.5);
+    }
+  }
+
+  @keyframes shard-2 {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(12deg) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-25px, 25px) rotate(-45deg) scale(0.3);
+    }
+  }
+
+  @keyframes shard-3 {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(-12deg) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(15px, -35px) rotate(30deg) scale(0.4);
+    }
+  }
+
+  /* Particle explosion animations - 12 directions */
+  @keyframes particle-explode-0 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 80px), calc(-50% - 80px)) scale(0.5); }
+  }
+  @keyframes particle-explode-1 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 110px), calc(-50% - 40px)) scale(0.5); }
+  }
+  @keyframes particle-explode-2 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 100px), calc(-50% + 20px)) scale(0.5); }
+  }
+  @keyframes particle-explode-3 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 70px), calc(-50% + 70px)) scale(0.5); }
+  }
+  @keyframes particle-explode-4 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 20px), calc(-50% + 95px)) scale(0.5); }
+  }
+  @keyframes particle-explode-5 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 30px), calc(-50% + 100px)) scale(0.5); }
+  }
+  @keyframes particle-explode-6 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 80px), calc(-50% + 80px)) scale(0.5); }
+  }
+  @keyframes particle-explode-7 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 110px), calc(-50% + 40px)) scale(0.5); }
+  }
+  @keyframes particle-explode-8 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 100px), calc(-50% - 20px)) scale(0.5); }
+  }
+  @keyframes particle-explode-9 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 70px), calc(-50% - 70px)) scale(0.5); }
+  }
+  @keyframes particle-explode-10 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% - 20px), calc(-50% - 95px)) scale(0.5); }
+  }
+  @keyframes particle-explode-11 {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + 30px), calc(-50% - 100px)) scale(0.5); }
   }
 }
 

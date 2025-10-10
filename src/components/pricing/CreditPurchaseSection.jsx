@@ -141,7 +141,7 @@ export default function CreditPurchaseSection({ title = 'Pay as you go', compact
         InputProps={{
           startAdornment: <Typography sx={{ mr: 1 }}>€</Typography>,
         }}
-        sx={{ mb: 3 }}
+        sx={{ mb: 1 }}
         type="number"
         inputProps={{ min: 1 }}
       />

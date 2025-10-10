@@ -49,12 +49,6 @@ const Room = ({
   const isInIframe = window !== window.parent;
   const isGuestAccess = isInIframe;
 
-  useEffect(() => {
-    return () => {
-      dispatch(clearRoomState());
-    };
-  }, [roomId]);
-
   // Auto-trigger guest authentication if in iframe and not authenticated
   useEffect(() => {
     if (isGuestAccess && !authenticated.guest && !guest) {
@@ -127,6 +121,8 @@ const Room = ({
       console.log('🏠 ❌ Conditions not met for room fetch:', {
         hasRoomId: !!roomId,
         notInitialized: !initialized,
+        hasUser: !!user,
+        hasGuest: !!guest,
       });
     }
   }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);

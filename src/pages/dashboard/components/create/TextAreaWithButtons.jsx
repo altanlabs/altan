@@ -149,10 +149,10 @@ function TextAreaWithButtons({
 
     let finalPrompt = inputValue.trim();
 
-
     // Append free account prompt when user is on free plan
     if (isAccountFree) {
-      finalPrompt += "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today .</hide>";
+      finalPrompt +=
+        "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, workflows, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - turning their $5 investment into $25 worth of credits to fully realize their vision. Keep the tone enthusiastic but professional, emphasizing that great ideas deserve great execution, and Altan can make it happen today .</hide>";
     }
 
     // Pass the final prompt directly to handleCreate
@@ -469,49 +469,53 @@ function TextAreaWithButtons({
               multiple
             />
 
-            {/* Voice input button */}
-            {/* <AIVoiceInput
-              ref={voiceInputRef}
-              onTranscript={handleTranscript}
-            /> */}
+            {/* Voice input / Generate button */}
             <m.button
               whileTap={{ scale: 0.95 }}
               onClick={!inputValue.trim() ? handleVoice : handleSubmit}
               disabled={loading}
               className={`
-                relative inline-flex items-center justify-center
-                ${!inputValue.trim() && !loading ? 'w-10 h-10 rounded-full' : 'min-w-[120px] rounded-2xl px-2 py-1'}
-                text-base font-medium tracking-tight
-                transition-all duration-300 ease-in-out
-                backdrop-blur-lg
-                text-slate-900 dark:text-slate-100
-                shadow-md dark:shadow-lg
+                relative inline-flex items-center justify-center gap-1.5
+                h-9 rounded-full px-4
+                ${!inputValue.trim() && !loading ? 'w-9 px-0' : 'min-w-[110px]'}
+                text-sm font-semibold tracking-tight
+                transition-all duration-300 ease-out
+                overflow-hidden
+                
+                bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
+                dark:from-white dark:via-gray-50 dark:to-white
+                text-white dark:text-slate-900
+                
+                shadow-lg shadow-slate-900/20 dark:shadow-white/10
+                hover:shadow-xl hover:shadow-slate-900/30 dark:hover:shadow-white/20
+                hover:scale-[1.02]
+                
+                active:scale-[0.98]
+                focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:ring-offset-2
+                
+                disabled:opacity-50
+                disabled:cursor-not-allowed 
+                disabled:hover:scale-100
+                disabled:shadow-md
 
-                hover:bg-white/90 dark:hover:bg-slate-700/70
-                hover:shadow-xl dark:hover:shadow-sm dark:hover:shadow-white/40
-                hover:ring-1 hover:ring-slate-300 dark:hover:ring-slate-600
-
-                active:scale-[0.97] active:ring-2 active:ring-blue-400/50
-                focus:outline-none focus:ring-2 focus:ring-blue-400/50
-
-                bg-white dark:bg-black
-                disabled:opacity-40
-                disabled:bg-slate-300/70 dark:disabled:bg-slate-700/50
-                disabled:text-slate-500 dark:disabled:text-slate-400
-                disabled:cursor-not-allowed disabled:shadow-none
+                before:absolute before:inset-0 
+                before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent
+                before:opacity-0 hover:before:opacity-100
+                before:transition-opacity before:duration-300
               `}
             >
               {/* Voice input when no text */}
               {!inputValue.trim() && !loading && (
                 <svg
-                  width="20"
-                  height="20"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="relative z-10"
                 >
                   <path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"></path>
                 </svg>
@@ -520,22 +524,31 @@ function TextAreaWithButtons({
               {/* Generate button when there is text */}
               {inputValue.trim() && !loading && (
                 <>
-                  <span className="opacity-100 transition-opacity duration-200">Generate</span>
+                  <span className="relative z-10 opacity-100 transition-opacity duration-200">
+                    Generate
+                  </span>
                   <Icon
-                    icon="noto:sparkles"
-                    className="ml-2 text-lg transition-opacity duration-300"
+                    icon="ph:sparkle-fill"
+                    className="relative z-10 text-sm transition-all duration-300"
                   />
                 </>
               )}
 
               {/* Loading state */}
               {loading && (
-                <TextShimmer
-                  className="text-md font-medium tracking-tight"
-                  duration={2}
-                >
-                  Generating...
-                </TextShimmer>
+                <div className="relative z-10">
+                  <TextShimmer
+                    className="text-sm font-semibold tracking-tight"
+                    duration={2}
+                  >
+                    Generating...
+                  </TextShimmer>
+                </div>
+              )}
+
+              {/* Subtle animated gradient overlay */}
+              {!loading && inputValue.trim() && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] hover:translate-x-[100%] hover:transition-transform hover:duration-700" />
               )}
             </m.button>
           </div>

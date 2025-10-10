@@ -17,6 +17,12 @@ import {
   setDrawerOpen,
   createNewThread,
   sendMessage,
+  setThreadDrawer,
+  selectThreadDrawerDetails,
+  selectThreadsById,
+  fetchThread,
+  switchToThread,
+  selectRoomThreadMain,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
@@ -59,12 +65,15 @@ const DesktopRoom = ({
   renderCredits = false,
   renderFeedback = false,
 }) => {
-  // const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
-  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
+  // const { isOpen, subscribe, unsubscribe } = useWebSocket();
 
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
   const { initialized, isLoading, drawerOpen } = useSelector(roomSelector);
+  const drawer = useSelector(selectThreadDrawerDetails);
+  const threadsById = useSelector(selectThreadsById);
+  const threadMain = useSelector(selectRoomThreadMain);
   const location = useLocation();
   const history = useHistory();
 
@@ -114,6 +123,80 @@ const DesktopRoom = ({
       }
     }
   }, [initialized.room, roomId, location.search, location.pathname, history]);
+
+  // Handle thread_id query parameter - open thread from URL
+  useEffect(() => {
+    if (initialized.room && roomId && location.search) {
+      const searchParams = new URLSearchParams(location.search);
+      const threadId = searchParams.get('thread_id');
+
+      // Only process if there's a thread_id and it's different from the current main thread
+      if (threadId && threadId !== threadMain.current) {
+        // Check if thread exists in Redux, if not fetch it
+        if (threadsById[threadId]) {
+          // Thread already loaded, switch to it in a tab
+          const threadData = threadsById[threadId];
+          dispatch(
+            switchToThread({
+              threadId,
+              threadName: threadData.name || 'Thread',
+            }),
+          );
+        } else {
+          // Thread not loaded, fetch it first
+          dispatch(fetchThread({ threadId }))
+            .then((response) => {
+              if (response) {
+                // Successfully fetched, now switch to it
+                const threadData = threadsById[threadId];
+                dispatch(
+                  switchToThread({
+                    threadId,
+                    threadName: threadData?.name || 'Thread',
+                  }),
+                );
+              } else {
+                // Thread not found, remove param from URL
+                searchParams.delete('thread_id');
+                const newSearch = searchParams.toString();
+                history.replace({
+                  pathname: location.pathname,
+                  search: newSearch ? `?${newSearch}` : '',
+                });
+              }
+            })
+            .catch((error) => {
+              console.error('Error fetching thread from URL:', error);
+              // Remove invalid thread_id from URL
+              searchParams.delete('thread_id');
+              const newSearch = searchParams.toString();
+              history.replace({
+                pathname: location.pathname,
+                search: newSearch ? `?${newSearch}` : '',
+              });
+            });
+        }
+      }
+    }
+  }, [initialized.room, roomId, location.search, location.pathname, history, threadMain.current, threadsById]);
+
+  // Sync URL with main thread (tabs) - update URL when thread changes
+  useEffect(() => {
+    if (initialized.room && roomId && threadMain.current) {
+      const searchParams = new URLSearchParams(location.search);
+      const urlThreadId = searchParams.get('thread_id');
+
+      // If current thread is different from URL, update URL
+      if (urlThreadId !== threadMain.current) {
+        searchParams.set('thread_id', threadMain.current);
+        const newSearch = searchParams.toString();
+        history.replace({
+          pathname: location.pathname,
+          search: `?${newSearch}`,
+        });
+      }
+    }
+  }, [initialized.room, roomId, threadMain.current, location.pathname, history]);
 
   const renderRoomContent = <RoomContent className="w-full" />;
 

@@ -9,7 +9,6 @@ import useResponsive from '../../../hooks/useResponsive';
 import useLocales from '../../../locales/useLocales';
 import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
-import { selectGate } from '../../../redux/slices/gate';
 import {
   fetchThread,
   makeSelectThread,
@@ -62,7 +61,7 @@ const Thread = ({
 }) => {
   const { gateId } = useParams();
   const history = useHistory();
-  const { isOpen, subscribe, unsubscribe } = useWebSocket();
+  const { isOpen } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
@@ -97,7 +96,6 @@ const Thread = ({
         ? '340px'
         : '120px'
       : '0px';
-  const gate = useSelector(selectGate);
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -146,16 +144,10 @@ const Thread = ({
 
       dispatch(fetchThread({ threadId }))
         .then((response) => {
-          console.log('🧵 fetchThread response:', response);
           if (!response) {
-            console.log('🧵 No response, redirecting to 404');
             history.replace('/404');
-          } else {
-            console.log('🧵 Thread fetched successfully, managing subscription');
-            // Set hasLoaded immediately when thread is fetched successfully
-            // The ThreadMessages component will handle its own loading state
-            setHasLoaded(true);
           }
+          // Let ThreadMessages handle setting hasLoaded when messages are ready
         })
         .catch((error) => {
           console.error('🧵 Error fetching thread:', error);
@@ -208,7 +200,6 @@ const Thread = ({
       <Helmet>
         <title>
           {helmetName} |{' '}
-          {gateId && !!gate?.account?.company?.name ? gate?.account?.company?.name : 'Altan'}
         </title>
       </Helmet>
       {/* Main container with flex layout for proper centering in empty state */}

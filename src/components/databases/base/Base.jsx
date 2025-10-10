@@ -3,7 +3,9 @@ import { useParams, useHistory } from 'react-router';
 
 import BaseLayout from './BaseLayout.jsx';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
-import HermesWebSocketProvider, { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import HermesWebSocketProvider, {
+  useHermesWebSocket,
+} from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   deleteTableById,
   getBaseById,
@@ -244,11 +246,6 @@ function Base({
   // Subscribe to base updates
   useEffect(() => {
     if (!!baseId && ws?.isOpen) {
-      console.log('🔔 Base: Subscribing to base updates:', {
-        baseId,
-        wsReadyState: ws.websocket?.readyState,
-        isOpen: ws.isOpen,
-      });
       ws.subscribe(`base:${baseId}`);
     }
   }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
@@ -339,14 +336,17 @@ function Base({
 }
 
 // Create a wrapper component that provides the HermesWebSocket
-const BaseWithHermesWebSocket = memo(function BaseWithHermesWebSocket(props) {
-  return (
-    <HermesWebSocketProvider>
-      <Base {...props} />
-    </HermesWebSocketProvider>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
-});
+const BaseWithHermesWebSocket = memo(
+  function BaseWithHermesWebSocket(props) {
+    return (
+      <HermesWebSocketProvider>
+        <Base {...props} />
+      </HermesWebSocketProvider>
+    );
+  },
+  (prevProps, nextProps) => {
+    return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
+  },
+);
 
 export default BaseWithHermesWebSocket;
