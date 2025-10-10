@@ -458,9 +458,6 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                  {isInterfaceComponent && (
-                    <CodeToggleButton disabled={!ui} />
-                  )}
                   <MobileActionsMenu
                     onDistribution={() => setOpenSettings(true)}
                     onHistory={() => setOpenVersionHistory(true)}
