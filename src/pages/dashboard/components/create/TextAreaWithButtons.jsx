@@ -469,88 +469,92 @@ function TextAreaWithButtons({
               multiple
             />
 
-            {/* Voice input / Generate button */}
-            <m.button
-              whileTap={{ scale: 0.95 }}
-              onClick={!inputValue.trim() ? handleVoice : handleSubmit}
-              disabled={loading}
-              className={`
-                relative inline-flex items-center justify-center gap-1.5
-                h-9 rounded-full px-4
-                ${!inputValue.trim() && !loading ? 'w-9 px-0' : 'min-w-[110px]'}
-                text-sm font-semibold tracking-tight
-                transition-all duration-300 ease-out
-                overflow-hidden
-                
-                bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
-                dark:from-white dark:via-gray-50 dark:to-white
-                text-white dark:text-slate-900
-                
-                shadow-lg shadow-slate-900/20 dark:shadow-white/10
-                hover:shadow-xl hover:shadow-slate-900/30 dark:hover:shadow-white/20
-                hover:scale-[1.02]
-                
-                active:scale-[0.98]
-                focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:ring-offset-2
-                
-                disabled:opacity-50
-                disabled:cursor-not-allowed 
-                disabled:hover:scale-100
-                disabled:shadow-md
-
-                before:absolute before:inset-0 
-                before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent
-                before:opacity-0 hover:before:opacity-100
-                before:transition-opacity before:duration-300
-              `}
-            >
-              {/* Voice input when no text */}
-              {!inputValue.trim() && !loading && (
+            {/* Voice input button - only show when no text */}
+            {!inputValue.trim() && !loading && (
+              <m.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleVoice}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                title="Voice input"
+              >
                 <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="relative z-10"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-slate-700 dark:text-white"
                 >
-                  <path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"></path>
+                  <path d="M7.167 15.416V4.583a.75.75 0 0 1 1.5 0v10.833a.75.75 0 0 1-1.5 0Zm4.166-2.5V7.083a.75.75 0 0 1 1.5 0v5.833a.75.75 0 0 1-1.5 0ZM3 11.25V8.75a.75.75 0 0 1 1.5 0v2.5a.75.75 0 0 1-1.5 0Zm12.5 0V8.75a.75.75 0 0 1 1.5 0v2.5a.75.75 0 0 1-1.5 0Z"></path>
                 </svg>
-              )}
+              </m.button>
+            )}
 
-              {/* Generate button when there is text */}
-              {inputValue.trim() && !loading && (
-                <>
-                  <span className="relative z-10 opacity-100 transition-opacity duration-200">
-                    Generate
-                  </span>
-                  <Icon
-                    icon="ph:sparkle-fill"
-                    className="relative z-10 text-sm transition-all duration-300"
-                  />
-                </>
-              )}
+            {/* Generate button - only show when there is text or loading */}
+            {(inputValue.trim() || loading) && (
+              <m.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSubmit}
+                disabled={loading}
+                className="
+                  relative inline-flex items-center justify-center gap-1.5
+                  h-9 rounded-full px-4 min-w-[110px]
+                  text-sm font-semibold tracking-tight
+                  transition-all duration-300 ease-out
+                  overflow-hidden
+                  
+                  bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
+                  dark:from-white dark:via-gray-50 dark:to-white
+                  text-white dark:text-slate-900
+                  
+                  shadow-lg shadow-slate-900/20 dark:shadow-white/10
+                  hover:shadow-xl hover:shadow-slate-900/30 dark:hover:shadow-white/20
+                  hover:scale-[1.02]
+                  
+                  active:scale-[0.98]
+                  focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:ring-offset-2
+                  
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed 
+                  disabled:hover:scale-100
+                  disabled:shadow-md
 
-              {/* Loading state */}
-              {loading && (
-                <div className="relative z-10">
-                  <TextShimmer
-                    className="text-sm font-semibold tracking-tight"
-                    duration={2}
-                  >
-                    Generating...
-                  </TextShimmer>
-                </div>
-              )}
+                  before:absolute before:inset-0 
+                  before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent
+                  before:opacity-0 hover:before:opacity-100
+                  before:transition-opacity before:duration-300
+                "
+              >
+                {!loading && (
+                  <>
+                    <span className="relative z-10 opacity-100 transition-opacity duration-200">
+                      Generate
+                    </span>
+                    <Icon
+                      icon="ph:sparkle-fill"
+                      className="relative z-10 text-sm transition-all duration-300"
+                    />
+                  </>
+                )}
 
-              {/* Subtle animated gradient overlay */}
-              {!loading && inputValue.trim() && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] hover:translate-x-[100%] hover:transition-transform hover:duration-700" />
-              )}
-            </m.button>
+                {/* Loading state */}
+                {loading && (
+                  <div className="relative z-10">
+                    <TextShimmer
+                      className="text-sm font-semibold tracking-tight"
+                      duration={2}
+                    >
+                      Generating...
+                    </TextShimmer>
+                  </div>
+                )}
+
+                {/* Subtle animated gradient overlay */}
+                {!loading && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] hover:translate-x-[100%] hover:transition-transform hover:duration-700" />
+                )}
+              </m.button>
+            )}
           </div>
         </div>
       </div>
