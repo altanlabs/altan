@@ -199,13 +199,13 @@ const DashboardPage = () => {
       <CompactLayout title={`${mode.charAt(0).toUpperCase() + mode.slice(1)} · Altan`}>
         <div>
           <m.div
-            className="grid grid-cols-1 mt-10 sm:mt-12 gap-4"
+            className="grid grid-cols-1 gap-4"
             initial="hidden"
             animate="visible"
             variants={fadeIn}
           >
             <m.div
-              className="flex flex-col py-20 sm:py-20 mt-20"
+              className="flex flex-col items-center justify-center min-h-[80vh] sm:min-h-[70vh] py-10 sm:py-20"
               variants={fadeIn}
             >
               <div>

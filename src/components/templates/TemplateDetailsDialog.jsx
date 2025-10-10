@@ -5,6 +5,7 @@ import ReactPlayer from 'react-player/youtube';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
+import { useAuthContext } from '../../auth/useAuthContext';
 import { selectAccount, selectIsAccountFree } from '../../redux/slices/general';
 import { optimai_shop } from '../../utils/axios';
 import { useAnalytics } from '../../hooks/useAnalytics';
