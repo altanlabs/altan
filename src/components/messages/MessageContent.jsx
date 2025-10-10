@@ -1,185 +1,76 @@
-import { Stack, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import { CLEAR_EDITOR_COMMAND } from 'lexical';
-import { memo, useMemo, useState, useEffect } from 'react';
-
-import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
+import { Stack } from '@mui/material';
+import { memo, useMemo } from 'react';
 
 import CustomMarkdown from './CustomMarkdown.jsx';
-import Editor from '../editor/Editor.tsx';
+import MessageError from './MessageError.jsx';
+import MessagePartRenderer from './MessagePartRenderer.jsx';
 import MessageMedia from './wrapper/MessageMedia.jsx';
-import MessageTaskExecutions from './wrapper/MessageTaskExecutions.jsx';
 import {
   makeSelectHasMessageContent,
   makeSelectHasMessageMedia,
-  makeSelectMessageContent,
-  sendMessage,
-  updateMessage,
-  selectMe,
+  makeSelectMessageParts,
+  selectMessagePartsById,
 } from '../../redux/slices/room.js';
-import { useSelector, dispatch } from '../../redux/store.js';
+import { useSelector } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
-
-// Function to extract commit resources from message content
-function extractCommitResources(message) {
-  if (!message) return [];
-
-  const pattern = /\[(.*?)\]\((?:\/)?([^/]+)(?:\/([^/)]+))?\)/g;
-  let match;
-  const commitResources = [];
-
-  while ((match = pattern.exec(message))) {
-    const [, name, resourceType, resourceId] = match;
-    if (name && resourceType && resourceType.toLowerCase() === 'commit') {
-      commitResources.push({
-        id: resourceId || resourceType,
-        name,
-        resourceName: resourceType,
-        fullMatch: match[0], // Store the full match for removal
-      });
-    }
-  }
-  return commitResources;
-}
-
-// Function to extract database version resources from message content
-function extractDatabaseVersionResources(message) {
-  if (!message) return [];
-
-  const pattern = /\[(.*?)\]\((?:\/)?([^/]+)(?:\/([^/)]+))?\)/g;
-  let match;
-  const databaseVersionResources = [];
-
-  while ((match = pattern.exec(message))) {
-    const [, name, resourceType, resourceId] = match;
-    if (name && resourceType && resourceType.toLowerCase() === 'database-version') {
-      databaseVersionResources.push({
-        id: resourceId || resourceType,
-        name,
-        resourceName: resourceType,
-        fullMatch: match[0], // Store the full match for removal
-      });
-    }
-  }
-  return databaseVersionResources;
-}
 
 const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const selectors = useMemo(
     () => ({
       hasContent: makeSelectHasMessageContent(),
       hasMedia: makeSelectHasMessageMedia(),
-      content: makeSelectMessageContent(),
+      messageParts: makeSelectMessageParts(),
     }),
     [],
   );
 
   const hasContent = useSelector((state) => selectors.hasContent(state, message.id));
   const hasMessageMedia = useSelector((state) => selectors.hasMedia(state, message.id));
-  const messageContent = useSelector((state) => selectors.content(state, message.id));
-  const me = useSelector(selectMe);
+  const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
+  const partsById = useSelector(selectMessagePartsById);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editorEmpty, setEditorEmpty] = useState(false);
-  const [thoughtAccordionOpen, setThoughtAccordionOpen] = useState(false);
-  const editorRef = useMemo(() => ({ current: {} }), []);
+  // Create sorted parts with fresh data on every render
+  // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
+  const sortedParts = useMemo(() => {
+    if (messageParts.length === 0) return [];
 
-  const isOwnMessage = message.member_id === me?.id;
+    return messageParts
+      .map((partId) => partsById[partId])
+      .filter(Boolean)
+      .sort((a, b) => {
+        // First, sort by order
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        // Then, sort by block_order
+        const blockOrderA = a.block_order ?? 0;
+        const blockOrderB = b.block_order ?? 0;
+        return blockOrderA - blockOrderB;
+      });
+  }, [messageParts, partsById]);
 
-  // Check if message contains commits
-  const commitResources = useMemo(() => extractCommitResources(messageContent), [messageContent]);
-  const hasCommits = commitResources.length > 0;
+  // Show "Thinking..." only if there's no content, no message parts, no media, and no error
+  const hasMessageParts = messageParts.length > 0;
 
-  // Check if message contains database versions
-  const databaseVersionResources = useMemo(
-    () => extractDatabaseVersionResources(messageContent),
-    [messageContent],
-  );
-  const hasDatabaseVersions = databaseVersionResources.length > 0;
+  // Check if message has error in meta_data
+  const hasMetaDataError = useMemo(() => {
+    return !!(message.meta_data?.error_code || message.meta_data?.error_message || message.meta_data?.error_type);
+  }, [message.meta_data]);
 
-  // Combined logic for both commits and database versions
-  const hasAnyWidgets = hasCommits || hasDatabaseVersions;
-  const allWidgetResources = useMemo(
-    () => [...commitResources, ...databaseVersionResources],
-    [commitResources, databaseVersionResources],
-  );
+  // Check if response is empty
+  const isEmptyResponse = useMemo(() => {
+    return message.meta_data?.is_empty === true;
+  }, [message.meta_data]);
 
-  // Remove both commits and database versions from text content
-  const textContentWithoutWidgets = useMemo(() => {
-    let cleanedContent = messageContent || '';
-    allWidgetResources.forEach((widget) => {
-      cleanedContent = cleanedContent.replace(widget.fullMatch, '');
-    });
-    return cleanedContent.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
-  }, [messageContent, allWidgetResources]);
-
-  // Create markdown with all widgets
-  const widgetOnlyContent = useMemo(() => {
-    return allWidgetResources
-      .map(
-        (widget) => `[${widget.name}](${widget.resourceName}${widget.id ? `/${widget.id}` : ''})`,
-      )
-      .join('\n\n');
-  }, [allWidgetResources]);
-
-  const handleMessageClick = () => {
-    console.log('TODO');
-    // if (isOwnMessage && hasContent) {
-    //   setIsEditing(true);
-    // }
-  };
-
-  const handleCancelEdit = (e) => {
-    e.stopPropagation();
-    setIsEditing(false);
-    if (editorRef.current?.editor) {
-      editorRef.current.editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-    }
-  };
-
-  const handleSaveEdit = (e) => {
-    e.stopPropagation();
-    const content = editorRef.current?.editor?._editorState.read(() => {
-      const root = editorRef.current.editor.getEditorState()._nodeMap.get('root');
-      return root.getTextContent();
-    });
-
-    if (content && !editorEmpty && content !== messageContent) {
-      dispatch(
-        updateMessage({
-          messageId: message.id,
-          content,
-          threadId,
-        }),
-      );
-    }
-    setIsEditing(false);
-    editorRef.current?.editor?.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-  };
-
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.sendContent = handleSaveEdit;
-    }
-  }, [handleSaveEdit]);
-
-  if (!hasContent && !message.error && !hasMessageMedia) {
+  if (!hasContent && !hasMessageParts && !message.error && !hasMessageMedia && !hasMetaDataError && !isEmptyResponse) {
     return (
       <Stack
         spacing={1}
         width="100%"
       >
-        <TextShimmer
-          className="text-sm font-semibold truncate"
-          duration={2}
-        >
-          Thinking...
-        </TextShimmer>
-        {message?.thread_id === threadId && (
-          <MessageTaskExecutions
-            messageId={message.id}
-            date_creation={message.date_creation}
-          />
-        )}
+        <Iconify icon="svg-spinners:3-dots-fade" />
       </Stack>
     );
   }
@@ -192,207 +83,79 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
         pt: 0.25,
       }}
     >
-      {/* Show accordion with thought process when commits are detected */}
-      {hasAnyWidgets && (textContentWithoutWidgets || message?.thread_id === threadId) && (
-        <Accordion
-          expanded={thoughtAccordionOpen}
-          onChange={() => setThoughtAccordionOpen(!thoughtAccordionOpen)}
-          className="w-full"
-          sx={{
-            margin: 0,
-            '&.MuiAccordion-root.Mui-expanded': { margin: 0 },
-            '&.MuiAccordion-root': {
-              boxShadow: 'none',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              '&:before': { display: 'none' },
-            },
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<Iconify icon="mdi:chevron-down" />}
-            sx={{
-              minHeight: 'auto',
-              '& .MuiAccordionSummary-content': {
-                margin: '8px 0',
-                '&.Mui-expanded': { margin: '8px 0' },
-              },
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <Iconify
-                icon="mdi:brain"
-                className="text-gray-600 dark:text-gray-400"
-                width={16}
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Worked for a while
-              </span>
-            </div>
-          </AccordionSummary>
-          <AccordionDetails sx={{ padding: '0 16px 16px 16px' }}>
-            <Stack spacing={1}>
-              {/* Show text content without commits */}
-              {textContentWithoutWidgets && (
-                <div onClick={handleMessageClick}>
-                  {isEditing ? (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="relative flex w-full mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-2 max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-gray-900/95 hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-gray-900/95 focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50"
-                    >
-                      <div className="flex flex-col w-full relative py-1">
-                        <Editor
-                          key={`edit_${message.id}`}
-                          threadId={threadId}
-                          editorRef={editorRef}
-                          placeholder="Edit your message..."
-                          setEditorEmpty={setEditorEmpty}
-                          disabled={false}
-                          namespace={`edit_${message.id}`}
-                        />
-                        <div className="flex justify-end gap-2 mt-2">
-                          <button
-                            onClick={handleCancelEdit}
-                            className="px-4 py-1 text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={handleSaveEdit}
-                            className="px-4 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors"
-                          >
-                            Enviar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
-                      <CustomMarkdown
-                        text={textContentWithoutWidgets}
-                        threadId={threadId}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Show task executions in the accordion */}
-              {message?.thread_id === threadId && (
-                <MessageTaskExecutions
-                  messageId={message.id}
-                  date_creation={message.date_creation}
-                />
-              )}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-      )}
-
       {/* Main content area */}
-      <div onClick={handleMessageClick}>
-        {isEditing && !hasAnyWidgets ? (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative flex w-full mx-16 xl:mx-10 lg:mx-7 md:mx-7 sm:mx-2 max-w-[850px] flex-col pb-3 pt-3 px-4 gap-2 rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-300/20 dark:border-white/10 transition-colors duration-200 hover:bg-white/95 dark:hover:bg-gray-900/95 hover:border-gray-400/30 dark:hover:border-white/15 focus-within:bg-white/95 dark:focus-within:bg-gray-900/95 focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50"
-          >
-            <div className="flex flex-col w-full relative py-1">
-              <Editor
-                key={`edit_${message.id}`}
-                threadId={threadId}
-                editorRef={editorRef}
-                placeholder="Edit your message..."
-                setEditorEmpty={setEditorEmpty}
-                disabled={false}
-                namespace={`edit_${message.id}`}
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <button
-                  onClick={handleCancelEdit}
-                  className="px-4 py-1 text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveEdit}
-                  className="px-4 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors"
-                >
-                  Send
-                </button>
+      <div>
+        {isEmptyResponse ? (
+          // Show empty response indicator
+          <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+            <Iconify icon="mdi:information-outline" className="w-4 h-4" />
+            <span>No response generated</span>
+          </div>
+        ) : hasMetaDataError && !hasMessageParts ? (
+          // Render error from meta_data if no message parts exist
+          <div className="mb-2">
+            <div className="w-full rounded-md bg-red-50/30 dark:bg-red-950/10 border-l-2 border-red-400 dark:border-red-600">
+              <div className="px-2.5 py-2">
+                <div className="flex items-start gap-1.5">
+                  <Iconify icon="mdi:alert-circle-outline" className="w-3.5 h-3.5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5 opacity-70" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="font-medium text-red-800 dark:text-red-200 text-xs">
+                        {message.meta_data.error_type || 'Error'}
+                      </span>
+                      {message.meta_data.error_code && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100/60 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+                          {message.meta_data.error_code}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed mb-1.5">
+                      {message.meta_data.error_message || 'An error occurred'}
+                    </div>
+                    {(message.meta_data.failed_in || message.meta_data.total_attempts) && (
+                      <div className="flex flex-wrap gap-2 text-[11px] text-red-600/70 dark:text-red-400/70">
+                        {message.meta_data.failed_in && (
+                          <div className="flex items-center gap-1">
+                            <Iconify icon="mdi:map-marker" className="w-2.5 h-2.5" />
+                            <span>{message.meta_data.failed_in}</span>
+                          </div>
+                        )}
+                        {message.meta_data.total_attempts && (
+                          <div className="flex items-center gap-1">
+                            <Iconify icon="mdi:refresh" className="w-2.5 h-2.5" />
+                            <span>{message.meta_data.total_attempts} attempt{message.meta_data.total_attempts > 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className={isOwnMessage ? 'cursor-pointer hover:opacity-80' : ''}>
-            {hasAnyWidgets ? (
-              // Show only commit widgets as main content
-              <CustomMarkdown
-                text={widgetOnlyContent}
+        ) : hasMessageParts ? (
+          // Render message parts in order
+          <div className="message-parts-container">
+            {sortedParts.map((part) => (
+              <MessagePartRenderer
+                key={part.id}
+                part={part}
                 threadId={threadId}
-                minified={mode === 'mini'}
+                mode={mode}
               />
-            ) : (
-              // Show regular content
-              <CustomMarkdown
-                messageId={message?.id}
-                threadId={threadId}
-                minified={mode === 'mini'}
-              />
-            )}
+            ))}
           </div>
+        ) : (
+          // Show regular content
+          <CustomMarkdown
+            messageId={message?.id}
+            threadId={threadId}
+            minified={mode === 'mini'}
+          />
         )}
       </div>
-
-      {message.error && (
-        <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 p-4 shadow-lg">
-          <div className="flex items-center space-x-2">
-            <Iconify
-              icon="bx:error-alt"
-              className="text-red-500 dark:text-red-400"
-            />
-            <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
-              {message.error.type || 'Provider error'}
-            </h2>
-          </div>
-          <div className="mt-2 flex flex-col space-y-3">
-            <p className="text-sm text-red-700 dark:text-red-300">
-              We are experiencing high demand. {message.error.message}
-            </p>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => {
-                  dispatch(
-                    sendMessage({
-                      content: 'continue',
-                      threadId: message.thread_id,
-                    }),
-                  );
-                }}
-                className="inline-flex items-center px-3 py-1 text-sm font-medium bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-              >
-                Retry
-              </button>
-              <a
-                href="https://www.altan.ai/pricing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Upgrade
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      <MessageError message={message} />
       <MessageMedia messageId={message.id} />
-
-      {!hasAnyWidgets && message?.thread_id === threadId && (
-        <MessageTaskExecutions
-          messageId={message.id}
-          date_creation={message.date_creation}
-        />
-      )}
     </Stack>
   );
 };

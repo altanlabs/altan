@@ -175,14 +175,6 @@ export default function SubscribedPricing() {
           xs={12}
           md={8}
         >
-          <Typography
-            variant="h4"
-            sx={{ mb: 2, fontWeight: 700 }}
-          >
-            Upgrade Your Plan
-          </Typography>
-
-          {/* Growth Plan */}
           {filteredGrowthPlans.length > 0 && (
             <Card sx={{ p: 4, mb: 4 }}>
               <Typography

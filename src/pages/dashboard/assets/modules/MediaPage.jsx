@@ -36,7 +36,7 @@ function MediaFilters({ searchTerm, setSearchTerm, selectedFilters, onFilterChan
   ];
 
   return (
-    <Stack spacing={2} sx={{ mb: 3 }}>
+    <Stack spacing={2} sx={{ mb: 3}}>
       <TextField
         size="small"
         placeholder="Search media files..."
@@ -102,17 +102,6 @@ const MediaPage = () => {
   return (
     <CompactLayout
       title={'Media · Altan'}
-      breadcrumb={{
-        title: 'Media',
-        links: [
-          {
-            name: 'Assets',
-          },
-          {
-            name: 'Media',
-          },
-        ],
-      }}
       toolbarChildren={
         <MediaType
           value={mediaType}

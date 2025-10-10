@@ -22,17 +22,10 @@ import Logo from '../logo';
 function ConnectionDialog({ connection }) {
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState(connection.name);
+  const [copyButtonText, setCopyButtonText] = useState('Copy');
   const { enqueueSnackbar } = useSnackbar();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(connection.id).then(() => {
-      enqueueSnackbar('Connection ID copied to clipboard', { variant: 'success' });
-    }).catch(() => {
-      enqueueSnackbar('Failed to copy connection ID', { variant: 'error' });
-    });
-  };
 
   const handleRename = async () =>
     dispatch(renameConnection(connection.id, connection.account_id, newName))
@@ -42,6 +35,18 @@ function ConnectionDialog({ connection }) {
         enqueueSnackbar('Error renaming connection', { variant: 'error' });
       })
       .finally(() => handleClose());
+
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(connection.id);
+      setCopyButtonText('Copied!');
+      enqueueSnackbar('Connection ID copied to clipboard', { variant: 'success' });
+      setTimeout(() => setCopyButtonText('Copy'), 2000);
+    } catch (error) {
+      console.error('Failed to copy connection ID:', error);
+      enqueueSnackbar('Failed to copy connection ID', { variant: 'error' });
+    }
+  };
 
   return (
     <>

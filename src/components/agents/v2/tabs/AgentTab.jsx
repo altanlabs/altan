@@ -1,4 +1,5 @@
-import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slider, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Checkbox, ListItemText, OutlinedInput } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
@@ -6,9 +7,9 @@ const models = [
   {
     provider: 'Anthropic',
     models: [
-      'claude-4.1-opus-latest',
-      'claude-4.5-sonnet-latest',
+      'claude-4-1-opus-latest',
       'claude-4-opus-latest',
+      'claude-4-5-sonnet-latest',
       'claude-4-sonnet-latest',
     ],
   },
@@ -33,7 +34,23 @@ const models = [
   },
 ];
 
-const reasoningModels = ['o1-mini', 'o1', 'o3-mini', 'o3', 'o4-mini'];
+// Models that always have reasoning enabled
+const alwaysReasoningModels = [
+  'o1-mini',
+  'o1',
+  'o3-mini',
+  'o3',
+  'o4-mini',
+];
+
+// Models that support optional reasoning (can be enabled/disabled)
+const optionalReasoningModels = [
+  'gpt-5',
+  'claude-4-1-opus-latest',
+  'claude-4-opus-latest',
+  'claude-4-5-sonnet-latest',
+  'claude-4-sonnet-latest',
+];
 
 const modelToProvider = {};
 models.forEach((providerData) => {
@@ -41,6 +58,24 @@ models.forEach((providerData) => {
     modelToProvider[model] = providerData.provider;
   });
 });
+
+const betaHeaderOptions = [
+  'message-batches-2024-09-24',
+  'prompt-caching-2024-07-31',
+  'computer-use-2024-10-22',
+  'computer-use-2025-01-24',
+  'pdfs-2024-09-25',
+  'token-counting-2024-11-01',
+  'token-efficient-tools-2025-02-19',
+  'output-128k-2025-02-19',
+  'files-api-2025-04-14',
+  'mcp-client-2025-04-04',
+  'dev-full-thinking-2025-05-14',
+  'interleaved-thinking-2025-05-14',
+  'code-execution-2025-05-22',
+  'extended-cache-ttl-2025-04-11',
+  'context-1m-2025-08-07',
+];
 
 function AgentTab({ agentData, onFieldChange }) {
   const [systemPrompt, setSystemPrompt] = useState(agentData?.prompt || 'I am a helpful assistant');
@@ -52,6 +87,12 @@ function AgentTab({ agentData, onFieldChange }) {
   const [tokenLimit, setTokenLimit] = useState(agentData?.llm_config?.settings?.token_limit ?? -1);
   const [reasoningEffort, setReasoningEffort] = useState(
     agentData?.llm_config?.settings?.reasoning_effort || 'medium',
+  );
+  const [reasoningEnabled, setReasoningEnabled] = useState(
+    agentData?.llm_config?.settings?.reasoning_enabled ?? false,
+  );
+  const [betaHeaders, setBetaHeaders] = useState(
+    agentData?.llm_config?.settings?.beta_headers ?? [],
   );
 
   const handleSystemPromptChange = (value) => {
@@ -91,6 +132,23 @@ function AgentTab({ agentData, onFieldChange }) {
     onFieldChange('llm_config', {
       ...agentData.llm_config,
       settings: { ...agentData.llm_config?.settings, reasoning_effort: value },
+    });
+  };
+
+  const handleReasoningEnabledChange = (enabled) => {
+    setReasoningEnabled(enabled);
+    onFieldChange('llm_config', {
+      ...agentData.llm_config,
+      settings: { ...agentData.llm_config?.settings, reasoning_enabled: enabled },
+    });
+  };
+
+  const handleBetaHeadersChange = (event) => {
+    const value = event.target.value;
+    setBetaHeaders(typeof value === 'string' ? value.split(',') : value);
+    onFieldChange('llm_config', {
+      ...agentData.llm_config,
+      settings: { ...agentData.llm_config?.settings, beta_headers: typeof value === 'string' ? value.split(',') : value },
     });
   };
 
@@ -168,7 +226,33 @@ function AgentTab({ agentData, onFieldChange }) {
               </Select>
             </FormControl>
 
-            {reasoningModels.includes(llmModel) && (
+            {/* Optional Reasoning Toggle (for GPT-5 and Claude models) */}
+            {optionalReasoningModels.includes(llmModel) && (
+              <Box sx={{ mb: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={reasoningEnabled}
+                      onChange={(e) => handleReasoningEnabledChange(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
+                        Enable Reasoning
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Enable extended thinking for more complex reasoning tasks
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Box>
+            )}
+
+            {/* Reasoning Effort Controls */}
+            {(alwaysReasoningModels.includes(llmModel) ||
+              (optionalReasoningModels.includes(llmModel) && reasoningEnabled)) && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
                   Reasoning Effort
@@ -254,23 +338,90 @@ function AgentTab({ agentData, onFieldChange }) {
               </Box>
             </Box>
 
-            {/* Token Limit */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
-                Limit token usage
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                Configure the maximum number of tokens that the LLM can predict. A limit will be
-                applied if the value is greater than 0.
-              </Typography>
-              <TextField
-                size="small"
-                type="number"
-                fullWidth
-                value={tokenLimit}
-                onChange={(e) => handleTokenLimitChange(e.target.value)}
-              />
-            </Box>
+            {/* Advanced Settings */}
+            <Accordion
+              sx={{
+                boxShadow: 'none',
+                '&:before': { display: 'none' },
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: '8px !important',
+                '&:first-of-type': {
+                  borderRadius: '8px !important',
+                },
+                '&:last-of-type': {
+                  borderRadius: '8px !important',
+                },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  '& .MuiAccordionSummary-content': {
+                    my: 1,
+                  },
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
+                  Advanced
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                {/* Token Limit */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
+                    Limit token usage
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    Configure the maximum number of tokens that the LLM can predict. A limit will be
+                    applied if the value is greater than 0.
+                  </Typography>
+                  <TextField
+                    size="small"
+                    type="number"
+                    fullWidth
+                    value={tokenLimit}
+                    onChange={(e) => handleTokenLimitChange(e.target.value)}
+                  />
+                </Box>
+
+                {/* Beta Headers - Only for Anthropic */}
+                {agentData?.llm_config?.provider?.toLowerCase() === 'anthropic' && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
+                      Beta Headers
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                      Enable experimental Anthropic beta features for this agent
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        multiple
+                        size="small"
+                        value={betaHeaders}
+                        onChange={handleBetaHeadersChange}
+                        input={<OutlinedInput />}
+                        renderValue={(selected) => selected.join(', ')}
+                        MenuProps={{
+                          PaperProps: {
+                            style: {
+                              maxHeight: 300,
+                            },
+                          },
+                        }}
+                      >
+                        {betaHeaderOptions.map((option) => (
+                          <MenuItem key={option} value={option}>
+                            <Checkbox checked={betaHeaders.indexOf(option) > -1} />
+                            <ListItemText primary={option} />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
           </Box>
         </Box>
       </Box>

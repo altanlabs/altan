@@ -8,6 +8,11 @@ import {
   Autocomplete,
   Box,
   Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 // import { truncate } from 'lodash';
 import React, { memo, useState, useEffect, useMemo, useCallback } from 'react';
@@ -251,6 +256,14 @@ function importDefaultData(tool, schema) {
 /* Helpers */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+/** Extract intent settings from tool metadata */
+const getIntentSettings = (tool) => ({
+  intent_settings: {
+    intent: tool?.meta_data?.intent_settings?.intent ?? false,
+    ui_intent: tool?.meta_data?.intent_settings?.ui_intent ?? false,
+  }
+});
+
 /** Merge headers, path_params & query_params into a single JSON-schema object */
 const aggregateLocationsSchema = (schemaMeta = {}) => {
   const groups = ['path_params', 'query_params', 'headers', 'body'];
@@ -333,12 +346,13 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
             locations: locationsSchema,
           };
 
-          setInitialDynamicDetails(type); // stash original for “Back”
+          setInitialDynamicDetails(type); // stash original for "Back"
           setActionDetails(fakeDynamic); // drives RHF form
           setStep(1); // show runtime param step
-          methods.reset(
-            importDefaultData(tool, fakeDynamic.locations), // prime RHF with defaults
-          );
+          methods.reset({
+            ...importDefaultData(tool, fakeDynamic.locations), // prime RHF with defaults
+            ...getIntentSettings(tool),
+          });
         } else {
           /* static action – business as usual */
           let selectedActionDetails = type;
@@ -351,7 +365,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
           }
           setActionDetails(selectedActionDetails);
           setStep(2); // static actions skip the runtime param step
-          methods.reset(importDefaultData(tool, selectedActionDetails?.locations));
+          methods.reset({
+            ...importDefaultData(tool, selectedActionDetails?.locations),
+            ...getIntentSettings(tool),
+          });
         }
       } catch (e) {
         console.warn('Failed to fetch action details:', e);
@@ -425,7 +442,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
       /* fetched is the REAL actionDetails object */
       setActionDetails(fakeDynamic);
       setStep(2);
-      methods.reset(importDefaultData(tool, aggregatedSchema));
+      methods.reset({
+        ...importDefaultData(tool, aggregatedSchema),
+        ...getIntentSettings(tool),
+      });
     } catch (e) {
       console.error('Failed to load dynamic schema:', e);
     }
@@ -438,15 +458,25 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
     const fakeDynamic = { ...initialDynamicDetails, locations: locationsSchema };
     setActionDetails(fakeDynamic);
     setStep(1);
-    methods.reset(importDefaultData(tool, fakeDynamic.locations));
+    methods.reset({
+      ...importDefaultData(tool, fakeDynamic.locations),
+      ...getIntentSettings(tool),
+    });
   }, [initialDynamicDetails, methods, tool]);
 
   /** Final save (only available in Step 2) */
   const handleSubmit = methods.handleSubmit(async (data) => {
-    const { parameters, ...rest } = data;
+    const { parameters, intent_settings, ...rest } = data;
     const formatted = {
       ...rest,
       parameters: parameters ? formatData(parameters) : {},
+      meta_data: {
+        ...(tool?.meta_data || {}),
+        intent_settings: {
+          intent: intent_settings?.intent ?? false,
+          ui_intent: intent_settings?.ui_intent ?? false,
+        },
+      },
       ...(isUpdate ? {} : { action_type_id: action.id, override_action: actionOverrides }),
     };
 
@@ -637,6 +667,71 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                 )}
 
                 {step === 2 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Accordion
+                      defaultExpanded={false}
+                      sx={{
+                        bgcolor: 'background.neutral',
+                        '&:before': { display: 'none' },
+                      }}
+                    >
+                      <AccordionSummary
+                        expandIcon={<Iconify icon="mdi:chevron-down" />}
+                        sx={{
+                          '& .MuiAccordionSummary-content': {
+                            alignItems: 'center',
+                            gap: 1,
+                          },
+                        }}
+                      >
+                        <Iconify icon="mdi:cog" />
+                        <Typography variant="subtitle2">Advanced Settings</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Stack spacing={2}>
+                          <Box>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  {...methods.register('intent_settings.intent')}
+                                  defaultChecked={values.intent_settings?.intent ?? false}
+                                />
+                              }
+                              label="Intent"
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
+                            >
+                              Add intent argument explaining why the agent used this tool
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  {...methods.register('intent_settings.ui_intent')}
+                                  defaultChecked={values.intent_settings?.ui_intent ?? false}
+                                />
+                              }
+                              label="UI Intent"
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
+                            >
+                              Allow agent to dynamically rename tool display with contextual parameters
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </AccordionDetails>
+                    </Accordion>
+                  </Box>
+                )}
+
+                {step === 2 && (
                   <Box
                     sx={{
                       mt: 1,
@@ -671,223 +766,3 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
 };
 
 export default memo(ActionTypeCard);
-
-// const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
-//   const connections = useSelector(selectAccountConnections);
-//   const [dispatchWithFeedback] = useFeedbackDispatch();
-//   const methods = useForm();
-
-//   const [internalConn, setInternalConn] = useState(null);
-//   const [actionDetails, setActionDetails] = useState(null);
-//   const [isCreatingNewConnection, setIsCreatingNewConnection] = useState(false);
-//   const [response, setResponse] = useState({ loading: false, result: null, error: null });
-//   const [responseType, setResponseType] = useState(null);
-
-//   const currentConnectionId = tool?.connection_id || null;
-
-//   const existingConnections = useMemo(() => {
-//     return (connections || []).filter(
-//       (c) => c?.connection_type?.id === actionDetails?.connection_type?.id,
-//     );
-//   }, [connections, actionDetails]);
-
-//   useEffect(() => {
-//     if (!action?.id) return;
-
-//     const fetchActionDetails = async () => {
-//       try {
-//         const { data } = await optimai_integration.get(`/action/${action.id}`);
-//         const type = data.action_type;
-//         setActionDetails(type);
-//         methods.reset(importDefaultData(tool, type?.locations));
-//       } catch (error) {
-//         console.warn('Failed to fetch action details:', error);
-//       }
-//     };
-
-//     fetchActionDetails();
-//   }, [action?.id, methods, tool]);
-
-//   useEffect(() => {
-//     if (!existingConnections?.length) return;
-//     setInternalConn(
-//       existingConnections.find(c => c.id === currentConnectionId) || existingConnections[0],
-//     );
-//   }, [existingConnections, currentConnectionId]);
-
-//   const handleConnectionChange = useCallback((_, newValue) => {
-//     if (newValue?.name === '+ Create connection') {
-//       setIsCreatingNewConnection(true);
-//     } else {
-//       setInternalConn(newValue);
-//       setIsCreatingNewConnection(false);
-//     }
-//   }, []);
-
-//   const handleSubmit = methods.handleSubmit(async (data) => {
-//     const { parameters, ...rest } = data;
-//     const formatted = {
-//       ...rest,
-//       parameters: parameters ? formatData(parameters) : {},
-//       ...(tool?.id ? {} : { action_type_id: action.id }),
-//     };
-
-//     const dispatchFn = tool?.id
-//       ? editTool({ toolId: tool.id, formData: formatted })
-//       : createTool({ connectionId: internalConn?.id, formData: formatted });
-
-//     const result = await dispatchWithFeedback(dispatchFn, {
-//       successMessage: `Tool ${tool?.id ? 'updated' : 'created'} successfully`,
-//       errorMessage: `Error ${tool?.id ? 'updating' : 'creating'} the tool`,
-//       useSnackbar: true,
-//     });
-
-//     if (onSave) onSave(result);
-//   });
-
-//   const renderConnectionInput = () => {
-//     if (tool?.connection_id) return null;
-//     return isCreatingNewConnection ? (
-//       <CreateConnection
-//         id={actionDetails?.connection_type?.id}
-//         setIsCreatingNewConnection={setIsCreatingNewConnection}
-//       />
-//     ) : (
-//       <Autocomplete
-//         options={[...existingConnections, { name: '+ Create connection' }]}
-//         getOptionLabel={(opt) => opt.name}
-//         renderOption={({ key, ...props }, option) => (
-//           <Stack key={key} {...props} direction="row" spacing={1} alignItems="center" padding={1}>
-//             <Tooltip title={JSON.stringify(option.details || {}, null, 2)} arrow followCursor>
-//               <span>
-//                 <IconRenderer
-//                   icon={option.connection_type?.icon}
-//                   color={option.connection_type?.meta_data?.color || 'inherit'}
-//                 />
-//               </span>
-//             </Tooltip>
-//             <Typography variant="caption">{option.name}</Typography>
-//           </Stack>
-//         )}
-//         renderInput={(params) => <TextField {...params} label="Select Connection" variant="filled" />}
-//         value={internalConn}
-//         onChange={handleConnectionChange}
-//         size="small"
-//       />
-//     );
-//   };
-
-//   return (
-//     <>
-//       <div className="relative w-full">
-//         <div className="sticky top-0 z-10 flex w-full items-center justify-between gap-2 bg-white/40 py-2 px-4 shadow-md dark:bg-gray-800/40 backdrop-blur-md">
-//           <div className="flex flex-col w-full">
-//             <div className="flex items-center gap-2">
-//               <IconRenderer icon={actionDetails?.connection_type?.icon || actionDetails?.connection_type?.external_app?.icon || 'ri:hammer-fill'} />
-//               <h5 className="text-lg font-semibold dark:text-gray-200">
-//                 {action?.name || 'Unnamed Action'}
-//               </h5>
-//             </div>
-//             <div className="text-xs text-gray-600 dark:text-gray-400">
-//               {action?.description?.length > 80
-//                 ? <span title={action.description}>{action.description.slice(0, 80)}...</span>
-//                 : (action?.description || 'No description available')}
-//             </div>
-//           </div>
-//           <button
-//             onClick={handleSubmit}
-//             disabled={!methods.formState.isDirty}
-//             className={cn(
-//               'flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md',
-//               methods.formState.isDirty
-//                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-//                 : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400',
-//             )}
-//           >
-//             <Iconify icon="dashicons:saved" />
-//             Save
-//           </button>
-//         </div>
-
-//         <div className="p-4">
-//           <FormProvider {...methods}>
-//             {!actionDetails ? (
-//               <FormSkeleton />
-//             ) : (
-//               <>
-//                 <Stack spacing={1}>
-//                   {renderConnectionInput()}
-//                   {['name', 'description'].map((field) => (
-//                     <FormParameter
-//                       key={field}
-//                       fieldKey={field}
-//                       schema={{ type: 'string', description: `The ${field} of the tool.` }}
-//                       required
-//                       isInMappings={false}
-//                       relationship={null}
-//                       enableLexical={false}
-//                       enableAIFill={false}
-//                     />
-//                   ))}
-//                 </Stack>
-//                 {actionDetails?.locations && (
-//                   <FormParameters
-//                     formSchema={actionDetails.locations}
-//                     enableLexical
-//                     enableAIFill
-//                     path="parameters."
-//                   />
-//                 )}
-//                 {!response.loading && (
-//                   <Box sx={{ mt: 1, p: 2, bgcolor: `${responseType}.dark`, borderRadius: '12px' }}>
-//                     <ExecutionResult actionExecution={response} />
-//                   </Box>
-//                 )}
-//               </>
-//             )}
-//           </FormProvider>
-//         </div>
-//       </div>
-//       <GlobalVarsMenu mode="agent" />
-//     </>
-//   );
-// };
-
-// export default memo(ActionTypeCard);
-
-/*
-  <span
-    className={`px-2 py-1 text-sm font-semibold rounded bg-opacity-20 ${METHOD_COLORS[action.method || actionDetails?.method] || 'bg-gray-300'
-      }`}
-  >
-    {action.method || actionDetails?.method}
-  </span>
-  <button
-    onClick={testAction}
-    className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-  >
-    <Iconify icon="mdi:test-tube" />
-    {response.loading ? 'Testing...' : 'Test'}
-  </button>
-
-  const testAction = async () => {
-    const rawParams = getValues('parameters');
-    const parameters = rawParams ? formatData(rawParams) : {};
-    try {
-      setResponse(prev => ({ ...prev, loading: true }));
-      const response = await optimai_integration.post(`/connection/${internalConn?.id}/actions/${action?.id}/execute`, parameters);
-      const { data, success } = response.data;
-      if (!success) {
-        throw new Error(data);
-      }
-      setResponse(prev => ({ ...prev, result: data }));
-      setResponseType('success');
-    } catch (error) {
-      setResponse(prev => ({ ...prev, error }));
-      setResponseType('error');
-    } finally {
-      setResponse(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-*/

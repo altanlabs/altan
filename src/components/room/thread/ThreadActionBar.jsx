@@ -167,15 +167,16 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
   const handleFeedbackSubmit = useCallback(async (feedbackData) => {
     try {
       const payload = {
-        messageId: feedbackData.messageId,
-        threadId: feedbackData.threadId,
-        altanerId: feedbackData.altanerId || currentAltaner?.id,
-        messageContent: feedbackData.messageContent,
-        type: feedbackData.reason === 'like' ? 'like' : 'dislike',
-        reason: feedbackData.reason,
-        additionalFeedback: feedbackData.additionalFeedback || '',
-        userId: user?.id || guest?.id,
-        timestamp: new Date().toISOString(),
+        feedback: {
+          message_id: feedbackData.messageId,
+          thread_id: feedbackData.threadId,
+          altaner_id: feedbackData.altanerId || currentAltaner?.id,
+          message_content: feedbackData.messageContent,
+          feedback_type: feedbackData.reason === 'like' ? 'like' : 'dislike',
+          reason: feedbackData.reason,
+          additional_feedback: feedbackData.additionalFeedback || '',
+          state: 'Open',
+        },
       };
 
       await axios.post('https://api.altan.ai/galaxia/hook/Exzd7H', payload, {

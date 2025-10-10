@@ -43,9 +43,12 @@ const previewControlSlice = createSlice({
       state.actionId = Date.now(); // Trigger action
     },
 
-    // Action to toggle iframe view mode
+    // Action to toggle iframe view mode (cycles through desktop -> tablet -> mobile -> desktop)
     toggleIframeViewMode: (state) => {
-      state.iframeViewMode = state.iframeViewMode === 'mobile' ? 'desktop' : 'mobile';
+      const modes = ['desktop', 'tablet', 'mobile'];
+      const currentIndex = modes.indexOf(state.iframeViewMode);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      state.iframeViewMode = modes[nextIndex];
       state.actionId = Date.now(); // Trigger action
     },
 
@@ -109,4 +112,4 @@ export const selectPreviewMode = (state) => state.previewControl.previewMode;
 export const selectEditMode = (state) => state.previewControl.editMode;
 export const selectActionId = (state) => state.previewControl.actionId;
 
-export default previewControlSlice.reducer; 
+export default previewControlSlice.reducer;

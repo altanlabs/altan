@@ -1,4 +1,4 @@
-import { Typography, Box, Stack, Divider } from '@mui/material';
+import { Typography, Box, Stack, Divider, Button, Chip, IconButton } from '@mui/material';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
@@ -6,7 +6,7 @@ import RenderPreview from './RenderPreview';
 import SkeletonMediaItem from './skeletons/SkeletonMediaItem';
 import { API_BASE_URL } from '../../../../auth/utils';
 import Iconify from '../../../../components/iconify';
-import { getMedia } from '../../../../redux/slices/media';
+import { getMedia, deleteMedia } from '../../../../redux/slices/media';
 import { dispatch } from '../../../../redux/store';
 
 const DRAWER_MODES = ['custom_message', 'drawer'];
@@ -68,23 +68,311 @@ const getFileTypeColor = (mimeType) => {
   return '#9CA3AF';
 };
 
+const MediaPreviewModal = memo(({ media, onClose }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Handle ESC key press
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleCopyUrl = async () => {
+    const url = `${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // You might want to show a toast notification here
+      console.log('URL copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
+
+  const handleDownload = () => {
+    const url = `${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = media?.name || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this media file?')) {
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteMedia({ mediaId: media.id }));
+        // Close modal after successful deletion
+        onClose();
+      } catch (err) {
+        console.error('Failed to delete media:', err);
+        // You might want to show an error toast notification here
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        backdropFilter: 'blur(10px)',
+        display: 'flex',
+        zIndex: 9999,
+      }}
+      onClick={onClose}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Media Preview Section */}
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 4,
+            pt: 12, // Extra top padding to avoid header conflict
+          }}
+        >
+          <Box
+            sx={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              position: 'relative',
+            }}
+          >
+            <RenderPreview
+              mode="modal"
+              preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
+              fileType={media?.type?.split('/').pop()}
+              fileName={media?.name}
+              media={media}
+            />
+          </Box>
+        </Box>
+
+        {/* Right Panel */}
+        <Box
+          sx={{
+            width: 400,
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            mt: 6, // Top margin to avoid header conflict
+            mb: 6, // Bottom margin for symmetry
+            mr: 4, // Right margin for spacing from edge
+            borderRadius: 3, // Add border radius for better aesthetics
+          }}
+        >
+          {/* Header with close button */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 3,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'white',
+                fontWeight: 600,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '300px',
+              }}
+            >
+              {media?.name || 'Unnamed file'}
+            </Typography>
+            <IconButton
+              onClick={onClose}
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <Iconify icon="material-symbols:close" width={24} />
+            </IconButton>
+          </Box>
+
+          {/* Media Information */}
+          <Box sx={{ flex: 1, p: 3, overflowY: 'auto' }}>
+            <Stack spacing={3}>
+              {/* File Type */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}
+                >
+                  File Type
+                </Typography>
+                <Chip
+                  label={media?.type || 'Unknown'}
+                  sx={{
+                    backgroundColor: getFileTypeColor(media?.type),
+                    color: 'white',
+                    fontWeight: 500,
+                  }}
+                />
+              </Box>
+
+              {/* File Size */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}
+                >
+                  File Size
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: 'white', fontWeight: 500 }}
+                >
+                  {formatFileSize(media?.file_size)}
+                </Typography>
+              </Box>
+
+              {/* Upload Date */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}
+                >
+                  Uploaded
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: 'white', fontWeight: 500 }}
+                >
+                  {formatUploadDate(media?.date_creation)}
+                </Typography>
+              </Box>
+
+              {/* File ID */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}
+                >
+                  File ID
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontFamily: 'monospace',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    p: 1,
+                    borderRadius: 1,
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {media?.id}
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box
+            sx={{
+              p: 3,
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <Stack spacing={2}>
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="material-symbols:download" />}
+                onClick={handleDownload}
+                sx={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(59, 130, 246, 0.9)',
+                  },
+                }}
+              >
+                Download
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="material-symbols:content-copy" />}
+                onClick={handleCopyUrl}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                }}
+              >
+                Copy URL
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<Iconify icon="material-symbols:delete-outline" />}
+                onClick={handleDelete}
+                disabled={isDeleting}
+                sx={{
+                  backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(244, 67, 54, 0.9)',
+                  },
+                }}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+});
+
+MediaPreviewModal.displayName = 'MediaPreviewModal';
+
 const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) => {
   const [showPreview, setShowPreview] = useState(false);
 
   const handleCardClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only handle selection, don't trigger preview/download
-    if (DRAWER_MODES.includes(mode)) {
-      onSelect(e, media.id);
-    } else {
-      handleSelect(media.id);
-    }
-  };
-
-  const handleDoubleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    // Open preview on single click
     setShowPreview(true);
   };
 
@@ -119,7 +407,6 @@ const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) 
         }}
         tabIndex={0}
         onClick={handleCardClick}
-        onDoubleClick={handleDoubleClick}
       >
         {/* Smart media display - images show thumbnails, others show icons */}
         <Box
@@ -261,123 +548,10 @@ const MediaCard = memo(({ media, onSelect, mode, selectedMedia, handleSelect }) 
           </Box>
         )}
 
-        {/* Selection checkbox */}
-        {(DRAWER_MODES.includes(mode) || MEDIA_PAGE_MODE === mode) && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              backgroundColor: selectedMedia?.has(media.id)
-                ? 'primary.main'
-                : 'rgba(255, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255, 255, 255, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              opacity: selectedMedia?.has(media.id) ? 1 : 0,
-              '.group:hover &': {
-                opacity: 1,
-              },
-              '&:hover': {
-                transform: 'scale(1.1)',
-                backgroundColor: 'primary.main',
-              },
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (DRAWER_MODES.includes(mode)) {
-                onSelect(e, media.id);
-              } else {
-                handleSelect(media.id);
-              }
-            }}
-          >
-            {selectedMedia?.has(media.id) && (
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-              </svg>
-            )}
-          </Box>
-        )}
       </Box>
 
       {/* Preview Modal */}
-      {showPreview && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-          onClick={() => setShowPreview(false)}
-        >
-          <Box
-            sx={{
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              position: 'relative',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <RenderPreview
-              mode="modal"
-              preview={`${MEDIA_BASE_URL}/${media.id}?account_id=${media.account_id}`}
-              fileType={media?.type?.split('/').pop()}
-              fileName={media?.name}
-              media={media}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 16,
-                right: 16,
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                },
-              }}
-              onClick={() => setShowPreview(false)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="white"
-              >
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-              </svg>
-            </Box>
-          </Box>
-        </Box>
-      )}
+      {showPreview && <MediaPreviewModal media={media} onClose={() => setShowPreview(false)} />}
     </>
   );
 });

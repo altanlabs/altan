@@ -15,6 +15,7 @@ import UpgradeDialog from '../dialogs/UpgradeDialog';
 
 const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   const history = useHistory();
+  const { isAuthenticated } = useAuthContext();
   const account = useSelector(selectAccount);
   const isAccountFree = useSelector(selectIsAccountFree);
   const analytics = useAnalytics();

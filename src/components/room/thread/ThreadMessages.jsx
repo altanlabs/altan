@@ -14,6 +14,9 @@ import {
   makeSelectMoreMessages,
   selectMessagesById,
   selectMembers,
+  selectMe,
+  selectActiveResponsesByThread,
+  makeSelectPlaceholderMessagesForThread,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -53,7 +56,7 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
   const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
 
   return (
-    <div className="pb-[20px]">
+    <div className="pb-[32px]">
       {/* Show ThreadActionBar if there are messages */}
       {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && (
         <ThreadActionBar
@@ -67,7 +70,7 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false }) => {
 });
 Footer.displayName = 'Footer';
 
-const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
+const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded, isFetching }) => (
   <div
     style={{
       paddingTop: isCreation ? '275px' : '85px',
@@ -78,12 +81,8 @@ const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded }) => (
       paddingRight: 15,
     }}
   >
-    {moreMessages && !isCreation && hasLoaded && (
+    {moreMessages && !isCreation && hasLoaded && isFetching && (
       <>
-        <ScrollSeekPlaceholder
-          disableImage
-          lines={lines[0]}
-        />
         <ScrollSeekPlaceholder
           disableImage
           lines={lines[1]}
@@ -141,10 +140,38 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const isCreation = useIsCreation(mode);
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
+  const placeholderMessagesSelector = useMemo(makeSelectPlaceholderMessagesForThread, []);
 
   const threadId = useThreadIdAtLocation(mode, tId);
   const moreMessages = useSelector((state) => moreMessagesSelector(state, threadId));
-  const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const realMessageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const placeholderMessages = useSelector((state) => placeholderMessagesSelector(state, threadId));
+  const messagesById = useSelector(selectMessagesById);
+  const me = useSelector(selectMe);
+  const activeResponses = useSelector((state) => selectActiveResponsesByThread(threadId)(state));
+  
+  // Merge real messages with placeholder messages
+  const { messageIds, allMessagesById } = useMemo(() => {
+    // Create a map for placeholder messages
+    const placeholderMap = {};
+    placeholderMessages.forEach(msg => {
+      placeholderMap[msg.id] = msg;
+    });
+    
+    // Get placeholder IDs
+    const placeholderIds = placeholderMessages.map(p => p.id);
+    // Combine real and placeholder IDs
+    const combinedIds = [...realMessageIds, ...placeholderIds];
+    
+    // Merge messagesById with placeholder messages
+    const combined = { ...messagesById, ...placeholderMap };
+    
+    return { 
+      messageIds: combinedIds,
+      allMessagesById: combined
+    };
+  }, [realMessageIds, placeholderMessages, messagesById]);
+  
   // console.log('ThreadMessages render', mode, threadId, messageIds); // Keep for debugging, or remove
 
   // We only track "am I fetching?" in local state
@@ -232,11 +259,10 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
         .finally(() => {
           setTimeout(() => setIsFetching(false), 1000);
         });
-    } else if (mode === 'main' && !!hasLoaded) {
-      scrollToBottom('instant');
     }
+    // Removed auto-scroll on hasLoaded - only scroll when user sends message
     hasLoadedRef.current = hasLoaded;
-  }, [threadId, hasLoaded]);
+  }, [threadId, hasLoaded, fetchMessages, messageIds.length]);
 
   // Ensure hasLoaded is set when messages are available
   useEffect(() => {
@@ -248,6 +274,38 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   useEffect(() => {
     isCreationRef.current = isCreation;
   }, [isCreation]);
+  
+  // Track message count and initialization to detect new messages only
+  const prevMessageCountRef = useRef(messageIds.length);
+  const isInitializedRef = useRef(false);
+  
+  // Detect when a NEW user message is sent and scroll to bottom
+  useEffect(() => {
+    if (messageIds.length > 0 && hasLoaded && mode === 'main') {
+      const lastMessageId = messageIds[messageIds.length - 1];
+      const lastMessage = allMessagesById[lastMessageId];
+      const isUserMessage = lastMessage && lastMessage.member_id === me?.id;
+      
+      // Mark as initialized after first load
+      if (!isInitializedRef.current && messageIds.length > 0) {
+        isInitializedRef.current = true;
+        prevMessageCountRef.current = messageIds.length;
+        return; // Skip scroll logic on initial load
+      }
+      
+      // Only scroll if message count increased and last message is from user
+      const messageCountIncreased = messageIds.length > prevMessageCountRef.current;
+      
+      if (messageCountIncreased && isUserMessage && isInitializedRef.current) {
+        // New user message was just sent - scroll to bottom
+        setTimeout(() => {
+          scrollToBottom('smooth');
+        }, 50);
+      }
+      
+      prevMessageCountRef.current = messageIds.length;
+    }
+  }, [messageIds, allMessagesById, me, hasLoaded, mode, scrollToBottom]);
 
   const handleScroll = useMemo(
     () =>
@@ -287,7 +345,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
 
   // ----------------------------------------------
   // 4d) followOutput logic
-  // Let Virtuoso auto-scroll if near bottom
+  // Auto-scroll when near bottom
   // ----------------------------------------------
   const followOutput = useCallback(() => {
     const { bottom, semiBottom } = scrollStateRef.current;
@@ -312,15 +370,17 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
             threadId={threadId}
             mode={mode}
             scrollToMessage={setMessageToScroll}
+            allMessagesById={allMessagesById}
           />
         </div>
       );
     },
-    [mode, threadId, messageIds, isCreation],
+    [mode, threadId, messageIds, isCreation, allMessagesById],
   );
 
   // ----------------------------------------------
   // 4f) onBottomScroll
+
   // ----------------------------------------------
   const onBottomScroll = useCallback(() => {
     // If we're somewhat near bottom, use smooth. Otherwise, just jump instantly.
@@ -334,7 +394,9 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   return (
     <>
       {/* Loading placeholder if not loaded and not creation */}
-      {!hasLoaded && !isCreation && (
+
+
+      {/* {!hasLoaded && !isCreation && (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 px-10">
           <div className="max-w-[700px] w-full mx-auto">
             {[...Array(5)].map((_, index) => (
@@ -342,7 +404,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Scroll to bottom button (memoized) */}
       <ScrollToBottomButton
@@ -370,6 +432,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   hasLoaded={hasLoaded}
                   moreMessages={moreMessages}
                   isCreation={isCreation}
+                  isFetching={isFetching}
                 />
               ),
               Footer: () => (

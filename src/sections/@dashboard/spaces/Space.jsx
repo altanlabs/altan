@@ -7,7 +7,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Stack, Box, Paper, Button, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Stack, Box, Paper, Button, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Drawer } from '@mui/material';
 import { AnimatePresence, m } from 'framer-motion';
 import React, { useState, useEffect, useCallback, useMemo, lazy, memo } from 'react';
 
@@ -21,12 +21,12 @@ import { SpaceCard, SpaceToolCard } from './StyledCards';
 import ActionTypeCard from './tools/ActionTypeCard';
 import ClientToolDrawer from './tools/ClientToolDrawer';
 import CustomTextField from '../../../components/custom-input/CustomTextField';
-import CustomDialog from '../../../components/dialogs/CustomDialog';
 import InfoModal from '../../../components/helpers/InfoModal';
 import Iconify from '../../../components/iconify';
 import AltanLogo from '../../../components/loaders/AltanLogo';
 import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
+import { bgBlur } from '../../../utils/cssStyles';
 import { HEADER, NAV } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectAccount } from '../../../redux/slices/general';
@@ -85,7 +85,9 @@ const Space = ({ navigate, spaceId, isPreview }) => {
   const user = useSelector((state) => state.general.user);
   const { enqueueSnackbar } = useSnackbar();
 
-  const onCloseEditTool = useCallback(() => setSelectedTool(null), []);
+  const onCloseEditTool = useCallback(() => {
+    setSelectedTool(null);
+  }, []);
 
   const onCloseEditClientTool = useCallback(() => {
     setSelectedClientTool(null);
@@ -416,33 +418,43 @@ const Space = ({ navigate, spaceId, isPreview }) => {
                       />
                     )}
                   </div>
-                  <CustomDialog
-                    dialogOpen={Boolean(selectedTool)}
+                  <Drawer
+                    open={Boolean(selectedTool)}
                     onClose={onCloseEditTool}
-                    fullWidth
-                    maxWidth="md"
-                    overflowHidden
+                    anchor="right"
+                    PaperProps={{
+                      sx: {
+                        width: 1,
+                        maxWidth: 600,
+                        backgroundColor: 'transparent',
+                        padding: 1,
+                        pb: 2,
+                        ...bgBlur({ opacity: 0.1 }),
+                      },
+                    }}
+                    slotProps={{
+                      backdrop: { invisible: true },
+                    }}
                   >
-                    <div className="w-full py-1 px-4 flex items-center justify-between">
-                      <span>Edit Tool</span>
-                      <IconButton
-                        aria-label="close"
-                        onClick={onCloseEditTool}
-                      >
-                        <Iconify icon="mdi:close" />
-                      </IconButton>
-                    </div>
-                    <AnimatePresence>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        backgroundColor: 'background.paper',
+                        borderRadius: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                      }}
+                    >
                       {!!selectedTool?.tool && (
-                        <m.div className="w-full overflow-y-auto">
-                          <ActionTypeCard
-                            action={selectedTool.tool.action_type}
-                            tool={selectedTool.tool}
-                          />
-                        </m.div>
+                        <ActionTypeCard
+                          action={selectedTool.tool.action_type}
+                          tool={selectedTool.tool}
+                          onSave={onCloseEditTool}
+                        />
                       )}
-                    </AnimatePresence>
-                  </CustomDialog>
+                    </Box>
+                  </Drawer>
                 </Box>
               )}
 

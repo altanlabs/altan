@@ -1331,8 +1331,6 @@ const KEY_MAPPING = {
   forms: 'forms',
   gates: 'gates',
   altaners: 'altaners',
-  // payments: 'payments',
-  // DEFAULT
   organisation: 'organisation',
   owner: 'user',
   developer_apps: 'developer_apps',

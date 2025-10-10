@@ -1,17 +1,18 @@
 import { createSelector, createSlice } from '@reduxjs/toolkit';
+// eslint-disable-next-line import/no-unresolved
 import { truncate } from 'lodash';
 import { createCachedSelector } from 're-reselect';
 
 import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
 import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
 import { setPreviewMode } from './previewControl';
+import { analytics } from '../../lib/analytics';
 import {
   // checkArraysEqualShallow,
   checkArraysEqualsProperties,
   checkObjectsEqual,
   getNestedProperty,
 } from '../helpers/memoize';
-import { analytics } from '../../lib/analytics';
 import { paginateCollection } from './utils/collections';
 import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
@@ -61,6 +62,176 @@ export function fetchCurrentMember(memberId, members) {
   return found;
 }
 
+// ---------- helpers ----------
+const isFiniteNumber = (n) => typeof n === 'number' && Number.isFinite(n);
+
+// Strict ordering: order → block_order → created_at → id
+const comparePartOrder = (aIdOrObj, bIdOrObj, byId) => {
+  const a = typeof aIdOrObj === 'string' ? byId[aIdOrObj] : aIdOrObj;
+  const b = typeof bIdOrObj === 'string' ? byId[bIdOrObj] : bIdOrObj;
+
+  const ao = isFiniteNumber(a?.order) ? a.order : Number.POSITIVE_INFINITY;
+  const bo = isFiniteNumber(b?.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
+
+  const ab = isFiniteNumber(a?.block_order) ? a.block_order : Number.POSITIVE_INFINITY;
+  const bb = isFiniteNumber(b?.block_order) ? b.block_order : Number.POSITIVE_INFINITY;
+  if (ab !== bb) return ab - bb;
+
+  const ac = a?.created_at ? Date.parse(a.created_at) || 0 : 0;
+  const bc = b?.created_at ? Date.parse(b.created_at) || 0 : 0;
+  if (ac !== bc) return ac - bc;
+
+  return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
+};
+
+// Ensure the message has an array; return it
+const ensureMessageIndex = (state, messageId) => {
+  if (!state.messageParts.byMessageId[messageId]) {
+    state.messageParts.byMessageId[messageId] = [];
+  }
+  return state.messageParts.byMessageId[messageId];
+};
+
+// Re-sort the message’s parts after any add/update impacting order
+const resortMessageParts = (state, messageId) => {
+  const arr = state.messageParts.byMessageId[messageId];
+  if (!arr || arr.length <= 1) return;
+  arr.sort((a, b) => comparePartOrder(a, b, state.messageParts.byId));
+};
+
+// Normalize incoming raw part
+const normalizePart = (raw) => {
+  const type = raw?.type || raw?.part_type || 'text';
+
+  // Defaults: missing order/block_order sort last (Infinity)
+  const order = isFiniteNumber(raw?.order) ? raw.order : Number.POSITIVE_INFINITY;
+  const block_order = isFiniteNumber(raw?.block_order) ? raw.block_order : Number.POSITIVE_INFINITY;
+
+  // For tool parts, extract data from task_execution if available
+  let toolData = {};
+  if (type === 'tool' && raw?.task_execution) {
+    const execution = raw.task_execution;
+    const executionStatus = execution.status || 'pending';
+
+    // Parse arguments to extract special fields
+    let parsedArgs = {};
+    let argumentsStr = '';
+    if (execution.arguments) {
+      if (typeof execution.arguments === 'string') {
+        try {
+          parsedArgs = JSON.parse(execution.arguments);
+          argumentsStr = execution.arguments;
+        } catch {
+          argumentsStr = execution.arguments;
+        }
+      } else {
+        parsedArgs = execution.arguments;
+        argumentsStr = JSON.stringify(execution.arguments);
+      }
+    }
+
+    toolData = {
+      name: execution.tool?.name || 'Tool',
+      arguments: argumentsStr,
+      result: execution.content,
+      error: execution.error,
+      status: executionStatus,
+      finished_at: execution.finished_at,
+      input: execution.input,
+      // Store execution ID for dialog access
+      task_execution_id: execution.id,
+      // Keep the full task_execution reference for accessing nested data like icons and intent
+      task_execution: execution,
+      // Extract special fields - prioritize root level of execution, fallback to arguments
+      act_now: execution.act_now || parsedArgs.__act_now,
+      act_done: execution.act_done || parsedArgs.__act_done,
+      intent: execution.intent || parsedArgs.__intent,
+      use_intent: execution.use_intent ?? parsedArgs.__use_intent,
+      // For tool parts, use the execution status to determine if done (don't override raw is_done)
+      // is_done will be handled by the main logic below
+    };
+  } else if (type === 'tool' && raw?.task_execution_id) {
+    // If we only have the execution ID, store it for later access
+    toolData = {
+      task_execution_id: raw.task_execution_id,
+    };
+  }
+
+  // Determine if part is done based on type
+  let isDone = raw?.is_done || false;
+  if (type === 'tool' && toolData?.status) {
+    isDone = ['success', 'error'].includes(toolData.status);
+  } else if (type === 'thinking') {
+    isDone = raw?.status === 'completed' || !!raw?.finished_at;
+  }
+
+  const thinkingProperties = {};
+  if (type === 'thinking') {
+    thinkingProperties.summary = raw?.meta_data?.summary ?? [];
+    thinkingProperties.provider = raw?.meta_data?.provider ?? '';
+    thinkingProperties.provider_id = raw?.meta_data?.provider_id ?? '';
+  }
+
+  return {
+    ...raw,
+    ...thinkingProperties,
+    id: raw?.id,
+    message_id: raw?.message_id,
+    type,
+    part_type: type, // keep both keys for compatibility
+    order,
+    block_order,
+    is_done: isDone,
+    created_at: raw?.created_at || raw?.date_creation || new Date().toISOString(),
+
+    // Streaming helpers (non-serializable/run-time):
+    // Plain objects to remain Immer-friendly without Map/Set semantics.
+    deltaBuffer: raw?.deltaBuffer ?? Object.create(null), // index -> string
+    receivedIndices: raw?.receivedIndices ?? Object.create(null), // index -> true
+    lastProcessedIndex: isFiniteNumber(raw?.lastProcessedIndex) ? raw.lastProcessedIndex : -1,
+
+    // Tool-specific streaming helpers for arguments
+    argumentsDeltaBuffer: raw?.argumentsDeltaBuffer ?? Object.create(null), // index -> string
+    argumentsReceivedIndices: raw?.argumentsReceivedIndices ?? Object.create(null), // index -> true
+    argumentsLastProcessedIndex: isFiniteNumber(raw?.argumentsLastProcessedIndex)
+      ? raw.argumentsLastProcessedIndex
+      : -1,
+
+    // Text default for text and thinking parts
+    text: (type === 'text' || type === 'thinking') ? (raw?.text ?? '') : raw?.text,
+    // Tool parts: use extracted tool data or fallback to raw arguments
+    arguments: type === 'tool' ? toolData.arguments || raw?.arguments || '' : raw?.arguments,
+    // Thinking parts: ensure status field is present
+    status: type === 'thinking' ? (raw?.meta_data?.status || 'in_progress') : raw?.status,
+
+    // Add tool-specific fields (but don't override is_done since we handled it above)
+    ...Object.fromEntries(Object.entries(toolData).filter(([key]) => key !== 'is_done')),
+  };
+};
+
+// Merge without nuking streaming helpers
+const mergeIntoExistingPart = (existing, incoming) => {
+  // Keep streaming fields from existing unless incoming explicitly carries them (rare)
+  const {
+    deltaBuffer = existing.deltaBuffer,
+    receivedIndices = existing.receivedIndices,
+    lastProcessedIndex = existing.lastProcessedIndex,
+    argumentsDeltaBuffer = existing.argumentsDeltaBuffer,
+    argumentsReceivedIndices = existing.argumentsReceivedIndices,
+    argumentsLastProcessedIndex = existing.argumentsLastProcessedIndex,
+    ...restIncoming
+  } = incoming;
+
+  Object.assign(existing, restIncoming);
+  existing.deltaBuffer = deltaBuffer;
+  existing.receivedIndices = receivedIndices;
+  existing.lastProcessedIndex = lastProcessedIndex;
+  existing.argumentsDeltaBuffer = argumentsDeltaBuffer;
+  existing.argumentsReceivedIndices = argumentsReceivedIndices;
+  existing.argumentsLastProcessedIndex = argumentsLastProcessedIndex;
+};
+
 const handleThread = (thread) => {
   const { messages, events, media, read_status, ...rest } = thread;
   return {
@@ -77,10 +248,11 @@ function Object_assign(target, ...sources) {
     Object.keys(source).forEach((key) => {
       const s_val = source[key];
       const t_val = target[key];
-      target[key] =
-        t_val && s_val && typeof t_val === 'object' && typeof s_val === 'object'
-          ? Object_assign(t_val, s_val)
-          : s_val;
+      if (t_val && s_val && typeof t_val === 'object' && typeof s_val === 'object') {
+        target[key] = Object_assign(t_val, s_val);
+      } else {
+        target[key] = s_val;
+      }
     });
   });
   return target;
@@ -127,6 +299,11 @@ const initialState = {
     byThreadId: {}, // threadId -> { isActive, agentId, elevenlabsId, conversation }
     isConnecting: false,
   },
+  // Minimal response lifecycle tracking
+  responseLifecycles: {
+    byId: {}, // response_id -> { response_id, agent_id, thread_id, status, events: [], message_id?, created_at, updated_at }
+    activeByThread: {}, // thread_id -> [response_id1, response_id2, ...] (active responses)
+  },
   thread: {
     drawer: {
       navigation: [],
@@ -158,6 +335,12 @@ const initialState = {
   },
   messagesContent: {},
   messagesExecutions: {},
+  // Add message parts support
+  messageParts: {
+    byId: {},
+    allIds: [],
+    byMessageId: {}, // messageId -> [partId1, partId2, ...]
+  },
   executions: {
     byId: {},
     allIds: [],
@@ -193,6 +376,8 @@ const extractMessagesFromThread = (state, thread) => {
     const message = threadMessages.byId[messageId];
     // Add the message to messages.byId
     messagesContentById[messageId] = message.text;
+
+    // Process executions
     const executions = message.executions?.items ?? null;
     if (executions) {
       messagesExecutions[messageId] = [];
@@ -201,9 +386,55 @@ const extractMessagesFromThread = (state, thread) => {
         messagesExecutions[messageId].push(execution.id);
       }
     }
+
+    // Process message parts
+    const parts = message.parts?.items ?? null;
+    if (parts) {
+      for (const rawPart of parts) {
+        // Set message_id if not present
+        if (!rawPart.message_id) {
+          rawPart.message_id = messageId;
+        }
+
+        const normalized = normalizePart(rawPart);
+
+        // Add to global parts collection
+        state.messageParts.byId[normalized.id] = normalized;
+        if (!state.messageParts.allIds.includes(normalized.id)) {
+          state.messageParts.allIds.push(normalized.id);
+        }
+
+        // Add to message association
+        const arr = ensureMessageIndex(state, messageId);
+        if (!arr.includes(normalized.id)) {
+          arr.push(normalized.id);
+        }
+      }
+
+      // Sort the parts for this message
+      resortMessageParts(state, messageId);
+    }
+
     delete message.text;
     delete message.executions;
-    messagesById[message.id] = message;
+    delete message.parts; // Also clean up parts from the message object
+
+    // Merge with existing message if it exists, especially preserving meta_data
+    const existingMessage = state.messages.byId[message.id];
+    if (existingMessage) {
+      // Merge meta_data from both existing and new message
+      const mergedMetaData = {
+        ...(existingMessage.meta_data || {}),
+        ...(message.meta_data || {}),
+      };
+      messagesById[message.id] = {
+        ...existingMessage,
+        ...message,
+        meta_data: mergedMetaData,
+      };
+    } else {
+      messagesById[message.id] = message;
+    }
   }
   state.messages.byId = { ...state.messages.byId, ...messagesById };
   state.messages.allIds = [...state.messages.allIds, ...Object.keys(messagesById)];
@@ -358,7 +589,6 @@ const slice = createSlice({
       // Authorization requests are now fetched separately via API
 
       const memberId = guest?.member.id || user?.member.id;
-
       state.me = fetchCurrentMember(memberId, state.members);
 
       if (threads?.items) {
@@ -557,8 +787,8 @@ const slice = createSlice({
     threadUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -567,12 +797,21 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((id) => {
+      const threadIds = Array.isArray(ids) ? ids : [ids];
+
+      threadIds.forEach((id) => {
+        if (typeof id !== 'string') {
+          console.error(`Invalid thread id: ${id}`);
+          return;
+        }
+
         const thread = state.threads.byId[id];
         if (thread) {
           // Apply changes to each valid thread
           Object.keys(changes).forEach((key) => {
-            thread[key] = changes[key];
+            if (changes[key] !== undefined) {
+              thread[key] = changes[key];
+            }
           });
 
           // Update corresponding tab name if the thread name changed
@@ -611,8 +850,8 @@ const slice = createSlice({
     roomMemberUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -621,16 +860,29 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((id) => {
+      const memberIds = Array.isArray(ids) ? ids : [ids];
+
+      memberIds.forEach((id) => {
+        if (typeof id !== 'string') {
+          console.error(`Invalid member id: ${id}`);
+          return;
+        }
+
         const member = state.members.byId[id];
         if (member) {
-          // Apply changes to each valid thread
+          // Apply changes to each valid member
           Object.keys(changes).forEach((key) => {
-            member[key] = changes[key];
+            if (changes[key] !== undefined) {
+              member[key] = changes[key];
+            }
           });
+
+          // Update the 'me' state if this member is the current user
           if (!!state.me && member.id === state.me.id) {
             Object.keys(changes).forEach((key) => {
-              state.me[key] = changes[key];
+              if (changes[key] !== undefined) {
+                state.me[key] = changes[key];
+              }
             });
           }
         } else {
@@ -659,11 +911,40 @@ const slice = createSlice({
     // },
     addMessage: (state, action) => {
       const message = action.payload;
-
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
       }
+
+      // Only play sound for non-streaming messages or when streaming starts
+      // and it's not from the current user
+      // if (message.member_id !== state.me?.id && !message.is_streaming) {
+      //   // Don't play sound if voice is active for this thread
+      //   const isVoiceActiveForThread =
+      //     !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
+      //   if (!isVoiceActiveForThread) {
+      //     SOUND_IN.play();
+      //   }
+      // }
+
+      console.log('[addMessage] Message:', message);
+
+      // Check if message already exists to avoid duplicates
+      if (state.messages.byId[message.id]) {
+        // Update existing message properties, merging meta_data
+        const existingMessage = state.messages.byId[message.id];
+        Object.assign(existingMessage, message);
+
+        // Ensure meta_data is properly merged (not replaced)
+        if (message.meta_data) {
+          existingMessage.meta_data = {
+            ...existingMessage.meta_data,
+            ...message.meta_data,
+          };
+        }
+        return;
+      }
+
       extractMessagesFromThread(state, {
         messages: { byId: { [message.id]: message }, allIds: [message.id] },
       });
@@ -677,6 +958,15 @@ const slice = createSlice({
         console.error('Invalid message to delete.');
         return;
       }
+
+      // Clean up message parts
+      const messageParts = state.messageParts.byMessageId[messageId] || [];
+      messageParts.forEach((partId) => {
+        delete state.messageParts.byId[partId];
+        state.messageParts.allIds = state.messageParts.allIds.filter((id) => id !== partId);
+      });
+      delete state.messageParts.byMessageId[messageId];
+
       delete state.messages.byId[messageId];
       delete state.messagesExecutions[messageId];
       delete state.messagesContent[messageId];
@@ -746,11 +1036,42 @@ const slice = createSlice({
       }
     },
     clearState: (state) => {
-      Object.assign(state, initialState);
+      // Preserve userRooms data when clearing room state
+      const preservedUserRooms = [...state.userRooms];
+      const preservedUserRoomsPagination = { ...state.userRoomsPagination };
+      const preservedUserRoomsInitialized = state.initialized.userRooms;
+      const preservedSearchRooms = { ...state.searchRooms };
+
+      // Reset to initial state
+      Object.keys(initialState).forEach((key) => {
+        if (key === 'userRooms') {
+          state[key] = preservedUserRooms;
+        } else if (key === 'userRoomsPagination') {
+          state[key] = preservedUserRoomsPagination;
+        } else if (key === 'searchRooms') {
+          state[key] = preservedSearchRooms;
+        } else if (key === 'initialized') {
+          // Reset all initialized flags but preserve userRooms
+          state[key] = { ...initialState[key] };
+          state[key].userRooms = preservedUserRoomsInitialized;
+          // Specifically ensure room is not initialized for new room fetch
+          state[key].room = false;
+          state[key].mainThread = false;
+          state[key].allThreads = false;
+        } else {
+          state[key] = initialState[key];
+        }
+      });
     },
     updateMessageContent: (state, action) => {
       const { messageId, content } = action.payload;
       state.messagesContent[messageId] = content;
+    },
+    updateMessageStreamingState: (state, action) => {
+      const { messageId, isStreaming } = action.payload;
+      if (state.messages.byId[messageId]) {
+        state.messages.byId[messageId].is_streaming = isStreaming;
+      }
     },
     addAuthorizationRequest: (state, action) => {
       const request = action.payload;
@@ -777,8 +1098,8 @@ const slice = createSlice({
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
-      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings.");
+      if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
+        console.error("Invalid 'ids': Must be an array of strings or a single string.");
         return;
       }
 
@@ -787,11 +1108,20 @@ const slice = createSlice({
         return;
       }
 
-      ids.forEach((roomId) => {
+      const roomIds = Array.isArray(ids) ? ids : [ids];
+
+      roomIds.forEach((roomId) => {
+        if (typeof roomId !== 'string') {
+          console.error(`Invalid room id: ${roomId}`);
+          return;
+        }
+
         // Update current room if it matches
         if (state.room && state.room.id === roomId) {
           Object.keys(changes).forEach((key) => {
-            state.room[key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.room[key] = changes[key];
+            }
           });
         }
 
@@ -799,7 +1129,9 @@ const slice = createSlice({
         const userRoomIndex = state.userRooms.findIndex((room) => room.id === roomId);
         if (userRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.userRooms[userRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.userRooms[userRoomIndex][key] = changes[key];
+            }
           });
         }
 
@@ -807,7 +1139,9 @@ const slice = createSlice({
         const publicRoomIndex = state.publicRooms.findIndex((room) => room.id === roomId);
         if (publicRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.publicRooms[publicRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.publicRooms[publicRoomIndex][key] = changes[key];
+            }
           });
         }
 
@@ -815,7 +1149,9 @@ const slice = createSlice({
         const searchRoomIndex = state.searchRooms.results.findIndex((room) => room.id === roomId);
         if (searchRoomIndex !== -1) {
           Object.keys(changes).forEach((key) => {
-            state.searchRooms.results[searchRoomIndex][key] = changes[key];
+            if (changes[key] !== undefined) {
+              state.searchRooms.results[searchRoomIndex][key] = changes[key];
+            }
           });
         }
       });
@@ -1037,6 +1373,557 @@ const slice = createSlice({
         Object.assign(state.voiceConversations.byThreadId[threadId], updates);
       }
     },
+    // Message Parts reducers
+    addMessagePart: (state, action) => {
+      const raw = action.payload;
+      if (!raw?.id || !raw?.message_id) {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
+          console.error('Invalid message part data', raw);
+        }
+        return;
+      }
+
+      const normalized = normalizePart(raw);
+      const existing = state.messageParts.byId[normalized.id];
+
+      if (existing) {
+        // Upsert behavior: do not duplicate, just merge fields & potentially resort
+        const prevOrder = existing.order;
+        const prevBlock = existing.block_order;
+        const prevMsgId = existing.message_id;
+
+        mergeIntoExistingPart(existing, normalized);
+
+        // If message_id changed (shouldn't, but be safe), move the id
+        if (prevMsgId && prevMsgId !== existing.message_id) {
+          const prevArr = state.messageParts.byMessageId[prevMsgId];
+          if (prevArr) {
+            state.messageParts.byMessageId[prevMsgId] = prevArr.filter((id) => id !== existing.id);
+          }
+          ensureMessageIndex(state, existing.message_id).push(existing.id);
+        }
+
+        // Re-sort if order keys changed
+        if (prevOrder !== existing.order || prevBlock !== existing.block_order) {
+          resortMessageParts(state, existing.message_id);
+        }
+        return;
+      }
+
+      // New part
+      state.messageParts.byId[normalized.id] = normalized;
+      if (!state.messageParts.allIds.includes(normalized.id)) {
+        state.messageParts.allIds.push(normalized.id);
+      }
+
+      const arr = ensureMessageIndex(state, normalized.message_id);
+      if (!arr.includes(normalized.id)) {
+        arr.push(normalized.id);
+        resortMessageParts(state, normalized.message_id);
+      }
+    },
+
+    updateMessagePart: (state, action) => {
+      const { id, delta, index, ...updates } = action.payload || {};
+      const part = id ? state.messageParts.byId[id] : null;
+
+      if (!part) {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
+          console.error('Message part not found for update:', id, 'payload:', action.payload);
+        }
+        return;
+      }
+
+      const partType = part.type || part.part_type || 'text';
+
+      // Streaming text updates with (id, index, delta) - for text and thinking parts
+      if (delta !== undefined && (partType === 'text' || partType === 'thinking')) {
+        // If index provided, do ordered buffering + dedup
+        if (index !== undefined && index >= 0) {
+          // Deduplicate by (id, index)
+          if (part.receivedIndices[index]) {
+            // Duplicate chunk → ignore safely
+          } else if (index <= part.lastProcessedIndex) {
+            // Late/duplicate chunk behind the cursor → ignore safely
+          } else {
+            part.receivedIndices[index] = true;
+            // Store delta even if empty; presence is what matters
+            part.deltaBuffer[index] = (part.deltaBuffer[index] ?? '') + String(delta);
+
+            // Consume as many consecutive chunks as possible
+            let next = part.lastProcessedIndex + 1;
+            while (Object.prototype.hasOwnProperty.call(part.deltaBuffer, next)) {
+              part.text = (part.text || '') + part.deltaBuffer[next];
+              delete part.deltaBuffer[next];
+              part.lastProcessedIndex = next;
+              next += 1;
+            }
+          }
+        } else {
+          // No index → fallback to simple append (still idempotent if caller repeats exact same delta only when upstream avoids repeats)
+          part.text = (part.text || '') + String(delta);
+        }
+      }
+
+      // Streaming tool arguments updates with (id, index, delta)
+      if (delta !== undefined && partType === 'tool') {
+        // If index provided, do ordered buffering + dedup for arguments
+        if (index !== undefined && index >= 0) {
+          // Deduplicate by (id, index)
+          if (part.argumentsReceivedIndices[index]) {
+            // Duplicate chunk → ignore safely
+          } else if (index <= part.argumentsLastProcessedIndex) {
+            // Late/duplicate chunk behind the cursor → ignore safely
+          } else {
+            part.argumentsReceivedIndices[index] = true;
+            // Store delta even if empty; presence is what matters
+            part.argumentsDeltaBuffer[index] =
+              (part.argumentsDeltaBuffer[index] ?? '') + String(delta);
+
+            // Consume as many consecutive chunks as possible
+            let next = part.argumentsLastProcessedIndex + 1;
+            while (Object.prototype.hasOwnProperty.call(part.argumentsDeltaBuffer, next)) {
+              part.arguments = (part.arguments || '') + part.argumentsDeltaBuffer[next];
+              delete part.argumentsDeltaBuffer[next];
+              part.argumentsLastProcessedIndex = next;
+              next += 1;
+            }
+
+            // Try to extract special fields from arguments as they stream
+            // Use partial extraction that doesn't require complete JSON
+            try {
+              const parsed = JSON.parse(part.arguments);
+              if (parsed.__act_now) part.act_now = parsed.__act_now;
+              if (parsed.__act_done) part.act_done = parsed.__act_done;
+              if (parsed.__intent) part.intent = parsed.__intent;
+              if (parsed.__use_intent !== undefined) part.use_intent = parsed.__use_intent;
+            } catch {
+              // If full JSON parse fails, try partial extraction with regex
+              const extractPartialField = (fieldName) => {
+                const regex = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]*)"`, 'i');
+                const match = part.arguments.match(regex);
+                return match ? match[1] : null;
+              };
+
+              const actNow = extractPartialField('__act_now');
+              const actDone = extractPartialField('__act_done');
+              const intent = extractPartialField('__intent');
+
+              if (actNow) part.act_now = actNow;
+              if (actDone) part.act_done = actDone;
+              if (intent) part.intent = intent;
+            }
+          }
+        } else {
+          // No index → fallback to simple append for arguments
+          part.arguments = (part.arguments || '') + String(delta);
+
+          // Try to extract special fields - use partial extraction
+          try {
+            const parsed = JSON.parse(part.arguments);
+            if (parsed.__act_now) part.act_now = parsed.__act_now;
+            if (parsed.__act_done) part.act_done = parsed.__act_done;
+            if (parsed.__intent) part.intent = parsed.__intent;
+            if (parsed.__use_intent !== undefined) part.use_intent = parsed.__use_intent;
+          } catch {
+            // If full JSON parse fails, try partial extraction with regex
+            const extractPartialField = (fieldName) => {
+              const regex = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]*)"`, 'i');
+              const match = part.arguments.match(regex);
+              return match ? match[1] : null;
+            };
+
+            const actNow = extractPartialField('__act_now');
+            const actDone = extractPartialField('__act_done');
+            const intent = extractPartialField('__intent');
+
+            if (actNow) part.act_now = actNow;
+            if (actDone) part.act_done = actDone;
+            if (intent) part.intent = intent;
+          }
+        }
+      }
+
+      // Apply other field updates (including order/block_order/is_done/etc.)
+      // Whitelist of allowed update fields to prevent metadata pollution
+      const ALLOWED_UPDATE_FIELDS = [
+        'order',
+        'block_order',
+        'type',
+        'part_type',
+        'text',
+        'arguments',
+        'is_done',
+        'result',
+        'error',
+        'status',
+        'finished_at',
+        'input',
+        'act_now',
+        'act_done',
+        'intent',
+        'use_intent',
+        'task_execution',
+        'task_execution_id',
+        'created_at',
+        'message_id',
+      ];
+
+      let needsResort = false;
+      const prevOrder = part.order;
+      const prevBlock = part.block_order;
+
+      Object.keys(updates).forEach((k) => {
+        const v = updates[k];
+        if (v === undefined) return;
+
+        // Skip fields that are not in the whitelist (prevents metadata like event_type, name from websocket from polluting the part)
+        if (!ALLOWED_UPDATE_FIELDS.includes(k)) {
+          if (
+            typeof process !== 'undefined' &&
+            process.env &&
+            process.env.NODE_ENV !== 'production'
+          ) {
+            console.warn(`Ignoring unexpected update field '${k}' for message part ${id}`);
+          }
+          return;
+        }
+
+        if (k === 'order' || k === 'block_order') {
+          part[k] = isFiniteNumber(v) ? v : Number.POSITIVE_INFINITY;
+          needsResort = true;
+        } else if (k === 'type' || k === 'part_type') {
+          part.type = v;
+          part.part_type = v;
+        } else if (k === 'text' && (partType === 'text' || partType === 'thinking')) {
+          // Direct text replacement (rare), allowed for text and thinking parts
+          part.text = v ?? '';
+        } else if (k === 'arguments' && partType === 'tool') {
+          // Direct arguments replacement (when final object is received), allowed
+          part.arguments = v ?? '';
+        } else {
+          part[k] = v;
+        }
+      });
+
+      // Re-sort if ordering keys changed
+      if (needsResort || prevOrder !== part.order || prevBlock !== part.block_order) {
+        resortMessageParts(state, part.message_id);
+      }
+    },
+
+    markMessagePartDone: (state, action) => {
+      const payload = action.payload || {};
+      const { id } = payload;
+      const part = id ? state.messageParts.byId[id] : null;
+      if (!part) {
+        if (
+          typeof process !== 'undefined' &&
+          process.env &&
+          process.env.NODE_ENV !== 'production'
+        ) {
+          console.error('Message part not found for mark done:', id);
+        }
+        return;
+      }
+
+      // Mark as done
+      part.is_done = true;
+
+      // Determine part type
+      const partType = part.type || part.part_type || 'text';
+
+      // If this is a thinking part, set finished_at and status
+      if (partType === 'thinking') {
+        if (!part.finished_at) {
+          part.finished_at = payload.finished_at || payload.created_at || new Date().toISOString();
+        }
+        part.status = 'completed';
+      }
+
+      // If this is a tool part, apply the execution data from the payload
+      if (partType === 'tool') {
+        // Update tool part with final execution data
+        if (payload.result !== undefined) part.result = payload.result;
+        if (payload.error !== undefined) part.error = payload.error;
+        if (payload.name) part.name = payload.name;
+        if (payload.input !== undefined) part.input = payload.input;
+        if (payload.created_at) part.finished_at = payload.created_at;
+
+        // Determine status based on result/error
+        if (payload.result && !payload.error) {
+          part.status = 'success';
+        } else if (payload.error) {
+          part.status = 'error';
+        }
+
+        // Store execution ID for dialog access
+        if (payload.id) {
+          part.task_execution_id = payload.id;
+        }
+
+        // Extract special fields - prioritize root level of payload, fallback to arguments
+        part.act_now = payload.act_now;
+        part.act_done = payload.act_done;
+        part.intent = payload.intent;
+        part.use_intent = payload.use_intent;
+
+        // Also check arguments for special fields if not found at root level
+        if (payload.arguments && (!part.act_now || !part.act_done || !part.intent)) {
+          try {
+            const parsed = typeof payload.arguments === 'string'
+              ? JSON.parse(payload.arguments)
+              : payload.arguments;
+            if (!part.act_now && parsed.__act_now) part.act_now = parsed.__act_now;
+            if (!part.act_done && parsed.__act_done) part.act_done = parsed.__act_done;
+            if (!part.intent && parsed.__intent) part.intent = parsed.__intent;
+            if (part.use_intent === undefined && parsed.__use_intent !== undefined) {
+              part.use_intent = parsed.__use_intent;
+            }
+          } catch {
+            // Invalid JSON, skip extraction
+          }
+        }
+
+        // Create/update execution in state for dialog access
+        if (payload.id) {
+          const executionData = {
+            id: payload.id,
+            date_creation: payload.created_at,
+            arguments: payload.arguments,
+            input: payload.input,
+            content: payload.result,
+            error: payload.error,
+            status: part.status,
+            finished_at: payload.created_at,
+            tool: {
+              id: payload.tool_id,
+              name: payload.name,
+            },
+          };
+
+          // Add to executions state
+          state.executions.byId[payload.id] = executionData;
+          if (!state.executions.allIds.includes(payload.id)) {
+            state.executions.allIds.push(payload.id);
+          }
+        }
+
+        // Update or create task_execution structure for ToolPartCard compatibility
+        if (!part.task_execution) {
+          part.task_execution = {};
+        }
+
+        // Try to find the execution data from the message's executions if we have tool_id
+        let toolInfo = part.task_execution.tool;
+        if (payload.tool_id && !toolInfo) {
+          // Look for the execution in the state to get tool information
+          const execution =
+            state.executions.byId[payload.tool_id] ||
+            Object.values(state.executions.byId).find((exec) => exec.tool?.id === payload.tool_id);
+          if (execution?.tool) {
+            toolInfo = execution.tool;
+          }
+        }
+
+        // Update task_execution with the latest data
+        Object.assign(part.task_execution, {
+          tool: toolInfo || {
+            name: payload.name,
+            action_type: {
+              connection_type: {
+                icon: 'ri:hammer-fill', // fallback icon
+              },
+            },
+          },
+          arguments: payload.arguments,
+          content: payload.result,
+          error: payload.error,
+          status: part.status,
+          finished_at: payload.created_at,
+          input: payload.input,
+        });
+      }
+
+      // Cleanup streaming helpers (idempotent)
+      if (part.deltaBuffer) part.deltaBuffer = Object.create(null);
+      if (part.receivedIndices) part.receivedIndices = Object.create(null);
+      if (isFiniteNumber(part.lastProcessedIndex))
+        part.lastProcessedIndex = part.lastProcessedIndex; // keep as a watermark
+
+      // Cleanup tool arguments streaming helpers
+      if (part.argumentsDeltaBuffer) part.argumentsDeltaBuffer = Object.create(null);
+      if (part.argumentsReceivedIndices) part.argumentsReceivedIndices = Object.create(null);
+      if (isFiniteNumber(part.argumentsLastProcessedIndex))
+        part.argumentsLastProcessedIndex = part.argumentsLastProcessedIndex; // keep as a watermark
+    },
+    deleteMessagePart: (state, action) => {
+      const { id } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found for deletion');
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+      const messageId = part.message_id;
+
+      // Remove from global collection
+      delete state.messageParts.byId[id];
+      state.messageParts.allIds = state.messageParts.allIds.filter((partId) => partId !== id);
+
+      // Remove from message association
+      if (state.messageParts.byMessageId[messageId]) {
+        state.messageParts.byMessageId[messageId] = state.messageParts.byMessageId[
+          messageId
+        ].filter((partId) => partId !== id);
+        if (state.messageParts.byMessageId[messageId].length === 0) {
+          delete state.messageParts.byMessageId[messageId];
+        }
+      }
+    },
+    clearMessageParts: (state, action) => {
+      const { messageId } = action.payload;
+      if (!messageId) {
+        console.error('Message ID required for clearing parts');
+        return;
+      }
+
+      // Get all parts for this message
+      const messageParts = state.messageParts.byMessageId[messageId] || [];
+
+      // Remove each part from global collection
+      messageParts.forEach((partId) => {
+        delete state.messageParts.byId[partId];
+        state.messageParts.allIds = state.messageParts.allIds.filter((id) => id !== partId);
+      });
+
+      // Remove message association
+      delete state.messageParts.byMessageId[messageId];
+    },
+    resetMessagePartStreaming: (state, action) => {
+      const { id } = action.payload;
+      if (!id || !state.messageParts.byId[id]) {
+        console.error('Message part not found for reset');
+        return;
+      }
+
+      const part = state.messageParts.byId[id];
+      const partType = part.type || part.part_type || 'text';
+
+      // Reset streaming state
+      if (partType === 'text' || partType === 'thinking') {
+        part.text = '';
+      } else if (partType === 'tool') {
+        part.arguments = '';
+      }
+      part.is_done = false;
+
+      // Clear streaming buffers
+      part.deltaBuffer = Object.create(null);
+      part.receivedIndices = Object.create(null);
+      part.lastProcessedIndex = -1;
+
+      // Clear tool arguments streaming buffers
+      if (partType === 'tool') {
+        part.argumentsDeltaBuffer = Object.create(null);
+        part.argumentsReceivedIndices = Object.create(null);
+        part.argumentsLastProcessedIndex = -1;
+      }
+
+      // Clear any existing text buffer (legacy)
+      if (part.textBuffer) {
+        delete part.textBuffer;
+      }
+    },
+    // Response lifecycle management
+    addResponseLifecycle: (state, action) => {
+      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
+
+      if (!state.responseLifecycles.byId[response_id]) {
+        // Create new response lifecycle
+        state.responseLifecycles.byId[response_id] = {
+          response_id,
+          agent_id,
+          thread_id,
+          status: 'submitted',
+          events: [],
+          created_at: timestamp || new Date().toISOString(),
+          updated_at: timestamp || new Date().toISOString(),
+        };
+
+        // Add to active responses for thread
+        if (!state.responseLifecycles.activeByThread[thread_id]) {
+          state.responseLifecycles.activeByThread[thread_id] = [];
+        }
+        state.responseLifecycles.activeByThread[thread_id].push(response_id);
+      }
+
+      const lifecycle = state.responseLifecycles.byId[response_id];
+
+      // Add event to timeline
+      lifecycle.events.push({
+        type: event_type,
+        data: event_data,
+        timestamp: timestamp || new Date().toISOString(),
+      });
+
+      // Update status based on event
+      if (event_type.startsWith('activation.')) {
+        lifecycle.status = event_type.replace('activation.', '');
+      } else if (event_type.startsWith('response.')) {
+        lifecycle.status = event_type.replace('response.', '');
+
+        // Set message_id when response starts
+        if (event_type === 'response.started' && event_data.message_id) {
+          lifecycle.message_id = event_data.message_id;
+        }
+      }
+
+      lifecycle.updated_at = timestamp || new Date().toISOString();
+    },
+
+    completeResponseLifecycle: (state, action) => {
+      const { response_id, thread_id } = action.payload;
+
+      // Remove from active responses
+      if (state.responseLifecycles.activeByThread[thread_id]) {
+        state.responseLifecycles.activeByThread[thread_id] =
+          state.responseLifecycles.activeByThread[thread_id].filter((id) => id !== response_id);
+
+        // Clean up empty arrays
+        if (state.responseLifecycles.activeByThread[thread_id].length === 0) {
+          delete state.responseLifecycles.activeByThread[thread_id];
+        }
+      }
+
+      // Keep completed responses for a while (they'll be cleaned up later)
+      if (state.responseLifecycles.byId[response_id]) {
+        state.responseLifecycles.byId[response_id].completed_at = new Date().toISOString();
+      }
+    },
+
+    cleanupResponseLifecycles: (state, action) => {
+      const { olderThan = 300000 } = action.payload || {}; // 5 minutes default
+      const cutoff = Date.now() - olderThan;
+
+      Object.keys(state.responseLifecycles.byId).forEach((response_id) => {
+        const lifecycle = state.responseLifecycles.byId[response_id];
+        if (lifecycle.completed_at) {
+          const completedTime = new Date(lifecycle.completed_at).getTime();
+          if (completedTime < cutoff) {
+            delete state.responseLifecycles.byId[response_id];
+          }
+        }
+      });
+    },
   },
 });
 
@@ -1079,6 +1966,7 @@ export const {
   deleteRunningResponse,
   clearState: clearRoomState,
   updateMessageContent,
+  updateMessageStreamingState,
   addAuthorizationRequest,
   updateAuthorizationRequest,
   setAuthorizationRequests,
@@ -1102,6 +1990,17 @@ export const {
   setVoiceConversationConnecting,
   stopVoiceConversation,
   updateVoiceConversation,
+  // Message parts actions
+  addMessagePart,
+  updateMessagePart,
+  markMessagePartDone,
+  deleteMessagePart,
+  clearMessageParts,
+  resetMessagePartStreaming,
+  // Response lifecycle actions
+  addResponseLifecycle,
+  completeResponseLifecycle,
+  cleanupResponseLifecycles,
 } = slice.actions;
 
 // SELECTORS
@@ -1241,10 +2140,39 @@ export const makeSelectMessage = () =>
     (messagesById, messageId) => !!messageId && messagesById?.[messageId],
   );
 
+// Message Parts selectors (moved up to be defined before use)
+export const selectMessageParts = (state) => selectRoomState(state).messageParts;
+
+export const selectMessagePartsById = (state) => selectMessageParts(state).byId;
+
+export const selectMessagePartsAllIds = (state) => selectMessageParts(state).allIds;
+
+export const selectMessagePartsByMessageId = (state) => selectMessageParts(state).byMessageId;
+
 export const makeSelectMessageContent = () =>
   createSelector(
-    [selectMessagesContent, (state, messageId) => messageId],
-    (messagesContent, messageId) => messagesContent[messageId],
+    [
+      selectMessagesContent,
+      selectMessagePartsById,
+      selectMessagePartsByMessageId,
+      (state, messageId) => messageId,
+    ],
+    (messagesContent, partsById, partsByMessageId, messageId) => {
+      // First check if we have message parts for this message
+      const messageParts = partsByMessageId[messageId];
+      if (messageParts && messageParts.length > 0) {
+        // Use message parts to construct content
+        return messageParts
+          .map((partId) => partsById[partId])
+          .filter((part) => part && part.part_type === 'text')
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map((part) => part.text || '')
+          .join('');
+      }
+
+      // Fallback to legacy message content
+      return messagesContent[messageId] || '';
+    },
   );
 
 export const makeSelectHasMessageContent = () =>
@@ -1581,6 +2509,155 @@ export const selectIsVoiceActive = (threadId) =>
   );
 
 export const selectIsVoiceConnecting = (state) => selectVoiceConversations(state).isConnecting;
+
+// Message Parts selectors (definitions moved up earlier)
+
+export const makeSelectMessageParts = () =>
+  createSelector(
+    [selectMessagePartsByMessageId, (state, messageId) => messageId],
+    (partsByMessageId, messageId) => partsByMessageId[messageId] || [],
+  );
+
+export const makeSelectMessagePartById = () =>
+  createSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => partsById[partId] || null,
+  );
+
+export const makeSelectMessagePartsContent = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part && (part.type === 'text' || part.part_type === 'text'))
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((part) => part.text || '')
+      .join('');
+  });
+
+export const makeSelectMessagePartsOfType = (partType) =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part && (part.type === partType || part.part_type === partType))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  });
+
+// Helper selector to get all parts for a message organized by type
+export const makeSelectMessagePartsGrouped = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    const parts = partIds
+      .map((partId) => partsById[partId])
+      .filter((part) => part)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    return parts.reduce((acc, part) => {
+      const partType = part.type || part.part_type || 'text';
+      if (!acc[partType]) {
+        acc[partType] = [];
+      }
+      acc[partType].push(part);
+      return acc;
+    }, {});
+  });
+
+// Helper to check if a message has any streaming parts
+export const makeSelectMessageHasStreamingParts = () =>
+  createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
+    return partIds.some((partId) => {
+      const part = partsById[partId];
+      return part && !part.is_done;
+    });
+  });
+
+// Response lifecycle selectors
+export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
+
+export const selectActiveResponsesByThread = (threadId) =>
+  createSelector(
+    [selectResponseLifecycles, selectMembers],
+    (lifecycles, members) => {
+      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+      return activeResponseIds
+        .map((responseId) => {
+          const lifecycle = lifecycles.byId[responseId];
+          if (!lifecycle) return null;
+
+          // Get agent details
+          const agent = Object.values(members.byId || {}).find(
+            (member) => member.member?.id === lifecycle.agent_id,
+          );
+
+          return {
+            ...lifecycle,
+            agent: agent
+              ? {
+                  id: agent.member.id,
+                  name: agent.member?.name || 'Agent',
+                  avatar: agent.member?.picture,
+                  member_type: agent.member?.member_type,
+                }
+              : null,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
+  );
+
+export const selectResponseLifecycleById = (responseId) =>
+  createSelector(
+    [selectResponseLifecycles],
+    (lifecycles) => lifecycles.byId[responseId] || null,
+  );
+
+// Selector for placeholder messages (active responses without message_id yet)
+export const makeSelectPlaceholderMessagesForThread = () =>
+  createSelector(
+    [
+      selectResponseLifecycles,
+      selectMembers,
+      (state, threadId) => threadId,
+    ],
+    (lifecycles, members, threadId) => {
+      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+
+      return activeResponseIds
+        .map((responseId) => {
+          const lifecycle = lifecycles.byId[responseId];
+          if (!lifecycle || lifecycle.message_id) return null; // Skip if real message exists
+
+          // Get agent details
+          const roomMember = Object.values(members.byId || {}).find(
+            (member) =>
+              member?.member?.member_type === 'agent' &&
+              member?.member?.agent_id === lifecycle.agent_id,
+          );
+
+          if (!roomMember) return null;
+
+          // Create placeholder message object
+          return {
+            id: `placeholder-${responseId}`,
+            response_id: responseId,
+            member_id: roomMember.id,
+            thread_id: lifecycle.thread_id,
+            date_creation: lifecycle.created_at,
+            isPlaceholder: true,
+            meta_data: {
+              loading: true,
+              status: lifecycle.status,
+            },
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(a.date_creation) - new Date(b.date_creation));
+    },
+    {
+      memoizeOptions: {
+        resultEqualityCheck: checkArraysEqualsProperties(['id', 'status', 'date_creation']),
+      },
+    },
+  );
 
 // ACTIONS
 
@@ -2287,6 +3364,16 @@ export const stopAgentResponse = (messageId) => async (dispatch, getState) => {
     const { room } = response.data;
     return Promise.resolve(room);
   } catch (e) {
+    return Promise.reject(e);
+  }
+};
+
+export const stopThreadGeneration = (threadId) => async () => {
+  try {
+    const response = await optimai_agent.delete(`/api/v1/activations/threads/${threadId}/responses`);
+    return Promise.resolve(response.data);
+  } catch (e) {
+    console.error('Failed to stop thread generation:', e);
     return Promise.reject(e);
   }
 };

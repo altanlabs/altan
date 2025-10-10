@@ -1,13 +1,13 @@
 import { Capacitor } from '@capacitor/core';
-import React, { memo, useMemo, useEffect, useState } from 'react';
+import React, { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { useSelector, dispatch } from '../../../redux/store';
 
 // Default header heights and spacing (tailor these as needed)
 const DEFAULT_HEADER_MOBILE_HEIGHT = HEADER.H_MOBILE;
@@ -24,6 +24,17 @@ const isIOSCapacitor = () => {
     return false;
   }
 };
+
+
+export const AGENT_IMAGES = [
+  'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c',
+  'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136',
+  'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130',
+  'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131',
+  'https://api.altan.ai/platform/media/6cc4b1c6-e9c2-4dbc-bc82-119c381b0603',
+  'https://api.altan.ai/platform/media/e2d112cf-7548-42c1-859d-973e9f4b1a08',
+  'https://api.altan.ai/platform/media/eda9f2f1-69db-4a87-85b6-a8cde46ca7a1',
+];
 
 const CompactLayout = ({
   children,
@@ -45,6 +56,14 @@ const CompactLayout = ({
   const isIOS = isIOSCapacitor();
   const { user } = useAuthContext();
   const location = useLocation();
+  const history = useHistory();
+
+  // Animation states for project creation
+  const [isConverging, setIsConverging] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isBursting, setIsBursting] = useState(false);
+  const [error, setError] = useState(null);
+  const apiCallStartedRef = useRef(false);
 
   // Define paths where gradient background should be shown
   const allowedPaths = ['/', '/agents', '/flows', '/usage', '/pricing'];
@@ -103,6 +122,82 @@ const CompactLayout = ({
       document.body.removeChild(testElement);
     }
   }, [isIOS, isMobile, isDesktop, headerVisible, hideHeader, title]);
+
+  // Detect idea param and trigger convergence animation + API call immediately
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ideaId = params.get('idea');
+    
+    console.log('🔍 Checking for idea param:', ideaId);
+    console.log('🔍 API call started ref:', apiCallStartedRef.current);
+    
+    if (ideaId && !apiCallStartedRef.current) {
+      console.log('🎬 STARTING ANIMATION & API CALL');
+      apiCallStartedRef.current = true;
+      setIsConverging(true);
+      const startTime = Date.now();
+      
+      console.log('📞 Calling createAltaner with idea:', ideaId);
+      
+      import('../../../redux/slices/altaners').then(({ createAltaner }) => {
+        console.log('✅ createAltaner imported successfully');
+        
+        const createPromise = dispatch(createAltaner({ name: 'New Project' }, ideaId));
+        console.log('📤 Dispatch called, promise:', createPromise);
+        
+        createPromise
+          .then((altaner) => {
+            console.log('📦 Raw response from createAltaner:', altaner);
+            
+            // createAltaner returns the altaner object directly (not wrapped)
+            const projectId = altaner?.id;
+            
+            console.log('📝 Project data:', altaner);
+            console.log('🆔 Project ID:', projectId);
+            
+            if (projectId) {
+              console.log('✅ Project created successfully!');
+              
+              // Calculate how long the animation has been running
+              const elapsed = Date.now() - startTime;
+              const minAnimationTime = 5000; // Minimum time for smooth animation
+              const remainingTime = Math.max(0, minAnimationTime - elapsed);
+              
+              console.log(`⏱️ Animation elapsed: ${elapsed}ms, waiting ${remainingTime}ms more`);
+              
+              // Wait for animation to complete, then redirect
+              setTimeout(() => {
+                console.log('💥 Starting burst animation');
+                setIsBursting(true);
+                setTimeout(() => {
+                  console.log('🚀 Redirecting to /project/' + projectId);
+                  // Use window.location for reliable navigation
+                  window.location.href = `/project/${projectId}`;
+                }, 800);
+              }, remainingTime);
+            } else {
+              console.error('❌ No project ID found in response:', altaner);
+              setError('Failed to create project. Please try again.');
+              apiCallStartedRef.current = false;
+            }
+          })
+          .catch((err) => {
+            console.error('❌ Promise rejected with error:', err);
+            setError(err?.message || 'Failed to create project. Please try again.');
+            apiCallStartedRef.current = false;
+          });
+      }).catch((importErr) => {
+        console.error('❌ Failed to import createAltaner:', importErr);
+        apiCallStartedRef.current = false;
+      });
+      
+      // Transition to creating state after convergence
+      setTimeout(() => {
+        console.log('✨ Setting isCreating to true');
+        setIsCreating(true);
+      }, 5000);
+    }
+  }, [location.search, history]);
 
   // This logic replicates the original top calculation:
   // If breadcrumb or toolbar exists, double the header height, else 0.75 of it.
@@ -200,30 +295,118 @@ const CompactLayout = ({
       >
         {shouldShowGradient && (
           <div
-            className="fixed left-1/2 aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto pointer-events-none"
+            className="fixed top-0 left-0 right-0 bottom-0 overflow-hidden pointer-events-none"
             style={{
-              backgroundImage: isMobile
-                ? 'url("https://api.altan.ai/platform/media/28c8847e-c46a-4b0e-b602-d374e0fd4e08?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")'
-                : 'url("https://api.altan.ai/platform/media/a9182a1d-fa44-4da0-88d1-7ebd51e78427?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")',
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center top',
-              mask: 'linear-gradient(transparent 0%, black 5%, black 100%)',
-              WebkitMask: 'linear-gradient(transparent 0%, black 5%, black 100%)',
-              backfaceVisibility: 'hidden',
-              perspective: '1000px',
-              willChange: 'transform',
-              animation: 'fadeInGradient 1.5s ease-in forwards',
-              opacity: 0,
-              top: 0,
-              bottom: 0,
               height: '100dvh',
               maxHeight: '100dvh',
               zIndex: -1,
             }}
-          />
+          >
+            {/* Animated Agent Spheres */}
+            {[
+              // Large spheres - more prominent, slower movement
+              { id: 1, size: isMobile ? 85 : 125, top: '8%', left: '12%', delay: 0, duration: 20, blur: isMobile ? 3 : 5, opacity: 0.45, imageIndex: 5 },
+              { id: 3, size: isMobile ? 95 : 135, top: '65%', right: '8%', delay: 3, duration: 24, blur: isMobile ? 4 : 6, opacity: 0.42, imageIndex: 1 },
+              { id: 5, size: isMobile ? 80 : 120, top: '82%', left: '18%', delay: 6, duration: 22, blur: isMobile ? 3 : 5, opacity: 0.44, imageIndex: 5 },
+              
+              // Medium spheres - balanced presence
+              { id: 7, size: isMobile ? 65 : 95, top: '28%', right: '22%', delay: 2, duration: 18, blur: isMobile ? 2 : 4, opacity: 0.38, imageIndex: 5 },
+              { id: 9, size: isMobile ? 70 : 105, top: '48%', left: '8%', delay: 5, duration: 20, blur: isMobile ? 3 : 4, opacity: 0.40, imageIndex: 4 },
+              { id: 11, size: isMobile ? 60 : 90, top: '72%', right: '32%', delay: 8, duration: 21, blur: isMobile ? 2 : 3, opacity: 0.37, imageIndex: 5 },
+              
+              // Small spheres - subtle, atmospheric
+              { id: 2, size: isMobile ? 50 : 70, top: '18%', left: '42%', delay: 1.5, duration: 16, blur: isMobile ? 2 : 3, opacity: 0.32, imageIndex: 1 },
+              { id: 4, size: isMobile ? 55 : 78, top: '38%', right: '48%', delay: 4.5, duration: 17, blur: isMobile ? 2 : 3, opacity: 0.34, imageIndex: 6 },
+              { id: 6, size: isMobile ? 45 : 65, top: '58%', left: '52%', delay: 3.5, duration: 15, blur: isMobile ? 1 : 2, opacity: 0.30, imageIndex: 3 },
+              { id: 8, size: isMobile ? 52 : 75, top: '88%', right: '18%', delay: 7, duration: 18, blur: isMobile ? 2 : 3, opacity: 0.35, imageIndex: 4 },
+            ].map((sphere) => (
+              <div
+                key={sphere.id}
+                className="absolute"
+                style={{
+                  width: `${sphere.size}px`,
+                  height: `${sphere.size}px`,
+                  top: (isConverging || isCreating) ? '50%' : sphere.top,
+                  left: (isConverging || isCreating) ? '50%' : sphere.left,
+                  right: (isConverging || isCreating) ? 'auto' : sphere.right,
+                  transform: (isConverging || isCreating) ? 'translate(-50%, -50%) scale(2.2)' : 'none',
+                  animation: (isConverging || isCreating)
+                    ? 'none'
+                    : `fadeInAgent 1s ease-out ${sphere.delay * 0.15}s forwards, floatAgentSubtle ${sphere.duration}s ease-in-out ${1 + sphere.delay}s infinite`,
+                  transition: isConverging 
+                    ? `transform 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s, top 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s, left 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s`
+                    : 'none',
+                  willChange: 'transform, top, left',
+                  zIndex: (isConverging || isCreating) ? 9999 : -1,
+                  pointerEvents: 'none',
+                  opacity: isBursting ? 0 : ((isConverging || isCreating) ? 1 : 0),
+                }}
+              >
+                <div
+                  className="w-full h-full bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${AGENT_IMAGES[sphere.imageIndex]})`,
+                    borderRadius: '1000px',
+                    filter: isConverging || isCreating
+                      ? 'blur(10px) brightness(1.25) saturate(1.25)' 
+                      : `blur(${sphere.blur}px) brightness(1.15) saturate(1.15)`,
+                    opacity: isConverging || isCreating ? 0.8 : sphere.opacity,
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 30px rgba(0, 0, 0, 0.08)',
+                    animation: (isConverging || isCreating)
+                      ? (isCreating ? `mergeAndPulse 3s ease-in-out ${sphere.delay * 0.1}s infinite` : 'none')
+                      : `breathe ${sphere.duration * 0.5}s ease-in-out ${1 + sphere.delay * 0.5}s infinite`,
+                    transition: isConverging 
+                      ? `filter 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s`
+                      : 'none',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         )}
-        <div className={contentClasses.join(' ')}>{children}</div>
+        
+        {/* Creating text overlay */}
+        {isCreating && !error && !isBursting && (
+          <div className="fixed inset-0 z-[9999] flex items-end justify-center pb-20 pointer-events-none">
+            <div 
+              className="text-xl tracking-wide animate-pulse"
+            >
+              Creating your project...
+            </div>
+          </div>
+        )}
+
+        {/* Error modal */}
+        {error && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl text-center max-w-md mx-4">
+              <h3 className="text-xl font-medium mb-4 text-gray-900 dark:text-white">Creation Failed</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+              <button 
+                onClick={() => {
+                  setError(null);
+                  setIsConverging(false);
+                  setIsCreating(false);
+                  history.push('/');
+                }}
+                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div 
+          className={contentClasses.join(' ')}
+          style={{
+            opacity: isConverging ? 0 : 1,
+            transition: 'opacity 0.8s ease-out',
+            pointerEvents: isConverging ? 'none' : 'auto',
+          }}
+        >
+          {children}
+        </div>
       </div>
     </>
   );

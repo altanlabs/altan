@@ -336,7 +336,7 @@ export const editTool =
     try {
       dispatch(slice.actions.startLoading());
 
-      const response = await optimai_integration.patch(`/tool/${toolId}`, formData);
+      const response = await optimai.patch(`/tool/${toolId}`, formData);
       const { tool } = response.data;
       // dispatch(slice.actions.addTool(tool));
       return Promise.resolve(tool);
