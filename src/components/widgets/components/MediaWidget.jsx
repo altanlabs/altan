@@ -1,5 +1,5 @@
 import { Box, Chip, IconButton, Modal, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { optimai } from '../../../utils/axios';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -369,4 +369,7 @@ const MediaWidget = ({ id, name }) => {
   );
 };
 
-export default MediaWidget;
+export default memo(MediaWidget, (prevProps, nextProps) => {
+  // Only re-render if id or name changes
+  return prevProps.id === nextProps.id && prevProps.name === nextProps.name;
+});

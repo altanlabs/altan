@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { createSelector } from '@reduxjs/toolkit';
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 
 import {
   selectAccountConnectionsByType,
@@ -254,4 +254,10 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
   );
 };
 
-export default AuthorizationWidget;
+export default memo(AuthorizationWidget, (prevProps, nextProps) => {
+  // Only re-render if connectionTypeId or threadId changes
+  return (
+    prevProps.connectionTypeId === nextProps.connectionTypeId &&
+    prevProps.threadId === nextProps.threadId
+  );
+});

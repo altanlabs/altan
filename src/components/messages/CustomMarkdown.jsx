@@ -11,7 +11,6 @@ import remarkMath from 'remark-math';
 import { cn } from '@lib/utils';
 
 import { ComponentTarget } from '../../components/editor/nodes/ComponentTargetNode.tsx';
-import { useDebounce } from '../../hooks/useDebounce';
 import { makeSelectMessageContent, sendMessage } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store.js';
 import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup.jsx';
@@ -541,9 +540,9 @@ const CustomLink = ({ href, children, threadId }) => {
 };
 
 const useMessageContent = (messageId) => {
-  const messageContentSelector = useMemo(makeSelectMessageContent, []);
+  const messageContentSelector = useMemo(() => makeSelectMessageContent(), []);
   const messageContent = useSelector((state) => messageContentSelector(state, messageId));
-  return useDebounce(messageContent, 100);
+  return messageContent; // Remove debouncing to prevent unnecessary re-renders
 };
 
 // Error boundary to catch rendering errors and display the problematic content
@@ -1007,4 +1006,15 @@ const CustomMarkdown = ({
   );
 };
 
-export default memo(CustomMarkdown);
+export default memo(CustomMarkdown, (prevProps, nextProps) => {
+  // Only re-render if the actual content or critical props change
+  return (
+    prevProps.text === nextProps.text &&
+    prevProps.messageId === nextProps.messageId &&
+    prevProps.threadId === nextProps.threadId &&
+    prevProps.codeActive === nextProps.codeActive &&
+    prevProps.minified === nextProps.minified &&
+    prevProps.noWrap === nextProps.noWrap &&
+    prevProps.center === nextProps.center
+  );
+});

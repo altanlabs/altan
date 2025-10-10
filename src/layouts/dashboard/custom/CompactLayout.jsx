@@ -27,13 +27,11 @@ const isIOSCapacitor = () => {
 
 
 export const AGENT_IMAGES = [
-  'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c',
-  'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136',
-  'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130',
-  'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131',
-  'https://api.altan.ai/platform/media/6cc4b1c6-e9c2-4dbc-bc82-119c381b0603',
-  'https://api.altan.ai/platform/media/e2d112cf-7548-42c1-859d-973e9f4b1a08',
-  'https://api.altan.ai/platform/media/eda9f2f1-69db-4a87-85b6-a8cde46ca7a1',
+  '/agents/1.png',
+  '/agents/2.png',
+  '/agents/3.png',
+  '/agents/4.png',
+  '/agents/5.jpeg',
 ];
 
 const CompactLayout = ({
@@ -305,18 +303,18 @@ const CompactLayout = ({
             {/* Animated Agent Spheres */}
             {[
               // Large spheres - more prominent, slower movement
-              { id: 1, size: isMobile ? 85 : 125, top: '8%', left: '12%', delay: 0, duration: 20, blur: isMobile ? 3 : 5, opacity: 0.45, imageIndex: 5 },
+              { id: 1, size: isMobile ? 85 : 125, top: '8%', left: '12%', delay: 0, duration: 20, blur: isMobile ? 3 : 5, opacity: 0.45, imageIndex: 1 },
               { id: 3, size: isMobile ? 95 : 135, top: '65%', right: '8%', delay: 3, duration: 24, blur: isMobile ? 4 : 6, opacity: 0.42, imageIndex: 1 },
-              { id: 5, size: isMobile ? 80 : 120, top: '82%', left: '18%', delay: 6, duration: 22, blur: isMobile ? 3 : 5, opacity: 0.44, imageIndex: 5 },
+              { id: 5, size: isMobile ? 80 : 120, top: '82%', left: '18%', delay: 6, duration: 22, blur: isMobile ? 3 : 5, opacity: 0.44, imageIndex: 3 },
               
               // Medium spheres - balanced presence
-              { id: 7, size: isMobile ? 65 : 95, top: '28%', right: '22%', delay: 2, duration: 18, blur: isMobile ? 2 : 4, opacity: 0.38, imageIndex: 5 },
+              { id: 7, size: isMobile ? 65 : 95, top: '28%', right: '22%', delay: 2, duration: 18, blur: isMobile ? 2 : 4, opacity: 0.38, imageIndex: 0 },
               { id: 9, size: isMobile ? 70 : 105, top: '48%', left: '8%', delay: 5, duration: 20, blur: isMobile ? 3 : 4, opacity: 0.40, imageIndex: 4 },
-              { id: 11, size: isMobile ? 60 : 90, top: '72%', right: '32%', delay: 8, duration: 21, blur: isMobile ? 2 : 3, opacity: 0.37, imageIndex: 5 },
+              { id: 11, size: isMobile ? 60 : 90, top: '72%', right: '32%', delay: 8, duration: 21, blur: isMobile ? 2 : 3, opacity: 0.37, imageIndex: 3 },
               
               // Small spheres - subtle, atmospheric
-              { id: 2, size: isMobile ? 50 : 70, top: '18%', left: '42%', delay: 1.5, duration: 16, blur: isMobile ? 2 : 3, opacity: 0.32, imageIndex: 1 },
-              { id: 4, size: isMobile ? 55 : 78, top: '38%', right: '48%', delay: 4.5, duration: 17, blur: isMobile ? 2 : 3, opacity: 0.34, imageIndex: 6 },
+              { id: 2, size: isMobile ? 50 : 70, top: '18%', left: '42%', delay: 1.5, duration: 16, blur: isMobile ? 2 : 3, opacity: 0.32, imageIndex: 2 },
+              { id: 4, size: isMobile ? 55 : 78, top: '38%', right: '48%', delay: 4.5, duration: 17, blur: isMobile ? 2 : 3, opacity: 0.34, imageIndex: 2 },
               { id: 6, size: isMobile ? 45 : 65, top: '58%', left: '52%', delay: 3.5, duration: 15, blur: isMobile ? 1 : 2, opacity: 0.30, imageIndex: 3 },
               { id: 8, size: isMobile ? 52 : 75, top: '88%', right: '18%', delay: 7, duration: 18, blur: isMobile ? 2 : 3, opacity: 0.35, imageIndex: 4 },
             ].map((sphere) => (

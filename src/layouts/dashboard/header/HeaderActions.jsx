@@ -54,15 +54,18 @@ const HeaderActions = ({ user, isDesktop }) => {
         /> */}
 
         <InvitationMenuPopover isDashboard={true} />
-
-        <Button
-          color="inherit"
-          variant="soft"
-          startIcon={<Iconify icon="mdi:gift-outline"  />}
+        
+        <Tooltip title="Get free credits"> 
+        <HeaderIconButton
           onClick={() => history.push(PATH_DASHBOARD.referrals)}
         >
-          Get free credits
-        </Button>
+          <Iconify
+            icon="mdi:gift-outline"
+            width={18}
+              height={18}
+            />
+          </HeaderIconButton>
+        </Tooltip>
 
         {/* <Tooltip
           arrow
