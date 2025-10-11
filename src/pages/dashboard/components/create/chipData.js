@@ -163,35 +163,14 @@ https://shorturl.at/wvWye
     ],
   },
   {
-    id: 'research',
-    name: 'Research',
+    id: 'support',
+    name: 'Support',
     useCases: [
       {
-        title: 'Market analysis',
+        title: 'Build a docs and support website',
         prompt:
-          'Analyze the outdoor activities market in Singapore using the most suitable business analysis framework (e.g., SWOT, BMC, PESTEL, 7Ps, etc.). Apply the chosen model comprehensively, completing all sections with realistic ideas and well-founded assumptions. Present the analysis as an interactive, professionally designed webpage that includes clear layouts, visual elements such as charts and icons, and responsive design. The final webpage should be public, permanent, and ready to be used in real-world contexts such as presentations, education, or strategic planning.',
-      },
-      {
-        title: 'Consumer sentiment',
-        prompt:
-          'Analyze online consumer sentiment toward pool cleaning robots, focusing on e-commerce platform reviews. Compile authentic positive and negative user feedback, then synthesize key insights. Present the analysis as an interactive, professionally designed webpage that includes clear layouts, visual elements such as charts and icons, and responsive design. The final webpage should be public, permanent, and ready to be used in real-world contexts such as presentations, education, or strategic planning.',
-      },
-      {
-        title: 'University Thesis',
-        prompt:
-          'Write a formal, university-level thesis (around 3,000–5,000 words) on the topic "How Taylor Swift Became a Billion-Dollar Brand." The paper should include a clear introduction with a thesis statement, followed by analytical sections on her career evolution, branding strategies, business decisions, and fan engagement. Use concrete examples and credible sources, and conclude with reflections on her impact on celebrity branding and the music industry. Present it in a single page website publicly available.',
+          'Create a docs and support website for my business. I should be able to add new docs and support articles and manage the website. Finally, we should be able to add an agent that can answer questions about the docs and support articles.',
       },
     ],
   },
-  // {
-  //   id: 'support',
-  //   name: 'Support',
-  //   useCases: [
-  //     {
-  //       title: 'Build a docs and support website',
-  //       prompt:
-  //         'Create a docs and support website for my business. I should be able to add new docs and support articles and manage the website. Finally, we should be able to add an agent that can answer questions about the docs and support articles.',
-  //     },
-  //   ],
-  // },
 ];

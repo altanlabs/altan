@@ -8,6 +8,7 @@ import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer
 import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
 import { selectIsAccountFree } from '../../../../redux/slices/general';
 import { useSelector } from '../../../../redux/store';
+import { chipCategories } from './chipData';
 
 // Helper function to get the appropriate icon based on file type
 const getFileIcon = (type) => {
@@ -141,6 +142,26 @@ function TextAreaWithButtons({
 
   const handleRemoveRepository = () => {
     setGithubRepo(null);
+  };
+
+  // Function to handle "Surprise Me" button click
+  const handleSurpriseMe = () => {
+    // Collect all use cases from all categories
+    const allUseCases = chipCategories.flatMap((category) => category.useCases);
+    
+    // Select a random use case
+    if (allUseCases.length > 0) {
+      const randomIndex = Math.floor(Math.random() * allUseCases.length);
+      const randomUseCase = allUseCases[randomIndex];
+      
+      // Set the prompt value
+      setInputValue(randomUseCase.prompt);
+      
+      // Adjust textarea height after setting value
+      setTimeout(() => {
+        adjustTextareaHeight();
+      }, 0);
+    }
   };
 
   // Modified handleSubmit to include the GitHub repository as github_url, isPublic flag, and autopilot mode
@@ -454,6 +475,19 @@ function TextAreaWithButtons({
                 </div>
               </div>
             )}
+
+            {/* Surprise Me button */}
+            <button
+              onClick={handleSurpriseMe}
+              className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-full bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors shadow-sm text-xs font-medium text-slate-700 dark:text-white"
+              title="Get a random project idea"
+            >
+              <Icon
+                icon="mdi:dice-3"
+                className="w-4 h-4"
+              />
+              <span>Surprise Me</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">

@@ -347,14 +347,6 @@ const MermaidDiagram = ({ chart, className = '' }) => {
                 ))}
               </Box>
             </Box>
-
-            {/* Loading indicator */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
-              <CircularProgress size={16} />
-              <Typography variant="body2" color="text.secondary">
-                Generating diagram...
-              </Typography>
-            </Box>
           </Box>
         )}
 
