@@ -44,7 +44,7 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
     return (
       <div className="flex items-center justify-center w-full h-full group relative">
         <Tooltip
-          title="Expand record"
+          title="Edit record"
           enterDelay={400}
           enterNextDelay={400}
           leaveDelay={0}
@@ -52,7 +52,7 @@ export const getIdColumnDef = ({ handleExpandRecord }) => ({
           sx={{ cursor: 'pointer' }}
         >
           <Iconify
-            icon="mdi:arrow-expand"
+            icon="mdi:pencil"
             color="text.secondary"
             className="cursor-pointer mr-2"
             width={12}

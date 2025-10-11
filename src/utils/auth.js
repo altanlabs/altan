@@ -50,8 +50,10 @@ const AUTH_API_ENDPOINTS = {
   optimai_room: `${AUTH_API}/token/platform`,
   optimai_tables: `${AUTH_API}/token/platform`,
   optimai_tables_legacy: `${AUTH_API}/token/platform`,
+  optimai_tables_v4: `${AUTH_API}/token/platform`,
   optimai_agent: `${AUTH_API}/token/platform`,
   optimai_database: `${AUTH_API}/token/platform`,
+  optimai_pg_meta: `${AUTH_API}/token/platform`,
   optimai_auth: `${AUTH_API}/token/platform`,
 };
 
@@ -64,8 +66,10 @@ const MOBILE_AUTH_API_ENDPOINTS = {
   optimai_room: `${AUTH_API}/token/mobile`,
   optimai_tables: `${AUTH_API}/token/mobile`,
   optimai_tables_legacy: `${AUTH_API}/token/mobile`,
+  optimai_tables_v4: `${AUTH_API}/token/mobile`,
   optimai_agent: `${AUTH_API}/token/mobile`,
   optimai_database: `${AUTH_API}/token/mobile`,
+  optimai_pg_meta: `${AUTH_API}/token/mobile`,
   optimai_auth: `${AUTH_API}/token/mobile`,
 };
 
@@ -114,8 +118,10 @@ export const clearStoredRefreshToken = () => {
  * otherwise uses web platform endpoint with cookies
  */
 export const refreshToken = async (axiosInstance) => {
+  console.log('🔄 refreshToken called for instance:', axiosInstance?.defaults?.name);
   try {
     const instanceName = axiosInstance.defaults.name;
+    console.log('📍 Instance name:', instanceName);
     const isMobile = isCapacitorPlatform();
 
     if (isMobile) {
@@ -148,9 +154,16 @@ export const refreshToken = async (axiosInstance) => {
     } else {
       // Web/platform refresh logic (existing)
       const refreshEndpoint = AUTH_API_ENDPOINTS[instanceName];
+      console.log('🔍 Refresh endpoint lookup:', {
+        instanceName,
+        refreshEndpoint,
+        allEndpoints: Object.keys(AUTH_API_ENDPOINTS),
+      });
       if (!refreshEndpoint) {
+        console.error('❌ No refresh endpoint found for instance:', instanceName);
         throw new Error('Invalid Axios instance');
       }
+      console.log('✅ Calling refresh endpoint:', refreshEndpoint);
       const res = await axios.get(refreshEndpoint, { withCredentials: true });
       const { user, token } = res.data;
 

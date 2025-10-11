@@ -77,6 +77,9 @@ const optimai_auth = axios.create({
   withCredentials: true,
 });
 
+// Note: Response interceptors run in reverse order (last added runs first)
+// We add auth refresh interceptors first so error tracking runs first,
+// then auth refresh interceptor handles 401s
 addResponseInterceptor(optimai);
 addResponseInterceptor(optimai_integration);
 addResponseInterceptor(optimai_shop);

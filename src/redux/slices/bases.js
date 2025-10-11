@@ -1110,6 +1110,8 @@ export const fetchTables =
         },
       });
 
+      console.log('response', response.data);
+
       const tables = response.data || [];
       dispatch(setTablesFromPgMeta({ baseId, tables }));
       return tables;
@@ -1811,6 +1813,19 @@ export const createTableRecords =
       const query = buildInsertSQL(tableName, postgreSQLData);
       const records = await executeSQL(baseId, query);
 
+      // Add each inserted record to Redux state
+      if (Array.isArray(records) && records.length > 0) {
+        records.forEach((record) => {
+          dispatch(
+            slice.actions.addTableRecord({
+              tableId,
+              record,
+              insertAtBeginning: true, // Insert at beginning so it appears at top of list
+            }),
+          );
+        });
+      }
+
       // Return in format expected by GridView: { records: [...] }
       return Promise.resolve({ records });
     } catch (e) {
@@ -2228,7 +2243,7 @@ export const getTableRecordCount = (tableId) => async (dispatch, getState) => {
       throw new Error(`Could not find table name or schema for table ${tableId}`);
     }
 
-    const query = `SELECT COUNT(*) as count FROM ${tableName};`;
+    const query = `SELECT COUNT(*) as count FROM ${schemaName}.${tableName};`;
     const result = await executeSQL(baseId, query);
     return parseInt(result[0]?.count || 0, 10);
   } catch {

@@ -7,6 +7,7 @@ import TableTabs from './TableTabs.jsx';
 import BaseOverview from './sections/BaseOverview.jsx';
 import BasePlaceholder from './sections/BasePlaceholder.jsx';
 import BaseUsers from './sections/BaseUsers.jsx';
+import BaseAuth from './sections/BaseAuth.jsx';
 import useResponsive from '../../../hooks/useResponsive.js';
 import { selectSQLTerminalMode } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
@@ -38,7 +39,9 @@ function BaseLayout({
       case 'tables':
         return renderTablesContent();
       case 'users':
-        return <BaseUsers baseId={baseId} />;
+        return <BaseUsers baseId={baseId} onNavigate={onSectionChange} />;
+      case 'auth':
+        return <BaseAuth baseId={baseId} onNavigate={onSectionChange} />;
       case 'storage':
         return <BasePlaceholder title="Storage" description="View and manage files, images, and documents." />;
       case 'functions':

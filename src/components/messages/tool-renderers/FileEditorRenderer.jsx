@@ -283,7 +283,7 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
             options={{
               readOnly: true,
               minimap: { enabled: false },
-              lineNumbers: 'on',
+              lineNumbers: 'off',
               scrollBeyondLastLine: false,
               wordWrap: 'on',
               fontSize: 12,
@@ -307,11 +307,6 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
               showFoldingControls: 'mouseover',
               padding: { top: 12, bottom: 12 },
             }}
-            loading={
-              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-xs">
-                Loading editor...
-              </div>
-            }
           />
         </div>
       )}

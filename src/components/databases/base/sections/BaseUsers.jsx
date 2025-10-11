@@ -143,7 +143,7 @@ const SignupChart = ({ timeRange, users }) => {
   );
 };
 
-function BaseUsers({ baseId }) {
+function BaseUsers({ baseId, onNavigate }) {
   const base = useSelector((state) => selectBaseById(state, baseId));
   const userCacheObject = useSelector((state) => selectUserCacheForBase(state, baseId));
   const userCacheState = useSelector(selectUserCacheState);
@@ -273,6 +273,7 @@ function BaseUsers({ baseId }) {
           <Button
             variant="outlined"
             startIcon={<Settings size={20} />}
+            onClick={() => onNavigate?.('auth')}
           >
             Auth settings
           </Button>

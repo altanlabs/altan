@@ -114,7 +114,9 @@ function Base({
     if (!base || !base.tables?.items || base.tables.items.length === 0) return;
 
     const tables = base.tables.items;
-    const firstTable = tables[0];
+    // Filter to only public schema tables for navigation
+    const publicTables = tables.filter((t) => t.schema === 'public');
+    const firstTable = publicTables[0] || tables[0]; // Fallback if no public tables
 
     // Only navigate if we don't have a tableId yet
     if (!tableId) {
@@ -130,6 +132,22 @@ function Base({
     // Note: Record loading is handled by Table.jsx component
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base?.tables?.items?.length, baseId]);
+
+  // Validate current tableId is in public schema - redirect if not
+  useEffect(() => {
+    if (!base?.tables?.items || !tableId) return;
+
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const currentTable = base.tables.items.find((t) => t.id === numericTableId);
+
+    if (currentTable && currentTable.schema !== 'public') {
+      // Redirect to first public table
+      const publicTables = base.tables.items.filter((t) => t.schema === 'public');
+      if (publicTables.length > 0) {
+        navigateToPath(publicTables[0].id);
+      }
+    }
+  }, [base?.tables?.items, tableId, navigateToPath]);
 
   // Clear table switching state when table or loading state changes
   useEffect(() => {

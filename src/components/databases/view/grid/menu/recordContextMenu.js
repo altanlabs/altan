@@ -118,8 +118,8 @@ const createRecordContextMenuItems = ({
       disabled: !hasSelection,
     },
     {
-      name: 'Expand record',
-      icon: '<span class="ag-icon ag-icon-maximize"></span>',
+      name: 'Edit record',
+      icon: '<span class="ag-icon ag-icon-edit"></span>',
       disabled: !params.node || isNewRecordRow(params.node.data),
       action: () => handleExpandRecord(params.node.data.id),
     },
