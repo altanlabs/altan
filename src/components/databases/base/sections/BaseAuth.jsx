@@ -12,14 +12,15 @@ import {
   Snackbar,
   IconButton,
   TextField,
-  InputAdornment,
 } from '@mui/material';
-import React, { useState, useEffect } from 'react';
-import { Mail, Chrome, ChevronRight, ArrowLeft, Copy } from 'lucide-react';
-import { optimai_database } from '../../../../utils/axios';
+import { Mail, Chrome, Github, Facebook as FacebookIcon, ChevronRight, ArrowLeft, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+import { setSession } from '../../../../utils/auth';
+import { optimai_cloud } from '../../../../utils/axios';
 
 // Sign-in method card component
-const SignInMethodCard = ({ icon: Icon, title, description, enabled, onClick }) => {
+const SignInMethodCard = ({ icon: Icon, title, description, enabled, onClick, comingSoon }) => {
   return (
     <Card
       className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -51,7 +52,22 @@ const SignInMethodCard = ({ icon: Icon, title, description, enabled, onClick }) 
             </Box>
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            {enabled && (
+            {comingSoon && (
+              <Box
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'info.lighter',
+                  color: 'info.darker',
+                }}
+              >
+                <Typography variant="caption" fontWeight={600}>
+                  Coming Soon
+                </Typography>
+              </Box>
+            )}
+            {!comingSoon && enabled && (
               <Box
                 sx={{
                   px: 1.5,
@@ -66,7 +82,7 @@ const SignInMethodCard = ({ icon: Icon, title, description, enabled, onClick }) 
                 </Typography>
               </Box>
             )}
-            {!enabled && (
+            {!comingSoon && !enabled && (
               <Box
                 sx={{
                   px: 1.5,
@@ -120,25 +136,35 @@ const SettingsToggleCard = ({ title, description, enabled, onToggle, loading }) 
 };
 
 function BaseAuth({ baseId, onNavigate }) {
-  const [settings, setSettings] = useState({
-    // Email settings
-    email_enabled: true,
-    auto_confirm_email: false,
-    secure_email_change: true,
-    require_reauth_password_change: false,
-    password_hibp_check: false,
-    min_password_length: 6,
-    password_required_characters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-    email_otp_expiration: 3600,
-    email_otp_length: 6,
-    // Google settings
-    google_enabled: false,
-    google_client_id: '',
-    google_client_secret: '',
-    google_skip_nonce_check: false,
-    // General settings
-    disable_signup: false,
-    anonymous_users: false,
+  const [config, setConfig] = useState({
+    mail: {
+      host: '',
+      port: '',
+      user: '',
+      password: '',
+      admin_email: '',
+    },
+    google: {
+      enabled: false,
+      client_id: '',
+      secret: '',
+    },
+    github: {
+      enabled: false,
+      client_id: '',
+      secret: '',
+    },
+    facebook: {
+      enabled: false,
+      client_id: '',
+      secret: '',
+    },
+    general: {
+      disable_signup: false,
+      site_url: '',
+      jwt_expiry: '3600',
+      auto_confirm: false,
+    },
   });
   const [activeView, setActiveView] = useState('main'); // 'main', 'email', 'google'
   const [loading, setLoading] = useState(true);
@@ -146,49 +172,77 @@ function BaseAuth({ baseId, onNavigate }) {
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Fetch auth settings on mount
-  useEffect(() => {
-    fetchAuthSettings();
-  }, [baseId]);
-
-  const fetchAuthSettings = async () => {
+  const fetchAuthSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await optimai_database.get(`/admin/gotrue/${baseId}/settings`);
+      // Ensure token is set
+      const authData = localStorage.getItem('oaiauth');
+      if (authData) {
+        try {
+          const { access_token: accessToken } = JSON.parse(authData);
+          if (accessToken) {
+            setSession(accessToken, optimai_cloud);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      const response = await optimai_cloud.get(`/v1/instances/config/gotrue/${baseId}`);
       if (response.data) {
-        setSettings((prev) => ({
-          ...prev,
-          ...response.data,
-        }));
+        setConfig(response.data);
       }
     } catch (err) {
-      console.error('Error fetching auth settings:', err);
+      // Error fetching auth settings
       setError(
         err.response?.data?.message ||
           err.message ||
-          'Failed to load authentication settings. Using defaults.'
+          'Failed to load authentication settings.',
       );
-      // Keep default settings on error
     } finally {
       setLoading(false);
     }
-  };
+  }, [baseId]);
 
-  const updateSetting = async (key, value, batchSettings = null) => {
+  // Fetch auth settings on mount
+  useEffect(() => {
+    fetchAuthSettings();
+  }, [fetchAuthSettings]);
+
+  const updateProviderConfig = async (provider, updatedConfig) => {
     setUpdating(true);
     try {
-      const updatedSettings = batchSettings || { ...settings, [key]: value };
-      await optimai_database.put(`/admin/gotrue/${baseId}/settings`, updatedSettings);
-      
-      setSettings(updatedSettings);
+      // Ensure token is set
+      const authData = localStorage.getItem('oaiauth');
+      if (authData) {
+        try {
+          const { access_token: accessToken } = JSON.parse(authData);
+          if (accessToken) {
+            setSession(accessToken, optimai_cloud);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      await optimai_cloud.put(`/v1/instances/config/gotrue/${baseId}`, {
+        ...config,
+        [provider]: updatedConfig,
+      });
+
+      setConfig((prev) => ({
+        ...prev,
+        [provider]: updatedConfig,
+      }));
+
       setSnackbar({
         open: true,
         message: 'Settings updated successfully',
         severity: 'success',
       });
     } catch (err) {
-      console.error('Error updating auth settings:', err);
+      // Error updating auth settings
       setSnackbar({
         open: true,
         message: err.response?.data?.message || err.message || 'Failed to update settings',
@@ -201,23 +255,6 @@ function BaseAuth({ baseId, onNavigate }) {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
-  };
-
-  const handleCopyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setSnackbar({
-      open: true,
-      message: 'Copied to clipboard',
-      severity: 'success',
-    });
-  };
-
-  const handleInputChange = (key, value) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSaveSettings = async () => {
-    await updateSetting(null, null, settings);
   };
 
   if (loading) {
@@ -233,7 +270,7 @@ function BaseAuth({ baseId, onNavigate }) {
     );
   }
 
-  // Email Settings View
+  // Email Configuration View
   if (activeView === 'email') {
     return (
       <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
@@ -250,142 +287,32 @@ function BaseAuth({ baseId, onNavigate }) {
             </Button>
             <Box>
               <Typography variant="h4" gutterBottom>
-                Email Settings
+                Email Configuration
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Configure email signup settings for your app
+                Configure SMTP settings for email authentication
               </Typography>
             </Box>
           </Stack>
 
           {error && (
-            <Alert severity="warning" onClose={() => setError(null)}>
+            <Alert severity="error" onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
 
-          {/* Enable Email Sign-in */}
-          <Box>
-            <SettingsToggleCard
-              title="Enable Email Sign-in"
-              description="Allow users to sign in with their email address"
-              enabled={settings.email_enabled}
-              onToggle={(value) => updateSetting('email_enabled', value)}
-              loading={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Auto-confirm Email */}
-          <Box>
-            <SettingsToggleCard
-              title="Auto-confirm Email"
-              description="Automatically confirm user emails without requiring verification"
-              enabled={settings.auto_confirm_email}
-              onToggle={(value) => updateSetting('auto_confirm_email', value)}
-              loading={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Secure Email Change */}
-          <Box>
-            <SettingsToggleCard
-              title="Secure Email Change"
-              description="Require confirmation on both old and new email addresses when changing email"
-              enabled={settings.secure_email_change}
-              onToggle={(value) => updateSetting('secure_email_change', value)}
-              loading={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Require Re-authentication for Password Changes */}
-          <Box>
-            <SettingsToggleCard
-              title="Require Re-authentication for Password Changes"
-              description="Require recent login to change password"
-              enabled={settings.require_reauth_password_change}
-              onToggle={(value) => updateSetting('require_reauth_password_change', value)}
-              loading={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Password HIBP Check */}
-          <Box>
-            <SettingsToggleCard
-              title="Password HIBP Check"
-              description="Reject known or easy to guess passwords using Have I Been Pwned database"
-              enabled={settings.password_hibp_check}
-              onToggle={(value) => updateSetting('password_hibp_check', value)}
-              loading={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Minimum Password Length */}
+          {/* SMTP Host */}
           <Box>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Minimum Password Length
+              SMTP Host
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Minimum password length (minimum 6, recommended 8+)
+              SMTP server hostname
             </Typography>
             <TextField
-              type="number"
-              value={settings.min_password_length}
-              onChange={(e) => handleInputChange('min_password_length', parseInt(e.target.value, 10))}
-              onBlur={handleSaveSettings}
-              size="small"
-              fullWidth
-              inputProps={{ min: 6 }}
-              disabled={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Required Password Characters */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Required Password Characters
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Define required character sets for passwords (e.g., 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,0123456789')
-            </Typography>
-            <TextField
-              value={settings.password_required_characters}
-              onChange={(e) => handleInputChange('password_required_characters', e.target.value)}
-              onBlur={handleSaveSettings}
-              size="small"
-              fullWidth
-              multiline
-              rows={2}
-              disabled={updating}
-            />
-          </Box>
-
-          <Divider />
-
-          {/* Email OTP Expiration */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Email OTP Expiration (seconds)
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Duration before email OTP/link expires in seconds
-            </Typography>
-            <TextField
-              type="number"
-              value={settings.email_otp_expiration}
-              onChange={(e) => handleInputChange('email_otp_expiration', parseInt(e.target.value, 10))}
-              onBlur={handleSaveSettings}
+              value={config.mail?.host || ''}
+              onChange={(e) => setConfig({ ...config, mail: { ...config.mail, host: e.target.value } })}
+              placeholder="smtp.example.com"
               size="small"
               fullWidth
               disabled={updating}
@@ -394,24 +321,97 @@ function BaseAuth({ baseId, onNavigate }) {
 
           <Divider />
 
-          {/* Email OTP Length */}
+          {/* SMTP Port */}
           <Box>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Email OTP Length
+              SMTP Port
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Number of digits in email OTP
+              SMTP server port (usually 587 for TLS or 465 for SSL)
             </Typography>
             <TextField
-              type="number"
-              value={settings.email_otp_length}
-              onChange={(e) => handleInputChange('email_otp_length', parseInt(e.target.value, 10))}
-              onBlur={handleSaveSettings}
+              value={config.mail?.port || ''}
+              onChange={(e) => setConfig({ ...config, mail: { ...config.mail, port: e.target.value } })}
+              placeholder="587"
               size="small"
               fullWidth
-              inputProps={{ min: 4, max: 10 }}
               disabled={updating}
             />
+          </Box>
+
+          <Divider />
+
+          {/* SMTP User */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              SMTP User
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              SMTP username/email for authentication
+            </Typography>
+            <TextField
+              value={config.mail?.user || ''}
+              onChange={(e) => setConfig({ ...config, mail: { ...config.mail, user: e.target.value } })}
+              placeholder="notifications@example.com"
+              size="small"
+              fullWidth
+              disabled={updating}
+            />
+          </Box>
+
+          <Divider />
+
+          {/* SMTP Password */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              SMTP Password
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              SMTP password for authentication
+            </Typography>
+            <TextField
+              type="password"
+              value={config.mail?.password || ''}
+              onChange={(e) => setConfig({ ...config, mail: { ...config.mail, password: e.target.value } })}
+              placeholder="***"
+              size="small"
+              fullWidth
+              disabled={updating}
+            />
+          </Box>
+
+          <Divider />
+
+          {/* Admin Email */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Admin Email
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Administrator email address
+            </Typography>
+            <TextField
+              value={config.mail?.admin_email || ''}
+              onChange={(e) => setConfig({ ...config, mail: { ...config.mail, admin_email: e.target.value } })}
+              placeholder="admin@example.com"
+              size="small"
+              fullWidth
+              disabled={updating}
+            />
+          </Box>
+
+          <Divider />
+
+          {/* Save Button */}
+          <Box>
+            <Button
+              variant="contained"
+              onClick={() => updateProviderConfig('mail', config.mail)}
+              disabled={updating}
+              startIcon={updating ? <CircularProgress size={16} /> : null}
+            >
+              {updating ? 'Saving...' : 'Save Configuration'}
+            </Button>
           </Box>
         </Stack>
 
@@ -429,10 +429,8 @@ function BaseAuth({ baseId, onNavigate }) {
     );
   }
 
-  // Google Settings View
+  // Google Configuration View
   if (activeView === 'google') {
-    const callbackUrl = `https://database.altan.ai/auth/v1/callback`;
-    
     return (
       <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
         <Stack spacing={4}>
@@ -448,27 +446,27 @@ function BaseAuth({ baseId, onNavigate }) {
             </Button>
             <Box>
               <Typography variant="h4" gutterBottom>
-                Google Settings
+                Google Configuration
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Configure Google signup settings for your app
+                Configure Google OAuth for authentication
               </Typography>
             </Box>
           </Stack>
 
           {error && (
-            <Alert severity="warning" onClose={() => setError(null)}>
+            <Alert severity="error" onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
 
-          {/* Enable Google Sign-in */}
+          {/* Enable Google */}
           <Box>
             <SettingsToggleCard
               title="Enable Google Sign-in"
               description="Allow users to sign in with their Google account"
-              enabled={settings.google_enabled}
-              onToggle={(value) => updateSetting('google_enabled', value)}
+              enabled={config.google?.enabled || false}
+              onToggle={(value) => setConfig({ ...config, google: { ...config.google, enabled: value } })}
               loading={updating}
             />
           </Box>
@@ -481,13 +479,12 @@ function BaseAuth({ baseId, onNavigate }) {
               Google Client ID
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Google OAuth Client ID from Google Cloud Console
+              OAuth 2.0 Client ID from Google Cloud Console
             </Typography>
             <TextField
-              value={settings.google_client_id}
-              onChange={(e) => handleInputChange('google_client_id', e.target.value)}
-              onBlur={handleSaveSettings}
-              placeholder="your-google-client-id.apps.googleusercontent.com"
+              value={config.google?.client_id || ''}
+              onChange={(e) => setConfig({ ...config, google: { ...config.google, client_id: e.target.value } })}
+              placeholder="123456789-abc.apps.googleusercontent.com"
               size="small"
               fullWidth
               disabled={updating}
@@ -502,14 +499,13 @@ function BaseAuth({ baseId, onNavigate }) {
               Google Client Secret
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Google OAuth Client Secret from Google Cloud Console
+              OAuth 2.0 Client Secret from Google Cloud Console
             </Typography>
             <TextField
               type="password"
-              value={settings.google_client_secret}
-              onChange={(e) => handleInputChange('google_client_secret', e.target.value)}
-              onBlur={handleSaveSettings}
-              placeholder="your-google-client-secret"
+              value={config.google?.secret || ''}
+              onChange={(e) => setConfig({ ...config, google: { ...config.google, secret: e.target.value } })}
+              placeholder="***"
               size="small"
               fullWidth
               disabled={updating}
@@ -518,46 +514,36 @@ function BaseAuth({ baseId, onNavigate }) {
 
           <Divider />
 
-          {/* Skip Nonce Check */}
+          {/* Callback URL Info */}
           <Box>
-            <SettingsToggleCard
-              title="Skip Nonce Check"
-              description="Allow ID tokens with any nonce to be accepted (not recommended for production)"
-              enabled={settings.google_skip_nonce_check}
-              onToggle={(value) => updateSetting('google_skip_nonce_check', value)}
-              loading={updating}
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Callback URL
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Use this callback URL in your Google Cloud Console OAuth configuration
+            </Typography>
+            <TextField
+              value={`${config.general?.site_url || ''}/auth/v1/callback`}
+              size="small"
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
             />
           </Box>
 
           <Divider />
 
-          {/* Callback URL */}
+          {/* Save Button */}
           <Box>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Callback URL (for OAuth)
-            </Typography>
-            <TextField
-              value={callbackUrl}
-              size="small"
-              fullWidth
-              InputProps={{
-                readOnly: true,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => handleCopyToClipboard(callbackUrl)}
-                      edge="end"
-                      size="small"
-                    >
-                      <Copy size={18} />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Register this callback URL when using Sign-in with Google on the web using OAuth.
-            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => updateProviderConfig('google', config.google)}
+              disabled={updating}
+              startIcon={updating ? <CircularProgress size={16} /> : null}
+            >
+              {updating ? 'Saving...' : 'Save Configuration'}
+            </Button>
           </Box>
         </Stack>
 
@@ -589,20 +575,25 @@ function BaseAuth({ baseId, onNavigate }) {
           >
             Users
           </Button>
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Auth
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Configure how users sign in to your app
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h4" gutterBottom>
+                Auth
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Configure how users sign in to your app
+              </Typography>
+            </Box>
+            <IconButton onClick={fetchAuthSettings} disabled={loading}>
+              <RefreshCw size={20} />
+            </IconButton>
           </Box>
         </Stack>
 
         {/* Error Alert */}
         {error && (
-          <Alert severity="warning" onClose={() => setError(null)}>
-            {error}
+          <Alert severity="error" onClose={() => setError(null)}>
+            Network Error
           </Alert>
         )}
 
@@ -616,15 +607,31 @@ function BaseAuth({ baseId, onNavigate }) {
               icon={Mail}
               title="Email"
               description="Allow users to sign in with their email address"
-              enabled={settings.email_enabled}
+              enabled={true}
               onClick={() => setActiveView('email')}
             />
             <SignInMethodCard
               icon={Chrome}
               title="Google"
               description="Allow users to sign in with their Google account"
-              enabled={settings.google_enabled}
+              enabled={config.google?.enabled || false}
               onClick={() => setActiveView('google')}
+            />
+            <SignInMethodCard
+              icon={Github}
+              title="GitHub"
+              description="Allow users to sign in with their GitHub account"
+              enabled={config.github?.enabled || false}
+              onClick={() => setSnackbar({ open: true, message: 'Configuration coming soon', severity: 'info' })}
+              comingSoon
+            />
+            <SignInMethodCard
+              icon={FacebookIcon}
+              title="Facebook"
+              description="Allow users to sign in with their Facebook account"
+              enabled={config.facebook?.enabled || false}
+              onClick={() => setSnackbar({ open: true, message: 'Configuration coming soon', severity: 'info' })}
+              comingSoon
             />
           </Stack>
         </Box>
@@ -636,8 +643,8 @@ function BaseAuth({ baseId, onNavigate }) {
           <SettingsToggleCard
             title="Disable Sign-up"
             description="Prevent new users from signing up"
-            enabled={settings.disable_signup}
-            onToggle={(value) => updateSetting('disable_signup', value)}
+            enabled={config.general?.disable_signup || false}
+            onToggle={(value) => updateProviderConfig('general', { ...config.general, disable_signup: value })}
             loading={updating}
           />
         </Box>
@@ -649,38 +656,10 @@ function BaseAuth({ baseId, onNavigate }) {
           <SettingsToggleCard
             title="Enable Anonymous Users"
             description="Allow anonymous users to sign in"
-            enabled={settings.anonymous_users}
-            onToggle={(value) => updateSetting('anonymous_users', value)}
-            loading={updating}
+            enabled={false}
+            onToggle={() => setSnackbar({ open: true, message: 'Feature not available', severity: 'info' })}
+            loading={false}
           />
-        </Box>
-
-        <Divider />
-
-        {/* Advanced */}
-        <Box>
-          <Button
-            endIcon={<ChevronRight size={20} />}
-            sx={{
-              justifyContent: 'space-between',
-              width: '100%',
-              py: 2,
-              textTransform: 'none',
-              color: 'text.primary',
-            }}
-            onClick={() => {
-              // TODO: Navigate to advanced settings or open a dialog
-              setSnackbar({
-                open: true,
-                message: 'Advanced settings coming soon',
-                severity: 'info',
-              });
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Advanced
-            </Typography>
-          </Button>
         </Box>
       </Stack>
 
@@ -700,4 +679,3 @@ function BaseAuth({ baseId, onNavigate }) {
 }
 
 export default BaseAuth;
-

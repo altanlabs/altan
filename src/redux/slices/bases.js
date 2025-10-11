@@ -298,6 +298,13 @@ const initialState = {
     lastFetched: null,
     error: null,
   },
+  // Bucket cache for storage.buckets to avoid redundant API calls
+  bucketCache: {},
+  bucketCacheState: {
+    loading: false,
+    lastFetched: null,
+    error: null,
+  },
 };
 
 const slice = createSlice({
@@ -954,6 +961,66 @@ const slice = createSlice({
         error: null,
       };
     },
+    // Bucket cache reducers
+    setBucketCacheLoading(state, action) {
+      state.bucketCacheState.loading = action.payload;
+      if (action.payload) {
+        state.bucketCacheState.error = null;
+      }
+    },
+    setBucketCache(state, action) {
+      const { buckets, baseId } = action.payload;
+
+      if (!state.bucketCache[baseId]) {
+        state.bucketCache[baseId] = {};
+      }
+
+      buckets.forEach((bucket) => {
+        if (bucket && bucket.id) {
+          state.bucketCache[baseId][bucket.id] = bucket;
+        }
+      });
+
+      state.bucketCacheState.loading = false;
+      state.bucketCacheState.lastFetched = Date.now();
+      state.bucketCacheState.error = null;
+    },
+    setBucketCacheError(state, action) {
+      state.bucketCacheState.loading = false;
+      state.bucketCacheState.error = action.payload;
+    },
+    clearBucketCache(state, action) {
+      const { baseId } = action.payload || {};
+      if (baseId) {
+        delete state.bucketCache[baseId];
+      } else {
+        state.bucketCache = {};
+      }
+      state.bucketCacheState = {
+        loading: false,
+        lastFetched: null,
+        error: null,
+      };
+    },
+    addBucketToCache(state, action) {
+      const { bucket, baseId } = action.payload;
+      if (!state.bucketCache[baseId]) {
+        state.bucketCache[baseId] = {};
+      }
+      state.bucketCache[baseId][bucket.id] = bucket;
+    },
+    removeBucketFromCache(state, action) {
+      const { bucketId, baseId } = action.payload;
+      if (state.bucketCache[baseId]) {
+        delete state.bucketCache[baseId][bucketId];
+      }
+    },
+    updateBucketInCache(state, action) {
+      const { bucket, baseId } = action.payload;
+      if (state.bucketCache[baseId] && state.bucketCache[baseId][bucket.id]) {
+        state.bucketCache[baseId][bucket.id] = bucket;
+      }
+    },
   },
 });
 
@@ -1009,6 +1076,14 @@ export const {
   setUserCache,
   setUserCacheError,
   clearUserCache,
+  // Bucket cache actions
+  setBucketCacheLoading,
+  setBucketCache,
+  setBucketCacheError,
+  clearBucketCache,
+  addBucketToCache,
+  removeBucketFromCache,
+  updateBucketInCache,
   integrateRealTimeUpdates,
   clearRealTimeUpdateFlags,
 } = slice.actions;
@@ -1983,6 +2058,46 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
   }
 };
 
+export const preloadBucketsForBase = (baseId) => async (dispatch, getState) => {
+  const state = getState();
+  const bucketCacheState = state.bases.bucketCacheState;
+  const existingBuckets = state.bases.bucketCache[baseId];
+
+  const ONE_HOUR = 60 * 60 * 1000;
+  if (
+    existingBuckets &&
+    Object.keys(existingBuckets).length > 0 &&
+    bucketCacheState.lastFetched &&
+    Date.now() - bucketCacheState.lastFetched < ONE_HOUR
+  ) {
+    return Promise.resolve(existingBuckets);
+  }
+
+  if (bucketCacheState.loading) {
+    return Promise.resolve({});
+  }
+
+  dispatch(setBucketCacheLoading(true));
+
+  try {
+    const base = state.bases.bases[baseId];
+    if (!base || !base.tables || !base.tables.items) {
+      throw new Error(`Base ${baseId} not found or has no tables`);
+    }
+
+    // Query storage.buckets table
+    const query = 'SELECT * FROM storage.buckets ORDER BY created_at DESC;';
+    const buckets = await executeSQL(baseId, query);
+
+    dispatch(setBucketCache({ buckets, baseId }));
+
+    return Promise.resolve(state.bases.bucketCache[baseId] || {});
+  } catch (error) {
+    dispatch(setBucketCacheError(error.message));
+    throw error;
+  }
+};
+
 export const importCSVToTable = (tableId, importData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
@@ -2638,6 +2753,24 @@ export const selectUserCacheForBase = createSelector(
 export const selectUserById = createSelector(
   [selectUserCacheForBase, (_, __, userId) => userId],
   (users, userId) => users[userId] || null,
+);
+
+// Bucket cache selectors
+export const selectBucketCache = createSelector([selectBaseState], (state) => state.bucketCache);
+
+export const selectBucketCacheState = createSelector(
+  [selectBaseState],
+  (state) => state.bucketCacheState,
+);
+
+export const selectBucketCacheForBase = createSelector(
+  [selectBucketCache, (_, baseId) => baseId],
+  (bucketCache, baseId) => bucketCache[baseId] || {},
+);
+
+export const selectBucketById = createSelector(
+  [selectBucketCacheForBase, (_, __, bucketId) => bucketId],
+  (buckets, bucketId) => buckets[bucketId] || null,
 );
 
 export const createUserDisplayValueSelector = (baseId, userId) =>
