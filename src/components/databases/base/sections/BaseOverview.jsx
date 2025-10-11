@@ -31,7 +31,7 @@ import { useSelector } from 'react-redux';
 
 import { selectBaseById, fetchTables } from '../../../../redux/slices/bases';
 import { dispatch } from '../../../../redux/store';
-import { optimai_cloud } from '../../../../utils/axios';
+import { optimai_cloud, optimai_pg_meta } from '../../../../utils/axios';
 import { setSession } from '../../../../utils/auth';
 
 const PRODUCTS = [
@@ -84,6 +84,8 @@ function BaseOverview({ baseId, onNavigate }) {
   const [instanceTypesLoading, setInstanceTypesLoading] = useState(true);
   const [upgradeDialog, setUpgradeDialog] = useState({ open: false, targetTier: null });
   const [upgrading, setUpgrading] = useState(false);
+  const [userCount, setUserCount] = useState(0);
+  const [bucketCount, setBucketCount] = useState(0);
 
   // Detect if instance is stopped based on pod status
   const isPaused = metrics?.pods?.[0]?.status !== 'Running' && !metricsLoading;
@@ -207,11 +209,45 @@ function BaseOverview({ baseId, onNavigate }) {
     }
   };
 
+  // Fetch user count using SQL query via pg-meta
+  const fetchUserCount = async () => {
+    try {
+      const response = await optimai_pg_meta.post(`/${baseId}/query`, {
+        query: 'SELECT COUNT(*) as count FROM auth.users',
+      });
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setUserCount(parseInt(response.data[0].count, 10) || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching user count:', error);
+      setUserCount(0);
+    }
+  };
+
+  // Fetch bucket count using SQL query via pg-meta
+  const fetchBucketCount = async () => {
+    try {
+      const response = await optimai_pg_meta.post(`/${baseId}/query`, {
+        query: 'SELECT COUNT(*) as count FROM storage.buckets',
+      });
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setBucketCount(parseInt(response.data[0].count, 10) || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching bucket count:', error);
+      setBucketCount(0);
+    }
+  };
+
   // Load instance types and metrics on mount
   useEffect(() => {
     fetchInstanceTypes();
     fetchMetrics();
-  }, [baseId]);
+    if (base && !isPaused) {
+      fetchUserCount();
+      fetchBucketCount();
+    }
+  }, [baseId, base, isPaused]);
 
   const currentTierData = instanceTypes.find((t) => t.id === currentTier);
   const tableCount = base?.tables?.items?.length || 0;
@@ -395,9 +431,9 @@ function BaseOverview({ baseId, onNavigate }) {
       case 'database':
         return `${tableCount} tables`;
       case 'users':
-        return '0 users';
+        return `${userCount} users`;
       case 'storage':
-        return '0 files';
+        return `${bucketCount} buckets`;
       case 'functions':
         return '0 functions';
       case 'secrets':
