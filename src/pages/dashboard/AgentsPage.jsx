@@ -296,7 +296,7 @@ function AgentsPage() {
                     <textarea
                       ref={textareaRef}
                       className="w-full bg-transparent min-h-[24px] max-h-[200px] focus:outline-none text-gray-900 placeholder-gray-400 resize-none pb-14"
-                      placeholder="Describe your next idea..."
+                      placeholder="Describe your next agent..."
                       value={ideaText}
                       onChange={(e) => {
                         setIdeaText(e.target.value);

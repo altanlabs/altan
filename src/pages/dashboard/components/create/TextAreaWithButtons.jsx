@@ -230,7 +230,7 @@ function TextAreaWithButtons({
         <textarea
           ref={textareaRef}
           className="w-full bg-transparent min-h-[24px] max-h-[200px] focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400/80 dark:placeholder-gray-500/80 resize-none mb-1"
-          placeholder={'Describe your next idea...'}
+          placeholder={'Describe your next project...'}
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
