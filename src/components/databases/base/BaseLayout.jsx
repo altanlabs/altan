@@ -8,6 +8,7 @@ import BaseOverview from './sections/BaseOverview.jsx';
 import BasePlaceholder from './sections/BasePlaceholder.jsx';
 import BaseUsers from './sections/BaseUsers.jsx';
 import BaseAuth from './sections/BaseAuth.jsx';
+import BaseStorage from './sections/BaseStorage.jsx';
 import useResponsive from '../../../hooks/useResponsive.js';
 import { selectSQLTerminalMode } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
@@ -43,7 +44,7 @@ function BaseLayout({
       case 'auth':
         return <BaseAuth baseId={baseId} onNavigate={onSectionChange} />;
       case 'storage':
-        return <BasePlaceholder title="Storage" description="View and manage files, images, and documents." />;
+        return <BaseStorage baseId={baseId} onNavigate={onSectionChange} />;
       case 'functions':
         return <BasePlaceholder title="Edge Functions" description="Configure functions executed in your app." />;
       case 'secrets':
