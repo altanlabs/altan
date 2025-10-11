@@ -66,6 +66,14 @@ const Room = ({
     }
   }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
 
+  // Clear room state when switching to a different room
+  useEffect(() => {
+    return () => {
+      // Clean up the current room's state when component unmounts or roomId changes
+      dispatch(clearRoomState());
+    };
+  }, [roomId]);
+
   const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => {
