@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 
 import BaseSidebar from './BaseSidebar.jsx';
 import TableTabs from './TableTabs.jsx';
-import BaseOverview from './sections/BaseOverview.jsx';
+import BaseOverview from './sections/overview/BaseOverview.jsx';
 import BasePlaceholder from './sections/BasePlaceholder.jsx';
 import BaseUsers from './sections/BaseUsers.jsx';
 import BaseAuth from './sections/BaseAuth.jsx';

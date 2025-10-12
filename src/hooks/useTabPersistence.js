@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import {
@@ -18,6 +18,7 @@ export const useTabPersistence = () => {
   const tabs = useSelector(selectTabs);
   const roomId = useSelector(selectRoomId);
   const threadsById = useSelector(selectThreadsById);
+  const hasLoadedRef = useRef(false);
 
   // Generate storage key based on room ID
   const getStorageKey = useCallback((roomId) => {
@@ -100,7 +101,15 @@ export const useTabPersistence = () => {
 
   // Load tabs when room changes
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId) {
+      hasLoadedRef.current = false;
+      return;
+    }
+
+    // Only load once per room to prevent reloading after tab operations
+    if (hasLoadedRef.current) {
+      return;
+    }
 
     const savedTabs = loadTabsFromStorage(roomId);
     if (savedTabs) {
@@ -109,6 +118,8 @@ export const useTabPersistence = () => {
       // Clear tabs if no saved state
       dispatch(clearTabs());
     }
+    
+    hasLoadedRef.current = true;
   }, [roomId, dispatch, loadTabsFromStorage]);
 
   // Fetch threads for tabs that don't have their threads loaded yet
