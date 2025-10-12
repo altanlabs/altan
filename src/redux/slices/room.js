@@ -2032,6 +2032,12 @@ export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
 
 export const selectMembers = (state) => selectRoomState(state).members;
 
+export const makeSelectMemberById = () =>
+  createSelector(
+    [selectMembers, (state, memberId) => memberId],
+    (members, memberId) => (memberId ? members.byId[memberId] : null),
+  );
+
 export const selectTotalMembers = createSelector(
   [selectMembers],
   (members) => members.allIds.length || 1,
@@ -2912,11 +2918,11 @@ export const fetchRoomAllThreads = () => async (dispatch, getState) => {
 };
 
 export const fetchThread =
-  ({ threadId }) =>
+  ({ threadId, force = false }) =>
   async (dispatch, getState) => {
     try {
       const { threads } = getState().room;
-      if (!!threads?.byId[threadId]) {
+      if (!force && !!threads?.byId[threadId]) {
         return Promise.resolve('Thread already loaded.');
       }
       const response = await optimai_room.post(`/thread/${threadId}/gq`, THREAD_GENERAL_GQ());
@@ -3717,5 +3723,31 @@ export const createNewThread = () => async (dispatch, getState) => {
   } catch (e) {
     console.error('Failed to create new thread:', e);
     return Promise.reject(e.message);
+  }
+};
+
+// Helper to ensure thread messages are loaded when switching to it
+export const ensureThreadMessagesLoaded = (threadId) => async (dispatch, getState) => {
+  const state = getState();
+  const thread = selectThreadsById(state)[threadId];
+
+  if (!thread) {
+    // Thread doesn't exist, fetch it
+    await dispatch(fetchThread({ threadId }));
+    return;
+  }
+
+  // Check if thread has minimal messages (likely just preview)
+  const messageCount = thread.messages?.allIds?.length || 0;
+  const hasMoreMessages = thread.messages?.paginationInfo?.hasNextPage;
+
+  // If thread has 1 or 0 messages and there are more to fetch, fetch them
+  if (messageCount <= 1 && hasMoreMessages) {
+    try {
+      await dispatch(fetchThreadResource({ threadId, resource: 'messages' }));
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to fetch thread messages:', error);
+    }
   }
 };
