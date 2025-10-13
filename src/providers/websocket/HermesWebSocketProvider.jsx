@@ -41,9 +41,6 @@ const HermesWebSocketProvider = ({ children }) => {
     (channels, callback = null, type = 'l') => {
       const filteredChannels = Array.isArray(channels) ? channels : [channels];
 
-      // eslint-disable-next-line no-console
-      console.log(`📡 HermesWS unsubscribing from: ${filteredChannels.join(', ')}`);
-
       if (
         filteredChannels.length &&
         wsRef.current &&
@@ -62,14 +59,10 @@ const HermesWebSocketProvider = ({ children }) => {
               subscription: { type, mode: 'u', elements: channelsToUnsubscribe },
             }),
           );
-          // eslint-disable-next-line no-console
-          console.log(`📡 HermesWS unsubscribed from ${channelsToUnsubscribe.length} channels`);
         }
 
         setActiveSubscriptions((current) => {
           const newSubscriptions = current.filter((s) => !filteredChannels.includes(s));
-          // eslint-disable-next-line no-console
-          console.log(`📡 Total active subscriptions after unsubscribe: ${newSubscriptions.length}`);
           return newSubscriptions;
         });
 
@@ -106,11 +99,6 @@ const HermesWebSocketProvider = ({ children }) => {
       }
 
       subscriptionTimestamps.current.set(subscriptionKey, now);
-
-      // eslint-disable-next-line no-console
-      console.log(`📡 HermesWS subscribing to: ${newChannels.join(', ')}`);
-      // eslint-disable-next-line no-console
-      console.log(`📡 Total active subscriptions: ${activeSubscriptions.length + newChannels.length}`);
 
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         return;

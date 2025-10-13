@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectBaseById } from '../../../../../redux/slices/bases';
-import { PRODUCTS } from './constants';
-import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from './hooks';
 import {
   AlertBanners,
   OverviewHeader,
@@ -15,6 +12,9 @@ import {
   ConfirmationPopover,
   CloudUpgradeDialog,
 } from './components';
+import { PRODUCTS } from './constants';
+import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from './hooks';
+import { selectBaseById } from '../../../../../redux/slices/bases';
 
 function BaseOverview({ baseId, onNavigate }) {
   const base = useSelector((state) => selectBaseById(state, baseId));

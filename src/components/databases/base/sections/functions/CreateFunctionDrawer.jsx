@@ -43,7 +43,7 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
     name: '',
     description: '',
     code: DEFAULT_CODE,
-    requirements: ['altan'],
+    requirements: [],
     output_variables: [],
   });
   const [newRequirement, setNewRequirement] = useState('');
@@ -119,7 +119,7 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
         name: '',
         description: '',
         code: DEFAULT_CODE,
-        requirements: ['altan'],
+        requirements: [],
         output_variables: [],
       });
       setNewRequirement('');
@@ -258,7 +258,6 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
                   }}
                   disabled={submitting}
                   sx={{ flex: 1 }}
-                  error={formData.output_variables.length === 0}
                 />
                 <Button
                   variant="outlined"
@@ -319,7 +318,7 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={submitting || !formData.name.trim() || !formData.code.trim() || formData.output_variables.length === 0}
+            disabled={submitting || !formData.name.trim() || !formData.code.trim()}
             startIcon={submitting && <CircularProgress size={16} />}
           >
             {submitting ? 'Creating...' : 'Create Function'}

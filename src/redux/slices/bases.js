@@ -251,15 +251,7 @@ const buildDeleteSQL = (tableName, recordIds) => {
  */
 const executeSQL = async (baseId, query) => {
   try {
-    console.log('📤 Executing SQL:', query.substring(0, 150) + '...');
     const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
-    console.log('📥 SQL Response:', {
-      dataType: typeof response.data,
-      isArray: Array.isArray(response.data),
-      length: response.data?.length,
-      keys: response.data ? Object.keys(response.data).slice(0, 5) : 'no data',
-      sample: Array.isArray(response.data) ? response.data[0] : response.data,
-    });
     return response.data;
   } catch (error) {
     // Log the SQL query that failed for debugging
@@ -1175,7 +1167,6 @@ export const fetchTables =
 
     dispatch(slice.actions.startLoading());
     try {
-      console.log('📡 Fetching tables from pg-meta for base:', baseId);
       const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/tables/`, {
         params: {
           include_columns,
@@ -1184,9 +1175,6 @@ export const fetchTables =
           include_system_schemas: true, // Include auth schema for Supabase
         },
       });
-
-      console.log('response', response.data);
-
       const tables = response.data || [];
       dispatch(setTablesFromPgMeta({ baseId, tables }));
       return tables;
