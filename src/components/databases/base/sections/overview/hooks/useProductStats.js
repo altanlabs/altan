@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { optimai_cloud } from '../../../../../../utils/axios';
 
 export const useProductStats = (baseId, base, isPaused) => {
   const [userCount, setUserCount] = useState(0);
   const [bucketCount, setBucketCount] = useState(0);
+
+  // Get functions from Redux store
+  const functionsData = useSelector((state) => state.functions?.functions?.[baseId]);
+  const functionCount = functionsData?.items?.length || 0;
 
   const fetchUserCount = async () => {
     try {
@@ -40,7 +45,9 @@ export const useProductStats = (baseId, base, isPaused) => {
     }
   }, [baseId, base, isPaused]);
 
-  const tableCount = base?.tables?.items?.length || 0;
+  // Only count tables in the public schema
+  const tableCount =
+    base?.tables?.items?.filter((table) => table.schema === 'public').length || 0;
 
   const getProductStats = (productId) => {
     switch (productId) {
@@ -51,7 +58,7 @@ export const useProductStats = (baseId, base, isPaused) => {
       case 'storage':
         return `${bucketCount} buckets`;
       case 'functions':
-        return '0 functions';
+        return `${functionCount} functions`;
       case 'secrets':
         return '0 secrets';
       default:
@@ -63,6 +70,7 @@ export const useProductStats = (baseId, base, isPaused) => {
     userCount,
     bucketCount,
     tableCount,
+    functionCount,
     getProductStats,
   };
 };

@@ -22,6 +22,12 @@ import {
   TextField,
   Drawer,
   IconButton,
+  ToggleButtonGroup,
+  ToggleButton,
+  Checkbox,
+  FormGroup,
+  Autocomplete,
+  Tooltip,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -34,6 +40,8 @@ import {
   Edit,
   Save,
   X,
+  Webhook,
+  Zap,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
@@ -58,7 +66,36 @@ const formatDate = (dateString) => {
   return date.toLocaleString();
 };
 
-function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+const COMMON_TIMEZONES = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Asia/Dubai',
+  'Australia/Sydney',
+];
+
+const CRON_EXAMPLES = [
+  { label: 'Every minute', value: '* * * * *' },
+  { label: 'Every 5 minutes', value: '*/5 * * * *' },
+  { label: 'Every 15 minutes', value: '*/15 * * * *' },
+  { label: 'Every hour', value: '0 * * * *' },
+  { label: 'Daily at midnight', value: '0 0 * * *' },
+  { label: 'Daily at 9 AM', value: '0 9 * * *' },
+  { label: 'Weekdays at 9 AM', value: '0 9 * * 1-5' },
+  { label: 'Weekly on Monday at 9 AM', value: '0 9 * * 1' },
+  { label: 'Monthly on 1st at midnight', value: '0 0 1 * *' },
+];
+
+function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar}) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState('code');
   const [testInput, setTestInput] = useState('{\n  "message": "Hello, world!"\n}');
@@ -77,6 +114,9 @@ function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [versionData, setVersionData] = useState(null);
   const [loadingVersion, setLoadingVersion] = useState(false);
+  const [isEditingTrigger, setIsEditingTrigger] = useState(false);
+  const [editedTrigger, setEditedTrigger] = useState(null);
+  const [isSavingTrigger, setIsSavingTrigger] = useState(false);
 
   const executionResult = useSelector((state) =>
     selectExecutionResult(state, functionData.name),
@@ -112,6 +152,7 @@ function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
       setEditedOutputVariables(outputVars.join(', '));
       setEditedName(fullFunctionData.metadata?.name || fullFunctionData.name || '');
       setEditedDescription(fullFunctionData.metadata?.description || fullFunctionData.description || '');
+      setEditedTrigger(fullFunctionData.trigger || fullFunctionData.metadata?.trigger || null);
     }
   }, [fullFunctionData]);
 
@@ -271,6 +312,90 @@ function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
     }
   };
 
+  const handleEditTrigger = () => {
+    setIsEditingTrigger(true);
+  };
+
+  const handleCancelEditTrigger = () => {
+    setIsEditingTrigger(false);
+    // Reset to original values
+    setEditedTrigger(fullFunctionData.trigger || fullFunctionData.metadata?.trigger || null);
+  };
+
+  const handleSaveTrigger = async () => {
+    if (!editedTrigger) {
+      onShowSnackbar('Trigger configuration is required', 'error');
+      return;
+    }
+
+    // Validate trigger based on type
+    if (editedTrigger.type === 'webhook') {
+      if (!editedTrigger.description?.trim()) {
+        onShowSnackbar('Webhook description is required', 'error');
+        return;
+      }
+      if (!editedTrigger.allowed_methods?.length) {
+        onShowSnackbar('At least one HTTP method must be selected', 'error');
+        return;
+      }
+    } else if (editedTrigger.type === 'cron') {
+      if (!editedTrigger.schedule?.trim()) {
+        onShowSnackbar('Cron schedule is required', 'error');
+        return;
+      }
+      const cronParts = editedTrigger.schedule.trim().split(/\s+/);
+      if (cronParts.length !== 5) {
+        onShowSnackbar('Cron schedule must have 5 fields: minute hour day month weekday', 'error');
+        return;
+      }
+    }
+
+    setIsSavingTrigger(true);
+    try {
+      await dispatch(
+        updateFunctionThunk(baseId, functionData.name, {
+          trigger: editedTrigger,
+        }),
+      );
+
+      // Refresh function details
+      await dispatch(fetchFunctionDetails(baseId, functionData.name));
+
+      setIsEditingTrigger(false);
+      onShowSnackbar('Trigger updated successfully', 'success');
+    } catch (error) {
+      onShowSnackbar(error.message || 'Failed to update trigger', 'error');
+    } finally {
+      setIsSavingTrigger(false);
+    }
+  };
+
+  const handleTriggerChange = (field, value) => {
+    setEditedTrigger((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleMethodToggle = (method) => {
+    const currentMethods = editedTrigger?.allowed_methods || [];
+    const newMethods = currentMethods.includes(method)
+      ? currentMethods.filter((m) => m !== method)
+      : [...currentMethods, method];
+
+    // Check if new methods include body-accepting methods
+    const bodyMethods = ['POST', 'PUT', 'PATCH'];
+    const hasBodyMethod = newMethods.some((m) => bodyMethods.includes(m));
+
+    setEditedTrigger((prev) => ({
+      ...prev,
+      allowed_methods: newMethods,
+      request_body_schema: hasBodyMethod
+        ? prev.request_body_schema || { type: 'object', properties: {} }
+        : null,
+    }));
+  };
+
   const handleViewVersion = async (versionId) => {
     setSelectedVersion(versionId);
     setVersionDrawerOpen(true);
@@ -368,6 +493,7 @@ function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
           <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
             <Tab label="Code" value="code" />
             <Tab label="Test" value="test" />
+            <Tab label="Trigger" value="trigger" />
             <Tab label="Versions" value="versions" />
             <Tab label="Settings" value="settings" />
           </Tabs>
@@ -726,6 +852,256 @@ function FunctionDetailView({ baseId, functionData, onBack, onShowSnackbar }) {
                 </Card>
               )}
             </Stack>
+          </Box>
+        )}
+
+        {/* Trigger Tab */}
+        {activeTab === 'trigger' && (
+          <Box>
+            {/* Edit/Save/Cancel Buttons */}
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              {!isEditingTrigger ? (
+                <Button
+                  variant="contained"
+                  startIcon={<Edit size={18} />}
+                  onClick={handleEditTrigger}
+                >
+                  Edit Trigger
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="contained"
+                    startIcon={isSavingTrigger ? <CircularProgress size={16} /> : <Save size={18} />}
+                    onClick={handleSaveTrigger}
+                    disabled={isSavingTrigger}
+                  >
+                    {isSavingTrigger ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<X size={18} />}
+                    onClick={handleCancelEditTrigger}
+                    disabled={isSavingTrigger}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </Stack>
+
+            <Card>
+              <CardContent>
+                <Stack spacing={2}>
+                  {/* Trigger Type */}
+                  <Box>
+                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, mb: 1.5 }}>
+                      Trigger Type *
+                    </Typography>
+                    {isEditingTrigger ? (
+                      <ToggleButtonGroup
+                        value={editedTrigger?.type || 'webhook'}
+                        exclusive
+                        onChange={(e, newType) => {
+                          if (newType !== null) {
+                            if (newType === 'webhook') {
+                              setEditedTrigger({
+                                type: 'webhook',
+                                description: 'Webhook endpoint for processing requests',
+                                allowed_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+                                request_body_schema: { type: 'object', properties: {} },
+                                request_query_schema: null,
+                                request_headers_schema: null,
+                                request_path_params_schema: null,
+                                response_schema: { type: 'object', properties: {}, example: {} },
+                              });
+                            } else if (newType === 'cron') {
+                              setEditedTrigger({
+                                type: 'cron',
+                                schedule: '0 0 * * *',
+                                timezone: 'UTC',
+                                enabled: true,
+                                function_name: functionData.name,
+                                trigger_id: '',
+                              });
+                            }
+                          }
+                        }}
+                        fullWidth
+                        size="small"
+                      >
+                        <ToggleButton value="webhook">
+                          <Webhook size={14} style={{ marginRight: 6 }} />
+                          <Typography variant="body2">Webhook</Typography>
+                        </ToggleButton>
+                        <ToggleButton value="cron">
+                          <Clock size={14} style={{ marginRight: 6 }} />
+                          <Typography variant="body2">Cron Schedule</Typography>
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    ) : (
+                      <Chip
+                        icon={editedTrigger?.type === 'webhook' ? <Webhook size={14} /> : <Clock size={14} />}
+                        label={editedTrigger?.type === 'webhook' ? 'Webhook' : 'Cron Schedule'}
+                        color="primary"
+                      />
+                    )}
+                  </Box>
+
+                  {/* Webhook Configuration */}
+                  {editedTrigger?.type === 'webhook' && (
+                    <Stack spacing={2}>
+                      {/* Description */}
+                      <Box>
+                        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                          Description *
+                        </Typography>
+                        {isEditingTrigger ? (
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={editedTrigger.description || ''}
+                            onChange={(e) => handleTriggerChange('description', e.target.value)}
+                            placeholder="Webhook endpoint for processing requests"
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            {editedTrigger.description || 'No description'}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {/* HTTP Methods */}
+                      <Box>
+                        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                          Allowed HTTP Methods *
+                        </Typography>
+                        {isEditingTrigger ? (
+                          <FormGroup row>
+                            {HTTP_METHODS.map((method) => (
+                              <FormControlLabel
+                                key={method}
+                                control={
+                                  <Checkbox
+                                    checked={editedTrigger.allowed_methods?.includes(method)}
+                                    onChange={() => handleMethodToggle(method)}
+                                    size="small"
+                                  />
+                                }
+                                label={<Typography variant="body2">{method}</Typography>}
+                              />
+                            ))}
+                          </FormGroup>
+                        ) : (
+                          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                            {editedTrigger.allowed_methods?.map((method) => (
+                              <Chip key={method} label={method} size="small" />
+                            ))}
+                          </Stack>
+                        )}
+                      </Box>
+                    </Stack>
+                  )}
+
+                  {/* Cron Configuration */}
+                  {editedTrigger?.type === 'cron' && (
+                    <Stack spacing={2}>
+                      {/* Cron Schedule */}
+                      <Box>
+                        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                          Schedule *
+                        </Typography>
+                        {isEditingTrigger ? (
+                          <Autocomplete
+                            freeSolo
+                            options={CRON_EXAMPLES}
+                            getOptionLabel={(option) => typeof option === 'string' ? option : option.label}
+                            value={editedTrigger.schedule}
+                            onChange={(e, newValue) => {
+                              const schedule = typeof newValue === 'string' ? newValue : newValue?.value || '';
+                              handleTriggerChange('schedule', schedule);
+                            }}
+                            onInputChange={(e, newValue) => {
+                              handleTriggerChange('schedule', newValue);
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="0 0 * * *"
+                                size="small"
+                                helperText="Format: minute hour day month weekday"
+                              />
+                            )}
+                            size="small"
+                          />
+                        ) : (
+                          <Typography variant="body2" fontFamily="monospace" color="text.secondary">
+                            {editedTrigger.schedule}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {/* Timezone */}
+                      <Box>
+                        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                          Timezone *
+                        </Typography>
+                        {isEditingTrigger ? (
+                          <Autocomplete
+                            options={COMMON_TIMEZONES}
+                            value={editedTrigger.timezone}
+                            onChange={(e, newValue) => handleTriggerChange('timezone', newValue || 'UTC')}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                size="small"
+                              />
+                            )}
+                            size="small"
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            {editedTrigger.timezone}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {/* Enabled */}
+                      <Box>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={editedTrigger.enabled}
+                              onChange={(e) => handleTriggerChange('enabled', e.target.checked)}
+                              disabled={!isEditingTrigger}
+                              size="small"
+                            />
+                          }
+                          label={<Typography variant="body2">Enabled</Typography>}
+                        />
+                      </Box>
+
+                      {/* Trigger ID */}
+                      {isEditingTrigger && (
+                        <Box>
+                          <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                            Trigger ID (Optional)
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={editedTrigger.trigger_id || ''}
+                            onChange={(e) => handleTriggerChange('trigger_id', e.target.value)}
+                            placeholder="auto-generated if not provided"
+                            helperText="Leave empty to auto-generate"
+                          />
+                        </Box>
+                      )}
+                    </Stack>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
           </Box>
         )}
 

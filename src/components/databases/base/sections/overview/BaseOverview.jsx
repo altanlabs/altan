@@ -98,7 +98,7 @@ function BaseOverview({ baseId, onNavigate }) {
       />
 
       {/* Header with Status Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <OverviewHeader
           lastRefresh={lastRefresh}
           metricsLoading={metricsLoading}

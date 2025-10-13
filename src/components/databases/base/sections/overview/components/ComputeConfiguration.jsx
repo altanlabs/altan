@@ -3,6 +3,8 @@ import { CircularProgress } from '@mui/material';
 import { Server, ChevronDown, ChevronUp, Cpu, HardDrive } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 
+import Iconify from '../../../../../iconify';
+
 export const ComputeConfiguration = ({
   base,
   metrics,
@@ -66,6 +68,7 @@ export const ComputeConfiguration = ({
             onClick={() => setExpanded(!expanded)}
             className="flex-shrink-0 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
           >
+            <Iconify icon="material-symbols:crown" width={16} />
             {expanded ? 'Hide' : 'View'} Plans
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </m.button>

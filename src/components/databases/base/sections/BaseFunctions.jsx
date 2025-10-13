@@ -482,7 +482,6 @@ function BaseFunctions({ baseId }) {
                                 size="small"
                                 color={isEnabled ? 'success' : 'default'}
                                 variant="soft"
-                                color={isEnabled ? 'success' : 'default'}
                               />
                             </TableCell>
                             <TableCell>
@@ -797,6 +796,7 @@ function BaseFunctions({ baseId }) {
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ zIndex: 1400 }}
       >
         <Alert
           onClose={handleCloseSnackbar}

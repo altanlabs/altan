@@ -124,13 +124,6 @@ export const DataApiConfiguration = ({ metrics }) => {
           />
         </div>
 
-        {/* Info Message */}
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-xs text-blue-800 dark:text-blue-300">
-            <strong>Note:</strong> The Service Role Key grants full access to your database.
-            Keep it secure and never expose it in client-side code.
-          </p>
-        </div>
       </div>
     </m.div>
   );
