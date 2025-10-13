@@ -27,7 +27,7 @@ export const useMetrics = (baseId) => {
         }
       }
 
-      const response = await optimai_cloud.get(`/v1/instances/metrics/tenant/${baseId}`);
+      const response = await optimai_cloud.get(`/v1/instances/metrics/cloud/${baseId}`);
       setMetrics(response.data);
       setLastRefresh(new Date());
 
