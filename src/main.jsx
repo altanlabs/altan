@@ -10,6 +10,8 @@ import './index.css';
 // Initialize analytics
 import { initializeAnalytics } from './lib/analytics';
 import { setupGlobalErrorHandling } from './utils/errorTracking';
+import { startMemoryMonitoring } from './utils/memoryMonitor';
+import { store } from './redux/store';
 
 // Initialize Microsoft Clarity
 Clarity.init('qdemnm0y9o');
@@ -19,6 +21,12 @@ initializeAnalytics();
 
 // Set up global error tracking
 setupGlobalErrorHandling();
+
+// Start memory monitoring in development
+if (import.meta.env.DEV) {
+  startMemoryMonitoring(store, { interval: 10000, enabled: true });
+  console.log('🔍 Memory monitoring enabled (DEV mode)');
+}
 
 // ----------------------------------------------------------------------
 

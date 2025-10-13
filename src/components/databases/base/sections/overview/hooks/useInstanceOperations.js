@@ -43,8 +43,8 @@ export const useInstanceOperations = (baseId, isPaused) => {
       setSnackbar({
         open: true,
         message: wasStarting
-          ? 'Database is starting up. This may take a few moments...'
-          : 'Database has been paused successfully.',
+          ? 'Cloud is starting up. This may take a few moments...'
+          : 'Cloud has been paused successfully.',
         severity: 'success',
       });
 
@@ -60,7 +60,7 @@ export const useInstanceOperations = (baseId, isPaused) => {
             setOperating(false);
             setSnackbar({
               open: true,
-              message: 'Database is now active!',
+              message: 'Cloud is now active!',
               severity: 'success',
             });
             onSuccess?.();
@@ -86,7 +86,7 @@ export const useInstanceOperations = (baseId, isPaused) => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || error.message || 'Failed to change database state',
+        message: error.response?.data?.message || error.message || 'Failed to change cloud state',
         severity: 'error',
       });
       setOperating(false);
@@ -125,10 +125,10 @@ export const useInstanceOperations = (baseId, isPaused) => {
 
       onSuccess?.(targetTier.id);
     } catch (error) {
-      console.error('Error upgrading instance:', error);
+      console.error('Error upgrading cloud:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || error.message || 'Failed to upgrade instance',
+        message: error.response?.data?.message || error.message || 'Failed to upgrade cloud',
         severity: 'error',
       });
     } finally {
