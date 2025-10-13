@@ -120,7 +120,7 @@ export default slice.reducer;
 
 // Actions
 
-export const fetchAgentDetails = (agentId) => async (dispatch, getState) => {
+export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
   dispatch(slice.actions.startLoading());
   try {
     const agentRes = await optimai.get(`/agent/${agentId}`);
@@ -230,4 +230,52 @@ export const fetchAgentRooms = (agentId) => async (dispatch) => {
   }
 };
 
+export const fetchAgentById = (agentId) => async (dispatch, getState) => {
+  try {
+    // Check if agent already exists in agents store
+    const { agents } = getState().agents;
+    const existingAgent = agents?.find((a) => a.id === agentId);
+    if (existingAgent) {
+      return Promise.resolve(existingAgent);
+    }
+
+    // Also check general store (legacy support)
+    const { account } = getState().general;
+    const existingInGeneral = account?.agents?.find((a) => a.id === agentId);
+    if (existingInGeneral) {
+      // Add to agents store for consistency
+      dispatch(slice.actions.addAgent(existingInGeneral));
+      return Promise.resolve(existingInGeneral);
+    }
+
+    // Fetch the agent
+    const response = await optimai.get(`/agent/${agentId}`);
+    const { agent } = response.data;
+
+    // Add to agents store
+    dispatch(slice.actions.addAgent(agent));
+
+    return Promise.resolve(agent);
+  } catch (e) {
+    const errorMessage = e.response?.data?.detail || e.message;
+    // eslint-disable-next-line no-console
+    console.error(`Error fetching agent ${agentId}:`, errorMessage);
+    return Promise.reject(errorMessage);
+  }
+};
+
 export const { setAgents, resetVoices } = slice.actions;
+
+// Selectors
+export const selectAllAgents = (state) => {
+  const agentsFromAgentsStore = state.agents.agents || [];
+  const agentsFromGeneralStore = state.general.account?.agents || [];
+
+  // Merge both stores, preferring agents store (for fetched agents)
+  return [
+    ...agentsFromAgentsStore,
+    ...agentsFromGeneralStore.filter(
+      (a) => !agentsFromAgentsStore.find((agent) => agent.id === a.id),
+    ),
+  ];
+};

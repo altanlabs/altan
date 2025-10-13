@@ -692,7 +692,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'AuthorizationRequestNew':
-      console.log('AuthorizationRequestNew', data.data);
       dispatch(addAuthorizationRequest(data.data.attributes));
       break;
     case 'AuthorizationRequestUpdate':

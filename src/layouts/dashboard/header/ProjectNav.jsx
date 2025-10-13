@@ -1,12 +1,13 @@
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
-import React, { useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useMemo, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useHistory } from 'react-router-dom';
 
 // components
 import ItemSwitcher from './components/ItemSwitcher';
 import UnifiedNavigation from './components/UnifiedNavigation';
+import { fetchAgentById, selectAllAgents } from '../../../redux/slices/agents';
 import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 
 // Default icons in case component doesn't provide one
@@ -22,8 +23,10 @@ const DEFAULT_ICONS = {
 
 const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
   const history = useHistory();
+  const dispatch = useDispatch();
   const { componentId, itemId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
+  const agents = useSelector(selectAllAgents);
 
   // Convert components to array and sort by position
   const sortedComponents = useMemo(() => {
@@ -53,6 +56,25 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
       (sortedComponents.length > 0 ? sortedComponents[0] : null)
     );
   }, [componentId, sortedComponents]);
+
+  console.log('activeComponent', activeComponent);
+
+  // Fetch agents if they're not in the store yet
+  useEffect(() => {
+    if (activeComponent?.type?.toLowerCase() === 'agents' || activeComponent?.type?.toLowerCase() === 'agent') {
+      const agentIds = activeComponent?.params?.ids || [];
+
+      // Check which agents need to be fetched
+      const missingAgentIds = agentIds.filter(
+        (id) => !agents.find((agent) => agent.id === id),
+      );
+
+      // Fetch missing agents
+      missingAgentIds.forEach((agentId) => {
+        dispatch(fetchAgentById(agentId));
+      });
+    }
+  }, [activeComponent, agents, dispatch]);
 
   // Handle component selection
   const handleComponentSelect = (compId) => {

@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import NavDropdown from './NavDropdown';
 import Iconify from '../../../../components/iconify';
+import { selectAllAgents } from '../../../../redux/slices/agents';
 import { deleteWorkflow, duplicateWorkflow } from '../../../../redux/slices/flows';
 import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general';
 import CreateAgentDialog from '../../../../sections/@dashboard/agents/CreateAgentDialog';
@@ -36,7 +37,7 @@ const ItemSwitcher = memo(
     const theme = useTheme();
     const dispatch = useDispatch();
     const flows = useSelector((state) => state.flows.flows || []);
-    const agents = useSelector((state) => state.general.account?.agents || []);
+    const agents = useSelector(selectAllAgents);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);

@@ -47,7 +47,6 @@ const AltanerComponent = ({
 }) => {
   // Lookup the component based on its type
   const Component = COMPONENTS[altanerComponentType];
-
   // Memoize the loadable component so it is instantiated only once per unique lazy component
   const LoadableComponent = useMemo(() => {
     return Component ? createLoadableComponent(Component) : null;

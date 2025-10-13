@@ -29,10 +29,11 @@ function ToolsTab({ agentData, onFieldChange }) {
               variant="body2"
               sx={{ color: 'text.secondary', mb: 3 }}
             >
-              Configure the action space that your agent can access and use to provide enhanced functionality.
+              Configure the action space that your agent can access and use to provide enhanced
+              functionality.
             </Typography>
 
-            <Space 
+            <Space
               navigate={() => console.log('navigated')}
               spaceId={agentData?.space_id}
               isPreview={true}

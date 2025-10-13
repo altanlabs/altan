@@ -31,7 +31,7 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // import { Room } from '../../../lib/agents/components';
 // auth
 // redux
-import { fetchAgentDetails, updateAgent } from '../../../redux/slices/agents';
+import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
 // sections
 import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
@@ -119,7 +119,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
   useEffect(() => {
     if (agentId || id) {
-      dispatch(fetchAgentDetails(agentId || id));
+      dispatch(fetchAgentRoom(agentId || id));
     }
   }, [dispatch, agentId, id]);
 
