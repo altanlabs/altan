@@ -612,11 +612,11 @@ function BaseStorage({ baseId }) {
           </Stack>
 
           {/* Actions Bar */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
             <Button
-              variant="contained"
+              variant="soft"
+              color="inherit"
               startIcon={<FolderPlus size={18} />}
-              size="small"
               onClick={() => setCreateDialogOpen(true)}
               disabled={operating}
             >

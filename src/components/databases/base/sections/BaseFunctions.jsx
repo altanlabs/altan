@@ -330,7 +330,6 @@ function BaseFunctions({ baseId }) {
             startIcon={<RefreshCw size={18} />}
             onClick={handleRefresh}
             variant="outlined"
-            size="small"
           >
             Refresh
           </Button>
@@ -360,12 +359,13 @@ function BaseFunctions({ baseId }) {
             <Stack
               direction="row"
               spacing={2}
+              alignItems="center"
               sx={{ mb: 2 }}
             >
               <Button
-                variant="contained"
+                variant="soft"
+                color="inherit"
                 startIcon={<Plus size={18} />}
-                size="small"
                 onClick={() => setCreateDrawerOpen(true)}
                 disabled={operating}
               >
@@ -532,12 +532,12 @@ function BaseFunctions({ baseId }) {
             <Stack
               direction="row"
               spacing={2}
+              alignItems="center"
               sx={{ mb: 2 }}
             >
               <Button
                 variant="contained"
                 startIcon={<Plus size={18} />}
-                size="small"
                 onClick={() => setCreateSecretDrawerOpen(true)}
                 disabled={operating}
               >

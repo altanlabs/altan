@@ -313,9 +313,9 @@ function BaseUsers({ baseId, onNavigate }) {
           {/* Actions Bar */}
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
             <Button
-              variant="contained"
+              variant="soft"
+              color="inherit"
               startIcon={<UserPlus size={18} />}
-              size="small"
               onClick={() => setInviteDialogOpen(true)}
             >
               Add User
