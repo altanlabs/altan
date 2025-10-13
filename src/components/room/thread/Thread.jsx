@@ -20,6 +20,7 @@ import {
   selectMembers,
   selectIsVoiceActive,
   selectIsVoiceConnecting,
+  ensureThreadMessagesLoaded,
 } from '../../../redux/slices/room';
 import { selectTasksExpanded } from '../../../redux/slices/tasks';
 import { dispatch, useSelector } from '../../../redux/store.js';
@@ -159,6 +160,13 @@ const Thread = ({
       // so empty state can show
       setHasLoaded(true);
     } else {
+    }
+  }, [threadId, isCreation, isOpen]);
+
+  // Ensure messages are loaded when switching to an already-loaded thread
+  useEffect(() => {
+    if (threadId && !isCreation && isOpen) {
+      dispatch(ensureThreadMessagesLoaded(threadId));
     }
   }, [threadId, isCreation, isOpen]);
 

@@ -19,7 +19,8 @@ import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
 
 import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
-import { useSelector } from '../../../../redux/store';
+import { updateCurrentTool, getSpace } from '../../../../redux/slices/spaces';
+import { dispatch, useSelector } from '../../../../redux/store';
 import { optimai } from '../../../../utils/axios';
 import { bgBlur } from '../../../../utils/cssStyles';
 
@@ -33,6 +34,7 @@ const VALUE_TYPES = [
 const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
   const { enqueueSnackbar } = useSnackbar();
   const currentAgent = useSelector((state) => state.agents.currentAgent);
+  const currentSpace = useSelector((state) => state.spaces.current);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = Boolean(toolToEdit);
 
@@ -113,10 +115,16 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
 
       // Call the appropriate API endpoint
       if (isEditMode) {
-        await optimai.patch(`/tool/${toolToEdit.tool.id}`, payload);
+        const response = await optimai.patch(`/tool/${toolToEdit.tool.id}`, payload);
+        const { tool } = response.data;
+        dispatch(updateCurrentTool(tool));
         enqueueSnackbar('Client tool updated successfully!', { variant: 'success' });
       } else {
         await optimai.post(`/agent/${currentAgent.id}/add-tool`, payload);
+        // Refetch space data to get updated tools list
+        if (currentSpace?.id) {
+          await dispatch(getSpace(currentSpace.id));
+        }
         enqueueSnackbar('Client tool created successfully!', { variant: 'success' });
       }
 

@@ -1,11 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Load preview mode from localStorage or default to production
+// Load preview mode from localStorage or default to production (live)
 const getInitialPreviewMode = () => {
   try {
     const saved = localStorage.getItem('previewMode');
+    // Explicitly check for null/undefined/empty and default to production
+    if (!saved || saved === 'null' || saved === 'undefined' || saved === '') {
+      return 'production';
+    }
+    // Only return development if explicitly set to 'development'
     return saved === 'development' ? 'development' : 'production';
   } catch {
+    // Always default to production (live) on any error
     return 'production';
   }
 };

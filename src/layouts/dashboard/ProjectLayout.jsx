@@ -36,8 +36,6 @@ const ACCOUNT_ENTITIES = [
   'template',
   'general',
   'space',
-  'thread',
-  'message',
   'media',
   'tool',
   'agent',

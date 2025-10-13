@@ -214,6 +214,18 @@ const slice = createSlice({
         state.current.tools.items = state.current.tools.items.filter((tool) => tool.id !== toolId);
       }
     },
+    updateCurrentTool(state, action) {
+      const updatedTool = action.payload;
+      if (!!state.current && state.current.id !== 'root' && state.current.tools) {
+        const toolIndex = state.current.tools.items.findIndex((tool) => tool.tool?.id === updatedTool.id);
+        if (toolIndex !== -1) {
+          state.current.tools.items[toolIndex].tool = {
+            ...state.current.tools.items[toolIndex].tool,
+            ...updatedTool,
+          };
+        }
+      }
+    },
     deleteCurrentKnowledge(state, action) {
       const fileId = action.payload;
       if (!!state.current && state.current.id !== 'root') {
@@ -348,6 +360,7 @@ export const {
   setNavigationActive,
   setNavigationHidden,
   updateCurrentWidget,
+  updateCurrentTool,
   setCurrentSpace,
   stopLoading: stopSpacesLoading,
   clearState: clearSpacesState,

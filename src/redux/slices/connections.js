@@ -2,6 +2,7 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 
 // utils
 import { selectAccount } from './general';
+import { updateCurrentTool } from './spaces';
 import { optimai, optimai_integration } from '../../utils/axios';
 import { checkArraysEqualsProperties } from '../helpers/memoize';
 
@@ -338,7 +339,7 @@ export const editTool =
 
       const response = await optimai.patch(`/tool/${toolId}`, formData);
       const { tool } = response.data;
-      // dispatch(slice.actions.addTool(tool));
+      dispatch(updateCurrentTool(tool));
       return Promise.resolve(tool);
     } catch (e) {
       dispatch(slice.actions.hasError(e));
