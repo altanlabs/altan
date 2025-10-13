@@ -14,6 +14,7 @@ import {
   InfrastructureActivity,
   ConfirmationPopover,
   CloudUpgradeDialog,
+  DataApiConfiguration,
 } from './components';
 
 function BaseOverview({ baseId, onNavigate }) {
@@ -120,6 +121,9 @@ function BaseOverview({ baseId, onNavigate }) {
           getProductStats={getProductStats}
           onNavigate={onNavigate}
         />
+
+        {/* Data API Configuration */}
+        <DataApiConfiguration metrics={metrics} />
 
         {/* Compute Configuration */}
         <ComputeConfiguration
