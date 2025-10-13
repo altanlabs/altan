@@ -199,10 +199,10 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
             {/* Output Variables */}
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Output Variables *
+                Output Variables
               </Typography>
               <Typography variant="caption" color="text.secondary" gutterBottom>
-                Variables that will be returned from the function
+                Variables that will be returned from the function (optional)
               </Typography>
               <Stack direction="row" spacing={1} sx={{ mb: 1, mt: 1, flexWrap: 'wrap', gap: 1 }}>
                 {formData.output_variables.map((variable) => (

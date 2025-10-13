@@ -57,8 +57,6 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
     );
   }, [componentId, sortedComponents]);
 
-  console.log('activeComponent', activeComponent);
-
   // Fetch agents if they're not in the store yet
   useEffect(() => {
     if (activeComponent?.type?.toLowerCase() === 'agents' || activeComponent?.type?.toLowerCase() === 'agent') {
@@ -69,12 +67,16 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
         (id) => !agents.find((agent) => agent.id === id),
       );
 
-      // Fetch missing agents
-      missingAgentIds.forEach((agentId) => {
-        dispatch(fetchAgentById(agentId));
-      });
+      // Fetch missing agents only if there are any missing
+      if (missingAgentIds.length > 0) {
+        missingAgentIds.forEach((agentId) => {
+          dispatch(fetchAgentById(agentId));
+        });
+      }
     }
-  }, [activeComponent, agents, dispatch]);
+    // Only run when activeComponent changes, not when agents updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeComponent, dispatch]);
 
   // Handle component selection
   const handleComponentSelect = (compId) => {

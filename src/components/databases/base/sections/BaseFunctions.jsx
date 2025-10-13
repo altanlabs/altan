@@ -426,7 +426,8 @@ function BaseFunctions({ baseId }) {
                             </Typography>
                             {!searchQuery && (
                               <Button
-                                variant="outlined"
+                                variant="soft"
+                                color="inherit"
                                 startIcon={<Plus size={18} />}
                                 onClick={() => setCreateDrawerOpen(true)}
                               >
@@ -536,7 +537,8 @@ function BaseFunctions({ baseId }) {
               sx={{ mb: 2 }}
             >
               <Button
-                variant="contained"
+                variant="soft"
+                color="inherit"
                 startIcon={<Plus size={18} />}
                 onClick={() => setCreateSecretDrawerOpen(true)}
                 disabled={operating}

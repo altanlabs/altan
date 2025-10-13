@@ -9,6 +9,7 @@ import agentsReducer from './slices/agents';
 import altanersReducer from './slices/altaners';
 import basesReducer from './slices/bases';
 import codeEditorReducer from './slices/codeEditor';
+import commitsReducer from './slices/commits';
 import connectionsReducer from './slices/connections';
 import flowsReducer from './slices/flows';
 import functionsReducer from './slices/functions';
@@ -64,6 +65,7 @@ const rootReducer = combineReducers({
   marketplace: marketplaceReducer,
   bases: basesReducer,
   codeEditor: codeEditorReducer,
+  commits: commitsReducer,
   room: roomsReducer,
   gate: gateReducer,
   tasks: tasksReducer,

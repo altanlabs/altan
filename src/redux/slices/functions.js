@@ -42,6 +42,15 @@ const initialState = {
     //   error: null
     // }
   },
+  // Function details (with code) per function
+  functionDetails: {
+    // [functionName]: {
+    //   data: null,
+    //   loading: false,
+    //   error: null,
+    //   lastFetched: null
+    // }
+  },
 };
 
 // ============================================================================
@@ -226,6 +235,50 @@ const slice = createSlice({
       state.versions[functionName].error = error;
       state.versions[functionName].loading = false;
     },
+
+    // Function details reducers
+    setFunctionDetailsLoading(state, action) {
+      const { functionName, loading } = action.payload;
+      if (!state.functionDetails[functionName]) {
+        state.functionDetails[functionName] = {
+          data: null,
+          loading: false,
+          error: null,
+          lastFetched: null,
+        };
+      }
+      state.functionDetails[functionName].loading = loading;
+    },
+    setFunctionDetails(state, action) {
+      const { functionName, data } = action.payload;
+      state.functionDetails[functionName] = {
+        data,
+        loading: false,
+        error: null,
+        lastFetched: Date.now(),
+      };
+    },
+    setFunctionDetailsError(state, action) {
+      const { functionName, error } = action.payload;
+      if (!state.functionDetails[functionName]) {
+        state.functionDetails[functionName] = {
+          data: null,
+          loading: false,
+          error: null,
+          lastFetched: null,
+        };
+      }
+      state.functionDetails[functionName].error = error;
+      state.functionDetails[functionName].loading = false;
+    },
+    clearFunctionDetails(state, action) {
+      const { functionName } = action.payload;
+      if (functionName) {
+        delete state.functionDetails[functionName];
+      } else {
+        state.functionDetails = {};
+      }
+    },
   },
 });
 
@@ -252,6 +305,10 @@ export const {
   setVersionsLoading,
   setVersions,
   setVersionsError,
+  setFunctionDetailsLoading,
+  setFunctionDetails,
+  setFunctionDetailsError,
+  clearFunctionDetails,
 } = slice.actions;
 
 // ============================================================================
@@ -272,6 +329,28 @@ export const fetchFunctions = (baseId) => async (dispatch) => {
     const errorMessage =
       error.response?.data?.detail || error.message || 'Failed to fetch functions';
     dispatch(setFunctionsError({ baseId, error: errorMessage }));
+    throw error;
+  }
+};
+
+/**
+ * Fetch function details (including code)
+ */
+export const fetchFunctionDetails = (baseId, functionName, version = null) => async (dispatch) => {
+  dispatch(setFunctionDetailsLoading({ functionName, loading: true }));
+  try {
+    const params = version ? { version } : {};
+    const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions/${functionName}`, { params });
+    const functionData = response.data;
+    // Only update the store if we're fetching the latest version (no version specified)
+    if (!version) {
+      dispatch(setFunctionDetails({ functionName, data: functionData }));
+    }
+    return functionData;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.detail || error.message || 'Failed to fetch function details';
+    dispatch(setFunctionDetailsError({ functionName, error: errorMessage }));
     throw error;
   }
 };
@@ -355,7 +434,7 @@ export const fetchFunctionVersions = (baseId, functionName) => async (dispatch) 
   dispatch(setVersionsLoading({ functionName, loading: true }));
   try {
     const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions/${functionName}/versions`);
-    const versions = response.data || [];
+    const versions = response.data?.versions || response.data || [];
     dispatch(setVersions({ functionName, versions }));
     return versions;
   } catch (error) {
@@ -491,5 +570,16 @@ export const selectVersionsForFunction = createSelector(
   [selectFunctionsState, (_, functionName) => functionName],
   (functionsState, functionName) =>
     functionsState.versions[functionName] || { items: [], loading: false, error: null },
+);
+
+export const selectFunctionDetails = createSelector(
+  [selectFunctionsState, (_, functionName) => functionName],
+  (functionsState, functionName) =>
+    functionsState.functionDetails[functionName] || {
+      data: null,
+      loading: false,
+      error: null,
+      lastFetched: null,
+    },
 );
 

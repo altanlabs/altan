@@ -99,11 +99,6 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
       return;
     }
 
-    if (formData.output_variables.length === 0) {
-      onError('At least one output variable is required');
-      return;
-    }
-
     setSubmitting(true);
     try {
       console.log('Creating function with data:', formData);
@@ -232,14 +227,10 @@ function CreateFunctionDrawer({ open, onClose, baseId, onSuccess, onError }) {
             {/* Output Variables */}
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Output Variables * {formData.output_variables.length === 0 && (
-                  <Typography component="span" variant="caption" color="error">
-                    - At least one required
-                  </Typography>
-                )}
+                Output Variables
               </Typography>
               <Typography variant="caption" color="text.secondary" gutterBottom>
-                Variables that will be returned from the function (press Enter or click Add)
+                Variables that will be returned from the function (optional - press Enter or click Add)
               </Typography>
               <Stack direction="row" spacing={1} sx={{ mb: 1, mt: 1, flexWrap: 'wrap', gap: 1 }}>
                 {formData.output_variables.map((variable) => (

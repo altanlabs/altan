@@ -1168,7 +1168,7 @@ export const fetchTables =
       const state = getState();
       const existingBase = state.bases.bases[baseId];
       if (existingBase?.tables?.items && existingBase.tables.items.length > 0) {
-        console.log('✅ Tables already cached for base:', baseId, '- skipping fetch');
+        // Silently return cached data to avoid log spam
         return existingBase.tables.items;
       }
     }
