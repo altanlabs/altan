@@ -1042,8 +1042,6 @@ const slice = createSlice({
       const preservedUserRoomsInitialized = state.initialized.userRooms;
       const preservedSearchRooms = { ...state.searchRooms };
 
-      console.log('🧹 Clearing room state - freeing memory');
-
       // Reset to initial state
       Object.keys(initialState).forEach((key) => {
         if (key === 'userRooms') {
@@ -1062,107 +1060,6 @@ const slice = createSlice({
           state[key].allThreads = false;
         } else {
           state[key] = initialState[key];
-        }
-      });
-    },
-    pruneOldMessages: (state, action) => {
-      const { maxMessagesPerThread = 100, maxThreads = 20 } = action.payload || {};
-
-      // eslint-disable-next-line no-console
-      console.log('🧹 Pruning old messages and threads');
-
-      // Prune old threads - keep only the most recent ones
-      if (state.threads.allIds.length > maxThreads) {
-        const threadsToKeep = new Set();
-
-        // Always keep main thread
-        if (state.mainThread) {
-          threadsToKeep.add(state.mainThread);
-        }
-
-        // Keep active tabs
-        state.tabs.allIds.forEach(tabId => {
-          const tab = state.tabs.byId[tabId];
-          if (tab?.threadId) {
-            threadsToKeep.add(tab.threadId);
-          }
-        });
-
-        // Sort threads by date and keep most recent
-        const sortedThreads = state.threads.allIds
-          .map(id => ({
-            id,
-            created: state.threads.byId[id]?.date_creation || 0,
-          }))
-          .sort((a, b) => new Date(b.created) - new Date(a.created));
-
-        // Add most recent threads up to maxThreads
-        sortedThreads.slice(0, maxThreads).forEach(t => threadsToKeep.add(t.id));
-
-        // Remove old threads
-        const threadsToRemove = state.threads.allIds.filter(id => !threadsToKeep.has(id));
-        threadsToRemove.forEach(threadId => {
-          delete state.threads.byId[threadId];
-        });
-        state.threads.allIds = state.threads.allIds.filter(id => threadsToKeep.has(id));
-
-        // eslint-disable-next-line no-console
-        console.log(`  Removed ${threadsToRemove.length} old threads`);
-      }
-
-      // Prune messages per thread
-      let totalMessagesRemoved = 0;
-      state.threads.allIds.forEach(threadId => {
-        const thread = state.threads.byId[threadId];
-        if (!thread?.messages?.allIds) return;
-
-        const messageCount = thread.messages.allIds.length;
-        if (messageCount > maxMessagesPerThread) {
-          // Keep only the most recent messages
-          const messagesToRemove = thread.messages.allIds.slice(0, messageCount - maxMessagesPerThread);
-
-          messagesToRemove.forEach(messageId => {
-            // Clean up message parts
-            const messageParts = state.messageParts.byMessageId[messageId] || [];
-            messageParts.forEach(partId => {
-              delete state.messageParts.byId[partId];
-              state.messageParts.allIds = state.messageParts.allIds.filter(id => id !== partId);
-            });
-            delete state.messageParts.byMessageId[messageId];
-
-            // Clean up message data
-            delete state.messages.byId[messageId];
-            delete state.messagesContent[messageId];
-            delete state.messagesExecutions[messageId];
-
-            // Remove from global message list
-            state.messages.allIds = state.messages.allIds.filter(id => id !== messageId);
-          });
-
-          // Update thread's message list
-          thread.messages.allIds = thread.messages.allIds.slice(-maxMessagesPerThread);
-
-          totalMessagesRemoved += messagesToRemove.length;
-        }
-      });
-
-      if (totalMessagesRemoved > 0) {
-        // eslint-disable-next-line no-console
-        console.log(`  Pruned ${totalMessagesRemoved} old messages`);
-      }
-
-      // Clean up orphaned executions
-      const validMessageIds = new Set(state.messages.allIds);
-      Object.keys(state.messagesExecutions).forEach(messageId => {
-        if (!validMessageIds.has(messageId)) {
-          delete state.messagesExecutions[messageId];
-        }
-      });
-
-      // Clean up orphaned message content
-      Object.keys(state.messagesContent).forEach(messageId => {
-        if (!validMessageIds.has(messageId)) {
-          delete state.messagesContent[messageId];
         }
       });
     },
@@ -2068,7 +1965,6 @@ export const {
   addRunningResponse,
   deleteRunningResponse,
   clearState: clearRoomState,
-  pruneOldMessages,
   updateMessageContent,
   updateMessageStreamingState,
   addAuthorizationRequest,

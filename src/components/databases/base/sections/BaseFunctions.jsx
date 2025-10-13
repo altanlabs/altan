@@ -285,7 +285,8 @@ function BaseFunctions({ baseId }) {
                 {functionsState.error}
               </Typography>
               <Button
-                variant="outlined"
+                variant="soft"
+                color="inherit"
                 onClick={() => dispatch(fetchFunctions(baseId))}
               >
                 Try Again
@@ -329,7 +330,8 @@ function BaseFunctions({ baseId }) {
           <Button
             startIcon={<RefreshCw size={18} />}
             onClick={handleRefresh}
-            variant="outlined"
+            variant="soft"
+            color="inherit"
           >
             Refresh
           </Button>
@@ -479,7 +481,8 @@ function BaseFunctions({ baseId }) {
                                 label={isEnabled ? 'Enabled' : 'Disabled'}
                                 size="small"
                                 color={isEnabled ? 'success' : 'default'}
-                                variant="outlined"
+                                variant="soft"
+                                color={isEnabled ? 'success' : 'default'}
                               />
                             </TableCell>
                             <TableCell>
@@ -591,7 +594,8 @@ function BaseFunctions({ baseId }) {
                               functions
                             </Typography>
                             <Button
-                              variant="outlined"
+                              variant="soft"
+                              color="inherit"
                               startIcon={<Plus size={18} />}
                               onClick={() => setCreateSecretDrawerOpen(true)}
                             >

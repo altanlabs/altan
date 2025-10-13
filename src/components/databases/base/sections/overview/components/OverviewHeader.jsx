@@ -9,13 +9,13 @@ export const OverviewHeader = ({
   operating,
   onRefresh,
 }) => {
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       if (!metricsLoading && !operating) {
         onRefresh();
       }
-    }, 30000); // 30 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [onRefresh, metricsLoading, operating]);

@@ -23,7 +23,6 @@ import {
   fetchThread,
   switchToThread,
   selectRoomThreadMain,
-  pruneOldMessages,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
@@ -81,12 +80,8 @@ const DesktopRoom = ({
   useEffect(() => {
     if (isOpen && roomId) {
       const lastRoomId = roomId;
-      // eslint-disable-next-line no-console
-      console.log(`🔌 DesktopRoom subscribing to room:${roomId}`);
       subscribe(`room:${roomId}`);
       return () => {
-        // eslint-disable-next-line no-console
-        console.log(`🔌 DesktopRoom unsubscribing from room:${lastRoomId}`);
         unsubscribe(`room:${lastRoomId}`);
       };
     }
@@ -205,23 +200,6 @@ const DesktopRoom = ({
       }
     }
   }, [initialized.room, roomId, threadMain.current, location.pathname, history]);
-
-  // Automatic memory management - prune old messages periodically
-  useEffect(() => {
-    if (!initialized.room || !roomId) return;
-
-    // Prune on mount
-    dispatch(pruneOldMessages({ maxMessagesPerThread: 100, maxThreads: 20 }));
-
-    // Prune every 2 minutes
-    const pruneInterval = setInterval(() => {
-      dispatch(pruneOldMessages({ maxMessagesPerThread: 100, maxThreads: 20 }));
-    }, 120000); // 2 minutes
-
-    return () => {
-      clearInterval(pruneInterval);
-    };
-  }, [initialized.room, roomId]);
 
   const renderRoomContent = <RoomContent className="w-full" />;
 
