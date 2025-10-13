@@ -24,7 +24,6 @@ export const useInstanceTypes = () => {
       }
 
       const response = await optimai_cloud.get('/v1/instances/types');
-      console.log('useInstanceTypes', response.data);
       setInstanceTypes(response.data || []);
     } catch (error) {
       console.error('Error fetching instance types:', error);

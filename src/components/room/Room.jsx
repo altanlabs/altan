@@ -5,6 +5,7 @@ import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
+import { useRenderLogger } from '../../hooks/useRenderLogger.js';
 import {
   fetchRoom,
   clearRoomState,
@@ -41,6 +42,9 @@ const Room = ({
   renderCredits = false,
   renderFeedback = false,
 }) => {
+  // Track re-renders in dev mode
+  useRenderLogger('Room', { roomId, isMobile, mobileActiveView, tabs });
+
   const history = useHistory();
   const { guest, user, authenticated, loginAsGuest } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);
@@ -68,8 +72,13 @@ const Room = ({
 
   // Clear room state when switching to a different room
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log(`🏠 Room component mounted - roomId: ${roomId}`);
+
     return () => {
       // Clean up the current room's state when component unmounts or roomId changes
+      // eslint-disable-next-line no-console
+      console.log(`🏠 Room component unmounting - cleaning up roomId: ${roomId}`);
       dispatch(clearRoomState());
     };
   }, [roomId]);

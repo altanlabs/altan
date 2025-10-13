@@ -7,8 +7,6 @@ import { useParams, useLocation, useHistory } from 'react-router-dom';
 import ProjectHeader from './header/ProjectHeader.jsx';
 import Main from './Main.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
-// import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
-import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import {
@@ -171,7 +169,7 @@ const ProjectLayout = ({ children }) => {
   if (!accountInitialized || !!accountLoading) return <LoadingScreen />;
 
   return (
-    <VoiceConversationProvider>
+    <>
       <ProjectHeader />
 
       <Box
@@ -251,7 +249,7 @@ const ProjectLayout = ({ children }) => {
           </IconButton>
         </Tooltip>
       )}
-    </VoiceConversationProvider>
+    </>
   );
 };
 
