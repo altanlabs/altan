@@ -1,4 +1,4 @@
-import { Database, Users, FolderOpen, Code, Key } from 'lucide-react';
+import { Database, Users, FolderOpen, Code } from 'lucide-react';
 
 export const PRODUCTS = [
   {
@@ -21,15 +21,8 @@ export const PRODUCTS = [
   },
   {
     id: 'functions',
-    name: 'Edge Functions',
+    name: 'Functions',
     description: 'Serverless functions',
     icon: Code,
   },
-  {
-    id: 'secrets',
-    name: 'Secrets',
-    description: 'Environment variables',
-    icon: Key,
-  },
 ];
-

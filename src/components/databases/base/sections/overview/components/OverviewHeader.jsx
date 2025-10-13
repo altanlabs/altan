@@ -1,14 +1,25 @@
-import React from 'react';
 import { CircularProgress } from '@mui/material';
-import { RefreshCw } from 'lucide-react';
 import { m } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
+import React, { useEffect } from 'react';
 
-export const OverviewHeader = ({ 
-  lastRefresh, 
-  metricsLoading, 
-  operating, 
-  onRefresh 
+export const OverviewHeader = ({
+  lastRefresh,
+  metricsLoading,
+  operating,
+  onRefresh,
 }) => {
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!metricsLoading && !operating) {
+        onRefresh();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [onRefresh, metricsLoading, operating]);
+
   return (
     <m.div
       initial={{ opacity: 0, y: 20 }}
@@ -47,4 +58,3 @@ export const OverviewHeader = ({
     </m.div>
   );
 };
-

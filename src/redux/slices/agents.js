@@ -129,7 +129,6 @@ export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
     if (agent) {
       const { account } = getState().general;
       const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
-
       dispatch(
         slice.actions.setAgent({
           agent,

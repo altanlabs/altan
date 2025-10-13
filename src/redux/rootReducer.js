@@ -11,6 +11,7 @@ import basesReducer from './slices/bases';
 import codeEditorReducer from './slices/codeEditor';
 import connectionsReducer from './slices/connections';
 import flowsReducer from './slices/flows';
+import functionsReducer from './slices/functions';
 import gateReducer from './slices/gate';
 import gatesReducer from './slices/gates';
 import generalReducer from './slices/general';
@@ -67,6 +68,7 @@ const rootReducer = combineReducers({
   gate: gateReducer,
   tasks: tasksReducer,
   templates: templatesReducer,
+  functions: functionsReducer,
 });
 
 export default rootReducer;

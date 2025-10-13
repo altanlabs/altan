@@ -42,7 +42,7 @@ import {
   updateBucketInCache,
 } from '../../../../redux/slices/bases';
 import { dispatch } from '../../../../redux/store';
-import { optimai_pg_meta, optimai_cloud } from '../../../../utils/axios';
+import { optimai_cloud } from '../../../../utils/axios';
 
 // Helper to format date
 const formatDate = (dateString) => {
@@ -156,7 +156,7 @@ function BaseStorage({ baseId }) {
         WHERE bucket_id = '${bucketId}'
         ORDER BY created_at DESC;
       `;
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, { query });
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
       setFiles(response.data || []);
     } catch (error) {
       setFilesError(error.response?.data?.message || error.message || 'Failed to load files');
@@ -189,7 +189,7 @@ function BaseStorage({ baseId }) {
         DELETE FROM storage.objects
         WHERE id = '${file.id}';
       `;
-      await optimai_pg_meta.post(`/${baseId}/query`, { query });
+      await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
 
       // Remove file from local state directly
       setFiles((prevFiles) => prevFiles.filter((f) => f.id !== file.id));
@@ -228,7 +228,7 @@ function BaseStorage({ baseId }) {
         VALUES ('${bucketId}', '${bucketId}', ${newBucketPublic}, NOW(), NOW())
         RETURNING *;
       `;
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, { query });
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
 
       // Add bucket to Redux cache directly
       const newBucket = response.data?.[0] || {
@@ -271,7 +271,7 @@ function BaseStorage({ baseId }) {
         DELETE FROM storage.buckets
         WHERE id = '${selectedBucket.id}';
       `;
-      await optimai_pg_meta.post(`/${baseId}/query`, { query });
+      await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
 
       // Remove bucket from Redux cache directly
       dispatch(removeBucketFromCache({ bucketId: selectedBucket.id, baseId }));
@@ -306,7 +306,7 @@ function BaseStorage({ baseId }) {
         WHERE id = '${selectedBucket.id}'
         RETURNING *;
       `;
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, { query });
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
 
       // Update bucket in Redux cache directly
       const updatedBucket = response.data?.[0] || {

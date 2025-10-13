@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { optimai_pg_meta } from '../../../../../../utils/axios';
+import { optimai_cloud } from '../../../../../../utils/axios';
 
 export const useProductStats = (baseId, base, isPaused) => {
   const [userCount, setUserCount] = useState(0);
@@ -7,7 +7,7 @@ export const useProductStats = (baseId, base, isPaused) => {
 
   const fetchUserCount = async () => {
     try {
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, {
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, {
         query: 'SELECT COUNT(*) as count FROM auth.users',
       });
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
@@ -21,7 +21,7 @@ export const useProductStats = (baseId, base, isPaused) => {
 
   const fetchBucketCount = async () => {
     try {
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, {
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, {
         query: 'SELECT COUNT(*) as count FROM storage.buckets',
       });
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {

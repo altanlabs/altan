@@ -1,9 +1,9 @@
-import React from 'react';
 import { m } from 'framer-motion';
+import React from 'react';
 
 export const ProductShortcuts = ({ products, base, getProductStats, onNavigate }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
       {products.map((product, index) => {
         const Icon = product.icon;
         return (
@@ -43,4 +43,3 @@ export const ProductShortcuts = ({ products, base, getProductStats, onNavigate }
     </div>
   );
 };
-

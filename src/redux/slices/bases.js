@@ -6,7 +6,7 @@ import {
   setAccountAttribute,
   setAccountAttributeError,
 } from './general';
-import { optimai_tables, optimai_pg_meta, optimai_tables_v4 } from '../../utils/axios';
+import { optimai_tables, optimai_cloud, optimai_tables_v4 } from '../../utils/axios';
 
 // ============================================================================
 // SQL QUERY HELPERS
@@ -247,12 +247,12 @@ const buildDeleteSQL = (tableName, recordIds) => {
 };
 
 /**
- * Execute raw SQL query via pg-meta
+ * Execute raw SQL query via cloud proxy
  */
 const executeSQL = async (baseId, query) => {
   try {
     console.log('📤 Executing SQL:', query.substring(0, 150) + '...');
-    const response = await optimai_pg_meta.post(`/${baseId}/query`, { query });
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
     console.log('📥 SQL Response:', {
       dataType: typeof response.data,
       isArray: Array.isArray(response.data),
@@ -1098,7 +1098,7 @@ export const {
 export const createSchema = (baseId, schemaData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.post(`/${baseId}/schemas/`, schemaData);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/schemas/`, schemaData);
     const schema = response.data;
     dispatch(addSchema({ baseId, schema }));
     return schema;
@@ -1116,7 +1116,7 @@ export const createSchema = (baseId, schemaData) => async (dispatch) => {
 export const updateSchemaById = (baseId, schemaId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.patch(`/${baseId}/schemas/${schemaId}`, changes);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/schemas/${schemaId}`, changes);
     const schema = response.data;
     dispatch(updateSchema({ baseId, schemaId, changes: schema }));
     return schema;
@@ -1136,7 +1136,7 @@ export const deleteSchemaById =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      await optimai_pg_meta.delete(`/${baseId}/schemas/${schemaId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/schemas/${schemaId}`, {
         params: { cascade },
       });
       dispatch(deleteSchema({ baseId, schemaId }));
@@ -1176,7 +1176,7 @@ export const fetchTables =
     dispatch(slice.actions.startLoading());
     try {
       console.log('📡 Fetching tables from pg-meta for base:', baseId);
-      const response = await optimai_pg_meta.get(`/${baseId}/tables/`, {
+      const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/tables/`, {
         params: {
           include_columns,
           include_relationships,
@@ -1214,7 +1214,7 @@ export const createTable = (baseId, tableData) => async (dispatch) => {
       schema: tenantSchema, // Override to ensure correct schema
     };
 
-    const response = await optimai_pg_meta.post(`/${baseId}/tables/`, tablePayload);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/tables/`, tablePayload);
     const table = response.data;
 
     // Transform to our internal format
@@ -1251,7 +1251,7 @@ export const createTable = (baseId, tableData) => async (dispatch) => {
 export const updateTableById = (baseId, tableId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.patch(`/${baseId}/tables/${tableId}`, changes);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/tables/${tableId}`, changes);
     const table = response.data;
 
     dispatch(
@@ -1285,7 +1285,7 @@ export const deleteTableById =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      await optimai_pg_meta.delete(`/${baseId}/tables/${tableId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/tables/${tableId}`, {
         params: { cascade },
       });
       dispatch(deleteTable({ baseId, tableId }));
@@ -1310,7 +1310,7 @@ export const fetchTablePolicies = (baseId, tableId, tableName, schemaName) => as
   try {
     console.log('🔐 Fetching RLS policies for table:', { baseId, tableId, tableName, schemaName });
 
-    const response = await optimai_pg_meta.get(`/${baseId}/policies/`, {
+    const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/policies/`, {
       params: {
         table_name: tableName,
       },
@@ -1342,7 +1342,7 @@ export const fetchColumns = (baseId, tableId) => async (dispatch) => {
     // Generate tenant schema name: tenant_{base_id} with hyphens → underscores
     const tenantSchema = `tenant_${baseId.replace(/-/g, '_')}`;
 
-    const response = await optimai_pg_meta.get(`/${baseId}/columns/`, {
+    const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/columns/`, {
       params: {
         included_schemas: tenantSchema,
         exclude_system_schemas: true,
@@ -1398,7 +1398,7 @@ export const createField = (table, fieldData) => async (dispatch, getState) => {
       comment: fieldData.description || fieldData.comment,
     };
 
-    const response = await optimai_pg_meta.post(`/${baseId}/columns/`, columnData);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/columns/`, columnData);
     const column = response.data;
 
     // Store column data directly from pg-meta
@@ -1468,7 +1468,7 @@ export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, 
     if (changes.default_value !== undefined) columnChanges.default_value = changes.default_value;
     if (changes.comment !== undefined) columnChanges.comment = changes.comment;
 
-    const response = await optimai_pg_meta.patch(`/${baseId}/columns/${fieldId}`, columnChanges);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/columns/${fieldId}`, columnChanges);
     const column = response.data;
 
     // Store column data directly from pg-meta
@@ -1518,7 +1518,7 @@ export const deleteFieldThunk =
         throw new Error(`Could not find base for table ${tableId}`);
       }
 
-      await optimai_pg_meta.delete(`/${baseId}/columns/${fieldId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/columns/${fieldId}`, {
         params: { cascade },
       });
 
@@ -2147,7 +2147,7 @@ export const exportDatabaseToSQL =
     dispatch(slice.actions.startLoading());
     try {
       const params = includeData ? { include_data: true } : {};
-      const response = await optimai_pg_meta.get(`/${baseId}/export/schema`, {
+      const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/export/schema`, {
         params,
         responseType: 'blob',
       });
