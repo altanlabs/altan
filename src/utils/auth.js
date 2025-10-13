@@ -54,6 +54,7 @@ const AUTH_API_ENDPOINTS = {
   optimai_agent: `${AUTH_API}/token/platform`,
   optimai_database: `${AUTH_API}/token/platform`,
   optimai_pg_meta: `${AUTH_API}/token/platform`,
+  optimai_cloud: `${AUTH_API}/token/platform`,
   optimai_auth: `${AUTH_API}/token/platform`,
 };
 
@@ -70,6 +71,7 @@ const MOBILE_AUTH_API_ENDPOINTS = {
   optimai_agent: `${AUTH_API}/token/mobile`,
   optimai_database: `${AUTH_API}/token/mobile`,
   optimai_pg_meta: `${AUTH_API}/token/mobile`,
+  optimai_cloud: `${AUTH_API}/token/mobile`,
   optimai_auth: `${AUTH_API}/token/mobile`,
 };
 

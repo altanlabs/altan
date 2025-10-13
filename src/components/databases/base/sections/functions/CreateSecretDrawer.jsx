@@ -100,12 +100,6 @@ function CreateSecretDrawer({ open, onClose, baseId, onSuccess, onError }) {
         {/* Content */}
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
           <Stack spacing={3}>
-            <Typography variant="body2" color="text.secondary">
-              Secrets are encrypted environment variables that are accessible to all functions via{' '}
-              <code style={{ background: '#f5f5f5', padding: '2px 6px', borderRadius: 4 }}>
-                os.environ['KEY_NAME']
-              </code>
-            </Typography>
 
             {/* Key */}
             <TextField

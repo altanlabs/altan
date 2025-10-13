@@ -48,6 +48,8 @@ function BaseLayout({
         return <BaseStorage baseId={baseId} onNavigate={onSectionChange} />;
       case 'functions':
         return <BaseFunctions baseId={baseId} />;
+      case 'realtime':
+        return <BasePlaceholder title="Realtime" description="Subscribe to database changes in real-time with WebSocket connections." />;
       case 'secrets':
         return <BasePlaceholder title="Secrets" description="Store and manage environment variables securely." />;
       case 'logs':

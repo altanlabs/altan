@@ -31,7 +31,6 @@ import {
   Plus,
   MoreVertical,
   Trash2,
-  ArrowLeft,
   RefreshCw,
   Key,
   Lock,
@@ -42,6 +41,10 @@ import {
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
+import CreateFunctionDrawer from './functions/CreateFunctionDrawer';
+import CreateSecretDrawer from './functions/CreateSecretDrawer';
+import EditFunctionDrawer from './functions/EditFunctionDrawer';
+import FunctionDetailView from './functions/FunctionDetailView';
 import {
   selectFunctionsForBase,
   selectSecretsForBase,
@@ -52,10 +55,6 @@ import {
   toggleFunctionEnabled,
 } from '../../../../redux/slices/functions';
 import { dispatch } from '../../../../redux/store';
-import CreateFunctionDrawer from './functions/CreateFunctionDrawer';
-import EditFunctionDrawer from './functions/EditFunctionDrawer';
-import CreateSecretDrawer from './functions/CreateSecretDrawer';
-import FunctionDetailView from './functions/FunctionDetailView';
 
 // Helper to format date
 const formatDate = (dateString) => {
@@ -76,7 +75,7 @@ const formatDate = (dateString) => {
 function BaseFunctions({ baseId }) {
   const functionsState = useSelector((state) => selectFunctionsForBase(state, baseId));
   const secretsState = useSelector((state) => selectSecretsForBase(state, baseId));
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedFunction, setSelectedFunction] = useState(null);
@@ -236,10 +235,24 @@ function BaseFunctions({ baseId }) {
   // Show loading state
   if (functionsState.loading && functions.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', p: 3 }}>
-        <Stack spacing={2} alignItems="center">
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          p: 3,
+        }}
+      >
+        <Stack
+          spacing={2}
+          alignItems="center"
+        >
           <CircularProgress />
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
             Loading functions...
           </Typography>
         </Stack>
@@ -253,11 +266,22 @@ function BaseFunctions({ baseId }) {
       <Box sx={{ p: 3 }}>
         <Card>
           <CardContent>
-            <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
-              <Typography variant="h6" color="error">
+            <Stack
+              spacing={2}
+              alignItems="center"
+              sx={{ py: 4 }}
+            >
+              <Typography
+                variant="h6"
+                color="error"
+              >
                 Unable to load functions
               </Typography>
-              <Typography variant="body2" color="text.secondary" textAlign="center">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                textAlign="center"
+              >
                 {functionsState.error}
               </Typography>
               <Button
@@ -289,13 +313,17 @@ function BaseFunctions({ baseId }) {
     <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           <Box>
-            <Typography variant="h4" gutterBottom>
-              Edge Functions
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Deploy serverless Python functions executed on-demand.
+            <Typography
+              variant="h4"
+              gutterBottom
+            >
+              Functions
             </Typography>
           </Box>
           <Button
@@ -310,9 +338,18 @@ function BaseFunctions({ baseId }) {
 
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab label="Functions" value="functions" />
-            <Tab label="Secrets" value="secrets" />
+          <Tabs
+            value={activeTab}
+            onChange={(e, newValue) => setActiveTab(newValue)}
+          >
+            <Tab
+              label="Functions"
+              value="functions"
+            />
+            <Tab
+              label="Secrets"
+              value="secrets"
+            />
           </Tabs>
         </Box>
 
@@ -320,7 +357,11 @@ function BaseFunctions({ baseId }) {
         {activeTab === 'functions' && (
           <Box>
             {/* Actions Bar */}
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
               <Button
                 variant="contained"
                 startIcon={<Plus size={18} />}
@@ -362,11 +403,26 @@ function BaseFunctions({ baseId }) {
                   <TableBody>
                     {filteredFunctions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
-                            <Code size={48} color="gray" />
-                            <Typography variant="body2" color="text.secondary">
-                              {searchQuery ? 'No functions found matching your search' : 'No functions yet'}
+                        <TableCell
+                          colSpan={5}
+                          align="center"
+                        >
+                          <Stack
+                            spacing={2}
+                            alignItems="center"
+                            sx={{ py: 4 }}
+                          >
+                            <Code
+                              size={48}
+                              color="gray"
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                            >
+                              {searchQuery
+                                ? 'No functions found matching your search'
+                                : 'No functions yet'}
                             </Typography>
                             {!searchQuery && (
                               <Button
@@ -391,17 +447,28 @@ function BaseFunctions({ baseId }) {
                             sx={{ cursor: 'pointer' }}
                           >
                             <TableCell>
-                              <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Stack
+                                direction="row"
+                                spacing={1.5}
+                                alignItems="center"
+                              >
                                 <Code size={20} />
                                 <Box>
-                                  <Typography variant="body2" fontWeight={500}>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={500}
+                                  >
                                     {func.name}
                                   </Typography>
                                 </Box>
                               </Stack>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ maxWidth: 300 }}
+                              >
                                 {func.description || 'No description'}
                               </Typography>
                             </TableCell>
@@ -441,9 +508,18 @@ function BaseFunctions({ baseId }) {
 
             {/* Functions count */}
             {filteredFunctions.length > 0 && (
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {filteredFunctions.length} {filteredFunctions.length === 1 ? 'function' : 'functions'}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mt: 2 }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  {filteredFunctions.length}{' '}
+                  {filteredFunctions.length === 1 ? 'function' : 'functions'}
                 </Typography>
               </Stack>
             )}
@@ -453,7 +529,11 @@ function BaseFunctions({ baseId }) {
         {/* Secrets Tab */}
         {activeTab === 'secrets' && (
           <Box>
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
               <Button
                 variant="contained"
                 startIcon={<Plus size={18} />}
@@ -481,14 +561,32 @@ function BaseFunctions({ baseId }) {
                   <TableBody>
                     {secrets.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
-                            <Key size={48} color="gray" />
-                            <Typography variant="body2" color="text.secondary">
+                        <TableCell
+                          colSpan={5}
+                          align="center"
+                        >
+                          <Stack
+                            spacing={2}
+                            alignItems="center"
+                            sx={{ py: 4 }}
+                          >
+                            <Key
+                              size={48}
+                              color="gray"
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                            >
                               No secrets configured
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
-                              Secrets are encrypted environment variables accessible to your functions via os.environ
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ maxWidth: 400, textAlign: 'center' }}
+                            >
+                              Secrets are encrypted environment variables accessible to your
+                              functions
                             </Typography>
                             <Button
                               variant="outlined"
@@ -502,29 +600,39 @@ function BaseFunctions({ baseId }) {
                       </TableRow>
                     ) : (
                       secrets.map((secret) => (
-                        <TableRow key={secret.key} hover>
+                        <TableRow
+                          key={secret.key}
+                          hover
+                        >
                           <TableCell>
-                            <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
+                            >
                               <Lock size={16} />
-                              <Typography variant="body2" fontWeight={500} sx={{ fontFamily: 'monospace' }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                sx={{ fontFamily: 'monospace' }}
+                              >
                                 {secret.key}
                               </Typography>
                             </Stack>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                            >
                               {secret.description || 'No description'}
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">
-                              {formatDate(secret.created_at)}
-                            </Typography>
+                            <Typography variant="body2">{formatDate(secret.created_at)}</Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">
-                              {formatDate(secret.updated_at)}
-                            </Typography>
+                            <Typography variant="body2">{formatDate(secret.updated_at)}</Typography>
                           </TableCell>
                           <TableCell align="right">
                             <IconButton
@@ -547,8 +655,16 @@ function BaseFunctions({ baseId }) {
 
             {/* Secrets count */}
             {secrets.length > 0 && (
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mt: 2 }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   {secrets.length} {secrets.length === 1 ? 'secret' : 'secrets'}
                 </Typography>
               </Stack>
@@ -563,7 +679,12 @@ function BaseFunctions({ baseId }) {
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => { handleViewFunction(selectedFunction); handleMenuClose(); }}>
+        <MenuItem
+          onClick={() => {
+            handleViewFunction(selectedFunction);
+            handleMenuClose();
+          }}
+        >
           <ListItemIcon>
             <Code size={18} />
           </ListItemIcon>
@@ -579,13 +700,17 @@ function BaseFunctions({ baseId }) {
           <ListItemIcon>
             {selectedFunction?.enabled ? <XCircle size={18} /> : <CheckCircle size={18} />}
           </ListItemIcon>
-          <ListItemText>
-            {selectedFunction?.enabled ? 'Disable' : 'Enable'}
-          </ListItemText>
+          <ListItemText>{selectedFunction?.enabled ? 'Disable' : 'Enable'}</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleDeleteFunction} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={handleDeleteFunction}
+          sx={{ color: 'error.main' }}
+        >
           <ListItemIcon>
-            <Trash2 size={18} color="currentColor" />
+            <Trash2
+              size={18}
+              color="currentColor"
+            />
           </ListItemIcon>
           <ListItemText>Delete</ListItemText>
         </MenuItem>
@@ -597,9 +722,15 @@ function BaseFunctions({ baseId }) {
         open={Boolean(secretsMenuAnchor)}
         onClose={handleSecretsMenuClose}
       >
-        <MenuItem onClick={handleDeleteSecret} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={handleDeleteSecret}
+          sx={{ color: 'error.main' }}
+        >
           <ListItemIcon>
-            <Trash2 size={18} color="currentColor" />
+            <Trash2
+              size={18}
+              color="currentColor"
+            />
           </ListItemIcon>
           <ListItemText>Delete Secret</ListItemText>
         </MenuItem>
@@ -661,7 +792,11 @@ function BaseFunctions({ baseId }) {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
@@ -670,4 +805,3 @@ function BaseFunctions({ baseId }) {
 }
 
 export default BaseFunctions;
-
