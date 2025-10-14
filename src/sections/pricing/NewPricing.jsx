@@ -47,7 +47,6 @@ const PRO_FEATURES = [
   { text: 'Private projects', available: true },
   { text: 'Custom domains', available: true },
   { text: 'Voice AI Agents', available: true },
-  { text: 'Workflow Builder', available: true },
   { text: 'Community support', available: true },
   { text: 'Remove Altan branding', available: true },
 ];

@@ -20,6 +20,34 @@ import AddDomainDialog from '../../../dashboard/interfaces/components/AddDomainD
 
 const versionTypes = ['major', 'minor', 'patch'];
 
+// Social sharing configurations
+const socialPlatforms = [
+  {
+    name: 'WhatsApp',
+    icon: 'mdi:whatsapp',
+    color: '#25D366',
+    getUrl: (url) => `https://wa.me/?text=${encodeURIComponent(`Check this out: ${url}`)}`,
+  },
+  {
+    name: 'Twitter',
+    icon: 'mdi:twitter',
+    color: '#1DA1F2',
+    getUrl: (url) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent('Check out this AI agent!')}`,
+  },
+  {
+    name: 'LinkedIn',
+    icon: 'mdi:linkedin',
+    color: '#0A66C2',
+    getUrl: (url) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+  },
+  {
+    name: 'Facebook',
+    icon: 'mdi:facebook',
+    color: '#1877F2',
+    getUrl: (url) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+  },
+];
+
 function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
   const dispatch = useDispatch();
   const [name, setName] = useState('');
@@ -27,6 +55,43 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isDomainDialogOpen, setIsDomainDialogOpen] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(null);
+
+  const handleCopyUrl = async (url) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleNativeShare = async (url) => {
+    // Check if Web Share API is available
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Check out this AI Agent',
+          text: `Try out this AI agent built with Altan:`,
+          url,
+        });
+      } catch (err) {
+        // User cancelled or error occurred
+        if (err.name !== 'AbortError') {
+          console.error('Error sharing:', err);
+        }
+      }
+    } else {
+      // Fallback: just copy to clipboard if Web Share API not available
+      handleCopyUrl(url);
+    }
+  };
+
+  const handleShare = (platform, url) => {
+    const shareUrl = platform.getUrl(url);
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -172,30 +237,105 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                         borderColor: 'divider',
                       }}
                     >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                      >
-                        <Iconify
-                          icon="mdi:web"
-                          sx={{ color: 'primary.main' }}
-                        />
-                        <Link
-                          href={defaultDomain}
-                          target="_blank"
-                          underline="hover"
-                          sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
                         >
-                          {defaultDomain}
-                        </Link>
-                        <Chip
-                          label="Primary"
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{ ml: 'auto' }}
-                        />
+                          <Iconify
+                            icon="mdi:web"
+                            sx={{ color: 'primary.main' }}
+                          />
+                          <Link
+                            href={defaultDomain}
+                            target="_blank"
+                            underline="hover"
+                            sx={{ fontFamily: 'monospace', fontSize: '0.875rem', flex: 1 }}
+                          >
+                            {defaultDomain}
+                          </Link>
+                          <Chip
+                            label="Primary"
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </Stack>
+
+                        {/* Native Share & Social buttons */}
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={{ pl: 4 }}
+                        >
+                          {/* Primary Native Share Button */}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Iconify icon="mdi:share-variant" />}
+                            onClick={() => handleNativeShare(defaultDomain)}
+                            sx={{
+                              borderRadius: 1,
+                              textTransform: 'none',
+                              fontWeight: 500,
+                              borderColor: 'divider',
+                              color: 'text.secondary',
+                              '&:hover': {
+                                borderColor: 'primary.main',
+                                color: 'primary.main',
+                                bgcolor: (theme) =>
+                                  theme.palette.mode === 'dark' ? 'primary.900' : 'primary.50',
+                              },
+                            }}
+                          >
+                            Share
+                          </Button>
+
+                          <Box sx={{ mx: 0.5, height: 16, width: '1px', bgcolor: 'divider' }} />
+
+                          {/* Quick action icons */}
+                          {socialPlatforms.slice(0, 2).map((platform) => (
+                            <IconButton
+                              key={platform.name}
+                              size="small"
+                              onClick={() => handleShare(platform, defaultDomain)}
+                              sx={{
+                                color: 'text.secondary',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  color: platform.color,
+                                  transform: 'scale(1.1)',
+                                },
+                              }}
+                              title={`Share on ${platform.name}`}
+                            >
+                              <Iconify
+                                icon={platform.icon}
+                                width={18}
+                              />
+                            </IconButton>
+                          ))}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopyUrl(defaultDomain)}
+                            sx={{
+                              color: copiedUrl === defaultDomain ? 'success.main' : 'text.secondary',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                color: 'primary.main',
+                                transform: 'scale(1.1)',
+                              },
+                            }}
+                            title="Copy link"
+                          >
+                            <Iconify
+                              icon={copiedUrl === defaultDomain ? 'mdi:check' : 'mdi:content-copy'}
+                              width={16}
+                            />
+                          </IconButton>
+                        </Stack>
                       </Stack>
                     </Box>
                   )}
@@ -203,44 +343,122 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                   {/* Custom domains */}
                   {allCustomDomains.length > 0 && (
                     <>
-                      {allCustomDomains.map((domain) => (
-                        <Box
-                          key={domain}
-                          sx={{
-                            p: 2,
-                            borderRadius: 1,
-                            bgcolor: (theme) =>
-                              theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            spacing={1}
+                      {allCustomDomains.map((domain) => {
+                        const fullDomain = `https://${domain}`;
+                        return (
+                          <Box
+                            key={domain}
+                            sx={{
+                              p: 2,
+                              borderRadius: 1,
+                              bgcolor: (theme) =>
+                                theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                            }}
                           >
-                            <Iconify
-                              icon="mdi:web"
-                              sx={{ color: 'text.secondary' }}
-                            />
-                            <Link
-                              href={`https://${domain}`}
-                              target="_blank"
-                              underline="hover"
-                              sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
-                            >
-                              {domain}
-                            </Link>
-                            <Chip
-                              label="Custom"
-                              size="small"
-                              variant="outlined"
-                              sx={{ ml: 'auto' }}
-                            />
-                          </Stack>
-                        </Box>
-                      ))}
+                            <Stack spacing={1.5}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                              >
+                                <Iconify
+                                  icon="mdi:web"
+                                  sx={{ color: 'text.secondary' }}
+                                />
+                                <Link
+                                  href={fullDomain}
+                                  target="_blank"
+                                  underline="hover"
+                                  sx={{ fontFamily: 'monospace', fontSize: '0.875rem', flex: 1 }}
+                                >
+                                  {domain}
+                                </Link>
+                                <Chip
+                                  label="Custom"
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              </Stack>
+
+                              {/* Native Share & Social buttons */}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ pl: 4 }}
+                              >
+                                {/* Primary Native Share Button */}
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<Iconify icon="mdi:share-variant" />}
+                                  onClick={() => handleNativeShare(fullDomain)}
+                                  sx={{
+                                    borderRadius: 1,
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    borderColor: 'divider',
+                                    color: 'text.secondary',
+                                    '&:hover': {
+                                      borderColor: 'primary.main',
+                                      color: 'primary.main',
+                                      bgcolor: (theme) =>
+                                        theme.palette.mode === 'dark' ? 'primary.900' : 'primary.50',
+                                    },
+                                  }}
+                                >
+                                  Share
+                                </Button>
+
+                                <Box sx={{ mx: 0.5, height: 16, width: '1px', bgcolor: 'divider' }} />
+
+                                {/* Quick action icons */}
+                                {socialPlatforms.slice(0, 2).map((platform) => (
+                                  <IconButton
+                                    key={platform.name}
+                                    size="small"
+                                    onClick={() => handleShare(platform, fullDomain)}
+                                    sx={{
+                                      color: 'text.secondary',
+                                      transition: 'all 0.2s',
+                                      '&:hover': {
+                                        color: platform.color,
+                                        transform: 'scale(1.1)',
+                                      },
+                                    }}
+                                    title={`Share on ${platform.name}`}
+                                  >
+                                    <Iconify
+                                      icon={platform.icon}
+                                      width={18}
+                                    />
+                                  </IconButton>
+                                ))}
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCopyUrl(fullDomain)}
+                                  sx={{
+                                    color: copiedUrl === fullDomain ? 'success.main' : 'text.secondary',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                      color: 'primary.main',
+                                      transform: 'scale(1.1)',
+                                    },
+                                  }}
+                                  title="Copy link"
+                                >
+                                  <Iconify
+                                    icon={copiedUrl === fullDomain ? 'mdi:check' : 'mdi:content-copy'}
+                                    width={16}
+                                  />
+                                </IconButton>
+                              </Stack>
+                            </Stack>
+                          </Box>
+                        );
+                      })}
                     </>
                   )}
 

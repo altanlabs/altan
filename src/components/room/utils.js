@@ -19,7 +19,7 @@ export function getMemberName(roomMember) {
     default:
       if (member.guest) {
         const { first_name, last_name } = member.guest;
-        return `${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous User';
+        return `${first_name || ''} ${last_name || ''}`.trim() || 'System';
       }
       return 'Anonymous';
   }

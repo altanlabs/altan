@@ -26,7 +26,6 @@ const PRO_FEATURES = [
   { text: 'Private projects', icon: 'material-symbols:lock' },
   { text: 'Custom domains', icon: 'material-symbols:domain' },
   { text: 'Voice AI Agents', icon: 'material-symbols:mic' },
-  { text: 'Workflow Builder', icon: 'material-symbols:account-tree' },
   { text: 'Community support', icon: 'material-symbols:support-agent' },
   { text: 'Remove Altan branding', icon: 'material-symbols:branding-watermark-off' },
 ];
