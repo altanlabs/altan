@@ -5,6 +5,7 @@ import { useSelector } from '../../redux/store.js';
 import { getCustomRenderer } from './tool-renderers/index.js';
 import ToolPartArguments from './tool-parts/ToolPartArguments.jsx';
 import ToolPartError from './tool-parts/ToolPartError.jsx';
+import ToolPartResult from './tool-parts/ToolPartResult.jsx';
 import ToolPartHeader from './tool-parts/ToolPartHeader.jsx';
 
 const ToolPartCard = ({
@@ -20,6 +21,7 @@ const ToolPartCard = ({
   
   const [manuallyCollapsed, setManuallyCollapsed] = useState(true);
   const [showError, setShowError] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
   const isCompleted = part?.is_done;
 
@@ -48,6 +50,11 @@ const ToolPartCard = ({
     setShowError((v) => !v);
   }, []);
 
+  const handleResultClick = useCallback((e) => {
+    e.stopPropagation();
+    setShowResult((v) => !v);
+  }, []);
+
   // Determine if there are displayable arguments
   const hasDisplayableArguments = useMemo(() => {
     if (!argsData?.arguments) return false;
@@ -62,6 +69,7 @@ const ToolPartCard = ({
   }, [argsData?.arguments]);
 
   const hasError = !!part?.error;
+  const hasResult = !!part?.result;
 
   if (!part) {
     return null;
@@ -93,6 +101,8 @@ const ToolPartCard = ({
             hasDisplayableArguments={hasDisplayableArguments}
             hasError={hasError}
             onErrorClick={handleErrorClick}
+            hasResult={hasResult}
+            onResultClick={handleResultClick}
           />
 
           {/* Default Arguments Display */}
@@ -107,6 +117,12 @@ const ToolPartCard = ({
       <ToolPartError
         partId={partId}
         showError={showError}
+      />
+
+      {/* Result Display - Only show when clicked */}
+      <ToolPartResult
+        partId={partId}
+        showResult={showResult}
       />
 
       {children}

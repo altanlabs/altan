@@ -27,6 +27,8 @@ const ToolPartHeader = ({
   hasDisplayableArguments,
   hasError,
   onErrorClick,
+  hasResult,
+  onResultClick,
 }) => {
   const { setExecutionId } = useExecutionDialog() || {};
 
@@ -126,10 +128,22 @@ const ToolPartHeader = ({
         />
       )}
 
+      {hasResult && (
+        <Icon
+          icon="mdi:information-outline"
+          className="text-blue-500 text-sm flex-shrink-0 cursor-pointer hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ml-auto"
+          onClick={onResultClick}
+          title="Show output"
+        />
+      )}
+
       {hasError && (
         <Icon
           icon="mdi:alert-circle"
-          className="text-red-500 text-sm flex-shrink-0 cursor-pointer hover:text-red-600 ml-auto"
+          className={cn(
+            'text-red-500 text-sm flex-shrink-0 cursor-pointer hover:text-red-600',
+            !hasResult && 'ml-auto',
+          )}
           onClick={onErrorClick}
         />
       )}
@@ -144,6 +158,7 @@ export default memo(ToolPartHeader, (prevProps, nextProps) => {
     prevProps.noClick === nextProps.noClick &&
     prevProps.isExpanded === nextProps.isExpanded &&
     prevProps.hasDisplayableArguments === nextProps.hasDisplayableArguments &&
-    prevProps.hasError === nextProps.hasError
+    prevProps.hasError === nextProps.hasError &&
+    prevProps.hasResult === nextProps.hasResult
   );
 });
