@@ -349,13 +349,6 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
             Now you know the basics! Start by chatting with your AI agents on the left to request
             features or ask questions.
           </p>
-          <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <p className="text-sm font-medium">💡 Pro Tip</p>
-            <p className="text-sm mt-1">
-              Try asking: "Add a contact form to my interface" or "Show me the users table in my
-              database"
-            </p>
-          </div>
         </div>
       ),
       placement: 'center',
