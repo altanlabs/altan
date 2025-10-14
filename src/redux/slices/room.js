@@ -2578,6 +2578,19 @@ export const makeSelectToolPartError = () =>
     },
   )((state, partId) => `toolPartError_${partId}`);
 
+export const makeSelectToolPartResult = () =>
+  createCachedSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        result: part.result,
+      };
+    },
+  )((state, partId) => `toolPartResult_${partId}`);
+
 export const makeSelectToolPartExecution = () =>
   createCachedSelector(
     [selectMessagePartsById, (state, partId) => partId],

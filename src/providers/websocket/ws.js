@@ -756,8 +756,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
           timestamp,
         }));
 
-        // Handle response completion events
-        if (['response.completed', 'response.failed', 'response.empty'].includes(eventType)) {
+        // Handle response completion events (including activation failures)
+        if (['response.completed', 'response.failed', 'response.empty', 'activation.failed'].includes(eventType)) {
           dispatch(completeResponseLifecycle({
             response_id: eventData.response_id,
             thread_id: eventData.thread_id,
@@ -868,6 +868,32 @@ export const handleWebSocketEvent = async (data, user_id) => {
           dispatch(deleteMessagePart(eventData));
           break;
 
+        case 'activation.failed':
+          // Check if it's a not_enough_credits error
+          if (eventData.error_type === 'not_enough_credits') {
+            function getSimulatedDate() {
+              const date = new Date();
+              // Format the date in ISO format without the trailing Z, and extend milliseconds to microseconds by appending "000"
+              const isoString = date.toISOString().slice(0, -1); // remove "Z"
+              const splitTime = isoString.split('.');
+              const milliseconds = splitTime[1] || '000';
+              // Simulated microseconds by appending "000" to the milliseconds
+              const microseconds = milliseconds.padEnd(6, '0');
+              return `${splitTime[0]}.${microseconds}`;
+            }
+
+            dispatch(
+              addMessage({
+                text: '[no_credits](no_credits/no_credits)',
+                thread_id: eventData.thread_id,
+                member_id: 'system',
+                date_creation: getSimulatedDate(),
+                id: 'credits-not-enough',
+              }),
+            );
+          }
+          break;
+
         default:
           if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
             console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
@@ -950,28 +976,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'TaskUpdate':
       // console.log('TaskUpdate:', data);
       dispatch(updateMessageExecution(data.data));
-      break;
-    case 'CreditsNotEnough':
-      function getSimulatedDate() {
-        const date = new Date();
-        // Format the date in ISO format without the trailing Z, and extend milliseconds to microseconds by appending "000"
-        const isoString = date.toISOString().slice(0, -1); // remove "Z"
-        const splitTime = isoString.split('.');
-        const milliseconds = splitTime[1] || '000';
-        // Simulated microseconds by appending "000" to the milliseconds
-        const microseconds = milliseconds.padEnd(6, '0');
-        return `${splitTime[0]}.${microseconds}`;
-      }
-
-      dispatch(
-        addMessage({
-          text: '[no_credits](no_credits/no_credits)',
-          thread_id: data.data.thread_id,
-          member_id: 'system',
-          date_creation: getSimulatedDate(),
-          id: 'credits-not-enough',
-        }),
-      );
       break;
     default:
       // console.log('Received unknown event type', data);
