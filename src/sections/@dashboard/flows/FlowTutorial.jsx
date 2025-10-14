@@ -25,7 +25,7 @@ import { useHistory } from 'react-router';
 import CustomDialog from '../../../components/dialogs/CustomDialog.jsx';
 
 const FlowTutorial = ({ open, setOpen }) => {
-  const history = useHistory();;
+  const history = useHistory();
   const handleClose = () => {
     setOpen(false);
   };

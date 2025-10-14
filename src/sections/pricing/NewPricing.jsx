@@ -262,7 +262,14 @@ function PricingCard({
         onClick={onButtonClick}
         disabled={loading}
         sx={{ py: 1.5, fontWeight: 600 }}
-        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+        startIcon={
+          loading ? (
+            <CircularProgress
+              size={20}
+              color="inherit"
+            />
+          ) : null
+        }
       >
         {loading ? 'Processing...' : buttonText}
       </Button>
@@ -275,7 +282,7 @@ export default function NewPricing() {
   const [proPlan, setProPlan] = useState(null);
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
-  const [isYearlyBilling, setIsYearlyBilling] = useState(false);
+  const [isYearlyBilling, setIsYearlyBilling] = useState(true);
   const [loadingStates, setLoadingStates] = useState({
     pro: false,
     growth: false,
@@ -373,7 +380,7 @@ export default function NewPricing() {
   };
 
   const handleProClick = async () => {
-    setLoadingStates(prev => ({ ...prev, pro: true }));
+    setLoadingStates((prev) => ({ ...prev, pro: true }));
 
     try {
       const billingFrequency = isYearlyBilling ? 'yearly' : 'monthly';
@@ -384,12 +391,12 @@ export default function NewPricing() {
         await handleCheckout(billingOption.id);
       }
     } finally {
-      setLoadingStates(prev => ({ ...prev, pro: false }));
+      setLoadingStates((prev) => ({ ...prev, pro: false }));
     }
   };
 
   const handleGrowthClick = async () => {
-    setLoadingStates(prev => ({ ...prev, growth: true }));
+    setLoadingStates((prev) => ({ ...prev, growth: true }));
 
     try {
       const selectedPlan = growthPlans[selectedGrowthTier];
@@ -401,12 +408,12 @@ export default function NewPricing() {
         await handleCheckout(billingOption.id);
       }
     } finally {
-      setLoadingStates(prev => ({ ...prev, growth: false }));
+      setLoadingStates((prev) => ({ ...prev, growth: false }));
     }
   };
 
   const handleEnterpriseClick = () => {
-    setLoadingStates(prev => ({ ...prev, enterprise: true }));
+    setLoadingStates((prev) => ({ ...prev, enterprise: true }));
 
     try {
       // Track lead generation for enterprise plan with PostHog
@@ -432,7 +439,7 @@ export default function NewPricing() {
     } catch (error) {
       console.error('Error tracking lead generation:', error);
     } finally {
-      setLoadingStates(prev => ({ ...prev, enterprise: false }));
+      setLoadingStates((prev) => ({ ...prev, enterprise: false }));
     }
   };
 
@@ -480,11 +487,21 @@ export default function NewPricing() {
               />
             }
             label={
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="body2" sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}
+                >
                   Monthly
                 </Typography>
-                <Typography variant="body2" sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}
+                >
                   Yearly
                 </Typography>
                 {isYearlyBilling && (
@@ -545,7 +562,11 @@ export default function NewPricing() {
                   </Typography>
                 )}
                 {!isYearlyBilling && DISCOUNT_CONFIG.showProDiscount && (
-                  <Stack direction="row" alignItems="center" spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                  >
                     <Typography
                       variant="body2"
                       sx={{
@@ -573,7 +594,11 @@ export default function NewPricing() {
             ) : (
               <Stack spacing={1}>
                 {DISCOUNT_CONFIG.showProDiscount && (
-                  <Stack direction="row" alignItems="center" spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                  >
                     <Typography
                       variant="body2"
                       sx={{
@@ -611,7 +636,10 @@ export default function NewPricing() {
           title="Growth"
           price={
             growthBillingOption
-              ? formatPrice(growthBillingOption.price, isAuthenticated ? billingFrequency : 'monthly')
+              ? formatPrice(
+                  growthBillingOption.price,
+                  isAuthenticated ? billingFrequency : 'monthly',
+                )
               : 'Contact us'
           }
           description={currentGrowthPlan?.description}
@@ -636,7 +664,10 @@ export default function NewPricing() {
                   + €
                   {Math.round(
                     currentGrowthPlan.credits / 100 -
-                      formatPrice(growthBillingOption.price, isAuthenticated ? billingFrequency : 'monthly'),
+                      formatPrice(
+                        growthBillingOption.price,
+                        isAuthenticated ? billingFrequency : 'monthly',
+                      ),
                   )}{' '}
                   free credits
                 </Typography>
@@ -669,7 +700,9 @@ export default function NewPricing() {
                 >
                   {growthPlans.map((plan, index) => {
                     const billingOption = getBillingOption(plan, billingFrequency);
-                    const price = billingOption ? formatPrice(billingOption.price, billingFrequency) : 0;
+                    const price = billingOption
+                      ? formatPrice(billingOption.price, billingFrequency)
+                      : 0;
 
                     return (
                       <MenuItem
@@ -692,7 +725,7 @@ export default function NewPricing() {
                             color="success.main"
                             fontWeight={600}
                           >
-                            €{price}/{isYearlyBilling ? 'yr' : 'mo'}
+                            €{price}/mo
                           </Typography>
                         </Stack>
                       </MenuItem>
