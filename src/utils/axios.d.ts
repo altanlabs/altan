@@ -10,12 +10,12 @@ export const optimai_galaxia: AxiosInstance;
 export const optimai_shop: AxiosInstance;
 export const optimai_tables: AxiosInstance;
 export const optimai_agent: AxiosInstance;
-export const optimai_tables_legacy: AxiosInstance;
 export const optimai_tables_v4: AxiosInstance;
 export const optimai_database: AxiosInstance;
 export const optimai_pg_meta: AxiosInstance;
 export const optimai_auth: AxiosInstance;
 export const optimai_cloud: AxiosInstance;
+export const optimai_pods: AxiosInstance;
 
 export function authorizeUser(): Promise<{ accessToken: string }>;
 export function unauthorizeUser(): void;

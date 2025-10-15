@@ -84,8 +84,8 @@ const FileToolbar = ({ interfaceId }) => {
   }
 
   return (
-    <>
-      <div className="flex bg-white dark:bg-[#1d1d1d] border-b border-gray-200 dark:border-[#404040] h-8 pl-2 overflow-x-auto">
+    <div className="relative w-full min-w-0 overflow-hidden">
+      <div className="flex w-full min-w-0 bg-white dark:bg-[#1d1d1d] border-b border-gray-200 dark:border-[#404040] h-8 pl-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {openFiles.map((file) => {
           const fileName = file.split('/').pop();
           const isActive = file === activeFile;
@@ -97,6 +97,7 @@ const FileToolbar = ({ interfaceId }) => {
               onClick={() => handleTabClick(file)}
               className={cn(
                 'group/tab relative flex items-center space-x-1 h-full px-3 py-1 text-sm',
+                'flex-shrink-0 min-w-[80px] max-w-[200px]',
                 'border-r border-gray-300 dark:border-gray-600',
                 isActive
                   ? 'bg-gray-100 dark:bg-gray-900 border-t border-blue-200 dark:border-blue-500'
@@ -153,7 +154,7 @@ const FileToolbar = ({ interfaceId }) => {
           onCancel={handleCancel}
         />
       )}
-    </>
+    </div>
   );
 };
 

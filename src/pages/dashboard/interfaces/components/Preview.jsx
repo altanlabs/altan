@@ -16,7 +16,7 @@ import {
   setPreviewMode,
 } from '../../../../redux/slices/previewControl';
 import { useSelector, dispatch } from '../../../../redux/store';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function Preview({
   interfaceId,
@@ -120,7 +120,7 @@ function Preview({
       }
       setIsSendingError(true);
       try {
-        await optimai.post(`/interfaces/dev/${interfaceId}/send-dev-error`, data);
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/send-dev-error`, data);
       } catch {
         // console.error('Error sending error to agent:', err);
       } finally {

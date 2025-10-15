@@ -36,8 +36,14 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
 
   // Fetch file tree
   useEffect(() => {
+    console.log('Fetching file tree for interfaceId:', interfaceId);
     dispatch(fetchFileTree(interfaceId));
   }, [interfaceId]);
+
+  // Debug: Log fileTree when it changes
+  useEffect(() => {
+    console.log('FileTree updated in Codebase:', fileTree);
+  }, [fileTree]);
 
   // Auto-expand root
   useEffect(() => {
@@ -169,7 +175,7 @@ const Codebase = ({ interfaceId, chatIframeRef }) => {
           <PanelResizeHandle className="bg-transparent hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors w-1 cursor-ew-resize" />
 
           {/* Editor Panel */}
-          <Panel className="flex-1 flex flex-col bg-gray-100 dark:bg-[#1d1d1d]">
+          <Panel className="flex-1 flex flex-col min-w-0 bg-gray-100 dark:bg-[#1d1d1d]">
             <FilesToolbar interfaceId={interfaceId} />
             <div className="flex-1 relative">
               {selectedFile ? (

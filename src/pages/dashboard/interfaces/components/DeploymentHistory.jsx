@@ -16,7 +16,7 @@ import React, { useState, useMemo, memo } from 'react';
 
 import DeploymentLogsDialog from './DeploymentLogsDialog';
 import Iconify from '../../../../components/iconify/Iconify';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 const getStatusStyles = (status) => {
   switch (status) {
@@ -96,9 +96,9 @@ function DeploymentHistory({ ui, handleReload }) {
     try {
       setIsRestoring(true);
       if (isCommit) {
-        await optimai.post(`/interfaces/dev/${interfaceId}/commits/${identifier}/restore`);
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/commits/${identifier}/restore`);
       } else {
-        await optimai.post(`/interfaces/${interfaceId}/deployment/${identifier}/rollback`);
+        await optimai_pods.post(`/interfaces/${interfaceId}/deployment/${identifier}/rollback`);
       }
     } catch (error) {
       console.error('Failed to restore:', error);

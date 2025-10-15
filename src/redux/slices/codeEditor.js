@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import { optimai } from '../../utils/axios';
+import { optimai_pods } from '../../utils/axios';
 
 // Helper function to check if a file is likely binary based on extension
 const isBinaryFile = (path) => {
@@ -311,14 +311,46 @@ export const selectDiffContent = (state) => selectDiffState(state).changes || nu
 export const selectDiffIsLoading = (state) => selectDiffState(state).isLoading || false;
 export const selectDiffError = (state) => selectDiffState(state).error || null;
 
+// Helper function to add path property to tree nodes
+const addPathsToTree = (node, parentPath = '', isRoot = false) => {
+  // For root node, use empty path to prevent repo_name from being included
+  // This ensures all descendant paths are relative (e.g., 'src/file.js' instead of 'repo-name/src/file.js')
+  const path = isRoot ? '' : (parentPath ? `${parentPath}/${node.name}` : node.name);
+
+  const nodeWithPath = {
+    ...node,
+    path,
+  };
+
+  if (node.type === 'directory' && node.children) {
+    nodeWithPath.children = node.children.map((child) => addPathsToTree(child, path, false));
+  }
+
+  return nodeWithPath;
+};
+
 // Thunks
 export const fetchFileTree = (interfaceId) => async (dispatch) => {
   dispatch(setLoading(true));
   try {
-    const treeResponse = await optimai.post(`/interfaces/dev/${interfaceId}/files/list-tree-json`, {
-      include_hidden: false,
-    });
-    const tree = treeResponse.data.tree;
+    const treeResponse = await optimai_pods.post(
+      `/interfaces/dev/${interfaceId}/files/list-tree-json`,
+      {
+        include_hidden: false,
+      },
+    );
+
+    console.log('Raw API response:', treeResponse.data);
+    // The API returns the tree directly in data, not in data.tree
+    let tree = treeResponse.data.tree || treeResponse.data;
+    console.log('Tree before transformation:', tree);
+
+    // If the tree doesn't have path properties, add them
+    if (tree && !tree.path) {
+      tree = addPathsToTree(tree, '', true); // Pass true for isRoot to strip repo_name
+      console.log('Tree after adding paths:', tree);
+    }
+
     dispatch(setFileTree(tree));
   } catch (error) {
     console.error('Error loading file tree:', error);
@@ -336,7 +368,7 @@ export const fetchFileContent = (interfaceId, path) => async (dispatch) => {
 
   dispatch(setLoading(true));
   try {
-    const response = await optimai.post(`/interfaces/dev/${interfaceId}/files/read`, path);
+    const response = await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/read`, path);
 
     if (response.data && typeof response.data === 'object' && response.data.error) {
       console.warn(`Error loading file ${path}:`, response.data.error);
@@ -376,11 +408,11 @@ export const saveFile = (interfaceId, path, content) => async (dispatch) => {
   dispatch(setLoading(true));
   try {
     if (!isBinaryFile(path)) {
-      await optimai.post(`/interfaces/dev/${interfaceId}/files/create`, {
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/create`, {
         file_name: path,
         content: content,
       });
-      await optimai.post(`/interfaces/dev/${interfaceId}/repo/commit`, {
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/repo/commit`, {
         message: `Edited file ${path}`,
       });
       dispatch(markFileSaved(path));
@@ -400,12 +432,12 @@ export const createFile =
     dispatch(setLoading(true));
     try {
       if (type === 'file') {
-        await optimai.post(`/interfaces/dev/${interfaceId}/files/create`, {
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/create`, {
           file_name: path,
           content: '',
         });
       } else {
-        await optimai.post(`/interfaces/dev/${interfaceId}/files/create-directory`, {
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/create-directory`, {
           path: path,
         });
       }
@@ -422,7 +454,7 @@ export const createFile =
 export const fetchDiffChanges = (interfaceId) => async (dispatch) => {
   dispatch(setDiffLoading(true));
   try {
-    const response = await optimai.get(`/interfaces/dev/${interfaceId}/changes`);
+    const response = await optimai_pods.get(`/interfaces/dev/${interfaceId}/changes`);
     dispatch(setDiffChanges(response.data));
   } catch (error) {
     console.error('Error fetching diff changes:', error);
@@ -435,7 +467,7 @@ export const acceptChanges =
   async (dispatch) => {
     dispatch(setDiffLoading(true));
     try {
-      await optimai.post(`/interfaces/dev/${interfaceId}/accept-changes`, { message });
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/accept-changes`, { message });
       dispatch(clearDiffChanges());
       return Promise.resolve('success');
     } catch (e) {
@@ -448,7 +480,7 @@ export const acceptChanges =
 export const discardChanges = (interfaceId) => async (dispatch) => {
   dispatch(setDiffLoading(true));
   try {
-    await optimai.post(`/interfaces/dev/${interfaceId}/discard-changes`);
+    await optimai_pods.post(`/interfaces/dev/${interfaceId}/discard-changes`);
     dispatch(clearDiffChanges());
     return Promise.resolve('success');
   } catch (e) {
