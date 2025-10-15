@@ -122,9 +122,6 @@ function BaseOverview({ baseId, onNavigate }) {
           onNavigate={onNavigate}
         />
 
-        {/* Data API Configuration */}
-        <DataApiConfiguration metrics={metrics} />
-
         {/* Compute Configuration */}
         <ComputeConfiguration
           base={base}
@@ -146,6 +143,7 @@ function BaseOverview({ baseId, onNavigate }) {
             currentTierData={currentTierData}
           />
         )}
+        <DataApiConfiguration metrics={metrics} />
       </div>
 
       {/* Confirmation Popover */}

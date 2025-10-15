@@ -163,6 +163,7 @@ const allTables = [
   'WidgetRelationship',
   'Workflow',
   'CreditTransaction',
+  'AccountUser'
 ];
 
 const nonSuperAdminTableSet = new Set([

@@ -11,6 +11,10 @@ export const TOOL_REGISTRY = {
     icon: 'mdi:eye',
     renderer: 'ReadFileRenderer',
   },
+  read_files: {
+    icon: 'mdi:eye',
+    renderer: null,
+  },
   list_dir: {
     icon: 'mdi:eye',
     renderer: null,
@@ -27,6 +31,18 @@ export const TOOL_REGISTRY = {
   },
   write_file: {
     icon: 'hugeicons:ai-file',
+    renderer: 'FileEditorRenderer',
+  },
+
+  // Cloud tools
+  activate_cloud: {
+    icon: 'material-symbols:cloud',
+    renderer: null,
+  },
+
+  // SQL tools - use Monaco editor renderer
+  execute_sql: {
+    icon: 'mdi:database',
     renderer: 'FileEditorRenderer',
   },
 

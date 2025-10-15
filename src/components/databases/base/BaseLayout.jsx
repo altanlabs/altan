@@ -11,7 +11,7 @@ import BaseAuth from './sections/BaseAuth.jsx';
 import BaseStorage from './sections/BaseStorage.jsx';
 import BaseFunctions from './sections/BaseFunctions.jsx';
 import useResponsive from '../../../hooks/useResponsive.js';
-import { selectSQLTerminalMode } from '../../../redux/slices/bases';
+import { selectSQLTerminalMode, selectBaseById } from '../../../redux/slices/bases';
 import LoadingFallback from '../../LoadingFallback.jsx';
 import SQLTerminal from '../sql/SQLTerminal.jsx';
 import Table from '../table/Table.jsx';
@@ -32,6 +32,7 @@ function BaseLayout({
 }) {
   const sqlTerminalMode = useSelector(selectSQLTerminalMode);
   const isMobile = useResponsive('down', 'md');
+  const base = useSelector((state) => selectBaseById(state, baseId));
 
   // Render content based on active section
   const renderSectionContent = () => {
@@ -59,32 +60,49 @@ function BaseLayout({
     }
   };
 
-  const renderTablesContent = () => (
-    <>
-      <div className="shrink-0 min-w-0 w-full">
-        <TableTabs
-          activeTableId={tableId}
-          onTableChange={handleTabChange}
-          onCreateTable={handleOpenCreateTable}
-          onDeleteTable={handleDeleteTable}
-          onImportTable={handleImportTable}
-          isLoading={state.isTableSwitching}
-          baseId={baseId}
-        />
-      </div>
-      <div className="flex-1 relative overflow-auto min-w-0">
-        {(state.isTableSwitching || isTableLoading) && <LoadingFallback />}
-        {tableId && viewId && !state.isTableSwitching && (
-          <Table
-            tableId={tableId}
-            viewId={viewId}
+  const renderTablesContent = () => {
+    // Check if current table is in public schema
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const currentTable = base?.tables?.items?.find((t) => t.id === numericTableId);
+    const isNonPublicTable = currentTable && currentTable.schema !== 'public';
+    
+    // Check if there are any public tables
+    const publicTables = base?.tables?.items?.filter((t) => t.schema === 'public') || [];
+    const hasNoPublicTables = base?.tables?.items && publicTables.length === 0;
+
+    return (
+      <>
+        <div className="shrink-0 min-w-0 w-full">
+          <TableTabs
+            activeTableId={tableId}
+            onTableChange={handleTabChange}
+            onCreateTable={handleOpenCreateTable}
+            onDeleteTable={handleDeleteTable}
+            onImportTable={handleImportTable}
+            isLoading={state.isTableSwitching}
             baseId={baseId}
-            triggerImport={triggerImport}
           />
-        )}
-      </div>
-    </>
-  );
+        </div>
+        <div className="flex-1 relative overflow-auto min-w-0">
+          {(state.isTableSwitching || isTableLoading || isNonPublicTable) && <LoadingFallback />}
+          {hasNoPublicTables && !state.isTableSwitching && !isNonPublicTable && (
+            <BasePlaceholder 
+              title="No Public Tables" 
+              description="This database has no tables in the public schema yet. Create your first table to get started." 
+            />
+          )}
+          {tableId && viewId && !state.isTableSwitching && !isNonPublicTable && !hasNoPublicTables && (
+            <Table
+              tableId={tableId}
+              viewId={viewId}
+              baseId={baseId}
+              triggerImport={triggerImport}
+            />
+          )}
+        </div>
+      </>
+    );
+  };
 
   // SQL Terminal mode content
   if (sqlTerminalMode) {

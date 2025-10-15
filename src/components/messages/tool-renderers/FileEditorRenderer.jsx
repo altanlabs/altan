@@ -8,6 +8,8 @@ import { cn } from '@lib/utils';
 
 import { getToolIcon } from './toolRendererConfig.js';
 import Iconify from '../../iconify/Iconify.jsx';
+import ToolPartError from '../tool-parts/ToolPartError.jsx';
+import ToolPartResult from '../tool-parts/ToolPartResult.jsx';
 
 /**
  * Get Monaco language from file extension
@@ -65,17 +67,20 @@ function getActionVerb(toolName, isCompleted) {
     edit_file: isCompleted ? 'Edited' : 'Editing',
     create_file: isCompleted ? 'Created' : 'Creating',
     write_file: isCompleted ? 'Wrote' : 'Writing',
+    execute_sql: isCompleted ? 'Executed' : 'Executing',
   };
   return verbMap[toolName] || (isCompleted ? 'Modified' : 'Modifying');
 }
 
 /**
- * Custom renderer for file editing tools (edit_file, create_file, write_file)
+ * Custom renderer for file editing tools (edit_file, create_file, write_file, execute_sql)
  * Displays file content in a Monaco editor with glassmorphic styling
  */
 const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
   const theme = useTheme();
   const [copied, setCopied] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [showError, setShowError] = useState(false);
   const isCompleted = part?.is_done;
   const isDarkMode = theme.palette.mode === 'dark';
 
@@ -95,9 +100,16 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
 
     try {
       const args = typeof part.arguments === 'string' ? JSON.parse(part.arguments) : part.arguments;
-      const filename =
-        args.file_name || args.file_path || args.target_file || args.path || 'untitled';
-      const content = args.content || args.code_edit || args.new_string || args.code || '';
+
+      // For execute_sql, use query.sql as filename to trigger SQL highlighting
+      let filename = args.file_name || args.file_path || args.target_file || args.path;
+      if (!filename && part?.name === 'execute_sql') {
+        filename = 'query.sql';
+      } else if (!filename) {
+        filename = 'untitled';
+      }
+
+      const content = args.content || args.code_edit || args.new_string || args.code || args.query || '';
       const oldContent = args.old_string || null;
 
       return {
@@ -114,11 +126,16 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
 
         // Try to extract filename from partial JSON
         const filenameMatch = argsStr.match(/"(?:file_name|file_path|target_file|path)"\s*:\s*"([^"]*)"/);
-        const filename = filenameMatch?.[1] || 'untitled';
+        let filename = filenameMatch?.[1];
+        if (!filename && part?.name === 'execute_sql') {
+          filename = 'query.sql';
+        } else if (!filename) {
+          filename = 'untitled';
+        }
 
         // Try to extract content - look for the content field and capture everything after it
         // We need to handle escaped quotes and newlines in the JSON string
-        const contentFieldMatch = argsStr.match(/"(?:content|code_edit|new_string|code)"\s*:\s*"/);
+        const contentFieldMatch = argsStr.match(/"(?:content|code_edit|new_string|code|query)"\s*:\s*"/);
 
         if (contentFieldMatch) {
           // Find where the content value starts
@@ -182,7 +199,7 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
       // If we can't extract anything, return null
       return null;
     }
-  }, [part?.arguments]);
+  }, [part?.arguments, part?.name]);
 
   // Handle copy to clipboard
   const handleCopy = useCallback(
@@ -197,6 +214,18 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
     },
     [fileInfo?.content],
   );
+
+  // Handle result click
+  const handleResultClick = useCallback((e) => {
+    e.stopPropagation();
+    setShowResult((v) => !v);
+  }, []);
+
+  // Handle error click
+  const handleErrorClick = useCallback((e) => {
+    e.stopPropagation();
+    setShowError((v) => !v);
+  }, []);
 
   // Generate header text
   const actionVerb = getActionVerb(part?.name, isCompleted);
@@ -214,6 +243,10 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
     }
     return text;
   }, [actionVerb, fileInfo, duration]);
+
+  // Check if there's a result or error
+  const hasResult = !!part?.result;
+  const hasError = !!part?.error;
 
   return (
     <div className="w-full">
@@ -254,6 +287,32 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
             />
           </button>
 
+          {hasResult && (
+            <button
+              onClick={handleResultClick}
+              className="p-1 hover:bg-gray-700/30 rounded transition-colors opacity-0 group-hover:opacity-100"
+              title="Show output"
+            >
+              <Icon
+                icon="mdi:information-outline"
+                className="text-blue-500 text-sm hover:text-blue-600"
+              />
+            </button>
+          )}
+
+          {hasError && (
+            <button
+              onClick={handleErrorClick}
+              className="p-1 hover:bg-gray-700/30 rounded transition-colors"
+              title="Show error"
+            >
+              <Icon
+                icon="mdi:alert-circle"
+                className="text-red-500 text-sm hover:text-red-600"
+              />
+            </button>
+          )}
+
           <Icon
             icon="mdi:chevron-down"
             className={cn(
@@ -286,7 +345,7 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
               lineNumbers: 'off',
               scrollBeyondLastLine: false,
               wordWrap: 'on',
-              fontSize: 12,
+              fontSize: 13,
               fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace",
               automaticLayout: true,
               scrollbar: {
@@ -305,11 +364,23 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
               folding: true,
               foldingStrategy: 'indentation',
               showFoldingControls: 'mouseover',
-              padding: { top: 12, bottom: 12 },
+              padding: { top: 16, bottom: 16 },
             }}
           />
         </div>
       )}
+
+      {/* Error Display - Only show when clicked */}
+      <ToolPartError
+        partId={part?.id}
+        showError={showError}
+      />
+
+      {/* Result Display - Only show when clicked */}
+      <ToolPartResult
+        partId={part?.id}
+        showResult={showResult}
+      />
     </div>
   );
 };

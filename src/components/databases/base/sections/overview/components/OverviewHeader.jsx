@@ -3,12 +3,7 @@ import { m } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import React, { useEffect } from 'react';
 
-export const OverviewHeader = ({
-  lastRefresh,
-  metricsLoading,
-  operating,
-  onRefresh,
-}) => {
+export const OverviewHeader = ({ lastRefresh, metricsLoading, operating, onRefresh }) => {
   // Auto-refresh every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,11 +34,23 @@ export const OverviewHeader = ({
             disabled={metricsLoading || operating}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {metricsLoading ? (
-              <CircularProgress size={20} />
-            ) : (
-              <RefreshCw size={20} className="text-gray-600 dark:text-gray-400" />
-            )}
+            <div className="w-5 h-5 flex items-center justify-center">
+              {metricsLoading ? (
+                <CircularProgress
+                  size={20}
+                  thickness={4}
+                  sx={{
+                    color: 'rgb(75 85 99)',
+                    '.dark &': { color: 'rgb(156 163 175)' },
+                  }}
+                />
+              ) : (
+                <RefreshCw
+                  size={20}
+                  className="text-gray-600 dark:text-gray-400"
+                />
+              )}
+            </div>
           </m.button>
           {lastRefresh && (
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">

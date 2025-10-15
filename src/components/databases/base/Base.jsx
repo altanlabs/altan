@@ -113,10 +113,10 @@ function Base({
     const tables = base.tables.items;
     // Filter to only public schema tables for navigation
     const publicTables = tables.filter((t) => t.schema === 'public');
-    const firstTable = publicTables[0] || tables[0]; // Fallback if no public tables
-
-    // Only navigate if we don't have a tableId yet
-    if (!tableId) {
+    
+    // Only navigate to a public table - don't fallback to non-public tables
+    if (!tableId && publicTables.length > 0) {
+      const firstTable = publicTables[0];
       // Use simplified URL without viewId
       if (altanerId) {
         onNavigate?.(altanerComponentId, { baseId, tableId: firstTable.id });
@@ -138,13 +138,21 @@ function Base({
     const currentTable = base.tables.items.find((t) => t.id === numericTableId);
 
     if (currentTable && currentTable.schema !== 'public') {
-      // Redirect to first public table
+      // Redirect to first public table, or clear tableId if none available
       const publicTables = base.tables.items.filter((t) => t.schema === 'public');
       if (publicTables.length > 0) {
         navigateToPath(publicTables[0].id);
+      } else {
+        // No public tables available - navigate to base without tableId
+        if (altanerId) {
+          onNavigate?.(altanerComponentId, { baseId });
+        } else {
+          const currentSearch = window.location.search;
+          history.push(`/bases/${baseId}${currentSearch}`);
+        }
       }
     }
-  }, [base?.tables?.items, tableId, navigateToPath]);
+  }, [base?.tables?.items, tableId, navigateToPath, altanerId, onNavigate, altanerComponentId, history, baseId]);
 
   // Clear table switching state when table or loading state changes
   useEffect(() => {
@@ -247,12 +255,6 @@ function Base({
     [tableId, base?.tables?.items, navigateToPath],
   );
 
-
-  const handleCloseCreateBase = useCallback(
-    () => setState((prev) => ({ ...prev, createBaseOpen: false })),
-    [],
-  );
-
   const handleSectionChange = useCallback((section) => {
     setState((prev) => ({ ...prev, activeSection: section }));
   }, []);
@@ -286,7 +288,7 @@ function Base({
   // 1. Base is loading from API
   // 2. Base exists but tables haven't loaded yet AND still loading (waiting for pg-meta)
   // If loading is done but no tables, render anyway (could be 503/stopped instance or empty base)
-  const isLoadingSchema = baseId && (!base || (!base.tables && isBaseLoading));
+  const isLoadingSchema = baseId && (!base || isBaseLoading);
 
   if (isBaseLoading || isLoadingSchema) {
     return <LoadingFallback />;
