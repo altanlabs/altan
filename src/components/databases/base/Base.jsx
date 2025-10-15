@@ -14,10 +14,7 @@ import {
   preloadUsersForBase,
 } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
-import CreateBaseDialog from '../base/CreateBaseDialog.jsx';
-import NoEntityPlaceholder from '../placeholders/NoEntityPlaceholder.jsx';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
-import { Typography } from '@mui/material';
 
 // const selectBasesError = (state) => state.bases.error;
 
@@ -53,6 +50,7 @@ function Base({
     createTableOpen: false,
     createBaseOpen: false,
     isTableSwitching: false,
+    activeSection: 'overview', // Default to overview
   });
 
   // Initialize base and handle navigation
@@ -113,10 +111,12 @@ function Base({
     if (!base || !base.tables?.items || base.tables.items.length === 0) return;
 
     const tables = base.tables.items;
-    const firstTable = tables[0];
-
-    // Only navigate if we don't have a tableId yet
-    if (!tableId) {
+    // Filter to only public schema tables for navigation
+    const publicTables = tables.filter((t) => t.schema === 'public');
+    
+    // Only navigate to a public table - don't fallback to non-public tables
+    if (!tableId && publicTables.length > 0) {
+      const firstTable = publicTables[0];
       // Use simplified URL without viewId
       if (altanerId) {
         onNavigate?.(altanerComponentId, { baseId, tableId: firstTable.id });
@@ -129,6 +129,30 @@ function Base({
     // Note: Record loading is handled by Table.jsx component
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base?.tables?.items?.length, baseId]);
+
+  // Validate current tableId is in public schema - redirect if not
+  useEffect(() => {
+    if (!base?.tables?.items || !tableId) return;
+
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const currentTable = base.tables.items.find((t) => t.id === numericTableId);
+
+    if (currentTable && currentTable.schema !== 'public') {
+      // Redirect to first public table, or clear tableId if none available
+      const publicTables = base.tables.items.filter((t) => t.schema === 'public');
+      if (publicTables.length > 0) {
+        navigateToPath(publicTables[0].id);
+      } else {
+        // No public tables available - navigate to base without tableId
+        if (altanerId) {
+          onNavigate?.(altanerComponentId, { baseId });
+        } else {
+          const currentSearch = window.location.search;
+          history.push(`/bases/${baseId}${currentSearch}`);
+        }
+      }
+    }
+  }, [base?.tables?.items, tableId, navigateToPath, altanerId, onNavigate, altanerComponentId, history, baseId]);
 
   // Clear table switching state when table or loading state changes
   useEffect(() => {
@@ -231,17 +255,11 @@ function Base({
     [tableId, base?.tables?.items, navigateToPath],
   );
 
-  const handleOpenCreateBase = useCallback(
-    () => setState((prev) => ({ ...prev, createBaseOpen: true })),
-    [],
-  );
+  const handleSectionChange = useCallback((section) => {
+    setState((prev) => ({ ...prev, activeSection: section }));
+  }, []);
 
-  const handleCloseCreateBase = useCallback(
-    () => setState((prev) => ({ ...prev, createBaseOpen: false })),
-    [],
-  );
-
-  const shouldShowPlaceholder = base && base?.tables?.items.length === 0;
+  const shouldShowPlaceholder = base && base?.tables?.items?.length === 0;
 
   // Subscribe to base updates
   useEffect(() => {
@@ -268,64 +286,30 @@ function Base({
   // Show loading skeleton while base or tables are loading
   // Show loading if:
   // 1. Base is loading from API
-  // 2. Base exists but tables haven't loaded yet (waiting for pg-meta)
-  const isLoadingSchema = baseId && (!base || !base.tables || !base.tables.items);
+  // 2. Base exists but tables haven't loaded yet AND still loading (waiting for pg-meta)
+  // If loading is done but no tables, render anyway (could be 503/stopped instance or empty base)
+  const isLoadingSchema = baseId && (!base || isBaseLoading);
 
   if (isBaseLoading || isLoadingSchema) {
     return <LoadingFallback />;
   }
-  if (!baseId) {
-    return (
-      <>
-        <CreateBaseDialog
-          open={state.createBaseOpen}
-          onClose={handleCloseCreateBase}
-          altanerId={altanerId}
-          altanerComponentId={altanerComponentId}
-        />
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <Typography
-            variant="h2"
-            sx={{
-              textAlign: 'center',
-              marginTop: 2,
-            }}
-          >No database yet</Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: 'center',
-              marginTop: 1,
-            }}
-          >Ask the AI to create a database for you</Typography>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
-      {shouldShowPlaceholder ? (
-        <NoEntityPlaceholder
-          title="No tables found in this base"
-          description="Create your first table to get started"
-          buttonMessage="Create Table"
-          onButtonClick={handleOpenCreateTable}
-        />
-      ) : (
-        <BaseLayout
-          baseId={baseId}
-          tableId={tableId}
-          handleTabChange={handleTabChange}
-          handleOpenCreateTable={handleOpenCreateTable}
-          handleDeleteTable={handleDeleteTable}
-          handleImportTable={handleImportTable}
-          state={state}
-          isTableLoading={isTableLoading}
-          viewId={viewId}
-          triggerImport={state.triggerImport}
-        />
-      )}
+      <BaseLayout
+        baseId={baseId}
+        tableId={tableId}
+        handleTabChange={handleTabChange}
+        handleOpenCreateTable={handleOpenCreateTable}
+        handleDeleteTable={handleDeleteTable}
+        handleImportTable={handleImportTable}
+        state={state}
+        isTableLoading={isTableLoading}
+        viewId={viewId}
+        triggerImport={state.triggerImport}
+        activeSection={state.activeSection}
+        onSectionChange={handleSectionChange}
+      />
       <CreateTableDialog
         baseId={baseId}
         open={state.createTableOpen}

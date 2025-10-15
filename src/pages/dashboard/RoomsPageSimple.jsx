@@ -35,7 +35,7 @@ import {
 } from '../../redux/slices/room';
 import { useSelector, useDispatch } from '../../redux/store';
 
-const DRAWER_WIDTH = 280;
+const DRAWER_WIDTH = 260;
 
 // Room List Item Component (ChatGPT style)
 const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
@@ -57,7 +57,7 @@ const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
     <ListItem
       disablePadding
       sx={{
-        mb: 0,
+        mb: 0.25,
         '&:hover .room-menu-button': {
           opacity: 1,
         },
@@ -67,33 +67,39 @@ const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
         onClick={handleClick}
         selected={isSelected}
         sx={{
-          borderRadius: 1,
+          borderRadius: 1.5,
           mx: 1,
-          px: 1.5,
-          py: 0.75,
-          minHeight: 40,
+          px: 1.25,
+          py: 1,
+          minHeight: 44,
+          gap: 1.25,
+          transition: 'all 0.15s ease',
           '&.Mui-selected': {
-            bgcolor: theme.palette.primary.main + '15',
-            color: theme.palette.primary.main,
+            bgcolor:
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
             '&:hover': {
-              bgcolor: theme.palette.primary.main + '20',
+              bgcolor:
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.06)',
             },
           },
           '&:hover': {
-            bgcolor: theme.palette.action.hover,
+            bgcolor:
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
           },
         }}
       >
-        <ListItemAvatar sx={{ minWidth: 28, mr: 1 }}>
+        <ListItemAvatar sx={{ minWidth: 'auto', mr: 0 }}>
           <Avatar
             src={room.icon_src}
             sx={{
-              width: 24,
-              height: 24,
-              bgcolor: isSelected ? theme.palette.primary.main : theme.palette.grey[400],
-              color: 'white',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              width: 28,
+              height: 28,
+              bgcolor:
+                theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[300],
+              color: theme.palette.text.primary,
+              fontSize: '0.813rem',
+              fontWeight: 500,
+              border: isSelected ? `2px solid ${theme.palette.primary.main}` : 'none',
             }}
           >
             {room.name?.charAt(0)?.toUpperCase() || 'R'}
@@ -105,14 +111,13 @@ const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
             <Typography
               variant="body2"
               sx={{
-                fontWeight: isSelected ? 600 : 400,
+                fontWeight: isSelected ? 500 : 400,
                 fontSize: '0.875rem',
-                color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
+                color: theme.palette.text.primary,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                pr: 0.5,
-                lineHeight: 1.2,
+                lineHeight: 1.43,
               }}
             >
               {room.name || 'Untitled Room'}
@@ -120,6 +125,7 @@ const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
           }
           sx={{
             m: 0,
+            flex: 1,
             '& .MuiListItemText-primary': {
               mb: 0,
             },
@@ -132,20 +138,22 @@ const RoomListItem = memo(({ room, isSelected, onSelect, onMenuOpen }) => {
           size="small"
           sx={{
             opacity: 0,
-            transition: 'opacity 0.2s ease-in-out',
+            transition: 'opacity 0.15s ease',
             color: theme.palette.text.secondary,
-            width: 20,
-            height: 20,
+            width: 24,
+            height: 24,
+            flexShrink: 0,
             '&:hover': {
-              bgcolor: theme.palette.action.hover,
+              bgcolor:
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
               color: theme.palette.text.primary,
             },
           }}
         >
           <Iconify
             icon="eva:more-vertical-fill"
-            width={14}
-            height={14}
+            width={16}
+            height={16}
           />
         </IconButton>
       </ListItemButton>
@@ -188,7 +196,7 @@ const RoomsPageSimple = () => {
       dispatch(clearRoomState());
       history.push(`/rooms/${room.id}`);
     },
-    [history, roomId, dispatch],
+    [history, dispatch],
   );
 
   const handleLoadMore = () => {
@@ -216,8 +224,6 @@ const RoomsPageSimple = () => {
   const handleCreateRoomSuccess = (result) => {
     if (result?.room?.id) {
       history.push(`/rooms/${result.room.id}`);
-    } else {
-      console.error('❌ No room ID in result:', result);
     }
   };
 
@@ -247,8 +253,8 @@ const RoomsPageSimple = () => {
         }
 
         handleMenuClose();
-      } catch (error) {
-        console.error('Error deleting room:', error);
+      } catch {
+        // Error handled silently
       }
     }
   };
@@ -266,8 +272,7 @@ const RoomsPageSimple = () => {
       {/* Header - Fixed */}
       <Box
         sx={{
-          p: 1.5,
-          borderBottom: `1px solid ${theme.palette.divider}`,
+          p: 2,
           flexShrink: 0,
         }}
       >
@@ -277,19 +282,26 @@ const RoomsPageSimple = () => {
           startIcon={
             <Iconify
               icon="eva:plus-fill"
-              width={16}
-              height={16}
+              width={18}
+              height={18}
             />
           }
           onClick={handleCreateRoomOpen}
           sx={{
-            mb: 1.5,
             borderRadius: 1.5,
             textTransform: 'none',
             fontWeight: 500,
             fontSize: '0.875rem',
-            py: 0.75,
-            height: 36,
+            py: 1,
+            height: 40,
+            border: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary,
+            bgcolor: 'transparent',
+            '&:hover': {
+              bgcolor:
+                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
+              border: `1px solid ${theme.palette.divider}`,
+            },
           }}
         >
           New Room
@@ -311,21 +323,25 @@ const RoomsPageSimple = () => {
               flex: 1,
               overflow: 'auto',
               '&::-webkit-scrollbar': {
-                width: '6px',
+                width: '4px',
               },
               '&::-webkit-scrollbar-track': {
                 backgroundColor: 'transparent',
               },
               '&::-webkit-scrollbar-thumb': {
-                backgroundColor: theme.palette.divider,
-                borderRadius: '3px',
+                backgroundColor:
+                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                borderRadius: '2px',
                 '&:hover': {
-                  backgroundColor: theme.palette.text.disabled,
+                  backgroundColor:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.3)'
+                      : 'rgba(0, 0, 0, 0.3)',
                 },
               },
             }}
           >
-            <List sx={{ py: 0.5, px: 0 }}>
+            <List sx={{ py: 1, px: 0 }}>
               {userRooms.map((room) => {
                 const isSelected = room.id === roomId;
                 return (
@@ -341,7 +357,7 @@ const RoomsPageSimple = () => {
 
               {/* Load More */}
               {userRoomsPagination.hasNextPage && (
-                <ListItem>
+                <ListItem sx={{ px: 2, py: 0.5 }}>
                   <Button
                     fullWidth
                     variant="text"
@@ -349,17 +365,25 @@ const RoomsPageSimple = () => {
                     disabled={userRoomsPagination.isLoadingMore}
                     startIcon={
                       userRoomsPagination.isLoadingMore ? (
-                        <CircularProgress size={16} />
+                        <CircularProgress size={14} />
                       ) : (
                         <Iconify
                           icon="eva:arrow-down-fill"
-                          width={16}
+                          width={14}
                         />
                       )
                     }
                     sx={{
                       color: theme.palette.text.secondary,
                       textTransform: 'none',
+                      fontSize: '0.813rem',
+                      py: 0.75,
+                      '&:hover': {
+                        bgcolor:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.06)'
+                            : 'rgba(0, 0, 0, 0.03)',
+                      },
                     }}
                   >
                     {userRoomsPagination.isLoadingMore ? 'Loading...' : 'Load More'}
@@ -377,7 +401,7 @@ const RoomsPageSimple = () => {
               flex: 1,
               textAlign: 'center',
               py: 4,
-              px: 2,
+              px: 3,
             }}
           >
             <Box>
@@ -386,20 +410,29 @@ const RoomsPageSimple = () => {
                 width={48}
                 height={48}
                 color={theme.palette.text.disabled}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, opacity: 0.5 }}
               />
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, fontSize: '0.875rem' }}
               >
                 No rooms yet
               </Typography>
               <Button
                 variant="outlined"
                 size="small"
-                startIcon={<Iconify icon="eva:plus-fill" />}
+                startIcon={
+                  <Iconify
+                    icon="eva:plus-fill"
+                    width={16}
+                  />
+                }
                 onClick={handleCreateRoomOpen}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '0.813rem',
+                }}
               >
                 Create Room
               </Button>
@@ -434,7 +467,7 @@ const RoomsPageSimple = () => {
               width: DRAWER_WIDTH,
               flexShrink: 0,
               borderRight: `1px solid ${theme.palette.divider}`,
-              bgcolor: theme.palette.background.paper,
+              bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#fafafa',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -511,10 +544,20 @@ const RoomsPageSimple = () => {
           onClose={handleMenuClose}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          PaperProps={{
+            sx: {
+              mt: 0.5,
+              minWidth: 180,
+            },
+          }}
         >
           <MenuItem
             onClick={handleDeleteRoom}
-            sx={{ color: 'error.main' }}
+            sx={{
+              color: 'error.main',
+              py: 1,
+              px: 1.5,
+            }}
           >
             <ListItemIcon>
               <Iconify

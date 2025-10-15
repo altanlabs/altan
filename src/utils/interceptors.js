@@ -35,11 +35,38 @@ const isGuestSession = () => {
 const onRequestFailure = async (error, axiosInstance) => {
   const originalRequest = error.config;
 
+  console.log('🔍 Interceptor triggered for:', {
+    instanceName: axiosInstance?.defaults?.name,
+    url: originalRequest?.url,
+    status: error.response?.status,
+    hasResponse: !!error.response,
+    errorMessage: error.message,
+    errorCode: error.code,
+    responseData: error.response?.data,
+  });
+
   if (!originalRequest._retryCount) {
     originalRequest._retryCount = 0;
   }
 
-  if (error.response && error.response.status === HTTP_STATUS_UNAUTHORIZED) {
+  // Handle 401 errors OR network errors that might be 401s (CORS issues)
+  // Only treat network errors as potential 401s if we have an Authorization header
+  // (meaning we're authenticated and the token might have expired)
+  const is401Error = error.response?.status === HTTP_STATUS_UNAUTHORIZED;
+  const hasAuthToken = axiosInstance.defaults.headers.common.Authorization;
+  const isNetworkErrorPossibly401 = !error.response && error.code === 'ERR_NETWORK' && hasAuthToken;
+
+  if (is401Error || isNetworkErrorPossibly401) {
+    console.log('🔴 401 DETECTED! Starting refresh flow...', {
+      is401Error,
+      isNetworkErrorPossibly401,
+      hasAuthToken,
+      retryCount: originalRequest._retryCount,
+      maxRetries: MAX_RETRY_COUNT,
+      isRefreshing,
+      instanceName: axiosInstance?.defaults?.name,
+    });
+
     if (originalRequest._retryCount >= MAX_RETRY_COUNT) {
       console.error('❌ Max retry count reached for request:', originalRequest.url);
       return Promise.reject(error);
@@ -48,9 +75,11 @@ const onRequestFailure = async (error, axiosInstance) => {
     originalRequest._retryCount++;
 
     if (isRefreshing) {
+      console.log('⏳ Already refreshing, adding to queue');
       return addRequestToQueue(originalRequest, axiosInstance);
     }
 
+    console.log('🚀 Starting token refresh...');
     isRefreshing = true;
 
     try {
@@ -82,9 +111,11 @@ const onRequestFailure = async (error, axiosInstance) => {
         // Regular user session - use existing user token refresh logic
         console.log('🔄 User session detected, refreshing user token');
         const { accessToken } = await refreshToken(axiosInstance);
+        console.log('✅ Token refreshed successfully, setting sessions and retrying request');
         // Set session for all axios instances, not just the failing one
         setSessionForAllInstances(accessToken, originalRequest);
         processQueue(null);
+        console.log('🔄 Retrying original request:', originalRequest.url);
         return axiosInstance(originalRequest);
       }
     } catch (err) {

@@ -9,6 +9,9 @@ import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
 import { useSelector, dispatch } from '../../../redux/store';
 
+// Selector for altaners
+const selectAccountAltaners = (state) => state.general.account?.altaners;
+
 // Default header heights and spacing (tailor these as needed)
 const DEFAULT_HEADER_MOBILE_HEIGHT = HEADER.H_MOBILE;
 const DRAWER_WIDTH = 275; // Match the actual drawer width from ChatDrawer
@@ -49,6 +52,7 @@ const CompactLayout = ({
   drawerVisible = true,
 }) => {
   const headerVisible = useSelector(selectHeaderVisible);
+  const altaners = useSelector(selectAccountAltaners);
   const isDesktop = useResponsive('up', 'lg');
   const isMobile = useResponsive('down', 'sm');
   const isIOS = isIOSCapacitor();
@@ -169,8 +173,12 @@ const CompactLayout = ({
                 setIsBursting(true);
                 setTimeout(() => {
                   console.log('🚀 Redirecting to /project/' + projectId);
-                  // Use window.location for reliable navigation
-                  window.location.href = `/project/${projectId}`;
+                  // Check if this is the first project (for onboarding)
+                  const isFirstProject = !altaners || altaners.length === 0;
+                  const onboardingParam = isFirstProject ? '?onboarding=true' : '';
+                  console.log(`📊 First project: ${isFirstProject}, adding onboarding: ${onboardingParam}`);
+                  // Use history.push for proper routing
+                  history.push(`/project/${projectId}${onboardingParam}`);
                 }, 800);
               }, remainingTime);
             } else {

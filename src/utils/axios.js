@@ -77,6 +77,14 @@ const optimai_auth = axios.create({
   withCredentials: true,
 });
 
+const optimai_cloud = axios.create({
+  name: 'optimai_cloud',
+  baseURL: 'https://cloud.altan.ai',
+});
+
+// Note: Response interceptors run in reverse order (last added runs first)
+// We add auth refresh interceptors first so error tracking runs first,
+// then auth refresh interceptor handles 401s
 addResponseInterceptor(optimai);
 addResponseInterceptor(optimai_integration);
 addResponseInterceptor(optimai_shop);
@@ -90,6 +98,7 @@ addResponseInterceptor(optimai_tables_v4);
 addResponseInterceptor(optimai_database);
 addResponseInterceptor(optimai_pg_meta);
 addResponseInterceptor(optimai_auth);
+addResponseInterceptor(optimai_cloud);
 
 const authorizeUser = () => {
   return new Promise(async (resolve, reject) => {
@@ -107,6 +116,7 @@ const authorizeUser = () => {
       setSession(accessToken, optimai_database);
       setSession(accessToken, optimai_pg_meta);
       setSession(accessToken, optimai_auth);
+      setSession(accessToken, optimai_cloud);
       resolve({ accessToken });
     } catch (error) {
       reject(error);
@@ -147,6 +157,7 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_database);
           setSession(tokenString, optimai_pg_meta);
           setSession(tokenString, optimai_auth);
+          setSession(tokenString, optimai_cloud);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
         }
@@ -177,6 +188,7 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_database, originalRequest);
   setSession(accessToken, optimai_pg_meta, originalRequest);
   setSession(accessToken, optimai_auth, originalRequest);
+  setSession(accessToken, optimai_cloud, originalRequest);
 };
 
 const unauthorizeUser = () => {
@@ -197,6 +209,7 @@ const axiosInstances = {
   optimai_database,
   optimai_pg_meta,
   optimai_auth,
+  optimai_cloud,
 };
 
 export const getAltanAxiosInstance = (instanceName) => {
@@ -222,6 +235,7 @@ export {
   optimai_database,
   optimai_pg_meta,
   optimai_auth,
+  optimai_cloud,
   authorizeUser,
   authorizeGuest,
   unauthorizeUser,
@@ -276,3 +290,4 @@ setupAxiosErrorTracking(optimai_tables_legacy, 'optimai_tables_legacy');
 setupAxiosErrorTracking(optimai_tables_v4, 'optimai_tables_v4');
 setupAxiosErrorTracking(optimai_database, 'optimai_database');
 setupAxiosErrorTracking(optimai_pg_meta, 'optimai_pg_meta');
+setupAxiosErrorTracking(optimai_cloud, 'optimai_cloud');

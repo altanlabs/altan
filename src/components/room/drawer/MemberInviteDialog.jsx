@@ -132,7 +132,7 @@ const MemberInviteDialog = () => {
               variant="h6"
               sx={{ textAlign: 'center', mb: 1 }}
             >
-              Invite People
+              Invite Humans and Agents
             </Typography>
             <Typography
               variant="body2"

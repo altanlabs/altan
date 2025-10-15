@@ -20,6 +20,7 @@ const ComponentSwitcher = memo(
 
     return (
       <Box
+        data-tour="component-switcher"
         sx={{
           display: 'flex',
           borderRadius: 2,
@@ -34,6 +35,14 @@ const ComponentSwitcher = memo(
       >
         {components.map((component) => {
           const isActive = component.id === activeComponent?.id;
+
+          // Add data-tour attributes based on component type
+          const getTourAttribute = () => {
+            if (component.type === 'base') return 'component-cloud';
+            if (component.type === 'agents') return 'component-agents';
+            if (component.type === 'interface') return 'component-interface';
+            return null;
+          };
 
           return (
             <Box
@@ -68,6 +77,7 @@ const ComponentSwitcher = memo(
                 <Box
                   component="button"
                   onClick={() => handleComponentClick(component.id)}
+                  data-tour={getTourAttribute()}
                   sx={{
                     position: 'relative',
                     display: 'flex',

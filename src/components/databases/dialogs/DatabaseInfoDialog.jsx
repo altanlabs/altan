@@ -753,59 +753,6 @@ function DatabaseInfoDialog({ open, onClose, database, onDatabaseUpdate, baseId 
                   </IconButton>
                 </Tooltip>
               </Box>
-
-              {database.tenant && (
-                <>
-                  <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    Tenant
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      p: 1.5,
-                      borderRadius: 2,
-                      backgroundColor: alpha(theme.palette.info.main, 0.08),
-                      border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontFamily: 'monospace',
-                        flex: 1,
-                        wordBreak: 'break-all',
-                        color: theme.palette.info.main,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {database.tenant}
-                    </Typography>
-                    <Tooltip title="Copy Tenant">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleCopyToClipboard(database.tenant, 'Tenant')}
-                        sx={{
-                          color: theme.palette.info.main,
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.info.main, 0.15),
-                          },
-                        }}
-                      >
-                        <Iconify
-                          icon="mdi:content-copy"
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </>
-              )}
             </Box>
 
             <Divider />

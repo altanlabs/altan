@@ -9,7 +9,7 @@ import { useState, useCallback, useRef, memo, useEffect } from 'react';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 
-import { optimai_pg_meta } from '../../../utils/axios';
+import { optimai_cloud } from '../../../utils/axios';
 import Iconify from '../../iconify';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
@@ -137,7 +137,7 @@ const SQLTerminal = memo(({ baseId }) => {
     );
 
     try {
-      const response = await optimai_pg_meta.post(`/${baseId}/query`, {
+      const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, {
         query: currentTab.sql.trim(),
       });
 

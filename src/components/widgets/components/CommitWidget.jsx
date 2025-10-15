@@ -1,61 +1,33 @@
-/* eslint-disable react/display-name */
 import { Box, Typography, Tooltip, CircularProgress, Button } from '@mui/material';
 import { memo, useState, useEffect } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
-import { optimai } from '../../../utils/axios.js';
+import { fetchCommitDetails, restoreCommit, selectCommitDetails, selectIsRestoring } from '../../../redux/slices/commits.js';
+import { useDispatch, useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
 
 const CommitWidget = ({ hash }) => {
-  const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [restoring, setRestoring] = useState(false);
+  const dispatch = useDispatch();
   const [showFileDetails, setShowFileDetails] = useState(false);
   const [dispatchWithFeedback] = useFeedbackDispatch();
 
+  // Get commit details and loading state from Redux
+  const { data: details, loading } = useSelector((state) => selectCommitDetails(state, hash));
+  const restoring = useSelector((state) => selectIsRestoring(state, hash));
+
   // Auto-fetch details on mount - only when hash changes and not already loaded
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchCommitDetails = async () => {
-      if (loading || details || !hash) return;
-
-      setLoading(true);
-      try {
-        const response = await optimai.get(`/interfaces/commits/${hash}`);
-        if (isMounted) {
-          setDetails(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching commit details:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchCommitDetails();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [hash]); // Only re-fetch when hash changes
+    if (hash) {
+      dispatch(fetchCommitDetails(hash));
+    }
+  }, [hash, dispatch]);
 
   const handleRestore = async () => {
-    setRestoring(true);
-    try {
-      await optimai.post(`/interfaces/commits/${hash}/restore`);
-      dispatchWithFeedback(null, {
-        successMessage: 'Successfully restored to commit',
-        errorMessage: 'Failed to restore commit',
-        useSnackbar: true,
-      });
-    } catch (error) {
-      console.error('Error restoring commit:', error);
-    } finally {
-      setRestoring(false);
-    }
+    dispatchWithFeedback(() => dispatch(restoreCommit(hash)), {
+      successMessage: 'Successfully restored to commit',
+      errorMessage: 'Failed to restore commit',
+      useSnackbar: true,
+    });
   };
 
   return (

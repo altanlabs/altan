@@ -411,6 +411,14 @@
   /* Header height */
   --ag-cell-horizontal-padding: 5px !important;
   /* Cell padding */
+  border-radius: 0 !important;
+  /* Remove border radius */
+}
+
+.ag-theme-quartz .ag-root-wrapper,
+.ag-theme-quartz-dark .ag-root-wrapper {
+  border-radius: 0 !important;
+  border: none !important;
 }
 
 /* Additional style for header cells */

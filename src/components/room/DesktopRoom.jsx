@@ -125,6 +125,8 @@ const DesktopRoom = ({
   }, [initialized.room, roomId, location.search, location.pathname, history]);
 
   // Handle thread_id query parameter - open thread from URL
+  // NOTE: threadMain.current is intentionally NOT in dependencies to prevent
+  // recreating tabs when switching between tabs (would cause closed tabs to reappear)
   useEffect(() => {
     if (initialized.room && roomId && location.search) {
       const searchParams = new URLSearchParams(location.search);
@@ -178,7 +180,8 @@ const DesktopRoom = ({
         }
       }
     }
-  }, [initialized.room, roomId, location.search, location.pathname, history, threadMain.current, threadsById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized.room, roomId, location.search, location.pathname, history, threadsById]);
 
   // Sync URL with main thread (tabs) - update URL when thread changes
   useEffect(() => {

@@ -21,7 +21,6 @@ import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
 import { useSelector } from '../../../redux/store';
 import AltanerTemplateMarketplace from '../../../components/templates/AltanerTemplateMarketplace';
-import TemplateMarketplace from '../marketplace/templates/TemplateMarketplace';
 
 const AltanerSkeleton = memo(() => (
   <Grid

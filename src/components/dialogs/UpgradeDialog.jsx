@@ -22,15 +22,14 @@ import Iconify from '../iconify';
 
 const PRO_FEATURES = [
   { text: '25€ in credits included', icon: 'material-symbols:account-balance-wallet' },
-  { text: 'Autopilot mode', icon: 'material-symbols:smart-toy' },
   { text: 'Private projects', icon: 'material-symbols:lock' },
   { text: 'Custom domains', icon: 'material-symbols:domain' },
   { text: 'Voice AI Agents', icon: 'material-symbols:mic' },
+  { text: 'Clone templates', icon: 'material-symbols:file-copy' },
   { text: 'Community support', icon: 'material-symbols:support-agent' },
-  { text: 'Remove Altan branding', icon: 'material-symbols:branding-watermark-off' },
 ];
 
-const UpgradeDialog = ({ open, onClose }) => {
+const UpgradeDialog = ({ open, onClose, ...other }) => {
   const [loading, setLoading] = useState(false);
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
@@ -100,6 +99,7 @@ const UpgradeDialog = ({ open, onClose }) => {
         dialogOpen={open}
         onClose={onClose}
         maxWidth="sm"
+        {...other}
       >
         <Box sx={{ p: 5 }}>
           <SubscribedPricing />
@@ -113,6 +113,7 @@ const UpgradeDialog = ({ open, onClose }) => {
       dialogOpen={open}
       onClose={onClose}
       maxWidth="sm"
+      {...other}
     >
       <Box sx={{ p: 5 }}>
         {/* Header Section */}
@@ -207,40 +208,6 @@ const UpgradeDialog = ({ open, onClose }) => {
           >
             {loading ? 'Processing...' : 'Become a Pro'}
           </Button>
-        </Box>
-
-        {/* Trust indicators */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Iconify
-              icon="material-symbols:cancel"
-              sx={{ color: 'text.secondary', fontSize: 14 }}
-            />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              Cancel anytime
-            </Typography>
-          </Box>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-          >
-            •
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Iconify
-              icon="material-symbols:refresh"
-              sx={{ color: 'text.secondary', fontSize: 14 }}
-            />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              30-day guarantee
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </CustomDialog>

@@ -25,6 +25,7 @@ const ThreadInfoPopup = ({
   onClose, 
   threadId, 
   threadName, 
+  roomId,
   isMainThread = false,
   className 
 }) => {
@@ -35,6 +36,7 @@ const ThreadInfoPopup = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showCopiedAlert, setShowCopiedAlert] = useState(false);
+  const [copiedItemType, setCopiedItemType] = useState(''); // 'thread' or 'room'
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
@@ -84,6 +86,7 @@ const ThreadInfoPopup = ({
   const handleCopyThreadId = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(threadId);
+      setCopiedItemType('thread');
       setShowCopiedAlert(true);
     } catch (error) {
       console.error('Failed to copy thread ID:', error);
@@ -94,9 +97,29 @@ const ThreadInfoPopup = ({
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
+      setCopiedItemType('thread');
       setShowCopiedAlert(true);
     }
   }, [threadId]);
+
+  const handleCopyRoomId = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(roomId);
+      setCopiedItemType('room');
+      setShowCopiedAlert(true);
+    } catch (error) {
+      console.error('Failed to copy room ID:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = roomId;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopiedItemType('room');
+      setShowCopiedAlert(true);
+    }
+  }, [roomId]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -294,6 +317,78 @@ const ThreadInfoPopup = ({
             </Typography>
           </Box>
 
+          {/* Room ID Section */}
+          {roomId && (
+            <Box sx={{ mt: 3 }}>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  mb: 1, 
+                  color: theme.palette.text.secondary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <Iconify icon="mdi:door-open" width={16} />
+                Room ID
+              </Typography>
+              
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  p: 1.5,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.default,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                  }
+                }}
+                onClick={handleCopyRoomId}
+              >
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    flex: 1,
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    color: theme.palette.text.secondary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {roomId}
+                </Typography>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: theme.palette.text.secondary,
+                    '&:hover': {
+                      color: theme.palette.text.primary
+                    }
+                  }}
+                >
+                  <Iconify icon="mdi:content-copy" width={16} />
+                </IconButton>
+              </Box>
+              
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  mt: 0.5,
+                  color: theme.palette.text.disabled,
+                  display: 'block'
+                }}
+              >
+                Click to copy room ID
+              </Typography>
+            </Box>
+          )}
+
           {/* Archive Section - Only show for main threads */}
           {isMainThread && (
             <Box sx={{ mt: 3 }}>
@@ -488,7 +583,7 @@ const ThreadInfoPopup = ({
               : 'rgba(76, 175, 80, 0.95)'
           }}
         >
-          Thread ID copied to clipboard!
+          {copiedItemType === 'room' ? 'Room ID' : 'Thread ID'} copied to clipboard!
         </Alert>
       </Snackbar>
     </>

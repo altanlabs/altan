@@ -6,12 +6,263 @@ import {
   setAccountAttribute,
   setAccountAttributeError,
 } from './general';
-import {
-  optimai_tables,
-  optimai_database,
-  optimai_pg_meta,
-  optimai_tables_v4,
-} from '../../utils/axios';
+import { optimai_tables, optimai_cloud, optimai_tables_v4 } from '../../utils/axios';
+
+// ============================================================================
+// SQL QUERY HELPERS
+// ============================================================================
+
+/**
+ * Escape SQL string values to prevent injection
+ */
+const escapeSql = (value) => {
+  if (value === null || value === undefined) return 'NULL';
+  return String(value).replace(/'/g, "''");
+};
+
+/**
+ * Build a single SQL condition from postgREST operator
+ */
+const buildCondition = (field, value) => {
+  if (typeof value === 'string') {
+    // PostgREST format: 'eq.value', 'ilike.*value*', 'in.(val1,val2)'
+    if (value.startsWith('eq.')) {
+      const val = value.substring(3);
+      return `${field} = '${escapeSql(val)}'`;
+    }
+    if (value.startsWith('ilike.')) {
+      const pattern = value.substring(6).replace(/\*/g, '%');
+      return `${field} ILIKE '${escapeSql(pattern)}'`;
+    }
+    if (value.startsWith('in.')) {
+      const vals = value.substring(4, value.length - 1).split(',');
+      const quotedVals = vals.map((v) => `'${escapeSql(v)}'`).join(',');
+      return `${field} IN (${quotedVals})`;
+    }
+    if (value.startsWith('gt.')) {
+      return `${field} > '${escapeSql(value.substring(3))}'`;
+    }
+    if (value.startsWith('gte.')) {
+      return `${field} >= '${escapeSql(value.substring(4))}'`;
+    }
+    if (value.startsWith('lt.')) {
+      return `${field} < '${escapeSql(value.substring(3))}'`;
+    }
+    if (value.startsWith('lte.')) {
+      return `${field} <= '${escapeSql(value.substring(4))}'`;
+    }
+    if (value.startsWith('neq.')) {
+      return `${field} != '${escapeSql(value.substring(4))}'`;
+    }
+    if (value.startsWith('is.')) {
+      const isVal = value.substring(3);
+      return isVal.toLowerCase() === 'null' ? `${field} IS NULL` : `${field} IS ${isVal}`;
+    }
+  }
+
+  // Default: exact match
+  return `${field} = '${escapeSql(String(value))}'`;
+};
+
+/**
+ * Build SQL WHERE clause from postgREST-style filters
+ * @param {Object} filters - postgREST filters (e.g., { id: 'eq.123', name: 'ilike.*John*' })
+ * @returns {string} SQL WHERE clause
+ */
+const buildWhereClause = (filters) => {
+  if (!filters || Object.keys(filters).length === 0) return '';
+
+  const conditions = [];
+  // SQL control parameters that should NOT be in WHERE clause
+  const sqlControlParams = ['limit', 'offset', 'order', 'select'];
+
+  Object.entries(filters).forEach(([field, value]) => {
+    // Skip SQL control parameters
+    if (sqlControlParams.includes(field)) {
+      return;
+    }
+
+    if (field === 'or') {
+      // Handle OR conditions: or=(field1.ilike.*value*,field2.ilike.*value*)
+      const orMatch = value.match(/\((.*)\)/);
+      if (orMatch) {
+        const orConditions = orMatch[1].split(',').map((cond) => {
+          const [f, op] = cond.split('.');
+          return buildCondition(f, `${op}`);
+        });
+        conditions.push(`(${orConditions.join(' OR ')})`);
+      }
+      return;
+    }
+
+    conditions.push(buildCondition(field, value));
+  });
+
+  return conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+};
+
+/**
+ * Build SQL ORDER BY clause from postgREST order param
+ * @param {string} order - postgREST order (e.g., 'created_at.desc', 'name.asc')
+ * @returns {string} SQL ORDER BY clause
+ */
+const buildOrderClause = (order) => {
+  if (!order) return '';
+
+  const parts = order.split(',').map((part) => {
+    const [field, direction] = part.split('.');
+    const dir = direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    return `${field} ${dir}`;
+  });
+
+  return `ORDER BY ${parts.join(', ')}`;
+};
+
+/**
+ * Build INSERT SQL statement
+ */
+const buildInsertSQL = (tableName, data) => {
+  // Ensure data is an object, not an array
+  if (Array.isArray(data)) {
+    throw new Error('buildInsertSQL expects an object, got array');
+  }
+
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+
+  // Filter out undefined/null/empty fields (let database use defaults)
+  const validFields = [];
+  const validValues = [];
+  fields.forEach((field, index) => {
+    const value = values[index];
+    // Skip fields that are undefined or empty strings
+    if (value !== undefined && value !== '') {
+      validFields.push(field);
+      validValues.push(value);
+    }
+  });
+
+  if (validFields.length === 0) {
+    throw new Error('No valid fields to insert');
+  }
+
+  const fieldsList = validFields.join(', ');
+  const valuesList = validValues
+    .map((v) => {
+      if (v === null) return 'NULL';
+
+      if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+
+      if (typeof v === 'number') return v;
+
+      if (typeof v === 'string') {
+        // Try to parse if it looks like a JSON-stringified value
+        let actualValue = v;
+        if (v.startsWith('"') && v.endsWith('"')) {
+          try {
+            actualValue = JSON.parse(v);
+          } catch {
+            // If parsing fails, use original value
+            actualValue = v;
+          }
+        }
+
+        // Check if it's a date string (ISO 8601 format)
+        const isDateString = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(actualValue);
+        if (isDateString) {
+          return `'${escapeSql(actualValue)}'::timestamp`;
+        }
+        return `'${escapeSql(actualValue)}'`;
+      }
+
+      // Objects (arrays, JSON) - cast to jsonb
+      if (typeof v === 'object') return `'${escapeSql(JSON.stringify(v))}'::jsonb`;
+
+      return `'${escapeSql(v)}'`;
+    })
+    .join(', ');
+
+  return `INSERT INTO ${tableName} (${fieldsList}) VALUES (${valuesList}) RETURNING *;`;
+};
+
+/**
+ * Build UPDATE SQL statement
+ */
+const buildUpdateSQL = (tableName, recordId, changes) => {
+  const setClauses = Object.entries(changes)
+    .map(([field, value]) => {
+      if (value === null || value === undefined) return `${field} = NULL`;
+
+      // Handle different data types
+      if (typeof value === 'boolean') {
+        return `${field} = ${value ? 'TRUE' : 'FALSE'}`;
+      }
+
+      if (typeof value === 'number') {
+        return `${field} = ${value}`;
+      }
+
+      if (typeof value === 'string') {
+        // Try to parse if it looks like a JSON-stringified value
+        let actualValue = value;
+        if (value.startsWith('"') && value.endsWith('"')) {
+          try {
+            actualValue = JSON.parse(value);
+          } catch {
+            // If parsing fails, use original value
+            actualValue = value;
+          }
+        }
+
+        // Check if it's a date string (ISO 8601 format)
+        const isDateString = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(actualValue);
+        if (isDateString) {
+          // Cast to timestamp (works for both date and timestamp columns)
+          return `${field} = '${escapeSql(actualValue)}'::timestamp`;
+        }
+        // Regular string
+        return `${field} = '${escapeSql(actualValue)}'`;
+      }
+
+      // Objects (arrays, JSON) - cast to jsonb
+      if (typeof value === 'object') {
+        return `${field} = '${escapeSql(JSON.stringify(value))}'::jsonb`;
+      }
+
+      // Fallback
+      return `${field} = '${escapeSql(value)}'`;
+    })
+    .join(', ');
+
+  return `UPDATE ${tableName} SET ${setClauses} WHERE id = '${escapeSql(recordId)}' RETURNING *;`;
+};
+
+/**
+ * Build DELETE SQL statement
+ */
+const buildDeleteSQL = (tableName, recordIds) => {
+  const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+  const idList = ids.map((id) => `'${escapeSql(id)}'`).join(',');
+  return `DELETE FROM ${tableName} WHERE id IN (${idList});`;
+};
+
+/**
+ * Execute raw SQL query via cloud proxy
+ */
+const executeSQL = async (baseId, query) => {
+  try {
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/query`, { query });
+    return response.data;
+  } catch (error) {
+    // Log the SQL query that failed for debugging
+    console.error('❌ SQL Query Failed:', {
+      query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
+      error: error.response?.data || error.message,
+      status: error.response?.status,
+    });
+    throw error;
+  }
+};
 
 const initialState = {
   isLoading: false,
@@ -35,6 +286,13 @@ const initialState = {
   // User cache for auth.users table to avoid redundant API calls
   userCache: {},
   userCacheState: {
+    loading: false,
+    lastFetched: null,
+    error: null,
+  },
+  // Bucket cache for storage.buckets to avoid redundant API calls
+  bucketCache: {},
+  bucketCacheState: {
     loading: false,
     lastFetched: null,
     error: null,
@@ -695,6 +953,66 @@ const slice = createSlice({
         error: null,
       };
     },
+    // Bucket cache reducers
+    setBucketCacheLoading(state, action) {
+      state.bucketCacheState.loading = action.payload;
+      if (action.payload) {
+        state.bucketCacheState.error = null;
+      }
+    },
+    setBucketCache(state, action) {
+      const { buckets, baseId } = action.payload;
+
+      if (!state.bucketCache[baseId]) {
+        state.bucketCache[baseId] = {};
+      }
+
+      buckets.forEach((bucket) => {
+        if (bucket && bucket.id) {
+          state.bucketCache[baseId][bucket.id] = bucket;
+        }
+      });
+
+      state.bucketCacheState.loading = false;
+      state.bucketCacheState.lastFetched = Date.now();
+      state.bucketCacheState.error = null;
+    },
+    setBucketCacheError(state, action) {
+      state.bucketCacheState.loading = false;
+      state.bucketCacheState.error = action.payload;
+    },
+    clearBucketCache(state, action) {
+      const { baseId } = action.payload || {};
+      if (baseId) {
+        delete state.bucketCache[baseId];
+      } else {
+        state.bucketCache = {};
+      }
+      state.bucketCacheState = {
+        loading: false,
+        lastFetched: null,
+        error: null,
+      };
+    },
+    addBucketToCache(state, action) {
+      const { bucket, baseId } = action.payload;
+      if (!state.bucketCache[baseId]) {
+        state.bucketCache[baseId] = {};
+      }
+      state.bucketCache[baseId][bucket.id] = bucket;
+    },
+    removeBucketFromCache(state, action) {
+      const { bucketId, baseId } = action.payload;
+      if (state.bucketCache[baseId]) {
+        delete state.bucketCache[baseId][bucketId];
+      }
+    },
+    updateBucketInCache(state, action) {
+      const { bucket, baseId } = action.payload;
+      if (state.bucketCache[baseId] && state.bucketCache[baseId][bucket.id]) {
+        state.bucketCache[baseId][bucket.id] = bucket;
+      }
+    },
   },
 });
 
@@ -750,6 +1068,14 @@ export const {
   setUserCache,
   setUserCacheError,
   clearUserCache,
+  // Bucket cache actions
+  setBucketCacheLoading,
+  setBucketCache,
+  setBucketCacheError,
+  clearBucketCache,
+  addBucketToCache,
+  removeBucketFromCache,
+  updateBucketInCache,
   integrateRealTimeUpdates,
   clearRealTimeUpdateFlags,
 } = slice.actions;
@@ -759,32 +1085,12 @@ export const {
 // ============================================================================
 
 /**
- * Fetch all schemas for a base using pg-meta
- */
-export const fetchSchemas = (baseId) => async (dispatch) => {
-  dispatch(setSchemasLoading({ baseId, loading: true }));
-  try {
-    const response = await optimai_pg_meta.get(`/${baseId}/schemas/`, {
-      params: {
-        include_system_schemas: false,
-      },
-    });
-    const schemas = response.data || [];
-    dispatch(setSchemas({ baseId, schemas }));
-    return schemas;
-  } catch (error) {
-    dispatch(setSchemasError({ baseId, error: error.message }));
-    throw error;
-  }
-};
-
-/**
  * Create a schema using pg-meta
  */
 export const createSchema = (baseId, schemaData) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.post(`/${baseId}/schemas/`, schemaData);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/schemas/`, schemaData);
     const schema = response.data;
     dispatch(addSchema({ baseId, schema }));
     return schema;
@@ -802,7 +1108,7 @@ export const createSchema = (baseId, schemaData) => async (dispatch) => {
 export const updateSchemaById = (baseId, schemaId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.patch(`/${baseId}/schemas/${schemaId}`, changes);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/schemas/${schemaId}`, changes);
     const schema = response.data;
     dispatch(updateSchema({ baseId, schemaId, changes: schema }));
     return schema;
@@ -822,7 +1128,7 @@ export const deleteSchemaById =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      await optimai_pg_meta.delete(`/${baseId}/schemas/${schemaId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/schemas/${schemaId}`, {
         params: { cascade },
       });
       dispatch(deleteSchema({ baseId, schemaId }));
@@ -841,24 +1147,34 @@ export const deleteSchemaById =
  */
 export const fetchTables =
   (baseId, options = {}) =>
-  async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-    try {
+  async (dispatch, getState) => {
       const {
         include_columns = true,
         include_relationships = true,
         excluded_schemas = 'pg_catalog,information_schema',
+        forceReload = false,
       } = options;
 
-      const response = await optimai_pg_meta.get(`/${baseId}/tables/`, {
+    // Check if tables already exist in state (unless force reload)
+    if (!forceReload) {
+      const state = getState();
+      const existingBase = state.bases.bases[baseId];
+      if (existingBase?.tables?.items && existingBase.tables.items.length > 0) {
+        // Silently return cached data to avoid log spam
+        return existingBase.tables.items;
+      }
+    }
+
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/tables/`, {
         params: {
           include_columns,
           include_relationships,
           excluded_schemas,
-          include_system_schemas: false,
+          include_system_schemas: true, // Include auth schema for Supabase
         },
       });
-
       const tables = response.data || [];
       dispatch(setTablesFromPgMeta({ baseId, tables }));
       return tables;
@@ -886,7 +1202,7 @@ export const createTable = (baseId, tableData) => async (dispatch) => {
       schema: tenantSchema, // Override to ensure correct schema
     };
 
-    const response = await optimai_pg_meta.post(`/${baseId}/tables/`, tablePayload);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/tables/`, tablePayload);
     const table = response.data;
 
     // Transform to our internal format
@@ -923,7 +1239,7 @@ export const createTable = (baseId, tableData) => async (dispatch) => {
 export const updateTableById = (baseId, tableId, changes) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_pg_meta.patch(`/${baseId}/tables/${tableId}`, changes);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/tables/${tableId}`, changes);
     const table = response.data;
 
     dispatch(
@@ -957,7 +1273,7 @@ export const deleteTableById =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      await optimai_pg_meta.delete(`/${baseId}/tables/${tableId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/tables/${tableId}`, {
         params: { cascade },
       });
       dispatch(deleteTable({ baseId, tableId }));
@@ -982,7 +1298,7 @@ export const fetchTablePolicies = (baseId, tableId, tableName, schemaName) => as
   try {
     console.log('🔐 Fetching RLS policies for table:', { baseId, tableId, tableName, schemaName });
 
-    const response = await optimai_pg_meta.get(`/${baseId}/policies/`, {
+    const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/policies/`, {
       params: {
         table_name: tableName,
       },
@@ -1014,7 +1330,7 @@ export const fetchColumns = (baseId, tableId) => async (dispatch) => {
     // Generate tenant schema name: tenant_{base_id} with hyphens → underscores
     const tenantSchema = `tenant_${baseId.replace(/-/g, '_')}`;
 
-    const response = await optimai_pg_meta.get(`/${baseId}/columns/`, {
+    const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/columns/`, {
       params: {
         included_schemas: tenantSchema,
         exclude_system_schemas: true,
@@ -1070,7 +1386,7 @@ export const createField = (table, fieldData) => async (dispatch, getState) => {
       comment: fieldData.description || fieldData.comment,
     };
 
-    const response = await optimai_pg_meta.post(`/${baseId}/columns/`, columnData);
+    const response = await optimai_cloud.post(`/v1/pg-meta/${baseId}/columns/`, columnData);
     const column = response.data;
 
     // Store column data directly from pg-meta
@@ -1140,7 +1456,7 @@ export const updateFieldThunk = (tableId, fieldId, changes) => async (dispatch, 
     if (changes.default_value !== undefined) columnChanges.default_value = changes.default_value;
     if (changes.comment !== undefined) columnChanges.comment = changes.comment;
 
-    const response = await optimai_pg_meta.patch(`/${baseId}/columns/${fieldId}`, columnChanges);
+    const response = await optimai_cloud.patch(`/v1/pg-meta/${baseId}/columns/${fieldId}`, columnChanges);
     const column = response.data;
 
     // Store column data directly from pg-meta
@@ -1190,7 +1506,7 @@ export const deleteFieldThunk =
         throw new Error(`Could not find base for table ${tableId}`);
       }
 
-      await optimai_pg_meta.delete(`/${baseId}/columns/${fieldId}`, {
+      await optimai_cloud.delete(`/v1/pg-meta/${baseId}/columns/${fieldId}`, {
         params: { cascade },
       });
 
@@ -1399,7 +1715,7 @@ export const deleteViewThunk = (baseId, tableId, viewId) => async (dispatch) => 
 };
 
 // ============================================================================
-// RECORD OPERATIONS (using postgREST - UNCHANGED)
+// RECORD OPERATIONS (using pg-meta raw SQL)
 // ============================================================================
 
 export const queryTableRecords =
@@ -1420,9 +1736,10 @@ export const queryTableRecords =
       const base = state.bases.bases[baseId];
       const table = base.tables?.items?.find((t) => t.id === numericTableId);
       const tableName = table?.db_name || table?.name;
+      const schemaName = table?.schema;
 
-      if (!tableName) {
-        throw new Error(`Could not find table name for table ${tableId}`);
+      if (!tableName || !schemaName) {
+        throw new Error(`Could not find table name or schema for table ${tableId}`);
       }
 
       // Check if table has a created_at field and auto-sort if no order is specified
@@ -1437,13 +1754,26 @@ export const queryTableRecords =
         finalQueryParams.order = 'created_at.desc';
       }
 
-      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: finalQueryParams,
-      });
+      // Build SQL query
+      const whereClause = buildWhereClause(finalQueryParams);
+      const orderClause = buildOrderClause(finalQueryParams.order);
+      const limit = finalQueryParams.limit ? `LIMIT ${finalQueryParams.limit}` : '';
+      const offset = finalQueryParams.offset ? `OFFSET ${finalQueryParams.offset}` : '';
 
-      const records = Array.isArray(response.data) ? response.data : response.data.records || [];
-      const total = response.data.total || records.length;
-      const next_page_token = response.data.next_page_token || null;
+      // Build clean SQL query (single line)
+      const queryParts = ['SELECT * FROM', tableName];
+      if (whereClause) queryParts.push(whereClause);
+      if (orderClause) queryParts.push(orderClause);
+      if (limit) queryParts.push(limit);
+      if (offset) queryParts.push(offset);
+      const query = queryParts.join(' ') + ';';
+
+      const records = await executeSQL(baseId, query);
+      const total = records.length;
+      const next_page_token =
+        records.length === finalQueryParams.limit
+          ? (finalQueryParams.offset || 0) + finalQueryParams.limit
+          : null;
 
       dispatch(
         slice.actions.setTableRecords({
@@ -1455,7 +1785,7 @@ export const queryTableRecords =
         }),
       );
 
-      return response.data;
+      return { records, total, next_page_token };
     } catch (e) {
       throw e;
     }
@@ -1470,28 +1800,26 @@ export const getTableRecord =
       // Convert tableId to number for comparison (pg-meta returns numeric IDs)
       const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-      let baseId, tableName;
+      let baseId, tableName, schemaName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
           const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = customTableName || table.name || table.db_name;
+            schemaName = table.schema;
             break;
           }
         }
       }
 
-      if (!baseId || !tableName) {
-        throw new Error(`Could not find base or table name for table ${tableId}`);
+      if (!baseId || !tableName || !schemaName) {
+        throw new Error(`Could not find base, table name, or schema for table ${tableId}`);
       }
 
-      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: { id: `eq.${recordId}` },
-      });
-
-      const records = Array.isArray(response.data) ? response.data : response.data.records || [];
-      const record = records.find((r) => r.id === recordId) || records[0];
+      const query = `SELECT * FROM ${tableName} WHERE id = '${escapeSql(recordId)}' LIMIT 1;`;
+      const records = await executeSQL(baseId, query);
+      const record = records[0];
 
       return Promise.resolve(record);
     } catch (e) {
@@ -1505,7 +1833,7 @@ export const getTableRecord =
 export const createTableRecords =
   (tableId, recordData, options = {}) =>
   async (dispatch, getState) => {
-    const { isRealTime = false, suppressLoading = false } = options;
+    const { suppressLoading = false } = options;
 
     if (!suppressLoading) {
       dispatch(slice.actions.startLoading());
@@ -1516,35 +1844,52 @@ export const createTableRecords =
       // Convert tableId to number for comparison (pg-meta returns numeric IDs)
       const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-      let baseId, tableName;
+      let baseId, tableName, schemaName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
           const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = table.db_name || table.name;
+            schemaName = table.schema;
             break;
           }
         }
       }
 
-      if (!baseId || !tableName) {
-        throw new Error(`Could not find base or table name for table ${tableId}`);
+      if (!baseId || !tableName || !schemaName) {
+        throw new Error(`Could not find base, table name, or schema for table ${tableId}`);
       }
 
       let postgreSQLData;
       if (recordData.records && recordData.records.length > 0) {
         postgreSQLData = recordData.records[0].fields;
+      } else if (Array.isArray(recordData) && recordData.length > 0) {
+        // If recordData is an array, take the first item
+        postgreSQLData = recordData[0];
       } else {
         postgreSQLData = recordData;
       }
 
-      const response = await optimai_database.post(
-        `/admin/records/${baseId}/${tableName}`,
-        postgreSQLData,
-      );
+      console.log('🔍 INSERT data:', { recordData, postgreSQLData, isArray: Array.isArray(postgreSQLData) });
+
+      const query = buildInsertSQL(tableName, postgreSQLData);
+      const records = await executeSQL(baseId, query);
+
+      // Add each inserted record to Redux state
+      if (Array.isArray(records) && records.length > 0) {
+        records.forEach((record) => {
+          dispatch(
+            slice.actions.addTableRecord({
+              tableId,
+              record,
+              insertAtBeginning: true, // Insert at beginning so it appears at top of list
+            }),
+          );
+        });
+      }
+
       // Return in format expected by GridView: { records: [...] }
-      const records = Array.isArray(response.data) ? response.data : [response.data];
       return Promise.resolve({ records });
     } catch (e) {
       if (!suppressLoading) {
@@ -1572,26 +1917,25 @@ export const updateTableRecordThunk =
       // Convert tableId to number for comparison (pg-meta returns numeric IDs)
       const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-      let baseId, tableName;
+      let baseId, tableName, schemaName;
       for (const [bId, base] of Object.entries(state.bases.bases)) {
         if (base.tables?.items) {
           const table = base.tables.items.find((t) => t.id === numericTableId);
           if (table) {
             baseId = bId;
             tableName = table.db_name || table.name;
+            schemaName = table.schema;
             break;
           }
         }
       }
 
-      if (!baseId || !tableName) {
-        throw new Error(`Could not find base or table name for table ${tableId}`);
+      if (!baseId || !tableName || !schemaName) {
+        throw new Error(`Could not find base, table name, or schema for table ${tableId}`);
       }
 
-      const response = await optimai_database.patch(
-        `/admin/records/${baseId}/${tableName}?id=eq.${recordId}`,
-        changes,
-      );
+      const query = buildUpdateSQL(tableName, recordId, changes);
+      const records = await executeSQL(baseId, query);
 
       dispatch(
         slice.actions.updateTableRecord({
@@ -1602,7 +1946,7 @@ export const updateTableRecordThunk =
         }),
       );
 
-      return Promise.resolve(response.data);
+      return Promise.resolve(records[0]);
     } catch (e) {
       if (!suppressLoading) {
         dispatch(slice.actions.hasError(e.message));
@@ -1622,30 +1966,31 @@ export const deleteTableRecordThunk = (tableId, recordIds) => async (dispatch, g
     // Convert tableId to number for comparison (pg-meta returns numeric IDs)
     const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
 
-    let baseId, tableName;
+    let baseId, tableName, schemaName;
     for (const [bId, base] of Object.entries(state.bases.bases)) {
       if (base.tables?.items) {
         const table = base.tables.items.find((t) => t.id === numericTableId);
         if (table) {
           baseId = bId;
           tableName = table.db_name || table.name;
+          schemaName = table.schema;
           break;
         }
       }
     }
 
-    if (!baseId || !tableName) {
-      throw new Error(`Could not find base or table name for table ${tableId}`);
+    if (!baseId || !tableName || !schemaName) {
+      throw new Error(`Could not find base, table name, or schema for table ${tableId}`);
     }
 
     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
 
+    // Execute delete in batches
     const BATCH_SIZE = 50;
     for (let i = 0; i < ids.length; i += BATCH_SIZE) {
       const batchIds = ids.slice(i, i + BATCH_SIZE);
-      const idFilter =
-        batchIds.length === 1 ? `id=eq.${batchIds[0]}` : `id=in.(${batchIds.join(',')})`;
-      await optimai_database.delete(`/admin/records/${baseId}/${tableName}?${idFilter}`);
+      const query = buildDeleteSQL(tableName, batchIds);
+      await executeSQL(baseId, query);
     }
 
     ids.forEach((recordId) => {
@@ -1688,39 +2033,55 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
       throw new Error(`Base ${baseId} not found or has no tables`);
     }
 
-    const authUsersTable = base.tables.items.find(
-      (table) =>
-        table.db_name === 'auth.users' ||
-        table.name === 'auth.users' ||
-        table.db_name === 'users' ||
-        table.name === 'users' ||
-        table.db_name === 'auth_users' ||
-        table.name === 'auth_users' ||
-        table.name?.toLowerCase().includes('user'),
-    );
-
-    if (!authUsersTable) {
-      dispatch(setUserCache({ users: [], baseId }));
-      return Promise.resolve({});
-    }
-
-    const response = await optimai_database.get(
-      `/admin/records/${baseId}/${authUsersTable.db_name || authUsersTable.name}`,
-      {
-        params: {
-          limit: 10000,
-          order: 'created_at.desc',
-        },
-      },
-    );
-
-    const users = Array.isArray(response.data) ? response.data : response.data.records || [];
+    // Self-hosted Supabase always uses auth.users
+    const query = 'SELECT * FROM auth.users ORDER BY created_at DESC LIMIT 10000;';
+    const users = await executeSQL(baseId, query);
 
     dispatch(setUserCache({ users, baseId }));
 
     return Promise.resolve(state.bases.userCache[baseId] || {});
   } catch (error) {
     dispatch(setUserCacheError(error.message));
+    throw error;
+  }
+};
+
+export const preloadBucketsForBase = (baseId) => async (dispatch, getState) => {
+  const state = getState();
+  const bucketCacheState = state.bases.bucketCacheState;
+  const existingBuckets = state.bases.bucketCache[baseId];
+
+  const ONE_HOUR = 60 * 60 * 1000;
+  if (
+    existingBuckets &&
+    Object.keys(existingBuckets).length > 0 &&
+    bucketCacheState.lastFetched &&
+    Date.now() - bucketCacheState.lastFetched < ONE_HOUR
+  ) {
+    return Promise.resolve(existingBuckets);
+  }
+
+  if (bucketCacheState.loading) {
+    return Promise.resolve({});
+  }
+
+  dispatch(setBucketCacheLoading(true));
+
+  try {
+    const base = state.bases.bases[baseId];
+    if (!base || !base.tables || !base.tables.items) {
+      throw new Error(`Base ${baseId} not found or has no tables`);
+    }
+
+    // Query storage.buckets table
+    const query = 'SELECT * FROM storage.buckets ORDER BY created_at DESC;';
+    const buckets = await executeSQL(baseId, query);
+
+    dispatch(setBucketCache({ buckets, baseId }));
+
+    return Promise.resolve(state.bases.bucketCache[baseId] || {});
+  } catch (error) {
+    dispatch(setBucketCacheError(error.message));
     throw error;
   }
 };
@@ -1774,7 +2135,7 @@ export const exportDatabaseToSQL =
     dispatch(slice.actions.startLoading());
     try {
       const params = includeData ? { include_data: true } : {};
-      const response = await optimai_pg_meta.get(`/${baseId}/export/schema`, {
+      const response = await optimai_cloud.get(`/v1/pg-meta/${baseId}/export/schema`, {
         params,
         responseType: 'blob',
       });
@@ -1830,9 +2191,10 @@ export const loadTableRecords =
       const base = state.bases.bases[baseId];
       const table = base.tables?.items?.find((t) => t.id === numericTableId);
       const tableName = table?.db_name || table?.name;
+      const schemaName = table?.schema;
 
-      if (!tableName) {
-        throw new Error(`Could not find table name for table ${tableId}`);
+      if (!tableName || !schemaName) {
+        throw new Error(`Could not find table name or schema for table ${tableId}`);
       }
 
       const queryParams = {
@@ -1878,35 +2240,41 @@ export const loadTableRecords =
         Object.assign(queryParams, filters);
       }
 
-      let totalCount = records?.total || recordsState?.totalRecords || 0;
+      // Build SQL query
+      const whereClause = buildWhereClause(queryParams);
+      const orderClause = buildOrderClause(queryParams.order);
+      const limitClause = `LIMIT ${limit}`;
+      const offsetClause = offset > 0 ? `OFFSET ${offset}` : '';
 
-      const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-        params: queryParams,
+      // Build clean SQL query (single line)
+      const queryParts = ['SELECT * FROM', tableName];
+      if (whereClause) queryParts.push(whereClause);
+      if (orderClause) queryParts.push(orderClause);
+      if (limitClause) queryParts.push(limitClause);
+      if (offsetClause) queryParts.push(offsetClause);
+      const query = queryParts.join(' ') + ';';
+
+      console.log('🔍 Executing SQL Query:', {
+        tableId,
+        tableName,
+        schemaName,
+        query: query.substring(0, 300),
+        queryParams,
       });
 
-      const responseRecords = Array.isArray(response.data)
-        ? response.data
-        : response.data.records || [];
+      const responseRecords = await executeSQL(baseId, query);
+      console.log('✅ SQL Query Result:', {
+        recordCount: responseRecords?.length || 0,
+        firstRecord: responseRecords?.[0],
+      });
 
+      // Get total count if needed
+      let totalCount = records?.total || recordsState?.totalRecords || 0;
       if (!totalCount || totalCount === 0) {
         try {
-          const countResponse = await optimai_database.head(
-            `/admin/records/${baseId}/${tableName}`,
-            {
-              headers: {
-                Prefer: 'count=exact',
-              },
-            },
-          );
-
-          const contentRange =
-            countResponse.headers['content-range'] || countResponse.headers['Content-Range'];
-          if (contentRange) {
-            const match = contentRange.match(/\/(\d+)$/);
-            if (match) {
-              totalCount = parseInt(match[1], 10);
-            }
-          }
+          const countQuery = `SELECT COUNT(*) as count FROM ${tableName} ${whereClause};`;
+          const countResult = await executeSQL(baseId, countQuery);
+          totalCount = parseInt(countResult[0]?.count || 0, 10);
         } catch {
           if (responseRecords.length < limit) {
             totalCount = responseRecords.length;
@@ -1942,8 +2310,15 @@ export const loadTableRecords =
 
       return getState().bases.records[tableId];
     } catch (error) {
+      console.error('❌ loadTableRecords failed:', {
+        tableId,
+        error: error.message,
+        response: error.response?.data,
+      });
       dispatch(slice.actions.hasError(error.message));
-      throw error;
+      dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
+      // Don't throw to prevent infinite retries
+      return { items: [], total: 0 };
     } finally {
       dispatch(slice.actions.setTableRecordsLoading({ tableId, loading: false }));
     }
@@ -1965,28 +2340,15 @@ export const getTableRecordCount = (tableId) => async (dispatch, getState) => {
     const base = state.bases.bases[baseId];
     const table = base.tables?.items?.find((t) => t.id === numericTableId);
     const tableName = table?.db_name || table?.name;
+    const schemaName = table?.schema;
 
-    if (!tableName) {
-      throw new Error(`Could not find table name for table ${tableId}`);
+    if (!tableName || !schemaName) {
+      throw new Error(`Could not find table name or schema for table ${tableId}`);
     }
 
-    const response = await optimai_database.head(`/admin/records/${baseId}/${tableName}`, {
-      headers: {
-        Prefer: 'count=exact',
-      },
-    });
-
-    const contentRange = response.headers['content-range'] || response.headers['Content-Range'];
-
-    if (contentRange) {
-      const match = contentRange.match(/\/(\d+)$/);
-      if (match) {
-        const count = parseInt(match[1], 10);
-        return count;
-      }
-    }
-
-    return 0;
+    const query = `SELECT COUNT(*) as count FROM ${schemaName}.${tableName};`;
+    const result = await executeSQL(baseId, query);
+    return parseInt(result[0]?.count || 0, 10);
   } catch {
     return 0;
   }
@@ -2097,8 +2459,10 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
     const base = state.bases.bases[baseId];
     const table = base.tables?.items?.find((t) => t.id === numericTableId);
     const tableName = table?.db_name || table?.name;
-    if (!tableName) {
-      throw new Error(`Could not find table name for table ${tableId}`);
+    const schemaName = table?.schema;
+
+    if (!tableName || !schemaName) {
+      throw new Error(`Could not find table name or schema for table ${tableId}`);
     }
 
     const searchQuery = query.trim();
@@ -2121,23 +2485,15 @@ export const searchTableRecords = (tableId, query) => async (dispatch, getState)
       return;
     }
 
+    // Build SQL WHERE clause with ILIKE for search
     const searchConditions = textFields
-      .map((field) => `${field.db_field_name}.ilike.*${searchQuery}*`)
-      .join(',');
+      .map((field) => `${field.db_field_name} ILIKE '%${escapeSql(searchQuery)}%'`)
+      .join(' OR ');
 
-    const queryParams = {
-      or: `(${searchConditions})`,
-      limit: 500,
-      order: 'created_at.desc',
-    };
+    // Build clean SQL query (single line)
+    const sqlQuery = `SELECT * FROM ${tableName} WHERE ${searchConditions} ORDER BY created_at DESC LIMIT 500;`;
 
-    const response = await optimai_database.get(`/admin/records/${baseId}/${tableName}`, {
-      params: queryParams,
-    });
-
-    const searchRecords = Array.isArray(response.data)
-      ? response.data
-      : response.data.records || [];
+    const searchRecords = await executeSQL(baseId, sqlQuery);
 
     const currentRecords = state.bases.records[tableId]?.items || [];
     const existingIds = new Set(currentRecords.map((record) => record.id));
@@ -2225,7 +2581,11 @@ export const selectBaseById = createSelector(
 
 export const selectTablesByBaseId = createSelector(
   [selectBaseById],
-  (base) => base?.tables?.items || [],
+  (base) => {
+    const tables = base?.tables?.items || [];
+    // Filter to only show tables in the 'public' schema
+    return tables.filter((table) => table.schema === 'public');
+  },
 );
 
 export const selectTableById = createSelector(
@@ -2381,6 +2741,24 @@ export const selectUserCacheForBase = createSelector(
 export const selectUserById = createSelector(
   [selectUserCacheForBase, (_, __, userId) => userId],
   (users, userId) => users[userId] || null,
+);
+
+// Bucket cache selectors
+export const selectBucketCache = createSelector([selectBaseState], (state) => state.bucketCache);
+
+export const selectBucketCacheState = createSelector(
+  [selectBaseState],
+  (state) => state.bucketCacheState,
+);
+
+export const selectBucketCacheForBase = createSelector(
+  [selectBucketCache, (_, baseId) => baseId],
+  (bucketCache, baseId) => bucketCache[baseId] || {},
+);
+
+export const selectBucketById = createSelector(
+  [selectBucketCacheForBase, (_, __, bucketId) => bucketId],
+  (buckets, bucketId) => buckets[bucketId] || null,
 );
 
 export const createUserDisplayValueSelector = (baseId, userId) =>

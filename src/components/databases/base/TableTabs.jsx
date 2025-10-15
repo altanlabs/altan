@@ -98,7 +98,7 @@ const StyledTab = styled(Tab)(({ theme }) => ({
       : 'rgba(255, 255, 255, 0.9)',
     fontWeight: 600,
     backdropFilter: 'blur(10px)',
-    borderBottom: theme.palette.mode === 'dark' 
+    borderTop: theme.palette.mode === 'dark' 
       ? '2px solid rgba(255, 255, 255, 0.2)' 
       : '2px solid rgba(0, 0, 0, 0.1)',
 

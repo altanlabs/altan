@@ -23,6 +23,9 @@ const TabItem = ({
   // Use the thread name selector to get the real-time thread name
   const threadNameSelector = useMemo(makeSelectThreadName, []);
   const actualThreadName = useSelector((state) => threadNameSelector(state, tab.threadId));
+  
+  // Get room ID from Redux state
+  const roomId = useSelector((state) => state.room.room?.id);
 
   // Use the actual thread name or fallback to tab name
   const displayName = actualThreadName || 'Thread';
@@ -189,6 +192,7 @@ const TabItem = ({
         onClose={handleCloseThreadInfo}
         threadId={tab.threadId}
         threadName={actualThreadName}
+        roomId={roomId}
         isMainThread={tab.isMainThread}
       />
     </>

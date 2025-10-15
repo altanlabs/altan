@@ -205,7 +205,7 @@ const DashboardPage = () => {
             variants={fadeIn}
           >
             <m.div
-              className="flex flex-col py-20 sm:py-20 mt-20"
+              className="flex flex-col py-12 sm:py-20 mt-12 sm:mt-20"
               variants={fadeIn}
             >
               <div>
@@ -345,7 +345,7 @@ const DashboardPage = () => {
             </m.div>
 
             <m.div
-              className="flex flex-col pt-[200px]"
+              className="flex flex-col pt-[80px] sm:pt-[150px]"
               variants={fadeIn}
             >
               <div className="w-full py-2 px-4 sm:px-6 rounded-t-2xl shadow-md bg-white dark:bg-[#1c1c1c] dark:border-gray-800 shadow-[0_2px_8px_rgba(0,0,0,0.1)] dark:shadow-[0_2px_8px_rgba(255,255,255,0.03)] max-w-none sm:max-w-7xl mx-auto">

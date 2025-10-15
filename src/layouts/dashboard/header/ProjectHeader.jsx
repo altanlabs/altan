@@ -433,6 +433,7 @@ function ProjectHeader() {
                   <InvitationMenuPopover isDashboard={true} />
                   <Tooltip title="Publish">
                     <HeaderIconButton
+                      data-tour="publish-button"
                       onClick={() => setOpenPublishDialog(true)}
                       sx={{
                         width: 32,
@@ -499,6 +500,7 @@ function ProjectHeader() {
                   <Button
                     size="small"
                     variant="contained"
+                    data-tour="publish-button"
                     startIcon={
                       <Iconify
                         icon="mdi:rocket-launch-outline"

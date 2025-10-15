@@ -1,10 +1,10 @@
 import React, { memo, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeExternalLinks from 'rehype-external-links';
-import rehypeKatex from 'rehype-katex';
+// import rehypeKatex from 'rehype-katex'; // Temporarily disabled due to conflicts with $$ in code blocks
 import rehypeRaw from 'rehype-raw'; // Re-enabled for suggestion components
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
+// import remarkMath from 'remark-math'; // Temporarily disabled due to conflicts with $$ in code blocks
 // import sanitizeHtml from 'sanitize-html';
 
 import { cn } from '@lib/utils';
@@ -386,10 +386,11 @@ const CustomMarkdown = ({
     >
       <MarkdownErrorBoundary content={content}>
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
+          remarkPlugins={[
+            remarkGfm,
+          ]}
           rehypePlugins={[
-            rehypeKatex,
-            rehypeRaw, // Re-enabled for suggestion components
+            rehypeRaw, // Process raw HTML first (for suggestion components)
             [rehypeExternalLinks, { target: '_blank', rel: ['nofollow'] }],
           ]}
           components={{

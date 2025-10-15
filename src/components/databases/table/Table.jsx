@@ -76,17 +76,28 @@ const Table = ({ tableId, viewId, baseId, triggerImport }) => {
   useEffect(() => {
     if (!tableId || !baseId || !table) return; // Wait for table to be in Redux state
 
+    // Only load if we don't already have records and aren't currently loading
+    if (hasRecords || isLoading || recordsState?.loading) {
+      setIsInitialLoad(false);
+      return;
+    }
+
     // Load records for this table (only if not already loaded)
     const loadRecords = async () => {
       try {
         await dispatch(loadTableRecords(tableId, { limit: 50, forceReload: false }));
+      } catch (error) {
+        console.error('Failed to load table records:', error);
+        // Don't retry on error - just mark as no longer initial load
       } finally {
         setIsInitialLoad(false);
       }
     };
 
     loadRecords();
-  }, [tableId, baseId, table]);
+    // Only depend on tableId and baseId, not table object to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId, baseId]);
 
   // Get accurate record count separately using PostgREST - only once per table
   useEffect(() => {

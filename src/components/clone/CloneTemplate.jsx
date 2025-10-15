@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo, memo, useCallback } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useHistory } from 'react-router';
+import { useTheme } from '@mui/material/styles';
+import { m, AnimatePresence } from 'framer-motion';
 
 import { cn } from '@lib/utils';
 
@@ -105,6 +107,7 @@ const MAP_REDIRECT = {
 
 function CloneTemplate({ clonedTemplateId }) {
   const history = useHistory();
+  const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
   const [isCreatingNewConnection, setIsCreatingNewConnection] = useState(false);
   const [connectionsSetup, setConnectionsSetup] = useState({});
@@ -113,6 +116,7 @@ function CloneTemplate({ clonedTemplateId }) {
   const [clonedTemplate, setClonedTemplate] = useState(null);
   const [isFetched, setIsFetched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [installationProgress, setInstallationProgress] = useState('');
   const [types, setTypes] = useState([]);
   const [typesInitialized, setTypesInitialized] = useState(false);
   const [skipSetup, setSkipSetup] = useState(false);
@@ -255,6 +259,25 @@ function CloneTemplate({ clonedTemplateId }) {
         const name = clonedTemplate.version.name;
         const vName = name.includes(version) ? name : `${name}:${version}`;
         setIsLoading(true);
+        
+        // Progress messages for better UX
+        const progressMessages = [
+          'Initializing installation...',
+          'Setting up connections...',
+          'Configuring variables...',
+          'Creating resources...',
+          'Almost there...',
+        ];
+        
+        let progressIndex = 0;
+        setInstallationProgress(progressMessages[0]);
+        
+        const progressInterval = setInterval(() => {
+          progressIndex++;
+          if (progressIndex < progressMessages.length) {
+            setInstallationProgress(progressMessages[progressIndex]);
+          }
+        }, 1500);
 
         const installData = {
           connections: useDefaults ? {} : connectionsSetup,
@@ -274,10 +297,18 @@ function CloneTemplate({ clonedTemplateId }) {
           },
         )
           .then((clone) => {
-            history.push(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=true`);
+            clearInterval(progressInterval);
+            setInstallationProgress('Installation complete!');
+            setTimeout(() => {
+              history.push(`/${MAP_REDIRECT[mode]}/${clone}?fromtemplate=true`);
+            }, 800);
           })
-          .catch((err) => console.error(err))
-          .finally(() => setIsLoading(false));
+          .catch((err) => {
+            clearInterval(progressInterval);
+            console.error(err);
+            setIsLoading(false);
+            setInstallationProgress('');
+          });
       }
     },
     [
@@ -320,16 +351,253 @@ function CloneTemplate({ clonedTemplateId }) {
     setActiveStep((prev) => prev - 1);
   };
 
+  // Vintage Installation Overlay
+  const installationOverlay = useMemo(
+    () => (
+      <AnimatePresence>
+        {isLoading && (
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            style={{
+              background:
+                theme.palette.mode === 'dark'
+                  ? 'rgba(0, 0, 0, 0.95)'
+                  : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+            }}
+          >
+            {/* Animated vintage background pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'} 10px,
+                    ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'} 20px
+                  )`,
+                }}
+              />
+            </div>
+
+            {/* Main Content */}
+            <m.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
+              className="relative z-10 text-center max-w-md"
+            >
+              {/* Vintage Card */}
+              <div
+                className="relative px-12 py-10 rounded-2xl backdrop-blur-xl border-2 shadow-2xl"
+                style={{
+                  background:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(0, 0, 0, 0.4)'
+                      : 'rgba(255, 255, 255, 0.8)',
+                  borderColor:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.15)'
+                      : 'rgba(0, 0, 0, 0.15)',
+                }}
+              >
+                {/* Vintage decorative corners */}
+                <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-blue-500 rounded-tl-lg opacity-60" />
+                <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-blue-500 rounded-tr-lg opacity-60" />
+                <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-blue-500 rounded-bl-lg opacity-60" />
+                <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-blue-500 rounded-br-lg opacity-60" />
+
+                {/* Animated Icon */}
+                <m.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
+                  style={{
+                    background:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(59, 130, 246, 0.1)'
+                        : 'rgba(59, 130, 246, 0.1)',
+                    border: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.3)'}`,
+                  }}
+                >
+                  <Iconify
+                    icon="mdi:package-variant-closed"
+                    width={32}
+                    style={{
+                      color: theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
+                    }}
+                  />
+                </m.div>
+
+                {/* Title */}
+                <div
+                  className="text-3xl font-light tracking-widest mb-6 uppercase"
+                  style={{
+                    color: theme.palette.mode === 'dark' ? 'white' : 'black',
+                    fontFamily: '"Georgia", serif',
+                    letterSpacing: '0.2em',
+                  }}
+                >
+                  Installing
+                </div>
+
+                {/* Progress Message */}
+                <m.div
+                  key={installationProgress}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-base tracking-wide mb-8 min-h-[24px]"
+                  style={{
+                    color:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.7)'
+                        : 'rgba(0, 0, 0, 0.7)',
+                    fontFamily: '"Georgia", serif',
+                  }}
+                >
+                  {installationProgress}
+                </m.div>
+
+                {/* Vintage Progress Bar */}
+                <div
+                  className="relative h-2 rounded-full overflow-hidden"
+                  style={{
+                    background:
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.1)'
+                        : 'rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <m.div
+                    className="absolute inset-y-0 left-0"
+                    animate={{
+                      x: ['-100%', '100%'],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    style={{
+                      width: '50%',
+                      background:
+                        'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* Decorative dots */}
+                <div className="flex gap-3 justify-center mt-8">
+                  {[0, 1, 2].map((i) => (
+                    <m.div
+                      key={i}
+                      animate={{
+                        scale: [1, 1.4, 1],
+                        opacity: [0.4, 1, 0.4],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.3,
+                        ease: 'easeInOut',
+                      }}
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        background:
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(59, 130, 246, 0.8)'
+                            : 'rgba(59, 130, 246, 0.6)',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Subtle glow effect */}
+              <div
+                className="absolute inset-0 -z-10 blur-3xl opacity-30"
+                style={{
+                  background: 'radial-gradient(circle, rgba(59, 130, 246, 0.4), transparent)',
+                }}
+              />
+            </m.div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    ),
+    [isLoading, installationProgress, theme.palette.mode],
+  );
+
   // Memoize the dialog content to prevent re-renders
   const memoizedContent = useMemo(
     () => (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Clone {clonedTemplate?.version?.public_details?.name}
-            </h1>
+        <div
+          className="rounded-xl shadow-lg border"
+          style={{
+            background:
+              theme.palette.mode === 'dark'
+                ? 'rgba(26, 32, 44, 0.95)'
+                : 'rgba(255, 255, 255, 0.95)',
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(0, 0, 0, 0.08)',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          {/* Vintage Header */}
+          <div
+            className="flex justify-between items-center p-6 border-b relative"
+            style={{
+              borderColor:
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            {/* Decorative line accent */}
+            <div
+              className="absolute top-0 left-6 right-6 h-[1px]"
+              style={{
+                background: `linear-gradient(to right, transparent, ${theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.5)' : 'rgba(59, 130, 246, 0.3)'}, transparent)`,
+              }}
+            />
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{
+                  background:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(59, 130, 246, 0.1)'
+                      : 'rgba(59, 130, 246, 0.1)',
+                  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}`,
+                }}
+              >
+                <Iconify
+                  icon="mdi:package-variant"
+                  width={20}
+                  style={{
+                    color: theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
+                  }}
+                />
+              </div>
+              <h1
+                className="text-2xl font-light tracking-wide"
+                style={{
+                  color: theme.palette.mode === 'dark' ? 'white' : 'black',
+                  fontFamily: '"Georgia", serif',
+                }}
+              >
+                Clone {clonedTemplate?.version?.public_details?.name}
+              </h1>
+            </div>
           </div>
 
           {/* Content */}
@@ -446,9 +714,22 @@ function CloneTemplate({ clonedTemplateId }) {
             )}
           </div>
 
-          {/* Sticky Footer */}
+          {/* Vintage Sticky Footer */}
           {isFetched && clonedTemplate?.version && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-800/50">
+            <div
+              className="border-t p-6 relative"
+              style={{
+                borderColor:
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.1)',
+                background:
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(0, 0, 0, 0.2)'
+                    : 'rgba(0, 0, 0, 0.02)',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
               <div className="flex justify-between items-center">
                 {/* Navigation Buttons */}
                 <div className="flex gap-3">
@@ -472,32 +753,48 @@ function CloneTemplate({ clonedTemplateId }) {
                     )}
                 </div>
 
-                {/* Install Button */}
-                <Button
+                {/* Vintage Install Button */}
+                <button
                   onClick={() => handleInstall(skipSetup)}
                   disabled={!canProceedToInstall || isLoading}
-                  className="min-w-[140px]"
+                  className="relative px-6 py-2.5 rounded-lg font-light tracking-wide transition-all duration-300 min-w-[160px]"
+                  style={{
+                    background:
+                      !canProceedToInstall || isLoading
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'rgba(59, 130, 246, 0.3)'
+                        : theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8))'
+                        : 'linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9))',
+                    color: 'white',
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.3)'}`,
+                    boxShadow:
+                      !canProceedToInstall || isLoading
+                        ? 'none'
+                        : '0 4px 20px rgba(59, 130, 246, 0.3)',
+                    cursor: !canProceedToInstall || isLoading ? 'not-allowed' : 'pointer',
+                    opacity: !canProceedToInstall || isLoading ? 0.6 : 1,
+                    fontFamily: '"Georgia", serif',
+                  }}
                 >
-                  {isLoading ? (
+                  {/* Decorative corners */}
+                  {!isLoading && canProceedToInstall && (
                     <>
-                      <Iconify
-                        icon="svg-spinners:blocks-shuffle-3"
-                        width={16}
-                        className="mr-2"
-                      />
-                      Installing...
-                    </>
-                  ) : (
-                    <>
-                      <Iconify
-                        icon="mdi:check"
-                        width={16}
-                        className="mr-2"
-                      />
-                      Install Template
+                      <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white opacity-50" />
+                      <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white opacity-50" />
+                      <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-white opacity-50" />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-white opacity-50" />
                     </>
                   )}
-                </Button>
+                  <span className="flex items-center justify-center gap-2">
+                    <Iconify
+                      icon={isLoading ? 'svg-spinners:blocks-shuffle-3' : 'mdi:package-down'}
+                      width={18}
+                    />
+                    {isLoading ? 'Installing...' : 'Install Template'}
+                  </span>
+                </button>
               </div>
             </div>
           )}
@@ -518,12 +815,18 @@ function CloneTemplate({ clonedTemplateId }) {
       handleInstall,
       canProceedToInstall,
       isLoading,
+      theme.palette.mode,
     ],
   );
 
   if (!clonedTemplateId) return null;
 
-  return <FormProvider {...methods}>{memoizedContent}</FormProvider>;
+  return (
+    <FormProvider {...methods}>
+      {installationOverlay}
+      {memoizedContent}
+    </FormProvider>
+  );
 }
 
 export default memo(CloneTemplate);

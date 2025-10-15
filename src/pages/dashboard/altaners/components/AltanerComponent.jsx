@@ -84,6 +84,7 @@ const AltanerComponent = ({
   if (altanerComponentType === 'base') {
     return (
       <div
+        data-tour="component-preview-base"
         style={{
           width: '100%',
           height: '100%',
@@ -102,10 +103,20 @@ const AltanerComponent = ({
   }
 
   return (
-    <LoadableComponent
-      key={`altaner-component-${altanerComponentId}`}
-      {...componentProps}
-    />
+    <div
+      data-tour={`component-preview-${altanerComponentType}`}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <LoadableComponent
+        key={`altaner-component-${altanerComponentId}`}
+        {...componentProps}
+      />
+    </div>
   );
 };
 

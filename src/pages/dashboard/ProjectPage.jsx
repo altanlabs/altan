@@ -21,6 +21,7 @@ import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
+import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
 
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
@@ -111,8 +112,9 @@ export default function ProjectPage() {
       // Set first component as default if no component is selected
       const firstComponentId = Object.keys(sortedComponents)[0];
 
-      // Navigate to the URL with the component ID in the path
-      history.push(`/project/${altanerId}/c/${firstComponentId}`);
+      // Navigate to the URL with the component ID in the path, preserving query params
+      const currentSearch = window.location.search;
+      history.push(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
     }
   }, [sortedComponents, activeComponentId, altanerId, history]);
 
@@ -320,6 +322,13 @@ export default function ProjectPage() {
       noPadding
       drawerVisible={false}
     >
+      {/* Onboarding Tour */}
+      <ProjectOnboardingTour
+        altanerId={altanerId}
+        currentComponent={currentComponent}
+        sortedComponents={sortedComponents}
+      />
+
       <Box sx={{ display: 'flex', height: '100%' }}>
         {/* Main content */}
         <Box
@@ -382,7 +391,10 @@ export default function ProjectPage() {
               minSize={35}
               className="overflow-auto min-w-0"
             >
-              <Box sx={{ height: '100%', position: 'relative' }}>
+              <Box 
+                sx={{ height: '100%', position: 'relative' }}
+                data-tour={`component-preview-${currentComponent?.type || 'default'}`}
+              >
                 {activeComponentId && currentComponent && renderComponent()}
               </Box>
             </Panel>

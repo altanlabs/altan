@@ -6,22 +6,24 @@ import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
-import { selectAccount } from '../../redux/slices/general';
-import { PATH_AUTH } from '../../routes/paths';
+import { selectAccount, selectIsAccountFree } from '../../redux/slices/general';
 import { optimai_shop } from '../../utils/axios';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import InteractiveHoverButton from '../agents/InteractiveHoverButton';
 import { CustomAvatar } from '../custom-avatar';
 import CustomDialog from '../dialogs/CustomDialog';
+import UpgradeDialog from '../dialogs/UpgradeDialog';
 
 const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   const history = useHistory();
   const { isAuthenticated } = useAuthContext();
   const account = useSelector(selectAccount);
+  const isAccountFree = useSelector(selectIsAccountFree);
   const analytics = useAnalytics();
   const [fullTemplate, setFullTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Fetch full template details when dialog opens
   const fetchTemplateDetails = useCallback(async (templateId) => {
@@ -79,11 +81,9 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
   };
 
   const handleClone = async () => {
-    // Check if user is authenticated first
-    if (!isAuthenticated) {
-      // Close the dialog and redirect to sign up
-      onClose();
-      history.push(PATH_AUTH.register);
+    // Check if account is free and show upgrade dialog
+    if (isAccountFree) {
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -130,14 +130,19 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
     }
   };
 
+  const handleCloseUpgradeDialog = () => {
+    setShowUpgradeDialog(false);
+  };
+
   const coverUrl = getCoverUrl();
 
   return (
-    <CustomDialog
-      open={open}
-      onClose={onClose}
-      alwaysFullScreen
-    >
+    <>
+      <CustomDialog
+        open={open}
+        onClose={onClose}
+        alwaysFullScreen
+      >
       <DialogContent sx={{ p: 0 }}>
         {/* Loading State */}
         {loading && (
@@ -357,7 +362,15 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
           </>
         )}
       </DialogContent>
-    </CustomDialog>
+      </CustomDialog>
+
+      {/* Upgrade Required Dialog */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onClose={handleCloseUpgradeDialog}
+        sx={{ zIndex: 10001 }}
+      />
+    </>
   );
 };
 
