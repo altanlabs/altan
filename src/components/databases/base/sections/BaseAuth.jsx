@@ -638,28 +638,88 @@ function BaseAuth({ baseId, onNavigate }) {
 
         <Divider />
 
-        {/* Disable Sign-up */}
+        {/* General Configuration */}
         <Box>
-          <SettingsToggleCard
-            title="Disable Sign-up"
-            description="Prevent new users from signing up"
-            enabled={config.general?.disable_signup || false}
-            onToggle={(value) => updateProviderConfig('general', { ...config.general, disable_signup: value })}
-            loading={updating}
-          />
-        </Box>
+          <Typography variant="h6" gutterBottom fontWeight={600}>
+            General Configuration
+          </Typography>
+          <Stack spacing={2}>
+            <SettingsToggleCard
+              title="Enable Anonymous Users"
+              description="Allow anonymous users to sign in"
+              enabled={false}
+              onToggle={() => setSnackbar({ open: true, message: 'Feature not available', severity: 'info' })}
+              loading={false}
+            />
+            <Divider />
+            <SettingsToggleCard
+              title="Disable Sign-up"
+              description="Prevent new users from signing up"
+              enabled={config.general?.disable_signup || false}
+              onToggle={(value) => setConfig((prev) => ({ ...prev, general: { ...prev.general, disable_signup: value } }))}
+              loading={updating}
+            />
+            <Divider />
+            <SettingsToggleCard
+              title="Auto Confirm Email"
+              description="Automatically confirm user emails without requiring validation"
+              enabled={config.general?.auto_confirm || false}
+              onToggle={(value) => setConfig((prev) => ({ ...prev, general: { ...prev.general, auto_confirm: value } }))}
+              loading={updating}
+            />
+            <Divider />
 
-        <Divider />
+            {/* Site URL */}
+            <Box sx={{ py: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                Site URL
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                The base URL of your site
+              </Typography>
+              <TextField
+                value={config.general?.site_url || ''}
+                onChange={(e) => setConfig((prev) => ({ ...prev, general: { ...prev.general, site_url: e.target.value } }))}
+                size="small"
+                fullWidth
+                placeholder="https://your-site.com"
+              />
+            </Box>
 
-        {/* Enable Anonymous Users */}
-        <Box>
-          <SettingsToggleCard
-            title="Enable Anonymous Users"
-            description="Allow anonymous users to sign in"
-            enabled={false}
-            onToggle={() => setSnackbar({ open: true, message: 'Feature not available', severity: 'info' })}
-            loading={false}
-          />
+            <Divider />
+
+            {/* JWT Expiry */}
+            <Box sx={{ py: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                JWT Expiry (seconds)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                How long a JWT token is valid before expiring
+              </Typography>
+              <TextField
+                value={config.general?.jwt_expiry || '3600'}
+                onChange={(e) => setConfig((prev) => ({ ...prev, general: { ...prev.general, jwt_expiry: e.target.value } }))}
+                size="small"
+                fullWidth
+                type="number"
+                placeholder="3600"
+              />
+            </Box>
+
+            <Divider />
+
+            {/* Save Button */}
+            <Box sx={{ pt: 2 }}>
+              <Button
+                variant="contained"
+                onClick={() => updateProviderConfig('general', config.general)}
+                disabled={updating}
+                startIcon={updating ? <CircularProgress size={16} /> : null}
+              >
+                {updating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </Box>
+          </Stack>
         </Box>
       </Stack>
 
