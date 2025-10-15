@@ -199,11 +199,11 @@ const normalizePart = (raw) => {
       : -1,
 
     // Text default for text and thinking parts
-    text: (type === 'text' || type === 'thinking') ? (raw?.text ?? '') : raw?.text,
+    text: type === 'text' || type === 'thinking' ? (raw?.text ?? '') : raw?.text,
     // Tool parts: use extracted tool data or fallback to raw arguments
     arguments: type === 'tool' ? toolData.arguments || raw?.arguments || '' : raw?.arguments,
     // Thinking parts: ensure status field is present
-    status: type === 'thinking' ? (raw?.meta_data?.status || 'in_progress') : raw?.status,
+    status: type === 'thinking' ? raw?.meta_data?.status || 'in_progress' : raw?.status,
 
     // Add tool-specific fields (but don't override is_done since we handled it above)
     ...Object.fromEntries(Object.entries(toolData).filter(([key]) => key !== 'is_done')),
@@ -890,45 +890,12 @@ const slice = createSlice({
         }
       });
     },
-    // addMessages: (state, action) => {
-    //   const { id, messages } = action.payload;
-
-    //   if (!id || !messages || !Array.isArray(messages.items)) {
-    //     console.error("Invalid input for addMessages.");
-    //     return;
-    //   }
-    //   const thread = state.threads.byId[id];
-    //   if (thread) {
-    //     const { byId, allIds, paginationInfo } = paginateCollection(messages);
-    //     thread.messages.byId = thread.messages.byId || {};
-    //     thread.messages.allIds = thread.messages.allIds || [];
-    //     Object.assign(thread.messages.paginationInfo, paginationInfo);
-    //     Object.assign(thread.messages.byId, byId);
-    //     thread.messages.allIds = [...new Set([...thread.messages.allIds, ...allIds])];
-    //   } else {
-    //     console.warn(`Thread with id '${id}' not found.`);
-    //   }
-    // },
     addMessage: (state, action) => {
       const message = action.payload;
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
       }
-
-      // Only play sound for non-streaming messages or when streaming starts
-      // and it's not from the current user
-      // if (message.member_id !== state.me?.id && !message.is_streaming) {
-      //   // Don't play sound if voice is active for this thread
-      //   const isVoiceActiveForThread =
-      //     !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
-      //   if (!isVoiceActiveForThread) {
-      //     SOUND_IN.play();
-      //   }
-      // }
-
-      console.log('[addMessage] Message:', message);
-
       // Check if message already exists to avoid duplicates
       if (state.messages.byId[message.id]) {
         // Update existing message properties, merging meta_data
@@ -1679,9 +1646,10 @@ const slice = createSlice({
         // Also check arguments for special fields if not found at root level
         if (payload.arguments && (!part.act_now || !part.act_done || !part.intent)) {
           try {
-            const parsed = typeof payload.arguments === 'string'
-              ? JSON.parse(payload.arguments)
-              : payload.arguments;
+            const parsed =
+              typeof payload.arguments === 'string'
+                ? JSON.parse(payload.arguments)
+                : payload.arguments;
             if (!part.act_now && parsed.__act_now) part.act_now = parsed.__act_now;
             if (!part.act_done && parsed.__act_done) part.act_done = parsed.__act_done;
             if (!part.intent && parsed.__intent) part.intent = parsed.__intent;
@@ -1845,7 +1813,8 @@ const slice = createSlice({
     },
     // Response lifecycle management
     addResponseLifecycle: (state, action) => {
-      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
+      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } =
+        action.payload;
 
       if (!state.responseLifecycles.byId[response_id]) {
         // Create new response lifecycle
@@ -2033,9 +2002,8 @@ export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
 export const selectMembers = (state) => selectRoomState(state).members;
 
 export const makeSelectMemberById = () =>
-  createSelector(
-    [selectMembers, (state, memberId) => memberId],
-    (members, memberId) => (memberId ? members.byId[memberId] : null),
+  createSelector([selectMembers, (state, memberId) => memberId], (members, memberId) =>
+    memberId ? members.byId[memberId] : null,
   );
 
 export const selectTotalMembers = createSelector(
@@ -2532,79 +2500,64 @@ export const makeSelectMessagePartById = () =>
 
 // Granular selectors for tool parts to minimize re-renders
 export const makeSelectToolPartHeader = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        name: part.name,
-        act_now: part.act_now,
-        act_done: part.act_done,
-        is_done: part.is_done,
-        status: part.status,
-        finished_at: part.finished_at,
-        created_at: part.created_at || part.date_creation,
-        intent: part.intent,
-      };
-    },
-  )((state, partId) => `toolPartHeader_${partId}`);
+    return {
+      name: part.name,
+      act_now: part.act_now,
+      act_done: part.act_done,
+      is_done: part.is_done,
+      status: part.status,
+      finished_at: part.finished_at,
+      created_at: part.created_at || part.date_creation,
+      intent: part.intent,
+    };
+  })((state, partId) => `toolPartHeader_${partId}`);
 
 export const makeSelectToolPartArguments = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        arguments: part.arguments,
-        is_done: part.is_done,
-      };
-    },
-  )((state, partId) => `toolPartArgs_${partId}`);
+    return {
+      arguments: part.arguments,
+      is_done: part.is_done,
+    };
+  })((state, partId) => `toolPartArgs_${partId}`);
 
 export const makeSelectToolPartError = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        error: part.error,
-      };
-    },
-  )((state, partId) => `toolPartError_${partId}`);
+    return {
+      error: part.error,
+    };
+  })((state, partId) => `toolPartError_${partId}`);
 
 export const makeSelectToolPartResult = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        result: part.result,
-      };
-    },
-  )((state, partId) => `toolPartResult_${partId}`);
+    return {
+      result: part.result,
+    };
+  })((state, partId) => `toolPartResult_${partId}`);
 
 export const makeSelectToolPartExecution = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        task_execution_id: part.task_execution_id,
-        task_execution: part.task_execution,
-        execution: part.execution,
-      };
-    },
-  )((state, partId) => `toolPartExec_${partId}`);
+    return {
+      task_execution_id: part.task_execution_id,
+      task_execution: part.task_execution,
+      execution: part.execution,
+    };
+  })((state, partId) => `toolPartExec_${partId}`);
 
 export const makeSelectMessagePartsContent = () =>
   createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
@@ -2655,51 +2608,41 @@ export const makeSelectMessageHasStreamingParts = () =>
 export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
 
 export const selectActiveResponsesByThread = (threadId) =>
-  createSelector(
-    [selectResponseLifecycles, selectMembers],
-    (lifecycles, members) => {
-      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
-      return activeResponseIds
-        .map((responseId) => {
-          const lifecycle = lifecycles.byId[responseId];
-          if (!lifecycle) return null;
+  createSelector([selectResponseLifecycles, selectMembers], (lifecycles, members) => {
+    const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+    return activeResponseIds
+      .map((responseId) => {
+        const lifecycle = lifecycles.byId[responseId];
+        if (!lifecycle) return null;
 
-          // Get agent details
-          const agent = Object.values(members.byId || {}).find(
-            (member) => member.member?.id === lifecycle.agent_id,
-          );
+        // Get agent details
+        const agent = Object.values(members.byId || {}).find(
+          (member) => member.member?.id === lifecycle.agent_id,
+        );
 
-          return {
-            ...lifecycle,
-            agent: agent
-              ? {
-                  id: agent.member.id,
-                  name: agent.member?.name || 'Agent',
-                  avatar: agent.member?.picture,
-                  member_type: agent.member?.member_type,
-                }
-              : null,
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    },
-  );
+        return {
+          ...lifecycle,
+          agent: agent
+            ? {
+                id: agent.member.id,
+                name: agent.member?.name || 'Agent',
+                avatar: agent.member?.picture,
+                member_type: agent.member?.member_type,
+              }
+            : null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  });
 
 export const selectResponseLifecycleById = (responseId) =>
-  createSelector(
-    [selectResponseLifecycles],
-    (lifecycles) => lifecycles.byId[responseId] || null,
-  );
+  createSelector([selectResponseLifecycles], (lifecycles) => lifecycles.byId[responseId] || null);
 
 // Selector for placeholder messages (active responses without message_id yet)
 export const makeSelectPlaceholderMessagesForThread = () =>
   createSelector(
-    [
-      selectResponseLifecycles,
-      selectMembers,
-      (state, threadId) => threadId,
-    ],
+    [selectResponseLifecycles, selectMembers, (state, threadId) => threadId],
     (lifecycles, members, threadId) => {
       const activeResponseIds = lifecycles.activeByThread[threadId] || [];
 
@@ -3452,7 +3395,9 @@ export const stopAgentResponse = (messageId) => async (dispatch, getState) => {
 
 export const stopThreadGeneration = (threadId) => async () => {
   try {
-    const response = await optimai_agent.delete(`/api/v1/activations/threads/${threadId}/responses`);
+    const response = await optimai_agent.delete(
+      `/api/v1/activations/threads/${threadId}/responses`,
+    );
     return Promise.resolve(response.data);
   } catch (e) {
     console.error('Failed to stop thread generation:', e);

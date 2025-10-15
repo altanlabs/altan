@@ -187,7 +187,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   }
 
   return (
-    <div className="w-full max-w-[1000px] mx-auto">
+    <div className="w-full max-w-[700px] mx-auto">
       {/* Compact Collapsible Header */}
       <div
         onClick={() => dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }))}
@@ -213,12 +213,12 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
 
             {/* Assigned Agent Avatar in collapsed view */}
-            {runningTask.assigned_agent && agentAvatars[runningTask.assigned_agent] && (
-              <Tooltip title={`Assigned to: ${runningTask.assigned_agent}`}>
+            {runningTask.assigned_agent_name && agentAvatars[runningTask.assigned_agent_name] && (
+              <Tooltip title={`Assigned to: ${runningTask.assigned_agent_name}`}>
                 <div className="flex-shrink-0">
                   <img
-                    src={agentAvatars[runningTask.assigned_agent]}
-                    alt={runningTask.assigned_agent}
+                    src={agentAvatars[runningTask.assigned_agent_name]}
+                    alt={runningTask.assigned_agent_name}
                     className="w-3.5 h-3.5 rounded-full border border-white/20 dark:border-gray-700/50 shadow-sm"
                     onError={(e) => {
                       e.target.style.display = 'none';
@@ -319,12 +319,12 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                   </div>
 
                   {/* Assigned Agent Avatar */}
-                  {task.assigned_agent && agentAvatars[task.assigned_agent] && (
+                  {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
                     <div className="flex-shrink-0">
-                      <Tooltip title={`Assigned to: ${task.assigned_agent}`}>
+                      <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
                         <img
-                          src={agentAvatars[task.assigned_agent]}
-                          alt={task.assigned_agent}
+                          src={agentAvatars[task.assigned_agent_name]}
+                          alt={task.assigned_agent_name}
                           className="w-4 h-4 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm hover:shadow-md transition-shadow"
                           onError={(e) => {
                             e.target.style.display = 'none';

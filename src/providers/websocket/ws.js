@@ -178,7 +178,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'SchemaUpdate':
       // Handle schema updates with targeted refetching
@@ -594,7 +593,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
         dispatch((dispatch, getState) => {
           const state = getState();
           const base = state.bases?.bases?.[newBaseId];
-          const table = base?.tables?.items?.find(t => t.db_name === newTableName || t.name === newTableName);
+          const table = base?.tables?.items?.find(
+            (t) => t.db_name === newTableName || t.name === newTableName,
+          );
 
           if (table?.id) {
             dispatch(
@@ -619,7 +620,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
         dispatch((dispatch, getState) => {
           const state = getState();
           const base = state.bases?.bases?.[updateBaseId];
-          const table = base?.tables?.items?.find(t => t.db_name === updateTableName || t.name === updateTableName);
+          const table = base?.tables?.items?.find(
+            (t) => t.db_name === updateTableName || t.name === updateTableName,
+          );
 
           if (table?.id) {
             dispatch(
@@ -642,7 +645,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
         dispatch((dispatch, getState) => {
           const state = getState();
           const base = state.bases?.bases?.[deleteBaseId];
-          const table = base?.tables?.items?.find(t => t.db_name === deleteTableName || t.name === deleteTableName);
+          const table = base?.tables?.items?.find(
+            (t) => t.db_name === deleteTableName || t.name === deleteTableName,
+          );
 
           if (table?.id) {
             dispatch(
@@ -696,10 +701,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
       break;
     case 'AuthorizationRequestUpdate':
       const { id, ...changes } = data.data;
-      dispatch(updateAuthorizationRequest({
-        ids: [id],
-        changes: changes,
-      }));
+      dispatch(
+        updateAuthorizationRequest({
+          ids: [id],
+          changes: changes,
+        }),
+      );
       break;
     case 'RoomNew':
       dispatch(addGateRoom(data.data.attributes));
@@ -731,37 +738,38 @@ export const handleWebSocketEvent = async (data, user_id) => {
       const eventType = agentEvent.event_type;
 
       // Try multiple timestamp sources in order of preference
-      const timestamp = agentEvent.event_extras?.timestamp ||
-                       agentEvent.extras?.timestamp ||
-                       agentEvent.timestamp ||
-                       eventData?.timestamp ||
-                       new Date().toISOString();
-
-      if (!eventType) {
-        console.error('[AGENT_RESPONSE] missing event_type:', data);
-        break;
-      }
+      const timestamp =
+        agentEvent.event_extras?.timestamp ||
+        agentEvent.extras?.timestamp ||
+        agentEvent.timestamp ||
+        eventData?.timestamp ||
+        new Date().toISOString();
 
       // Handle activation and response lifecycle events
       if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
-        console.log('[AGENT_RESPONSE] Event:', eventType, data);
-
-        // console.log('[AGENT_RESPONSE] Lifecycle:', eventType, eventData, timestamp);
-        dispatch(addResponseLifecycle({
-          response_id: eventData.response_id,
-          agent_id: eventData.agent_id,
-          thread_id: eventData.thread_id,
-          event_type: eventType,
-          event_data: eventData,
-          timestamp,
-        }));
+        dispatch(
+          addResponseLifecycle({
+            response_id: eventData.response_id,
+            agent_id: eventData.agent_id,
+            thread_id: eventData.thread_id,
+            event_type: eventType,
+            event_data: eventData,
+            timestamp,
+          }),
+        );
 
         // Handle response completion events (including activation failures)
-        if (['response.completed', 'response.failed', 'response.empty', 'activation.failed'].includes(eventType)) {
-          dispatch(completeResponseLifecycle({
-            response_id: eventData.response_id,
-            thread_id: eventData.thread_id,
-          }));
+        if (
+          ['response.completed', 'response.failed', 'response.empty', 'activation.failed'].includes(
+            eventType,
+          )
+        ) {
+          dispatch(
+            completeResponseLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+            }),
+          );
         }
       }
 
@@ -783,10 +791,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
         case 'response.completed':
           dispatch(deleteRunningResponse(eventData));
           if (eventData.message_id) {
-            dispatch(updateMessageStreamingState({
-              messageId: eventData.message_id,
-              isStreaming: false,
-            }));
+            dispatch(
+              updateMessageStreamingState({
+                messageId: eventData.message_id,
+                isStreaming: false,
+              }),
+            );
           }
           break;
 
@@ -794,19 +804,23 @@ export const handleWebSocketEvent = async (data, user_id) => {
           dispatch(deleteRunningResponse(eventData));
           if (eventData.message_id) {
             batch(() => {
-              dispatch(updateMessageStreamingState({
-                messageId: eventData.message_id,
-                isStreaming: false,
-              }));
+              dispatch(
+                updateMessageStreamingState({
+                  messageId: eventData.message_id,
+                  isStreaming: false,
+                }),
+              );
 
               // Mark message as empty response
-              dispatch(addMessage({
-                id: eventData.message_id,
-                thread_id: eventData.thread_id,
-                meta_data: {
-                  is_empty: true,
-                },
-              }));
+              dispatch(
+                addMessage({
+                  id: eventData.message_id,
+                  thread_id: eventData.thread_id,
+                  meta_data: {
+                    is_empty: true,
+                  },
+                }),
+              );
             });
           }
           break;
@@ -815,42 +829,48 @@ export const handleWebSocketEvent = async (data, user_id) => {
           dispatch(deleteRunningResponse(eventData));
           if (eventData.message_id) {
             batch(() => {
-              dispatch(updateMessageStreamingState({
-                messageId: eventData.message_id,
-                isStreaming: false,
-              }));
+              dispatch(
+                updateMessageStreamingState({
+                  messageId: eventData.message_id,
+                  isStreaming: false,
+                }),
+              );
 
               // Update message meta_data with error information
-              dispatch(addMessage({
-                id: eventData.message_id,
-                thread_id: eventData.thread_id,
-                meta_data: {
+              dispatch(
+                addMessage({
+                  id: eventData.message_id,
+                  thread_id: eventData.thread_id,
+                  meta_data: {
+                    error_code: eventData.error_code,
+                    error_message: eventData.error_message,
+                    error_type: eventData.error_type,
+                    failed_in: eventData.failed_in,
+                    retryable: eventData.retryable,
+                    total_attempts: eventData.total_attempts,
+                  },
+                }),
+              );
+
+              // Add error message part to display the error
+              // Use a deterministic ID so multiple errors for the same message replace each other
+              const errorPartId = `${eventData.message_id}-error`;
+              dispatch(
+                addMessagePart({
+                  id: errorPartId,
+                  message_id: eventData.message_id,
+                  thread_id: eventData.thread_id,
+                  type: 'error',
                   error_code: eventData.error_code,
                   error_message: eventData.error_message,
                   error_type: eventData.error_type,
                   failed_in: eventData.failed_in,
                   retryable: eventData.retryable,
                   total_attempts: eventData.total_attempts,
-                },
-              }));
-
-              // Add error message part to display the error
-              // Use a deterministic ID so multiple errors for the same message replace each other
-              const errorPartId = `${eventData.message_id}-error`;
-              dispatch(addMessagePart({
-                id: errorPartId,
-                message_id: eventData.message_id,
-                thread_id: eventData.thread_id,
-                type: 'error',
-                error_code: eventData.error_code,
-                error_message: eventData.error_message,
-                error_type: eventData.error_type,
-                failed_in: eventData.failed_in,
-                retryable: eventData.retryable,
-                total_attempts: eventData.total_attempts,
-                order: 999, // Put error at the end
-                is_done: true,
-              }));
+                  order: 999, // Put error at the end
+                  is_done: true,
+                }),
+              );
             });
           }
           break;
@@ -903,6 +923,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'RoomMemberUpdate':
       dispatch(roomMemberUpdate(data.data));
       break;
+    case 'ThreadNew':
+      console.log('ThreadNew', data);
+      dispatch(addThread(data.data.attributes));
+      break;
     case 'ThreadOpened':
       const thread = data.data.attributes;
       dispatch(addThread(thread));
@@ -921,34 +945,82 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'ThreadRead':
       dispatch(changeThreadReadState(data.data));
       break;
-    case 'ThreadTaskNew':
-      dispatch(
-        addTask({
-          threadId: data.data.mainthread_id,
-          task: data.data,
-        }),
-      );
-      break;
-    case 'ThreadTaskUpdate':
-      // eslint-disable-next-line no-console
-      console.log('🔄 ThreadTaskUpdate:', data);
-      dispatch(
-        updateTask({
-          threadId: data.data.mainthread_id,
-          taskId: data.data.id,
-          updates: data.data,
-        }),
-      );
-      break;
-    case 'ThreadTaskDelete':
-      // eslint-disable-next-line no-console
-      console.log('🗑️ ThreadTaskDelete:', data);
-      dispatch(
-        removeTask({
-          threadId: data.data.mainthread_id,
-          taskId: data.data.id,
-        }),
-      );
+    case 'TASK_EVENT':
+      console.log('TASK_EVENT', data);
+      const taskEvent = data.data?.task_event;
+      if (!taskEvent) {
+        console.error('TASK_EVENT missing task_event:', data);
+        break;
+      }
+
+      const taskEventType = taskEvent.event_type;
+      const taskEventData = taskEvent.data;
+
+      if (!taskEventType || !taskEventData) {
+        console.error('TASK_EVENT missing event_type or data:', data);
+        break;
+      }
+
+      switch (taskEventType) {
+        case 'task.created':
+          dispatch(
+            addTask({
+              threadId: taskEventData.mainthread_id,
+              task: {
+                id: taskEventData.task_id,
+                mainthread_id: taskEventData.mainthread_id,
+                room_id: taskEventData.room_id,
+                task_name: taskEventData.task_name,
+                task_description: taskEventData.task_description,
+                status: taskEventData.status,
+                priority: taskEventData.priority,
+                assigned_agent: taskEventData.assigned_agent,
+                assigned_agent_name: taskEventData.assigned_agent_name,
+                subthread_id: taskEventData.subthread_id,
+                dependencies: taskEventData.dependencies,
+                summary: taskEventData.summary,
+                created_at: taskEventData.created_at,
+                updated_at: taskEventData.updated_at,
+              },
+            }),
+          );
+          break;
+        case 'task.updated':
+          // eslint-disable-next-line no-console
+          console.log('🔄 task.updated:', taskEventData);
+          dispatch(
+            updateTask({
+              threadId: taskEventData.mainthread_id || taskEventData.room_id,
+              taskId: taskEventData.task_id,
+              updates: {
+                id: taskEventData.task_id,
+                status: taskEventData.status,
+                task_name: taskEventData.task_name,
+                task_description: taskEventData.task_description,
+                assigned_agent: taskEventData.assigned_agent,
+                assigned_agent_name: taskEventData.assigned_agent_name,
+                subthread_id: taskEventData.subthread_id,
+                priority: taskEventData.priority,
+                dependencies: taskEventData.dependencies,
+                summary: taskEventData.summary,
+                updated_at: taskEventData.updated_at,
+              },
+            }),
+          );
+          break;
+        case 'task.deleted':
+          // eslint-disable-next-line no-console
+          console.log('🗑️ task.deleted:', taskEventData);
+          dispatch(
+            removeTask({
+              threadId: taskEventData.mainthread_id || taskEventData.room_id,
+              taskId: taskEventData.task_id,
+            }),
+          );
+          break;
+        default:
+          console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
+      }
       break;
     case 'MESSAGE':
       console.log('MESSAGE', data);
