@@ -83,7 +83,7 @@ const FloatingNavigation = () => {
       { path: '/', label: 'Projects', icon: 'material-symbols:folder-outline' },
       { path: '/agents', label: 'Agents', icon: 'fluent:bot-sparkle-20-filled' },
       { path: '/flows', label: 'Flows', icon: 'fluent:flash-flow-24-filled' },
-      { path: '/bases', label: 'Databases', icon: 'material-symbols:database-outline' },
+      // { path: '/bases', label: 'Databases', icon: 'material-symbols:database-outline' },
       { path: '/rooms', label: 'Rooms', icon: 'material-symbols:chat' },
     ],
     utils: [
@@ -131,16 +131,16 @@ const FloatingNavigation = () => {
         />
       ),
     },
-    {
-      path: '/flows',
-      label: 'Flows',
-      icon: (
-        <Iconify
-          icon="fluent:flash-flow-24-filled"
-          className="w-[12px] h-[12px]"
-        />
-      ),
-    },
+    // {
+    //   path: '/flows',
+    //   label: 'Flows',
+    //   icon: (
+    //     <Iconify
+    //       icon="fluent:flash-flow-24-filled"
+    //       className="w-[12px] h-[12px]"
+    //     />
+    //   ),
+    // },
     // Conditionally show Usage or Pricing based on authentication
     isAuthenticated
       ? {
