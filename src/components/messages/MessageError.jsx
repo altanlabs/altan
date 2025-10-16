@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { sendMessage, selectRoomId, makeSelectMemberById } from '../../redux/slices/room.js';
+import { retryResponse, selectRoomId, makeSelectMemberById } from '../../redux/slices/room.js';
 import { dispatch } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
 
@@ -35,17 +35,18 @@ const MessageError = ({ message }) => {
   }, [errorMessage]);
 
   // Check for error in both message.error (legacy) and message.meta_data
-  const hasError =
-    message.error || message.meta_data?.error_code || message.meta_data?.error_message;
+  const hasError = !!(
+    message.error ||
+    message.meta_data?.error_code ||
+    message.meta_data?.error_message ||
+    message.meta_data?.error_type
+  );
 
   if (!hasError) return null;
 
   const handleRetry = () => {
     dispatch(
-      sendMessage({
-        content: 'continue',
-        threadId: message.thread_id,
-      }),
+      retryResponse(message.id, message.thread_id, roomId, member?.member?.agent_id),
     );
   };
 

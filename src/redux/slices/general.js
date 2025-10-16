@@ -1234,7 +1234,7 @@ export const selectWorkflowExecutionsInitialized = (state) =>
 const ACCOUNT_GQ = {
   '@fields': '@all',
   user: {
-    '@fields': ['id', 'email'],
+    '@fields': ['id', 'email', 'first_name', 'last_name', 'avatar_url'],
     owned_accounts: {
       '@fields': '@base@exc:meta_data',
     },
@@ -1441,7 +1441,7 @@ export const getAccount = (selectedAccountId) => async (dispatch, getState) => {
     const finalAccount = selectedAccountId || accountId;
     const response = await optimai.post(
       `/account/${finalAccount}/gq`,
-      FILTER_ACCOUNT_GQ(['organisation', 'user', 'company']),
+      FILTER_ACCOUNT_GQ(['organisation', 'owner', 'company']),
     );
     const accountBody = response.data;
     if (accountBody?.id !== finalAccount) {
@@ -1449,6 +1449,7 @@ export const getAccount = (selectedAccountId) => async (dispatch, getState) => {
     }
     batch(() => {
       const organisation = accountBody?.organisation || {};
+
       dispatch(
         slice.actions.setAccount({
           id: accountBody?.id,

@@ -391,7 +391,7 @@ export default function NewMentionsPlugin(): JSX.Element | null {
               }}
               zIndex={999}
             >
-              <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+              {/* <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <TextField 
                   variant="outlined" 
                   placeholder="Search outsiders..." 
@@ -404,7 +404,7 @@ export default function NewMentionsPlugin(): JSX.Element | null {
                     }
                   }}
                 />
-              </Box>
+              </Box> */}
               <ul>
                   {
                     options.map((option, i: number) => {

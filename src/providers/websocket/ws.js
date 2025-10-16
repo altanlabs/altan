@@ -107,6 +107,10 @@ import {
   markMessagePartDone,
   deleteMessagePart,
   updateMessageStreamingState,
+  // Activation lifecycle actions
+  addActivationLifecycle,
+  completeActivationLifecycle,
+  discardActivationLifecycle,
   // Response lifecycle actions
   addResponseLifecycle,
   completeResponseLifecycle,
@@ -525,7 +529,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
       // If interface_id is not in changes, we need to find it by searching all interfaces
       if (!interfaceId) {
-        console.log('Interface ID not found in changes, searching existing deployments...');
+        console.warn('Interface ID not found in changes, searching existing deployments...');
         // This will be handled by the Redux reducer with a special flag
         dispatch(
           updateInterfaceDeployment({
@@ -583,7 +587,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
     case 'RecordsNew':
-      console.log('RecordsNew WS', data);
       const newTableName = data.table_name || data.data?.table_name;
       const newBaseId = data.base_id || data.data?.base_id;
       const newRecords = data.records || data.data?.records;
@@ -747,29 +750,58 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
       // Handle activation and response lifecycle events
       if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
-        dispatch(
-          addResponseLifecycle({
+        console.log('[AGENT_RESPONSE] Event:', eventType);
+
+        // Activation lifecycle (before response starts)
+        if (eventType.startsWith('activation.')) {
+          // Add to activation lifecycle
+          dispatch(addActivationLifecycle({
             response_id: eventData.response_id,
             agent_id: eventData.agent_id,
             thread_id: eventData.thread_id,
             event_type: eventType,
             event_data: eventData,
             timestamp,
-          }),
-        );
+          }));
 
-        // Handle response completion events (including activation failures)
-        if (
-          ['response.completed', 'response.failed', 'response.empty', 'activation.failed'].includes(
-            eventType,
-          )
-        ) {
-          dispatch(
-            completeResponseLifecycle({
+          // Complete activation lifecycle when scheduled or rescheduled
+          if (['activation.scheduled', 'activation.rescheduled'].includes(eventType)) {
+            dispatch(completeActivationLifecycle({
               response_id: eventData.response_id,
               thread_id: eventData.thread_id,
-            }),
-          );
+            }));
+          }
+
+          // Discard activation when discarded
+          if (eventType === 'activation.discarded') {
+            dispatch(discardActivationLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+            }));
+          }
+        }
+
+        // Response lifecycle (after response starts)
+        if (eventType.startsWith('response.')) {
+          // Add to response lifecycle
+          dispatch(addResponseLifecycle({
+            response_id: eventData.response_id,
+            agent_id: eventData.agent_id,
+            thread_id: eventData.thread_id,
+            event_type: eventType,
+            event_data: eventData,
+            timestamp,
+          }));
+
+          // Complete response lifecycle on completion events
+          if (['response.completed', 'response.failed', 'response.empty', 'response.stopped', 'response.interrupted', 'response.suspended', 'response.requeued'].includes(eventType)) {
+            dispatch(completeResponseLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+              message_id: eventData.message_id,
+              status: eventType.replace('response.', ''),
+            }));
+          }
         }
       }
 
@@ -917,6 +949,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
         default:
           if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
             console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
+          } else {
+            console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
           }
       }
       break;
@@ -1023,7 +1057,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'MESSAGE':
-      console.log('MESSAGE', data);
+      // console.log('MESSAGE', data);
       dispatch(addMessage(data.data.attributes));
       break;
     case 'MessageNew':

@@ -12,7 +12,6 @@ import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import {
   fetchThread,
   makeSelectThread,
-  readThread,
   selectRoom,
   selectThreadDrawerDetails,
   makeSelectSortedThreadMessageIds,
@@ -22,7 +21,6 @@ import {
   selectIsVoiceConnecting,
   ensureThreadMessagesLoaded,
 } from '../../../redux/slices/room';
-import { selectTasksExpanded } from '../../../redux/slices/tasks';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import { useVoiceConversationHandler } from '../../attachment/hooks/useVoiceConversation.js';
 import FloatingTextArea from '../../FloatingTextArea.jsx';
@@ -60,12 +58,13 @@ const Thread = ({
   renderCredits = false,
   renderFeedback = false,
 }) => {
-  const { gateId } = useParams();
+  useParams();
   const history = useHistory();
   const { isOpen } = useWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
+  const [floatingTextAreaHeight, setFloatingTextAreaHeight] = useState(120);
 
   const room = useSelector(selectRoom);
   const drawer = useSelector(selectThreadDrawerDetails);
@@ -87,16 +86,12 @@ const Thread = ({
   const thread = useSelector((state) =>
     threadSelector(state, mode === 'drawer' ? drawer.current : tId),
   );
-  const todoExpanded = useSelector(selectTasksExpanded(tId || drawer.current));
   const threadId = thread?.id;
-  // Debug logging for padding calculation
-  const calculatedPaddingBottom = isMobile
-    ? '120px'
-    : !hideInput
-      ? todoExpanded
-        ? '340px'
-        : '120px'
-      : '0px';
+
+  // Calculate padding based on actual FloatingTextArea height
+  const calculatedPaddingBottom = !hideInput
+    ? `${floatingTextAreaHeight + 20}px` // Add 20px buffer
+    : '0px';
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -234,7 +229,7 @@ const Thread = ({
             width: '100%',
             // Add bottom padding: always on mobile (fixed FloatingTextArea), or on desktop when input shown
             // Extra padding when TodoWidget is expanded
-            paddingBottom: calculatedPaddingBottom,
+            // paddingBottom: calculatedPaddingBottom,
             // Only hide if we're certain there are no messages AND not in drawer mode
             ...(!hasMessages ? { display: 'none' } : {}),
           }}
@@ -246,6 +241,7 @@ const Thread = ({
             hasLoaded={hasLoaded}
             setHasLoaded={setHasLoaded}
             renderFeedback={renderFeedback}
+            footerPaddingBottom={floatingTextAreaHeight + 50}
           />
         </div>
 
@@ -385,6 +381,7 @@ const Thread = ({
               roomId={room?.id}
               mode={isMobile ? 'mobile' : 'standard'}
               renderCredits={renderCredits}
+              onHeightChange={setFloatingTextAreaHeight}
             />
           )}
         </div>

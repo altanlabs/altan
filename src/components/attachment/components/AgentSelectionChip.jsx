@@ -7,9 +7,13 @@ import {
   MenuItem,
   useMediaQuery,
   useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
+import { AgentDetailDialog } from './agent-detail';
+import { useAuthContext } from '../../../auth/useAuthContext';
 import { selectMembers, selectRoomId } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store';
 import Iconify from '../../iconify/Iconify.jsx';
@@ -22,13 +26,15 @@ const AgentSelectionChip = ({
   isVoiceActive = false,
 }) => {
   const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
+  const [detailDialogAgent, setDetailDialogAgent] = useState(null);
   const members = useSelector(selectMembers);
   const roomId = useSelector(selectRoomId);
+  const { user } = useAuthContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // LocalStorage key for this room's selected agent
-  const getStorageKey = () => `selectedAgent_${roomId}`;
+  const getStorageKey = useCallback(() => `selectedAgent_${roomId}`, [roomId]);
 
   // Load persisted agent selection for this room
   useEffect(() => {
@@ -44,12 +50,11 @@ const AgentSelectionChip = ({
             localStorage.removeItem(getStorageKey());
           }
         }
-      } catch (error) {
-        console.warn('Error loading saved agent selection:', error);
+      } catch {
+        // Error loading saved agent selection
       }
     }
-  }, [roomId, agents, selectedAgent, onAgentSelect]);
-
+  }, [roomId, agents, selectedAgent, onAgentSelect, getStorageKey]);
 
   const handleAgentMenuOpen = (event) => {
     event.preventDefault();
@@ -64,8 +69,8 @@ const AgentSelectionChip = ({
     // Save selection to localStorage for this room
     try {
       localStorage.setItem(getStorageKey(), agent.id);
-    } catch (error) {
-      console.warn('Error saving agent selection:', error);
+    } catch {
+      // Error saving agent selection
     }
     onAgentSelect(agent);
     setAgentMenuAnchor(null);
@@ -75,10 +80,21 @@ const AgentSelectionChip = ({
     // Remove selection from localStorage for this room
     try {
       localStorage.removeItem(getStorageKey());
-    } catch (error) {
-      console.warn('Error clearing agent selection:', error);
+    } catch {
+      // Error clearing agent selection
     }
     onAgentClear();
+  };
+
+  const handleAgentInfo = (event, agent) => {
+    event.stopPropagation();
+    // Get the full member object from Redux
+    const fullMember = members.byId[agent.id];
+    setDetailDialogAgent(fullMember);
+  };
+
+  const handleCloseDetailDialog = () => {
+    setDetailDialogAgent(null);
   };
 
   // Don't show if there's only one agent or if voice is active
@@ -159,43 +175,76 @@ const AgentSelectionChip = ({
           >
             Select an agent to mention
           </Typography>
-          {agents.map((agent) => (
-            <MenuItem
-              key={agent.id}
-              onClick={() => handleAgentSelect(agent)}
-              sx={{
-                borderRadius: '8px',
-                margin: '2px 0',
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                },
-              }}
-            >
-              <Avatar
-                src={agent.src}
-                alt={agent.name}
-                sx={{ width: 24, height: 24, marginRight: 1 }}
-              />
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 500 }}
+          {agents.map((agent) => {
+            const originalMember = members.byId[agent.id];
+            const hasVoice = !!originalMember?.member?.agent?.elevenlabs_id;
+
+            return (
+              <MenuItem
+                key={agent.id}
+                onClick={() => handleAgentSelect(agent)}
+                sx={{
+                  borderRadius: '8px',
+                  margin: '2px 0',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                }}
               >
-                {agent.name}
-              </Typography>
-              {(() => {
-                const originalMember = members.byId[agent.id];
-                const hasVoice = !!originalMember?.member?.agent?.elevenlabs_id;
-                return hasVoice ? (
-                  <Iconify
-                    icon="mdi:microphone"
-                    sx={{ ml: 'auto', color: 'success.main', fontSize: '16px' }}
-                  />
-                ) : null;
-              })()}
-            </MenuItem>
-          ))}
+                <Avatar
+                  src={agent.src}
+                  alt={agent.name}
+                  sx={{ width: 24, height: 24, marginRight: 1 }}
+                />
+                <Typography
+                  variant="body2"
+                  noWrap
+                  sx={{ flex: 1, fontWeight: 500 }}
+                >
+                  {agent.name}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+                  {hasVoice && (
+                    <Iconify
+                      icon="mdi:microphone"
+                      width={15}
+                      sx={{ color: 'success.main' }}
+                    />
+                  )}
+                  {user?.xsup && (
+                    <Tooltip title="Agent details">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleAgentInfo(e, agent)}
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          color: 'text.secondary',
+                          '&:hover': {
+                            color: 'primary.main',
+                            bgcolor: 'action.hover',
+                          },
+                        }}
+                      >
+                        <Iconify icon="eva:settings-2-outline" width={14} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              </MenuItem>
+            );
+          })}
         </Box>
       </Popover>
+
+      {/* Agent Detail Dialog for Super Users */}
+      {user?.xsup && (
+        <AgentDetailDialog
+          open={!!detailDialogAgent}
+          onClose={handleCloseDetailDialog}
+          agentMember={detailDialogAgent}
+        />
+      )}
     </>
   );
 };

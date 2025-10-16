@@ -2,7 +2,11 @@ import { useMediaQuery, useTheme, DialogContent } from '@mui/material';
 import { memo, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { selectActiveResponsesByThread, stopThreadGeneration } from '../../redux/slices/room';
+import {
+  selectActiveResponsesByThread,
+  selectActiveActivationsByThread,
+  stopThreadGeneration,
+} from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
@@ -51,11 +55,17 @@ const AttachmentHandler = ({
   const { isVoiceActive, isVoiceConnecting, startVoiceCall, stopVoiceCall } =
     useVoiceConversationHandler(threadId);
 
-  // Check for active agent generation
+  // Check for active agent generation (activations OR responses)
   const activeResponses = useSelector((state) =>
     threadId ? selectActiveResponsesByThread(threadId)(state) : [],
   );
-  const hasActiveGeneration = activeResponses && activeResponses.length > 0;
+  const activeActivations = useSelector((state) =>
+    threadId ? selectActiveActivationsByThread(threadId)(state) : [],
+  );
+  // Show stop button if there are ANY active activations or responses
+  const hasActiveGeneration =
+    (activeResponses && activeResponses.length > 0) ||
+    (activeActivations && activeActivations.length > 0);
 
   // File handling hooks
   const { dragOver, fileInputRef, handleFileChange, handleDrop, handleUrlUpload, setupDragEvents } =
