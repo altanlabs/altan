@@ -18,7 +18,7 @@ import {
   loadDisplayModeForProject,
   selectViewType,
 } from '../../redux/slices/altaners';
-import { makeSelectInterfaceById, makeSelectSortedCommits } from '../../redux/slices/general';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../redux/slices/general';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
@@ -107,8 +107,20 @@ export default function ProjectPage() {
     if (!activeComponentId || !sortedComponents) return null;
     const component = sortedComponents[activeComponentId];
     // Current component type for rendering logic
-    return component;
+    return component || null;
   }, [activeComponentId, sortedComponents]);
+
+  // Redirect to first component if the requested component doesn't exist
+  useEffect(() => {
+    if (activeComponentId && sortedComponents && Object.keys(sortedComponents).length > 0) {
+      // Check if the active component ID exists in sorted components
+      if (!sortedComponents[activeComponentId]) {
+        const firstComponentId = Object.keys(sortedComponents)[0];
+        const currentSearch = window.location.search;
+        history.replace(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
+      }
+    }
+  }, [activeComponentId, sortedComponents, altanerId, history]);
 
   // Create memoized selectors for interface
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
@@ -138,6 +150,13 @@ export default function ProjectPage() {
     // Only show full-screen chat if interface is loaded and has no commits
     return !interfaceCommits || interfaceCommits.length === 0;
   }, [interfaceId, interfaceData, interfaceCommits]);
+
+  // Fetch interface data if we're viewing an interface component
+  useEffect(() => {
+    if (interfaceId) {
+      dispatch(getInterfaceById(interfaceId));
+    }
+  }, [interfaceId]);
 
   // Initialize dev server status polling for interfaces (regardless of commits)
   // This ensures the dev server starts even when showing full-screen chat

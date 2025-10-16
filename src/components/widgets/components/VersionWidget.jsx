@@ -1,4 +1,3 @@
-/* eslint-disable react/display-name */
 import {
   Box,
   Typography,
@@ -6,42 +5,30 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  IconButton,
   Stack,
 } from '@mui/material';
-import { memo, useState, useEffect } from 'react';
+import { memo, useEffect } from 'react';
 
-import { optimai } from '../../../utils/axios.js';
-
+import {
+  fetchTemplateVersion,
+  selectTemplateVersion,
+  selectTemplateVersionLoading,
+  selectTemplateVersionError,
+} from '../../../redux/slices/templateVersions';
+import { useDispatch, useSelector } from '../../../redux/store';
 import Iconify from '../../iconify/Iconify.jsx';
 
 const VersionWidget = ({ id }) => {
-  const [templateVersion, setTemplateVersion] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const templateVersion = useSelector(selectTemplateVersion(id));
+  const loading = useSelector(selectTemplateVersionLoading(id));
+  const error = useSelector(selectTemplateVersionError(id));
 
   useEffect(() => {
-    const fetchTemplateVersion = async () => {
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await optimai.get(`/templates/versions/${id}`);
-        setTemplateVersion(response.data.template_version);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching template version:', error);
-        setError('Failed to load template version');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTemplateVersion();
-  }, [id]);
+    if (id) {
+      dispatch(fetchTemplateVersion(id));
+    }
+  }, [id, dispatch]);
 
   const handlePreviewClick = () => {
     const url = templateVersion?.build_metadata?.url;
@@ -94,12 +81,6 @@ const VersionWidget = ({ id }) => {
     );
   }
 
-  // Extract template name from different possible sources
-  const templateName =
-    templateVersion?.public_details?.name ||
-    templateVersion?.name?.replace(/\n/g, ' ') ||
-    'Unnamed Template';
-
   // Extract version info
   const versionString = templateVersion?.version_string || templateVersion?.version || 'Unknown';
 
@@ -107,8 +88,6 @@ const VersionWidget = ({ id }) => {
   const hasPreviewUrl = templateVersion?.build_metadata?.url;
 
   // Extract additional metadata
-  const description =
-    templateVersion?.public_details?.description || templateVersion?.description || '';
   const tags = templateVersion?.public_details?.tags || [];
   const updatedAt = templateVersion?.date_creation;
 
