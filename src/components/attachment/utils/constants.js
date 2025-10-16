@@ -16,4 +16,4 @@ export const TOOL_MENU_ITEM = {
   type: 'tool',
   icon: 'mdi:tools',
   label: 'Add Tool',
-}; 
+};

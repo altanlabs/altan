@@ -12,6 +12,7 @@ import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
 import FlowSelectionDialog from './components/FlowSelectionDialog.jsx';
+import ModeSelectionChip from './components/ModeSelectionChip.jsx';
 import SpeechInputModal from './components/SpeechInputModal.jsx';
 import VoiceCallButton from './components/VoiceCallButton.jsx';
 import { useFileHandling } from './hooks/useFileHandling';
@@ -32,6 +33,8 @@ const AttachmentHandler = ({
   onMobileToggle = null,
   selectedAgent = null,
   setSelectedAgent = null,
+  selectedMode: propSelectedMode = null,
+  setSelectedMode: propSetSelectedMode = null,
   agents = [],
   activeComponent = null,
   allComponents = null,
@@ -63,12 +66,17 @@ const AttachmentHandler = ({
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [showSpeechInput, setShowSpeechInput] = useState(false);
   const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
+  
+  // Use prop mode if provided, otherwise use local state
+  const [localSelectedMode, setLocalSelectedMode] = useState('auto');
+  const selectedMode = propSelectedMode !== null ? propSelectedMode : localSelectedMode;
+  const setSelectedMode = propSetSelectedMode !== null ? propSetSelectedMode : setLocalSelectedMode;
 
   // Get altaner_id from route params
   const { altanerId } = useParams();
 
   // Determine menu items based on altanerId presence
-  const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM] : BASE_MENU_ITEMS;
+  const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, TOOL_MENU_ITEM] : BASE_MENU_ITEMS;
 
   // Fetch altaner data on mount if altanerId exists
   useEffect(() => {
@@ -203,6 +211,15 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
     setSelectedAgent(null);
   }, [setSelectedAgent]);
 
+  // Mode selection handler
+  const handleModeSelect = useCallback((mode) => {
+    setSelectedMode(mode);
+    // Clear agent selection when switching to auto or plan mode
+    if ((mode === 'auto' || mode === 'plan') && selectedAgent) {
+      setSelectedAgent(null);
+    }
+  }, [selectedAgent, setSelectedAgent]);
+
   // The container into which we'll portal the overlay
   const overlayContainer = containerRef?.current;
 
@@ -228,13 +245,23 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
           />
 
           {!isMobile && (
-            <AgentSelectionChip
-              agents={agents}
-              selectedAgent={selectedAgent}
-              onAgentSelect={handleAgentSelect}
-              onAgentClear={handleAgentClear}
-              isVoiceActive={isVoiceActive}
-            />
+            <>
+              <ModeSelectionChip
+                selectedMode={selectedMode}
+                onModeSelect={handleModeSelect}
+                isVoiceActive={isVoiceActive}
+              />
+              
+              {selectedMode === 'instant' && (
+                <AgentSelectionChip
+                  agents={agents}
+                  selectedAgent={selectedAgent}
+                  onAgentSelect={handleAgentSelect}
+                  onAgentClear={handleAgentClear}
+                  isVoiceActive={isVoiceActive}
+                />
+              )}
+            </>
           )}
         </div>
 

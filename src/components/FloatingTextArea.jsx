@@ -98,6 +98,7 @@ const FloatingTextArea = ({
   const { translate } = useLocales();
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [attachments, setAttachments] = useState([]);
+  const [selectedMode, setSelectedMode] = useState('auto');
   const editorRef = useRef({});
 
   // Voice conversation hooks
@@ -129,6 +130,15 @@ const FloatingTextArea = ({
           setSelectedAgent(null);
         }
 
+        // Append mode instruction as hidden directive
+        const modeMapping = {
+          'auto': 'AUTO MODE',
+          'instant': 'INSTANT MODE',
+          'plan': 'PLAN MODE',
+        };
+        const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
+        finalContent = finalContent + '\n' + modeInstruction;
+
         // Create a clean attachments array without `preview`
         const sanitizedAttachments = attachments.map(({ preview, ...rest }) => rest);
 
@@ -150,7 +160,7 @@ const FloatingTextArea = ({
         setAttachments([]);
       }
     },
-    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent],
+    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode],
   );
 
   // Removes a single attachment by index
@@ -461,6 +471,8 @@ const FloatingTextArea = ({
                   mode={mode}
                   mobileActiveView={mobileActiveView}
                   onMobileToggle={onMobileToggle}
+                  selectedMode={selectedMode}
+                  setSelectedMode={setSelectedMode}
                   selectedAgent={selectedAgent}
                   setSelectedAgent={setSelectedAgent}
                   agents={agents}
