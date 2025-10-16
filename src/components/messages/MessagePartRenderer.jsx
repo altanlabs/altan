@@ -59,8 +59,7 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
       return null;
   }
 }, (prevProps, nextProps) => {
-  // Custom comparison function for better memoization
-  // Since ToolPartCard now uses its own selectors, we can simplify this
+  // Simplified comparison function for better streaming reliability
   const prevPart = prevProps.part;
   const nextPart = nextProps.part;
 
@@ -79,17 +78,23 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
 
   // Type-specific properties
   if (partType === 'text') {
-    // Text parts only need to check text content
-    return prevPart.text === nextPart.text;
+    // For text parts, check both text content and is_done status
+    // Check text length as well to ensure streaming updates are caught
+    const textChanged = prevPart.text !== nextPart.text ||
+                        (prevPart.text?.length || 0) !== (nextPart.text?.length || 0);
+    const statusChanged = prevPart.is_done !== nextPart.is_done;
+
+    // Return true only if nothing changed (memo should skip render)
+    return !textChanged && !statusChanged;
   } else if (partType === 'tool') {
-    // Tool parts use their own selectors now, so we can just check the part ID
-    // The ToolPartCard sub-components will handle their own re-rendering
+    // Tool parts use their own selectors, allow re-render for safety
     return true;
   } else if (partType === 'thinking') {
     return (
       prevPart.text === nextPart.text &&
       prevPart.status === nextPart.status &&
-      prevPart.finished_at === nextPart.finished_at
+      prevPart.finished_at === nextPart.finished_at &&
+      prevPart.is_done === nextPart.is_done
     );
   } else if (partType === 'error') {
     return (

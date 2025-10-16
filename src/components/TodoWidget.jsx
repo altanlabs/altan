@@ -17,6 +17,47 @@ import {
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
+// Separate component to handle each task's thread messages
+const TaskThreadPreview = memo(({ task, isExpanded }) => {
+  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
+  const taskMessages = useSelector((state) =>
+    task.subthread_id ? messagesSelector(state, task.subthread_id) : [],
+  );
+
+  if (!task.subthread_id || taskMessages.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`rounded-md overflow-hidden transition-all duration-300 ${
+        isExpanded ? 'h-[450px]' : 'h-24'
+      }`}
+    >
+      <Virtuoso
+        key={`${task.id}-${taskMessages.length}`}
+        data={taskMessages}
+        alignToBottom
+        followOutput="smooth"
+        itemContent={(index, messageId) => (
+          <div className={isExpanded ? 'px-2 py-1' : ''}>
+            <Message
+              messageId={messageId}
+              threadId={task.subthread_id}
+              mode="mini"
+              disableEndButtons={true}
+              previousMessageId={messageId}
+            />
+          </div>
+        )}
+        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+      />
+    </div>
+  );
+});
+
+TaskThreadPreview.displayName = 'TaskThreadPreview';
+
 const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
@@ -83,12 +124,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const runningTask = useMemo(() => {
     return sortedTasks.find((task) => task.status?.toLowerCase() === 'running');
   }, [sortedTasks]);
-
-  // Message selectors for running task thread
-  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
-  const runningTaskMessages = useSelector((state) =>
-    runningTask?.subthread_id ? messagesSelector(state, runningTask.subthread_id) : [],
-  );
 
   // Only fetch tasks if we're inside an altaner context
 
@@ -450,28 +485,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                 {/* Thread preview for running tasks - always visible, expandable */}
                 {task.status?.toLowerCase() === 'running' && task.subthread_id && (
                   <div className="ml-5 border-l-2 border-blue-500 dark:border-blue-400 pl-3 mt-2">
-                    <div
-                      className={`rounded-md overflow-hidden transition-all duration-300 ${
-                        expandedTasks.has(task.id) ? 'h-[450px]' : 'h-24'
-                      }`}
-                    >
-                      <Virtuoso
-                        data={runningTaskMessages}
-                        initialTopMostItemIndex={Math.max(0, runningTaskMessages.length - 1)}
-                        itemContent={(index, messageId) => (
-                          <div className={expandedTasks.has(task.id) ? 'px-2 py-1' : ''}>
-                            <Message
-                              messageId={messageId}
-                              threadId={task.subthread_id}
-                              mode="mini"
-                              disableEndButtons={true}
-                              previousMessageId={messageId} // Same as current to suppress date separators
-                            />
-                          </div>
-                        )}
-                        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
-                      />
-                    </div>
+                    <TaskThreadPreview task={task} isExpanded={expandedTasks.has(task.id)} />
                   </div>
                 )}
               </div>

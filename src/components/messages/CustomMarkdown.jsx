@@ -338,6 +338,7 @@ const CustomMarkdown = ({
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
+  console.log('content', content);
 
   if (!content?.length && !messageId) {
     return null;
@@ -671,8 +672,12 @@ const CustomMarkdown = ({
 
 export default memo(CustomMarkdown, (prevProps, nextProps) => {
   // Only re-render if the actual content or critical props change
+  // For streaming text, also check length to ensure partial updates are caught
+  const textUnchanged = prevProps.text === nextProps.text &&
+                        (prevProps.text?.length || 0) === (nextProps.text?.length || 0);
+
   return (
-    prevProps.text === nextProps.text &&
+    textUnchanged &&
     prevProps.messageId === nextProps.messageId &&
     prevProps.threadId === nextProps.threadId &&
     prevProps.codeActive === nextProps.codeActive &&

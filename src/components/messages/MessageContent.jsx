@@ -29,7 +29,7 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
   const partsById = useSelector(selectMessagePartsById);
 
-  // Create sorted parts with fresh data on every render
+  // Create sorted parts - relies on partsById reference changing when parts are updated (via Immer)
   // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
   const sortedParts = useMemo(() => {
     if (messageParts.length === 0) return [];

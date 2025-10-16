@@ -88,10 +88,6 @@ const Thread = ({
   );
   const threadId = thread?.id;
 
-  // Calculate padding based on actual FloatingTextArea height
-  const calculatedPaddingBottom = !hideInput
-    ? `${floatingTextAreaHeight + 20}px` // Add 20px buffer
-    : '0px';
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -241,7 +237,7 @@ const Thread = ({
             hasLoaded={hasLoaded}
             setHasLoaded={setHasLoaded}
             renderFeedback={renderFeedback}
-            footerPaddingBottom={floatingTextAreaHeight + 50}
+            footerPaddingBottom={floatingTextAreaHeight + 150}
           />
         </div>
 

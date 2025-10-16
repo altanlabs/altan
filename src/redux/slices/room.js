@@ -2714,6 +2714,22 @@ export const makeSelectMessagePartById = () =>
     (partsById, partId) => partsById[partId] || null,
   );
 
+// Granular selector for text parts to ensure streaming updates are detected
+export const makeSelectTextPartContent = () =>
+  createSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        text: part.text,
+        is_done: part.is_done,
+        type: part.type || part.part_type,
+      };
+    },
+  );
+
 // Granular selectors for tool parts to minimize re-renders
 export const makeSelectToolPartHeader = () =>
   createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {

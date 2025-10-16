@@ -182,32 +182,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent', data);
   switch (data.type) {
-    case 'SchemaUpdate':
-      // Handle schema updates with targeted refetching
-      const { base_id, path } = data.data || {};
-
-      // Dispatch targeted refetch based on the path
-      try {
-        if (path.startsWith('columns/')) {
-          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
-        } else if (path.startsWith('tables/')) {
-          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
-        } else if (path.startsWith('schemas/')) {
-          // Schemas are not needed for SQL queries - only fetch tables
-          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
-        } else if (path.startsWith('policies/')) {
-          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
-        } else {
-          // Only fetch tables, not schemas
-          dispatch(fetchTables(base_id, { include_columns: true, include_relationships: true }));
-        }
-      } catch (error) {
-        console.error('❌ SchemaUpdate: Error during refetch', error);
-      }
-
-      break;
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
       break;
@@ -372,36 +347,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'SubscriptionDelete':
       dispatch(deleteSubscription(data.data.ids[0]));
       break;
-    case 'SubscriptionPlanNew':
-      dispatch(addPlan(data.data.attributes));
-      break;
-    case 'SubscriptionPlanUpdate':
-      dispatch(
-        updatePlan({
-          id: data.data.ids[0],
-          ...data.data.changes,
-        }),
-      );
-      break;
-    case 'SubscriptionPlanDelete':
-      dispatch(deletePlan(data.data.ids[0]));
-      break;
-    case 'SubscriptionPlanGroupNew':
-      dispatch(addPlanGroup(data.data.attributes));
-      break;
-    case 'SubscriptionPlanGroupUpdate':
-      dispatch(
-        updatePlanGroup({
-          id: data.data.ids[0],
-          ...data.data.changes,
-        }),
-      );
-      break;
-    case 'SubscriptionPlanGroupDelete':
-      dispatch(deletePlanGroup(data.data.ids[0]));
-      break;
-    case 'SubscriptionPlanBilling':
-      break;
+
     case 'TemplateNew':
     case 'TemplateUpdate':
     case 'TemplateDelete':
@@ -909,16 +855,24 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
 
         case 'message_part.added':
-          dispatch(addMessagePart(eventData));
+          batch(() => {
+            dispatch(addMessagePart(eventData));
+          });
           break;
         case 'message_part.updated':
-          dispatch(updateMessagePart(eventData));
+          batch(() => {
+            dispatch(updateMessagePart(eventData));
+          });
           break;
         case 'message_part.completed':
-          dispatch(markMessagePartDone(eventData));
+          batch(() => {
+            dispatch(markMessagePartDone(eventData));
+          });
           break;
         case 'MessagePartDeleted':
-          dispatch(deleteMessagePart(eventData));
+          batch(() => {
+            dispatch(deleteMessagePart(eventData));
+          });
           break;
 
         case 'activation.failed':
