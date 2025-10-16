@@ -182,6 +182,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'SchemaUpdate':
       // Handle schema updates with targeted refetching

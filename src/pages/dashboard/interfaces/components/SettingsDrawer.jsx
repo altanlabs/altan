@@ -33,26 +33,6 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
   const [isMemoryDialogOpen, setIsMemoryDialogOpen] = useState(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const response = await optimai_room.get(
-          `/external/interface_${ui.id}?account_id=${accountId}`,
-        );
-        setRoom(response.data.room);
-      } catch (error) {
-        console.error('Failed to fetch room:', error);
-        setRoom(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (ui?.id) {
-      fetchRoom();
-    }
-  }, [ui?.id]);
-
   const handleAddDomain = () => {
     setIsDomainDialogOpen(true);
     if (onAddDomain) onAddDomain();
@@ -529,7 +509,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
             </Box>
 
             {/* Knowledge Settings */}
-            <Box>
+            {/* <Box>
               <Stack
                 direction="row"
                 alignItems="center"
@@ -606,7 +586,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                   </Typography>
                 )}
               </Box>
-            </Box>
+            </Box> */}
           </Stack>
         </Box>
       </Drawer>

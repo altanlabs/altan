@@ -178,7 +178,7 @@ const slice = createSlice({
         state.altaners[altaner_id].components.items.push(attributes);
 
         // Update current if the component is under current
-        if (state.current.id === altaner_id) {
+        if (state.current && state.current.id === altaner_id) {
           state.current.components.items.push(attributes);
         }
       }
@@ -197,7 +197,7 @@ const slice = createSlice({
           state.altaners[altaner_id].components.items[componentIndex] = updatedComponent;
 
           // Update current if the component is under current
-          if (state.current.id === altaner_id) {
+          if (state.current && state.current.id === altaner_id) {
             const currentComponentIndex = state.current.components.items.findIndex(
               (c) => c.id === ids[0],
             );
@@ -217,7 +217,7 @@ const slice = createSlice({
         ].components.items.filter((component) => !ids.includes(component.id));
 
         // Update current if the component is under current
-        if (state.current.id === altaner_id) {
+        if (state.current && state.current.id === altaner_id) {
           state.current.components.items = state.current.components.items.filter(
             (component) => !ids.includes(component.id),
           );
