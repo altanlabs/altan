@@ -198,6 +198,9 @@ const normalizePart = (raw) => {
       ? raw.argumentsLastProcessedIndex
       : -1,
 
+    // Revision counter for detecting updates even when text hasn't changed (e.g., buffered chunks)
+    updateRevision: raw?.updateRevision ?? 0,
+
     // Text default for text and thinking parts
     text: type === 'text' || type === 'thinking' ? (raw?.text ?? '') : raw?.text,
     // Tool parts: use extracted tool data or fallback to raw arguments
@@ -1519,10 +1522,15 @@ const slice = createSlice({
               part.lastProcessedIndex = next;
               next += 1;
             }
+
+            // Increment revision counter to ensure re-renders even when text didn't change
+            // (e.g., when buffering out-of-order chunks that haven't been consumed yet)
+            part.updateRevision = (part.updateRevision || 0) + 1;
           }
         } else {
           // No index → fallback to simple append (still idempotent if caller repeats exact same delta only when upstream avoids repeats)
           part.text = (part.text || '') + String(delta);
+          part.updateRevision = (part.updateRevision || 0) + 1;
         }
       }
 
@@ -1574,6 +1582,9 @@ const slice = createSlice({
               if (actDone) part.act_done = actDone;
               if (intent) part.intent = intent;
             }
+
+            // Increment revision counter for tool parts too
+            part.updateRevision = (part.updateRevision || 0) + 1;
           }
         } else {
           // No index → fallback to simple append for arguments
@@ -1602,6 +1613,8 @@ const slice = createSlice({
             if (actDone) part.act_done = actDone;
             if (intent) part.intent = intent;
           }
+
+          part.updateRevision = (part.updateRevision || 0) + 1;
         }
       }
 
@@ -1634,6 +1647,7 @@ const slice = createSlice({
       const prevOrder = part.order;
       const prevBlock = part.block_order;
 
+      let hasUpdates = false;
       Object.keys(updates).forEach((k) => {
         const v = updates[k];
         if (v === undefined) return;
@@ -1650,6 +1664,7 @@ const slice = createSlice({
           return;
         }
 
+        hasUpdates = true;
         if (k === 'order' || k === 'block_order') {
           part[k] = isFiniteNumber(v) ? v : Number.POSITIVE_INFINITY;
           needsResort = true;
@@ -1666,6 +1681,11 @@ const slice = createSlice({
           part[k] = v;
         }
       });
+
+      // Increment revision counter if any updates were applied
+      if (hasUpdates) {
+        part.updateRevision = (part.updateRevision || 0) + 1;
+      }
 
       // Re-sort if ordering keys changed
       if (needsResort || prevOrder !== part.order || prevBlock !== part.block_order) {
@@ -1690,6 +1710,9 @@ const slice = createSlice({
 
       // Mark as done
       part.is_done = true;
+
+      // Increment revision counter
+      part.updateRevision = (part.updateRevision || 0) + 1;
 
       // Show loading dots when a message part is done (more parts may be coming)
       const messageId = part.message_id;

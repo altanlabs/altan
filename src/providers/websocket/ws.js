@@ -27,7 +27,6 @@ import {
   updateField,
   deleteField,
   integrateRealTimeUpdates,
-  fetchTables,
 } from '../../redux/slices/bases';
 import {
   setFileContent,
@@ -182,6 +181,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
