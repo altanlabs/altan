@@ -907,13 +907,13 @@ export const handleWebSocketEvent = async (data, user_id) => {
           }
           break;
 
-        case 'MessagePartAdded':
+        case 'message_part.added':
           dispatch(addMessagePart(eventData));
           break;
-        case 'MessagePartUpdated':
+        case 'message_part.updated':
           dispatch(updateMessagePart(eventData));
           break;
-        case 'MessagePartDone':
+        case 'message_part.completed':
           dispatch(markMessagePartDone(eventData));
           break;
         case 'MessagePartDeleted':
