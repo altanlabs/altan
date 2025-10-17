@@ -75,6 +75,15 @@ const slice = createSlice({
         state.tasksByThread[threadId] = [];
       }
       state.tasksByThread[threadId].push(task);
+
+      // Also add task to the plan if it exists for this thread
+      const planId = state.planIdByThread[threadId];
+      if (planId && state.plansById[planId]) {
+        if (!state.plansById[planId].tasks) {
+          state.plansById[planId].tasks = [];
+        }
+        state.plansById[planId].tasks.push(task);
+      }
     },
 
     updateTask(state, action) {
@@ -89,6 +98,20 @@ const slice = createSlice({
           };
         }
       }
+
+      // Also update task within plans
+      Object.keys(state.plansById).forEach(planId => {
+        const plan = state.plansById[planId];
+        if (plan?.tasks) {
+          const planTaskIndex = plan.tasks.findIndex(task => task.id === taskId);
+          if (planTaskIndex !== -1) {
+            state.plansById[planId].tasks[planTaskIndex] = {
+              ...plan.tasks[planTaskIndex],
+              ...updates,
+            };
+          }
+        }
+      });
     },
 
     removeTask(state, action) {
@@ -97,6 +120,14 @@ const slice = createSlice({
       if (tasks) {
         state.tasksByThread[threadId] = tasks.filter(task => task.id !== taskId);
       }
+
+      // Also remove task from plans
+      Object.keys(state.plansById).forEach(planId => {
+        const plan = state.plansById[planId];
+        if (plan?.tasks) {
+          state.plansById[planId].tasks = plan.tasks.filter(task => task.id !== taskId);
+        }
+      });
     },
 
     setTasksExpanded(state, action) {

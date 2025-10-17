@@ -181,7 +181,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -943,6 +942,21 @@ export const handleWebSocketEvent = async (data, user_id) => {
             removeTask({
               threadId: taskEventData.mainthread_id || taskEventData.room_id,
               taskId: taskEventData.task_id,
+            }),
+          );
+          break;
+        case 'task.completed':
+          // eslint-disable-next-line no-console
+          console.log('✅ task.completed:', taskEventData);
+          dispatch(
+            updateTask({
+              threadId: taskEventData.mainthread_id || taskEventData.room_id,
+              taskId: taskEventData.task_id,
+              updates: {
+                status: 'completed',
+                task_name: taskEventData.task_name,
+                updated_at: taskEventData.updated_at || new Date().toISOString(),
+              },
             }),
           );
           break;

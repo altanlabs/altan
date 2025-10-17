@@ -397,8 +397,8 @@ export default function ProjectPage() {
           component="main"
           sx={{ flexGrow: 1, display: 'flex', height: '100%' }}
         >
-          {/* Show full-screen chat when interface has no commits */}
-          {isInterfaceWithNoCommits ? (
+          {/* Show full-screen chat when interface has no commits AND no plan is being viewed */}
+          {isInterfaceWithNoCommits && !planId ? (
             altaner?.room_id && (
               <Box
                 sx={{

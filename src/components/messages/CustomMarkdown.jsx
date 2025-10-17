@@ -32,11 +32,11 @@ import PlanWidget from '../widgets/PlanWidget.jsx';
 const isComponentTarget = (href) => /\[selected_component\]\(.*\)/.test(href);
 
 const isPlanLink = (href) => {
-  return /^\/plan\/([0-9a-fA-F-]{36})$/.test(href);
+  return /^\/?plan\/([0-9a-fA-F-]{36})$/.test(href);
 };
 
 const extractPlanId = (href) => {
-  const match = href.match(/^\/plan\/([0-9a-fA-F-]{36})$/);
+  const match = href.match(/^\/?plan\/([0-9a-fA-F-]{36})$/);
   return match ? match[1] : null;
 };
 
