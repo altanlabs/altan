@@ -82,11 +82,18 @@ const PlanWidget = ({ planId }) => {
   };
 
   const handleViewFullPlan = () => {
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.set('plan_id', planId);
+    // Extract altanerId from current pathname
+    const match = location.pathname.match(/\/project\/([^/]+)/);
+    const altanerId = match ? match[1] : null;
+
+    if (!altanerId || !planId) {
+      return;
+    }
+
+    // Navigate to plans route with explicit empty search to clear query params
     history.push({
-      pathname: location.pathname,
-      search: searchParams.toString(),
+      pathname: `/project/${altanerId}/plans/${planId}`,
+      search: '', // Explicitly clear all query params
     });
   };
 
@@ -285,17 +292,6 @@ const PlanWidget = ({ planId }) => {
           {approveError && (
             <div className="mt-2 px-2 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded text-xs text-red-700 dark:text-red-300">
               {approveError}
-            </div>
-          )}
-          {plan.estimated_minutes && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <Iconify
-                icon="mdi:clock-outline"
-                className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
-              />
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                Estimated: {plan.estimated_minutes % 60}m
-              </span>
             </div>
           )}
         </div>

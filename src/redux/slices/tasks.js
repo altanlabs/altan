@@ -6,11 +6,14 @@ import axios from 'axios';
 const initialState = {
   tasksByThread: {}, // Store tasks keyed by threadId
   plansById: {}, // Store plans keyed by plan_id
+  plansByRoom: {}, // Store all plans keyed by room_id
   planIdByThread: {}, // Map threadId to plan_id
   loading: {}, // Track loading state per threadId
   planLoading: {}, // Track loading state per plan_id
+  roomPlansLoading: {}, // Track loading state per room_id
   errors: {}, // Track errors per threadId
   planErrors: {}, // Track errors per plan_id
+  roomPlansErrors: {}, // Track errors per room_id
   initialized: {}, // Track initialization per threadId
   expandedState: {}, // Track expanded state per threadId
   threadExpandedState: {}, // Track thread area expanded state per threadId
@@ -55,6 +58,31 @@ const slice = createSlice({
         state.planLoading[plan.id] = false;
         state.planErrors[plan.id] = null;
       }
+    },
+
+    setPlans(state, action) {
+      const { roomId, plans } = action.payload;
+      state.plansByRoom[roomId] = plans;
+      // Also store each plan by ID for easy access
+      plans.forEach(plan => {
+        if (plan && plan.id) {
+          state.plansById[plan.id] = plan;
+        }
+      });
+      state.roomPlansLoading[roomId] = false;
+      state.roomPlansErrors[roomId] = null;
+    },
+
+    startLoadingRoomPlans(state, action) {
+      const { roomId } = action.payload;
+      state.roomPlansLoading[roomId] = true;
+      state.roomPlansErrors[roomId] = null;
+    },
+
+    setRoomPlansError(state, action) {
+      const { roomId, error } = action.payload;
+      state.roomPlansLoading[roomId] = false;
+      state.roomPlansErrors[roomId] = error;
     },
 
     startLoadingPlan(state, action) {
@@ -174,8 +202,11 @@ export const {
   setTasksError,
   setTasks,
   setPlan,
+  setPlans,
   startLoadingPlan,
   setPlanError,
+  startLoadingRoomPlans,
+  setRoomPlansError,
   addTask,
   updateTask,
   removeTask,
@@ -221,6 +252,15 @@ export const selectTasksExpanded = (threadId) => (state) =>
 
 export const selectThreadExpanded = (threadId) => (state) =>
   selectTasksState(state).threadExpandedState[threadId] || false;
+
+export const selectPlansByRoom = (roomId) => (state) =>
+  selectTasksState(state).plansByRoom[roomId] || [];
+
+export const selectRoomPlansLoading = (roomId) => (state) =>
+  selectTasksState(state).roomPlansLoading[roomId] || false;
+
+export const selectRoomPlansError = (roomId) => (state) =>
+  selectTasksState(state).roomPlansErrors[roomId] || null;
 
 // ----------------------------------------------------------------------
 
@@ -323,4 +363,50 @@ export const refreshTasks = (threadId) => async (dispatch, getState) => {
   }
 
   return dispatch(fetchTasks(threadId));
+};
+
+// Fetch all plans by room ID
+export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
+  const state = getState();
+  const isLoading = selectRoomPlansLoading(roomId)(state);
+  const existingPlans = selectPlansByRoom(roomId)(state);
+
+  // Don't fetch if already loading
+  if (isLoading) {
+    return existingPlans;
+  }
+
+  dispatch(startLoadingRoomPlans({ roomId }));
+
+  try {
+    const response = await axios.get(
+      `https://cagi.altan.ai/plans/?room_id=${roomId}&include_tasks=true&order_by=created_at&ascending=false`,
+    );
+    const plansData = response.data.data || [];
+
+    // Ensure plansData is an array
+    const plans = Array.isArray(plansData) ? plansData : [plansData];
+
+    // Transform plans to our format
+    const transformedPlans = plans.map((planData) => ({
+      id: planData.id,
+      title: planData.title,
+      description: planData.description,
+      status: planData.status,
+      is_approved: planData.is_approved,
+      estimated_minutes: planData.estimated_minutes,
+      created_at: planData.created_at,
+      updated_at: planData.updated_at,
+      finished_at: planData.finished_at,
+      room_id: planData.room_id,
+      tasks: planData.tasks || [],
+    }));
+
+    dispatch(setPlans({ roomId, plans: transformedPlans }));
+    return transformedPlans;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch plans';
+    dispatch(setRoomPlansError({ roomId, error: errorMessage }));
+    throw error;
+  }
 };

@@ -35,16 +35,6 @@ const isGuestSession = () => {
 const onRequestFailure = async (error, axiosInstance) => {
   const originalRequest = error.config;
 
-  console.log('🔍 Interceptor triggered for:', {
-    instanceName: axiosInstance?.defaults?.name,
-    url: originalRequest?.url,
-    status: error.response?.status,
-    hasResponse: !!error.response,
-    errorMessage: error.message,
-    errorCode: error.code,
-    responseData: error.response?.data,
-  });
-
   if (!originalRequest._retryCount) {
     originalRequest._retryCount = 0;
   }
@@ -57,16 +47,6 @@ const onRequestFailure = async (error, axiosInstance) => {
   const isNetworkErrorPossibly401 = !error.response && error.code === 'ERR_NETWORK' && hasAuthToken;
 
   if (is401Error || isNetworkErrorPossibly401) {
-    console.log('🔴 401 DETECTED! Starting refresh flow...', {
-      is401Error,
-      isNetworkErrorPossibly401,
-      hasAuthToken,
-      retryCount: originalRequest._retryCount,
-      maxRetries: MAX_RETRY_COUNT,
-      isRefreshing,
-      instanceName: axiosInstance?.defaults?.name,
-    });
-
     if (originalRequest._retryCount >= MAX_RETRY_COUNT) {
       console.error('❌ Max retry count reached for request:', originalRequest.url);
       return Promise.reject(error);
