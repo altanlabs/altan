@@ -84,25 +84,33 @@ export async function requestNotificationPermission() {
  * @returns {Notification | null}
  */
 export function sendBrowserNotification(title, options = {}) {
+  console.log('🔔 sendBrowserNotification called:', { title, options });
+  
   // Check if notifications are supported and enabled
   if (!isBrowserNotificationSupported()) {
+    console.warn('❌ Browser notifications not supported');
     return null;
   }
 
   if (Notification.permission !== 'granted') {
+    console.warn('❌ Notification permission not granted:', Notification.permission);
     return null;
   }
 
   if (!areBrowserNotificationsEnabled()) {
+    console.warn('❌ Browser notifications disabled in settings');
     return null;
   }
 
   // Don't send notifications if user is on the page and it's focused
   if (options.onlyWhenInactive && document.visibilityState === 'visible') {
+    console.log('⏸️ Skipping notification - page is visible and onlyWhenInactive is true');
+    console.log('Document visibility state:', document.visibilityState);
     return null;
   }
 
   try {
+    console.log('✅ Creating notification...');
     const notification = new Notification(title, {
       body: options.body || '',
       icon: options.icon || '/logos/logoBlack.png',
@@ -114,6 +122,8 @@ export function sendBrowserNotification(title, options = {}) {
       vibrate: options.vibrate || [200, 100, 200],
       ...options,
     });
+    
+    console.log('✅ Notification created successfully:', notification);
 
     // Auto close after duration if specified
     if (options.autoClose) {

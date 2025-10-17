@@ -23,6 +23,7 @@ import {
   DashboardPage,
   UsagePage,
   UsageDatabasePage,
+  TestNotificationsPage,
   IntegrationCreator,
   MemberPage,
   MediaPage,
@@ -757,6 +758,18 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <UsageDatabasePage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Test Notifications Route */}
+        <Route
+          path="/test-notifications"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <TestNotificationsPage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

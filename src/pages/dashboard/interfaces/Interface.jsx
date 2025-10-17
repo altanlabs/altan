@@ -46,13 +46,18 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   const baseIframeUrl = useMemo(() => {
     if (!ui?.repo_name) return '';
+    // Get the latest commit hash (first in the sorted array)
+    const latestCommit = commits?.[0]?.commit_hash;
+    if (!latestCommit) return '';
+    
     const queryParams = new URLSearchParams({
       theme: theme.palette.mode,
       hideSnippet: 'true',
     });
-    const baseUrl = `https://${ui.repo_name}.preview.altan.ai${currentPath}`;
+    const baseUrl = `https://previews.altan.ai/v1/projects/${ui.repo_name}/${latestCommit}${currentPath}`;
+    console.log('baseUrl', baseUrl);
     return baseUrl ? `${baseUrl}?${queryParams.toString()}` : '';
-  }, [ui?.repo_name, theme.palette.mode, currentPath]);
+  }, [ui?.repo_name, commits, theme.palette.mode, currentPath]);
 
   // Production URL - either deployment_url or {interface.name}.altanlabs.com or custom domain
   const productionUrl = useMemo(() => {

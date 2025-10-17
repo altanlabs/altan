@@ -25,25 +25,17 @@ const ToolPartCard = ({
 
   const isCompleted = part?.is_done;
 
-  // Get custom renderer component if available (must be defined before useEffect)
+  // Get custom renderer component if available
   const CustomRenderer = useMemo(() => {
     return getCustomRenderer(part?.name);
   }, [part?.name]);
 
-  // Auto-expand when executing, auto-collapse when completed
-  useEffect(() => {
-    if (!isCompleted) {
-      setManuallyCollapsed(false); // Expand when executing
-    } else {
-      setManuallyCollapsed(true); // Collapse when completed
-    }
-  }, [isCompleted]);
-
-  const isExpanded = useMemo(() => !isCompleted || !manuallyCollapsed, [isCompleted, manuallyCollapsed]);
+  // Keep collapsed by default for better performance
+  const isExpanded = useMemo(() => !manuallyCollapsed, [manuallyCollapsed]);
 
   const handleToggle = useCallback(() => {
-    if (isCompleted) setManuallyCollapsed((v) => !v);
-  }, [isCompleted]);
+    setManuallyCollapsed((v) => !v);
+  }, []);
 
   const handleErrorClick = useCallback((e) => {
     e.stopPropagation();
