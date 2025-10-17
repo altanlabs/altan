@@ -28,7 +28,7 @@ function Base({
   onNavigate,
   baseId: explicitBaseId,
 }) {
-  const { altanerId, altanerComponentId, tableId, viewId: urlViewId, baseId: routeBaseId } = useParams();
+  const { altanerId, componentId: altanerComponentId, tableId, viewId: urlViewId, baseId: routeBaseId } = useParams();
   const history = useHistory();
   const ws = useHermesWebSocket();
 

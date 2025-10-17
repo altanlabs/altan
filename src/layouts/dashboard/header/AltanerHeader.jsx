@@ -44,7 +44,7 @@ import { bgBlur } from '../../../utils/cssStyles';
 function AltanerHeader() {
   const theme = useTheme();
   const history = useHistory();
-  const { altanerId, altanerComponentId } = useParams();
+  const { altanerId, componentId: altanerComponentId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const isMobile = useResponsive('down', 'sm');

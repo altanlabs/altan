@@ -16,8 +16,8 @@ const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'tables', label: 'Database', icon: Database },
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'services', label: 'Services', icon: Code },
   { id: 'storage', label: 'Storage', icon: FolderOpen },
-  { id: 'functions', label: 'Functions', icon: Code },
   { id: 'realtime', label: 'Realtime', icon: Radio },
 ];
 

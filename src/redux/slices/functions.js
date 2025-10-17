@@ -7,7 +7,7 @@ import { optimai_cloud } from '../../utils/axios';
 // ============================================================================
 
 const initialState = {
-  // Functions data per base
+  // Functions/Services data per base
   functions: {
     // [baseId]: {
     //   items: [],
@@ -23,23 +23,6 @@ const initialState = {
     //   loading: false,
     //   error: null,
     //   lastFetched: null
-    // }
-  },
-  // Execution results per function
-  executionResults: {
-    // [functionName]: {
-    //   result: null,
-    //   loading: false,
-    //   error: null,
-    //   timestamp: null
-    // }
-  },
-  // Version data per function
-  versions: {
-    // [functionName]: {
-    //   items: [],
-    //   loading: false,
-    //   error: null
     // }
   },
   // Function details (with code) per function
@@ -170,72 +153,6 @@ const slice = createSlice({
       }
     },
 
-    // Execution results reducers
-    setExecutionLoading(state, action) {
-      const { functionName, loading } = action.payload;
-      if (!state.executionResults[functionName]) {
-        state.executionResults[functionName] = {
-          result: null,
-          loading: false,
-          error: null,
-          timestamp: null,
-        };
-      }
-      state.executionResults[functionName].loading = loading;
-    },
-    setExecutionResult(state, action) {
-      const { functionName, result } = action.payload;
-      state.executionResults[functionName] = {
-        result,
-        loading: false,
-        error: null,
-        timestamp: Date.now(),
-      };
-    },
-    setExecutionError(state, action) {
-      const { functionName, error } = action.payload;
-      if (!state.executionResults[functionName]) {
-        state.executionResults[functionName] = {
-          result: null,
-          loading: false,
-          error: null,
-          timestamp: null,
-        };
-      }
-      state.executionResults[functionName].error = error;
-      state.executionResults[functionName].loading = false;
-      state.executionResults[functionName].timestamp = Date.now();
-    },
-    clearExecutionResult(state, action) {
-      const { functionName } = action.payload;
-      delete state.executionResults[functionName];
-    },
-
-    // Versions reducers
-    setVersionsLoading(state, action) {
-      const { functionName, loading } = action.payload;
-      if (!state.versions[functionName]) {
-        state.versions[functionName] = { items: [], loading: false, error: null };
-      }
-      state.versions[functionName].loading = loading;
-    },
-    setVersions(state, action) {
-      const { functionName, versions } = action.payload;
-      state.versions[functionName] = {
-        items: versions,
-        loading: false,
-        error: null,
-      };
-    },
-    setVersionsError(state, action) {
-      const { functionName, error } = action.payload;
-      if (!state.versions[functionName]) {
-        state.versions[functionName] = { items: [], loading: false, error: null };
-      }
-      state.versions[functionName].error = error;
-      state.versions[functionName].loading = false;
-    },
-
     // Function details reducers
     setFunctionDetailsLoading(state, action) {
       const { functionName, loading } = action.payload;
@@ -298,13 +215,6 @@ export const {
   setSecretsError,
   addSecret,
   removeSecret,
-  setExecutionLoading,
-  setExecutionResult,
-  setExecutionError,
-  clearExecutionResult,
-  setVersionsLoading,
-  setVersions,
-  setVersionsError,
   setFunctionDetailsLoading,
   setFunctionDetails,
   setFunctionDetailsError,
@@ -316,47 +226,44 @@ export const {
 // ============================================================================
 
 /**
- * Fetch all functions for a base
+ * Fetch all services/routers for a base
  */
 export const fetchFunctions = (baseId) => async (dispatch) => {
   dispatch(setFunctionsLoading({ baseId, loading: true }));
   try {
     const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions`);
-    const functions = response.data?.functions || response.data || [];
+    // New API returns {count, routers: [...]}
+    const functions = response.data?.routers || response.data?.functions || response.data || [];
     dispatch(setFunctions({ baseId, functions }));
     return functions;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to fetch functions';
+      error.response?.data?.detail || error.message || 'Failed to fetch services';
     dispatch(setFunctionsError({ baseId, error: errorMessage }));
     throw error;
   }
 };
 
 /**
- * Fetch function details (including code)
+ * Fetch service/router details (including code)
  */
-export const fetchFunctionDetails = (baseId, functionName, version = null) => async (dispatch) => {
+export const fetchFunctionDetails = (baseId, functionName) => async (dispatch) => {
   dispatch(setFunctionDetailsLoading({ functionName, loading: true }));
   try {
-    const params = version ? { version } : {};
-    const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions/${functionName}`, { params });
+    const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions/${functionName}`);
     const functionData = response.data;
-    // Only update the store if we're fetching the latest version (no version specified)
-    if (!version) {
-      dispatch(setFunctionDetails({ functionName, data: functionData }));
-    }
+    dispatch(setFunctionDetails({ functionName, data: functionData }));
     return functionData;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to fetch function details';
+      error.response?.data?.detail || error.message || 'Failed to fetch service details';
     dispatch(setFunctionDetailsError({ functionName, error: errorMessage }));
     throw error;
   }
 };
 
 /**
- * Create a new function
+ * Create a new service/router
  */
 export const createFunction = (baseId, functionData) => async (dispatch) => {
   try {
@@ -369,13 +276,13 @@ export const createFunction = (baseId, functionData) => async (dispatch) => {
     return newFunction;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to create function';
+      error.response?.data?.detail || error.message || 'Failed to create service';
     throw new Error(errorMessage);
   }
 };
 
 /**
- * Update an existing function
+ * Update an existing service/router
  */
 export const updateFunctionThunk = (baseId, functionName, updates) => async (dispatch) => {
   try {
@@ -390,13 +297,13 @@ export const updateFunctionThunk = (baseId, functionName, updates) => async (dis
     return response.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to update function';
+      error.response?.data?.detail || error.message || 'Failed to update service';
     throw new Error(errorMessage);
   }
 };
 
 /**
- * Delete a function
+ * Delete a service/router
  */
 export const deleteFunction = (baseId, functionName) => async (dispatch) => {
   try {
@@ -405,83 +312,7 @@ export const deleteFunction = (baseId, functionName) => async (dispatch) => {
     return Promise.resolve();
   } catch (error) {
     const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to delete function';
-    throw new Error(errorMessage);
-  }
-};
-
-/**
- * Execute a function
- */
-export const executeFunction = (baseId, functionName, executeData = {}) => async (dispatch) => {
-  dispatch(setExecutionLoading({ functionName, loading: true }));
-  try {
-    const response = await optimai_cloud.post(`/v1/instances/${baseId}/functions/functions/${functionName}`, executeData);
-    dispatch(setExecutionResult({ functionName, result: response.data }));
-    return response.data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to execute function';
-    dispatch(setExecutionError({ functionName, error: errorMessage }));
-    throw error;
-  }
-};
-
-/**
- * Fetch function versions
- */
-export const fetchFunctionVersions = (baseId, functionName) => async (dispatch) => {
-  dispatch(setVersionsLoading({ functionName, loading: true }));
-  try {
-    const response = await optimai_cloud.get(`/v1/instances/${baseId}/functions/functions/${functionName}/versions`);
-    const versions = response.data?.versions || response.data || [];
-    dispatch(setVersions({ functionName, versions }));
-    return versions;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to fetch versions';
-    dispatch(setVersionsError({ functionName, error: errorMessage }));
-    throw error;
-  }
-};
-
-/**
- * Change the latest version of a function
- */
-export const changeLatestVersion = (baseId, functionName, functionId) => async (dispatch) => {
-  try {
-    await optimai_cloud.patch(`/v1/instances/${baseId}/functions/functions/${functionName}/latest_version`, null, {
-      params: { function_id: functionId },
-    });
-
-    // Refresh function list
-    await dispatch(fetchFunctions(baseId));
-
-    // Refresh versions
-    await dispatch(fetchFunctionVersions(baseId, functionName));
-
-    return Promise.resolve();
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to change latest version';
-    throw new Error(errorMessage);
-  }
-};
-
-/**
- * Toggle function enabled state
- */
-export const toggleFunctionEnabled = (baseId, functionName, enabled) => async (dispatch) => {
-  try {
-    await optimai_cloud.patch(`/v1/instances/${baseId}/functions/functions/${functionName}/enabled`, null, {
-      params: { enabled },
-    });
-
-    dispatch(updateFunction({ baseId, functionName, changes: { enabled } }));
-    return Promise.resolve();
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to toggle function state';
+      error.response?.data?.detail || error.message || 'Failed to delete service';
     throw new Error(errorMessage);
   }
 };
@@ -553,23 +384,6 @@ export const selectSecretsForBase = createSelector(
   [selectFunctionsState, (_, baseId) => baseId],
   (functionsState, baseId) =>
     functionsState.secrets[baseId] || { items: [], loading: false, error: null, lastFetched: null },
-);
-
-export const selectExecutionResult = createSelector(
-  [selectFunctionsState, (_, functionName) => functionName],
-  (functionsState, functionName) =>
-    functionsState.executionResults[functionName] || {
-      result: null,
-      loading: false,
-      error: null,
-      timestamp: null,
-    },
-);
-
-export const selectVersionsForFunction = createSelector(
-  [selectFunctionsState, (_, functionName) => functionName],
-  (functionsState, functionName) =>
-    functionsState.versions[functionName] || { items: [], loading: false, error: null },
 );
 
 export const selectFunctionDetails = createSelector(

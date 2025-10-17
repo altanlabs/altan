@@ -47,7 +47,7 @@ function BaseLayout({
         return <BaseAuth baseId={baseId} onNavigate={onSectionChange} />;
       case 'storage':
         return <BaseStorage baseId={baseId} onNavigate={onSectionChange} />;
-      case 'functions':
+      case 'services':
         return <BaseFunctions baseId={baseId} />;
       case 'realtime':
         return <BasePlaceholder title="Realtime" description="Subscribe to database changes in real-time with WebSocket connections." />;

@@ -47,7 +47,7 @@ const AltanerPage = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [isCAGIMode, setCAGIMode] = useState(false);
 
-  const { altanerId, altanerComponentId } = useParams();
+  const { altanerId, componentId: altanerComponentId } = useParams();
   const history = useHistory();
   const accountId = useSelector(selectAccountId);
   const isLoading = useSelector(selectAltanersIsLoading);
