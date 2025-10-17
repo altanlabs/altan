@@ -51,22 +51,25 @@ const ClarifyingQuestions = ({ children, threadId }) => {
     }
   }, [expandedGroupId, questionGroups]);
 
-  const handleSelect = React.useCallback((groupId, value) => {
-    setSelections((prev) => ({
-      ...prev,
-      [groupId]: value,
-    }));
+  const handleSelect = React.useCallback(
+    (groupId, value) => {
+      setSelections((prev) => ({
+        ...prev,
+        [groupId]: value,
+      }));
 
-    // Find current group index
-    const currentIndex = questionGroups.findIndex((g) => g.id === groupId);
+      // Find current group index
+      const currentIndex = questionGroups.findIndex((g) => g.id === groupId);
 
-    // If there's a next group, expand it after a short delay
-    if (currentIndex !== -1 && currentIndex < questionGroups.length - 1) {
-      setTimeout(() => {
-        setExpandedGroupId(questionGroups[currentIndex + 1].id);
-      }, 300);
-    }
-  }, [questionGroups]);
+      // If there's a next group, expand it after animation completes
+      if (currentIndex !== -1 && currentIndex < questionGroups.length - 1) {
+        setTimeout(() => {
+          setExpandedGroupId(questionGroups[currentIndex + 1].id);
+        }, 500);
+      }
+    },
+    [questionGroups],
+  );
 
   const handleConfirm = () => {
     const selectedValues = Object.values(selections).filter(Boolean);
@@ -141,28 +144,14 @@ const ClarifyingQuestions = ({ children, threadId }) => {
         ))}
       </div>
 
-      {/* Confirm Button - Always visible when selections exist */}
+      {/* Continue Button - Always visible when selections exist */}
       {selectedCount > 0 && (
         <button
           onClick={handleConfirm}
-          className="w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-[1.01] active:scale-[0.99] shadow-md hover:shadow-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+          style={{ transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+          className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black"
         >
-          <div className="flex items-center justify-center gap-2">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            Confirm & Send ({selectedCount})
-          </div>
+          Continue
         </button>
       )}
     </div>

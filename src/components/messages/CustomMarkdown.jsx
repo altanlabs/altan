@@ -27,8 +27,18 @@ import DatabaseVersionWidget from '../widgets/components/DatabaseVersionWidget.j
 import MediaWidget from '../widgets/components/MediaWidget.jsx';
 import NoCredits from '../widgets/components/NoCredits.jsx';
 import VersionWidget from '../widgets/components/VersionWidget.jsx';
+import PlanWidget from '../widgets/PlanWidget.jsx';
 
 const isComponentTarget = (href) => /\[selected_component\]\(.*\)/.test(href);
+
+const isPlanLink = (href) => {
+  return /^\/plan\/([0-9a-fA-F-]{36})$/.test(href);
+};
+
+const extractPlanId = (href) => {
+  const match = href.match(/^\/plan\/([0-9a-fA-F-]{36})$/);
+  return match ? match[1] : null;
+};
 
 // const isTwitterTweetLink = (url) => {
 //   const twitterTweetPattern = /(?:twitter\.com|x\.com)\/i\/web\/status\/(\d+)/;
@@ -109,7 +119,15 @@ function extractResources(message) {
 }
 
 const CustomLink = ({ href, children, threadId }) => {
-  // Check for YouTube URLs first
+  // Check for plan links first
+  if (isPlanLink(href)) {
+    const planId = extractPlanId(href);
+    if (planId) {
+      return <PlanWidget planId={planId} />;
+    }
+  }
+
+  // Check for YouTube URLs
   if (isYouTubeUrl(href)) {
     const videoId = extractYouTubeVideoId(href);
     if (videoId) {
@@ -338,7 +356,6 @@ const CustomMarkdown = ({
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
-  console.log('content', content);
 
   if (!content?.length && !messageId) {
     return null;

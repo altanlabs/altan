@@ -181,6 +181,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -385,62 +386,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'BaseDelete':
       const baseIdToDelete = data.data.ids ? data.data.ids[0] : data.data.id;
       dispatch(deleteBase(baseIdToDelete));
-      break;
-    case 'TableNew':
-      const tableBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
-      dispatch(
-        addTable({
-          baseId: tableBaseId,
-          table: data.data.attributes,
-        }),
-      );
-      break;
-    case 'TableUpdate':
-      dispatch(
-        updateTable({
-          baseId: data.base_id,
-          tableId: data.data.ids[0],
-          changes: data.data.changes,
-        }),
-      );
-      break;
-    case 'TableDelete':
-      const deleteTableBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
-      const deleteTableId = data.data.ids ? data.data.ids[0] : data.data.id;
-      dispatch(
-        deleteTable({
-          baseId: deleteTableBaseId,
-          tableId: deleteTableId,
-        }),
-      );
-      break;
-    case 'FieldNew':
-      const fieldBaseId = data.base_id || data.data.base_id || data.data.attributes.base_id;
-      const fieldTableId = data.table_id || data.data.table_id || data.data.attributes.table_id;
-      dispatch(
-        addField({
-          baseId: fieldBaseId,
-          tableId: fieldTableId,
-          field: data.data.attributes,
-        }),
-      );
-      break;
-    case 'FieldUpdate':
-      dispatch(
-        updateField({
-          tableId: data.table_id,
-          fieldId: data.data.ids[0],
-          changes: data.data.changes,
-        }),
-      );
-      break;
-    case 'FieldDelete':
-      dispatch(
-        deleteField({
-          tableId: data.table_id,
-          fieldId: data.data.ids[0],
-        }),
-      );
       break;
     case 'InterfaceNew':
       dispatch(addInterface(data.data.attributes));
@@ -696,8 +641,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
       // Handle activation and response lifecycle events
       if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
-        console.log('[AGENT_RESPONSE] Event:', eventType);
-
         // Activation lifecycle (before response starts)
         if (eventType.startsWith('activation.')) {
           // Add to activation lifecycle
@@ -918,11 +861,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'ThreadOpened':
       const thread = data.data.attributes;
       dispatch(addThread(thread));
-      // dispatch(createTab({
-      //   threadId: thread.id,
-      //   threadName: thread.name,
-      //   isMainThread: false,
-      // }));
       break;
     case 'ThreadUpdate':
       dispatch(threadUpdate(data.data));
@@ -934,7 +872,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'TASK_EVENT':
+
       console.log('TASK_EVENT', data);
+
       const taskEvent = data.data?.task_event;
       if (!taskEvent) {
         console.error('TASK_EVENT missing task_event:', data);

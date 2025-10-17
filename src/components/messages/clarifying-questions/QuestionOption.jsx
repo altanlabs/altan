@@ -1,27 +1,50 @@
+import { useState, useEffect } from 'react';
+
 import { cn } from '@lib/utils';
 
 // Question Option Component - individual option within a question group
 const QuestionOption = ({ children, value, isSelected, isRecommended, onSelect, groupId }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const handleClick = () => {
-    onSelect(groupId, value || (typeof children === 'string' ? children : ''));
+    if (!isSelected) {
+      setIsAnimating(true);
+      // Delay the actual selection to show animation
+      setTimeout(() => {
+        onSelect(groupId, value || (typeof children === 'string' ? children : ''));
+      }, 150);
+    }
   };
+
+  // Reset animation state when selection changes
+  useEffect(() => {
+    if (isSelected) {
+      const timer = setTimeout(() => setIsAnimating(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isSelected]);
 
   return (
     <button
       onClick={handleClick}
+      style={{
+        transition: 'background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
       className={cn(
-        'w-full px-3 py-2 rounded-lg text-sm font-medium transition-all text-left',
-        'hover:scale-[1.01] active:scale-[0.98] shadow-sm hover:shadow-md',
+        'w-full px-3 py-2 rounded-lg text-sm font-medium text-left',
+        'shadow-sm hover:shadow-md',
         'backdrop-blur-md border-2',
-        // Selected state
-        isSelected && 'bg-blue-500/12 dark:bg-blue-500/25 border-blue-500 dark:border-blue-400 text-gray-900 dark:text-white',
+        // Animating state (first flash - bright)
+        isAnimating && 'bg-blue-500/30 dark:bg-blue-400/40 border-blue-600 dark:border-blue-300 scale-[1.02]',
+        // Selected state (second stage - settled)
+        isSelected && !isAnimating && 'bg-blue-500/12 dark:bg-blue-500/25 border-blue-500 dark:border-blue-400 text-gray-900 dark:text-white',
         // Recommended state (when not selected)
-        !isSelected && isRecommended && 'bg-green-500/6 dark:bg-green-500/10 border-green-500/40 dark:border-green-500/50 text-gray-800 dark:text-gray-200',
+        !isSelected && !isAnimating && isRecommended && 'bg-green-500/6 dark:bg-green-500/10 border-green-500/40 dark:border-green-500/50 text-gray-800 dark:text-gray-200',
         // Default state (when not selected and not recommended)
-        !isSelected && !isRecommended && 'bg-white/80 dark:bg-gray-700/50 border-gray-400/30 dark:border-gray-600/40 text-gray-800 dark:text-gray-200',
+        !isSelected && !isAnimating && !isRecommended && 'bg-white/80 dark:bg-gray-700/50 border-gray-400/30 dark:border-gray-600/40 text-gray-800 dark:text-gray-200',
         // Hover states
-        !isSelected && isRecommended && 'hover:bg-green-500/10 dark:hover:bg-green-500/15 hover:border-green-500/50 dark:hover:border-green-500/60',
-        !isSelected && !isRecommended && 'hover:bg-gray-500/8 dark:hover:bg-gray-600/20 hover:border-gray-500/40 dark:hover:border-gray-500/50',
+        !isSelected && !isAnimating && isRecommended && 'hover:bg-green-500/10 dark:hover:bg-green-500/15 hover:border-green-500/50 dark:hover:border-green-500/60',
+        !isSelected && !isAnimating && !isRecommended && 'hover:bg-gray-500/8 dark:hover:bg-gray-600/20 hover:border-gray-500/40 dark:hover:border-gray-500/50',
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -34,16 +57,19 @@ const QuestionOption = ({ children, value, isSelected, isRecommended, onSelect, 
           )}
         </span>
         <div
+          style={{
+            transition: 'background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}
           className={cn(
-            'flex items-center justify-center w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all',
+            'flex items-center justify-center w-5 h-5 rounded-full border-2 flex-shrink-0',
             isSelected
-              ? 'bg-blue-500 dark:bg-blue-400 border-blue-500 dark:border-blue-400'
-              : 'bg-transparent border-gray-400/40 dark:border-gray-500/50',
+              ? 'bg-blue-500 dark:bg-blue-400 border-blue-500 dark:border-blue-400 scale-100'
+              : 'bg-transparent border-gray-400/40 dark:border-gray-500/50 scale-90',
           )}
         >
           {isSelected && (
             <svg
-              className="w-3.5 h-3.5 text-white"
+              className="w-3.5 h-3.5 text-white animate-in"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

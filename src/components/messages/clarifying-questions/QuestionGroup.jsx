@@ -42,13 +42,17 @@ const QuestionGroup = ({
   const hasSelection = !!selectedValue;
 
   return (
-    <div className="rounded-lg border-2 border-gray-200/50 dark:border-gray-700/50 bg-white/40 dark:bg-gray-800/20 overflow-hidden transition-all">
+    <div 
+      style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+      className="rounded-lg border-2 border-gray-200/50 dark:border-gray-700/50 bg-white/40 dark:bg-gray-800/20 overflow-hidden"
+    >
       {/* Header - Clickable to toggle */}
       {title && (
         <button
           onClick={onToggle}
+          style={{ transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
           className={cn(
-            'w-full px-3 py-2.5 flex items-center justify-between transition-colors',
+            'w-full px-3 py-2.5 flex items-center justify-between',
             'hover:bg-gray-100/50 dark:hover:bg-gray-700/30',
             hasSelection && 'bg-green-50/50 dark:bg-green-900/20',
           )}
@@ -76,8 +80,9 @@ const QuestionGroup = ({
             )}
           </div>
           <svg
+            style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
             className={cn(
-              'w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform duration-200',
+              'w-4 h-4 text-gray-600 dark:text-gray-400',
               isExpanded && 'rotate-180',
             )}
             fill="none"
@@ -96,8 +101,11 @@ const QuestionGroup = ({
 
       {/* Collapsible Content */}
       <div
+        style={{ 
+          transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
         className={cn(
-          'transition-all duration-300 ease-in-out overflow-hidden',
+          'overflow-hidden',
           isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0',
         )}
       >

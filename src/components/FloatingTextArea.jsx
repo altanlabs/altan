@@ -320,8 +320,7 @@ const FloatingTextArea = ({
         <>
           <AuthorizationRequests />
 
-          {/* Todo Widget integrated with text field */}
-          <TodoWidget threadId={threadId} mode={mode} />
+          {/* <TodoWidget threadId={threadId} mode={mode} /> */}
 
           <ActivationLifecycleBar threadId={threadId} className="mb-2" />
 

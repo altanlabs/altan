@@ -1,15 +1,14 @@
 import { Tooltip, Typography } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Virtuoso } from 'react-virtuoso';
 
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
 import Iconify from './iconify/Iconify.jsx';
-import Message from './room/thread/Message.jsx';
-import { switchToThread, makeSelectSortedThreadMessageIds } from '../redux/slices/room';
+import { switchToThread } from '../redux/slices/room';
 import {
   fetchTasks,
   selectTasksByThread,
+  selectPlanByThread,
   selectTasksLoading,
   selectTasksError,
   selectTasksExpanded,
@@ -17,52 +16,10 @@ import {
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
-// Separate component to handle each task's thread messages
-const TaskThreadPreview = memo(({ task, isExpanded }) => {
-  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
-  const taskMessages = useSelector((state) =>
-    task.subthread_id ? messagesSelector(state, task.subthread_id) : [],
-  );
-
-  if (!task.subthread_id || taskMessages.length === 0) {
-    return null;
-  }
-
-  return (
-    <div
-      className={`rounded-md overflow-hidden transition-all duration-300 ${
-        isExpanded ? 'h-[450px]' : 'h-24'
-      }`}
-    >
-      <Virtuoso
-        key={`${task.id}-${taskMessages.length}`}
-        data={taskMessages}
-        alignToBottom
-        followOutput="smooth"
-        itemContent={(index, messageId) => (
-          <div className={isExpanded ? 'px-2 py-1' : ''}>
-            <Message
-              messageId={messageId}
-              threadId={task.subthread_id}
-              mode="mini"
-              disableEndButtons={true}
-              previousMessageId={messageId}
-            />
-          </div>
-        )}
-        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
-      />
-    </div>
-  );
-});
-
-TaskThreadPreview.displayName = 'TaskThreadPreview';
-
 const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [expandedTasks, setExpandedTasks] = useState(new Set());
 
   // Agent avatar mapping
   const agentAvatars = {
@@ -80,6 +37,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   };
 
   const tasks = useSelector(selectTasksByThread(threadId));
+  const plan = useSelector(selectPlanByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
   const isExpanded = useSelector(selectTasksExpanded(threadId));
@@ -247,6 +205,32 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
           <span className="text-xs font-medium">
             {sortedTasks.length} Task{sortedTasks.length !== 1 ? 's' : ''}
           </span>
+          {plan && plan.title && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+              · {plan.title}
+            </span>
+          )}
+          {plan && plan.status && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                plan.status === 'draft'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  : plan.status === 'approved'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+              }`}
+            >
+              {plan.status}
+            </span>
+          )}
+          {plan && plan.is_approved && (
+            <Tooltip title="Plan Approved">
+              <Iconify
+                icon="mdi:check-decagram"
+                className="w-3 h-3 text-green-600 dark:text-green-400"
+              />
+            </Tooltip>
+          )}
         </div>
 
         {/* Show running task info when collapsed */}
@@ -333,19 +317,11 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
       {/* Compact Expandable Content */}
       <div
         className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
-          isExpanded
-            ? expandedTasks.size > 0
-              ? 'max-h-[800px] opacity-100'
-              : 'max-h-96 opacity-100'
-            : 'max-h-0 opacity-0'
+          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border-x border-b border-gray-200/30 dark:border-gray-700/30 backdrop-blur-lg">
-          <div
-            className={`overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1 ${
-              expandedTasks.size > 0 ? 'max-h-[550px]' : 'max-h-80'
-            }`}
-          >
+          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1 max-h-80">
             {sortedTasks.map((task, index) => (
               <div
                 key={task.id || index}
@@ -426,44 +402,8 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
 
                   {/* Subthread Actions - show if task has subthread_id */}
                   {task.subthread_id && (
-                    <div className="flex-shrink-0 flex items-center gap-1">
-                      {/* Expand/Collapse Button - only for running tasks */}
-                      {task.status?.toLowerCase() === 'running' && (
-                        <Tooltip
-                          title={
-                            expandedTasks.has(task.id)
-                              ? 'Collapse thread view'
-                              : 'Expand thread view'
-                          }
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedTasks((prev) => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(task.id)) {
-                                  newSet.delete(task.id);
-                                } else {
-                                  newSet.add(task.id);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                          >
-                            <Iconify
-                              icon={
-                                expandedTasks.has(task.id)
-                                  ? 'mdi:unfold-less-horizontal'
-                                  : 'mdi:unfold-more-horizontal'
-                              }
-                              className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                            />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {/* Open in New Tab Button - always show if subthread exists */}
+                    <div className="flex-shrink-0">
+                      {/* Open in New Tab Button */}
                       <Tooltip title={`Open task thread: ${task.task_name}`}>
                         <button
                           onClick={(e) => {
@@ -481,13 +421,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Thread preview for running tasks - always visible, expandable */}
-                {task.status?.toLowerCase() === 'running' && task.subthread_id && (
-                  <div className="ml-5 border-l-2 border-blue-500 dark:border-blue-400 pl-3 mt-2">
-                    <TaskThreadPreview task={task} isExpanded={expandedTasks.has(task.id)} />
-                  </div>
-                )}
               </div>
             ))}
           </div>

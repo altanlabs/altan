@@ -2,11 +2,12 @@ import { Box } from '@mui/material';
 import React, { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import Room from '../../components/room/Room.jsx';
+import Plan from './Plan.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import {
@@ -51,6 +52,7 @@ export default function ProjectPage() {
   const mobileContainerRef = React.useRef(null);
   const chatPanelRef = React.useRef(null);
   const history = useHistory();
+  const location = useLocation();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
@@ -60,6 +62,10 @@ export default function ProjectPage() {
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
+
+  // Extract plan_id from query params
+  const searchParams = new URLSearchParams(location.search);
+  const planId = searchParams.get('plan_id');
 
   // Programmatically collapse/expand chat panel based on display mode
   React.useEffect(() => {
@@ -475,7 +481,11 @@ export default function ProjectPage() {
                   sx={{ height: '100%', position: 'relative' }}
                   data-tour={`component-preview-${currentComponent?.type || 'default'}`}
                 >
-                  {activeComponentId && currentComponent && renderComponent()}
+                  {planId ? (
+                    <Plan planId={planId} />
+                  ) : (
+                    activeComponentId && currentComponent && renderComponent()
+                  )}
                 </Box>
               </Panel>
             </PanelGroup>
