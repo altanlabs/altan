@@ -443,7 +443,7 @@ const Space = ({ navigate, spaceId, isPreview }) => {
                         borderRadius: 2,
                         display: 'flex',
                         flexDirection: 'column',
-                        overflow: 'hidden',
+                        overflowY: 'auto',
                       }}
                     >
                       {!!selectedTool?.tool && (

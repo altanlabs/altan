@@ -8,16 +8,20 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
+  Box,
+  IconButton,
 } from '@mui/material';
 import React, { useState, useMemo, useCallback, memo } from 'react';
 
 import CustomDialog from './CustomDialog.jsx';
+import { useAuthContext } from '../../auth/useAuthContext';
 import {
   updateRoom,
   selectRoom,
   selectMe,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
+import Iconify from '../iconify/Iconify.jsx';
 
 export const PRIVACY_ENUM = [
   {
@@ -146,10 +150,11 @@ export const roomPolicyFields = [
 const SettingsDialog = ({ open = false, onClose }) => {
   const room = useSelector(selectRoom);
   const me = useSelector(selectMe);
+  const { user } = useAuthContext();
   const isViewer = useMemo(() => me?.role && ['viewer', 'listener'].includes(me.role), [me]);
-  const isAdmin = useMemo(() => me?.role && ['admin', 'owner'].includes(me.role), [me]);
 
   const [loading, setLoading] = useState(false);
+  const [copiedAccountId, setCopiedAccountId] = useState(false);
 
   // include new boolean flags
   const [formState, setFormState] = useState({
@@ -221,6 +226,14 @@ const SettingsDialog = ({ open = false, onClose }) => {
         onClose();
       });
   }, [formState, onClose]);
+
+  const handleCopyAccountId = useCallback(() => {
+    if (room?.account_id) {
+      navigator.clipboard.writeText(room.account_id);
+      setCopiedAccountId(true);
+      setTimeout(() => setCopiedAccountId(false), 2000);
+    }
+  }, [room?.account_id]);
 
   // const actionHandler = useCallback((action) => {
   //   setLoading(true);
@@ -375,6 +388,30 @@ const SettingsDialog = ({ open = false, onClose }) => {
         >
           Exit room
         </Button> */}
+
+        {/* Display Account ID for super users */}
+        {user?.xsup && room?.account_id && (
+          <Box sx={{ mt: 2, pt: 2, borderTop: (t) => `1px solid ${t.palette.divider}` }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                Account ID: {room.account_id}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={handleCopyAccountId}
+                sx={{
+                  bgcolor: copiedAccountId ? 'success.lighter' : 'action.hover',
+                  '&:hover': { bgcolor: copiedAccountId ? 'success.light' : 'action.selected' },
+                }}
+              >
+                <Iconify
+                  icon={copiedAccountId ? 'mdi:check' : 'solar:copy-bold-duotone'}
+                  width={16}
+                />
+              </IconButton>
+            </Stack>
+          </Box>
+        )}
       </Stack>
     </CustomDialog>
   );

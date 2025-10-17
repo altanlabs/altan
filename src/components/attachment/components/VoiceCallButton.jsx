@@ -7,10 +7,10 @@ import Iconify from '../../iconify/Iconify.jsx';
 import SendButton from '../SendButton.jsx';
 import MicrophoneSvg from '../ui/MicrophoneSvg.jsx';
 
-const VoiceCallButton = ({ 
-  isVoiceActive, 
-  isVoiceConnecting, 
-  isSendEnabled, 
+const VoiceCallButton = ({
+  isVoiceActive,
+  isVoiceConnecting,
+  isSendEnabled,
   onSendMessage,
   hasActiveGeneration = false,
   onStopGeneration = null,
@@ -36,7 +36,7 @@ const VoiceCallButton = ({
         onClick: onStopGeneration,
       };
     }
-    
+
     // If voice is not enabled, don't show voice-specific states
     if (!isVoiceEnabled) {
       return null; // Use regular SendButton

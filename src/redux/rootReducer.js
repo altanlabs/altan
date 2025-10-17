@@ -27,6 +27,7 @@ import subscriptionsReducer from './slices/subscriptions';
 import superadminReducer from './slices/superadmin';
 import tasksReducer from './slices/tasks';
 import templatesReducer from './slices/templates';
+import templateVersionsReducer from './slices/templateVersions';
 import userReducer from './slices/user';
 
 // ----------------------------------------------------------------------
@@ -70,6 +71,7 @@ const rootReducer = combineReducers({
   gate: gateReducer,
   tasks: tasksReducer,
   templates: templatesReducer,
+  templateVersions: templateVersionsReducer,
   functions: functionsReducer,
 });
 

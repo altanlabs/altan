@@ -198,12 +198,15 @@ const normalizePart = (raw) => {
       ? raw.argumentsLastProcessedIndex
       : -1,
 
+    // Revision counter for detecting updates even when text hasn't changed (e.g., buffered chunks)
+    updateRevision: raw?.updateRevision ?? 0,
+
     // Text default for text and thinking parts
-    text: (type === 'text' || type === 'thinking') ? (raw?.text ?? '') : raw?.text,
+    text: type === 'text' || type === 'thinking' ? (raw?.text ?? '') : raw?.text,
     // Tool parts: use extracted tool data or fallback to raw arguments
     arguments: type === 'tool' ? toolData.arguments || raw?.arguments || '' : raw?.arguments,
     // Thinking parts: ensure status field is present
-    status: type === 'thinking' ? (raw?.meta_data?.status || 'in_progress') : raw?.status,
+    status: type === 'thinking' ? raw?.meta_data?.status || 'in_progress' : raw?.status,
 
     // Add tool-specific fields (but don't override is_done since we handled it above)
     ...Object.fromEntries(Object.entries(toolData).filter(([key]) => key !== 'is_done')),
@@ -299,7 +302,11 @@ const initialState = {
     byThreadId: {}, // threadId -> { isActive, agentId, elevenlabsId, conversation }
     isConnecting: false,
   },
-  // Minimal response lifecycle tracking
+  // Activation and response lifecycle tracking
+  activationLifecycles: {
+    byId: {}, // response_id -> { response_id, agent_id, thread_id, status, events: [], created_at, updated_at }
+    activeByThread: {}, // thread_id -> [response_id1, response_id2, ...] (pending activations)
+  },
   responseLifecycles: {
     byId: {}, // response_id -> { response_id, agent_id, thread_id, status, events: [], message_id?, created_at, updated_at }
     activeByThread: {}, // thread_id -> [response_id1, response_id2, ...] (active responses)
@@ -582,6 +589,7 @@ const slice = createSlice({
         is_dm: roomObject.is_dm,
         policy: roomObject.policy || {},
         meta_data: roomObject.meta_data || {},
+        account_id: roomObject.account_id || null,
         external_id: roomObject.external_id || null,
       };
       state.account = account;
@@ -890,58 +898,60 @@ const slice = createSlice({
         }
       });
     },
-    // addMessages: (state, action) => {
-    //   const { id, messages } = action.payload;
-
-    //   if (!id || !messages || !Array.isArray(messages.items)) {
-    //     console.error("Invalid input for addMessages.");
-    //     return;
-    //   }
-    //   const thread = state.threads.byId[id];
-    //   if (thread) {
-    //     const { byId, allIds, paginationInfo } = paginateCollection(messages);
-    //     thread.messages.byId = thread.messages.byId || {};
-    //     thread.messages.allIds = thread.messages.allIds || [];
-    //     Object.assign(thread.messages.paginationInfo, paginationInfo);
-    //     Object.assign(thread.messages.byId, byId);
-    //     thread.messages.allIds = [...new Set([...thread.messages.allIds, ...allIds])];
-    //   } else {
-    //     console.warn(`Thread with id '${id}' not found.`);
-    //   }
-    // },
     addMessage: (state, action) => {
       const message = action.payload;
       if (!message?.id || !message?.thread_id) {
         console.error('Invalid input for addMessage.');
         return;
       }
-
-      // Only play sound for non-streaming messages or when streaming starts
-      // and it's not from the current user
-      // if (message.member_id !== state.me?.id && !message.is_streaming) {
-      //   // Don't play sound if voice is active for this thread
-      //   const isVoiceActiveForThread =
-      //     !!state.voiceConversations.byThreadId[message.thread_id]?.isActive;
-      //   if (!isVoiceActiveForThread) {
-      //     SOUND_IN.play();
-      //   }
-      // }
-
-      console.log('[addMessage] Message:', message);
-
       // Check if message already exists to avoid duplicates
       if (state.messages.byId[message.id]) {
         // Update existing message properties, merging meta_data
         const existingMessage = state.messages.byId[message.id];
-        Object.assign(existingMessage, message);
-
-        // Ensure meta_data is properly merged (not replaced)
-        if (message.meta_data) {
-          existingMessage.meta_data = {
-            ...existingMessage.meta_data,
-            ...message.meta_data,
+        
+        // Check if error was previously cleared (no error fields in existing message)
+        const errorWasCleared = !existingMessage.error && 
+          !existingMessage.meta_data?.error_code &&
+          !existingMessage.meta_data?.error_message &&
+          !existingMessage.meta_data?.error_type &&
+          !existingMessage.meta_data?.has_error;
+        
+        // If error was cleared, filter out error-related fields from incoming message
+        const { error: incomingError, ...messageWithoutError } = message;
+        
+        // Clean up incoming meta_data if error was cleared
+        let cleanedIncomingMetaData = message.meta_data ? { ...message.meta_data } : undefined;
+        if (errorWasCleared && cleanedIncomingMetaData) {
+          const {
+            error_code,
+            error_message,
+            error_type,
+            failed_in,
+            total_attempts,
+            has_error,
+            ...restMetaData
+          } = cleanedIncomingMetaData;
+          cleanedIncomingMetaData = restMetaData;
+          console.log('[addMessage] Filtered out error fields from incoming message:', message.id);
+        }
+        
+        // Create a new message object with merged data
+        const updatedMessage = {
+          ...existingMessage,
+          ...messageWithoutError,
+        };
+        
+        // Merge meta_data carefully
+        if (cleanedIncomingMetaData) {
+          updatedMessage.meta_data = {
+            ...(existingMessage.meta_data || {}),
+            ...cleanedIncomingMetaData,
           };
         }
+        
+        // Replace with the new object to ensure immutability
+        state.messages.byId[message.id] = updatedMessage;
+        
         return;
       }
 
@@ -999,6 +1009,46 @@ const slice = createSlice({
         state.messagesContent[id] = state.messagesContent[id] || ' ';
         message.error = content;
       }
+    },
+    clearMessageError: (state, action) => {
+      const { id } = action.payload;
+      const message = state.messages.byId[id];
+      if (!message) {
+        console.warn(`Message with id '${id}' not found for error clearing.`);
+        return;
+      }
+
+      console.log('[clearMessageError] Before clearing - meta_data:', message.meta_data);
+      
+      // Create a completely new message object to ensure React detects the change
+      const { error, meta_data, ...restMessage } = message;
+      
+      // Clean meta_data if it exists
+      let cleanedMetaData;
+      if (meta_data) {
+        const { 
+          error_code, 
+          error_message, 
+          error_type, 
+          failed_in, 
+          total_attempts, 
+          has_error,
+          ...restMetaData 
+        } = meta_data;
+        
+        // Only include meta_data if there's something left
+        if (Object.keys(restMetaData).length > 0) {
+          cleanedMetaData = restMetaData;
+        }
+      }
+      
+      // Replace the message with a new object (ensures immutability and re-render)
+      state.messages.byId[id] = {
+        ...restMessage,
+        ...(cleanedMetaData ? { meta_data: cleanedMetaData } : {}),
+      };
+
+      console.log('[clearMessageError] After clearing - meta_data:', state.messages.byId[id].meta_data);
     },
     addMessageReaction: (state, action) => {
       const reaction = action.payload;
@@ -1390,6 +1440,12 @@ const slice = createSlice({
       const normalized = normalizePart(raw);
       const existing = state.messageParts.byId[normalized.id];
 
+      // Hide loading dots when a new message part is added
+      const messageId = normalized.message_id;
+      if (messageId && state.messages.byId[messageId]?.meta_data?.showLoadingDots) {
+        state.messages.byId[messageId].meta_data.showLoadingDots = false;
+      }
+
       if (existing) {
         // Upsert behavior: do not duplicate, just merge fields & potentially resort
         const prevOrder = existing.order;
@@ -1466,10 +1522,15 @@ const slice = createSlice({
               part.lastProcessedIndex = next;
               next += 1;
             }
+
+            // Increment revision counter to ensure re-renders even when text didn't change
+            // (e.g., when buffering out-of-order chunks that haven't been consumed yet)
+            part.updateRevision = (part.updateRevision || 0) + 1;
           }
         } else {
           // No index → fallback to simple append (still idempotent if caller repeats exact same delta only when upstream avoids repeats)
           part.text = (part.text || '') + String(delta);
+          part.updateRevision = (part.updateRevision || 0) + 1;
         }
       }
 
@@ -1521,6 +1582,9 @@ const slice = createSlice({
               if (actDone) part.act_done = actDone;
               if (intent) part.intent = intent;
             }
+
+            // Increment revision counter for tool parts too
+            part.updateRevision = (part.updateRevision || 0) + 1;
           }
         } else {
           // No index → fallback to simple append for arguments
@@ -1549,6 +1613,8 @@ const slice = createSlice({
             if (actDone) part.act_done = actDone;
             if (intent) part.intent = intent;
           }
+
+          part.updateRevision = (part.updateRevision || 0) + 1;
         }
       }
 
@@ -1581,6 +1647,7 @@ const slice = createSlice({
       const prevOrder = part.order;
       const prevBlock = part.block_order;
 
+      let hasUpdates = false;
       Object.keys(updates).forEach((k) => {
         const v = updates[k];
         if (v === undefined) return;
@@ -1597,6 +1664,7 @@ const slice = createSlice({
           return;
         }
 
+        hasUpdates = true;
         if (k === 'order' || k === 'block_order') {
           part[k] = isFiniteNumber(v) ? v : Number.POSITIVE_INFINITY;
           needsResort = true;
@@ -1613,6 +1681,11 @@ const slice = createSlice({
           part[k] = v;
         }
       });
+
+      // Increment revision counter if any updates were applied
+      if (hasUpdates) {
+        part.updateRevision = (part.updateRevision || 0) + 1;
+      }
 
       // Re-sort if ordering keys changed
       if (needsResort || prevOrder !== part.order || prevBlock !== part.block_order) {
@@ -1637,6 +1710,18 @@ const slice = createSlice({
 
       // Mark as done
       part.is_done = true;
+
+      // Increment revision counter
+      part.updateRevision = (part.updateRevision || 0) + 1;
+
+      // Show loading dots when a message part is done (more parts may be coming)
+      const messageId = part.message_id;
+      if (messageId && state.messages.byId[messageId]) {
+        if (!state.messages.byId[messageId].meta_data) {
+          state.messages.byId[messageId].meta_data = {};
+        }
+        state.messages.byId[messageId].meta_data.showLoadingDots = true;
+      }
 
       // Determine part type
       const partType = part.type || part.part_type || 'text';
@@ -1679,9 +1764,10 @@ const slice = createSlice({
         // Also check arguments for special fields if not found at root level
         if (payload.arguments && (!part.act_now || !part.act_done || !part.intent)) {
           try {
-            const parsed = typeof payload.arguments === 'string'
-              ? JSON.parse(payload.arguments)
-              : payload.arguments;
+            const parsed =
+              typeof payload.arguments === 'string'
+                ? JSON.parse(payload.arguments)
+                : payload.arguments;
             if (!part.act_now && parsed.__act_now) part.act_now = parsed.__act_now;
             if (!part.act_done && parsed.__act_done) part.act_done = parsed.__act_done;
             if (!part.intent && parsed.__intent) part.intent = parsed.__intent;
@@ -1843,9 +1929,68 @@ const slice = createSlice({
         delete part.textBuffer;
       }
     },
-    // Response lifecycle management
-    addResponseLifecycle: (state, action) => {
+    // Activation lifecycle management (before response starts)
+    addActivationLifecycle: (state, action) => {
       const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
+
+      if (!state.activationLifecycles.byId[response_id]) {
+        // Create new activation lifecycle
+        state.activationLifecycles.byId[response_id] = {
+          response_id,
+          agent_id,
+          thread_id,
+          status: 'acknowledged',
+          events: [],
+          created_at: timestamp || new Date().toISOString(),
+          updated_at: timestamp || new Date().toISOString(),
+        };
+
+        // Add to active activations for thread
+        if (!state.activationLifecycles.activeByThread[thread_id]) {
+          state.activationLifecycles.activeByThread[thread_id] = [];
+        }
+        state.activationLifecycles.activeByThread[thread_id].push(response_id);
+      }
+
+      const lifecycle = state.activationLifecycles.byId[response_id];
+
+      // Add event to timeline
+      lifecycle.events.push({
+        type: event_type,
+        data: event_data,
+        timestamp: timestamp || new Date().toISOString(),
+      });
+
+      // Update status based on event
+      lifecycle.status = event_type.replace('activation.', '');
+      lifecycle.updated_at = timestamp || new Date().toISOString();
+    },
+
+    // Complete activation lifecycle (when scheduled or rescheduled)
+    completeActivationLifecycle: (state, action) => {
+      const { response_id, thread_id } = action.payload;
+
+      // Remove from active activations
+      if (state.activationLifecycles.activeByThread[thread_id]) {
+        state.activationLifecycles.activeByThread[thread_id] =
+          state.activationLifecycles.activeByThread[thread_id].filter((id) => id !== response_id);
+
+        // Clean up empty arrays
+        if (state.activationLifecycles.activeByThread[thread_id].length === 0) {
+          delete state.activationLifecycles.activeByThread[thread_id];
+        }
+      }
+
+      // Mark as completed
+      if (state.activationLifecycles.byId[response_id]) {
+        state.activationLifecycles.byId[response_id].completed_at = new Date().toISOString();
+      }
+    },
+
+    // Response lifecycle management (after response starts)
+    addResponseLifecycle: (state, action) => {
+      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } =
+        action.payload;
 
       if (!state.responseLifecycles.byId[response_id]) {
         // Create new response lifecycle
@@ -1853,7 +1998,7 @@ const slice = createSlice({
           response_id,
           agent_id,
           thread_id,
-          status: 'submitted',
+          status: 'started',
           events: [],
           created_at: timestamp || new Date().toISOString(),
           updated_at: timestamp || new Date().toISOString(),
@@ -1876,22 +2021,43 @@ const slice = createSlice({
       });
 
       // Update status based on event
-      if (event_type.startsWith('activation.')) {
-        lifecycle.status = event_type.replace('activation.', '');
-      } else if (event_type.startsWith('response.')) {
-        lifecycle.status = event_type.replace('response.', '');
+      lifecycle.status = event_type.replace('response.', '');
 
-        // Set message_id when response starts
-        if (event_type === 'response.started' && event_data.message_id) {
-          lifecycle.message_id = event_data.message_id;
-        }
+      // Set message_id when response starts
+      if (event_type === 'response.started' && event_data.message_id) {
+        lifecycle.message_id = event_data.message_id;
       }
 
       lifecycle.updated_at = timestamp || new Date().toISOString();
     },
 
     completeResponseLifecycle: (state, action) => {
-      const { response_id, thread_id } = action.payload;
+      const { response_id, thread_id, message_id, status } = action.payload;
+
+      // Hide loading dots on completion events
+      if (message_id && state.messages.byId[message_id]?.meta_data?.showLoadingDots) {
+        state.messages.byId[message_id].meta_data.showLoadingDots = false;
+      }
+
+      // Add warning metadata for stopped/interrupted/suspended
+      if (message_id && ['stopped', 'interrupted', 'suspended'].includes(status)) {
+        if (!state.messages.byId[message_id]) {
+          console.warn(`Message ${message_id} not found for warning`);
+        } else {
+          if (!state.messages.byId[message_id].meta_data) {
+            state.messages.byId[message_id].meta_data = {};
+          }
+          state.messages.byId[message_id].meta_data.warning = {
+            type: status,
+            message:
+              status === 'stopped'
+                ? 'Response was stopped'
+                : status === 'interrupted'
+                  ? 'Response was interrupted'
+                  : 'Response was suspended',
+          };
+        }
+      }
 
       // Remove from active responses
       if (state.responseLifecycles.activeByThread[thread_id]) {
@@ -1924,6 +2090,42 @@ const slice = createSlice({
         }
       });
     },
+
+    discardActivationLifecycle: (state, action) => {
+      const { response_id, thread_id } = action.payload;
+
+      // Remove from active activations completely
+      if (state.activationLifecycles.activeByThread[thread_id]) {
+        state.activationLifecycles.activeByThread[thread_id] =
+          state.activationLifecycles.activeByThread[thread_id].filter((id) => id !== response_id);
+
+        // Clean up empty arrays
+        if (state.activationLifecycles.activeByThread[thread_id].length === 0) {
+          delete state.activationLifecycles.activeByThread[thread_id];
+        }
+      }
+
+      // Mark as discarded
+      if (state.activationLifecycles.byId[response_id]) {
+        state.activationLifecycles.byId[response_id].discarded = true;
+        state.activationLifecycles.byId[response_id].discarded_at = new Date().toISOString();
+      }
+    },
+
+    cleanupActivationLifecycles: (state, action) => {
+      const { olderThan = 300000 } = action.payload || {}; // 5 minutes default
+      const cutoff = Date.now() - olderThan;
+
+      Object.keys(state.activationLifecycles.byId).forEach((response_id) => {
+        const lifecycle = state.activationLifecycles.byId[response_id];
+        if (lifecycle.completed_at || lifecycle.discarded_at) {
+          const completedTime = new Date(lifecycle.completed_at || lifecycle.discarded_at).getTime();
+          if (completedTime < cutoff) {
+            delete state.activationLifecycles.byId[response_id];
+          }
+        }
+      });
+    },
   },
 });
 
@@ -1947,6 +2149,7 @@ export const {
   addMessageDelta,
   addMessageAttachment,
   setMessageError,
+  clearMessageError,
   addMessageReaction,
   addThread,
   removeThread,
@@ -1997,6 +2200,11 @@ export const {
   deleteMessagePart,
   clearMessageParts,
   resetMessagePartStreaming,
+  // Activation lifecycle actions
+  addActivationLifecycle,
+  completeActivationLifecycle,
+  discardActivationLifecycle,
+  cleanupActivationLifecycles,
   // Response lifecycle actions
   addResponseLifecycle,
   completeResponseLifecycle,
@@ -2033,9 +2241,8 @@ export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
 export const selectMembers = (state) => selectRoomState(state).members;
 
 export const makeSelectMemberById = () =>
-  createSelector(
-    [selectMembers, (state, memberId) => memberId],
-    (members, memberId) => (memberId ? members.byId[memberId] : null),
+  createSelector([selectMembers, (state, memberId) => memberId], (members, memberId) =>
+    memberId ? members.byId[memberId] : null,
   );
 
 export const selectTotalMembers = createSelector(
@@ -2530,81 +2737,82 @@ export const makeSelectMessagePartById = () =>
     (partsById, partId) => partsById[partId] || null,
   );
 
+// Granular selector for text parts to ensure streaming updates are detected
+export const makeSelectTextPartContent = () =>
+  createSelector(
+    [selectMessagePartsById, (state, partId) => partId],
+    (partsById, partId) => {
+      const part = partsById[partId];
+      if (!part) return null;
+
+      return {
+        text: part.text,
+        is_done: part.is_done,
+        type: part.type || part.part_type,
+      };
+    },
+  );
+
 // Granular selectors for tool parts to minimize re-renders
 export const makeSelectToolPartHeader = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        name: part.name,
-        act_now: part.act_now,
-        act_done: part.act_done,
-        is_done: part.is_done,
-        status: part.status,
-        finished_at: part.finished_at,
-        created_at: part.created_at || part.date_creation,
-        intent: part.intent,
-      };
-    },
-  )((state, partId) => `toolPartHeader_${partId}`);
+    return {
+      name: part.name,
+      act_now: part.act_now,
+      act_done: part.act_done,
+      is_done: part.is_done,
+      status: part.status,
+      finished_at: part.finished_at,
+      created_at: part.created_at || part.date_creation,
+      intent: part.intent,
+    };
+  })((state, partId) => `toolPartHeader_${partId}`);
 
 export const makeSelectToolPartArguments = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        arguments: part.arguments,
-        is_done: part.is_done,
-      };
-    },
-  )((state, partId) => `toolPartArgs_${partId}`);
+    return {
+      arguments: part.arguments,
+      is_done: part.is_done,
+    };
+  })((state, partId) => `toolPartArgs_${partId}`);
 
 export const makeSelectToolPartError = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        error: part.error,
-      };
-    },
-  )((state, partId) => `toolPartError_${partId}`);
+    return {
+      error: part.error,
+    };
+  })((state, partId) => `toolPartError_${partId}`);
 
 export const makeSelectToolPartResult = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        result: part.result,
-      };
-    },
-  )((state, partId) => `toolPartResult_${partId}`);
+    return {
+      result: part.result,
+    };
+  })((state, partId) => `toolPartResult_${partId}`);
 
 export const makeSelectToolPartExecution = () =>
-  createCachedSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createCachedSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        task_execution_id: part.task_execution_id,
-        task_execution: part.task_execution,
-        execution: part.execution,
-      };
-    },
-  )((state, partId) => `toolPartExec_${partId}`);
+    return {
+      task_execution_id: part.task_execution_id,
+      task_execution: part.task_execution,
+      execution: part.execution,
+    };
+  })((state, partId) => `toolPartExec_${partId}`);
 
 export const makeSelectMessagePartsContent = () =>
   createSelector([selectMessagePartsById, makeSelectMessageParts()], (partsById, partIds) => {
@@ -2651,32 +2859,67 @@ export const makeSelectMessageHasStreamingParts = () =>
     });
   });
 
-// Response lifecycle selectors
-export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
+// Activation lifecycle selectors
+export const selectActivationLifecycles = (state) => selectRoomState(state).activationLifecycles;
 
-export const selectActiveResponsesByThread = (threadId) =>
+export const selectActiveActivationsByThread = (threadId) =>
   createSelector(
-    [selectResponseLifecycles, selectMembers],
+    [selectActivationLifecycles, selectMembers],
     (lifecycles, members) => {
-      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
-      return activeResponseIds
+      const activeActivationIds = lifecycles.activeByThread[threadId] || [];
+      return activeActivationIds
         .map((responseId) => {
           const lifecycle = lifecycles.byId[responseId];
           if (!lifecycle) return null;
 
-          // Get agent details
-          const agent = Object.values(members.byId || {}).find(
-            (member) => member.member?.id === lifecycle.agent_id,
+          // Get agent details from members
+          const roomMember = Object.values(members.byId || {}).find(
+            (member) =>
+              member?.member?.member_type === 'agent' &&
+              member?.member?.agent_id === lifecycle.agent_id,
           );
 
           return {
             ...lifecycle,
-            agent: agent
+            agent: roomMember
               ? {
-                  id: agent.member.id,
-                  name: agent.member?.name || 'Agent',
-                  avatar: agent.member?.picture,
-                  member_type: agent.member?.member_type,
+                  id: roomMember.member.agent_id,
+                  name: roomMember.member?.agent?.name || 'Agent',
+                  avatar: roomMember.member?.agent?.avatar_url,
+                }
+              : null,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
+  );
+
+// Response lifecycle selectors
+export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
+
+export const selectActiveResponsesByThread = (threadId) =>
+  createSelector([selectResponseLifecycles, selectMembers], (lifecycles, members) => {
+    const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+    return activeResponseIds
+      .map((responseId) => {
+        const lifecycle = lifecycles.byId[responseId];
+        if (!lifecycle) return null;
+
+          // Get agent details from members
+          const roomMember = Object.values(members.byId || {}).find(
+            (member) =>
+              member?.member?.member_type === 'agent' &&
+              member?.member?.agent_id === lifecycle.agent_id,
+          );
+
+          return {
+            ...lifecycle,
+            agent: roomMember
+              ? {
+                  id: roomMember.member.agent_id,
+                  name: roomMember.member?.agent?.name || 'Agent',
+                  avatar: roomMember.member?.agent?.avatar_url,
                 }
               : null,
           };
@@ -2687,19 +2930,12 @@ export const selectActiveResponsesByThread = (threadId) =>
   );
 
 export const selectResponseLifecycleById = (responseId) =>
-  createSelector(
-    [selectResponseLifecycles],
-    (lifecycles) => lifecycles.byId[responseId] || null,
-  );
+  createSelector([selectResponseLifecycles], (lifecycles) => lifecycles.byId[responseId] || null);
 
 // Selector for placeholder messages (active responses without message_id yet)
 export const makeSelectPlaceholderMessagesForThread = () =>
   createSelector(
-    [
-      selectResponseLifecycles,
-      selectMembers,
-      (state, threadId) => threadId,
-    ],
+    [selectResponseLifecycles, selectMembers, (state, threadId) => threadId],
     (lifecycles, members, threadId) => {
       const activeResponseIds = lifecycles.activeByThread[threadId] || [];
 
@@ -3452,10 +3688,33 @@ export const stopAgentResponse = (messageId) => async (dispatch, getState) => {
 
 export const stopThreadGeneration = (threadId) => async () => {
   try {
-    const response = await optimai_agent.delete(`/api/v1/activations/threads/${threadId}/responses`);
+    const response = await optimai_agent.delete(
+      `/api/v1/activations/threads/${threadId}/responses`,
+    );
     return Promise.resolve(response.data);
   } catch (e) {
     console.error('Failed to stop thread generation:', e);
+    return Promise.reject(e);
+  }
+};
+
+export const retryResponse = (messageId, threadId, roomId, agentId) => async (dispatch) => {
+  try {
+    console.log('[retryResponse] Starting retry for message:', messageId);
+    const response = await optimai_agent.post('/api/v1/activations/retry', {
+      override_message_id: messageId,
+      thread_id: threadId,
+      room_id: roomId,
+      agent_id: agentId,
+    });
+
+    console.log('[retryResponse] Retry successful, clearing error for message:', messageId);
+    // Clear the error from the message after successful retry
+    dispatch(slice.actions.clearMessageError({ id: messageId }));
+
+    return Promise.resolve(response.data);
+  } catch (e) {
+    console.error('[retryResponse] Failed to retry response:', e);
     return Promise.reject(e);
   }
 };

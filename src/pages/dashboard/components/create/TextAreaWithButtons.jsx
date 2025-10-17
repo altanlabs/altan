@@ -8,7 +8,6 @@ import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer
 import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
 import { selectIsAccountFree } from '../../../../redux/slices/general';
 import { useSelector } from '../../../../redux/store';
-import { chipCategories } from './chipData';
 
 // Helper function to get the appropriate icon based on file type
 const getFileIcon = (type) => {
@@ -145,24 +144,24 @@ function TextAreaWithButtons({
   };
 
   // Function to handle "Surprise Me" button click
-  const handleSurpriseMe = () => {
-    // Collect all use cases from all categories
-    const allUseCases = chipCategories.flatMap((category) => category.useCases);
-    
-    // Select a random use case
-    if (allUseCases.length > 0) {
-      const randomIndex = Math.floor(Math.random() * allUseCases.length);
-      const randomUseCase = allUseCases[randomIndex];
-      
-      // Set the prompt value
-      setInputValue(randomUseCase.prompt);
-      
-      // Adjust textarea height after setting value
-      setTimeout(() => {
-        adjustTextareaHeight();
-      }, 0);
-    }
-  };
+  // const handleSurpriseMe = () => {
+  //   // Collect all use cases from all categories
+  //   const allUseCases = chipCategories.flatMap((category) => category.useCases);
+
+  //   // Select a random use case
+  //   if (allUseCases.length > 0) {
+  //     const randomIndex = Math.floor(Math.random() * allUseCases.length);
+  //     const randomUseCase = allUseCases[randomIndex];
+
+  //     // Set the prompt value
+  //     setInputValue(randomUseCase.prompt);
+
+  //     // Adjust textarea height after setting value
+  //     setTimeout(() => {
+  //       adjustTextareaHeight();
+  //     }, 0);
+  //   }
+  // };
 
   // Modified handleSubmit to include the GitHub repository as github_url, isPublic flag, and autopilot mode
   const handleSubmit = () => {
@@ -477,7 +476,7 @@ function TextAreaWithButtons({
             )}
 
             {/* Surprise Me button */}
-            <button
+            {/* <button
               onClick={handleSurpriseMe}
               className="h-7 px-3 flex items-center justify-center gap-1.5 rounded-full bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors shadow-sm text-xs font-medium text-slate-700 dark:text-white"
               title="Get a random project idea"
@@ -487,7 +486,7 @@ function TextAreaWithButtons({
                 className="w-4 h-4"
               />
               <span>Surprise Me</span>
-            </button>
+            </button> */}
           </div>
 
           <div className="flex items-center gap-2">
@@ -536,24 +535,24 @@ function TextAreaWithButtons({
                   text-sm font-semibold tracking-tight
                   transition-all duration-300 ease-out
                   overflow-hidden
-                  
+
                   bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
                   dark:from-white dark:via-gray-50 dark:to-white
                   text-white dark:text-slate-900
-                  
+
                   shadow-lg shadow-slate-900/20 dark:shadow-white/10
                   hover:shadow-xl hover:shadow-slate-900/30 dark:hover:shadow-white/20
                   hover:scale-[1.02]
-                  
+
                   active:scale-[0.98]
                   focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:ring-offset-2
-                  
+
                   disabled:opacity-50
-                  disabled:cursor-not-allowed 
+                  disabled:cursor-not-allowed
                   disabled:hover:scale-100
                   disabled:shadow-md
 
-                  before:absolute before:inset-0 
+                  before:absolute before:inset-0
                   before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent
                   before:opacity-0 hover:before:opacity-100
                   before:transition-opacity before:duration-300

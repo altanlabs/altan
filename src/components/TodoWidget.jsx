@@ -1,15 +1,14 @@
 import { Tooltip, Typography } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Virtuoso } from 'react-virtuoso';
 
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
 import Iconify from './iconify/Iconify.jsx';
-import Message from './room/thread/Message.jsx';
-import { switchToThread, makeSelectSortedThreadMessageIds } from '../redux/slices/room';
+import { switchToThread } from '../redux/slices/room';
 import {
   fetchTasks,
   selectTasksByThread,
+  selectPlanByThread,
   selectTasksLoading,
   selectTasksError,
   selectTasksExpanded,
@@ -21,17 +20,24 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [expandedTasks, setExpandedTasks] = useState(new Set());
 
   // Agent avatar mapping
   const agentAvatars = {
-    Database: 'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Genesis: 'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Database:
+      'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Genesis:
+      'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
     Flow: 'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Interface: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    Interface:
+      'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    Cloud:
+      'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+    Functions:
+      'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
   };
 
   const tasks = useSelector(selectTasksByThread(threadId));
+  const plan = useSelector(selectPlanByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
   const isExpanded = useSelector(selectTasksExpanded(threadId));
@@ -76,12 +82,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const runningTask = useMemo(() => {
     return sortedTasks.find((task) => task.status?.toLowerCase() === 'running');
   }, [sortedTasks]);
-
-  // Message selectors for running task thread
-  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
-  const runningTaskMessages = useSelector((state) =>
-    runningTask?.subthread_id ? messagesSelector(state, runningTask.subthread_id) : [],
-  );
 
   // Only fetch tasks if we're inside an altaner context
 
@@ -187,7 +187,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   }
 
   return (
-    <div className="w-full max-w-[1000px] mx-auto">
+    <div className="w-full max-w-[700px] mx-auto">
       {/* Compact Collapsible Header */}
       <div
         onClick={() => dispatch(setTasksExpanded({ threadId, expanded: !isExpanded }))}
@@ -205,6 +205,32 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
           <span className="text-xs font-medium">
             {sortedTasks.length} Task{sortedTasks.length !== 1 ? 's' : ''}
           </span>
+          {plan && plan.title && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+              · {plan.title}
+            </span>
+          )}
+          {plan && plan.status && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                plan.status === 'draft'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  : plan.status === 'approved'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+              }`}
+            >
+              {plan.status}
+            </span>
+          )}
+          {plan && plan.is_approved && (
+            <Tooltip title="Plan Approved">
+              <Iconify
+                icon="mdi:check-decagram"
+                className="w-3 h-3 text-green-600 dark:text-green-400"
+              />
+            </Tooltip>
+          )}
         </div>
 
         {/* Show running task info when collapsed */}
@@ -213,12 +239,12 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
 
             {/* Assigned Agent Avatar in collapsed view */}
-            {runningTask.assigned_agent && agentAvatars[runningTask.assigned_agent] && (
-              <Tooltip title={`Assigned to: ${runningTask.assigned_agent}`}>
+            {runningTask.assigned_agent_name && agentAvatars[runningTask.assigned_agent_name] && (
+              <Tooltip title={`Assigned to: ${runningTask.assigned_agent_name}`}>
                 <div className="flex-shrink-0">
                   <img
-                    src={agentAvatars[runningTask.assigned_agent]}
-                    alt={runningTask.assigned_agent}
+                    src={agentAvatars[runningTask.assigned_agent_name]}
+                    alt={runningTask.assigned_agent_name}
                     className="w-3.5 h-3.5 rounded-full border border-white/20 dark:border-gray-700/50 shadow-sm"
                     onError={(e) => {
                       e.target.style.display = 'none';
@@ -291,19 +317,11 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
       {/* Compact Expandable Content */}
       <div
         className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
-          isExpanded
-            ? expandedTasks.size > 0
-              ? 'max-h-[800px] opacity-100'
-              : 'max-h-96 opacity-100'
-            : 'max-h-0 opacity-0'
+          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border-x border-b border-gray-200/30 dark:border-gray-700/30 backdrop-blur-lg">
-          <div
-            className={`overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1 ${
-              expandedTasks.size > 0 ? 'max-h-[550px]' : 'max-h-80'
-            }`}
-          >
+          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 py-1 max-h-80">
             {sortedTasks.map((task, index) => (
               <div
                 key={task.id || index}
@@ -319,12 +337,12 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                   </div>
 
                   {/* Assigned Agent Avatar */}
-                  {task.assigned_agent && agentAvatars[task.assigned_agent] && (
+                  {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
                     <div className="flex-shrink-0">
-                      <Tooltip title={`Assigned to: ${task.assigned_agent}`}>
+                      <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
                         <img
-                          src={agentAvatars[task.assigned_agent]}
-                          alt={task.assigned_agent}
+                          src={agentAvatars[task.assigned_agent_name]}
+                          alt={task.assigned_agent_name}
                           className="w-4 h-4 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm hover:shadow-md transition-shadow"
                           onError={(e) => {
                             e.target.style.display = 'none';
@@ -384,44 +402,8 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
 
                   {/* Subthread Actions - show if task has subthread_id */}
                   {task.subthread_id && (
-                    <div className="flex-shrink-0 flex items-center gap-1">
-                      {/* Expand/Collapse Button - only for running tasks */}
-                      {task.status?.toLowerCase() === 'running' && (
-                        <Tooltip
-                          title={
-                            expandedTasks.has(task.id)
-                              ? 'Collapse thread view'
-                              : 'Expand thread view'
-                          }
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedTasks((prev) => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(task.id)) {
-                                  newSet.delete(task.id);
-                                } else {
-                                  newSet.add(task.id);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                          >
-                            <Iconify
-                              icon={
-                                expandedTasks.has(task.id)
-                                  ? 'mdi:unfold-less-horizontal'
-                                  : 'mdi:unfold-more-horizontal'
-                              }
-                              className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                            />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {/* Open in New Tab Button - always show if subthread exists */}
+                    <div className="flex-shrink-0">
+                      {/* Open in New Tab Button */}
                       <Tooltip title={`Open task thread: ${task.task_name}`}>
                         <button
                           onClick={(e) => {
@@ -439,34 +421,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Thread preview for running tasks - always visible, expandable */}
-                {task.status?.toLowerCase() === 'running' && task.subthread_id && (
-                  <div className="ml-5 border-l-2 border-blue-500 dark:border-blue-400 pl-3 mt-2">
-                    <div
-                      className={`rounded-md overflow-hidden transition-all duration-300 ${
-                        expandedTasks.has(task.id) ? 'h-[450px]' : 'h-24'
-                      }`}
-                    >
-                      <Virtuoso
-                        data={runningTaskMessages}
-                        initialTopMostItemIndex={Math.max(0, runningTaskMessages.length - 1)}
-                        itemContent={(index, messageId) => (
-                          <div className={expandedTasks.has(task.id) ? 'px-2 py-1' : ''}>
-                            <Message
-                              messageId={messageId}
-                              threadId={task.subthread_id}
-                              mode="mini"
-                              disableEndButtons={true}
-                              previousMessageId={messageId} // Same as current to suppress date separators
-                            />
-                          </div>
-                        )}
-                        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>

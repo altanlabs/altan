@@ -1,10 +1,11 @@
-import { Box, Stack, Tooltip, Typography, LinearProgress, Button, Chip } from '@mui/material';
+import { Box, Stack, Tooltip, Typography, LinearProgress, Button, Chip, IconButton } from '@mui/material';
 import { PieChart } from '@mui/x-charts';
 import { memo, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
+import { useAuthContext } from '../auth/useAuthContext';
 import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
 
@@ -17,29 +18,33 @@ function formatCredits(credits) {
   return credits.toString();
 }
 
-const UpgradeButton = ({ large = false, prominent = false }) => {
+const UpgradeButton = ({ large = false, prominent = false, superAdminExpanded = false, onToggleSuperAdmin = null }) => {
   const history = useHistory();
+  const { user } = useAuthContext();
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
-  const creditBalance = useSelector(selectAccountCreditBalance);
+  const accountCreditBalance = useSelector(selectAccountCreditBalance);
+
+  const safeAccountCreditBalance = accountCreditBalance ?? 0;
   const getCreditsInfo = useCallback(() => {
     if (!activeSubscriptions?.[0]) {
       return { used: 0, total: 0, remaining: 0, isLowCredits: false };
     }
     const subscription = activeSubscriptions[0];
-    const totalCredits = subscription?.meta_data?.custom_subscription
+    const subscriptionPlanCredits = subscription?.meta_data?.custom_subscription
       ? Number(subscription?.meta_data?.total_credits ?? 0)
       : Number(subscription?.billing_option?.plan?.credits ?? 0);
+
     const remainingCredits = Number(subscription?.credit_balance ?? 0);
     const isLowCredits =
-      totalCredits > 0 && (remainingCredits === 0 || remainingCredits / totalCredits <= 0.15);
+      subscriptionPlanCredits > 0 && (remainingCredits === 0 || remainingCredits / subscriptionPlanCredits <= 0.15) && (safeAccountCreditBalance < 2000);
 
     return {
-      total: Math.round(totalCredits / 100),
-      remaining: Math.round(remainingCredits / 100),
-      used: Math.round((totalCredits - remainingCredits) / 100),
+      total: Number(subscriptionPlanCredits / 100),
+      remaining: Number(remainingCredits / 100),
+      used: Number(subscriptionPlanCredits - remainingCredits) / 100,
       isLowCredits,
     };
-  }, [activeSubscriptions]);
+  }, [activeSubscriptions, safeAccountCreditBalance]);
 
   const renderPieChart = useCallback(
     ({ used, remaining, isLowCredits }) => (
@@ -111,7 +116,7 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
                 color="text.primary"
                 sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
-                €{(creditInfo.remaining + creditBalance / 100).toFixed(2)}
+                €{Number(creditInfo.remaining + safeAccountCreditBalance / 100).toFixed(2)}
               </Typography>
               <Typography
                 variant="body2"
@@ -125,6 +130,23 @@ const UpgradeButton = ({ large = false, prominent = false }) => {
               direction="row"
               spacing={1}
             >
+              {user?.xsup && onToggleSuperAdmin && (
+                <IconButton
+                  size="small"
+                  onClick={onToggleSuperAdmin}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Iconify
+                    icon={superAdminExpanded ? 'mdi:chevron-left' : 'mdi:chevron-right'}
+                    width={16}
+                  />
+                </IconButton>
+              )}
               <Button
                 size="small"
                 variant="contained"

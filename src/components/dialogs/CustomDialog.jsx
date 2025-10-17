@@ -28,6 +28,7 @@ const CustomDialog = ({
   className,
   children,
   showCloseButton = true,
+  maxWidth = 'sm',
   ...other
 }) => {
   const theme = useTheme();
@@ -119,7 +120,7 @@ const CustomDialog = ({
         onClose={onClose}
         fullScreen={alwaysFullScreen}
         fullWidth={shouldUseFullWidth}
-        maxWidth={shouldUseFullWidth ? false : 'sm'}
+        maxWidth={shouldUseFullWidth ? false : maxWidth}
         hideBackdrop={hideBackdrop}
         container={document.body}
         // Remove transitions to prevent flickering

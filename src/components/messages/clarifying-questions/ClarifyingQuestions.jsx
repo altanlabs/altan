@@ -1,4 +1,3 @@
-import { useTheme, alpha } from '@mui/material/styles';
 import React from 'react';
 
 import QuestionGroup from './QuestionGroup';
@@ -7,16 +6,70 @@ import { dispatch } from '../../../redux/store';
 
 // Clarifying Questions Component - main container with multiple question groups
 const ClarifyingQuestions = ({ children, threadId }) => {
-  const theme = useTheme();
   // State: { groupId: selectedValue }
   const [selections, setSelections] = React.useState({});
+  // Track which group is currently expanded
+  const [expandedGroupId, setExpandedGroupId] = React.useState(null);
 
-  const handleSelect = (groupId, value) => {
-    setSelections((prev) => ({
-      ...prev,
-      [groupId]: value,
-    }));
-  };
+  // Process children to create question groups
+  const questionGroups = React.useMemo(() => {
+    const groups = [];
+    let currentGroup = null;
+    let groupIndex = 0;
+
+    React.Children.forEach(children, (child) => {
+      if (!React.isValidElement(child)) return;
+
+      // Check for question-group - look for title prop or data-qg-title attribute
+      const questionTitle = child.props?.title || child.props?.['data-qg-title'];
+
+      if (questionTitle !== undefined) {
+        // This is a question-group
+        if (currentGroup) {
+          groups.push(currentGroup);
+        }
+        const groupId = `group-${groupIndex++}`;
+        currentGroup = {
+          id: groupId,
+          title: questionTitle,
+          children: React.Children.toArray(child.props.children),
+        };
+      }
+    });
+
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+
+    return groups;
+  }, [children]);
+
+  // Initialize first group as expanded
+  React.useEffect(() => {
+    if (expandedGroupId === null && questionGroups.length > 0) {
+      setExpandedGroupId(questionGroups[0].id);
+    }
+  }, [expandedGroupId, questionGroups]);
+
+  const handleSelect = React.useCallback(
+    (groupId, value) => {
+      setSelections((prev) => ({
+        ...prev,
+        [groupId]: value,
+      }));
+
+      // Find current group index
+      const currentIndex = questionGroups.findIndex((g) => g.id === groupId);
+
+      // If there's a next group, expand it after animation completes
+      if (currentIndex !== -1 && currentIndex < questionGroups.length - 1) {
+        setTimeout(() => {
+          setExpandedGroupId(questionGroups[currentIndex + 1].id);
+        }, 500);
+      }
+    },
+    [questionGroups],
+  );
 
   const handleConfirm = () => {
     const selectedValues = Object.values(selections).filter(Boolean);
@@ -37,35 +90,6 @@ const ClarifyingQuestions = ({ children, threadId }) => {
     // Reset selections after sending
     setSelections({});
   };
-
-  // Process children to create question groups
-  const questionGroups = [];
-  let currentGroup = null;
-  let groupIndex = 0;
-
-  React.Children.forEach(children, (child) => {
-    if (!React.isValidElement(child)) return;
-
-    // Check for question-group - look for title prop or data-qg-title attribute
-    const questionTitle = child.props?.title || child.props?.['data-qg-title'];
-
-    if (questionTitle !== undefined) {
-      // This is a question-group
-      if (currentGroup) {
-        questionGroups.push(currentGroup);
-      }
-      const groupId = `group-${groupIndex++}`;
-      currentGroup = {
-        id: groupId,
-        title: questionTitle,
-        children: React.Children.toArray(child.props.children),
-      };
-    }
-  });
-
-  if (currentGroup) {
-    questionGroups.push(currentGroup);
-  }
 
   const selectedCount = Object.values(selections).filter(Boolean).length;
 
@@ -97,20 +121,14 @@ const ClarifyingQuestions = ({ children, threadId }) => {
           Select options to clarify
         </span>
         {selectedCount > 0 && (
-          <span
-            className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full shadow-sm"
-            style={{
-              backgroundColor: alpha(theme.palette.primary.main, 0.2),
-              color: theme.palette.primary.main,
-            }}
-          >
+          <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full shadow-sm bg-blue-500/20 text-blue-600 dark:bg-blue-500/30 dark:text-blue-300">
             {selectedCount} selected
           </span>
         )}
       </div>
 
       {/* Question Groups */}
-      <div className="mb-3">
+      <div className="mb-3 space-y-2">
         {questionGroups.map((group) => (
           <QuestionGroup
             key={group.id}
@@ -118,38 +136,22 @@ const ClarifyingQuestions = ({ children, threadId }) => {
             title={group.title}
             selectedValue={selections[group.id]}
             onSelect={handleSelect}
+            isExpanded={expandedGroupId === group.id}
+            onToggle={() => setExpandedGroupId(expandedGroupId === group.id ? null : group.id)}
           >
             {group.children}
           </QuestionGroup>
         ))}
       </div>
 
-      {/* Confirm Button - Always visible when selections exist */}
+      {/* Continue Button - Always visible when selections exist */}
       {selectedCount > 0 && (
         <button
           onClick={handleConfirm}
-          className="w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-[1.01] active:scale-[0.99] shadow-md hover:shadow-lg"
-          style={{
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-          }}
+          style={{ transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+          className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black"
         >
-          <div className="flex items-center justify-center gap-2">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            Confirm & Send ({selectedCount})
-          </div>
+          Continue
         </button>
       )}
     </div>

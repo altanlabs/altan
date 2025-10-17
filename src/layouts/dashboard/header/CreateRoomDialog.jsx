@@ -1,18 +1,14 @@
-import {
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Autocomplete,
-  CircularProgress,
-  Avatar,
-  Typography,
-} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useCallback } from 'react';
 
+import RoomAdvancedSection from './room-dialog/RoomAdvancedSection';
+import RoomAvatarSection from './room-dialog/RoomAvatarSection';
+import RoomDialogFooter from './room-dialog/RoomDialogFooter';
+import RoomDialogHeader from './room-dialog/RoomDialogHeader';
+import RoomFeaturesSection from './room-dialog/RoomFeaturesSection';
+import RoomParticipantsSection from './room-dialog/RoomParticipantsSection';
+import RoomPrivacySection from './room-dialog/RoomPrivacySection';
+import RoomSettingsSection from './room-dialog/RoomSettingsSection';
 import CustomDialog from '../../../components/dialogs/CustomDialog';
 import {
   selectAccountId,
@@ -24,6 +20,7 @@ import {
 } from '../../../redux/slices/general';
 import { createRoom, updateRoom } from '../../../redux/slices/room';
 import { useSelector, dispatch } from '../../../redux/store';
+import { uploadMedia } from '../../../utils/media';
 
 const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData = null }) => {
   const theme = useTheme();
@@ -36,14 +33,20 @@ const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
+    avatar_url: '',
+    external_id: '',
     users: [],
     agents: [],
     policy: {
       privacy: 'account',
       default_role: 'member',
       agent_interaction: 'always',
+      agent_timeout: null,
+      max_members: null,
       memory_enabled: true,
       cagi_enabled: false,
+      voice_enabled: false,
     },
   });
 
@@ -78,28 +81,40 @@ const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData
 
       setFormData({
         name: roomData.name || '',
+        description: roomData.description || '',
+        avatar_url: roomData.avatar_url || '',
+        external_id: roomData.external_id || '',
         users: mappedUsers,
         agents: mappedAgents,
         policy: {
           privacy: roomData.policy?.privacy || 'account',
           default_role: roomData.policy?.default_role || 'member',
           agent_interaction: roomData.policy?.agent_interaction || 'always',
+          agent_timeout: roomData.policy?.agent_timeout || null,
+          max_members: roomData.policy?.max_members || null,
           memory_enabled: roomData.policy?.memory_enabled ?? true,
           cagi_enabled: roomData.policy?.cagi_enabled ?? false,
+          voice_enabled: roomData.policy?.voice_enabled ?? false,
         },
       });
     } else if (!editMode) {
       // Reset form for create mode
       setFormData({
         name: '',
+        description: '',
+        avatar_url: '',
+        external_id: '',
         users: [],
         agents: [],
         policy: {
           privacy: 'account',
           default_role: 'member',
           agent_interaction: 'always',
+          agent_timeout: null,
+          max_members: null,
           memory_enabled: true,
           cagi_enabled: false,
+          voice_enabled: false,
         },
       });
     }
@@ -169,22 +184,24 @@ const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData
         result = await dispatch(createRoom(roomDataPayload));
       }
 
-      console.log(`Room ${editMode ? 'updated' : 'created'}:`, result);
-
       // Reset form only if creating
       if (!editMode) {
         setFormData({
           name: '',
           description: '',
           avatar_url: '',
+          external_id: '',
           users: [],
           agents: [],
           policy: {
             privacy: 'account',
             default_role: 'member',
             agent_interaction: 'always',
+            agent_timeout: null,
+            max_members: null,
             memory_enabled: true,
             cagi_enabled: false,
+            voice_enabled: false,
           },
         });
       }
@@ -192,7 +209,8 @@ const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData
       onSuccess?.(result);
       onClose();
     } catch (error) {
-      console.error(`Error ${editMode ? 'updating' : 'creating'} room:`, error);
+      // Error handling
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -204,182 +222,126 @@ const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData
     }
   };
 
+  const handleDropSingleFile = useCallback(
+    async (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (file) {
+        try {
+          const mediaUrl = await uploadMedia(file);
+          setFormData((prev) => ({ ...prev, avatar_url: mediaUrl }));
+        } catch {
+          // Handle error silently
+        }
+      }
+    },
+    [],
+  );
+
   return (
     <CustomDialog
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
+      showCloseButton={false}
+      maxWidth="lg"
       PaperProps={{
         sx: {
-          backgroundColor: theme.palette.background.paper,
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(40px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: '16px',
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+            : '0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          height: '90vh',
+          maxHeight: '900px',
+          position: 'relative',
+          overflow: 'hidden',
         },
       }}
     >
-      <DialogTitle>{editMode ? 'Edit Room' : 'Create New Room'}</DialogTitle>
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField
-              label="Room Name"
-              value={formData.name}
-              variant="filled"
-              onChange={handleInputChange('name')}
-              required
-              fullWidth
-              disabled={isSubmitting}
-            />
-            <Autocomplete
-              fullWidth
-              disabled={isSubmitting}
-              disablePortal={false}
-              sx={{
-                '& .MuiPopper-root': {
-                  width: '100% !important',
-                },
-                '& .MuiAutocomplete-listbox': {
-                  width: '100%',
-                },
-              }}
-              options={[
-                { value: 'account', label: 'Account' },
-                { value: 'public', label: 'Public' },
-                { value: 'private', label: 'Private' },
-              ]}
-              getOptionLabel={(option) => option.label}
-              isOptionEqualToValue={(option, value) => option.value === value?.value}
-              value={
-                formData.policy.privacy
-                  ? { value: formData.policy.privacy, label: formData.policy.privacy.charAt(0).toUpperCase() + formData.policy.privacy.slice(1) }
-                  : null
-              }
-              onChange={(event, newValue) => {
-                handleInputChange('policy.privacy')({
-                  target: { value: newValue ? newValue.value : '' },
-                });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Privacy"
-                  variant="filled"
-                />
-              )}
-              PopperProps={{
-                style: {
-                  zIndex: 99999,
-                },
-                placement: 'bottom-start',
-              }}
-              slotProps={{
-                popper: {
-                  style: {
-                    zIndex: 99999,
-                  },
-                },
-              }}
-              ListboxProps={{
-                style: {
-                  maxHeight: '200px',
-                },
-              }}
+      <form onSubmit={handleSubmit} className="h-full flex flex-col relative">
+        {/* Absolute Header */}
+        <RoomDialogHeader
+          editMode={editMode}
+          onClose={handleClose}
+          isSubmitting={isSubmitting}
+        />
+
+        {/* Scrollable Content with custom scrollbar */}
+        <div
+          className="flex-1 overflow-y-auto pt-[140px] pb-[120px] px-12 scrollbar-thin scrollbar-thumb-violet-500/20 scrollbar-track-transparent hover:scrollbar-thumb-violet-500/40"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(139, 92, 246, 0.2) transparent',
+          }}
+        >
+          <div className="flex flex-col gap-10 max-w-4xl mx-auto">
+            {/* Avatar and Name */}
+            <RoomAvatarSection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              onInputChange={handleInputChange}
+              onAvatarDrop={handleDropSingleFile}
             />
 
-            <Autocomplete
-              multiple
-              fullWidth
-              disabled={isSubmitting}
-              options={availableMembers}
-              getOptionLabel={(option) => `${option.user.first_name} ${option.user.last_name}` || `${option.user.email}`}
-              isOptionEqualToValue={(option, value) => option.user.id === value.user.id}
-              value={formData.users}
-              onChange={(event, newValue) => {
-                setFormData(prev => ({
-                  ...prev,
-                  users: newValue,
-                }));
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Invite Members"
-                  variant="filled"
-                  placeholder="Select members to invite"
-                />
-              )}
-              loading={membersLoading}
-              loadingText="Loading members..."
-              noOptionsText="No members available"
-              renderOption={(props, option) => (
-                <li {...props}>
-                  <Avatar sx={{ mr: 2 }} src={option.user.avatar_url}>
-                    {option.user.first_name?.charAt(0)}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2">{`${option.user.first_name} ${option.user.last_name}`}</Typography>
-                    <Typography variant="body2" color="text.secondary">{option.user.email}</Typography>
-                  </Box>
-                </li>
-              )}
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
+
+            {/* Privacy */}
+            <RoomPrivacySection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              onInputChange={handleInputChange}
             />
 
-            <Autocomplete
-              multiple
-              fullWidth
-              disabled={isSubmitting}
-              options={availableAgents}
-              getOptionLabel={(option) => option.name || `Agent ${option.id}`}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              value={formData.agents}
-              onChange={(event, newValue) => {
-                setFormData(prev => ({
-                  ...prev,
-                  agents: newValue,
-                }));
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Invite Agents"
-                  variant="filled"
-                  placeholder="Select agents to invite"
-                />
-              )}
-              loading={agentsLoading}
-              loadingText="Loading agents..."
-              noOptionsText="No agents available"
-              renderOption={(props, option) => (
-                <li {...props}>
-                  <Avatar sx={{ mr: 2 }} src={option.avatar_url}>
-                    {option.name?.charAt(0)}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2">{option.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{`Agent ${option.id}`}</Typography>
-                  </Box>
-                </li>
-              )}
+            {/* Settings Row */}
+            <RoomSettingsSection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              onInputChange={handleInputChange}
             />
-          </Box>
-        </DialogContent>
 
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button
-            onClick={handleClose}
-            disabled={isSubmitting}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting || !formData.name.trim()}
-            startIcon={isSubmitting ? <CircularProgress size={16} /> : null}
-          >
-            {isSubmitting ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Room' : 'Create Room')}
-          </Button>
-        </DialogActions>
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
+
+            {/* Participants */}
+            <RoomParticipantsSection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              availableMembers={availableMembers}
+              availableAgents={availableAgents}
+              membersLoading={membersLoading}
+              agentsLoading={agentsLoading}
+              setFormData={setFormData}
+            />
+
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
+
+            {/* Features */}
+            <RoomFeaturesSection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              onInputChange={handleInputChange}
+            />
+
+            {/* Advanced Settings */}
+            <RoomAdvancedSection
+              formData={formData}
+              isSubmitting={isSubmitting}
+              onInputChange={handleInputChange}
+            />
+          </div>
+        </div>
+
+        {/* Absolute Footer */}
+        <RoomDialogFooter
+          editMode={editMode}
+          isSubmitting={isSubmitting}
+          formData={formData}
+          onClose={handleClose}
+        />
       </form>
     </CustomDialog>
   );

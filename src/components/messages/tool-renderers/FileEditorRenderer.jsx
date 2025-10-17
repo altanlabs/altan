@@ -278,7 +278,7 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
         >
           <button
             onClick={handleCopy}
-            className="p-1 hover:bg-gray-700/30 rounded transition-colors"
+            className="p-1 hover:bg-gray-700/30 rounded transition-colors opacity-0 group-hover:opacity-100"
             title="Copy to clipboard"
           >
             <Icon

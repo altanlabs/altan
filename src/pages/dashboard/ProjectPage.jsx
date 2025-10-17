@@ -2,11 +2,12 @@ import { Box } from '@mui/material';
 import React, { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import Room from '../../components/room/Room.jsx';
+import Plan from './Plan.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import {
@@ -16,12 +17,15 @@ import {
   getAltanerById,
   clearCurrentAltaner,
   loadDisplayModeForProject,
+  selectViewType,
 } from '../../redux/slices/altaners';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../redux/slices/general';
 import { selectMainThread } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
+import useGetInterfaceServerStatus from './interfaces/hooks/useGetInterfaceServerStatus.js';
 
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
@@ -48,14 +52,20 @@ export default function ProjectPage() {
   const mobileContainerRef = React.useRef(null);
   const chatPanelRef = React.useRef(null);
   const history = useHistory();
+  const location = useLocation();
   const { altanerId, componentId, itemId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
+  const viewType = useSelector(selectViewType);
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
+
+  // Extract plan_id from query params
+  const searchParams = new URLSearchParams(location.search);
+  const planId = searchParams.get('plan_id');
 
   // Programmatically collapse/expand chat panel based on display mode
   React.useEffect(() => {
@@ -103,8 +113,60 @@ export default function ProjectPage() {
     if (!activeComponentId || !sortedComponents) return null;
     const component = sortedComponents[activeComponentId];
     // Current component type for rendering logic
-    return component;
+    return component || null;
   }, [activeComponentId, sortedComponents]);
+
+  // Redirect to first component if the requested component doesn't exist
+  useEffect(() => {
+    if (activeComponentId && sortedComponents && Object.keys(sortedComponents).length > 0) {
+      // Check if the active component ID exists in sorted components
+      if (!sortedComponents[activeComponentId]) {
+        const firstComponentId = Object.keys(sortedComponents)[0];
+        const currentSearch = window.location.search;
+        history.replace(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
+      }
+    }
+  }, [activeComponentId, sortedComponents, altanerId, history]);
+
+  // Create memoized selectors for interface
+  const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
+  const selectSortedCommits = useMemo(makeSelectSortedCommits, []);
+
+  // Get the interface ID if current component is an interface
+  const interfaceId = useMemo(() => {
+    if (!currentComponent || currentComponent.type !== 'interface') return null;
+    return currentComponent.params?.id || currentComponent.params?.ids?.[0];
+  }, [currentComponent]);
+
+  // Get interface data and commits if viewing an interface
+  const interfaceData = useSelector((state) => 
+    interfaceId ? selectInterfaceById(state, interfaceId) : null
+  );
+  
+  const interfaceCommits = useSelector((state) => 
+    interfaceId ? selectSortedCommits(state, interfaceId) : []
+  );
+
+  // Check if current component is an interface with no commits
+  // Only return true if we have confirmed the interface exists but has no commits
+  const isInterfaceWithNoCommits = useMemo(() => {
+    if (!interfaceId) return false;
+    // If interface data hasn't loaded yet, don't apply full-screen logic
+    if (!interfaceData) return false;
+    // Only show full-screen chat if interface is loaded and has no commits
+    return !interfaceCommits || interfaceCommits.length === 0;
+  }, [interfaceId, interfaceData, interfaceCommits]);
+
+  // Fetch interface data if we're viewing an interface component
+  useEffect(() => {
+    if (interfaceId) {
+      dispatch(getInterfaceById(interfaceId));
+    }
+  }, [interfaceId]);
+
+  // Initialize dev server status polling for interfaces (regardless of commits)
+  // This ensures the dev server starts even when showing full-screen chat
+  useGetInterfaceServerStatus(interfaceId, viewType === 'preview');
 
   // Set the first component as active when components are loaded
   useEffect(() => {
@@ -335,70 +397,99 @@ export default function ProjectPage() {
           component="main"
           sx={{ flexGrow: 1, display: 'flex', height: '100%' }}
         >
-          {/* Always use PanelGroup layout to prevent re-renders when toggling display mode */}
-          <PanelGroup
-            direction="horizontal"
-            className="w-full h-full"
-          >
-            {/* Chat Panel - collapses to 0 when in preview mode */}
-            <Panel
-              ref={chatPanelRef}
-              id="chat-panel"
-              order={1}
-              defaultSize={30}
-              minSize={20}
-              maxSize={65}
-              collapsible={true}
-              defaultCollapsed={displayMode === 'preview'}
-              collapsedSize={0}
-              className="overflow-hidden"
-            >
-              {altaner?.room_id && (
-                <Box
-                  sx={{
-                    height: '100%',
-                    position: 'relative',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Room
-                    key={altaner?.room_id}
-                    roomId={altaner?.room_id}
-                    header={false}
-                    renderCredits={true}
-                    renderFeedback={true}
-                    settings={false}
-                    tabs={true}
-                  />
-                </Box>
-              )}
-            </Panel>
-
-            {/* Resize Handle - only show in both mode */}
-            {displayMode === 'both' && (
-              <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
-                <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
-                <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
-              </PanelResizeHandle>
-            )}
-
-            {/* Preview Panel */}
-            <Panel
-              id="preview-panel"
-              order={2}
-              defaultSize={60}
-              minSize={35}
-              className="overflow-auto min-w-0"
-            >
-              <Box 
-                sx={{ height: '100%', position: 'relative' }}
-                data-tour={`component-preview-${currentComponent?.type || 'default'}`}
+          {/* Show full-screen chat when interface has no commits AND no plan is being viewed */}
+          {isInterfaceWithNoCommits && !planId ? (
+            altaner?.room_id && (
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  position: 'relative',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                }}
               >
-                {activeComponentId && currentComponent && renderComponent()}
+                <Room
+                  key={altaner?.room_id}
+                  roomId={altaner?.room_id}
+                  header={false}
+                  renderCredits={true}
+                  renderFeedback={true}
+                  settings={false}
+                  tabs={true}
+                />
               </Box>
-            </Panel>
-          </PanelGroup>
+            )
+          ) : (
+            /* Always use PanelGroup layout to prevent re-renders when toggling display mode */
+            <PanelGroup
+              direction="horizontal"
+              className="w-full h-full"
+            >
+              {/* Chat Panel - collapses to 0 when in preview mode */}
+              <Panel
+                ref={chatPanelRef}
+                id="chat-panel"
+                order={1}
+                defaultSize={30}
+                minSize={20}
+                maxSize={65}
+                collapsible={true}
+                defaultCollapsed={displayMode === 'preview'}
+                collapsedSize={0}
+                className="overflow-hidden"
+              >
+                {altaner?.room_id && (
+                  <Box
+                    sx={{
+                      height: '100%',
+                      position: 'relative',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Room
+                      key={altaner?.room_id}
+                      roomId={altaner?.room_id}
+                      header={false}
+                      renderCredits={true}
+                      renderFeedback={true}
+                      settings={false}
+                      tabs={true}
+                    />
+                  </Box>
+                )}
+              </Panel>
+
+              {/* Resize Handle - only show in both mode */}
+              {displayMode === 'both' && (
+                <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
+                  <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
+                  <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
+                </PanelResizeHandle>
+              )}
+
+              {/* Preview Panel */}
+              <Panel
+                id="preview-panel"
+                order={2}
+                defaultSize={60}
+                minSize={35}
+                className="overflow-auto min-w-0"
+              >
+                <Box 
+                  sx={{ height: '100%', position: 'relative' }}
+                  data-tour={`component-preview-${currentComponent?.type || 'default'}`}
+                >
+                  {planId ? (
+                    <Plan planId={planId} />
+                  ) : (
+                    activeComponentId && currentComponent && renderComponent()
+                  )}
+                </Box>
+              </Panel>
+            </PanelGroup>
+          )}
         </Box>
       </Box>
     </CompactLayout>

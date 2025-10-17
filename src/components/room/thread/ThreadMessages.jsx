@@ -45,7 +45,7 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds, renderFeedback = false, isStreaming = false }) => {
+const Footer = memo(({ threadId, messageIds, renderFeedback = false, isStreaming = false, paddingBottom = 32 }) => {
   const messagesById = useSelector(selectMessagesById);
   const members = useSelector(selectMembers);
 
@@ -56,7 +56,7 @@ const Footer = memo(({ threadId, messageIds, renderFeedback = false, isStreaming
   const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
 
   return (
-    <div className="pb-[32px]">
+    <div style={{ paddingBottom: `${paddingBottom}px` }}>
       {/* Show ThreadActionBar if there are messages and not streaming */}
       {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && !isStreaming && (
         <ThreadActionBar
@@ -136,7 +136,7 @@ const useIsCreation = (mode) => {
 // -----------------------------------------------------
 // 4) The Main Component
 // -----------------------------------------------------
-const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, renderFeedback = false }) => {
+const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, renderFeedback = false, footerPaddingBottom = 32 }) => {
   const isCreation = useIsCreation(mode);
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
@@ -441,6 +441,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
                   messageIds={messageIds}
                   renderFeedback={renderFeedback}
                   isStreaming={activeResponses && activeResponses.length > 0}
+                  paddingBottom={footerPaddingBottom}
                 />
               ),
             }}

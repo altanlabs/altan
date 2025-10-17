@@ -348,7 +348,7 @@ export default function NewPricing() {
 
   const handleCheckout = async (billingOptionId) => {
     // Check if user is authenticated
-    if (!accountId) {
+    if (!isAuthenticated || !accountId) {
       // Redirect to register page if not authenticated
       history.push('/auth/register');
       return;
@@ -475,56 +475,54 @@ export default function NewPricing() {
 
   return (
     <Box>
-      {/* Billing Toggle - Only show for authenticated users */}
-      {isAuthenticated && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isYearlyBilling}
-                onChange={(e) => setIsYearlyBilling(e.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
+      {/* Billing Toggle */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isYearlyBilling}
+              onChange={(e) => setIsYearlyBilling(e.target.checked)}
+              color="primary"
+            />
+          }
+          label={
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+            >
+              <Typography
+                variant="body2"
+                sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}
               >
+                Monthly
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}
+              >
+                Yearly
+              </Typography>
+              {isYearlyBilling && (
                 <Typography
-                  variant="body2"
-                  sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: 'success.lighter',
+                    color: 'success.main',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                  }}
                 >
-                  Monthly
+                  Save ~17%
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}
-                >
-                  Yearly
-                </Typography>
-                {isYearlyBilling && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      backgroundColor: 'success.lighter',
-                      color: 'success.main',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                    }}
-                  >
-                    Save ~17%
-                  </Typography>
-                )}
-              </Stack>
-            }
-            sx={{ m: 0 }}
-          />
-        </Box>
-      )}
+              )}
+            </Stack>
+          }
+          sx={{ m: 0 }}
+        />
+      </Box>
 
       {/* Pricing Cards */}
       <Box
@@ -636,24 +634,14 @@ export default function NewPricing() {
           title="Growth"
           price={
             growthBillingOption
-              ? formatPrice(
-                  growthBillingOption.price,
-                  isAuthenticated ? billingFrequency : 'monthly',
-                )
+              ? formatPrice(growthBillingOption.price, billingFrequency)
               : 'Contact us'
           }
           description={currentGrowthPlan?.description}
           priceSubtext={
             growthBillingOption ? (
               <Stack spacing={1}>
-                {isAuthenticated && isYearlyBilling && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    €{Math.round(growthBillingOption.price / 100 / 12)}/mo billed yearly
-                  </Typography>
-                )}
+
                 <Typography
                   variant="body1"
                   sx={{
@@ -664,10 +652,7 @@ export default function NewPricing() {
                   + €
                   {Math.round(
                     currentGrowthPlan.credits / 100 -
-                      formatPrice(
-                        growthBillingOption.price,
-                        isAuthenticated ? billingFrequency : 'monthly',
-                      ),
+                      formatPrice(growthBillingOption.price, billingFrequency),
                   )}{' '}
                   free credits
                 </Typography>
@@ -675,66 +660,64 @@ export default function NewPricing() {
             ) : null
           }
           features={GROWTH_FEATURES}
-          buttonText={isAuthenticated ? 'Choose Plan' : 'Sign in to choose plan'}
+          buttonText="Choose Plan"
           highlighted={true}
           loading={loadingStates.growth}
-          onButtonClick={isAuthenticated ? handleGrowthClick : () => history.push('/auth/login')}
+          onButtonClick={handleGrowthClick}
         >
-          {isAuthenticated ? (
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 2, fontWeight: 600 }}
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 2, fontWeight: 600 }}
+            >
+              Choose your credit tier:
+            </Typography>
+            <FormControl fullWidth>
+              <Select
+                value={selectedGrowthTier}
+                onChange={handleGrowthTierChange}
+                sx={{
+                  '& .MuiSelect-select': {
+                    py: 1.5,
+                  },
+                }}
               >
-                Choose your credit tier:
-              </Typography>
-              <FormControl fullWidth>
-                <Select
-                  value={selectedGrowthTier}
-                  onChange={handleGrowthTierChange}
-                  sx={{
-                    '& .MuiSelect-select': {
-                      py: 1.5,
-                    },
-                  }}
-                >
-                  {growthPlans.map((plan, index) => {
-                    const billingOption = getBillingOption(plan, billingFrequency);
-                    const price = billingOption
-                      ? formatPrice(billingOption.price, billingFrequency)
-                      : 0;
+                {growthPlans.map((plan, index) => {
+                  const billingOption = getBillingOption(plan, billingFrequency);
+                  const price = billingOption
+                    ? formatPrice(billingOption.price, billingFrequency)
+                    : 0;
 
-                    return (
-                      <MenuItem
-                        key={plan.id}
-                        value={index}
+                  return (
+                    <MenuItem
+                      key={plan.id}
+                      value={index}
+                    >
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        width="100%"
                       >
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          width="100%"
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
                         >
-                          <Typography
-                            variant="body2"
-                            fontWeight={600}
-                          >
-                            €{plan.credits / 100} credits
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="success.main"
-                            fontWeight={600}
-                          >
-                            €{price}/mo
-                          </Typography>
-                        </Stack>
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
-            </Box>
-          ) : null}
+                          €{plan.credits / 100} credits
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="success.main"
+                          fontWeight={600}
+                        >
+                          €{price}/mo
+                        </Typography>
+                      </Stack>
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </Box>
         </PricingCard>
 
         {/* Enterprise Plan */}

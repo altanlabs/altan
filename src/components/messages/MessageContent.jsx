@@ -29,7 +29,7 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
   const partsById = useSelector(selectMessagePartsById);
 
-  // Create sorted parts with fresh data on every render
+  // Create sorted parts - relies on partsById reference changing when parts are updated (via Immer)
   // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
   const sortedParts = useMemo(() => {
     if (messageParts.length === 0) return [];
@@ -62,6 +62,16 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   // Check if response is empty
   const isEmptyResponse = useMemo(() => {
     return message.meta_data?.is_empty === true;
+  }, [message.meta_data]);
+
+  // Check if should show loading dots
+  const showLoadingDots = useMemo(() => {
+    return message.meta_data?.showLoadingDots === true;
+  }, [message.meta_data]);
+
+  // Check for warning
+  const warning = useMemo(() => {
+    return message.meta_data?.warning;
   }, [message.meta_data]);
 
   if (!hasContent && !hasMessageParts && !message.error && !hasMessageMedia && !hasMetaDataError && !isEmptyResponse) {
@@ -144,6 +154,12 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
                 mode={mode}
               />
             ))}
+            {/* Show loading dots at bottom when more parts are expected */}
+            {showLoadingDots && (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
+                <Iconify icon="svg-spinners:3-dots-fade" className="w-5 h-5" />
+              </div>
+            )}
           </div>
         ) : (
           // Show regular content
@@ -156,6 +172,29 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
       </div>
       <MessageError message={message} />
       <MessageMedia messageId={message.id} />
+
+      {/* Show warning feedback for stopped/interrupted/suspended responses */}
+      {warning && (
+        <div className="mt-2">
+          <div className="w-full rounded-md bg-amber-50/30 dark:bg-amber-950/10 border-l-2 border-amber-400 dark:border-amber-600">
+            <div className="px-2.5 py-2">
+              <div className="flex items-start gap-1.5">
+                <Iconify icon="mdi:alert-outline" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 opacity-70" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-medium text-amber-800 dark:text-amber-200 text-xs">
+                      {warning.type === 'stopped' ? 'Stopped' : warning.type === 'interrupted' ? 'Interrupted' : 'Suspended'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                    {warning.message}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Stack>
   );
 };
