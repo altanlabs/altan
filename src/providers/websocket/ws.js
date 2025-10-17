@@ -959,6 +959,33 @@ export const handleWebSocketEvent = async (data, user_id) => {
               },
             }),
           );
+
+          // Send browser notification
+          dispatch(
+            addNotification({
+              id: `task-completed-${taskEventData.task_id}-${Date.now()}`,
+              status: 'unopened',
+              notification: {
+                type: 'system',
+                title: 'Task Completed',
+                body: `✅ "${taskEventData.task_name}" has been completed!`,
+                message: `The task "${taskEventData.task_name}" has been marked as completed.`,
+                date_creation: new Date().toISOString(),
+                meta_data: {
+                  data: {
+                    category: 'task_completed',
+                    task: {
+                      id: taskEventData.task_id,
+                      name: taskEventData.task_name,
+                      room_id: taskEventData.room_id,
+                      mainthread_id: taskEventData.mainthread_id,
+                    },
+                  },
+                  avatar_url: '/logos/logoBlack.png',
+                },
+              },
+            }),
+          );
           break;
         default:
           console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);

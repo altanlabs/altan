@@ -20,9 +20,14 @@ const PlansList = ({ roomId }) => {
   const isLoading = useSelector(selectRoomPlansLoading(roomId));
   const error = useSelector(selectRoomPlansError(roomId));
 
+  console.log('PlansList render:', { roomId, plans, isLoading, error, plansCount: plans?.length });
+
   useEffect(() => {
+    console.log('PlansList: Fetching plans for roomId:', roomId);
     if (roomId) {
       dispatch(fetchPlansByRoomId(roomId));
+    } else {
+      console.warn('PlansList: No roomId provided!');
     }
   }, [roomId, dispatch]);
 

@@ -1,12 +1,21 @@
 // form
 import { LoadingButton } from '@mui/lab';
-import { Card, Stack, Typography } from '@mui/material';
+import { Card, Stack, Typography, Button, Alert, Box } from '@mui/material';
 import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 // @mui
 
 // components
 import FormProvider, { RHFSwitch } from '../../../../components/hook-form';
 import { useSnackbar } from '../../../../components/snackbar';
+import Iconify from '../../../../components/iconify';
+import {
+  isBrowserNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  areBrowserNotificationsEnabled,
+  setBrowserNotificationsEnabled,
+} from '../../../../utils/browserNotifications';
 
 // ----------------------------------------------------------------------
 
@@ -35,12 +44,17 @@ const NOTIFICATION_SETTINGS = {
   applicationNews: true,
   applicationProduct: false,
   applicationBlog: false,
+  browserNotifications: true,
 };
 
 // ----------------------------------------------------------------------
 
 export default function AccountNotifications() {
   const { enqueueSnackbar } = useSnackbar();
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState(
+    getNotificationPermission()
+  );
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   const defaultValues = {
     activityComments: NOTIFICATION_SETTINGS.activityComments,
@@ -49,6 +63,7 @@ export default function AccountNotifications() {
     applicationNews: NOTIFICATION_SETTINGS.applicationNews,
     applicationProduct: NOTIFICATION_SETTINGS.applicationProduct,
     applicationBlog: NOTIFICATION_SETTINGS.applicationBlog,
+    browserNotifications: areBrowserNotificationsEnabled(),
   };
 
   const methods = useForm({
@@ -57,16 +72,49 @@ export default function AccountNotifications() {
 
   const {
     handleSubmit,
+    watch,
     formState: { isSubmitting },
   } = methods;
 
+  const browserNotificationsEnabled = watch('browserNotifications');
+
+  // Update browser notification preference when changed
+  useEffect(() => {
+    setBrowserNotificationsEnabled(browserNotificationsEnabled);
+  }, [browserNotificationsEnabled]);
+
+  const handleRequestPermission = async () => {
+    setIsRequestingPermission(true);
+    try {
+      const permission = await requestNotificationPermission();
+      setBrowserNotificationPermission(permission);
+      if (permission === 'granted') {
+        enqueueSnackbar('Browser notifications enabled!', { variant: 'success' });
+      } else if (permission === 'denied') {
+        enqueueSnackbar(
+          'Browser notifications blocked. Please enable them in your browser settings.',
+          { variant: 'warning' }
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting permission:', error);
+      enqueueSnackbar('Failed to request notification permission', { variant: 'error' });
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
+      // Save browser notification preference
+      setBrowserNotificationsEnabled(data.browserNotifications);
+      
       await new Promise((resolve) => setTimeout(resolve, 500));
-      enqueueSnackbar('Update success!');
+      enqueueSnackbar('Notification preferences saved!', { variant: 'success' });
       console.log('DATA', data);
     } catch (error) {
       console.error(error);
+      enqueueSnackbar('Failed to save preferences', { variant: 'error' });
     }
   };
 
@@ -76,6 +124,89 @@ export default function AccountNotifications() {
       onSubmit={handleSubmit(onSubmit)}
     >
       <Card sx={{ p: 3 }}>
+        {/* Browser Notifications Section */}
+        <Box sx={{ mb: 4 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ mb: 2 }}
+          >
+            <Iconify
+              icon="solar:bell-bing-bold-duotone"
+              width={24}
+              sx={{ color: 'primary.main' }}
+            />
+            <Typography
+              variant="overline"
+              component="div"
+              sx={{ color: 'text.secondary' }}
+            >
+              Browser Notifications
+            </Typography>
+          </Stack>
+
+          {!isBrowserNotificationSupported() && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Browser notifications are not supported in your current browser.
+            </Alert>
+          )}
+
+          {isBrowserNotificationSupported() && browserNotificationPermission === 'denied' && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              You have blocked browser notifications. To enable them, please update your browser
+              settings and reload the page.
+            </Alert>
+          )}
+
+          {isBrowserNotificationSupported() && browserNotificationPermission === 'default' && (
+            <Alert
+              severity="info"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={handleRequestPermission}
+                  disabled={isRequestingPermission}
+                >
+                  {isRequestingPermission ? 'Requesting...' : 'Enable'}
+                </Button>
+              }
+            >
+              Enable browser notifications to receive real-time alerts about mentions, assignments,
+              and important updates.
+            </Alert>
+          )}
+
+          <Stack
+            alignItems="flex-start"
+            spacing={1}
+          >
+            <RHFSwitch
+              name="browserNotifications"
+              label="Enable browser notifications"
+              disabled={
+                !isBrowserNotificationSupported() ||
+                browserNotificationPermission === 'denied' ||
+                browserNotificationPermission === 'default'
+              }
+              sx={{ m: 0 }}
+            />
+          </Stack>
+
+          {browserNotificationPermission === 'granted' && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 1, ml: 4 }}
+            >
+              You'll receive desktop notifications for mentions, assignments, and important updates
+              when you're not actively using the app.
+            </Typography>
+          )}
+        </Box>
+
         <Typography
           variant="overline"
           component="div"

@@ -6,6 +6,7 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
+import useBrowserNotifications from '../../hooks/useBrowserNotifications';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
@@ -58,6 +59,9 @@ const DashboardLayout = ({ children }) => {
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
+
+  // Enable browser notifications for this user
+  useBrowserNotifications();
 
   const handleToggleNav = useCallback(() => {
     // Toggle navigation handler - kept for compatibility

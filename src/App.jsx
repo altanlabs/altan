@@ -42,6 +42,7 @@ import { ThemeSettings, SettingsProvider } from './components/settings';
 import SnackbarProvider from './components/snackbar';
 import CookieBanner from './components/cookie-banner';
 import CookieManager from './components/cookie-banner/CookieManager';
+import { NotificationPermissionBanner } from './components/browser-notifications';
 import ThemeLocalization from './locales';
 import { store, persistor } from './redux/store';
 // routes
@@ -87,6 +88,7 @@ function App() {
                               <Router />
                               <CookieBanner />
                               <CookieManager />
+                              <NotificationPermissionBanner />
                             </SnackbarProvider>
                           </ThemeLocalization>
                         </ThemeSettings>

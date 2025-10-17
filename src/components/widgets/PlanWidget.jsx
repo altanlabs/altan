@@ -254,7 +254,7 @@ const PlanWidget = ({ planId }) => {
                       icon="mdi:arrow-expand"
                       className="w-3.5 h-3.5"
                     />
-                    <span>View Full</span>
+                    <span>Expand</span>
                   </div>
                 </button>
               </Tooltip>
