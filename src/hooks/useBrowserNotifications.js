@@ -15,6 +15,7 @@ export default function useBrowserNotifications() {
   const history = useHistory();
   const notifications = useSelector((state) => state.notifications.notifications);
   const prevNotificationsRef = useRef([]);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     // Skip if browser notifications aren't supported or not enabled
@@ -24,6 +25,13 @@ export default function useBrowserNotifications() {
 
     // Skip if permission not granted
     if (getNotificationPermission() !== 'granted') {
+      return;
+    }
+
+    // On first load, just initialize the ref without sending notifications
+    if (!isInitializedRef.current) {
+      prevNotificationsRef.current = notifications;
+      isInitializedRef.current = true;
       return;
     }
 

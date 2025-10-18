@@ -44,7 +44,7 @@ const NOTIFICATION_SETTINGS = {
   applicationNews: true,
   applicationProduct: false,
   applicationBlog: false,
-  browserNotifications: true,
+  browserNotifications: false,
 };
 
 // ----------------------------------------------------------------------

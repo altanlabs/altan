@@ -43,7 +43,7 @@ export function setPermissionRequested() {
  */
 export function areBrowserNotificationsEnabled() {
   const enabled = localStorage.getItem(NOTIFICATION_ENABLED_KEY);
-  return enabled === null ? true : enabled === 'true'; // Default to true if not set
+  return enabled === null ? false : enabled === 'true'; // Default to false if not set
 }
 
 /**

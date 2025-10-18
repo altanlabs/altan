@@ -5,7 +5,7 @@ import { useReactFlow } from 'reactflow';
 import { getLayoutedNodes, getNodeDimensions } from './hooks/utils/index.ts';
 import ControlPanel from '../../../components/control-panel/ControlPanel.jsx';
 import { useSettingsContext } from '../../../components/settings/SettingsContext.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { setInitializedNodes } from '../../../redux/slices/flows';
 import { dispatch, useSelector } from '../../../redux/store';
 
@@ -106,7 +106,7 @@ const FlowLayoutedNodes = ({
   const [autoAlignCount, setAutoAlignCount] = useState(0);
   const [layoutingNodes, setLayoutingNodes] = useState(false);
   const { animations, onToggleAnimation } = useSettingsContext();
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const sendCommand = ws?.sendCommand;
   const initializedNodes = useSelector(initializedNodesSelector);
   const nextMappings = useSelector(nextModuleMappingsSelector);

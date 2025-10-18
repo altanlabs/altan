@@ -30,7 +30,6 @@ import { useSnackbar } from '../../../components/snackbar';
 import UpgradeButton from '../../../components/UpgradeButton.jsx';
 import { useLocales } from '../../../locales';
 import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
 import { selectAccount, selectAccountCreditBalance, selectAccountSubscriptions } from '../../../redux/slices/general';
 import { updateEntry } from '../../../redux/slices/superadmin';
 import { useDispatch, useSelector } from '../../../redux/store';
@@ -42,8 +41,7 @@ export default function AccountPopover() {
   const history = useHistory();
   const dispatch = useDispatch();
   const { resolvedThemeMode, onToggleMode } = useSettingsContext();
-  const ws = useWebSocket();
-  const hermesWs = useHermesWebSocket();
+  const ws = useHermesWebSocket();
   const { user, logout } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
   const [openPopover, setOpenPopover] = useState(null);
@@ -174,7 +172,7 @@ export default function AccountPopover() {
             width: 30,
           }}
         />
-        {!!(user?.xsup && (ws?.activeSubscriptions?.length || hermesWs?.activeSubscriptions?.length)) && (
+        {!!(user?.xsup && ws?.activeSubscriptions?.length) && (
           <Tooltip
             arrow
             placement="bottom-start"
@@ -203,7 +201,7 @@ export default function AccountPopover() {
                   }}
                 >
                   <Typography variant="h4">SuperAdmin Stats</Typography>
-                  {/* Regular WebSocket Subscriptions */}
+                  {/* Hermes WebSocket Subscriptions */}
                   {ws?.activeSubscriptions?.length > 0 && (
                     <>
                       <Typography variant="h6" sx={{ mt: 1, mb: 0.5 }}>
@@ -215,24 +213,6 @@ export default function AccountPopover() {
                           variant="caption"
                           sx={{ pl: 1, color: 'primary.main' }}
                         >
-                          📡 {as}
-                        </Typography>
-                      ))}
-                    </>
-                  )}
-
-                  {/* Hermes WebSocket Subscriptions */}
-                  {hermesWs?.activeSubscriptions?.length > 0 && (
-                    <>
-                      <Typography variant="h6" sx={{ mt: 2, mb: 0.5 }}>
-                        Hermes WebSocket subscriptions ({hermesWs.activeSubscriptions.length}):
-                      </Typography>
-                      {hermesWs.activeSubscriptions.map((as) => (
-                        <Typography
-                          key={`hermes-${as}`}
-                          variant="caption"
-                          sx={{ pl: 1, color: 'secondary.main' }}
-                        >
                           🚀 {as}
                         </Typography>
                       ))}
@@ -240,7 +220,7 @@ export default function AccountPopover() {
                   )}
 
                   {/* Show message if no subscriptions */}
-                  {!ws?.activeSubscriptions?.length && !hermesWs?.activeSubscriptions?.length && (
+                  {!ws?.activeSubscriptions?.length && (
                     <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
                       No active subscriptions
                     </Typography>

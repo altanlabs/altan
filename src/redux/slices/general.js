@@ -756,9 +756,13 @@ const slice = createSlice({
     },
     addInterfaceCommit(state, action) {
       const { id, interface_id, ...commitData } = action.payload;
+      console.log('Redux addInterfaceCommit - Payload:', action.payload);
+      console.log('Redux addInterfaceCommit - Looking for interface_id:', interface_id);
+      console.log('Redux addInterfaceCommit - Available interfaces:', state.account.interfaces.map(i => ({ id: i.id, name: i.name })));
       const interface_ = state.account.interfaces.find((i) => i.id === interface_id);
 
       if (interface_) {
+        console.log('Redux addInterfaceCommit - Found interface:', interface_.name);
         // Ensure commits and commits.items are initialized
         if (!interface_.commits) {
           interface_.commits = { items: [] };
@@ -768,6 +772,7 @@ const slice = createSlice({
 
         const commitIndex = interface_.commits.items.findIndex((c) => c.id === id);
         if (commitIndex !== -1) {
+          console.log('Redux addInterfaceCommit - Updating existing commit at index', commitIndex);
           interface_.commits.items[commitIndex] = {
             ...interface_.commits.items[commitIndex],
             ...commitData,
@@ -775,12 +780,16 @@ const slice = createSlice({
             interface_id,
           };
         } else {
+          console.log('Redux addInterfaceCommit - Adding new commit');
           interface_.commits.items.push({
             id,
             interface_id,
             ...commitData,
           });
+          console.log('Redux addInterfaceCommit - Total commits now:', interface_.commits.items.length);
         }
+      } else {
+        console.error('Redux addInterfaceCommit - Interface not found!');
       }
     },
     updateInterfaceCommit(state, action) {

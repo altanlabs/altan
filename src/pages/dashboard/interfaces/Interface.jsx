@@ -8,7 +8,7 @@ import PublishDialog from './components/PublishDialog.jsx';
 import SettingsDrawer from './components/SettingsDrawer.jsx';
 import useGetInterfaceServerStatus from './hooks/useGetInterfaceServerStatus.js';
 import InterfaceLayout from './InterfaceLayout.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { selectViewType } from '../../../redux/slices/altaners';
 import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../../redux/slices/general';
@@ -17,7 +17,7 @@ import { dispatch, useSelector } from '../../../redux/store.js';
 
 function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const theme = useTheme();
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const { enqueueSnackbar } = useSnackbar();
   const iframeRef = useRef(null);
   const chatIframeRefCustom = useRef(null);
@@ -90,15 +90,20 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     setIsLoading(false);
   }, []);
 
-  const handleReload = useCallback(() => {
+  const handleReload = useCallback(async () => {
     setIsLoading(true);
+    // Refetch the interface data to get latest commits and deployments
+    if (id) {
+      await dispatch(getInterfaceById(id));
+    }
+    // Reload the iframe
     if (!!iframeRef.current) {
       setIframeUrl('');
       setTimeout(() => {
         setIframeUrl(baseIframeUrl);
       }, 0);
     }
-  }, [baseIframeUrl]);
+  }, [baseIframeUrl, id]);
 
   const toggleDrawer = useCallback(() => setIsDrawerOpen((prev) => !prev), []);
 
@@ -192,17 +197,26 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     };
   }, [enqueueSnackbar]);
 
-  // Add effect to watch for new commits
+  // Watch for new commits and update URL automatically
   useEffect(() => {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
-      // Only trigger reload if we're in preview mode
+      // Show loading state while the new commit URL loads
       if (viewType === 'preview') {
-        handleReload();
+        setIsLoading(true);
+        // Force iframe reload with new commit
+        if (iframeRef.current) {
+          setIframeUrl('');
+          setTimeout(() => {
+            setIframeUrl(baseIframeUrl);
+          }, 100);
+        }
       }
+      // baseIframeUrl will automatically update with the new commit hash
+      // and the effect at line 163 will update the iframe URL
     }
-  }, [commits, handleReload, viewType]);
+  }, [commits, viewType, baseIframeUrl, iframeRef]);
 
   if (!ui) return null;
 

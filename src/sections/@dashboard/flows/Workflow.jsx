@@ -18,7 +18,7 @@ import Iconify from '../../../components/iconify';
 import IconRenderer from '../../../components/icons/IconRenderer.jsx';
 import useCompactMode from '../../../hooks/useCompactMode';
 import { CompactLayout } from '../../../layouts/dashboard/index.js';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   selectFlow,
   selectFlowDetails,
@@ -67,7 +67,7 @@ const Workflow = ({
 }) => {
   const history = useHistory();;
   const { id: routeId } = useParams();
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const { isCompact, toolbarRef } = useCompactMode(600);
 
   const id = propId || routeId;

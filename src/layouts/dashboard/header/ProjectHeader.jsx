@@ -52,7 +52,7 @@ import {
   selectDisplayMode,
   setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
-import { makeSelectInterfaceById } from '../../../redux/slices/general.js';
+import { makeSelectInterfaceById, getInterfaceById } from '../../../redux/slices/general.js';
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
@@ -605,8 +605,11 @@ function ProjectHeader() {
       >
         <DeploymentHistory
           ui={ui}
-          handleReload={() => {
-            // Optionally trigger a reload of interface data
+          handleReload={async () => {
+            // Reload interface data to get latest commits and deployments
+            if (interfaceId) {
+              await dispatch(getInterfaceById(interfaceId));
+            }
           }}
         />
       </Drawer>

@@ -24,7 +24,7 @@ import LinkPlugin from './plugins/LinkPlugin';
 import MarkdownPlugin from './plugins/MarkdownShortcutPlugin';
 import MentionsPlugin from './plugins/MentionsPlugin';
 import TwitterPlugin from './plugins/TwitterPlugin';
-import { useWebSocket } from '../../providers/WebSocketProvider';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 // import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 
 // import DraggableBlockPlugin from './plugins/DraggableBlockPlugin';
@@ -79,7 +79,7 @@ const sendEventWriting = throttle(
 
 const EditorPlugins = (props: PluginProps): JSX.Element => {
   const [editor] = useLexicalComposerContext();
-  const { websocket }: { websocket: WebSocket } = useWebSocket();
+  const { websocket }: { websocket: WebSocket } = useHermesWebSocket();
   const { room, me } = useSelector((state: RootState) => state.room);
 
   const onChange = useCallback(

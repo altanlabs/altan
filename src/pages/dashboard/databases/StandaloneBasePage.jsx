@@ -5,7 +5,7 @@ import { useParams, useHistory } from 'react-router';
 import { useLocation } from 'react-router-dom';
 
 import Base from '../../../components/databases/base/Base';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { selectBaseById } from '../../../redux/slices/bases';
 
 function StandaloneBasePage() {
@@ -14,7 +14,7 @@ function StandaloneBasePage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const hideChat = searchParams.get('hideChat') === 'true';
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
 
   // Move the selector inside the component and memoize it
   const selectBaseAndAccountId = useMemo(
@@ -32,22 +32,16 @@ function StandaloneBasePage() {
     selectBaseAndAccountId,
     (prev, next) => prev.accountId === next.accountId && prev.base === next.base,
   );
-  // Memoize the channels array outside of useEffect
-  const channels = useMemo(
-    () => (accountId ? [`account:${accountId}:entities:base`] : []),
-    [accountId],
-  );
-
-  // Use the memoized channels array in useEffect
+  // Subscribe to account channel
   useEffect(() => {
-    if (ws?.isOpen && channels.length > 0) {
-      ws.subscribe(channels);
+    if (ws?.isOpen && accountId) {
+      ws.subscribe(`account:${accountId}`);
 
       return () => {
-        ws.unsubscribe(channels);
+        ws.unsubscribe(`account:${accountId}`);
       };
     }
-  }, [ws?.isOpen, channels]);
+  }, [ws?.isOpen, accountId]);
 
   useEffect(() => {
     if (!accountId && ws?.isOpen) {

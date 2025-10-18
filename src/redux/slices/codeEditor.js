@@ -340,15 +340,11 @@ export const fetchFileTree = (interfaceId) => async (dispatch) => {
       },
     );
 
-    console.log('Raw API response:', treeResponse.data);
-    // The API returns the tree directly in data, not in data.tree
     let tree = treeResponse.data.tree || treeResponse.data;
-    console.log('Tree before transformation:', tree);
 
     // If the tree doesn't have path properties, add them
     if (tree && !tree.path) {
       tree = addPathsToTree(tree, '', true); // Pass true for isRoot to strip repo_name
-      console.log('Tree after adding paths:', tree);
     }
 
     dispatch(setFileTree(tree));

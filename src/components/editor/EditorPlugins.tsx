@@ -28,7 +28,7 @@ import type { Attachment } from './plugins/ImageAttachmentPlugin';
 import ImageAttachmentPlugin from './plugins/ImageAttachmentPlugin';
 import { LayoutPlugin } from './plugins/LayoutPlugin/LayoutPlugin';
 import MentionsPlugin from './plugins/MentionsPlugin';
-import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { selectMe, selectRoomId } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
 
@@ -75,7 +75,7 @@ const sendEventWriting = throttle(
 
 const EditorPlugins = (props: PluginProps): JSX.Element => {
   const [editor] = useLexicalComposerContext();
-  const { sendPayload }: { sendPayload: (payload: object) => void } = useWebSocket();
+  const { sendPayload }: { sendPayload: (payload: object) => void } = useHermesWebSocket();
   const roomId: string = useSelector(selectRoomId);
   const me = useSelector(selectMe);
 
