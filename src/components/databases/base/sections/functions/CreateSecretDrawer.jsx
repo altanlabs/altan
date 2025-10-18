@@ -11,7 +11,7 @@ import {
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { createOrUpdateSecret } from '../../../../../redux/slices/functions';
+import { createOrUpdateSecret } from '../../../../../redux/slices/services';
 import { dispatch } from '../../../../../redux/store';
 
 function CreateSecretDrawer({ open, onClose, baseId, onSuccess, onError }) {

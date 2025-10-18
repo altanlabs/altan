@@ -12,7 +12,7 @@ import codeEditorReducer from './slices/codeEditor';
 import commitsReducer from './slices/commits';
 import connectionsReducer from './slices/connections';
 import flowsReducer from './slices/flows';
-import functionsReducer from './slices/functions';
+import servicesReducer from './slices/services';
 import gateReducer from './slices/gate';
 import gatesReducer from './slices/gates';
 import generalReducer from './slices/general';
@@ -72,7 +72,7 @@ const rootReducer = combineReducers({
   tasks: tasksReducer,
   templates: templatesReducer,
   templateVersions: templateVersionsReducer,
-  functions: functionsReducer,
+  services: servicesReducer,
 });
 
 export default rootReducer;

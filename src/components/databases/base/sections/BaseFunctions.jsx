@@ -50,7 +50,7 @@ import {
   fetchSecrets,
   deleteFunction,
   deleteSecret,
-} from '../../../../redux/slices/functions';
+} from '../../../../redux/slices/services';
 import { dispatch } from '../../../../redux/store';
 
 // Helper to format date

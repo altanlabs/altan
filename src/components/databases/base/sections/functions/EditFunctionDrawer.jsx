@@ -14,7 +14,7 @@ import { X, Plus } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
-import { updateFunctionThunk } from '../../../../../redux/slices/functions';
+import { updateFunctionThunk } from '../../../../../redux/slices/services';
 import { dispatch } from '../../../../../redux/store';
 
 function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, onError }) {
