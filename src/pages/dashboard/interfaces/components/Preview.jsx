@@ -3,9 +3,7 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useState, useEffect } from 'react';
 
 import IframeControls from './IframeControls';
-import NoDevBuildOverlay from './NoDevBuildOverlay';
 import PreviewErrorOverlay from './PreviewErrorOverlay';
-import { selectViewType } from '../../../../redux/slices/altaners';
 import {
   selectNavigationPath,
   selectShouldRefresh,
@@ -28,7 +26,6 @@ function Preview({
   fatalError,
   chatIframeRef,
   isLoading,
-  hasLoadError,
 }) {
   const [isSendingError, setIsSendingError] = useState(false);
 
@@ -39,7 +36,6 @@ function Preview({
   const iframeViewMode = useSelector(selectIframeViewMode);
   const previewMode = useSelector(selectPreviewMode);
   const actionId = useSelector(selectActionId);
-  const viewType = useSelector(selectViewType);
 
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
@@ -182,7 +178,6 @@ function Preview({
               height: '100%',
               border: 'none',
               display: 'block',
-              visibility: hasLoadError ? 'hidden' : 'visible',
             }}
           />
         </Box>
@@ -191,15 +186,6 @@ function Preview({
         <PreviewErrorOverlay
           error={fatalError}
           sendErrorToAgent={sendErrorToAgent}
-        />
-      )}
-      {hasLoadError && !fatalError && viewType === 'preview' && (
-        <NoDevBuildOverlay
-          interfaceId={interfaceId}
-          onRebuildStart={() => {
-            // Reset the error state when rebuild starts
-            // The parent component will handle showing loading state
-          }}
         />
       )}
       <IframeControls
@@ -221,7 +207,6 @@ Preview.propTypes = {
   fatalError: PropTypes.object,
   interfaceId: PropTypes.string.isRequired,
   isLoading: PropTypes.bool.isRequired,
-  hasLoadError: PropTypes.bool,
 };
 
 export default memo(Preview);

@@ -38,8 +38,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
-  const [hasLoadError, setHasLoadError] = useState(false);
-  const loadTimeoutRef = useRef(null);
 
   const {
     status,
@@ -89,53 +87,8 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui, currentPath]);
 
   const handleIframeLoad = useCallback(() => {
-    const iframeSrc = iframeRef.current?.src || 'unknown';
-    console.log('Iframe onLoad fired for:', iframeSrc);
-    
     setIsLoading(false);
-    
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-      loadTimeoutRef.current = null;
-    }
-    
-    // Check if iframe loaded successfully or has an error
-    // We'll check after a brief delay to let the iframe render
-    setTimeout(() => {
-      try {
-        const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
-        
-        if (iframeDoc && viewType === 'preview') {
-          const bodyText = (iframeDoc.body?.textContent || '').toLowerCase();
-          const title = (iframeDoc.title || '').toLowerCase();
-          
-          console.log('Iframe content check:', { 
-            title: title.substring(0, 50), 
-            bodyLength: bodyText.length,
-            hasError: bodyText.includes('500') || bodyText.includes('error') || title.includes('500')
-          });
-          
-          // Check if it's an error page
-          if (bodyText.includes('500') || bodyText.includes('internal server error') || 
-              title.includes('500') || title.includes('error')) {
-            console.log('Error page detected in iframe');
-            setHasLoadError(true);
-          } else {
-            console.log('Iframe loaded successfully with content');
-            setHasLoadError(false);
-          }
-        } else {
-          // Cross-origin or production - assume success
-          console.log('Iframe loaded (cross-origin or production mode)');
-          setHasLoadError(false);
-        }
-      } catch (e) {
-        // Cross-origin - assume success
-        console.log('Iframe loaded (cross-origin, cannot read content)');
-        setHasLoadError(false);
-      }
-    }, 300);
-  }, [iframeRef, viewType]);
+  }, []);
 
   const handleReload = useCallback(async () => {
     setIsLoading(true);
@@ -209,28 +162,9 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   useEffect(() => {
     if (!!baseIframeUrl) {
-      console.log('Setting iframe URL to:', baseIframeUrl);
-      // ALWAYS load the URL
       setIframeUrl(baseIframeUrl);
-      setHasLoadError(false);
-      
-      // Only set timeout in preview mode to detect if iframe never loads
-      if (viewType === 'preview') {
-        setIsLoading(true);
-        
-        if (loadTimeoutRef.current) {
-          clearTimeout(loadTimeoutRef.current);
-        }
-        
-        // Set a timeout - if iframe doesn't load within 10 seconds, show error
-        loadTimeoutRef.current = setTimeout(() => {
-          console.log('Iframe load timeout - showing error overlay');
-          setHasLoadError(true);
-          setIsLoading(false);
-        }, 10000);
-      }
     }
-  }, [baseIframeUrl, viewType]);
+  }, [baseIframeUrl]);
 
   useEffect(() => {
     if (!ui?.repo_name || !ws?.isOpen) return;
@@ -247,9 +181,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   useEffect(() => {
     return () => {
       dispatch(clearCodeBaseState());
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -273,27 +204,17 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
-      console.log('New commit detected, reloading iframe with new URL');
       
-      // Clear any load errors when a new commit arrives
-      setHasLoadError(false);
-      
-      // Show loading state while the new commit URL loads
-      if (viewType === 'preview') {
+      // Reload iframe with new commit URL
+      if (viewType === 'preview' && iframeRef.current) {
         setIsLoading(true);
-        // Force iframe reload with new commit - clear first, then set new URL
-        if (iframeRef.current) {
-          iframeRef.current.src = 'about:blank';
-          // Small delay to ensure the iframe clears
-          setTimeout(() => {
-            setIframeUrl(baseIframeUrl);
-            if (iframeRef.current) {
-              iframeRef.current.src = baseIframeUrl;
-            }
-          }, 100);
-        } else {
-          setIframeUrl(baseIframeUrl);
-        }
+        // Force iframe reload by setting to blank first, then new URL
+        iframeRef.current.src = 'about:blank';
+        setTimeout(() => {
+          if (iframeRef.current) {
+            iframeRef.current.src = baseIframeUrl;
+          }
+        }, 100);
       }
     }
   }, [commits, viewType, baseIframeUrl, iframeRef]);
@@ -312,7 +233,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
-        hasLoadError={hasLoadError}
       />
       {/* Drawer for viewing deployments */}
       <Drawer

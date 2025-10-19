@@ -25,7 +25,6 @@ function InterfaceLayout({
   productionUrl,
   handleIframeLoad,
   iframeRef,
-  hasLoadError,
 }) {
   const [fatalError, setFatalError] = useState(null);
   const viewType = useSelector(selectViewType);
@@ -61,7 +60,6 @@ function InterfaceLayout({
               chatIframeRef={chatIframeRef}
               isLoading={isLoading}
               fatalError={fatalError}
-              hasLoadError={hasLoadError}
             />
           </>
         ) : (
