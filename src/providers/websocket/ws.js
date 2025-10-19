@@ -125,10 +125,28 @@ import {
 } from '../../redux/slices/subscriptions';
 import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
+import { messagePartBatcher } from '../../utils/eventBatcher';
 
 const SOUND_IN = new Audio(
   'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
 );
+
+// Register message part event handlers for high-performance batching
+messagePartBatcher.registerHandler('added', (eventData) => {
+  dispatch(addMessagePart(eventData));
+});
+
+messagePartBatcher.registerHandler('updated', (eventData) => {
+  dispatch(updateMessagePart(eventData));
+});
+
+messagePartBatcher.registerHandler('completed', (eventData) => {
+  dispatch(markMessagePartDone(eventData));
+});
+
+messagePartBatcher.registerHandler('deleted', (eventData) => {
+  dispatch(deleteMessagePart(eventData));
+});
 
 // TODO: add other redux actions for agent, gate and form
 const TEMPLATE_ACTIONS = {
@@ -181,7 +199,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent', data);
+  // console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -811,24 +829,16 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
 
         case 'message_part.added':
-          batch(() => {
-            dispatch(addMessagePart(eventData));
-          });
+          messagePartBatcher.enqueue('added', eventData);
           break;
         case 'message_part.updated':
-          batch(() => {
-            dispatch(updateMessagePart(eventData));
-          });
+          messagePartBatcher.enqueue('updated', eventData);
           break;
         case 'message_part.completed':
-          batch(() => {
-            dispatch(markMessagePartDone(eventData));
-          });
+          messagePartBatcher.enqueue('completed', eventData);
           break;
         case 'MessagePartDeleted':
-          batch(() => {
-            dispatch(deleteMessagePart(eventData));
-          });
+          messagePartBatcher.enqueue('deleted', eventData);
           break;
 
         case 'activation.failed':
