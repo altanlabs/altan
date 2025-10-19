@@ -81,7 +81,7 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
     const value = billingOption.price / 100; // Convert cents to euros
     const currency = 'EUR';
 
-    // Track with PostHog
+    // Track analytics event
     analytics.checkoutInitiated(planType, billingOption, {
       source: 'pricing_page',
       plan_id: plan.id,
@@ -416,7 +416,7 @@ export default function NewPricing() {
     setLoadingStates((prev) => ({ ...prev, enterprise: true }));
 
     try {
-      // Track lead generation for enterprise plan with PostHog
+      // Track lead generation for enterprise plan
       analytics.generateLead('enterprise', {
         source: 'pricing_page',
         action: 'book_call',

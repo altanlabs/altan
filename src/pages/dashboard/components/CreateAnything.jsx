@@ -22,7 +22,7 @@ const trackCreateProject = (projectData, analytics) => {
       creation_source: 'dashboard',
     };
 
-    // Track with PostHog
+    // Track analytics event
     analytics.trackCreateProject(
       projectData.name || 'Untitled Project',
       projectData.type || 'App',

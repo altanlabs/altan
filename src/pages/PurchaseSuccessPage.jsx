@@ -37,7 +37,7 @@ const trackPurchaseEvent = (sessionData, analytics) => {
         },
       ];
 
-      // Track with PostHog
+      // Track analytics event
       analytics.trackPurchase(transactionId, value, currency, items, {
         plan_type: plan?.name,
         billing_frequency: billing_option?.billing_frequency,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 
 /**
- * Example component demonstrating PostHog analytics integration
+ * Example component demonstrating analytics integration
  * This shows how to track various user interactions and events
  */
 const AnalyticsExample = () => {
@@ -37,7 +37,7 @@ const AnalyticsExample = () => {
       email_provided: !!formData.email,
     });
 
-    alert('Form submitted! Check PostHog for analytics.');
+    alert('Form submitted! Check analytics dashboard.');
   };
 
   // Track button clicks
@@ -84,7 +84,7 @@ const AnalyticsExample = () => {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        PostHog Analytics Integration Demo
+        Analytics Integration Demo
       </h2>
       
       <div className="space-y-6">
@@ -210,7 +210,7 @@ const AnalyticsExample = () => {
         <div className="border rounded-lg p-4 bg-blue-50">
           <h3 className="text-lg font-semibold mb-2">Analytics Information</h3>
           <p className="text-sm text-gray-600 mb-2">
-            All interactions on this page are being tracked with PostHog analytics.
+            All interactions on this page are being tracked with analytics.
             Events include:
           </p>
           <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">

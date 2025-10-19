@@ -41,7 +41,7 @@ const trackCreditPurchaseEvent = (packageInfo, analytics) => {
       quantity: 1,
     }];
 
-    // Track with PostHog
+    // Track analytics event
     analytics.trackBeginCheckout(packageInfo.price, 'EUR', items, {
       purchase_type: 'credits',
       amount: packageInfo.price,

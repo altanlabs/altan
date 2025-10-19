@@ -40,7 +40,7 @@ export const trackSignUp = (method = 'default') => {
       ...urlParams, // Captures all query params like ?utm_source=..., ?idea=...
     };
 
-    // Track with PostHog
+    // Track analytics event
     analytics.signUp(method, eventParams);
 
     // Check if gtag is available (keep existing GA4 tracking)
@@ -73,7 +73,7 @@ export const trackLogin = (method = 'default') => {
       ...urlParams,
     };
 
-    // Track with PostHog
+    // Track analytics event
     analytics.signIn(method, eventParams);
 
     // Check if gtag is available (keep existing GA4 tracking)

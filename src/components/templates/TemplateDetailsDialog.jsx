@@ -89,7 +89,7 @@ const TemplateDetailsDialog = ({ open, onClose, templateData }) => {
 
     // Track clone event
     try {
-      // Track with PostHog
+      // Track analytics event
       analytics.trackCloneTemplate(template.id, name, {
         template_price: price,
         template_category: template.category,

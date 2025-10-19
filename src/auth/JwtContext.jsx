@@ -425,7 +425,7 @@ export function AuthProvider({ children }) {
         // Only make API calls for regular (non-iframe) users
         const userProfile = await getUserProfile();
 
-        // Identify user in PostHog on initialization
+        // Identify user in analytics on initialization
         if (userProfile.isAuthenticated && userProfile.user) {
           analytics.identify(userProfile.user.id, {
             email: userProfile.user.email,
@@ -537,7 +537,7 @@ export function AuthProvider({ children }) {
           try {
             const userProfile = await getUserProfile();
 
-            // Identify user in PostHog
+            // Identify user in analytics
             if (userProfile.user) {
               analytics.identify(userProfile.user.id, {
                 email: userProfile.user.email,
@@ -654,7 +654,7 @@ export function AuthProvider({ children }) {
       try {
         const userProfile = await getUserProfile();
 
-        // Identify user in PostHog
+        // Identify user in analytics
         if (userProfile.user) {
           analytics.identify(userProfile.user.id, {
             email: userProfile.user.email,
@@ -676,7 +676,7 @@ export function AuthProvider({ children }) {
           await authorizeUser();
           const userProfile = await getUserProfile();
 
-          // Identify user in PostHog for fallback
+          // Identify user in analytics for fallback
           if (userProfile.user) {
             analytics.identify(userProfile.user.id, {
               email: userProfile.user.email,
@@ -779,7 +779,7 @@ export function AuthProvider({ children }) {
       try {
         const userProfile = await getUserProfile();
 
-        // Identify user in PostHog
+        // Identify user in analytics
         if (userProfile.user) {
           analytics.identify(userProfile.user.id, {
             email: userProfile.user.email,
@@ -804,7 +804,7 @@ export function AuthProvider({ children }) {
           await authorizeUser();
           const userProfile = await getUserProfile();
 
-          // Identify user in PostHog for fallback
+          // Identify user in analytics for fallback
           if (userProfile.user) {
             analytics.identify(userProfile.user.id, {
               email: userProfile.user.email,
@@ -866,7 +866,7 @@ export function AuthProvider({ children }) {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
 
-      // Reset PostHog session
+      // Reset analytics session
       analytics.reset();
 
       dispatch({

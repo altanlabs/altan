@@ -22,7 +22,7 @@ const trackVoiceConversation = (action, agentData = {}, analytics, duration = nu
       altan_agent_id: agentData.altanAgentId || null,
     };
 
-    // Track with PostHog
+    // Track analytics event
     if (action === 'start') {
       analytics.trackVoiceConversationStart(agentData.agentId || 'unknown', properties);
     } else if (action === 'end') {

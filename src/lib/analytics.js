@@ -1,8 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+// ANALYTICS DISABLED - No longer using Supabase for analytics
+// import { createClient } from '@supabase/supabase-js';
 
-// Supabase Analytics configuration
-const supabaseUrl = 'https://database.altan.ai';
-const supabaseKey = 'tenant_db49e5eb_2aa7_459f_8815_8f69889d90d5';
+// Supabase Analytics configuration - DISABLED
+// const supabaseUrl = 'https://database.altan.ai';
+// const supabaseKey = 'tenant_db49e5eb_2aa7_459f_8815_8f69889d90d5';
 
 let supabase = null;
 
@@ -14,19 +15,11 @@ let currentUserContext = {
 };
 
 export const initializeAnalytics = () => {
-  const isDev = import.meta.env.DEV;
-
-  try {
-    supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Make analytics available globally for debugging
-    window.supabaseAnalytics = supabase;
-  } catch (error) {
-    console.error('Supabase Analytics initialization failed:', error);
-  }
+  // Analytics initialization disabled
+  console.log('Analytics disabled');
 };
 
-// Helper function to send events to Supabase
+// Helper function to send events - DISABLED
 const trackEvent = async (
   eventName,
   userId,
@@ -35,80 +28,16 @@ const trackEvent = async (
   properties = {},
   source = 'web',
 ) => {
-  if (!supabase) {
-    console.warn('Analytics not initialized');
-    return;
-  }
-
-  try {
-    // Only track events for authenticated users
-    const finalUserId = userId || currentUserContext.user_id;
-    if (!finalUserId) {
-      return;
-    }
-
-    const eventData = {
-      event_name: eventName,
-      user_id: String(finalUserId),
-      user_email: userEmail || currentUserContext.user_email || null,
-      account_id: accountId
-        ? String(accountId)
-        : currentUserContext.account_id
-          ? String(currentUserContext.account_id)
-          : null,
-      properties: properties && Object.keys(properties).length > 0 ? properties : null,
-      source: source,
-    };
-
-    const { data, error } = await supabase.from('events').insert([eventData]);
-
-    if (error) {
-      console.error('Error tracking event:', error);
-    }
-
-    return { data, error };
-  } catch (error) {
-    console.error('Failed to track event:', error);
-  }
+  // Analytics tracking disabled
+  return { data: null, error: null };
 };
 
 // Analytics event tracking functions
 export const analytics = {
   // User authentication events
   identify: async (userId, userProperties = {}) => {
-    if (!userId) {
-      console.warn('Analytics identify called without userId');
-      return;
-    }
-
-    const { email, first_name, last_name, method, signup_date, ...customProperties } =
-      userProperties;
-
-    // Store user context globally for future events
-    currentUserContext = {
-      user_id: userId,
-      user_email: email,
-      account_id: userProperties.account_id || null,
-    };
-
-    const properties = {
-      first_name,
-      last_name,
-      name: first_name && last_name ? `${first_name} ${last_name}` : undefined,
-      method,
-      signup_date,
-      // Geographic and session data (captured once per user)
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: navigator.language,
-      user_agent: navigator.userAgent,
-      screen_width: window.screen.width,
-      screen_height: window.screen.height,
-      signup_url: window.location.href,
-      signup_referrer: document.referrer || null,
-      ...customProperties,
-    };
-
-    return trackEvent('user_identified', userId, email, userProperties.account_id, properties);
+    // Analytics disabled
+    return { data: null, error: null };
   },
 
   // Page view tracking

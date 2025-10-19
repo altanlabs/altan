@@ -120,7 +120,7 @@ function AuthGuard({ children, requireAuth = false }) {
         `${user.email}`, // optional: friendly name
       );
 
-      // Identify user in PostHog
+      // Identify user in analytics
       analytics.identify(user.id, {
         email: user.email,
         first_name: user.first_name,
