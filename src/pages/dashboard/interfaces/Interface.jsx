@@ -8,7 +8,7 @@ import PublishDialog from './components/PublishDialog.jsx';
 import SettingsDrawer from './components/SettingsDrawer.jsx';
 import useGetInterfaceServerStatus from './hooks/useGetInterfaceServerStatus.js';
 import InterfaceLayout from './InterfaceLayout.jsx';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { selectViewType } from '../../../redux/slices/altaners';
 import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../../redux/slices/general';
@@ -17,7 +17,7 @@ import { dispatch, useSelector } from '../../../redux/store.js';
 
 function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const theme = useTheme();
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const { enqueueSnackbar } = useSnackbar();
   const iframeRef = useRef(null);
   const chatIframeRefCustom = useRef(null);
@@ -38,6 +38,8 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const loadTimeoutRef = useRef(null);
 
   const {
     status,
@@ -46,13 +48,18 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   const baseIframeUrl = useMemo(() => {
     if (!ui?.repo_name) return '';
+    // Get the latest commit hash (first in the sorted array)
+    const latestCommit = commits?.[0]?.commit_hash;
+    if (!latestCommit) return '';
+    
     const queryParams = new URLSearchParams({
       theme: theme.palette.mode,
       hideSnippet: 'true',
     });
-    const baseUrl = `https://${ui.repo_name}.preview.altan.ai${currentPath}`;
+    const baseUrl = `https://${ui.repo_name}.previews.altan.ai/`;
+    console.log('baseUrl', baseUrl);
     return baseUrl ? `${baseUrl}?${queryParams.toString()}` : '';
-  }, [ui?.repo_name, theme.palette.mode, currentPath]);
+  }, [ui?.repo_name, commits, theme.palette.mode, currentPath]);
 
   // Production URL - either deployment_url or {interface.name}.altanlabs.com or custom domain
   const productionUrl = useMemo(() => {
@@ -82,18 +89,29 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui, currentPath]);
 
   const handleIframeLoad = useCallback(() => {
+    console.log('Iframe loaded successfully');
     setIsLoading(false);
+    setHasLoadError(false);
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+      loadTimeoutRef.current = null;
+    }
   }, []);
 
-  const handleReload = useCallback(() => {
+  const handleReload = useCallback(async () => {
     setIsLoading(true);
+    // Refetch the interface data to get latest commits and deployments
+    if (id) {
+      await dispatch(getInterfaceById(id));
+    }
+    // Reload the iframe
     if (!!iframeRef.current) {
       setIframeUrl('');
       setTimeout(() => {
         setIframeUrl(baseIframeUrl);
       }, 0);
     }
-  }, [baseIframeUrl]);
+  }, [baseIframeUrl, id]);
 
   const toggleDrawer = useCallback(() => setIsDrawerOpen((prev) => !prev), []);
 
@@ -151,10 +169,48 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui?.deployments?.items]);
 
   useEffect(() => {
-    if (!!baseIframeUrl) {
+    if (!!baseIframeUrl && viewType === 'preview') {
+      setHasLoadError(false);
+      setIsLoading(true);
+      
+      // Check if the URL returns 500 before loading it in the iframe
+      fetch(baseIframeUrl, { method: 'GET' })
+        .then((response) => {
+          console.log('Preview URL status:', response.status, response.statusText);
+          
+          if (response.status >= 500) {
+            // Server error - show the error overlay
+            console.log('Server error detected, showing rebuild overlay');
+            setHasLoadError(true);
+            setIsLoading(false);
+            setIframeUrl(''); // Don't load the error page
+          } else {
+            // URL is accessible, load it in the iframe
+            console.log('Preview URL is accessible, loading iframe');
+            setIframeUrl(baseIframeUrl);
+            setHasLoadError(false);
+          }
+        })
+        .catch((error) => {
+          console.log('Error fetching preview URL:', error);
+          // CORS or network error - try loading anyway with a timeout
+          setIframeUrl(baseIframeUrl);
+          
+          if (loadTimeoutRef.current) {
+            clearTimeout(loadTimeoutRef.current);
+          }
+          
+          loadTimeoutRef.current = setTimeout(() => {
+            console.log('Timeout reached, showing error overlay');
+            setHasLoadError(true);
+            setIsLoading(false);
+          }, 15000);
+        });
+    } else if (!!baseIframeUrl) {
+      // Production mode - just load it without checking
       setIframeUrl(baseIframeUrl);
     }
-  }, [baseIframeUrl]);
+  }, [baseIframeUrl, viewType]);
 
   useEffect(() => {
     if (!ui?.repo_name || !ws?.isOpen) return;
@@ -169,7 +225,12 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ws?.isOpen, ui?.repo_name]);
 
   useEffect(() => {
-    return () => dispatch(clearCodeBaseState());
+    return () => {
+      dispatch(clearCodeBaseState());
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Listen for deployment completion events
@@ -187,17 +248,28 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     };
   }, [enqueueSnackbar]);
 
-  // Add effect to watch for new commits
+  // Watch for new commits and update URL automatically
   useEffect(() => {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
-      // Only trigger reload if we're in preview mode
+      // Clear any load errors when a new commit arrives
+      setHasLoadError(false);
+      // Show loading state while the new commit URL loads
       if (viewType === 'preview') {
-        handleReload();
+        setIsLoading(true);
+        // Force iframe reload with new commit
+        if (iframeRef.current) {
+          setIframeUrl('');
+          setTimeout(() => {
+            setIframeUrl(baseIframeUrl);
+          }, 100);
+        }
       }
+      // baseIframeUrl will automatically update with the new commit hash
+      // and the effect at line 163 will update the iframe URL
     }
-  }, [commits, handleReload, viewType]);
+  }, [commits, viewType, baseIframeUrl, iframeRef]);
 
   if (!ui) return null;
 
@@ -213,6 +285,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
+        hasLoadError={hasLoadError}
       />
       {/* Drawer for viewing deployments */}
       <Drawer

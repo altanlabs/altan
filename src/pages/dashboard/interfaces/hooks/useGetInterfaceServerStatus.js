@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // import usePageVisibility from '@hooks/usePageVisibility.ts';
 
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 /**
  * Custom hook to manage the status and starting of a dev server.
@@ -31,7 +31,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
     if (!interfaceId || !isDev) return;
 
     try {
-      const { data } = await optimai.get(`/interfaces/dev/${interfaceId}/status`);
+      const { data } = await optimai_pods.get(`/interfaces/dev/${interfaceId}/status`);
       setStatus(data.status);
       prevStatusRef.current = data.status;
 
@@ -60,7 +60,7 @@ const useGetInterfaceServerStatus = (interfaceId, isDev) => {
     setIsStarting(true);
 
     try {
-      await optimai.post(`/interfaces/dev/${interfaceId}/start`);
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/start`);
       setIntervalTime(2 * 1000); // poll more frequently on starting
     } catch {
       // console.error('Error starting dev server:', error);

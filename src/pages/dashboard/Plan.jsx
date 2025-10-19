@@ -1,7 +1,7 @@
 import { Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 import { TextShimmer } from '../../components/aceternity/text/text-shimmer.tsx';
 import Iconify from '../../components/iconify/Iconify';
@@ -13,7 +13,6 @@ import { useDispatch, useSelector } from '../../redux/store';
 const Plan = ({ planId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const location = useLocation();
   const plan = useSelector(selectPlanById(planId));
   const isLoading = useSelector(selectPlanLoading(planId));
   const error = useSelector(selectPlanError(planId));
@@ -108,12 +107,7 @@ const Plan = ({ planId }) => {
   };
 
   const handleClose = () => {
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.delete('plan_id');
-    history.push({
-      pathname: location.pathname,
-      search: searchParams.toString(),
-    });
+    history.goBack();
   };
 
   const handleApprovePlan = async (approve) => {

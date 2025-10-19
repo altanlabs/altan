@@ -8,6 +8,7 @@ import Base from '../../components/databases/base/Base.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import Room from '../../components/room/Room.jsx';
 import Plan from './Plan.jsx';
+import PlansList from './PlansList.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import {
@@ -51,9 +52,10 @@ export default function ProjectPage() {
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
   const chatPanelRef = React.useRef(null);
+  const previewPanelRef = React.useRef(null);
   const history = useHistory();
   const location = useLocation();
-  const { altanerId, componentId, itemId } = useParams();
+  const { altanerId, componentId, itemId, planId } = useParams();
   const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
@@ -63,9 +65,22 @@ export default function ProjectPage() {
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
 
-  // Extract plan_id from query params
-  const searchParams = new URLSearchParams(location.search);
-  const planId = searchParams.get('plan_id');
+  // Detect if we're on a plans route
+  const isPlansRoute = location.pathname.includes('/plans');
+
+  // Clear thread_id query param when on plans route to avoid conflicts
+  useEffect(() => {
+    if (isPlansRoute) {
+      const searchParams = new URLSearchParams(location.search);
+      if (searchParams.has('thread_id')) {
+        searchParams.delete('thread_id');
+        history.replace({
+          pathname: location.pathname,
+          search: searchParams.toString(),
+        });
+      }
+    }
+  }, [isPlansRoute, location.pathname, location.search, history]);
 
   // Programmatically collapse/expand chat panel based on display mode
   React.useEffect(() => {
@@ -118,6 +133,9 @@ export default function ProjectPage() {
 
   // Redirect to first component if the requested component doesn't exist
   useEffect(() => {
+    // Don't redirect if we're on a plans route
+    if (isPlansRoute) return;
+
     if (activeComponentId && sortedComponents && Object.keys(sortedComponents).length > 0) {
       // Check if the active component ID exists in sorted components
       if (!sortedComponents[activeComponentId]) {
@@ -126,7 +144,7 @@ export default function ProjectPage() {
         history.replace(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
       }
     }
-  }, [activeComponentId, sortedComponents, altanerId, history]);
+  }, [activeComponentId, sortedComponents, altanerId, history, isPlansRoute]);
 
   // Create memoized selectors for interface
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
@@ -164,12 +182,29 @@ export default function ProjectPage() {
     }
   }, [interfaceId]);
 
+  // Determine if preview panel should be collapsed (0 width)
+  const shouldCollapsePreview = isInterfaceWithNoCommits && !isPlansRoute;
+
+  // Programmatically collapse/expand preview panel
+  useEffect(() => {
+    if (previewPanelRef.current) {
+      if (shouldCollapsePreview) {
+        previewPanelRef.current.collapse();
+      } else if (previewPanelRef.current.isCollapsed()) {
+        previewPanelRef.current.expand();
+      }
+    }
+  }, [shouldCollapsePreview]);
+
   // Initialize dev server status polling for interfaces (regardless of commits)
   // This ensures the dev server starts even when showing full-screen chat
   useGetInterfaceServerStatus(interfaceId, viewType === 'preview');
 
   // Set the first component as active when components are loaded
   useEffect(() => {
+    // Don't redirect if we're on a plans route
+    if (isPlansRoute) return;
+
     if (sortedComponents && Object.keys(sortedComponents).length > 0 && !activeComponentId) {
       // Set first component as default if no component is selected
       const firstComponentId = Object.keys(sortedComponents)[0];
@@ -178,7 +213,7 @@ export default function ProjectPage() {
       const currentSearch = window.location.search;
       history.push(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
     }
-  }, [sortedComponents, activeComponentId, altanerId, history]);
+  }, [sortedComponents, activeComponentId, altanerId, history, isPlansRoute]);
 
   // Note: Removed automatic display mode switching to preserve user's chat sidebar preference
 
@@ -397,99 +432,82 @@ export default function ProjectPage() {
           component="main"
           sx={{ flexGrow: 1, display: 'flex', height: '100%' }}
         >
-          {/* Show full-screen chat when interface has no commits AND no plan is being viewed */}
-          {isInterfaceWithNoCommits && !planId ? (
-            altaner?.room_id && (
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  position: 'relative',
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                }}
-              >
-                <Room
-                  key={altaner?.room_id}
-                  roomId={altaner?.room_id}
-                  header={false}
-                  renderCredits={true}
-                  renderFeedback={true}
-                  settings={false}
-                  tabs={true}
-                />
-              </Box>
-            )
-          ) : (
-            /* Always use PanelGroup layout to prevent re-renders when toggling display mode */
-            <PanelGroup
-              direction="horizontal"
-              className="w-full h-full"
+          {/* Always use PanelGroup layout to keep Room mounted */}
+          <PanelGroup
+            direction="horizontal"
+            className="w-full h-full"
+          >
+            {/* Chat Panel - 100% when interface has no commits, 30% otherwise, 0% in preview mode */}
+            <Panel
+              ref={chatPanelRef}
+              id="chat-panel"
+              order={1}
+              defaultSize={shouldCollapsePreview ? 100 : 30}
+              minSize={shouldCollapsePreview ? 100 : 20}
+              maxSize={shouldCollapsePreview ? 100 : 65}
+              collapsible={true}
+              defaultCollapsed={displayMode === 'preview'}
+              collapsedSize={0}
+              className="overflow-hidden"
             >
-              {/* Chat Panel - collapses to 0 when in preview mode */}
-              <Panel
-                ref={chatPanelRef}
-                id="chat-panel"
-                order={1}
-                defaultSize={30}
-                minSize={20}
-                maxSize={65}
-                collapsible={true}
-                defaultCollapsed={displayMode === 'preview'}
-                collapsedSize={0}
-                className="overflow-hidden"
-              >
-                {altaner?.room_id && (
-                  <Box
-                    sx={{
-                      height: '100%',
-                      position: 'relative',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Room
-                      key={altaner?.room_id}
-                      roomId={altaner?.room_id}
-                      header={false}
-                      renderCredits={true}
-                      renderFeedback={true}
-                      settings={false}
-                      tabs={true}
-                    />
-                  </Box>
-                )}
-              </Panel>
-
-              {/* Resize Handle - only show in both mode */}
-              {displayMode === 'both' && (
-                <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
-                  <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
-                  <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
-                </PanelResizeHandle>
-              )}
-
-              {/* Preview Panel */}
-              <Panel
-                id="preview-panel"
-                order={2}
-                defaultSize={60}
-                minSize={35}
-                className="overflow-auto min-w-0"
-              >
-                <Box 
-                  sx={{ height: '100%', position: 'relative' }}
-                  data-tour={`component-preview-${currentComponent?.type || 'default'}`}
+              {altaner?.room_id && (
+                <Box
+                  sx={{
+                    height: '100%',
+                    position: 'relative',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                  }}
                 >
-                  {planId ? (
+                  <Room
+                    key={`room-${altaner?.room_id}`}
+                    roomId={altaner?.room_id}
+                    header={false}
+                    renderCredits={true}
+                    renderFeedback={true}
+                    settings={false}
+                    tabs={true}
+                  />
+                </Box>
+              )}
+            </Panel>
+
+            {/* Resize Handle - only show in both mode and when preview is NOT collapsed */}
+            {displayMode === 'both' && !shouldCollapsePreview && (
+              <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
+                <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
+                <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
+              </PanelResizeHandle>
+            )}
+
+            {/* Preview Panel - 0% width when interface has no commits, 70% otherwise */}
+            <Panel
+              ref={previewPanelRef}
+              id="preview-panel"
+              order={2}
+              defaultSize={shouldCollapsePreview ? 0 : 70}
+              minSize={shouldCollapsePreview ? 0 : 35}
+              collapsible={true}
+              collapsedSize={0}
+              defaultCollapsed={shouldCollapsePreview}
+              className="overflow-auto min-w-0"
+            >
+              <Box 
+                sx={{ height: '100%', position: 'relative' }}
+                data-tour={`component-preview-${currentComponent?.type || 'default'}`}
+              >
+                {isPlansRoute ? (
+                  planId ? (
                     <Plan planId={planId} />
                   ) : (
-                    activeComponentId && currentComponent && renderComponent()
-                  )}
-                </Box>
-              </Panel>
-            </PanelGroup>
-          )}
+                    <PlansList roomId={altaner?.room_id} />
+                  )
+                ) : (
+                  activeComponentId && currentComponent && renderComponent()
+                )}
+              </Box>
+            </Panel>
+          </PanelGroup>
         </Box>
       </Box>
     </CompactLayout>

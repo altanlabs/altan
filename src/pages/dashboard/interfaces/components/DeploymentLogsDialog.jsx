@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function DeploymentLogsDialog({ open, onClose, deploymentId }) {
   const [logs, setLogs] = useState([]);
@@ -20,7 +20,7 @@ function DeploymentLogsDialog({ open, onClose, deploymentId }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await optimai.get(`/interfaces/deployment/${deploymentId}/logs`);
+      const response = await optimai_pods.get(`/interfaces/deployment/${deploymentId}/logs`);
       setLogs(response.data.logs || []);
     } catch (err) {
       setError(err.message || 'Failed to fetch logs');

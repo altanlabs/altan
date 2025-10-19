@@ -20,7 +20,7 @@ import EditMemoryDialog from './EditMemoryDialog.jsx';
 import Iconify from '../../../../components/iconify/Iconify.jsx';
 import { selectAccountId, selectIsAccountFree, updateInterfaceById } from '../../../../redux/slices/general';
 import { dispatch, useSelector } from '../../../../redux/store.js';
-import { optimai, optimai_room } from '../../../../utils/axios';
+import { optimai_pods, optimai_room } from '../../../../utils/axios';
 
 function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
   const accountId = useSelector(selectAccountId);
@@ -192,7 +192,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                               size="small"
                               onClick={async () => {
                                 try {
-                                  await optimai.delete(`/interfaces/${ui.id}/domains/${domain}`);
+                                  await optimai_pods.delete(`/interfaces/${ui.id}/domains/${domain}`);
                                   // You might want to refresh the interface data here
                                 } catch (error) {
                                   console.error('Failed to delete domain:', error);
@@ -396,7 +396,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                           ];
 
                           for (const scriptTag of scriptTags) {
-                            await optimai.post(`/interfaces/dev/${ui.id}/files/search-replace`, {
+                            await optimai_pods.post(`/interfaces/dev/${ui.id}/files/search-replace`, {
                               query: scriptTag,
                               replacement: '',
                               file_patterns: ['index.html'],
@@ -404,7 +404,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                           }
                           // Commit the changes with the specified message
                           try {
-                            await optimai.post(`/interfaces/dev/${ui.id}/repo/commit`, {
+                            await optimai_pods.post(`/interfaces/dev/${ui.id}/repo/commit`, {
                               message: 'Removed Altan Branding',
                             });
                             console.log('Changes committed successfully');
@@ -470,7 +470,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       }}
                       onClick={async () => {
                         try {
-                          await optimai.get(`/interfaces/dev/${ui.id}/repo/restore-main`);
+                          await optimai_pods.get(`/interfaces/dev/${ui.id}/repo/restore-main`);
                         } catch (error) {
                           console.error('Failed to restore dev to main:', error);
                         }
@@ -494,7 +494,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       }}
                       onClick={async () => {
                         try {
-                          await optimai.post(`/interfaces/dev/${ui.id}/clear-cache-restart`);
+                          await optimai_pods.post(`/interfaces/dev/${ui.id}/clear-cache-restart`);
                           console.log('Cache cleared and server restarted successfully');
                         } catch (error) {
                           console.error('Failed to clear cache and restart:', error);

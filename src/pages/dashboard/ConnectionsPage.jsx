@@ -13,13 +13,13 @@ import {
   Button,
   TextField,
   Typography,
-  DialogContent,
   Divider,
   useTheme,
   Card,
   CardContent,
   Box,
   IconButton,
+  Drawer,
 } from '@mui/material';
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useSelector } from 'react-redux';
@@ -27,7 +27,6 @@ import { useLocation } from 'react-router-dom';
 
 import ConnectionTypesAutocomplete from '../../components/ConnectionTypesAutocomplete.jsx';
 import { CustomAvatar } from '../../components/custom-avatar';
-import CustomDialog from '../../components/dialogs/CustomDialog.jsx';
 import DeleteDialog from '../../components/dialogs/DeleteDialog.jsx';
 import EmptyContent from '../../components/empty-content/EmptyContent.jsx';
 import Iconify from '../../components/iconify/Iconify.jsx';
@@ -233,6 +232,13 @@ function ConnectionsPage() {
   const ConnectionCard = memo(({ connection }) => {
     const user = getUserById(account, connection.user_id);
     const [openDialog, setOpenDialog] = useState(false);
+    
+    // Get connection type - handle both full object and just ID from websocket
+    const connectionType = connection?.connection_type || 
+      types?.find(t => t.id === connection?.connection_type_id);
+
+    // Safety check - don't render if we don't have essential data
+    if (!connection) return null;
 
     return (
       <Card
@@ -248,10 +254,12 @@ function ConnectionsPage() {
             alignItems="center"
           >
             {/* Connection Type Icon */}
-            <IconRenderer
-              icon={connection.connection_type.icon}
-              size={32}
-            />
+            {connectionType?.icon && (
+              <IconRenderer
+                icon={connectionType.icon}
+                size={32}
+              />
+            )}
 
             {/* Main Content */}
             <Box sx={{ flex: 1 }}>
@@ -260,13 +268,15 @@ function ConnectionsPage() {
                 alignItems="center"
                 spacing={2}
               >
-                <Typography variant="subtitle1">{connection.name}</Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  {fToNow(connection.date_creation)}
-                </Typography>
+                <Typography variant="subtitle1">{connection.name || 'Unnamed Connection'}</Typography>
+                {connection.date_creation && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {fToNow(connection.date_creation)}
+                  </Typography>
+                )}
               </Stack>
 
               {connection.meta_data?.external_id && (
@@ -279,21 +289,23 @@ function ConnectionsPage() {
               )}
 
               {/* User Info */}
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ mt: 1 }}
-              >
-                <CustomAvatar
-                  name={user?.first_name}
-                  src={user?.avatar_url}
-                  sx={{ width: 24, height: 24 }}
-                />
-                <Typography variant="caption">
-                  {user?.first_name} {user?.last_name}
-                </Typography>
-              </Stack>
+              {user && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mt: 1 }}
+                >
+                  <CustomAvatar
+                    name={user?.first_name}
+                    src={user?.avatar_url}
+                    sx={{ width: 24, height: 24 }}
+                  />
+                  <Typography variant="caption">
+                    {user?.first_name || 'Unknown'} {user?.last_name || ''}
+                  </Typography>
+                </Stack>
+              )}
             </Box>
 
             {/* Actions */}
@@ -301,15 +313,18 @@ function ConnectionsPage() {
               direction="row"
               spacing={1}
             >
-              <ConnectionDialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
-                connection={connection}
-              />
+              {connectionType && (
+                <ConnectionDialog
+                  open={openDialog}
+                  onClose={() => setOpenDialog(false)}
+                  connection={connection}
+                />
+              )}
               <IconButton
                 size="small"
                 color="error"
                 onClick={() => openDeleteDialog(connection.id)}
+                disabled={!connection.id}
               >
                 <Iconify icon="iconamoon:trash-fill" />
               </IconButton>
@@ -378,12 +393,14 @@ function ConnectionsPage() {
         {initialized ? (
           safeConnections.length > 0 ? (
             <Stack spacing={2}>
-              {safeConnections.map((connection) => (
-                <ConnectionCard
-                  key={connection.id}
-                  connection={connection}
-                />
-              ))}
+              {safeConnections
+                .filter(connection => connection && connection.id)
+                .map((connection) => (
+                  <ConnectionCard
+                    key={connection.id}
+                    connection={connection}
+                  />
+                ))}
             </Stack>
           ) : (
             <EmptyContent
@@ -408,74 +425,117 @@ function ConnectionsPage() {
         message="Deleting this connection will delete all tools and resources associated with it, are you sure you want to continue?"
       />
 
-      <CustomDialog
-        dialogOpen={open}
+      <Drawer
+        anchor="right"
+        open={open}
         onClose={onClose}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 500, md: 600 },
+          },
+        }}
       >
-        {types.length === 0 ? (
-          <DialogContent className="h-full w-full flex flex-row items-center justify-center">
-            <Iconify icon="svg-spinners:gooey-balls-2" />
-          </DialogContent>
-        ) : (
-          <Stack
-            padding={2}
-            spacing={2}
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={2}
+            >
+              <IconButton
+                onClick={onClose}
+                size="small"
+              >
+                <Iconify icon="mdi:close" />
+              </IconButton>
+              <Typography variant="h6">New Connection</Typography>
+            </Stack>
+          </Box>
+
+          {/* Content */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflowY: 'auto',
+              p: 2,
+            }}
           >
-            <Typography>New connection</Typography>
-            <ConnectionTypesAutocomplete
-              value={selectedType}
-              onChange={handleTypeChange}
-            />
-            {selectedType && (
-              <>
-                <CreateConnection
-                  id={selectedType}
-                  setIsCreatingNewConnection={() => setSelectedType(null)}
+            {types.length === 0 ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <Iconify icon="svg-spinners:gooey-balls-2" />
+              </Box>
+            ) : (
+              <Stack spacing={2}>
+                <ConnectionTypesAutocomplete
+                  value={selectedType}
+                  onChange={handleTypeChange}
                 />
-                {!isTemplate && (
+                {selectedType && (
                   <>
-                    <Divider>OR</Divider>
-
-                    <Typography
-                      variant="subtitle2"
-                      color="primary"
-                    >
-                      Share Connection Setup
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      Generate a magic link to let another user set up this connection. They will be
-                      able to securely connect their account without needing access to your
-                      dashboard.
-                    </Typography>
-
-                    <TextField
-                      label="External ID (Optional)"
-                      value={externalId}
-                      onChange={(e) => setExternalId(e.target.value)}
-                      size="small"
-                      helperText="Add an identifier to track this specific connection"
+                    <CreateConnection
+                      id={selectedType}
+                      setIsCreatingNewConnection={() => setSelectedType(null)}
                     />
+                    {!isTemplate && (
+                      <>
+                        <Divider sx={{ my: 2 }}>OR</Divider>
 
-                    <Button
-                      onClick={handleCopyLink}
-                      startIcon={<Iconify icon="solar:copy-bold" />}
-                      variant="soft"
-                      fullWidth
-                    >
-                      {buttonText}
-                    </Button>
+                        <Typography
+                          variant="subtitle2"
+                          color="primary"
+                        >
+                          Share Connection Setup
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                        >
+                          Generate a magic link to let another user set up this connection. They
+                          will be able to securely connect their account without needing access to
+                          your dashboard.
+                        </Typography>
+
+                        <TextField
+                          label="External ID (Optional)"
+                          value={externalId}
+                          onChange={(e) => setExternalId(e.target.value)}
+                          size="small"
+                          helperText="Add an identifier to track this specific connection"
+                          fullWidth
+                        />
+
+                        <Button
+                          onClick={handleCopyLink}
+                          startIcon={<Iconify icon="solar:copy-bold" />}
+                          variant="soft"
+                          fullWidth
+                        >
+                          {buttonText}
+                        </Button>
+                      </>
+                    )}
                   </>
                 )}
-              </>
+              </Stack>
             )}
-          </Stack>
-        )}
-      </CustomDialog>
+          </Box>
+        </Box>
+      </Drawer>
     </Box>
   );
 }

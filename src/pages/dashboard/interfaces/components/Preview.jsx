@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useState, useEffect } from 'react';
 
 import IframeControls from './IframeControls';
-import LoadingFrame from './LoadingFrame';
+import NoDevBuildOverlay from './NoDevBuildOverlay';
 import PreviewErrorOverlay from './PreviewErrorOverlay';
+import { selectViewType } from '../../../../redux/slices/altaners';
 import {
   selectNavigationPath,
   selectShouldRefresh,
@@ -16,11 +17,10 @@ import {
   setPreviewMode,
 } from '../../../../redux/slices/previewControl';
 import { useSelector, dispatch } from '../../../../redux/store';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function Preview({
   interfaceId,
-  status,
   iframeUrl,
   productionUrl,
   handleIframeLoad,
@@ -28,6 +28,7 @@ function Preview({
   fatalError,
   chatIframeRef,
   isLoading,
+  hasLoadError,
 }) {
   const [isSendingError, setIsSendingError] = useState(false);
 
@@ -38,6 +39,7 @@ function Preview({
   const iframeViewMode = useSelector(selectIframeViewMode);
   const previewMode = useSelector(selectPreviewMode);
   const actionId = useSelector(selectActionId);
+  const viewType = useSelector(selectViewType);
 
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
@@ -120,7 +122,7 @@ function Preview({
       }
       setIsSendingError(true);
       try {
-        await optimai.post(`/interfaces/dev/${interfaceId}/send-dev-error`, data);
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/send-dev-error`, data);
       } catch {
         // console.error('Error sending error to agent:', err);
       } finally {
@@ -136,75 +138,80 @@ function Preview({
       flex={1}
       sx={{ position: 'relative' }}
     >
-
-      {(!status || status === 'stopped' || status === 'running:stalled') &&
-        previewMode === 'development' && <LoadingFrame status={status} />}
-      {(status === 'running' || status === 'server_error' || previewMode === 'production') && (
-        <>
-          <Box
-            sx={{
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: iframeViewMode === 'desktop' ? 'stretch' : 'flex-start',
+          pt: iframeViewMode === 'mobile' || iframeViewMode === 'tablet' ? 2 : 0,
+        }}
+      >
+        <Box
+          sx={{
+            width:
+              iframeViewMode === 'mobile'
+                ? '375px'
+                : iframeViewMode === 'tablet'
+                  ? '768px'
+                  : '100%',
+            height: iframeViewMode === 'desktop' ? '100%' : 'calc(100% - 16px)',
+            maxWidth: '100%',
+            borderRadius: iframeViewMode === 'mobile' || iframeViewMode === 'tablet' ? 2 : 0,
+            overflow: 'hidden',
+            boxShadow:
+              iframeViewMode === 'mobile' || iframeViewMode === 'tablet'
+                ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
+                : 'none',
+            border:
+              iframeViewMode === 'mobile' || iframeViewMode === 'tablet'
+                ? '1px solid rgba(0, 0, 0, 0.08)'
+                : 'none',
+            position: 'relative',
+          }}
+        >
+          <iframe
+            id="preview-iframe"
+            src={currentUrl}
+            onLoad={handleIframeLoad}
+            ref={iframeRef}
+            allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
+            style={{
               width: '100%',
               height: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: iframeViewMode === 'desktop' ? 'stretch' : 'flex-start',
-              pt: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 2 : 0,
+              border: 'none',
+              display: 'block',
             }}
-          >
-            <Box
-              sx={{
-                width: 
-                  iframeViewMode === 'mobile' ? '375px' :
-                  iframeViewMode === 'tablet' ? '768px' : 
-                  '100%',
-                height: iframeViewMode === 'desktop' ? '100%' : 'calc(100% - 16px)',
-                maxWidth: '100%',
-                borderRadius: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 2 : 0,
-                overflow: 'hidden',
-                boxShadow: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 
-                  '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)' : 
-                  'none',
-                border: (iframeViewMode === 'mobile' || iframeViewMode === 'tablet') ? 
-                  '1px solid rgba(0, 0, 0, 0.08)' : 
-                  'none',
-                position: 'relative',
-              }}
-            >
-              <iframe
-                id="preview-iframe"
-                src={currentUrl}
-                onLoad={handleIframeLoad}
-                ref={iframeRef}
-                allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  display: 'block',
-                }}
-              />
-            </Box>
-          </Box>
-          {fatalError && (
-            <PreviewErrorOverlay
-              error={fatalError}
-              sendErrorToAgent={sendErrorToAgent}
-            />
-          )}
-          <IframeControls
-            previewIframeRef={iframeRef}
-            chatIframeRef={chatIframeRef}
-            interfaceId={interfaceId}
-            key={isLoading}
           />
-        </>
+        </Box>
+      </Box>
+      {fatalError && (
+        <PreviewErrorOverlay
+          error={fatalError}
+          sendErrorToAgent={sendErrorToAgent}
+        />
       )}
+      {hasLoadError && !fatalError && viewType === 'preview' && (
+        <NoDevBuildOverlay
+          interfaceId={interfaceId}
+          onRebuildStart={() => {
+            // Reset the error state when rebuild starts
+            // The parent component will handle showing loading state
+          }}
+        />
+      )}
+      <IframeControls
+        previewIframeRef={iframeRef}
+        chatIframeRef={chatIframeRef}
+        interfaceId={interfaceId}
+        key={isLoading}
+      />
     </Box>
   );
 }
 
 Preview.propTypes = {
-  status: PropTypes.string,
   iframeUrl: PropTypes.string.isRequired,
   productionUrl: PropTypes.string,
   handleIframeLoad: PropTypes.func.isRequired,
@@ -213,6 +220,7 @@ Preview.propTypes = {
   fatalError: PropTypes.object,
   interfaceId: PropTypes.string.isRequired,
   isLoading: PropTypes.bool.isRequired,
+  hasLoadError: PropTypes.bool,
 };
 
 export default memo(Preview);

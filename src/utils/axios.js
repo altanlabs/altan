@@ -12,11 +12,6 @@ const optimai_tables = axios.create({
   baseURL: 'https://database-api.altan.ai/v3',
 });
 
-const optimai_tables_legacy = axios.create({
-  name: 'optimai_tables_legacy',
-  baseURL: 'https://database-api.altan.ai/v3',
-});
-
 const optimai_tables_v4 = axios.create({
   name: 'optimai_tables_v4',
   baseURL: 'https://database-api.altan.ai/v4',
@@ -82,6 +77,11 @@ const optimai_cloud = axios.create({
   baseURL: 'https://cloud.altan.ai',
 });
 
+const optimai_pods = axios.create({
+  name: 'optimai_pods',
+  baseURL: 'https://pods.altan.ai',
+});
+
 // Note: Response interceptors run in reverse order (last added runs first)
 // We add auth refresh interceptors first so error tracking runs first,
 // then auth refresh interceptor handles 401s
@@ -93,12 +93,12 @@ addResponseInterceptor(optimai_galaxia);
 addResponseInterceptor(optimai_root);
 addResponseInterceptor(optimai_tables);
 addResponseInterceptor(optimai_agent);
-addResponseInterceptor(optimai_tables_legacy);
 addResponseInterceptor(optimai_tables_v4);
 addResponseInterceptor(optimai_database);
 addResponseInterceptor(optimai_pg_meta);
 addResponseInterceptor(optimai_auth);
 addResponseInterceptor(optimai_cloud);
+addResponseInterceptor(optimai_pods);
 
 const authorizeUser = () => {
   return new Promise(async (resolve, reject) => {
@@ -111,12 +111,12 @@ const authorizeUser = () => {
       setSession(accessToken, optimai_integration);
       setSession(accessToken, optimai_tables);
       setSession(accessToken, optimai_agent);
-      setSession(accessToken, optimai_tables_legacy);
       setSession(accessToken, optimai_tables_v4);
       setSession(accessToken, optimai_database);
       setSession(accessToken, optimai_pg_meta);
       setSession(accessToken, optimai_auth);
       setSession(accessToken, optimai_cloud);
+      setSession(accessToken, optimai_pods);
       resolve({ accessToken });
     } catch (error) {
       reject(error);
@@ -148,7 +148,6 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai);
           setSession(tokenString, optimai_root);
           setSession(tokenString, optimai_tables);
-          setSession(tokenString, optimai_tables_legacy);
           setSession(tokenString, optimai_galaxia);
           setSession(tokenString, optimai_shop);
           setSession(tokenString, optimai_integration);
@@ -158,6 +157,7 @@ const authorizeGuest = async (guestToken) => {
           setSession(tokenString, optimai_pg_meta);
           setSession(tokenString, optimai_auth);
           setSession(tokenString, optimai_cloud);
+          setSession(tokenString, optimai_pods);
         } else {
           console.warn('⚠️ Could not extract token string from:', guestToken);
         }
@@ -182,13 +182,13 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_integration, originalRequest);
   setSession(accessToken, optimai_room, originalRequest);
   setSession(accessToken, optimai_tables, originalRequest);
-  setSession(accessToken, optimai_tables_legacy, originalRequest);
   setSession(accessToken, optimai_agent, originalRequest);
   setSession(accessToken, optimai_tables_v4, originalRequest);
   setSession(accessToken, optimai_database, originalRequest);
   setSession(accessToken, optimai_pg_meta, originalRequest);
   setSession(accessToken, optimai_auth, originalRequest);
   setSession(accessToken, optimai_cloud, originalRequest);
+  setSession(accessToken, optimai_pods, originalRequest);
 };
 
 const unauthorizeUser = () => {
@@ -204,12 +204,12 @@ const axiosInstances = {
   optimai_shop,
   optimai_tables,
   optimai_agent,
-  optimai_tables_legacy,
   optimai_tables_v4,
   optimai_database,
   optimai_pg_meta,
   optimai_auth,
   optimai_cloud,
+  optimai_pods,
 };
 
 export const getAltanAxiosInstance = (instanceName) => {
@@ -230,42 +230,15 @@ export {
   optimai_shop,
   optimai_tables,
   optimai_agent,
-  optimai_tables_legacy,
   optimai_tables_v4,
   optimai_database,
   optimai_pg_meta,
   optimai_auth,
   optimai_cloud,
+  optimai_pods,
   authorizeUser,
   authorizeGuest,
   unauthorizeUser,
-};
-
-export const endpoints = {
-  chat: '/api/chat',
-  kanban: '/api/kanban',
-  calendar: '/api/calendar',
-  auth: {
-    me: '/api/auth/me',
-    login: '/api/auth/login',
-    register: '/api/auth/register',
-  },
-  mail: {
-    list: '/api/mail/list',
-    details: '/api/mail/details',
-    labels: '/api/mail/labels',
-  },
-  post: {
-    list: '/api/post/list',
-    details: '/api/post/details',
-    latest: '/api/post/latest',
-    search: '/api/post/search',
-  },
-  product: {
-    list: '/api/product/list',
-    details: '/api/product/details',
-    search: '/api/product/search',
-  },
 };
 
 export const fetcher = async (args) => {
@@ -286,8 +259,8 @@ setupAxiosErrorTracking(optimai_galaxia, 'optimai_galaxia');
 setupAxiosErrorTracking(optimai_root, 'optimai_root');
 setupAxiosErrorTracking(optimai_tables, 'optimai_tables');
 setupAxiosErrorTracking(optimai_agent, 'optimai_agent');
-setupAxiosErrorTracking(optimai_tables_legacy, 'optimai_tables_legacy');
 setupAxiosErrorTracking(optimai_tables_v4, 'optimai_tables_v4');
 setupAxiosErrorTracking(optimai_database, 'optimai_database');
 setupAxiosErrorTracking(optimai_pg_meta, 'optimai_pg_meta');
 setupAxiosErrorTracking(optimai_cloud, 'optimai_cloud');
+setupAxiosErrorTracking(optimai_pods, 'optimai_pods');

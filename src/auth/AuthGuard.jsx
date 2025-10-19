@@ -10,7 +10,6 @@ import { analytics } from '../lib/analytics';
 //
 import Login from '../pages/auth/LoginPage.jsx';
 import HermesWebSocketProvider from '../providers/websocket/HermesWebSocketProvider.jsx';
-import WebSocketProvider from '../providers/websocket/WebSocketProvider.jsx';
 import { setAccount, setAccounts, setUser } from '../redux/slices/general';
 import { dispatch } from '../redux/store';
 import { optimai } from '../utils/axios.js';
@@ -196,7 +195,7 @@ function AuthGuard({ children, requireAuth = false }) {
             setShowLoginModal,
           }}
         >
-          {isAuthenticated ? <HermesWebSocketProvider ><WebSocketProvider>{children}</WebSocketProvider></HermesWebSocketProvider> : children}
+          {isAuthenticated ? <HermesWebSocketProvider>{children}</HermesWebSocketProvider> : children}
         </AuthRequirementContext.Provider>
         <Login
           onClose={() => setShowLoginModal(false)}
@@ -217,9 +216,7 @@ function AuthGuard({ children, requireAuth = false }) {
       }}
     >
       {isAuthenticated ? (
-        <HermesWebSocketProvider >
-          <WebSocketProvider>{children}</WebSocketProvider>
-        </HermesWebSocketProvider>
+        <HermesWebSocketProvider>{children}</HermesWebSocketProvider>
       ) : (
         children
       )}

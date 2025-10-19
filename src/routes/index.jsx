@@ -23,6 +23,7 @@ import {
   DashboardPage,
   UsagePage,
   UsageDatabasePage,
+  TestNotificationsPage,
   IntegrationCreator,
   MemberPage,
   MediaPage,
@@ -233,6 +234,29 @@ const Router = () => {
         </Route>
 
         {/* Project Routes */}
+        {/* Plans routes - must come before generic project routes */}
+        <Route
+          path="/project/:altanerId/plans/:planId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/plans"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
         <Route
           path="/project/:altanerId"
           exact
@@ -734,6 +758,18 @@ const Router = () => {
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
               <UsageDatabasePage />
+            </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Test Notifications Route */}
+        <Route
+          path="/test-notifications"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardLayout>
+              <TestNotificationsPage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

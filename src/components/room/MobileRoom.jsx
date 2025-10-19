@@ -9,7 +9,6 @@ import DrawerToggle from './drawer/DrawerToggle.jsx';
 import RoomContent from './RoomContent.jsx';
 import Threads from './Threads.jsx';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
-import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
 import {
   selectRoom,
   selectRoomId,

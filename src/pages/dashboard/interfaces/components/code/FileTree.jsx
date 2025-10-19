@@ -11,7 +11,7 @@ import {
   toggleFolder,
   openFile as openFileThunk,
 } from '../../../../../redux/slices/codeEditor';
-import { optimai } from '../../../../../utils/axios';
+import { optimai_pods } from '../../../../../utils/axios';
 
 function countFiles(node) {
   if (!node || node.type !== 'directory') {
@@ -108,7 +108,7 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
       const filePath = parentPath ? `${parentPath}/${fileName}` : fileName;
       try {
         if (type === 'file') {
-          await optimai.post(`/interfaces/dev/${interfaceId}/files/create`, {
+          await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/create`, {
             name: filePath,
             content: '',
           });
@@ -121,7 +121,7 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
           updateTreeWithNewNode(parentPath, newNode);
           handleFileSelect(filePath);
         } else {
-          await optimai.post(`/interfaces/dev/${interfaceId}/files/create-directory`, {
+          await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/create-directory`, {
             path: filePath,
           });
 
@@ -145,7 +145,7 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
 
   const handleDelete = async (node) => {
     try {
-      await optimai.post(`/interfaces/dev/${interfaceId}/files/delete`, {
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/delete`, {
         file_name: node.path,
       });
       setContextMenu(null);
@@ -159,7 +159,7 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
     if (!newName || newName === node.name) return;
 
     try {
-      await optimai.post(`/interfaces/dev/${interfaceId}/files/rename`, {
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/rename`, {
         old_name: node.path,
         new_name: newName,
       });
@@ -199,9 +199,10 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
       <div key={node.path}>
         <div
           className={`flex items-center px-2 py-1 cursor-pointer select-none group transition-colors \
-            ${isSelected 
-              ? 'bg-gray-700/30 dark:bg-gray-700/30' 
-              : 'hover:bg-gray-100/50 dark:hover:bg-white/[0.03]'
+            ${
+              isSelected
+                ? 'bg-gray-700/30 dark:bg-gray-700/30'
+                : 'hover:bg-gray-100/50 dark:hover:bg-white/[0.03]'
             }`}
           onClick={() => {
             if (isDirectory) {
@@ -235,11 +236,12 @@ const FileTree = ({ treeData, interfaceId, chatIframeRef }) => {
             {/* File/Folder Name */}
             <span
               className={`truncate text-[13px] \
-                ${isSelected 
-                  ? 'text-gray-900 dark:text-gray-200' 
-                  : isDirectory 
-                    ? 'text-gray-700 dark:text-gray-300'
-                    : 'text-gray-600 dark:text-gray-400'
+                ${
+                  isSelected
+                    ? 'text-gray-900 dark:text-gray-200'
+                    : isDirectory
+                      ? 'text-gray-700 dark:text-gray-300'
+                      : 'text-gray-600 dark:text-gray-400'
                 }`}
             >
               {node.name}

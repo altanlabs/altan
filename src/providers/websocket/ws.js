@@ -181,6 +181,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -410,16 +411,15 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'DeploymentUpdate':
-      // Try to find deployment by both possible ID formats
-      const deploymentId = data.data.ids[0];
-      const vercelDeploymentId = data.data.changes.meta_data?.deployment_info?.id;
+      // New event format: data is directly in data.data
+      const deploymentData = data.data;
+      const deploymentId = deploymentData.id;
+      const vercelDeploymentId = deploymentData.deployment_id;
+      const interfaceId = deploymentData.interface_id;
 
-      // Get interface_id from changes, or try to find it from existing deployment
-      const interfaceId = data.data.changes.interface_id;
-
-      // If interface_id is not in changes, we need to find it by searching all interfaces
+      // If interface_id is not provided, we need to find it by searching all interfaces
       if (!interfaceId) {
-        console.warn('Interface ID not found in changes, searching existing deployments...');
+        console.warn('Interface ID not found in deployment update, searching existing deployments...');
         // This will be handled by the Redux reducer with a special flag
         dispatch(
           updateInterfaceDeployment({
@@ -427,7 +427,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
             interface_id: null, // Signal that we need to find it
             vercel_deployment_id: vercelDeploymentId,
             search_all_interfaces: true,
-            ...data.data.changes,
+            status: deploymentData.status,
+            url: deploymentData.url,
+            commit_sha: deploymentData.commit_sha,
+            meta_data: deploymentData.meta_data,
+            interface_name: deploymentData.interface_name,
+            date_creation: deploymentData.date_creation,
           }),
         );
       } else {
@@ -436,13 +441,18 @@ export const handleWebSocketEvent = async (data, user_id) => {
             id: deploymentId,
             interface_id: interfaceId,
             vercel_deployment_id: vercelDeploymentId,
-            ...data.data.changes,
+            status: deploymentData.status,
+            url: deploymentData.url,
+            commit_sha: deploymentData.commit_sha,
+            meta_data: deploymentData.meta_data,
+            interface_name: deploymentData.interface_name,
+            date_creation: deploymentData.date_creation,
           }),
         );
       }
 
       // Show success notification for completed deployments
-      if (data.data.changes.status === 'COMPLETED') {
+      if (deploymentData.status === 'COMPLETED') {
         // Use a timeout to ensure the notification is shown after state update
         setTimeout(() => {
           const event = new CustomEvent('deployment-completed', {
@@ -456,13 +466,15 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
       break;
     case 'CommitNew':
-      dispatch(
-        addInterfaceCommit({
-          id: data.data.attributes.id,
-          interface_id: data.data.attributes.interface_id,
-          ...data.data.attributes,
-        }),
-      );
+      console.log('CommitNew - Full data:', data);
+      console.log('CommitNew - Attributes:', data.data.attributes);
+      const commitPayload = {
+        id: data.data.attributes.id,
+        interface_id: data.data.attributes.interface_id,
+        ...data.data.attributes,
+      };
+      console.log('CommitNew - Dispatching payload:', commitPayload);
+      dispatch(addInterfaceCommit(commitPayload));
       break;
     case 'CommitUpdate':
       dispatch(
@@ -610,7 +622,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'RoomMemberJoined':
       dispatch(
         addMember({
-          roomMember: data.data.attributes,
+          roomMember: {
+            id: data.data.id,
+            ...data.data.attributes,
+          },
           currentUserId: user_id,
         }),
       );
@@ -956,6 +971,33 @@ export const handleWebSocketEvent = async (data, user_id) => {
                 status: 'completed',
                 task_name: taskEventData.task_name,
                 updated_at: taskEventData.updated_at || new Date().toISOString(),
+              },
+            }),
+          );
+
+          // Send browser notification
+          dispatch(
+            addNotification({
+              id: `task-completed-${taskEventData.task_id}-${Date.now()}`,
+              status: 'unopened',
+              notification: {
+                type: 'system',
+                title: 'Task Completed',
+                body: `✅ "${taskEventData.task_name}" has been completed!`,
+                message: `The task "${taskEventData.task_name}" has been marked as completed.`,
+                date_creation: new Date().toISOString(),
+                meta_data: {
+                  data: {
+                    category: 'task_completed',
+                    task: {
+                      id: taskEventData.task_id,
+                      name: taskEventData.task_name,
+                      room_id: taskEventData.room_id,
+                      mainthread_id: taskEventData.mainthread_id,
+                    },
+                  },
+                  avatar_url: '/logos/logoBlack.png',
+                },
               },
             }),
           );

@@ -6,9 +6,10 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
+import useBrowserNotifications from '../../hooks/useBrowserNotifications';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
-import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
 import { getFlows } from '../../redux/slices/flows.js';
 import {
@@ -24,25 +25,6 @@ import { optimai } from '../../utils/axios.js';
 // Note: AltanerFromIdea logic has been moved to CompactLayout for bubble convergence animation
 // Project creation now happens through bubble convergence animation instead of a separate dialog
 
-const ACCOUNT_ENTITIES = [
-  'altaner',
-  'subscription',
-  'template',
-  'general',
-  'space',
-  'thread',
-  'message',
-  'media',
-  'connection',
-  'tool',
-  'agent',
-  'user',
-  'workflow',
-  'deployment',
-  'interface',
-  'base',
-];
-
 const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
@@ -50,7 +32,7 @@ const selectAccountInitialized = (state) => state.general.generalInitialized.acc
 const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
 
   const searchParams = new URLSearchParams(location.search);
   const hideHeader = searchParams.get('hideHeader') === 'true';
@@ -59,13 +41,16 @@ const DashboardLayout = ({ children }) => {
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
 
+  // Enable browser notifications for this user
+  useBrowserNotifications();
+
   const handleToggleNav = useCallback(() => {
     // Toggle navigation handler - kept for compatibility
   }, []);
 
   useEffect(() => {
     if (!!ws?.isOpen && !!accountId && !!user) {
-      ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
+      ws.subscribe(`account:${accountId}`);
     }
   }, [ws, accountId, user]);
 

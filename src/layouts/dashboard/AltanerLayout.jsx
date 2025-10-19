@@ -7,7 +7,7 @@ import AltanerHeader from './header/AltanerHeader.jsx';
 import Main from './Main.jsx';
 import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
-import { useWebSocket } from '../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   clearCurrentAltaner,
   getAltanerById,
@@ -37,25 +37,6 @@ const Loadable = (Component) => (props) => (
   </Suspense>
 );
 
-const ACCOUNT_ENTITIES = [
-  'altaner',
-  'subscription',
-  'template',
-  'general',
-  'space',
-  'thread',
-  'message',
-  'media',
-  'connection',
-  'tool',
-  'agent',
-  'user',
-  'workflow',
-  'deployment',
-  'interface',
-  'base',
-];
-
 const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;
 const selectAccountInitialized = (state) => state.general.generalInitialized.account;
@@ -73,7 +54,7 @@ const AltanerLayout = () => {
     });
   };
   
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
@@ -92,7 +73,7 @@ const AltanerLayout = () => {
 
   useEffect(() => {
     if (!!ws?.isOpen && !!accountId) {
-      ws.subscribe(ACCOUNT_ENTITIES.map((entity) => `account:${accountId}:entities:${entity}`));
+      ws.subscribe(`account:${accountId}`);
     }
   }, [ws?.isOpen, accountId, ws]);
 

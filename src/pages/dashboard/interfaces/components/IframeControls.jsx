@@ -18,7 +18,7 @@ import {
 } from '../../../../redux/slices/codeEditor';
 import { selectEditMode } from '../../../../redux/slices/previewControl';
 import { dispatch, useSelector } from '../../../../redux/store.js';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function IframeControls({
   interfaceId,
@@ -48,7 +48,7 @@ function IframeControls({
   const handleRevisionConfirm = useCallback(async () => {
     try {
       setOpenRevisionConfirm(false);
-      await optimai.post(`/interfaces/dev/${interfaceId}/revision`);
+      await optimai_pods.post(`/interfaces/dev/${interfaceId}/revision`);
     } catch (error) {
       console.error('Error requesting revision:', error);
     }
@@ -92,7 +92,7 @@ function IframeControls({
           }
         }
 
-        await optimai.post(`/interfaces/dev/${interfaceId}/log-error`, {
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/log-error`, {
           error_type: data.error_type,
           file: filePath,
           line: data.data?.line,

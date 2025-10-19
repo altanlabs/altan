@@ -16,7 +16,7 @@ import React, { useState, useMemo, memo } from 'react';
 
 import DeploymentLogsDialog from './DeploymentLogsDialog';
 import Iconify from '../../../../components/iconify/Iconify';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 const getStatusStyles = (status) => {
   switch (status) {
@@ -73,6 +73,7 @@ function DeploymentHistory({ ui, handleReload }) {
   const [viewMode, setViewMode] = useState('versions');
   const [selectedDeploymentId, setSelectedDeploymentId] = useState(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const liveDeploymentId = ui?.meta_data?.live_deployment;
   const interfaceId = ui?.id;
 
@@ -83,7 +84,9 @@ function DeploymentHistory({ ui, handleReload }) {
   }, []);
 
   const adjustDateForTimezone = (dateString) => {
+    if (!dateString) return null;
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
     date.setHours(date.getHours() + timezoneOffsetHours);
     return date;
   };
@@ -96,9 +99,9 @@ function DeploymentHistory({ ui, handleReload }) {
     try {
       setIsRestoring(true);
       if (isCommit) {
-        await optimai.post(`/interfaces/dev/${interfaceId}/commits/${identifier}/restore`);
+        await optimai_pods.post(`/interfaces/dev/${interfaceId}/commits/${identifier}/restore`);
       } else {
-        await optimai.post(`/interfaces/${interfaceId}/deployment/${identifier}/rollback`);
+        await optimai_pods.post(`/interfaces/${interfaceId}/deployment/${identifier}/rollback`);
       }
     } catch (error) {
       console.error('Failed to restore:', error);
@@ -124,6 +127,20 @@ function DeploymentHistory({ ui, handleReload }) {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (handleReload) {
+        await handleReload();
+      }
+    } finally {
+      // Add a small delay for visual feedback
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+    }
+  };
+
   const VersionsList = () => {
     if (!ui?.deployments?.items) return null;
 
@@ -137,9 +154,10 @@ function DeploymentHistory({ ui, handleReload }) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {filteredDeployments.map((deployment) => {
-          const timeAgo = formatDistanceToNow(adjustDateForTimezone(deployment.date_creation), {
-            addSuffix: true,
-          });
+          const adjustedDate = adjustDateForTimezone(deployment.date_creation);
+          const timeAgo = adjustedDate
+            ? formatDistanceToNow(adjustedDate, { addSuffix: true })
+            : 'Unknown date';
           const commitMessage = deployment.meta_data?.message || 'No commit message';
           const isLive = deployment.id === liveDeploymentId;
           const coverUrl = deployment.cover_url;
@@ -343,9 +361,10 @@ function DeploymentHistory({ ui, handleReload }) {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {sortedCommits.map((commit) => {
           const isCurrentCommit = commit.commit_hash === currentCommitSha;
-          const timeAgo = formatDistanceToNow(adjustDateForTimezone(commit.date_creation), {
-            addSuffix: true,
-          });
+          const adjustedDate = adjustDateForTimezone(commit.date_creation);
+          const timeAgo = adjustedDate
+            ? formatDistanceToNow(adjustedDate, { addSuffix: true })
+            : 'Unknown date';
 
           return (
             <StyledDeploymentCard
@@ -452,7 +471,25 @@ function DeploymentHistory({ ui, handleReload }) {
   return (
     <Box>
       <Stack spacing={1}>
-        <Typography variant="h4">Interface History</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h4">Interface History</Typography>
+          <Tooltip title="Refresh history">
+            <IconButton
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              size="small"
+              sx={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
+                },
+              }}
+            >
+              <Iconify icon="mdi:refresh" width={24} />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <ToggleButtonGroup
           value={viewMode}
           exclusive

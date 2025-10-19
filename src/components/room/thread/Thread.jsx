@@ -7,7 +7,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import ThreadMessages from './ThreadMessages.jsx';
 import useResponsive from '../../../hooks/useResponsive';
 import useLocales from '../../../locales/useLocales';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import {
   fetchThread,
@@ -60,7 +60,7 @@ const Thread = ({
 }) => {
   useParams();
   const history = useHistory();
-  const { isOpen } = useWebSocket();
+  const { isOpen } = useHermesWebSocket();
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);

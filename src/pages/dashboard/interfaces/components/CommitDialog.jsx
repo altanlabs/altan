@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 export default function CommitDialog({ open, onClose, interfaceId }) {
   const [commitMessage, setCommitMessage] = useState('New commit');
@@ -23,7 +23,7 @@ export default function CommitDialog({ open, onClose, interfaceId }) {
     setError('');
 
     try {
-      const response = await optimai.post(`/interfaces/dev/${interfaceId}/repo/commit`, {
+      const response = await optimai_pods.post(`/interfaces/dev/${interfaceId}/repo/commit`, {
         message: commitMessage,
       });
 

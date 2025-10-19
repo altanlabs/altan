@@ -29,7 +29,7 @@ import RenameModuleDialog from '../../../components/flows/canvas/nodes/RenameMod
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 import useKeyShortcutListener from '../../../hooks/useKeyShortcutListener.ts';
 import { selectFlowEdges, selectFlowNodes } from '../../../providers/flows/utils';
-import { useWebSocket } from '../../../providers/websocket/WebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   addNewModule,
   deleteFlowModule,
@@ -141,7 +141,7 @@ const FlowCanvas = (
     // altanerComponentType = null,
   },
 ) => {
-  const ws = useWebSocket();
+  const ws = useHermesWebSocket();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const location = useLocation();
   const history = useHistory();
