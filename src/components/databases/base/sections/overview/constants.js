@@ -14,15 +14,15 @@ export const PRODUCTS = [
     icon: Users,
   },
   {
+    id: 'services',
+    name: 'Services',
+    description: 'API services and integrations',
+    icon: Code,
+  },
+  {
     id: 'storage',
     name: 'Storage',
     description: 'File storage',
     icon: FolderOpen,
-  },
-  {
-    id: 'functions',
-    name: 'Functions',
-    description: 'Serverless functions',
-    icon: Code,
   },
 ];

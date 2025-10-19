@@ -34,8 +34,6 @@ import {
   RefreshCw,
   Key,
   Lock,
-  CheckCircle,
-  XCircle,
   Edit2,
 } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -52,8 +50,7 @@ import {
   fetchSecrets,
   deleteFunction,
   deleteSecret,
-  toggleFunctionEnabled,
-} from '../../../../redux/slices/functions';
+} from '../../../../redux/slices/services';
 import { dispatch } from '../../../../redux/store';
 
 // Helper to format date
@@ -156,38 +153,13 @@ function BaseFunctions({ baseId }) {
       await dispatch(deleteFunction(baseId, selectedFunction.name));
       setSnackbar({
         open: true,
-        message: 'Function deleted successfully',
+        message: 'Service deleted successfully',
         severity: 'success',
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Failed to delete function',
-        severity: 'error',
-      });
-    } finally {
-      setOperating(false);
-    }
-  };
-
-  const handleToggleEnabled = async () => {
-    if (!selectedFunction) return;
-
-    const newEnabledValue = !selectedFunction.enabled;
-    handleMenuClose();
-    setOperating(true);
-
-    try {
-      await dispatch(toggleFunctionEnabled(baseId, selectedFunction.name, newEnabledValue));
-      setSnackbar({
-        open: true,
-        message: `Function ${newEnabledValue ? 'enabled' : 'disabled'} successfully`,
-        severity: 'success',
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || 'Failed to toggle function state',
+        message: error.message || 'Failed to delete service',
         severity: 'error',
       });
     } finally {
@@ -253,7 +225,7 @@ function BaseFunctions({ baseId }) {
             variant="body2"
             color="text.secondary"
           >
-            Loading functions...
+            Loading services...
           </Typography>
         </Stack>
       </Box>
@@ -275,7 +247,7 @@ function BaseFunctions({ baseId }) {
                 variant="h6"
                 color="error"
               >
-                Unable to load functions
+                Unable to load services
               </Typography>
               <Typography
                 variant="body2"
@@ -324,7 +296,7 @@ function BaseFunctions({ baseId }) {
               variant="h4"
               gutterBottom
             >
-              Functions
+              Services
             </Typography>
           </Box>
           <Button
@@ -344,7 +316,7 @@ function BaseFunctions({ baseId }) {
             onChange={(e, newValue) => setActiveTab(newValue)}
           >
             <Tab
-              label="Functions"
+              label="Services"
               value="functions"
             />
             <Tab
@@ -371,7 +343,7 @@ function BaseFunctions({ baseId }) {
                 onClick={() => setCreateDrawerOpen(true)}
                 disabled={operating}
               >
-                Create Function
+                Create Service
               </Button>
               <TextField
                 size="small"
@@ -389,7 +361,7 @@ function BaseFunctions({ baseId }) {
               />
             </Stack>
 
-            {/* Functions Table */}
+            {/* Services Table */}
             <Card>
               <TableContainer>
                 <Table>
@@ -397,8 +369,9 @@ function BaseFunctions({ baseId }) {
                     <TableRow>
                       <TableCell>Name</TableCell>
                       <TableCell>Description</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Last Modified</TableCell>
+                      <TableCell>Mounted At</TableCell>
+                      <TableCell>Requirements</TableCell>
+                      <TableCell>Created</TableCell>
                       <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -406,7 +379,7 @@ function BaseFunctions({ baseId }) {
                     {filteredFunctions.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={6}
                           align="center"
                         >
                           <Stack
@@ -423,8 +396,8 @@ function BaseFunctions({ baseId }) {
                               color="text.secondary"
                             >
                               {searchQuery
-                                ? 'No functions found matching your search'
-                                : 'No functions yet'}
+                                ? 'No services found matching your search'
+                                : 'No services yet'}
                             </Typography>
                             {!searchQuery && (
                               <Button
@@ -433,83 +406,84 @@ function BaseFunctions({ baseId }) {
                                 startIcon={<Plus size={18} />}
                                 onClick={() => setCreateDrawerOpen(true)}
                               >
-                                Create Your First Function
+                                Create Your First Service
                               </Button>
                             )}
                           </Stack>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredFunctions.map((func) => {
-                        const isEnabled = func.enabled !== false;
-                        return (
-                          <TableRow
-                            key={func.name}
-                            hover
-                            onClick={() => handleViewFunction(func)}
-                            sx={{ cursor: 'pointer' }}
-                          >
-                            <TableCell>
-                              <Stack
-                                direction="row"
-                                spacing={1.5}
-                                alignItems="center"
-                              >
-                                <Code size={20} />
-                                <Box>
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight={500}
-                                  >
-                                    {func.name}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ maxWidth: 300 }}
-                              >
-                                {func.description || 'No description'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                icon={isEnabled ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                                label={isEnabled ? 'Enabled' : 'Disabled'}
-                                size="small"
-                                color={isEnabled ? 'success' : 'default'}
-                                variant="soft"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {formatDate(func.updated_at || func.created_at)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMenuOpen(e, func);
-                                }}
-                              >
-                                <MoreVertical size={18} />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+                      filteredFunctions.map((func) => (
+                        <TableRow
+                          key={func.name}
+                          hover
+                          onClick={() => handleViewFunction(func)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          <TableCell>
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
+                            >
+                              <Code size={20} />
+                              <Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={500}
+                                >
+                                  {func.name}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ maxWidth: 300 }}
+                            >
+                              {func.description || 'No description'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontFamily: 'monospace' }}
+                            >
+                              {func.mounted_at || 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {func.requirements?.length || 0}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatDate(func.created_at)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMenuOpen(e, func);
+                              }}
+                            >
+                              <MoreVertical size={18} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
               </TableContainer>
             </Card>
 
-            {/* Functions count */}
+            {/* Services count */}
             {filteredFunctions.length > 0 && (
               <Stack
                 direction="row"
@@ -522,7 +496,7 @@ function BaseFunctions({ baseId }) {
                   color="text.secondary"
                 >
                   {filteredFunctions.length}{' '}
-                  {filteredFunctions.length === 1 ? 'function' : 'functions'}
+                  {filteredFunctions.length === 1 ? 'service' : 'services'}
                 </Typography>
               </Stack>
             )}
@@ -678,7 +652,7 @@ function BaseFunctions({ baseId }) {
         )}
       </Stack>
 
-      {/* Function Actions Menu */}
+      {/* Service Actions Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -700,12 +674,6 @@ function BaseFunctions({ baseId }) {
             <Edit2 size={18} />
           </ListItemIcon>
           <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleToggleEnabled}>
-          <ListItemIcon>
-            {selectedFunction?.enabled ? <XCircle size={18} /> : <CheckCircle size={18} />}
-          </ListItemIcon>
-          <ListItemText>{selectedFunction?.enabled ? 'Disable' : 'Enable'}</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={handleDeleteFunction}

@@ -1,6 +1,7 @@
 import { Snackbar, Alert } from '@mui/material';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import {
   AlertBanners,
@@ -16,11 +17,16 @@ import {
 import { PRODUCTS } from './constants';
 import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from './hooks';
 import { selectBaseById } from '../../../../../redux/slices/bases';
+import { selectAccountId } from '../../../../../redux/slices/general';
+import { optimai_cloud } from '../../../../../utils/axios';
 
 function BaseOverview({ baseId, onNavigate }) {
   const base = useSelector((state) => selectBaseById(state, baseId));
+  const accountId = useSelector(selectAccountId);
+  const { componentId: altanerComponentId } = useParams();
   const [anchorEl, setAnchorEl] = useState(null);
   const [upgradeDialog, setUpgradeDialog] = useState({ open: false, targetTier: null });
+  const [activating, setActivating] = useState(false);
 
   // Custom hooks
   const {
@@ -47,6 +53,54 @@ function BaseOverview({ baseId, onNavigate }) {
   const currentTierData = instanceTypes.find((t) => t.id === currentTier);
 
   // Handlers
+  const handleActivateCloud = async () => {
+    if (activating) return;
+
+    if (!altanerComponentId) {
+      setSnackbar({
+        open: true,
+        message: 'Missing component ID. Please try again.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    if (!accountId) {
+      setSnackbar({
+        open: true,
+        message: 'Missing account ID. Please try again.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    try {
+      setActivating(true);
+      await optimai_cloud.post(
+        `/v1/instances?altaner_component_id=${altanerComponentId}`,
+        {
+          account_id: accountId,
+          name: 'New database',
+          icon: 'material-symbols:database',
+        },
+      );
+
+      setSnackbar({
+        open: true,
+        message: 'Cloud database activated successfully!',
+        severity: 'success',
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to activate cloud database',
+        severity: 'error',
+      });
+    } finally {
+      setActivating(false);
+    }
+  };
+
   const handleStatusClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -95,6 +149,8 @@ function BaseOverview({ baseId, onNavigate }) {
       <AlertBanners
         base={base}
         isPaused={isPaused}
+        onActivate={handleActivateCloud}
+        activating={activating}
       />
 
       {/* Header with Status Badge */}

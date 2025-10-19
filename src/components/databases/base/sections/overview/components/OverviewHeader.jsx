@@ -59,7 +59,7 @@ export const OverviewHeader = ({ lastRefresh, metricsLoading, operating, onRefre
           )}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Monitor and configure compute resources for your database
+          Monitor and configure compute resources for your AI Cloud
         </p>
       </div>
     </m.div>

@@ -14,28 +14,27 @@ import { X, Plus } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
-import { updateFunctionThunk } from '../../../../../redux/slices/functions';
+import { updateFunctionThunk } from '../../../../../redux/slices/services';
 import { dispatch } from '../../../../../redux/store';
 
 function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, onError }) {
   const theme = useTheme();
   const [formData, setFormData] = useState({
+    name: '',
     code: '',
     description: '',
     requirements: [],
-    output_variables: [],
   });
   const [newRequirement, setNewRequirement] = useState('');
-  const [newOutputVariable, setNewOutputVariable] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (functionData && open) {
       setFormData({
+        name: functionData.name || '',
         code: functionData.code || '',
         description: functionData.description || '',
-        requirements: functionData.requirements || ['altan'],
-        output_variables: functionData.output_variables || [],
+        requirements: functionData.requirements || [],
       });
     }
   }, [functionData, open]);
@@ -61,49 +60,51 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
     }));
   };
 
-  const handleAddOutputVariable = () => {
-    if (newOutputVariable.trim() && !formData.output_variables.includes(newOutputVariable.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        output_variables: [...prev.output_variables, newOutputVariable.trim()],
-      }));
-      setNewOutputVariable('');
+  const handleClose = () => {
+    if (!submitting) {
+      onClose();
     }
-  };
-
-  const handleRemoveOutputVariable = (variable) => {
-    setFormData((prev) => ({
-      ...prev,
-      output_variables: prev.output_variables.filter((v) => v !== variable),
-    }));
   };
 
   const handleSubmit = async () => {
-    if (!formData.code.trim()) {
-      onError('Function code is required');
+    // Basic validation
+    if (!formData.name.trim()) {
+      onError('Service name is required');
       return;
     }
 
-    if (formData.output_variables.length === 0) {
-      onError('At least one output variable is required');
+    if (!formData.code.trim()) {
+      onError('Service code is required');
       return;
     }
 
     setSubmitting(true);
     try {
-      await dispatch(updateFunctionThunk(baseId, functionData.name, formData));
-      onSuccess('Function updated successfully. A new version has been created.');
+      await dispatch(updateFunctionThunk(baseId, functionData.name, {
+        name: formData.name,
+        code: formData.code,
+        description: formData.description,
+        requirements: formData.requirements,
+      }));
+
+      onSuccess('Service updated successfully');
       handleClose();
     } catch (error) {
-      onError(error.message || 'Failed to update function');
+      let errorMessage = 'Failed to update service';
+
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      onError(errorMessage);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!submitting) {
-      onClose();
     }
   };
 
@@ -128,36 +129,48 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
             justifyContent: 'space-between',
           }}
         >
-          <Box>
-            <Typography variant="h6">Edit Function</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {functionData?.name}
-            </Typography>
-          </Box>
+          <Typography variant="h6">Edit Service</Typography>
           <IconButton onClick={handleClose} disabled={submitting}>
             <X size={20} />
           </IconButton>
         </Box>
 
         {/* Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
           <Stack spacing={3}>
+            {/* Name */}
+            <TextField
+              label="Service Name"
+              placeholder="my_service"
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              fullWidth
+              required
+              disabled={submitting}
+              helperText="Use lowercase letters, numbers, and underscores"
+              size="small"
+            />
+
             {/* Description */}
             <TextField
               label="Description"
-              placeholder="What does this function do?"
+              placeholder="What does this service do?"
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               fullWidth
               multiline
               rows={2}
               disabled={submitting}
+              size="small"
             />
 
             {/* Requirements */}
             <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Requirements
+              <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
+                Python Requirements
+              </Typography>
+              <Typography variant="caption" color="text.secondary" gutterBottom display="block" sx={{ mb: 1 }}>
+                Python packages that will be installed for your service
               </Typography>
               <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap', gap: 1 }}>
                 {formData.requirements.map((req) => (
@@ -187,7 +200,8 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
                 />
                 <Button
                   variant="outlined"
-                  startIcon={<Plus size={16} />}
+                  size="small"
+                  startIcon={<Plus size={14} />}
                   onClick={handleAddRequirement}
                   disabled={submitting || !newRequirement.trim()}
                 >
@@ -196,59 +210,13 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
               </Stack>
             </Box>
 
-            {/* Output Variables */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Output Variables
-              </Typography>
-              <Typography variant="caption" color="text.secondary" gutterBottom>
-                Variables that will be returned from the function (optional)
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mb: 1, mt: 1, flexWrap: 'wrap', gap: 1 }}>
-                {formData.output_variables.map((variable) => (
-                  <Chip
-                    key={variable}
-                    label={variable}
-                    onDelete={() => handleRemoveOutputVariable(variable)}
-                    disabled={submitting}
-                    size="small"
-                    color="primary"
-                  />
-                ))}
-              </Stack>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  size="small"
-                  placeholder="variable_name"
-                  value={newOutputVariable}
-                  onChange={(e) => setNewOutputVariable(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddOutputVariable();
-                    }
-                  }}
-                  disabled={submitting}
-                  sx={{ flex: 1 }}
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<Plus size={16} />}
-                  onClick={handleAddOutputVariable}
-                  disabled={submitting || !newOutputVariable.trim()}
-                >
-                  Add
-                </Button>
-              </Stack>
-            </Box>
-
             {/* Code Editor */}
             <Box>
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
                 Python Code *
               </Typography>
               <Typography variant="caption" color="text.secondary" gutterBottom display="block" sx={{ mb: 1 }}>
-                Updating the code will create a new version
+                Your FastAPI router will be automatically mounted at /api/{'{'}service_name{'}'}
               </Typography>
               <Box
                 sx={{
@@ -293,10 +261,10 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={submitting || !formData.code.trim() || formData.output_variables.length === 0}
+            disabled={submitting || !formData.name.trim() || !formData.code.trim()}
             startIcon={submitting && <CircularProgress size={16} />}
           >
-            {submitting ? 'Updating...' : 'Update Function'}
+            {submitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </Box>
       </Box>
@@ -305,4 +273,3 @@ function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, on
 }
 
 export default EditFunctionDrawer;
-
