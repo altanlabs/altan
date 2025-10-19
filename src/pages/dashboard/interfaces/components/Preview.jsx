@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useState, useEffect } from 'react';
 
 import IframeControls from './IframeControls';
-import LoadingFrame from './LoadingFrame';
+import NoDevBuildOverlay from './NoDevBuildOverlay';
 import PreviewErrorOverlay from './PreviewErrorOverlay';
+import { selectViewType } from '../../../../redux/slices/altaners';
 import {
   selectNavigationPath,
   selectShouldRefresh,
@@ -20,7 +21,6 @@ import { optimai_pods } from '../../../../utils/axios';
 
 function Preview({
   interfaceId,
-  status,
   iframeUrl,
   productionUrl,
   handleIframeLoad,
@@ -28,6 +28,7 @@ function Preview({
   fatalError,
   chatIframeRef,
   isLoading,
+  hasLoadError,
 }) {
   const [isSendingError, setIsSendingError] = useState(false);
 
@@ -38,6 +39,7 @@ function Preview({
   const iframeViewMode = useSelector(selectIframeViewMode);
   const previewMode = useSelector(selectPreviewMode);
   const actionId = useSelector(selectActionId);
+  const viewType = useSelector(selectViewType);
 
   // Determine the current URL based on preview mode
   const currentUrl = previewMode === 'production' && productionUrl ? productionUrl : iframeUrl;
@@ -190,6 +192,15 @@ function Preview({
           sendErrorToAgent={sendErrorToAgent}
         />
       )}
+      {hasLoadError && !fatalError && viewType === 'preview' && (
+        <NoDevBuildOverlay
+          interfaceId={interfaceId}
+          onRebuildStart={() => {
+            // Reset the error state when rebuild starts
+            // The parent component will handle showing loading state
+          }}
+        />
+      )}
       <IframeControls
         previewIframeRef={iframeRef}
         chatIframeRef={chatIframeRef}
@@ -201,7 +212,6 @@ function Preview({
 }
 
 Preview.propTypes = {
-  status: PropTypes.string,
   iframeUrl: PropTypes.string.isRequired,
   productionUrl: PropTypes.string,
   handleIframeLoad: PropTypes.func.isRequired,
@@ -210,6 +220,7 @@ Preview.propTypes = {
   fatalError: PropTypes.object,
   interfaceId: PropTypes.string.isRequired,
   isLoading: PropTypes.bool.isRequired,
+  hasLoadError: PropTypes.bool,
 };
 
 export default memo(Preview);

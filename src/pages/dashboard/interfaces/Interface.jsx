@@ -38,6 +38,8 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const loadTimeoutRef = useRef(null);
 
   const {
     status,
@@ -87,7 +89,13 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui, currentPath]);
 
   const handleIframeLoad = useCallback(() => {
+    console.log('Iframe loaded successfully');
     setIsLoading(false);
+    setHasLoadError(false);
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+      loadTimeoutRef.current = null;
+    }
   }, []);
 
   const handleReload = useCallback(async () => {
@@ -161,10 +169,48 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui?.deployments?.items]);
 
   useEffect(() => {
-    if (!!baseIframeUrl) {
+    if (!!baseIframeUrl && viewType === 'preview') {
+      setHasLoadError(false);
+      setIsLoading(true);
+      
+      // Check if the URL returns 500 before loading it in the iframe
+      fetch(baseIframeUrl, { method: 'GET' })
+        .then((response) => {
+          console.log('Preview URL status:', response.status, response.statusText);
+          
+          if (response.status >= 500) {
+            // Server error - show the error overlay
+            console.log('Server error detected, showing rebuild overlay');
+            setHasLoadError(true);
+            setIsLoading(false);
+            setIframeUrl(''); // Don't load the error page
+          } else {
+            // URL is accessible, load it in the iframe
+            console.log('Preview URL is accessible, loading iframe');
+            setIframeUrl(baseIframeUrl);
+            setHasLoadError(false);
+          }
+        })
+        .catch((error) => {
+          console.log('Error fetching preview URL:', error);
+          // CORS or network error - try loading anyway with a timeout
+          setIframeUrl(baseIframeUrl);
+          
+          if (loadTimeoutRef.current) {
+            clearTimeout(loadTimeoutRef.current);
+          }
+          
+          loadTimeoutRef.current = setTimeout(() => {
+            console.log('Timeout reached, showing error overlay');
+            setHasLoadError(true);
+            setIsLoading(false);
+          }, 15000);
+        });
+    } else if (!!baseIframeUrl) {
+      // Production mode - just load it without checking
       setIframeUrl(baseIframeUrl);
     }
-  }, [baseIframeUrl]);
+  }, [baseIframeUrl, viewType]);
 
   useEffect(() => {
     if (!ui?.repo_name || !ws?.isOpen) return;
@@ -179,7 +225,12 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ws?.isOpen, ui?.repo_name]);
 
   useEffect(() => {
-    return () => dispatch(clearCodeBaseState());
+    return () => {
+      dispatch(clearCodeBaseState());
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Listen for deployment completion events
@@ -202,6 +253,8 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
+      // Clear any load errors when a new commit arrives
+      setHasLoadError(false);
       // Show loading state while the new commit URL loads
       if (viewType === 'preview') {
         setIsLoading(true);
@@ -232,6 +285,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
+        hasLoadError={hasLoadError}
       />
       {/* Drawer for viewing deployments */}
       <Drawer
