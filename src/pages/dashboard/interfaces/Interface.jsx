@@ -89,14 +89,53 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui, currentPath]);
 
   const handleIframeLoad = useCallback(() => {
-    console.log('Iframe loaded successfully');
+    const iframeSrc = iframeRef.current?.src || 'unknown';
+    console.log('Iframe onLoad fired for:', iframeSrc);
+    
     setIsLoading(false);
-    setHasLoadError(false);
+    
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
       loadTimeoutRef.current = null;
     }
-  }, []);
+    
+    // Check if iframe loaded successfully or has an error
+    // We'll check after a brief delay to let the iframe render
+    setTimeout(() => {
+      try {
+        const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+        
+        if (iframeDoc && viewType === 'preview') {
+          const bodyText = (iframeDoc.body?.textContent || '').toLowerCase();
+          const title = (iframeDoc.title || '').toLowerCase();
+          
+          console.log('Iframe content check:', { 
+            title: title.substring(0, 50), 
+            bodyLength: bodyText.length,
+            hasError: bodyText.includes('500') || bodyText.includes('error') || title.includes('500')
+          });
+          
+          // Check if it's an error page
+          if (bodyText.includes('500') || bodyText.includes('internal server error') || 
+              title.includes('500') || title.includes('error')) {
+            console.log('Error page detected in iframe');
+            setHasLoadError(true);
+          } else {
+            console.log('Iframe loaded successfully with content');
+            setHasLoadError(false);
+          }
+        } else {
+          // Cross-origin or production - assume success
+          console.log('Iframe loaded (cross-origin or production mode)');
+          setHasLoadError(false);
+        }
+      } catch (e) {
+        // Cross-origin - assume success
+        console.log('Iframe loaded (cross-origin, cannot read content)');
+        setHasLoadError(false);
+      }
+    }, 300);
+  }, [iframeRef, viewType]);
 
   const handleReload = useCallback(async () => {
     setIsLoading(true);
@@ -169,46 +208,27 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui?.deployments?.items]);
 
   useEffect(() => {
-    if (!!baseIframeUrl && viewType === 'preview') {
-      setHasLoadError(false);
-      setIsLoading(true);
-      
-      // Check if the URL returns 500 before loading it in the iframe
-      fetch(baseIframeUrl, { method: 'GET' })
-        .then((response) => {
-          console.log('Preview URL status:', response.status, response.statusText);
-          
-          if (response.status >= 500) {
-            // Server error - show the error overlay
-            console.log('Server error detected, showing rebuild overlay');
-            setHasLoadError(true);
-            setIsLoading(false);
-            setIframeUrl(''); // Don't load the error page
-          } else {
-            // URL is accessible, load it in the iframe
-            console.log('Preview URL is accessible, loading iframe');
-            setIframeUrl(baseIframeUrl);
-            setHasLoadError(false);
-          }
-        })
-        .catch((error) => {
-          console.log('Error fetching preview URL:', error);
-          // CORS or network error - try loading anyway with a timeout
-          setIframeUrl(baseIframeUrl);
-          
-          if (loadTimeoutRef.current) {
-            clearTimeout(loadTimeoutRef.current);
-          }
-          
-          loadTimeoutRef.current = setTimeout(() => {
-            console.log('Timeout reached, showing error overlay');
-            setHasLoadError(true);
-            setIsLoading(false);
-          }, 15000);
-        });
-    } else if (!!baseIframeUrl) {
-      // Production mode - just load it without checking
+    if (!!baseIframeUrl) {
+      console.log('Setting iframe URL to:', baseIframeUrl);
+      // ALWAYS load the URL
       setIframeUrl(baseIframeUrl);
+      setHasLoadError(false);
+      
+      // Only set timeout in preview mode to detect if iframe never loads
+      if (viewType === 'preview') {
+        setIsLoading(true);
+        
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
+        }
+        
+        // Set a timeout - if iframe doesn't load within 10 seconds, show error
+        loadTimeoutRef.current = setTimeout(() => {
+          console.log('Iframe load timeout - showing error overlay');
+          setHasLoadError(true);
+          setIsLoading(false);
+        }, 10000);
+      }
     }
   }, [baseIframeUrl, viewType]);
 
@@ -253,21 +273,28 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
+      console.log('New commit detected, reloading iframe with new URL');
+      
       // Clear any load errors when a new commit arrives
       setHasLoadError(false);
+      
       // Show loading state while the new commit URL loads
       if (viewType === 'preview') {
         setIsLoading(true);
-        // Force iframe reload with new commit
+        // Force iframe reload with new commit - clear first, then set new URL
         if (iframeRef.current) {
-          setIframeUrl('');
+          iframeRef.current.src = 'about:blank';
+          // Small delay to ensure the iframe clears
           setTimeout(() => {
             setIframeUrl(baseIframeUrl);
+            if (iframeRef.current) {
+              iframeRef.current.src = baseIframeUrl;
+            }
           }, 100);
+        } else {
+          setIframeUrl(baseIframeUrl);
         }
       }
-      // baseIframeUrl will automatically update with the new commit hash
-      // and the effect at line 163 will update the iframe URL
     }
   }, [commits, viewType, baseIframeUrl, iframeRef]);
 

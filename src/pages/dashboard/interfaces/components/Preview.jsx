@@ -182,6 +182,7 @@ function Preview({
               height: '100%',
               border: 'none',
               display: 'block',
+              visibility: hasLoadError ? 'hidden' : 'visible',
             }}
           />
         </Box>
