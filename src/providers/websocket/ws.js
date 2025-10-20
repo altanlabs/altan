@@ -131,21 +131,10 @@ const SOUND_IN = new Audio(
   'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
 );
 
-// Register message part event handlers for high-performance batching
-messagePartBatcher.registerHandler('added', (eventData) => {
-  dispatch(addMessagePart(eventData));
-});
-
+// Register handler for high-frequency streaming updates
+// Only 'updated' events are batched - lifecycle events are processed immediately
 messagePartBatcher.registerHandler('updated', (eventData) => {
   dispatch(updateMessagePart(eventData));
-});
-
-messagePartBatcher.registerHandler('completed', (eventData) => {
-  dispatch(markMessagePartDone(eventData));
-});
-
-messagePartBatcher.registerHandler('deleted', (eventData) => {
-  dispatch(deleteMessagePart(eventData));
 });
 
 // TODO: add other redux actions for agent, gate and form
@@ -437,7 +426,9 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
       // If interface_id is not provided, we need to find it by searching all interfaces
       if (!interfaceId) {
-        console.warn('Interface ID not found in deployment update, searching existing deployments...');
+        console.warn(
+          'Interface ID not found in deployment update, searching existing deployments...',
+        );
         // This will be handled by the Redux reducer with a special flag
         dispatch(
           updateInterfaceDeployment({
@@ -638,11 +629,53 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(roomUpdate(data.data));
       break;
     case 'RoomMemberJoined':
+      console.log('RoomMemberJoined', data.data);
+      const attrs = data.data.attributes;
+
+      // Transform flat websocket structure to match expected nested member structure
+      const memberData = {
+        id: attrs.member_id,
+        member_type: attrs.member_type,
+      };
+
+      // Add user, agent, or guest data based on member_type
+      // Use the specific ID field if available, otherwise use member_id as fallback
+      if (attrs.member_type === 'user') {
+        memberData.user = {
+          id: attrs.user_id || attrs.member_id,
+          // Store member_name as fallback display name since websocket doesn't provide first_name/last_name
+          first_name: attrs.member_name || '',
+          last_name: '',
+        };
+      } else if (attrs.member_type === 'agent') {
+        memberData.agent = {
+          id: attrs.agent_id || attrs.member_id,
+          name: attrs.member_name,
+        };
+      } else if (attrs.member_type === 'guest') {
+        memberData.guest = {
+          id: attrs.guest_id || attrs.member_id,
+          first_name: attrs.member_name || '',
+          last_name: '',
+        };
+      }
+
       dispatch(
         addMember({
           roomMember: {
             id: data.data.id,
-            ...data.data.attributes,
+            role: attrs.role,
+            date_creation: attrs.date_creation,
+            is_kicked: attrs.is_kicked,
+            is_silenced: attrs.is_silenced,
+            is_vblocked: attrs.is_vblocked,
+            is_cagi_enabled: attrs.is_cagi_enabled,
+            agent_interaction: attrs.agent_interaction,
+            caller_id: attrs.caller_id,
+            account_id: attrs.account_id,
+            room_id: attrs.room_id,
+            room_name: attrs.room_name,
+            member: memberData,
           },
           currentUserId: user_id,
         }),
@@ -676,52 +709,72 @@ export const handleWebSocketEvent = async (data, user_id) => {
         // Activation lifecycle (before response starts)
         if (eventType.startsWith('activation.')) {
           // Add to activation lifecycle
-          dispatch(addActivationLifecycle({
-            response_id: eventData.response_id,
-            agent_id: eventData.agent_id,
-            thread_id: eventData.thread_id,
-            event_type: eventType,
-            event_data: eventData,
-            timestamp,
-          }));
+          dispatch(
+            addActivationLifecycle({
+              response_id: eventData.response_id,
+              agent_id: eventData.agent_id,
+              thread_id: eventData.thread_id,
+              event_type: eventType,
+              event_data: eventData,
+              timestamp,
+            }),
+          );
 
           // Complete activation lifecycle when scheduled or rescheduled
           if (['activation.scheduled', 'activation.rescheduled'].includes(eventType)) {
-            dispatch(completeActivationLifecycle({
-              response_id: eventData.response_id,
-              thread_id: eventData.thread_id,
-            }));
+            dispatch(
+              completeActivationLifecycle({
+                response_id: eventData.response_id,
+                thread_id: eventData.thread_id,
+              }),
+            );
           }
 
           // Discard activation when discarded
           if (eventType === 'activation.discarded') {
-            dispatch(discardActivationLifecycle({
-              response_id: eventData.response_id,
-              thread_id: eventData.thread_id,
-            }));
+            dispatch(
+              discardActivationLifecycle({
+                response_id: eventData.response_id,
+                thread_id: eventData.thread_id,
+              }),
+            );
           }
         }
 
         // Response lifecycle (after response starts)
         if (eventType.startsWith('response.')) {
           // Add to response lifecycle
-          dispatch(addResponseLifecycle({
-            response_id: eventData.response_id,
-            agent_id: eventData.agent_id,
-            thread_id: eventData.thread_id,
-            event_type: eventType,
-            event_data: eventData,
-            timestamp,
-          }));
+          dispatch(
+            addResponseLifecycle({
+              response_id: eventData.response_id,
+              agent_id: eventData.agent_id,
+              thread_id: eventData.thread_id,
+              event_type: eventType,
+              event_data: eventData,
+              timestamp,
+            }),
+          );
 
           // Complete response lifecycle on completion events
-          if (['response.completed', 'response.failed', 'response.empty', 'response.stopped', 'response.interrupted', 'response.suspended', 'response.requeued'].includes(eventType)) {
-            dispatch(completeResponseLifecycle({
-              response_id: eventData.response_id,
-              thread_id: eventData.thread_id,
-              message_id: eventData.message_id,
-              status: eventType.replace('response.', ''),
-            }));
+          if (
+            [
+              'response.completed',
+              'response.failed',
+              'response.empty',
+              'response.stopped',
+              'response.interrupted',
+              'response.suspended',
+              'response.requeued',
+            ].includes(eventType)
+          ) {
+            dispatch(
+              completeResponseLifecycle({
+                response_id: eventData.response_id,
+                thread_id: eventData.thread_id,
+                message_id: eventData.message_id,
+                status: eventType.replace('response.', ''),
+              }),
+            );
           }
         }
       }
@@ -829,16 +882,28 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
 
         case 'message_part.added':
-          messagePartBatcher.enqueue('added', eventData);
+          // Process immediately - lifecycle event
+          batch(() => {
+            dispatch(addMessagePart(eventData));
+          });
           break;
         case 'message_part.updated':
+          // Batch for performance - high frequency event
           messagePartBatcher.enqueue('updated', eventData);
           break;
         case 'message_part.completed':
-          messagePartBatcher.enqueue('completed', eventData);
+          // Process immediately - critical completion event
+          // Flush any pending updates first to ensure correct order
+          messagePartBatcher.flush();
+          batch(() => {
+            dispatch(markMessagePartDone(eventData));
+          });
           break;
         case 'MessagePartDeleted':
-          messagePartBatcher.enqueue('deleted', eventData);
+          // Process immediately - lifecycle event
+          batch(() => {
+            dispatch(deleteMessagePart(eventData));
+          });
           break;
 
         case 'activation.failed':
@@ -896,7 +961,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'TASK_EVENT':
-
       console.log('TASK_EVENT', data);
 
       const taskEvent = data.data?.task_event;

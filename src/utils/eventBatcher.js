@@ -10,19 +10,30 @@
  * - Prevents UI freezing during rapid-fire events
  * - Memory efficient with automatic cleanup
  * 
+ * Best Practices:
+ * - Only batch high-frequency events (e.g., streaming updates)
+ * - Process lifecycle events immediately (e.g., completed, added, deleted)
+ * - Call flush() before critical state changes to ensure ordering
+ * 
  * Example Usage:
  * ```javascript
  * import { messagePartBatcher } from '../../utils/eventBatcher';
  * 
- * // Register handler
+ * // Register handler for high-frequency updates
  * messagePartBatcher.registerHandler('updated', (eventData) => {
  *   dispatch(updateMessagePart(eventData));
  * });
  * 
- * // Enqueue events (even thousands per second!)
- * messagePartBatcher.enqueue('updated', eventData);
+ * // Batch high-frequency events (thousands per second!)
+ * case 'message_part.updated':
+ *   messagePartBatcher.enqueue('updated', eventData);
+ *   break;
  * 
- * // Events are automatically batched and flushed at next animation frame
+ * // Process lifecycle events immediately
+ * case 'message_part.completed':
+ *   messagePartBatcher.flush(); // Flush pending updates first
+ *   dispatch(markMessagePartDone(eventData));
+ *   break;
  * ```
  */
 

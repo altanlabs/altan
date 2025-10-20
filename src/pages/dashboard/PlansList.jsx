@@ -145,7 +145,7 @@ const PlansList = ({ roomId }) => {
 
   return (
     <div className="w-full h-full relative overflow-hidden pb-2 px-2">
-      <div className="flex flex-col h-full overflow-auto border border-divider rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex flex-col h-full overflow-auto border border-divider rounded-xl">
         <div className="max-w-6xl mx-auto w-full p-6">
           {/* Header */}
           <div className="mb-6">

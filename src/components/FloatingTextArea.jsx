@@ -318,11 +318,14 @@ const FloatingTextArea = ({
         </div>
       ) : (
         <>
+          <ActivationLifecycleBar
+            threadId={threadId}
+            className="mb-2"
+          />
+
           <AuthorizationRequests />
 
           {/* <TodoWidget threadId={threadId} mode={mode} /> */}
-
-          <ActivationLifecycleBar threadId={threadId} className="mb-2" />
 
           <div
             ref={floatingTextAreaRef}
@@ -332,8 +335,8 @@ const FloatingTextArea = ({
                   ? 'w-full max-w-full bg-transparent' // Transparent in fullscreen
                   : 'w-full max-w-full bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl rounded-t-2xl border-t border-gray-200/50 dark:border-gray-700/50'
                 : `w-full max-w-[700px] mx-auto pb-2 pt-3 ${
-                  hasTasks ? 'rounded-b-3xl border-x border-b' : 'rounded-3xl border'
-                } bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30`
+                    hasTasks ? 'rounded-b-3xl border-x border-b' : 'rounded-3xl border'
+                  } bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30`
             }`}
             style={
               mode === 'mobile'
