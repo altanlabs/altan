@@ -60,6 +60,20 @@ export const TOOL_REGISTRY = {
     renderer: 'CommitRenderer',
   },
 
+  // Terminal/Command execution tools
+  execute_terminal_command: {
+    icon: 'mdi:console',
+    renderer: 'TerminalCommandRenderer',
+  },
+  run_command: {
+    icon: 'mdi:console',
+    renderer: 'TerminalCommandRenderer',
+  },
+  terminal: {
+    icon: 'mdi:console',
+    renderer: 'TerminalCommandRenderer',
+  },
+
   // Add more tools here as needed
   // Example:
   // 'search': { icon: 'mdi:magnify', renderer: 'SearchRenderer' },

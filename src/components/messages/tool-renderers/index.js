@@ -7,6 +7,7 @@
 import CommitRenderer from './CommitRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
+import TerminalCommandRenderer from './TerminalCommandRenderer.jsx';
 import { TOOL_REGISTRY, getToolIcon, getToolRendererName } from './toolRendererConfig.js';
 
 // Map of renderer names to actual components
@@ -14,6 +15,7 @@ const RENDERERS = {
   CommitRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
+  TerminalCommandRenderer,
 };
 
 /**
@@ -33,5 +35,6 @@ export {
   CommitRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
+  TerminalCommandRenderer,
 };
 

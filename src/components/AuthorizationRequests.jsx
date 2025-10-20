@@ -10,8 +10,6 @@ import CreateConnection from './tools/CreateConnection.jsx';
 const AuthorizationRequests = () => {
   const accountId = useSelector(selectAccountId);
   const authorizations = useSelector(selectAuthorizationRequests);
-
-  console.log('authorizations', authorizations);
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [secretValues, setSecretValues] = useState({});
