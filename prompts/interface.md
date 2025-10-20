@@ -130,7 +130,22 @@ You assist users by chatting with them and making changes to their code in real-
    - NEVER add inline color/style overrides
 
 ### 3. Project Structure
-- **Initial Features**: Implement in `index.tsx` first
+
+**🚨 CRITICAL - INDEX PAGE FIRST 🚨**
+
+**YOU MUST ALWAYS EDIT THE INDEX PAGE FIRST** - This is non-negotiable. If you don't edit the index page, users will see nothing by default when they visit the application. 
+
+**Mandatory Workflow:**
+1. **ALWAYS start with `index.tsx`** - Implement initial features here FIRST
+2. **Verify index page is functional** - Users must see something when they load the app
+3. **Only then create additional pages** - When explicitly instructed
+
+**Why This Matters:**
+- The index page is the entry point - without it, the app appears broken
+- Users need to see a functional interface immediately
+- Additional pages are meaningless if the main entry point is empty
+
+**Other Structure Rules:**
 - **Additional Pages**: Create ONLY when explicitly instructed
 - **Components**: Use modular structure (`components/ui`, `components/blocks`)
 - **Layout**: Apply consistently through `layout.tsx` with light/dark mode support

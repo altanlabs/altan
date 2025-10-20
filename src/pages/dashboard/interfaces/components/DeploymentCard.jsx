@@ -3,7 +3,7 @@ import React, { useCallback, useState, useEffect, memo } from 'react';
 
 import { HoverBorderGradient } from '../../../../components/aceternity/buttons/hover-border-gradient';
 import Iconify from '../../../../components/iconify';
-import { optimai } from '../../../../utils/axios';
+import { optimai, optimai_pods } from '../../../../utils/axios';
 
 const DeploymentCard = ({ deployment }) => {
   const [isWorking, setIsWorking] = useState(false);
@@ -12,7 +12,7 @@ const DeploymentCard = ({ deployment }) => {
   const handleFixWithAI = useCallback(
     async (deploymentId) => {
       try {
-        const response = await optimai.post(`/interfaces/deployment/${deploymentId}/fix-with-ai`);
+        const response = await optimai_pods.post(`/interfaces/deployment/${deploymentId}/fix-with-ai`);
         if (response.status === 200) {
           setIsWorking(true);
         }

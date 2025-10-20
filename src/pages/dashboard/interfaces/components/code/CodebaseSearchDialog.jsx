@@ -5,7 +5,7 @@ import Iconify from '../../../../../components/iconify';
 import { useDebounce } from '../../../../../hooks/useDebounce';
 import { openFile as openFileThunk } from '../../../../../redux/slices/codeEditor';
 import { dispatch } from '../../../../../redux/store';
-import { optimai } from '../../../../../utils/axios';
+import { optimai, optimai_pods } from '../../../../../utils/axios';
 
 const CodebaseSearchDialog = ({ open, onClose, interfaceId }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +30,7 @@ const CodebaseSearchDialog = ({ open, onClose, interfaceId }) => {
 
       setIsLoading(true);
       try {
-        const response = await optimai.post(`/interfaces/dev/${interfaceId}/files/search`, {
+        const response = await optimai_pods.post(`/interfaces/dev/${interfaceId}/files/search`, {
           query: query,
           use_regex: false,
           case_sensitive: false,

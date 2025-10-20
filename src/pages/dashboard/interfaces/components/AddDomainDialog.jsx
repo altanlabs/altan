@@ -12,7 +12,7 @@ import {
 import React, { useState } from 'react';
 
 import CustomDialog from '../../../../components/dialogs/CustomDialog';
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function AddDomainDialog({ open, onClose, ui }) {
   const [domain, setDomain] = useState('');
@@ -21,7 +21,7 @@ function AddDomainDialog({ open, onClose, ui }) {
 
   const handleAddDomain = async () => {
     try {
-      const response = await optimai.post(`/interfaces/${ui.id}/domains`, { domain });
+      const response = await optimai_pods.post(`/interfaces/${ui.id}/domains`, { domain });
       setDomainInfo(response.data.domain); // Set the domain info from the response
       setDomain(''); // Clear the input field
       setError(''); // Clear any previous errors
@@ -32,7 +32,7 @@ function AddDomainDialog({ open, onClose, ui }) {
 
   const handleDeleteDomain = async (domainName) => {
     try {
-      await optimai.delete(`/interfaces/${ui.id}/domains/${domainName}`);
+      await optimai_pods.delete(`/interfaces/${ui.id}/domains/${domainName}`);
       // Refresh domain info or close dialog after successful deletion
       setDomainInfo(null);
       onClose();

@@ -434,7 +434,6 @@ export default function ProjectPage() {
       {/* Onboarding Tour */}
       <ProjectOnboardingTour
         altanerId={altanerId}
-        currentComponent={currentComponent}
         sortedComponents={sortedComponents}
       />
 

@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 
-import { optimai } from '../../../../utils/axios';
+import { optimai, optimai_pods } from '../../../../utils/axios';
 
 function AddEnvVarsDialog({ open, onClose, ui }) {
   const [envVars, setEnvVars] = useState([{ key: '', value: '' }]);
@@ -60,7 +60,7 @@ function AddEnvVarsDialog({ open, onClose, ui }) {
         return;
       }
 
-      await optimai.post(`/interfaces/${ui.id}/env`, {
+      await optimai_pods.post(`/interfaces/${ui.id}/env`, {
         variables,
       });
 
@@ -78,7 +78,7 @@ function AddEnvVarsDialog({ open, onClose, ui }) {
       setLoading(true);
       setError('');
 
-      await optimai.delete(`/interfaces/${ui.id}/env/${key}`);
+      await optimai_pods.delete(`/interfaces/${ui.id}/env/${key}`);
 
       // Remove from local state
       const newExistingVars = { ...existingVars };

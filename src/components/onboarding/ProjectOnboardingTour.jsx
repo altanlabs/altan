@@ -1,8 +1,8 @@
+import { alpha, useTheme } from '@mui/material/styles';
+import PropTypes from 'prop-types';
 import { useEffect, useState, useCallback } from 'react';
 import Joyride, { ACTIONS, EVENTS, STATUS } from 'react-joyride';
 import { useLocation, useHistory } from 'react-router-dom';
-import { alpha, useTheme } from '@mui/material/styles';
-import PropTypes from 'prop-types';
 
 // Custom styles to ensure spotlight area is clear and highlighted
 const tourStyles = `
@@ -11,13 +11,11 @@ const tourStyles = `
   }
   
   .react-joyride__spotlight {
-    background-color: transparent !important;
     border-radius: 12px !important;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 
-                0 0 40px 4px rgba(139, 92, 246, 0.4),
-                inset 0 0 0 2px rgba(139, 92, 246, 0.3) !important;
+                0 0 40px 4px rgba(139, 92, 246, 0.5),
+                inset 0 0 0 3px rgba(139, 92, 246, 0.4) !important;
     animation: pulse-spotlight 2s ease-in-out infinite !important;
-    pointer-events: none !important;
   }
   
   @keyframes pulse-spotlight {
@@ -33,18 +31,12 @@ const tourStyles = `
     }
   }
   
-  .react-joyride__overlay {
-    background-color: transparent !important;
-    mix-blend-mode: normal !important;
-    pointer-events: auto !important;
-  }
-  
   .react-joyride__tooltip {
     z-index: 99999 !important;
   }
 `;
 
-const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }) => {
+const ProjectOnboardingTour = ({ altanerId, sortedComponents }) => {
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const location = useLocation();
@@ -86,10 +78,10 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
       if ([EVENTS.STEP_AFTER, EVENTS.TARGET_NOT_FOUND].includes(type)) {
         const nextStepIndex = index + (action === ACTIONS.PREV ? -1 : 1);
 
-        // Auto-navigate to Cloud when moving from step 3 (component switcher) to step 4
-        if (index === 3 && action === ACTIONS.NEXT && nextStepIndex === 4) {
+        // Auto-navigate to Cloud when moving from step 1 (component switcher) to step 2
+        if (index === 1 && action === ACTIONS.NEXT && nextStepIndex === 2) {
           const cloudComponent = Object.entries(sortedComponents || {}).find(
-            ([id, comp]) => comp.type === 'base',
+            ([, comp]) => comp.type === 'base',
           );
           if (cloudComponent) {
             history.push(`/project/${altanerId}/c/${cloudComponent[0]}`);
@@ -101,10 +93,10 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
           }
         }
 
-        // Auto-navigate to Agents when moving from step 4 to 5
-        if (index === 4 && action === ACTIONS.NEXT && nextStepIndex === 5) {
+        // Auto-navigate to Agents when moving from step 2 (Cloud) to step 3
+        if (index === 2 && action === ACTIONS.NEXT && nextStepIndex === 3) {
           const agentsComponent = Object.entries(sortedComponents || {}).find(
-            ([id, comp]) => comp.type === 'agents',
+            ([, comp]) => comp.type === 'agents',
           );
           if (agentsComponent) {
             history.push(`/project/${altanerId}/c/${agentsComponent[0]}`);
@@ -116,11 +108,17 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
           }
         }
 
+        // Auto-navigate to Plans when moving from step 3 (Agents) to step 4
+        if (index === 3 && action === ACTIONS.NEXT && nextStepIndex === 4) {
+          history.push(`/project/${altanerId}/plans`);
+          // Wait for navigation before advancing
+          setTimeout(() => {
+            setStepIndex(nextStepIndex);
+          }, 300);
+          return; // Don't advance immediately
+        }
+
         setStepIndex(nextStepIndex);
-      } else if (type === EVENTS.TARGET_NOT_FOUND) {
-        // If target not found, log it but don't auto-advance
-        console.error('Target not found for step:', index, steps[index]);
-        // Don't advance automatically to avoid loops
       } else if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
         // Tour is finished, remove query param and navigate back to Interface
         const params = new URLSearchParams(location.search);
@@ -128,7 +126,7 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
 
         // Find the interface component and navigate to it
         const interfaceComponent = Object.entries(sortedComponents || {}).find(
-          ([id, comp]) => comp.type === 'interface',
+          ([, comp]) => comp.type === 'interface',
         );
 
         if (interfaceComponent) {
@@ -155,63 +153,17 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
             Welcome to Your Project! 🚀
           </div>
           <p className="text-base">
-            Let's take a quick tour to help you understand how to build amazing applications with AI
-            assistance.
+            Let&apos;s take a quick tour of your project components.
           </p>
-          <p className="text-sm opacity-75">
-            This will only take a minute, and you can skip it anytime.
-          </p>
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              💡 Use the AI chat on the left to request changes. The live preview appears on the right after your first commit!
+            </p>
+          </div>
         </div>
       ),
       placement: 'center',
       disableBeacon: true,
-    },
-    {
-      target: '#chat-panel',
-      content: (
-        <div className="space-y-2">
-          <div className="text-lg font-semibold">💬 AI Chat Room</div>
-          <p>This is your AI-powered workspace. Chat with AI agents to:</p>
-          <ul className="list-disc list-inside space-y-1 text-sm">
-            <li>Request code changes and features</li>
-            <li>Ask questions about your project</li>
-            <li>Get help debugging issues</li>
-            <li>Collaborate in real-time</li>
-          </ul>
-        </div>
-      ),
-      placement: 'right',
-      disableBeacon: true,
-      spotlightClicks: false,
-      styles: {
-        spotlight: {
-          borderRadius: 12,
-        },
-      },
-    },
-    {
-      target: '#preview-panel',
-      content: (
-        <div className="space-y-2">
-          <div className="text-lg font-semibold">👁️ Live Preview</div>
-          <p>
-            This is where you see your <strong>Interface</strong> - your frontend UI.
-          </p>
-          <p className="text-sm opacity-75">
-            The interface updates in real-time as you make changes through the AI chat on the left.
-          </p>
-          <p className="text-sm font-medium mt-3 text-purple-600 dark:text-purple-400">
-            Next, we'll show you how to switch between different parts of your project! →
-          </p>
-        </div>
-      ),
-      placement: 'left',
-      disableBeacon: true,
-      styles: {
-        spotlight: {
-          borderRadius: 12,
-        },
-      },
     },
     {
       target: '[data-tour="component-switcher"]',
@@ -225,7 +177,7 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
             <div className="flex items-center gap-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <span className="text-base">🖥️</span>
               <span>
-                <strong>Interface</strong> - Your frontend UI (currently active)
+                <strong>Interface</strong> - Your frontend UI
               </span>
             </div>
             <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -240,11 +192,17 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
                 <strong>Agents</strong> - AI automation
               </span>
             </div>
+            <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <span className="text-base">📋</span>
+              <span>
+                <strong>Plans</strong> - Project planning & roadmap
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border-2 border-purple-400 dark:border-purple-600 mt-3">
             <span className="text-2xl">👉</span>
             <p className="text-sm font-bold">
-              Click "Next" and we'll take you to the Cloud backend!
+              Let&apos;s explore each component! Click &quot;Next&quot; to continue.
             </p>
           </div>
         </div>
@@ -263,7 +221,7 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
       content: (
         <div className="space-y-2">
           <div className="text-lg font-semibold">☁️ Cloud Backend</div>
-          <p>Perfect! This is your backend infrastructure:</p>
+          <p>This preview shows your backend infrastructure. You can manage:</p>
           <ul className="list-disc list-inside space-y-1 text-sm">
             <li>
               <strong>Database:</strong> Store and query your data
@@ -281,7 +239,9 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
               <strong>Secrets:</strong> API keys and environment variables
             </li>
           </ul>
-          <p className="text-sm opacity-75 mt-2">Click "Next" to learn about AI Agents →</p>
+          <p className="text-xs opacity-75 mt-2 italic">
+            💬 You can configure all of this through the AI chat on the left!
+          </p>
         </div>
       ),
       placement: 'left',
@@ -298,15 +258,40 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
       content: (
         <div className="space-y-2">
           <div className="text-lg font-semibold">🤖 AI Agents</div>
-          <p>This is where you manage your AI agents:</p>
+          <p>This preview shows your AI agents. Here you can:</p>
           <ul className="list-disc list-inside space-y-1 text-sm">
             <li>Automate repetitive tasks</li>
             <li>Handle user interactions in your interface</li>
             <li>Process data and make decisions</li>
             <li>Integrate with external services</li>
           </ul>
-          <p className="text-sm opacity-75 mt-2">
-            Agents can be embedded directly into your interface or used in the chat room.
+          <p className="text-xs opacity-75 mt-2 italic">
+            💬 Agents can be embedded in your interface or controlled via chat!
+          </p>
+        </div>
+      ),
+      placement: 'left',
+      disableBeacon: true,
+      styles: {
+        spotlight: {
+          borderRadius: 12,
+        },
+      },
+    },
+    {
+      target: '#preview-panel',
+      content: (
+        <div className="space-y-2">
+          <div className="text-lg font-semibold">📋 Plans</div>
+          <p>This preview shows your project plans and roadmap:</p>
+          <ul className="list-disc list-inside space-y-1 text-sm">
+            <li>Break down complex features into manageable tasks</li>
+            <li>Track progress on multi-step implementations</li>
+            <li>Organize your project development workflow</li>
+            <li>Collaborate with AI to plan new features</li>
+          </ul>
+          <p className="text-xs opacity-75 mt-2 italic">
+            💬 Ask the AI to create plans for new features and track them here!
           </p>
         </div>
       ),
@@ -323,7 +308,7 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
       content: (
         <div className="space-y-2">
           <div className="text-lg font-semibold">🚀 Publish to Production</div>
-          <p>When you're ready, click here to deploy your project to production.</p>
+          <p>When you&apos;re ready, click here to deploy your project to production.</p>
           <ul className="list-disc list-inside space-y-1 text-sm">
             <li>Get a live URL instantly</li>
             <li>Connect a custom domain</li>
@@ -343,7 +328,7 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
       content: (
         <div className="space-y-3">
           <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-            You're All Set! 🎉
+            You&apos;re All Set! 🎉
           </div>
           <p className="text-base">
             Now you know the basics! Start by chatting with your AI agents on the left to request
@@ -441,10 +426,6 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
         },
         spotlight: {
           borderRadius: 12,
-          backgroundColor: 'transparent',
-        },
-        overlay: {
-          backgroundColor: 'transparent',
         },
       }}
       floaterProps={{
@@ -468,7 +449,6 @@ const ProjectOnboardingTour = ({ altanerId, currentComponent, sortedComponents }
 
 ProjectOnboardingTour.propTypes = {
   altanerId: PropTypes.string.isRequired,
-  currentComponent: PropTypes.object,
   sortedComponents: PropTypes.object,
 };
 

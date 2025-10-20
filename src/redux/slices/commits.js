@@ -1,6 +1,6 @@
 import { createSlice, createSelector } from '@reduxjs/toolkit';
 
-import { optimai } from '../../utils/axios';
+import { optimai_pods } from '../../utils/axios';
 
 // ============================================================================
 // INITIAL STATE
@@ -73,7 +73,7 @@ const slice = createSlice({
         state.commits = {};
       }
     },
-    
+
     // Restore reducers
     setRestoring(state, action) {
       const { hash, restoring } = action.payload;
@@ -101,36 +101,38 @@ export const {
  * Fetch commit details by hash
  * Uses cache if available and not expired (5 minutes)
  */
-export const fetchCommitDetails = (hash, forceRefresh = false) => async (dispatch, getState) => {
-  const state = getState();
-  const existingCommit = state.commits.commits[hash];
-  
-  // Use cache if available and not expired (5 minutes) and not forcing refresh
-  if (!forceRefresh && existingCommit?.data && existingCommit.lastFetched) {
-    const fiveMinutes = 5 * 60 * 1000;
-    if (Date.now() - existingCommit.lastFetched < fiveMinutes) {
+export const fetchCommitDetails =
+  (hash, forceRefresh = false) =>
+  async (dispatch, getState) => {
+    const state = getState();
+    const existingCommit = state.commits.commits[hash];
+
+    // Use cache if available and not expired (5 minutes) and not forcing refresh
+    if (!forceRefresh && existingCommit?.data && existingCommit.lastFetched) {
+      const fiveMinutes = 5 * 60 * 1000;
+      if (Date.now() - existingCommit.lastFetched < fiveMinutes) {
+        return existingCommit.data;
+      }
+    }
+
+    // Don't fetch if already loading
+    if (existingCommit?.loading) {
       return existingCommit.data;
     }
-  }
-  
-  // Don't fetch if already loading
-  if (existingCommit?.loading) {
-    return existingCommit.data;
-  }
 
-  dispatch(setCommitLoading({ hash, loading: true }));
-  try {
-    const response = await optimai.get(`/interfaces/commits/${hash}`);
-    const data = response.data;
-    dispatch(setCommitDetails({ hash, data }));
-    return data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.detail || error.message || 'Failed to fetch commit details';
-    dispatch(setCommitError({ hash, error: errorMessage }));
-    throw error;
-  }
-};
+    dispatch(setCommitLoading({ hash, loading: true }));
+    try {
+      const response = await optimai_pods.get(`/interfaces/commits/${hash}`);
+      const data = response.data;
+      dispatch(setCommitDetails({ hash, data }));
+      return data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.detail || error.message || 'Failed to fetch commit details';
+      dispatch(setCommitError({ hash, error: errorMessage }));
+      throw error;
+    }
+  };
 
 /**
  * Restore to a specific commit
@@ -138,7 +140,7 @@ export const fetchCommitDetails = (hash, forceRefresh = false) => async (dispatc
 export const restoreCommit = (hash) => async (dispatch) => {
   dispatch(setRestoring({ hash, restoring: true }));
   try {
-    await optimai.post(`/interfaces/commits/${hash}/restore`);
+    await optimai_pods.post(`/interfaces/commits/${hash}/restore`);
     return Promise.resolve();
   } catch (error) {
     const errorMessage =
@@ -170,4 +172,3 @@ export const selectIsRestoring = createSelector(
   [selectCommitsState, (_, hash) => hash],
   (commitsState, hash) => commitsState.restoring[hash] || false,
 );
-

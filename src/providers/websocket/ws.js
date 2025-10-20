@@ -20,12 +20,6 @@ import {
   addBase,
   updateBase,
   deleteBase,
-  addTable,
-  updateTable,
-  deleteTable,
-  addField,
-  updateField,
-  deleteField,
   integrateRealTimeUpdates,
 } from '../../redux/slices/bases';
 import {
@@ -114,15 +108,6 @@ import {
   addResponseLifecycle,
   completeResponseLifecycle,
 } from '../../redux/slices/room';
-import {
-  addPlan,
-  updatePlan,
-  deletePlan,
-  addPlanGroup,
-  updatePlanGroup,
-  deletePlanGroup,
-  // Note: There's no specific reducer for SubscriptionPlanBilling in the current slice
-} from '../../redux/slices/subscriptions';
 import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 import { messagePartBatcher } from '../../utils/eventBatcher';

@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { memo, useState } from 'react';
 
-import { optimai } from '../../../../utils/axios';
+import { optimai_pods } from '../../../../utils/axios';
 
 function AddCollaboratorDialog({ open, onClose, interfaceId, repoOwner, repoName }) {
   const [username, setUsername] = useState('');
@@ -20,7 +20,7 @@ function AddCollaboratorDialog({ open, onClose, interfaceId, repoOwner, repoName
 
     setIsSubmitting(true);
     try {
-      await optimai.post(`/interfaces/${interfaceId}/collaborators`, {
+      await optimai_pods.post(`/interfaces/${interfaceId}/collaborators`, {
         username: username.trim(),
         permission: 'push',
       });
