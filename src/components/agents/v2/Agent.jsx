@@ -68,8 +68,6 @@ const TABS = [
     icon: 'eva:message-circle-outline',
     component: ConversationsTab,
   },
-
-  { id: 'widget', label: 'Widget', icon: 'eva:cube-outline', component: WidgetTab },
 ];
 
 function Agent({ agentId, id, onGoBack, altanerComponentId }) {

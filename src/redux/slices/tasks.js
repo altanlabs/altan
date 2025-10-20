@@ -435,15 +435,12 @@ export const refreshTasks = (threadId) => async (dispatch, getState) => {
 
 // Fetch all plans by room ID
 export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
-  console.log('🔍 fetchPlansByRoomId called with roomId:', roomId);
-
   const state = getState();
   const isLoading = selectRoomPlansLoading(roomId)(state);
   const existingPlans = selectPlansByRoom(roomId)(state);
 
   // Don't fetch if already loading
   if (isLoading) {
-    console.log('⏳ Already loading plans for room:', roomId);
     return existingPlans;
   }
 
@@ -451,16 +448,13 @@ export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
 
   try {
     const url = `https://cagi.altan.ai/plans/?room_id=${roomId}&include_tasks=true&order_by=created_at&ascending=false`;
-    console.log('📡 Fetching plans from:', url);
 
     const response = await axios.get(url);
-    console.log('✅ Plans API response:', response.data);
 
     const plansData = response.data.data || [];
 
     // Ensure plansData is an array
     const plans = Array.isArray(plansData) ? plansData : [plansData];
-    console.log(`📊 Found ${plans.length} plan(s)`);
 
     // Transform plans to our format
     const transformedPlans = plans.map((planData) => ({
@@ -480,12 +474,6 @@ export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
     dispatch(setPlans({ roomId, plans: transformedPlans }));
     return transformedPlans;
   } catch (error) {
-    console.error('❌ Failed to fetch plans:', error);
-    console.error('Error details:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch plans';
     dispatch(setRoomPlansError({ roomId, error: errorMessage }));
     throw error;
