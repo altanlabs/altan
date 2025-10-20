@@ -17,6 +17,7 @@ import CustomDialog from '../../../../components/dialogs/CustomDialog';
 import Iconify from '../../../../components/iconify/Iconify';
 import { createTemplate, createTemplateVersion } from '../../../../redux/slices/general';
 import AddDomainDialog from '../../../dashboard/interfaces/components/AddDomainDialog';
+import { optimai_pods } from '../../../../utils/axios';
 
 const versionTypes = ['major', 'minor', 'patch'];
 
@@ -98,33 +99,24 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
     setIsSubmitting(true);
 
     try {
-      let templateId = altaner?.template?.id;
-
-      // If no template exists, create one first
-      if (!templateId) {
-        const template = await dispatch(
-          createTemplate({
-            id: altaner.id,
-            entity_type: 'altaner',
-          }),
-        );
-        templateId = template.id;
+      // Use the interface ID from ui prop
+      const interfaceId = ui?.id;
+      
+      if (!interfaceId) {
+        throw new Error('Interface ID is required');
       }
 
-      // Create new version
-      await dispatch(
-        createTemplateVersion(templateId, {
-          version: {
-            version_type: versionType,
-            branch: 'master',
-          },
-          name: name || undefined,
-        }),
-      );
+      // Publish interface using optimai_pods
+      await optimai_pods.post(`/interfaces/${interfaceId}/publish`, null, {
+        params: {
+          message: name || 'New version',
+          subdomain: ui?.name || '',
+        },
+      });
 
       onClose();
     } catch (error) {
-      console.error('Failed to publish version:', error);
+      console.error('Failed to publish interface:', error);
     } finally {
       setIsSubmitting(false);
     }

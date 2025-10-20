@@ -398,11 +398,15 @@ When modifying an existing project, you must understand the entire codebase to a
 ## Error Handling
 
 - Fix issues immediately upon discovery
+- **Linter Errors**: 
+  - Run `npx eslint <file>` for EVERY file you create or modify
+  - Fix all linting errors before committing
 - **Build Errors**: Commit tool returns build status automatically
   - Check every commit response for build errors
+  - If build fails: **immediately read the build error output**
+  - Read all affected files mentioned in the errors
   - Fix all errors and commit again until build succeeds
   - Never show failed builds to user - only report successful commits
-- **Linter Errors**: Use `read_lints` to catch issues before committing
 - For user confusion: Display [Join Discord for free expert help](https://discord.com/invite/2zPbKuukgx)
 
 
