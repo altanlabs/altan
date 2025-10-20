@@ -51,6 +51,41 @@ const slice = createSlice({
     setPlan(state, action) {
       const { plan, threadId } = action.payload;
       if (plan && plan.id) {
+        // eslint-disable-next-line no-console
+        console.log('📋 Redux setPlan:', {
+          planId: plan.id,
+          threadId,
+          tasksCount: plan.tasks?.length,
+        });
+
+        // If plan already exists, merge tasks carefully to preserve websocket updates
+        const existingPlan = state.plansById[plan.id];
+        if (existingPlan?.tasks) {
+          // Merge tasks: prefer existing task data if it has a more recent updated_at
+          const mergedTasks = plan.tasks.map((newTask) => {
+            const existingTask = existingPlan.tasks.find((t) => t.id === newTask.id);
+            if (existingTask) {
+              const existingTime = new Date(existingTask.updated_at || 0).getTime();
+              const newTime = new Date(newTask.updated_at || 0).getTime();
+
+              // Keep the newer task data
+              if (existingTime > newTime) {
+                // eslint-disable-next-line no-console
+                console.log('⚠️ Preserving newer task from store:', existingTask.task_name, {
+                  existingStatus: existingTask.status,
+                  newStatus: newTask.status,
+                  existingTime: existingTask.updated_at,
+                  newTime: newTask.updated_at,
+                });
+                return existingTask;
+              }
+            }
+            return newTask;
+          });
+
+          plan.tasks = mergedTasks;
+        }
+
         state.plansById[plan.id] = plan;
         if (threadId) {
           state.planIdByThread[threadId] = plan.id;
@@ -64,7 +99,7 @@ const slice = createSlice({
       const { roomId, plans } = action.payload;
       state.plansByRoom[roomId] = plans;
       // Also store each plan by ID for easy access
-      plans.forEach(plan => {
+      plans.forEach((plan) => {
         if (plan && plan.id) {
           state.plansById[plan.id] = plan;
         }
@@ -118,32 +153,50 @@ const slice = createSlice({
       const { threadId, taskId, updates } = action.payload;
       // eslint-disable-next-line no-console
       console.log('📝 Redux updateTask:', { threadId, taskId, updates });
-      
+
+      // Filter out null/undefined values from updates to preserve existing data
+      const filteredUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+        if (value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
       const tasks = state.tasksByThread[threadId];
       if (tasks) {
-        const taskIndex = tasks.findIndex(task => task.id === taskId);
+        const taskIndex = tasks.findIndex((task) => task.id === taskId);
         if (taskIndex !== -1) {
+          const currentTask = tasks[taskIndex];
           state.tasksByThread[threadId][taskIndex] = {
-            ...tasks[taskIndex],
-            ...updates,
+            ...currentTask,
+            ...filteredUpdates,
           };
           // eslint-disable-next-line no-console
-          console.log('✅ Updated task in tasksByThread:', state.tasksByThread[threadId][taskIndex]);
+          console.log('✅ Updated task in tasksByThread:', {
+            before: currentTask,
+            updates: filteredUpdates,
+            after: state.tasksByThread[threadId][taskIndex],
+          });
         }
       }
 
       // Also update task within plans
-      Object.keys(state.plansById).forEach(planId => {
+      Object.keys(state.plansById).forEach((planId) => {
         const plan = state.plansById[planId];
         if (plan?.tasks) {
-          const planTaskIndex = plan.tasks.findIndex(task => task.id === taskId);
+          const planTaskIndex = plan.tasks.findIndex((task) => task.id === taskId);
           if (planTaskIndex !== -1) {
+            const currentTask = plan.tasks[planTaskIndex];
             state.plansById[planId].tasks[planTaskIndex] = {
-              ...plan.tasks[planTaskIndex],
-              ...updates,
+              ...currentTask,
+              ...filteredUpdates,
             };
             // eslint-disable-next-line no-console
-            console.log('✅ Updated task in plan:', planId, state.plansById[planId].tasks[planTaskIndex]);
+            console.log('✅ Updated task in plan:', planId, {
+              before: currentTask,
+              updates: filteredUpdates,
+              after: state.plansById[planId].tasks[planTaskIndex],
+            });
           }
         }
       });
@@ -153,14 +206,14 @@ const slice = createSlice({
       const { threadId, taskId } = action.payload;
       const tasks = state.tasksByThread[threadId];
       if (tasks) {
-        state.tasksByThread[threadId] = tasks.filter(task => task.id !== taskId);
+        state.tasksByThread[threadId] = tasks.filter((task) => task.id !== taskId);
       }
 
       // Also remove task from plans
-      Object.keys(state.plansById).forEach(planId => {
+      Object.keys(state.plansById).forEach((planId) => {
         const plan = state.plansById[planId];
         if (plan?.tasks) {
-          state.plansById[planId].tasks = plan.tasks.filter(task => task.id !== taskId);
+          state.plansById[planId].tasks = plan.tasks.filter((task) => task.id !== taskId);
         }
       });
     },
@@ -280,16 +333,24 @@ export const fetchPlan = (planId) => async (dispatch, getState) => {
   const existingPlan = selectPlanById(planId)(state);
 
   // Don't fetch if already loading or already exists
-  if (isLoading || existingPlan) {
+  if (isLoading) {
+    // eslint-disable-next-line no-console
+    console.log('⏳ Plan already loading, skipping fetch:', planId);
     return existingPlan;
   }
 
+  if (existingPlan) {
+    // eslint-disable-next-line no-console
+    console.log('✅ Using existing plan from store:', planId);
+    return existingPlan;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('📡 Fetching plan from API:', planId);
   dispatch(startLoadingPlan({ planId }));
 
   try {
-    const response = await axios.get(
-      `https://cagi.altan.ai/plans/${planId}?include_tasks=true`,
-    );
+    const response = await axios.get(`https://cagi.altan.ai/plans/${planId}?include_tasks=true`);
     const planData = response.data.data || {};
 
     // Extract plan metadata
@@ -375,7 +436,7 @@ export const refreshTasks = (threadId) => async (dispatch, getState) => {
 // Fetch all plans by room ID
 export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
   console.log('🔍 fetchPlansByRoomId called with roomId:', roomId);
-  
+
   const state = getState();
   const isLoading = selectRoomPlansLoading(roomId)(state);
   const existingPlans = selectPlansByRoom(roomId)(state);
@@ -391,10 +452,10 @@ export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
   try {
     const url = `https://cagi.altan.ai/plans/?room_id=${roomId}&include_tasks=true&order_by=created_at&ascending=false`;
     console.log('📡 Fetching plans from:', url);
-    
+
     const response = await axios.get(url);
     console.log('✅ Plans API response:', response.data);
-    
+
     const plansData = response.data.data || [];
 
     // Ensure plansData is an array
@@ -420,10 +481,10 @@ export const fetchPlansByRoomId = (roomId) => async (dispatch, getState) => {
     return transformedPlans;
   } catch (error) {
     console.error('❌ Failed to fetch plans:', error);
-    console.error('Error details:', { 
+    console.error('Error details:', {
       status: error.response?.status,
       data: error.response?.data,
-      message: error.message 
+      message: error.message,
     });
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch plans';
     dispatch(setRoomPlansError({ roomId, error: errorMessage }));

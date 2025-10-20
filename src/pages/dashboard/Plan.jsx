@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import PlanHeader from '../../components/plan/PlanHeader';
@@ -14,7 +14,6 @@ const Plan = ({ planId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const plan = useSelector(selectPlanById(planId));
-  console.log('plan', plan);
   const isLoading = useSelector(selectPlanLoading(planId));
   const error = useSelector(selectPlanError(planId));
   const [isApproving, setIsApproving] = useState(false);
@@ -29,7 +28,7 @@ const Plan = ({ planId }) => {
   const sortedTasks = useMemo(() => sortTasksByPriority(plan?.tasks), [plan?.tasks]);
   const progress = useMemo(() => calculateProgress(sortedTasks), [sortedTasks]);
 
-  const handleOpenSubthread = (task) => {
+  const handleOpenSubthread = useCallback((task) => {
     if (task.subthread_id) {
       dispatch(
         switchToThread({
@@ -38,37 +37,40 @@ const Plan = ({ planId }) => {
         }),
       );
     }
-  };
+  }, [dispatch]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     history.goBack();
-  };
+  }, [history]);
 
-  const handleApprovePlan = async (approve) => {
-    if (!plan) return;
+  const handleApprovePlan = useCallback(
+    async (approve) => {
+      if (!plan) return;
 
-    setIsApproving(true);
-    setApproveError(null);
+      setIsApproving(true);
+      setApproveError(null);
 
-    try {
-      await axios.post(`https://cagi.altan.ai/plans/${planId}/approve`, {
-        approve,
-      });
+      try {
+        await axios.post(`https://cagi.altan.ai/plans/${planId}/approve`, {
+          approve,
+        });
 
-      const updatedPlan = {
-        ...plan,
-        is_approved: approve,
-        status: approve ? 'approved' : plan.status,
-      };
+        const updatedPlan = {
+          ...plan,
+          is_approved: approve,
+          status: approve ? 'approved' : plan.status,
+        };
 
-      dispatch(setPlan({ plan: updatedPlan }));
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to approve plan';
-      setApproveError(errorMessage);
-    } finally {
-      setIsApproving(false);
-    }
-  };
+        dispatch(setPlan({ plan: updatedPlan }));
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to approve plan';
+        setApproveError(errorMessage);
+      } finally {
+        setIsApproving(false);
+      }
+    },
+    [plan, planId, dispatch],
+  );
 
   if (isLoading) {
     return <PlanLoading />;

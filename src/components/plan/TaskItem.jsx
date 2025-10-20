@@ -1,6 +1,5 @@
 import { Tooltip, Typography } from '@mui/material';
-import { useMemo } from 'react';
-import { TextShimmer } from '../aceternity/text/text-shimmer.tsx';
+import { memo, useMemo } from 'react';
 import Iconify from '../iconify/Iconify';
 import CustomMarkdown from '../messages/CustomMarkdown';
 import ToolPartCard from '../messages/ToolPartCard';
@@ -9,13 +8,13 @@ import { useSelector } from '../../redux/store';
 import { agentAvatars, getTaskIcon, getTaskIconColor, getTaskTextStyle } from './planUtils';
 import RunningTimer from './RunningTimer';
 
-const TaskItem = ({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
+const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
   const isRunning = task.status?.toLowerCase() === 'running';
   
-  // Get tool parts for this task's subthread
+  // Get tool parts for this task's subthread - only if expanded
   const toolPartsSelector = useMemo(() => makeSelectToolPartsByThreadId(), []);
   const toolParts = useSelector((state) => 
-    task.subthread_id ? toolPartsSelector(state, task.subthread_id) : []
+    isExpanded && task.subthread_id ? toolPartsSelector(state, task.subthread_id) : []
   );
 
   return (
@@ -29,7 +28,9 @@ const TaskItem = ({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
           <div className="flex-shrink-0 mt-1">
             <Iconify
               icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
-              className="w-5 h-5 text-gray-400 transition-transform duration-200"
+              className={`w-5 h-5 transition-transform duration-200 ${
+                isRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'
+              }`}
             />
           </div>
 
@@ -58,33 +59,10 @@ const TaskItem = ({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
                   />
                 </Tooltip>
               )}
-              {task.status?.toLowerCase() === 'running' ? (
-                (() => {
-                  try {
-                    const taskName = task?.task_name;
-                    const safeTaskName =
-                      taskName !== null && taskName !== undefined && taskName !== ''
-                        ? String(taskName).trim()
-                        : 'Running task...';
-
-                    if (!safeTaskName || safeTaskName.length === 0) {
-                      return <span className="text-base font-medium">Running task...</span>;
-                    }
-
-                    return (
-                      <TextShimmer
-                        className="text-base font-medium"
-                        duration={2}
-                      >
-                        {safeTaskName}
-                      </TextShimmer>
-                    );
-                  } catch (error) {
-                    // eslint-disable-next-line no-console
-                    console.error('TextShimmer error in Plan:', error, task);
-                    return <span className="text-base font-medium">Task Error</span>;
-                  }
-                })()
+              {isRunning ? (
+                <div className="text-base font-medium text-blue-600 dark:text-blue-400">
+                  {task.task_name || 'Running task...'}
+                </div>
               ) : (
                 <Typography
                   variant="body1"
@@ -184,7 +162,7 @@ const TaskItem = ({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
                   className="w-4 h-4 text-gray-500 dark:text-gray-400"
                 />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                  Task Actions ({toolParts.length})
+                  Subtasks ({toolParts.length})
                 </span>
               </div>
               {toolParts.map((part) => (
@@ -200,6 +178,20 @@ const TaskItem = ({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for better performance
+  // Only re-render if these specific props changed
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.task_name === nextProps.task.task_name &&
+    prevProps.task.updated_at === nextProps.task.updated_at &&
+    prevProps.task.assigned_agent_name === nextProps.task.assigned_agent_name &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.onToggleExpansion === nextProps.onOpenSubthread
+  );
+});
+
+TaskItem.displayName = 'TaskItem';
 
 export default TaskItem;
