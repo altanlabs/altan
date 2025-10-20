@@ -2859,6 +2859,45 @@ export const makeSelectMessageHasStreamingParts = () =>
     });
   });
 
+// Get all tool parts for a specific thread (for task subtasks rendering)
+export const makeSelectToolPartsByThreadId = () =>
+  createSelector(
+    [
+      selectMessagePartsById,
+      selectMessagePartsByMessageId,
+      selectMessagesIdsByThread,
+      (_state, threadId) => threadId,
+    ],
+    (partsById, partsByMessageId, messagesIdsByThread, threadId) => {
+      if (!threadId) return [];
+
+      const messageIds = messagesIdsByThread[threadId] || [];
+      const toolParts = [];
+
+      messageIds.forEach((messageId) => {
+        const partIds = partsByMessageId[messageId] || [];
+        partIds.forEach((partId) => {
+          const part = partsById[partId];
+          if (part && (part.type === 'tool' || part.part_type === 'tool')) {
+            toolParts.push(part);
+          }
+        });
+      });
+
+      // Sort by order and block_order
+      return toolParts.sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        const blockOrderA = a.block_order ?? 0;
+        const blockOrderB = b.block_order ?? 0;
+        return blockOrderA - blockOrderB;
+      });
+    },
+  );
+
 // Activation lifecycle selectors
 export const selectActivationLifecycles = (state) => selectRoomState(state).activationLifecycles;
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { EmptyPlanState } from './PlanStates';
+
 import PlanProgress from './PlanProgress';
+import { EmptyPlanState } from './PlanStates';
 import TaskItem from './TaskItem';
 
 const PlanRoadmap = ({ tasks, progress, onOpenSubthread }) => {
@@ -42,4 +43,3 @@ const PlanRoadmap = ({ tasks, progress, onOpenSubthread }) => {
 };
 
 export default PlanRoadmap;
-

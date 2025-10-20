@@ -185,13 +185,25 @@ export default function ProjectPage() {
   // Determine if preview panel should be collapsed (0 width)
   const shouldCollapsePreview = isInterfaceWithNoCommits && !isPlansRoute;
 
-  // Programmatically collapse/expand preview panel
+  // Programmatically collapse/expand preview panel and set correct sizes
   useEffect(() => {
-    if (previewPanelRef.current) {
+    if (previewPanelRef.current && chatPanelRef.current) {
       if (shouldCollapsePreview) {
+        // Interface with no commits: 100% chat, 0% preview
         previewPanelRef.current.collapse();
-      } else if (previewPanelRef.current.isCollapsed()) {
-        previewPanelRef.current.expand();
+        chatPanelRef.current.resize(100);
+      } else {
+        // Plans route or interface with commits: 30% chat, 70% preview
+        if (previewPanelRef.current.isCollapsed()) {
+          previewPanelRef.current.expand();
+        }
+        // Always resize to proper percentages when showing preview
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          if (chatPanelRef.current) {
+            chatPanelRef.current.resize(30);
+          }
+        });
       }
     }
   }, [shouldCollapsePreview]);

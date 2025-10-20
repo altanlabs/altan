@@ -14,6 +14,7 @@ const Plan = ({ planId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const plan = useSelector(selectPlanById(planId));
+  console.log('plan', plan);
   const isLoading = useSelector(selectPlanLoading(planId));
   const error = useSelector(selectPlanError(planId));
   const [isApproving, setIsApproving] = useState(false);

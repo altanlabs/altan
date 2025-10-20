@@ -35,7 +35,7 @@ const PlanWidget = ({ planId }) => {
       'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
     Cloud:
       'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Functions:
+    Services:
       'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
   };
 
@@ -68,7 +68,7 @@ const PlanWidget = ({ planId }) => {
       // If same status, sort by priority field
       return (a.priority || 999) - (b.priority || 999);
     });
-  }, [plan?.tasks]);
+  }, [plan]); // Depend on the entire plan object, not just tasks
 
   const handleOpenSubthread = (task) => {
     if (task.subthread_id) {

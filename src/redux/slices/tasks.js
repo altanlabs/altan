@@ -116,6 +116,9 @@ const slice = createSlice({
 
     updateTask(state, action) {
       const { threadId, taskId, updates } = action.payload;
+      // eslint-disable-next-line no-console
+      console.log('📝 Redux updateTask:', { threadId, taskId, updates });
+      
       const tasks = state.tasksByThread[threadId];
       if (tasks) {
         const taskIndex = tasks.findIndex(task => task.id === taskId);
@@ -124,6 +127,8 @@ const slice = createSlice({
             ...tasks[taskIndex],
             ...updates,
           };
+          // eslint-disable-next-line no-console
+          console.log('✅ Updated task in tasksByThread:', state.tasksByThread[threadId][taskIndex]);
         }
       }
 
@@ -137,6 +142,8 @@ const slice = createSlice({
               ...plan.tasks[planTaskIndex],
               ...updates,
             };
+            // eslint-disable-next-line no-console
+            console.log('✅ Updated task in plan:', planId, state.plansById[planId].tasks[planTaskIndex]);
           }
         }
       });

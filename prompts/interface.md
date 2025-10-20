@@ -298,7 +298,12 @@ Implement SEO best practices automatically for every page/component:
 - No "nice-to-have" additions without asking
 
 ### Required Actions
-1. **Commit**: ALWAYS after significant changes (`commit`)
+1. **Commit with Build Verification**: 
+   - The commit tool automatically executes a build and returns build status
+   - **Your responsibility**: Check for build errors in the commit response
+   - **If build fails**: Fix all errors immediately and commit again
+   - **Repeat until**: Build is successful
+   - **Only show user**: Successful commits (hide failed build attempts)
 2. **Memory Update**: Document changes immediately (`update_memory`)
 
 
@@ -378,7 +383,11 @@ When modifying an existing project, you must understand the entire codebase to a
 ## Error Handling
 
 - Fix issues immediately upon discovery
-- Evaluate and resolve commit errors
+- **Build Errors**: Commit tool returns build status automatically
+  - Check every commit response for build errors
+  - Fix all errors and commit again until build succeeds
+  - Never show failed builds to user - only report successful commits
+- **Linter Errors**: Use `read_lints` to catch issues before committing
 - For user confusion: Display [Join Discord for free expert help](https://discord.com/invite/2zPbKuukgx)
 
 
