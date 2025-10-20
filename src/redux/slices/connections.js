@@ -184,7 +184,7 @@ export const getConnectionTypes = () => async (dispatch, getState) => {
   }
   try {
     dispatch(slice.actions.startLoading('types'));
-    const response = await optimai_integration.get('/connection-type/all');
+    const response = await optimai_integration.get('/connection-type/all?is_compact=false');
     const { items } = response.data;
     dispatch(slice.actions.setConnectionTypes(items));
     return Promise.resolve('success');
