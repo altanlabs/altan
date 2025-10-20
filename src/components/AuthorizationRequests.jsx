@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { selectAccountId } from '../redux/slices/general.js';
-import { selectAuthorizationRequests, sendMessage } from '../redux/slices/room.js';
+import { selectAuthorizationRequests, selectMembers, sendMessage } from '../redux/slices/room.js';
 import { dispatch } from '../redux/store.js';
 import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
@@ -12,13 +12,13 @@ import CreateConnection from './tools/CreateConnection.jsx';
 const AuthorizationRequests = () => {
   const accountId = useSelector(selectAccountId);
   const authorizations = useSelector(selectAuthorizationRequests);
+  const members = useSelector(selectMembers);
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [secretValues, setSecretValues] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const history = useHistory();
   const location = useLocation();
-
 
   // Don't render if no account ID (prevents crashes during loading)
   if (!accountId) {
@@ -92,8 +92,17 @@ const AuthorizationRequests = () => {
       search: searchParams.toString(),
     });
 
-    // Send help message to the thread
-    const helpMessage = 'I need help with this authorization request. Can you give me step-by-step instructions on how to find and provide the required credentials?';
+    // Find the Services agent
+    const servicesAgent = Object.values(members.byId || {}).find(
+      (member) => member.member.agent.name === 'Services',
+    );
+    // Build help message with agent mention if found
+    let helpMessage = 'I need help with this authorization request. Can you give me step-by-step instructions on how to find and provide the required credentials?';
+
+    if (servicesAgent) {
+      const mentionText = `**[@Services](/member/${servicesAgent.id})**`;
+      helpMessage = `${mentionText}\n${helpMessage}`;
+    }
 
     // Small delay to ensure thread is loaded before sending message
     setTimeout(() => {

@@ -148,10 +148,14 @@ const CreateTaskRenderer = memo(({ part, isExpanded, onToggle }) => {
           )}
         </span>
 
-        {!duration ? <TextShimmer className="inline-block">{headerText}</TextShimmer> : <span className="font-medium">{headerText}</span>}
+        {!isCompleted && !taskData ? (
+          <TextShimmer className="inline-block">{headerText}</TextShimmer>
+        ) : (
+          <span className="font-medium">{headerText}</span>
+        )}
 
         {/* Agent Avatar - only show when task is created */}
-        {agentAvatar && isCompleted && (
+        {agentAvatar && taskData && (
           <img
             src={agentAvatar}
             alt={taskData.assignedAgentName}
@@ -164,7 +168,7 @@ const CreateTaskRenderer = memo(({ part, isExpanded, onToggle }) => {
         )}
 
         {/* Task Created Indicator */}
-        {taskData?.subthreadId && isCompleted && (
+        {taskData?.subthreadId && (
           <>
             <Icon icon="mdi:check-circle" className="text-sm text-green-600 dark:text-green-400 ml-1" />
             <button
