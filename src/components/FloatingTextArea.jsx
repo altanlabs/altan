@@ -13,7 +13,7 @@ import ActivationLifecycleBar from './response/ActivationLifecycleBar.jsx';
 import FileUpload from './room/thread/FileUpload.jsx';
 import MessageMinified from './room/thread/MessageMinified.jsx';
 import { useSnackbar } from './snackbar';
-import TodoWidget from './TodoWidget.jsx';
+// import TodoWidget from './TodoWidget.jsx';
 import useLocales from '../locales/useLocales';
 import { useVoiceConversation } from '../providers/voice/VoiceConversationProvider';
 import { checkObjectsEqual } from '../redux/helpers/memoize';

@@ -74,6 +74,12 @@ export const TOOL_REGISTRY = {
     renderer: 'TerminalCommandRenderer',
   },
 
+  // Task management tools
+  create_task: {
+    icon: 'mdi:checkbox-marked-circle-plus-outline',
+    renderer: 'CreateTaskRenderer',
+  },
+
   // Add more tools here as needed
   // Example:
   // 'search': { icon: 'mdi:magnify', renderer: 'SearchRenderer' },

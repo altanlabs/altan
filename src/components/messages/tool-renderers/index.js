@@ -5,6 +5,7 @@
  */
 
 import CommitRenderer from './CommitRenderer.jsx';
+import CreateTaskRenderer from './CreateTaskRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
 import TerminalCommandRenderer from './TerminalCommandRenderer.jsx';
@@ -13,6 +14,7 @@ import { TOOL_REGISTRY, getToolIcon, getToolRendererName } from './toolRendererC
 // Map of renderer names to actual components
 const RENDERERS = {
   CommitRenderer,
+  CreateTaskRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
   TerminalCommandRenderer,
@@ -33,6 +35,7 @@ export {
   getToolIcon,
   getToolRendererName,
   CommitRenderer,
+  CreateTaskRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
   TerminalCommandRenderer,

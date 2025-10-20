@@ -7,6 +7,7 @@ import React, { memo, useMemo, useState } from 'react';
  */
 const TerminalCommandRenderer = memo(({ part }) => {
   const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [showOutput, setShowOutput] = useState(false);
 
   // Parse arguments to get the command string
   const commandFromArgs = useMemo(() => {
@@ -70,60 +71,76 @@ const TerminalCommandRenderer = memo(({ part }) => {
   }
 
   return (
-    <div className="w-full px-3 py-2">
+    <div className="w-full px-2 py-1">
       {/* Render single terminal card with original command */}
       {commandFromArgs && (aggregatedData || isExecuting) && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 overflow-hidden">
           {/* Command Header */}
-          <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:console" className="text-gray-600 dark:text-gray-400 text-sm flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Terminal Command</span>
+          <div className="flex items-center justify-between px-2 py-1 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-1.5">
+              <Icon icon="mdi:console" className="text-gray-600 dark:text-gray-400 text-xs flex-shrink-0" />
+              <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">Terminal Command</span>
               {isExecuting && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                  <Icon icon="svg-spinners:ring-resize" className="text-sm" />
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  <Icon icon="svg-spinners:ring-resize" className="text-xs" />
                   Executing...
                 </span>
               )}
             </div>
-            {!isExecuting && aggregatedData && !aggregatedData.isSuccess && (
-              <button
-                onClick={() => setShowErrorDetails(!showErrorDetails)}
-                className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-                title="View error details"
-              >
-                <Icon icon="mdi:alert-circle" className="text-sm" />
-                <span className="font-medium">Error</span>
-                <Icon
-                  icon={showErrorDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-                  className="text-sm"
-                />
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {!isExecuting && aggregatedData && (aggregatedData.output || aggregatedData.error) && (
+                <button
+                  onClick={() => setShowOutput(!showOutput)}
+                  className="flex items-center gap-1 text-[10px] text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  title={showOutput ? "Hide output" : "View output"}
+                >
+                  <Icon icon="mdi:text-box-outline" className="text-xs" />
+                  <span className="font-medium">Output</span>
+                  <Icon
+                    icon={showOutput ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                    className="text-xs"
+                  />
+                </button>
+              )}
+              {!isExecuting && aggregatedData && !aggregatedData.isSuccess && (
+                <button
+                  onClick={() => setShowErrorDetails(!showErrorDetails)}
+                  className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                  title="View error details"
+                >
+                  <Icon icon="mdi:alert-circle" className="text-xs" />
+                  <span className="font-medium">Error</span>
+                  <Icon
+                    icon={showErrorDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                    className="text-xs"
+                  />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Command Display */}
-          <div className="px-3 py-2 bg-gray-900 dark:bg-black flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2 flex-1 min-w-0">
-              <span className="text-green-400 dark:text-green-500 text-sm font-mono select-none flex-shrink-0">
+          <div className="px-2 py-1.5 bg-gray-900 dark:bg-black flex items-start justify-between gap-2">
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              <span className="text-green-400 dark:text-green-500 text-xs font-mono select-none flex-shrink-0">
                 $
               </span>
-              <pre className="text-sm font-mono text-gray-100 dark:text-gray-200 whitespace-pre-wrap break-words flex-1">
+              <pre className="text-xs font-mono text-gray-100 dark:text-gray-200 whitespace-pre-wrap break-words flex-1">
                 {commandFromArgs}
               </pre>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {isExecuting ? (
-                <Icon icon="svg-spinners:pulse-rings-2" className="text-blue-500 dark:text-blue-400 text-sm" />
+                <Icon icon="svg-spinners:pulse-rings-2" className="text-blue-500 dark:text-blue-400 text-xs" />
               ) : aggregatedData ? (
                 <>
                   {aggregatedData.isSuccess ? (
-                    <Icon icon="mdi:check-circle" className="text-green-500 dark:text-green-400 text-sm" />
+                    <Icon icon="mdi:check-circle" className="text-green-500 dark:text-green-400 text-xs" />
                   ) : (
-                    <Icon icon="mdi:alert-circle" className="text-red-500 dark:text-red-400 text-sm" />
+                    <Icon icon="mdi:alert-circle" className="text-red-500 dark:text-red-400 text-xs" />
                   )}
                   {aggregatedData.duration > 0 && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
                       {aggregatedData.duration < 1000
                         ? `${aggregatedData.duration}ms`
                         : `${(aggregatedData.duration / 1000).toFixed(2)}s`}
@@ -135,10 +152,10 @@ const TerminalCommandRenderer = memo(({ part }) => {
           </div>
 
           {/* Output Display */}
-          {aggregatedData && (aggregatedData.output || aggregatedData.error) && (
-            <div className="max-h-96 overflow-y-auto">
+          {aggregatedData && (aggregatedData.output || aggregatedData.error) && showOutput && (
+            <div className="max-h-80 overflow-y-auto border-t border-gray-200 dark:border-gray-700">
               {aggregatedData.output && (
-                <div className="px-3 pt-2 pb-1.5 font-mono text-xs">
+                <div className="px-2 pt-1.5 pb-1 font-mono text-[10px]">
                   <pre className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                     {aggregatedData.output}
                   </pre>
@@ -146,7 +163,7 @@ const TerminalCommandRenderer = memo(({ part }) => {
               )}
               {/* Only show error details if expanded */}
               {aggregatedData.error && showErrorDetails && (
-                <div className="px-3 pt-2 pb-1.5 font-mono text-xs bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-800">
+                <div className="px-2 pt-1.5 pb-1 font-mono text-[10px] bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-800">
                   <pre className="text-red-700 dark:text-red-400 whitespace-pre-wrap break-words">
                     {aggregatedData.error}
                   </pre>
@@ -157,7 +174,7 @@ const TerminalCommandRenderer = memo(({ part }) => {
 
           {/* Show placeholder while executing with no output yet */}
           {isExecuting && (!aggregatedData || (!aggregatedData.output && !aggregatedData.error)) && (
-            <div className="px-3 pt-2 pb-1.5 font-mono text-xs">
+            <div className="px-2 pt-1.5 pb-1 font-mono text-[10px]">
               <span className="text-gray-500 dark:text-gray-500 italic">Waiting for output...</span>
             </div>
           )}
@@ -166,45 +183,47 @@ const TerminalCommandRenderer = memo(({ part }) => {
 
       {/* Top-level error display (when no commands were executed) */}
       {hasError && commandExecutions.length === 0 && commandFromArgs && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 overflow-hidden">
           {/* Command Header with Error */}
-          <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:console" className="text-gray-600 dark:text-gray-400 text-sm flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Terminal Command</span>
+          <div className="flex items-center justify-between px-2 py-1 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-1.5">
+              <Icon icon="mdi:console" className="text-gray-600 dark:text-gray-400 text-xs flex-shrink-0" />
+              <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">Terminal Command</span>
             </div>
-            <button
-              onClick={() => setShowErrorDetails(!showErrorDetails)}
-              className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-              title="View error details"
-            >
-              <Icon icon="mdi:alert-circle" className="text-sm" />
-              <span className="font-medium">Error</span>
-              <Icon
-                icon={showErrorDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-                className="text-sm"
-              />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowErrorDetails(!showErrorDetails)}
+                className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                title="View error details"
+              >
+                <Icon icon="mdi:alert-circle" className="text-xs" />
+                <span className="font-medium">Error</span>
+                <Icon
+                  icon={showErrorDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                  className="text-xs"
+                />
+              </button>
+            </div>
           </div>
 
           {/* Command Display */}
-          <div className="px-3 py-2 bg-gray-900 dark:bg-black flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2 flex-1 min-w-0">
-              <span className="text-green-400 dark:text-green-500 text-sm font-mono select-none flex-shrink-0">
+          <div className="px-2 py-1.5 bg-gray-900 dark:bg-black flex items-start justify-between gap-2">
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              <span className="text-green-400 dark:text-green-500 text-xs font-mono select-none flex-shrink-0">
                 $
               </span>
-              <pre className="text-sm font-mono text-gray-100 dark:text-gray-200 whitespace-pre-wrap break-words flex-1">
+              <pre className="text-xs font-mono text-gray-100 dark:text-gray-200 whitespace-pre-wrap break-words flex-1">
                 {commandFromArgs}
               </pre>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Icon icon="mdi:alert-circle" className="text-red-500 dark:text-red-400 text-sm" />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Icon icon="mdi:alert-circle" className="text-red-500 dark:text-red-400 text-xs" />
             </div>
           </div>
 
           {/* Error details (collapsible) */}
           {showErrorDetails && (
-            <div className="px-3 pt-2 pb-1.5 font-mono text-xs bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-800">
+            <div className="px-2 pt-1.5 pb-1 font-mono text-[10px] bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-800">
               <pre className="text-red-700 dark:text-red-400 whitespace-pre-wrap break-words">
                 {typeof part.error === 'string' ? part.error : JSON.stringify(part.error, null, 2)}
               </pre>

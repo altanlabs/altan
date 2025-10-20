@@ -1,8 +1,10 @@
 import { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { selectAccountId } from '../redux/slices/general.js';
-import { selectAuthorizationRequests } from '../redux/slices/room.js';
+import { selectAuthorizationRequests, sendMessage } from '../redux/slices/room.js';
+import { dispatch } from '../redux/store.js';
 import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
 import CreateConnection from './tools/CreateConnection.jsx';
@@ -14,6 +16,9 @@ const AuthorizationRequests = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [secretValues, setSecretValues] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const history = useHistory();
+  const location = useLocation();
+
 
   // Don't render if no account ID (prevents crashes during loading)
   if (!accountId) {
@@ -75,6 +80,33 @@ const AuthorizationRequests = () => {
     }
   };
 
+  const handleGetHelp = (request) => {
+    const threadId = request.callback_id;
+    if (!threadId) return;
+
+    // Navigate to the thread
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('thread_id', threadId);
+    history.push({
+      pathname: location.pathname,
+      search: searchParams.toString(),
+    });
+
+    // Send help message to the thread
+    const helpMessage = 'I need help with this authorization request. Can you give me step-by-step instructions on how to find and provide the required credentials?';
+
+    // Small delay to ensure thread is loaded before sending message
+    setTimeout(() => {
+      dispatch(
+        sendMessage({
+          threadId,
+          content: helpMessage,
+          attachments: [],
+        }),
+      );
+    }, 500);
+  };
+
   if (!authorizations?.length) {
     return null;
   }
@@ -125,12 +157,27 @@ const AuthorizationRequests = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            Secret Authorization Required
-                          </h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                            Please provide the requested credentials to continue
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                Secret Authorization Required
+                              </h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                                Please provide the requested credentials to continue
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleGetHelp(request)}
+                              className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/50 rounded-md flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-blue-200 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-blue-800/60 shadow-sm hover:shadow active:scale-[0.98] whitespace-nowrap"
+                              title="Get step-by-step help with this authorization"
+                            >
+                              <Iconify
+                                icon="mdi:help-circle"
+                                className="w-3.5 h-3.5"
+                              />
+                              Get Help
+                            </button>
+                          </div>
                         </div>
                       </div>
                       {request.meta_data.requested_secrets?.map((secret) => (
@@ -224,6 +271,17 @@ const AuthorizationRequests = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleGetHelp(request)}
+                      className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/50 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-blue-200 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-blue-800/60 shadow-sm hover:shadow active:scale-[0.98]"
+                      title="Get step-by-step help with this authorization"
+                    >
+                      <Iconify
+                        icon="mdi:help-circle"
+                        className="w-3.5 h-3.5"
+                      />
+                      Help
+                    </button>
                     <button
                       onClick={() => handleReject(request)}
                       className="px-3 py-2 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-red-200 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-800/60 shadow-sm hover:shadow active:scale-[0.98]"
