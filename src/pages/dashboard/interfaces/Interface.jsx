@@ -53,6 +53,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const queryParams = new URLSearchParams({
       theme: theme.palette.mode,
       hideSnippet: 'true',
+      commit: latestCommit,
     });
     const baseUrl = `https://${ui.repo_name}.previews.altan.ai/`;
     console.log('baseUrl', baseUrl);
@@ -162,9 +163,19 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   useEffect(() => {
     if (!!baseIframeUrl) {
-      setIframeUrl(baseIframeUrl);
+      const latestCommit = commits?.[0]?.commit_hash;
+      const isNewCommit = latestCommit && latestCommit !== lastCommitRef.current;
+      
+      // If this is a new commit (not initial load), wait 2 seconds for server to deploy
+      const delay = isNewCommit ? 2000 : 0;
+      
+      const timeoutId = setTimeout(() => {
+        setIframeUrl(baseIframeUrl);
+      }, delay);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [baseIframeUrl]);
+  }, [baseIframeUrl, commits]);
 
   useEffect(() => {
     if (!ui?.repo_name || !ws?.isOpen) return;
@@ -199,25 +210,18 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     };
   }, [enqueueSnackbar]);
 
-  // Watch for new commits and update URL automatically
+  // Watch for new commits and set loading state
   useEffect(() => {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
       
-      // Reload iframe with new commit URL
-      if (viewType === 'preview' && iframeRef.current) {
+      // Set loading state when new commit arrives
+      if (viewType === 'preview') {
         setIsLoading(true);
-        // Force iframe reload by setting to blank first, then new URL
-        iframeRef.current.src = 'about:blank';
-        setTimeout(() => {
-          if (iframeRef.current) {
-            iframeRef.current.src = baseIframeUrl;
-          }
-        }, 100);
       }
     }
-  }, [commits, viewType, baseIframeUrl, iframeRef]);
+  }, [commits, viewType]);
 
   if (!ui) return null;
 

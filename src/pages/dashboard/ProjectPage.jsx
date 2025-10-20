@@ -514,7 +514,7 @@ export default function ProjectPage() {
                     <PlansList roomId={altaner?.room_id} />
                   )
                 ) : (
-                  activeComponentId && currentComponent && renderComponent()
+                  !shouldCollapsePreview && activeComponentId && currentComponent && renderComponent()
                 )}
               </Box>
             </Panel>

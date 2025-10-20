@@ -1125,7 +1125,11 @@ const slice = createSlice({
     },
     addAuthorizationRequest: (state, action) => {
       const request = action.payload;
-      state.authorization_requests.push(request);
+      // Check if request already exists to avoid duplicates
+      const existingIndex = state.authorization_requests.findIndex((req) => req.id === request.id);
+      if (existingIndex === -1) {
+        state.authorization_requests.push(request);
+      }
     },
     updateAuthorizationRequest: (state, action) => {
       const { ids, changes } = action.payload;
@@ -1143,7 +1147,14 @@ const slice = createSlice({
       }
     },
     setAuthorizationRequests: (state, action) => {
-      state.authorization_requests = action.payload;
+      // Deduplicate by ID before setting
+      const uniqueRequests = action.payload.reduce((acc, request) => {
+        if (!acc.find((r) => r.id === request.id)) {
+          acc.push(request);
+        }
+        return acc;
+      }, []);
+      state.authorization_requests = uniqueRequests;
     },
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;

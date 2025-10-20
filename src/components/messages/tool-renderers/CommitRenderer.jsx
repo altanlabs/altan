@@ -138,7 +138,7 @@ const CommitRenderer = memo(({ part, onToggle }) => {
               {isCommitting && (
                 <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                   <Icon icon="svg-spinners:ring-resize" className="text-sm" />
-                  Committing...
+                  Building...
                 </span>
               )}
             </div>
