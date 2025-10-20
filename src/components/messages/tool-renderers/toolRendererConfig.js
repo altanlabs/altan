@@ -46,6 +46,20 @@ export const TOOL_REGISTRY = {
     renderer: 'FileEditorRenderer',
   },
 
+  // Git/Commit tools
+  commit: {
+    icon: 'mdi:source-commit',
+    renderer: 'CommitRenderer',
+  },
+  commit_changes: {
+    icon: 'mdi:source-commit',
+    renderer: 'CommitRenderer',
+  },
+  git_commit: {
+    icon: 'mdi:source-commit',
+    renderer: 'CommitRenderer',
+  },
+
   // Add more tools here as needed
   // Example:
   // 'search': { icon: 'mdi:magnify', renderer: 'SearchRenderer' },

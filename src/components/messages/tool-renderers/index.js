@@ -4,12 +4,14 @@
  * Exports all custom tool renderers and provides utilities for retrieving them.
  */
 
+import CommitRenderer from './CommitRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
 import { TOOL_REGISTRY, getToolIcon, getToolRendererName } from './toolRendererConfig.js';
 
 // Map of renderer names to actual components
 const RENDERERS = {
+  CommitRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
 };
@@ -28,6 +30,7 @@ export {
   TOOL_REGISTRY,
   getToolIcon,
   getToolRendererName,
+  CommitRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
 };
