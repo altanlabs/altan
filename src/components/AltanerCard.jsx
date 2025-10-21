@@ -10,7 +10,7 @@ import FormDialog from './FormDialog';
 import Iconify from './iconify/Iconify';
 import IconRenderer from './icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../redux/slices/altaners';
-import { optimai } from '../utils/axios';
+import { optimai_pods } from '../utils/axios';
 import { fToNow } from '../utils/formatTime';
 
 const AltanerCard = memo(
@@ -33,7 +33,7 @@ const AltanerCard = memo(
       const fetchCoverUrl = async () => {
         if (interfaceComponent?.params?.id) {
           try {
-            const response = await optimai.get(`/interfaces/${interfaceComponent.params.id}/preview`);
+            const response = await optimai_pods.get(`/interfaces/${interfaceComponent.params.id}/preview`);
             setCoverUrl(response.data.url);
           } catch (error) {
             console.error('Failed to fetch interface cover URL:', error);

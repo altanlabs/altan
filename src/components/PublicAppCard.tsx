@@ -1,7 +1,7 @@
 import { m } from 'framer-motion';
 import { memo, type ReactElement, useCallback, useState, useEffect } from 'react';
 
-import { optimai } from '@utils/axios';
+import { optimai_pods } from '@utils/axios';
 import { fToNow } from '@utils/formatTime';
 
 // Declare global variables for TypeScript
@@ -47,7 +47,7 @@ function PublicAppCard({
     const fetchPreview = async (): Promise<void> => {
       if (interfaceComponent?.params?.id) {
         try {
-          const response = await optimai.get<PreviewResponse>(
+          const response = await optimai_pods.get<PreviewResponse>(
             `/interfaces/${interfaceComponent.params.id}/preview`,
           );
           setPreviewUrl(response.data.url === 'None' ? null : response.data.url);
