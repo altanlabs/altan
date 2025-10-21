@@ -1,23 +1,26 @@
-import { Icon } from '@iconify/react';
-import React, { memo, useMemo, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { Tooltip } from '@mui/material';
+import React, { memo, useMemo, useState, useCallback } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
 
-import { switchToThread } from '../../../redux/slices/room';
-import { makeSelectToolPartHeader, makeSelectToolPartExecution } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import {
+  makeSelectToolPartHeader,
+  makeSelectToolPartExecution,
+  switchToThread,
+  makeSelectToolPartsByThreadId,
+} from '../../../redux/slices/room';
+import { selectTasksByThread } from '../../../redux/slices/tasks';
+import { useSelector, useDispatch } from '../../../redux/store.js';
+import Iconify from '../../iconify/Iconify.jsx';
 import IconRenderer from '../../icons/IconRenderer.jsx';
 import { getToolIcon } from '../tool-renderers/index.js';
+import ToolPartCard from '../ToolPartCard.jsx';
 
 // Agent avatar mapping
 const agentAvatars = {
-  Database:
-    'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
   Genesis:
     'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-  Flow: 'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
   Interface:
     'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
   Cloud:
@@ -35,53 +38,134 @@ function extractAndCapitalize(str) {
     .join(' ');
 }
 
+const getTaskIcon = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'completed':
+    case 'done':
+      return 'mdi:check-circle';
+    case 'running':
+      return 'mdi:circle-slice-8';
+    case 'ready':
+      return 'mdi:circle-outline';
+    default:
+      return 'mdi:circle-outline';
+  }
+};
+
+const getTaskIconColor = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'completed':
+    case 'done':
+      return 'text-green-600 dark:text-green-400';
+    case 'ready':
+      return 'text-amber-600 dark:text-amber-400';
+    case 'running':
+      return 'text-blue-600 dark:text-blue-400';
+    case 'to-do':
+    case 'todo':
+    case 'pending':
+      return 'text-gray-500 dark:text-gray-400';
+    default:
+      return 'text-gray-500 dark:text-gray-400';
+  }
+};
+
 /**
  * Custom renderer for create_task tool
- * Displays the created task with agent avatar in a custom header
+ * Fetches and displays the actual task from Redux with expand/collapse
  */
-const CreateTaskRenderer = memo(({ part, isExpanded, onToggle }) => {
+const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: toolOnToggle }) => {
   const dispatch = useDispatch();
+  const [taskExpanded, setTaskExpanded] = useState(true); // Auto-expand by default
 
   const headerSelector = useMemo(() => makeSelectToolPartHeader(), []);
   const executionSelector = useMemo(() => makeSelectToolPartExecution(), []);
+  const toolPartsSelector = useMemo(() => makeSelectToolPartsByThreadId(), []);
 
   const header = useSelector((state) => headerSelector(state, part?.id));
   const execution = useSelector((state) => executionSelector(state, part?.id));
 
+  // Get all tasks from the current thread
+  const tasks = useSelector((state) => selectTasksByThread(part?.thread_id)(state));
+
   const isCompleted = header?.is_done;
-  const isExecuting = !isCompleted && (header?.status === 'running' || header?.status === 'preparing');
+  const isExecuting =
+    !isCompleted && (header?.status === 'running' || header?.status === 'preparing');
 
-  // Parse task data from result
+  // Get task data from tool result (preferred) or from Redux (fallback)
   const taskData = useMemo(() => {
-    if (!part?.result) return null;
+    // First, try to get task from the tool result (this is the source of truth)
+    if (part?.result) {
+      try {
+        const result = typeof part.result === 'string' ? JSON.parse(part.result) : part.result;
+        const data = result.payload?.data || result.data || result;
 
-    try {
-      const result = typeof part.result === 'string' ? JSON.parse(part.result) : part.result;
-
-      // Handle both direct data and payload wrapper
-      const data = result.payload?.data || result.data || result;
-
-      if (!data) return null;
-
-      return {
-        taskName: data.task_name || 'Untitled Task',
-        subthreadId: data.subthread_id,
-        assignedAgentName: data.assigned_agent_name,
-      };
-    } catch (err) {
-      console.error('Failed to parse create_task result:', err);
-      return null;
+        if (data && data.task_name) {
+          // eslint-disable-next-line no-console
+          console.log('CreateTaskRenderer - Got task from result:', data);
+          return {
+            id: data.id,
+            task_name: data.task_name,
+            task_description: data.task_description,
+            status: data.status,
+            assigned_agent_name: data.assigned_agent_name,
+            subthread_id: data.subthread_id,
+            priority: data.priority,
+          };
+        }
+      } catch {
+        // Silently ignore parse errors
+      }
     }
-  }, [part?.result]);
+
+    // Fallback: find task in Redux by name (for backward compatibility)
+    let taskNameFromArgs = null;
+    try {
+      if (part?.arguments) {
+        const args =
+          typeof part.arguments === 'string' ? JSON.parse(part.arguments) : part.arguments;
+        taskNameFromArgs = args.task_name;
+      }
+    } catch {
+      // Silently ignore parse errors
+    }
+
+    if (taskNameFromArgs) {
+      const matchingTask = tasks?.find((t) => t.task_name === taskNameFromArgs && !t.plan_id);
+      if (matchingTask) {
+        // eslint-disable-next-line no-console
+        console.log('CreateTaskRenderer - Got task from Redux fallback:', matchingTask);
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('CreateTaskRenderer - Task not found. Searched for:', taskNameFromArgs);
+      }
+      return matchingTask || null;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('CreateTaskRenderer - No task data available');
+    return null;
+  }, [part?.result, part?.arguments, tasks]);
+
+  // Get tool parts from the task's subthread (where the actual work happens)
+  const toolParts = useSelector((state) =>
+    taskData?.subthread_id ? toolPartsSelector(state, taskData.subthread_id) : [],
+  );
+
+  // Handlers
+  const handleToggleTask = useCallback((e) => {
+    e?.stopPropagation();
+    setTaskExpanded((prev) => !prev);
+  }, []);
 
   const handleOpenSubthread = useCallback(
     (e) => {
-      e.stopPropagation();
-      if (taskData?.subthreadId) {
+      e?.stopPropagation();
+      if (taskData?.subthread_id) {
         dispatch(
           switchToThread({
-            threadId: taskData.subthreadId,
-            threadName: taskData.taskName || 'Task Thread',
+            threadId: taskData.subthread_id,
+            threadName: taskData.task_name || 'Task Thread',
           }),
         );
       }
@@ -123,64 +207,159 @@ const CreateTaskRenderer = memo(({ part, isExpanded, onToggle }) => {
     return displayText;
   }, [duration, displayText]);
 
-  const agentAvatar = taskData?.assignedAgentName ? agentAvatars[taskData.assignedAgentName] : null;
+  const agentAvatar = taskData?.assigned_agent_name
+    ? agentAvatars[taskData.assigned_agent_name]
+    : null;
+  const isTaskRunning = taskData?.status?.toLowerCase() === 'running';
 
   if (!header) {
     return null;
   }
 
-  return (
-    <div className="w-full">
-      {/* Custom Header with Agent Avatar */}
-      <button
-        onClick={onToggle}
-        aria-expanded={isExpanded}
-        className="w-full flex items-center gap-1.5 px-1 py-1.5 text-[12px] text-gray-400 dark:text-gray-300 group"
-        title={header.intent || undefined}
-      >
-        <span className="flex items-center gap-1">
-          <IconRenderer
-            icon={toolIcon}
-            className={cn('text-[11px] flex-shrink-0', !isCompleted && 'animate-pulse')}
-          />
-          {!isCompleted && (
-            <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />
+  // If we don't have the task yet, show simple header
+  if (!taskData) {
+    return (
+      <div className="w-full">
+        <button
+          onClick={toolOnToggle}
+          aria-expanded={toolExpanded}
+          className="w-full flex items-center gap-1.5 px-1 py-1.5 text-[12px] text-gray-400 dark:text-gray-300 group"
+          title={header.intent || undefined}
+        >
+          <span className="flex items-center gap-1">
+            <IconRenderer
+              icon={toolIcon}
+              className={cn('text-[11px] flex-shrink-0', !isCompleted && 'animate-pulse')}
+            />
+            {!isCompleted && (
+              <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />
+            )}
+          </span>
+
+          {!isCompleted ? (
+            <TextShimmer className="inline-block">{headerText}</TextShimmer>
+          ) : (
+            <span className="font-medium">{headerText}</span>
           )}
-        </span>
+        </button>
+      </div>
+    );
+  }
 
-        {!isCompleted && !taskData ? (
-          <TextShimmer className="inline-block">{headerText}</TextShimmer>
-        ) : (
-          <span className="font-medium">{headerText}</span>
-        )}
+  // Render full task card with expand/collapse
+  return (
+    <div className="w-full my-2">
+      {/* Task Card */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 overflow-hidden">
+        {/* Task Header - Clickable to expand/collapse */}
+        <div
+          className="px-4 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 cursor-pointer transition-colors"
+          onClick={handleToggleTask}
+        >
+          <div className="flex items-start gap-3">
+            {/* Expand/Collapse Icon */}
+            <div className="flex-shrink-0 mt-0.5">
+              <Iconify
+                icon={taskExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isTaskRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'
+                }`}
+              />
+            </div>
 
-        {/* Agent Avatar - only show when task is created */}
-        {agentAvatar && taskData && (
-          <img
-            src={agentAvatar}
-            alt={taskData.assignedAgentName}
-            className="w-4 h-4 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm ml-1"
-            title={`Assigned to: ${taskData.assignedAgentName}`}
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        )}
+            <div className="flex-1 min-w-0">
+              {/* Task Name and Agent */}
+              <div className="flex items-center gap-2">
+                {agentAvatar && (
+                  <Tooltip title={`Assigned to: ${taskData.assigned_agent_name}`}>
+                    <img
+                      src={agentAvatar}
+                      alt={taskData.assigned_agent_name}
+                      className="w-5 h-5 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </Tooltip>
+                )}
+                {isTaskRunning ? (
+                  <TextShimmer className="text-sm font-medium text-blue-600 dark:text-blue-400" duration={2}>
+                    {taskData.task_name || 'Untitled Task'}
+                  </TextShimmer>
+                ) : (
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {taskData.task_name || 'Untitled Task'}
+                  </span>
+                )}
+              </div>
 
-        {/* Task Created Indicator */}
-        {taskData?.subthreadId && (
-          <>
-            <Icon icon="mdi:check-circle" className="text-sm text-green-600 dark:text-green-400 ml-1" />
-            <button
-              onClick={handleOpenSubthread}
-              className="ml-auto flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              <Icon icon="mdi:open-in-new" className="text-sm" />
-              Open task
-            </button>
-          </>
+              {/* Task Description - only when collapsed */}
+              {!taskExpanded && taskData.task_description && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  {taskData.task_description}
+                </div>
+              )}
+            </div>
+
+            {/* Open Thread Button */}
+            {taskData.subthread_id && (
+              <div className="flex-shrink-0">
+                <Tooltip title="View task execution details">
+                  <button
+                    onClick={handleOpenSubthread}
+                    className="p-1.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                  >
+                    <Iconify
+                      icon="mdi:open-in-new"
+                      className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                    />
+                  </button>
+                </Tooltip>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expanded Content - Subtasks */}
+        {taskExpanded && (
+          <div className="px-4 pb-3 pl-14 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
+            {/* Task Description */}
+            {taskData.task_description && (
+              <div className="mb-3 text-sm text-gray-700 dark:text-gray-300 pt-3">
+                {taskData.task_description}
+              </div>
+            )}
+
+            {/* Subtasks */}
+            {toolParts.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Iconify
+                    icon="mdi:wrench-outline"
+                    className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                  />
+                  <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                    Subtasks ({toolParts.length})
+                  </span>
+                </div>
+                {toolParts.map((toolPart) => (
+                  <ToolPartCard
+                    key={toolPart.id}
+                    partId={toolPart.id}
+                    noClick={false}
+                  />
+                ))}
+              </div>
+            )}
+
+            {toolParts.length === 0 && isTaskRunning && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 italic mt-3">
+                Waiting for subtasks...
+              </div>
+            )}
+          </div>
         )}
-      </button>
+      </div>
     </div>
   );
 });
@@ -188,4 +367,3 @@ const CreateTaskRenderer = memo(({ part, isExpanded, onToggle }) => {
 CreateTaskRenderer.displayName = 'CreateTaskRenderer';
 
 export default CreateTaskRenderer;
-
