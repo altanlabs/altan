@@ -167,7 +167,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
       const isNewCommit = latestCommit && latestCommit !== lastCommitRef.current;
       
       // If this is a new commit (not initial load), wait 2 seconds for server to deploy
-      const delay = isNewCommit ? 2000 : 0;
+      const delay = isNewCommit ? 5000 : 0;
       
       const timeoutId = setTimeout(() => {
         setIframeUrl(baseIframeUrl);

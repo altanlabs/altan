@@ -305,15 +305,7 @@ const AGENT_TEMPLATE_SCHEMA = {
       type: 'string',
       title: 'Category',
       description: 'The category for this agent template.',
-      enum: [
-        'official',
-        'personal',
-        'sales',
-        'marketing',
-        'finance',
-        'operations',
-        'support',
-      ],
+      enum: ['official', 'personal', 'sales', 'marketing', 'finance', 'operations', 'support'],
       'x-enum-labels': [
         'Official',
         'Personal',
@@ -502,8 +494,6 @@ const TemplateManager = ({
     [dispatchWithFeedback, mode, template?.id, branches, resetVersionForm, selectedBranch],
   );
 
-  console.log('template', template);
-
   if (!template) {
     return (
       <Box
@@ -585,7 +575,9 @@ const TemplateManager = ({
       {activeTab === 'general' && (
         <FormProvider {...templateMethods}>
           <Stack spacing={2}>
-            {Object.entries((mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA).properties).map(([key, fieldSchema]) => {
+            {Object.entries(
+              (mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA).properties,
+            ).map(([key, fieldSchema]) => {
               const schema = mode === 'agent' ? AGENT_TEMPLATE_SCHEMA : TEMPLATE_SCHEMA;
               const required = schema.required.includes(key);
               return (
