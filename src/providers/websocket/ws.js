@@ -309,6 +309,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'AltanerComponentUpdate':
+      console.log('AltanerComponentUpdate', data);
       dispatch(
         patchAltanerComponent({
           altaner_id: data.altaner_id,

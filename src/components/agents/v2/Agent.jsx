@@ -2,9 +2,6 @@ import { Room } from '@altanlabs/sdk';
 import {
   Box,
   Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Tooltip,
   Typography,
@@ -47,6 +44,7 @@ import ShareAgentDialog from '../../members/ShareAgentDialog';
 import TemplateDialog from '../../templates/TemplateDialog';
 import { UploadAvatar } from '../../upload';
 // local components
+import AgentInfoDialog from './components/AgentInfoDialog';
 import AvatarSelectionModal from './components/AvatarSelectionModal';
 import AgentTab from './tabs/AgentTab';
 import ConversationsTab from './tabs/ConversationsTab';
@@ -88,6 +86,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const initialTab = searchParams.get('tab') || 'agent';
 
   const [agentData, setAgentData] = useState(null);
+  console.log('agentData', agentData);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
@@ -849,105 +848,13 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       />
 
       {/* Agent Information Dialog */}
-      <Dialog
+      <AgentInfoDialog
         open={infoDialogOpen}
         onClose={() => setInfoDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6">Agent Information</Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pb: 4 }}>
-            <Box>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Description
-              </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={agentData?.description || ''}
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-                placeholder="Agent description"
-                variant="outlined"
-                size="small"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: theme.palette.primary.main,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: theme.palette.primary.main,
-                    },
-                  },
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Agent ID
-              </Typography>
-              <TextField
-                fullWidth
-                value={agentData?.id || ''}
-                variant="outlined"
-                size="small"
-                InputProps={{
-                  readOnly: true,
-                  endAdornment: (
-                    <IconButton
-                      onClick={() => handleCopyToClipboard(agentData?.id, 'Agent ID')}
-                      size="small"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <Iconify icon="eva:copy-outline" />
-                    </IconButton>
-                  ),
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                ElevenLabs Agent ID
-              </Typography>
-              <TextField
-                fullWidth
-                value={agentData?.elevenlabs_id || 'Not configured'}
-                variant="outlined"
-                size="small"
-                InputProps={{
-                  readOnly: true,
-                  endAdornment: agentData?.elevenlabs_id ? (
-                    <IconButton
-                      onClick={() =>
-                        handleCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
-                      }
-                      size="small"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <Iconify icon="eva:copy-outline" />
-                    </IconButton>
-                  ) : null,
-                }}
-              />
-            </Box>
-          </Box>
-        </DialogContent>
-      </Dialog>
+        agentData={agentData}
+        onFieldChange={handleFieldChange}
+        onCopyToClipboard={handleCopyToClipboard}
+      />
 
       {/* Copy Success Snackbar */}
       <Snackbar
