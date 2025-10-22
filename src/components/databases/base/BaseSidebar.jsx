@@ -7,7 +7,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { Database, Users, FolderOpen, Code, LayoutGrid, Radio } from 'lucide-react';
+import { Database, Users, FolderOpen, Code, LayoutGrid, Radio, FileText } from 'lucide-react';
 import React from 'react';
 
 const SIDEBAR_WIDTH = 175;
@@ -19,6 +19,7 @@ const menuItems = [
   { id: 'services', label: 'Services', icon: Code },
   { id: 'storage', label: 'Storage', icon: FolderOpen },
   { id: 'realtime', label: 'Realtime', icon: Radio },
+  { id: 'logs', label: 'Logs', icon: FileText },
 ];
 
 function BaseSidebar({ activeSection, onSectionChange, open }) {

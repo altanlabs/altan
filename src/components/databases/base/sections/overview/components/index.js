@@ -8,3 +8,4 @@ export { ConfirmationPopover } from './ConfirmationPopover';
 export { ComputeConfiguration } from './ComputeConfiguration';
 export { CloudUpgradeDialog } from './CloudUpgradeDialog';
 export { DataApiConfiguration } from './DataApiConfiguration';
+export { MetricsHistoryCharts } from './MetricsHistoryCharts';

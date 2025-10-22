@@ -13,6 +13,7 @@ import {
   ConfirmationPopover,
   CloudUpgradeDialog,
   DataApiConfiguration,
+  MetricsHistoryCharts,
 } from './components';
 import { PRODUCTS } from './constants';
 import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from './hooks';
@@ -200,6 +201,9 @@ function BaseOverview({ baseId, onNavigate }) {
           />
         )}
         <DataApiConfiguration metrics={metrics} />
+
+        {/* Metrics History Charts */}
+        {base && <MetricsHistoryCharts baseId={baseId} metrics={metrics} />}
       </div>
 
       {/* Confirmation Popover */}
