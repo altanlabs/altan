@@ -7,7 +7,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { Database, Users, FolderOpen, Code, LayoutGrid, Radio, FileText } from 'lucide-react';
+import { Database, Users, FolderOpen, Code, LayoutGrid, Radio, FileText, Terminal } from 'lucide-react';
 import React from 'react';
 
 const SIDEBAR_WIDTH = 175;
@@ -15,6 +15,7 @@ const SIDEBAR_WIDTH = 175;
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'tables', label: 'Database', icon: Database },
+  { id: 'sql-editor', label: 'SQL Terminal', icon: Terminal },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'services', label: 'Services', icon: Code },
   { id: 'storage', label: 'Storage', icon: FolderOpen },

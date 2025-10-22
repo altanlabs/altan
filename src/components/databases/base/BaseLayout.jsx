@@ -42,6 +42,8 @@ function BaseLayout({
         return <BaseOverview baseId={baseId} onNavigate={onSectionChange} />;
       case 'tables':
         return renderTablesContent();
+      case 'sql-editor':
+        return <SQLTerminal baseId={baseId} />;
       case 'users':
         return <BaseUsers baseId={baseId} onNavigate={onSectionChange} />;
       case 'auth':

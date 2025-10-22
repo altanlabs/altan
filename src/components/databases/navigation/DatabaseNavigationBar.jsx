@@ -1,4 +1,4 @@
-import { Box, TextField, IconButton, Tooltip, Stack, Chip, useMediaQuery } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Chip, useMediaQuery } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { useRef, useCallback, useEffect, useState } from 'react';
@@ -17,14 +17,10 @@ import {
   selectBaseById,
   setDatabaseRefreshing,
   loadTableRecords,
-  selectSQLTerminalMode,
-  setSQLTerminalMode,
 } from '../../../redux/slices/bases';
 import { dispatch } from '../../../redux/store';
 import Iconify from '../../iconify';
 import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
-import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
-import { optimai_tables_v4 } from '../../../utils/axios.js';
 
 function DatabaseNavigationBar({ disabled = false }) {
   const theme = useTheme();
@@ -33,7 +29,6 @@ function DatabaseNavigationBar({ disabled = false }) {
   const { baseId: routeBaseId, tableId, componentId } = useParams();
 
   // Dialog states
-  const [openCreateRecord, setOpenCreateRecord] = useState(false);
   const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
 
   // Get baseId from route params
@@ -52,7 +47,6 @@ function DatabaseNavigationBar({ disabled = false }) {
   const currentTableRecordCount = useSelector((state) =>
     tableId ? selectTableTotalRecords(state, tableId) : 0,
   );
-  const sqlTerminalMode = useSelector(selectSQLTerminalMode);
 
   // Use internal state for better performance
   const actualRecordCount = currentTableRecordCount;
@@ -114,60 +108,9 @@ function DatabaseNavigationBar({ disabled = false }) {
     }
   }, [baseId, tableId, database]);
 
-  const handleDatabaseAddRecord = useCallback(() => {
-    setOpenCreateRecord(true);
-  }, []);
-
   const handleDatabaseInfo = useCallback(() => {
     setOpenDatabaseInfo(true);
   }, []);
-
-  const handleExportCSV = useCallback(async () => {
-    if (!baseId || !tableId) {
-      return;
-    }
-
-    // Find current table to get its name (convert tableId to number for comparison)
-    const currentTable = database?.tables?.items?.find((t) => t.id === Number(tableId));
-    if (!currentTable) {
-      return;
-    }
-
-    try {
-      // Call the export API endpoint
-      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
-        params: {
-          table_name: currentTable.name,
-        },
-        responseType: 'blob',
-      });
-
-      // Create a download link and trigger download
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-
-      link.setAttribute('href', url);
-      link.setAttribute(
-        'download',
-        `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`,
-      );
-      link.style.visibility = 'hidden';
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up the URL object
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting CSV:', error);
-    }
-  }, [baseId, database, tableId]);
-
-  const handleToggleSQLTerminal = useCallback(() => {
-    dispatch(setSQLTerminalMode(!sqlTerminalMode));
-  }, [sqlTerminalMode]);
 
   // Cleanup debounced function on unmount
   useEffect(() => {
@@ -331,112 +274,6 @@ function DatabaseNavigationBar({ disabled = false }) {
         )}
       </Box>
 
-      {/* Action Buttons - Outside search bar */}
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
-      >
-        {/* Export CSV Button (Current Table) */}
-        <Tooltip title="Export table to CSV">
-          <IconButton
-            size="small"
-            onClick={handleExportCSV}
-            disabled={disabled || !tableId || actualRecordCount === 0}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              color: theme.palette.success.main,
-              backgroundColor: alpha(theme.palette.success.main, 0.12),
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-              transition: theme.transitions.create(['all'], {
-                duration: theme.transitions.duration.shorter,
-              }),
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.success.main, 0.2),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <Iconify
-              icon="mdi:download"
-              sx={{ width: 18, height: 18 }}
-            />
-          </IconButton>
-        </Tooltip>
-
-        {/* SQL Terminal Button */}
-        <Tooltip title={sqlTerminalMode ? "Close SQL Terminal" : "Open SQL Terminal"}>
-          <IconButton
-            size="small"
-            onClick={handleToggleSQLTerminal}
-            disabled={disabled || !baseId}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              color: sqlTerminalMode ? theme.palette.warning.main : theme.palette.text.secondary,
-              backgroundColor: sqlTerminalMode 
-                ? alpha(theme.palette.warning.main, 0.15)
-                : alpha(theme.palette.background.paper, 0.6),
-              backdropFilter: 'blur(10px)',
-              border: sqlTerminalMode
-                ? `1px solid ${alpha(theme.palette.warning.main, 0.3)}`
-                : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              transition: theme.transitions.create(['all'], {
-                duration: theme.transitions.duration.shorter,
-              }),
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.warning.main, 0.2),
-                color: theme.palette.warning.main,
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <Iconify
-              icon="mdi:console"
-              sx={{ width: 18, height: 18 }}
-            />
-          </IconButton>
-        </Tooltip>
-
-        {/* Create Record Button - Primary */}
-        <Tooltip title="Create new record">
-          <IconButton
-            size="small"
-            onClick={handleDatabaseAddRecord}
-            disabled={disabled || !tableId}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              color: theme.palette.mode === 'dark' ? theme.palette.primary.lighter : '#fff',
-              backgroundColor: theme.palette.primary.main,
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
-              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-              transition: theme.transitions.create(['all'], {
-                duration: theme.transitions.duration.shorter,
-              }),
-              '&:hover': {
-                backgroundColor: theme.palette.primary.dark,
-                border: `1px solid ${alpha(theme.palette.primary.dark, 0.5)}`,
-                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <Iconify
-              icon="mdi:plus"
-              sx={{ width: 20, height: 20 }}
-            />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
       {/* Database Dialogs */}
       {baseId && (
         <>
@@ -446,14 +283,6 @@ function DatabaseNavigationBar({ disabled = false }) {
             database={database}
             baseId={baseId}
           />
-          {tableId && (
-            <CreateRecordDrawer
-              baseId={baseId}
-              tableId={tableId}
-              open={openCreateRecord}
-              onClose={() => setOpenCreateRecord(false)}
-            />
-          )}
         </>
       )}
     </Box>

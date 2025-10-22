@@ -12,17 +12,20 @@ import {
   CircularProgress,
   Tooltip,
   Typography,
+  Stack,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import React, { useState, memo, useCallback, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
-import { selectTablesByBaseId, updateTableById } from '../../../redux/slices/bases';
+import { selectTablesByBaseId, updateTableById, selectBaseById, selectTableTotalRecords } from '../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../redux/store';
 import DeleteDialog from '../../dialogs/DeleteDialog.jsx';
 import Iconify from '../../iconify';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
 import EditTableDrawer from '../table/EditTableDrawer.jsx';
+import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
+import { optimai_tables_v4 } from '../../../utils/axios.js';
 
 const StyledTabs = styled(Tabs)(() => ({
   minHeight: '30px',
@@ -318,14 +321,20 @@ function TableTabs({
   isLoading = false,
   baseId = null,
 }) {
+  const theme = useTheme();
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createTableDialogOpen, setCreateTableDialogOpen] = useState(false);
   const [tableDropdownAnchor, setTableDropdownAnchor] = useState(null);
+  const [openCreateRecord, setOpenCreateRecord] = useState(false);
 
   const tables = useSelector((state) => selectTablesByBaseId(state, baseId));
+  const database = useSelector((state) => (baseId ? selectBaseById(state, baseId) : null));
+  const currentTableRecordCount = useSelector((state) =>
+    activeTableId ? selectTableTotalRecords(state, activeTableId) : 0,
+  );
 
   // Validate and sanitize tables prop
   const validTables = useMemo(() => {
@@ -430,6 +439,53 @@ function TableTabs({
     handleCloseTableDropdown();
   };
 
+  const handleExportCSV = useCallback(async () => {
+    if (!baseId || !activeTableId) {
+      return;
+    }
+
+    // Find current table to get its name (convert tableId to number for comparison)
+    const currentTable = database?.tables?.items?.find((t) => t.id === Number(activeTableId));
+    if (!currentTable) {
+      return;
+    }
+
+    try {
+      // Call the export API endpoint
+      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
+        params: {
+          table_name: currentTable.name,
+        },
+        responseType: 'blob',
+      });
+
+      // Create a download link and trigger download
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.setAttribute('href', url);
+      link.setAttribute(
+        'download',
+        `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`,
+      );
+      link.style.visibility = 'hidden';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+    }
+  }, [baseId, database, activeTableId]);
+
+  const handleDatabaseAddRecord = useCallback(() => {
+    setOpenCreateRecord(true);
+  }, []);
+
   // Don't render if we don't have any valid tables and no effective table ID
   if (validTables.length === 0 && !effectiveTableId) {
     return (
@@ -455,7 +511,7 @@ function TableTabs({
   }
 
   return (
-    <div className="relative w-full min-w-0 p-0">
+    <div className="relative w-full min-w-0 p-0 flex items-center gap-2">
       <DragDropContext
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}
@@ -512,6 +568,76 @@ function TableTabs({
           )}
         </Droppable>
       </DragDropContext>
+
+      {/* Action Buttons */}
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        sx={{ pr: 1, flexShrink: 0 }}
+      >
+        {/* Export CSV Button */}
+        <Tooltip title="Export table to CSV">
+          <IconButton
+            size="small"
+            onClick={handleExportCSV}
+            disabled={!activeTableId || currentTableRecordCount === 0}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1.5,
+              color: theme.palette.success.main,
+              backgroundColor: alpha(theme.palette.success.main, 0.12),
+              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.success.main, 0.2),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:download"
+              sx={{ width: 16, height: 16 }}
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* Create Record Button */}
+        <Tooltip title="Create new record">
+          <IconButton
+            size="small"
+            onClick={handleDatabaseAddRecord}
+            disabled={!activeTableId}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1.5,
+              color: theme.palette.mode === 'dark' ? theme.palette.primary.lighter : '#fff',
+              backgroundColor: theme.palette.primary.main,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
+              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+              transition: theme.transitions.create(['all'], {
+                duration: theme.transitions.duration.shorter,
+              }),
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+                border: `1px solid ${alpha(theme.palette.primary.dark, 0.5)}`,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            <Iconify
+              icon="mdi:plus"
+              sx={{ width: 18, height: 18 }}
+            />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
       {/* Context Menu */}
       <Menu
@@ -632,6 +758,15 @@ function TableTabs({
         open={createTableDialogOpen}
         onClose={() => setCreateTableDialogOpen(false)}
       />
+
+      {activeTableId && (
+        <CreateRecordDrawer
+          baseId={baseId}
+          tableId={activeTableId}
+          open={openCreateRecord}
+          onClose={() => setOpenCreateRecord(false)}
+        />
+      )}
     </div>
   );
 }
