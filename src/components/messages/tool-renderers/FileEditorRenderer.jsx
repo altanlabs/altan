@@ -109,7 +109,8 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
         filename = 'untitled';
       }
 
-      const content = args.content || args.code_edit || args.new_string || args.code || args.query || '';
+      const content =
+        args.content || args.code_edit || args.new_string || args.code || args.query || '';
       const oldContent = args.old_string || null;
 
       return {
@@ -125,7 +126,9 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
         const argsStr = part.arguments;
 
         // Try to extract filename from partial JSON
-        const filenameMatch = argsStr.match(/"(?:file_name|file_path|target_file|path)"\s*:\s*"([^"]*)"/);
+        const filenameMatch = argsStr.match(
+          /"(?:file_name|file_path|target_file|path)"\s*:\s*"([^"]*)"/,
+        );
         let filename = filenameMatch?.[1];
         if (!filename && part?.name === 'execute_sql') {
           filename = 'query.sql';
@@ -135,7 +138,9 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
 
         // Try to extract content - look for the content field and capture everything after it
         // We need to handle escaped quotes and newlines in the JSON string
-        const contentFieldMatch = argsStr.match(/"(?:content|code_edit|new_string|code|query)"\s*:\s*"/);
+        const contentFieldMatch = argsStr.match(
+          /"(?:content|code_edit|new_string|code|query)"\s*:\s*"/,
+        );
 
         if (contentFieldMatch) {
           // Find where the content value starts
@@ -328,9 +333,7 @@ const FileEditorRenderer = ({ part, onScroll, isExpanded, onToggle }) => {
         <div
           className={cn(
             'backdrop-blur-sm border-b',
-            isDarkMode
-              ? 'bg-gray-900/40 border-gray-700/20'
-              : 'bg-gray-50/80 border-gray-200/40',
+            isDarkMode ? 'bg-gray-900/40 border-gray-700/20' : 'bg-gray-50/80 border-gray-200/40',
           )}
           onScroll={onScroll}
         >

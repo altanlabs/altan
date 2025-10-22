@@ -154,7 +154,7 @@ function AuthGuard({ children, requireAuth = false }) {
   }, [isAuthenticated, searchParams]);
 
   if (!isInitialized) {
-    return <LoadingScreen />;
+    return null;
   }
 
   // Handle authenticated users with special states
