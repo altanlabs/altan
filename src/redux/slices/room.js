@@ -370,6 +370,7 @@ const initialState = {
   mainThread: null,
   isRealtimeCall: false,
   contextMenu: null,
+  roomContext: null, // Context to append to all messages in this room
 };
 
 const extractMessagesFromThread = (state, thread) => {
@@ -497,6 +498,9 @@ const slice = createSlice({
   reducers: {
     setContextMenu: (state, action) => {
       state.contextMenu = action.payload;
+    },
+    setRoomContext: (state, action) => {
+      state.roomContext = action.payload;
     },
     setDrawerOpen: (state, action) => {
       state.drawerOpen = action.payload;
@@ -2163,6 +2167,7 @@ export const {
   clearMessageError,
   addMessageReaction,
   addThread,
+  setRoomContext,
   removeThread,
   setThreadMain,
   setThreadDrawer,
@@ -2248,6 +2253,8 @@ export const selectMe = (state) => selectRoomState(state).me;
 export const selectRealtime = (state) => selectRoomState(state)?.isRealtimeCall;
 
 export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
+
+export const selectRoomContext = (state) => selectRoomState(state).roomContext;
 
 export const selectMembers = (state) => selectRoomState(state).members;
 

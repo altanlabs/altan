@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import { memo, useCallback, useEffect, useState, useRef } from 'react';
+import { memo, useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory, useParams } from 'react-router-dom';
@@ -51,6 +51,33 @@ import VoiceTab from './tabs/VoiceTab';
 import WidgetTab from './tabs/WidgetTab';
 
 const versionsSelector = (template) => template?.versions;
+
+// Stable memoized component for test agent panel - prevents iframe reload on parent re-renders
+const TestAgentIframe = memo(({ dmRoomId }) => {
+  if (!dmRoomId) return null;
+  
+  return (
+    <iframe
+      key={`test-${dmRoomId}`}
+      src={`/r/${dmRoomId}`}
+      style={{
+        width: '100%',
+        height: '100%',
+        border: 'none',
+      }}
+      title="Test Agent"
+      allow="microphone; camera; clipboard-write"
+    />
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if dmRoomId changes
+  return prevProps.dmRoomId === nextProps.dmRoomId;
+});
+
+TestAgentIframe.displayName = 'TestAgentIframe';
+TestAgentIframe.propTypes = {
+  dmRoomId: PropTypes.string,
+};
 
 const TABS = [
   { id: 'agent', label: 'Agent', icon: 'eva:settings-2-outline', component: AgentTab },
@@ -300,6 +327,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     }
   };
 
+  const handleCloseTestDrawer = useCallback(() => {
+    setShowTestDrawer(false);
+  }, []);
+
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -325,10 +356,18 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           }}
         >
           <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            {creatorRoomId ? (
+            {creatorRoomId && agentData ? (
               <iframe
                 key={`${creatorRoomId}-${initialMessage ? 'with-message' : 'no-message'}`}
-                src={`/r/${creatorRoomId}${initialMessage ? `?message=${encodeURIComponent(initialMessage)}` : ''}`}
+                src={`/r/${creatorRoomId}${(() => {
+                  const params = new URLSearchParams();
+                  // Add context about the agent being edited
+                  params.set('context', `User is editing agent: ${agentData.name} (ID: ${agentData.id})`);
+                  if (initialMessage) {
+                    params.set('message', encodeURIComponent(initialMessage));
+                  }
+                  return `?${params.toString()}`;
+                })()}`}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -808,74 +847,65 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </PanelResizeHandle>
         )}
 
-        {/* Test Chat Panel - Iframe */}
-        {showTestDrawer && !isMobile && (
+        {/* Test Chat Panel - Iframe - Always mounted to prevent reload */}
+        {!isMobile && (
           <Panel
             ref={chatPanelRef}
             id="test-chat-panel"
             order={2}
-            defaultSize={50}
-            minSize={25}
-            maxSize={60}
+            defaultSize={showTestDrawer ? 50 : 0}
+            minSize={showTestDrawer ? 25 : 0}
+            maxSize={showTestDrawer ? 60 : 0}
             collapsible={false}
             className="overflow-hidden"
           >
-            <Box
-              sx={{
-                height: '100%',
-                position: 'relative',
-                borderLeft: 1,
-                borderColor: theme.palette.divider,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {/* Test drawer header */}
+            <div style={{ height: '100%', display: showTestDrawer ? 'flex' : 'none', flexDirection: 'column' }}>
               <Box
                 sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: 1,
+                  height: '100%',
+                  position: 'relative',
+                  borderLeft: 1,
                   borderColor: theme.palette.divider,
+                  overflow: 'hidden',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  flexDirection: 'column',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify
-                    icon="eva:message-circle-outline"
-                    sx={{ color: 'primary.main' }}
-                  />
-                  <Typography variant="subtitle2">Test Agent</Typography>
+                {/* Test drawer header */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: 1,
+                    borderColor: theme.palette.divider,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Iconify
+                      icon="eva:message-circle-outline"
+                      sx={{ color: 'primary.main' }}
+                    />
+                    <Typography variant="subtitle2">Test Agent</Typography>
+                  </Box>
+                  <Tooltip title="Close test panel">
+                    <IconButton
+                      size="small"
+                      onClick={handleCloseTestDrawer}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <Iconify icon="eva:close-outline" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-                <Tooltip title="Close test panel">
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowTestDrawer(false)}
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    <Iconify icon="eva:close-outline" />
-                  </IconButton>
-                </Tooltip>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <TestAgentIframe dmRoomId={dmRoomId} />
+                </div>
               </Box>
-              <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                {dmRoomId && (
-                  <iframe
-                    src={`/r/${dmRoomId}`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      border: 'none',
-                    }}
-                    title="Test Agent"
-                    allow="microphone; camera; clipboard-write"
-                  />
-                )}
-              </Box>
-            </Box>
+            </div>
           </Panel>
         )}
       </PanelGroup>

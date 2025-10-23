@@ -22,6 +22,8 @@ import {
   selectRoomThreadMain,
   selectMainThread,
   clearRoomState,
+  setRoomContext,
+  selectRoomContext,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
@@ -87,6 +89,9 @@ const DesktopRoom = ({
   // Track if initialMessage has been sent to avoid duplicates
   const initialMessageSentRef = useRef(false);
 
+  // Get room context from Redux store
+  const roomContext = useSelector(selectRoomContext);
+
   // Clear old room state when switching to a new room - MUST happen AFTER WebSocket unsubscribe
   useEffect(() => {
     if (prevRoomIdRef.current !== null && prevRoomIdRef.current !== roomId) {
@@ -109,6 +114,27 @@ const DesktopRoom = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
 
+  // Extract and store context from URL on room initialization
+  useEffect(() => {
+    if (initialized.room && roomId && location.search) {
+      const searchParams = new URLSearchParams(location.search);
+      const context = searchParams.get('context');
+      
+      if (context && !roomContext) {
+        // Store the context in Redux for use in all messages
+        dispatch(setRoomContext(decodeURIComponent(context)));
+        
+        // Clean up the URL by removing the context parameter
+        searchParams.delete('context');
+        const newSearch = searchParams.toString();
+        history.replace({
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : '',
+        });
+      }
+    }
+  }, [initialized.room, roomId, location.search, location.pathname, history, roomContext]);
+
   // Handle message query parameter
   useEffect(() => {
     if (initialized.room && roomId && mainThreadId && location.search) {
@@ -116,12 +142,20 @@ const DesktopRoom = ({
       const message = searchParams.get('message');
 
       if (message) {
+        // Prepare the message content
+        let messageContent = decodeURIComponent(message);
+        
+        // Append context as hidden content if available
+        if (roomContext) {
+          messageContent += `\n<hide>${roomContext}</hide>`;
+        }
+
         // Send the message to the MAIN thread (not a new thread)
         // This keeps things simple for new users
         dispatch(
           sendMessage({
             threadId: mainThreadId,
-            content: decodeURIComponent(message),
+            content: messageContent,
             attachments: [],
           }),
         );
@@ -135,7 +169,7 @@ const DesktopRoom = ({
         });
       }
     }
-  }, [initialized.room, roomId, mainThreadId, location.search, location.pathname, history]);
+  }, [initialized.room, roomId, mainThreadId, location.search, location.pathname, history, roomContext]);
 
   // Handle initialMessage prop (for embedded rooms)
   useEffect(() => {
@@ -143,16 +177,24 @@ const DesktopRoom = ({
       // Mark as sent to avoid duplicates
       initialMessageSentRef.current = true;
       
+      // Prepare the message content
+      let messageContent = initialMessage;
+      
+      // Append context as hidden content if available
+      if (roomContext) {
+        messageContent += `\n<hide>${roomContext}</hide>`;
+      }
+      
       // Send the message to the main thread
       dispatch(
         sendMessage({
           threadId: mainThreadId,
-          content: initialMessage,
+          content: messageContent,
           attachments: [],
         }),
       );
     }
-  }, [initialized.room, roomId, initialMessage, mainThreadId]);
+  }, [initialized.room, roomId, initialMessage, mainThreadId, roomContext]);
 
   // Reset the sent flag when roomId changes
   useEffect(() => {

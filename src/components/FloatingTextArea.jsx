@@ -27,6 +27,7 @@ import {
   sendMessage,
   setThreadRespond,
   selectIsVoiceActive,
+  selectRoomContext,
 } from '../redux/slices/room';
 import { selectTasksByThread } from '../redux/slices/tasks';
 import { dispatch, useSelector } from '../redux/store.js';
@@ -113,6 +114,9 @@ const FloatingTextArea = ({
     .filter((member) => member?.member?.member_type === 'agent')
     .map((member) => getMemberDetails(member));
 
+  // Get room context to append to all messages
+  const roomContext = useSelector(selectRoomContext);
+
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => {
     // Don't show viewer state during loading/switching - only when explicitly a viewer
@@ -141,6 +145,11 @@ const FloatingTextArea = ({
         const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
         finalContent = finalContent + '\n' + modeInstruction;
 
+        // Append room context as hidden content if available
+        if (roomContext) {
+          finalContent += `\n<hide>${roomContext}</hide>`;
+        }
+
         // Create a clean attachments array without `preview`
         const sanitizedAttachments = attachments.map(({ preview, ...rest }) => rest);
 
@@ -162,7 +171,7 @@ const FloatingTextArea = ({
         setAttachments([]);
       }
     },
-    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode],
+    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode, roomContext],
   );
 
   // Removes a single attachment by index
