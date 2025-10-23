@@ -19,7 +19,7 @@ const _socials = [
   {
     name: 'X (Twitter)',
     icon: 'eva:twitter-fill',
-    path: 'https://x.com/altan_ai',
+    path: 'https://x.com/altanlabs',
   },
   {
     name: 'Instagram',

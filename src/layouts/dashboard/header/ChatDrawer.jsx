@@ -124,7 +124,7 @@ const RoomItem = memo(({ room, onSelect, onMenuOpen }) => {
 
 RoomItem.displayName = 'RoomItem';
 
-const ChatDrawer = ({ open, onClose, persistent = false }) => {
+const ChatDrawer = ({ open, onClose, persistent = false, v2Mode = false }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const userRooms = useSelector(selectUserRooms);
@@ -178,12 +178,13 @@ const ChatDrawer = ({ open, onClose, persistent = false }) => {
     : 'No chat rooms found.';
 
   const handleRoomClick = useCallback((room) => {
-    // Navigate to the room and close the drawer only if not persistent
-    history.push(`/room/${room.id}`);
+    // Navigate to the room - use v2 route if in v2 mode
+    const roomPath = v2Mode ? `/v2/rooms/${room.id}` : `/room/${room.id}`;
+    history.push(roomPath);
     if (!persistent) {
       onClose();
     }
-  }, [history, persistent, onClose]);
+  }, [history, persistent, onClose, v2Mode]);
 
   const handleLoadMore = () => {
     dispatch(fetchMoreUserRooms());
@@ -219,9 +220,10 @@ const ChatDrawer = ({ open, onClose, persistent = false }) => {
   };
 
   const handleCreateRoomSuccess = (result) => {
-    // Navigate to the new room and close only if not persistent
+    // Navigate to the new room - use v2 route if in v2 mode
     if (result?.room?.id) {
-      history.push(`/room/${result.room.id}`);
+      const roomPath = v2Mode ? `/v2/rooms/${result.room.id}` : `/room/${result.room.id}`;
+      history.push(roomPath);
       if (!persistent) {
         onClose();
       }
