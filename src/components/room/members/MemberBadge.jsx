@@ -4,6 +4,7 @@ import StatusBadge from './badge/StatusBadge.jsx';
 import useLongPress from '../../../hooks/useLongPress.jsx';
 import { createMemberContextMenu } from '../../../redux/slices/room';
 import { dispatch } from '../../../redux/store.js';
+import AgentOrbAvatar from '../../agents/AgentOrbAvatar.jsx';
 import CustomAvatar from '../../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../../iconify/Iconify.jsx';
 
@@ -51,19 +52,33 @@ const MemberBadge = ({
       onContextMenu={onContextMenu}
       {...longPressParams}
     >
-      <CustomAvatar
-        alt={name}
-        src={src}
-        name={name}
-        sx={{
-          height: badgeSize,
-          width: badgeSize,
-          borderColor: !member?.is_kicked ? borderColor : '#000',
-          borderWidth: 2,
-          borderStyle: 'solid',
-          opacity: member?.is_kicked ? 0.5 : 1,
-        }}
-      />
+      {member?.member?.member_type === 'agent' && !src ? (
+        <AgentOrbAvatar
+          size={badgeSize}
+          agentId={member?.member?.agent_id || member?.id}
+          agentState={null}
+          sx={{
+            borderColor: !member?.is_kicked ? borderColor : '#000',
+            borderWidth: 2,
+            borderStyle: 'solid',
+            opacity: member?.is_kicked ? 0.5 : 1,
+          }}
+        />
+      ) : (
+        <CustomAvatar
+          alt={name}
+          src={src}
+          name={name}
+          sx={{
+            height: badgeSize,
+            width: badgeSize,
+            borderColor: !member?.is_kicked ? borderColor : '#000',
+            borderWidth: 2,
+            borderStyle: 'solid',
+            opacity: member?.is_kicked ? 0.5 : 1,
+          }}
+        />
+      )}
       {
         member?.isUserInCall && (
           <Iconify

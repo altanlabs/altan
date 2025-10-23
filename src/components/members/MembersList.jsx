@@ -18,6 +18,7 @@ import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 import MemberInviteDialog from '../room/drawer/MemberInviteDialog.jsx';
 import { getMemberDetails } from '../room/utils';
+import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const MembersList = ({
   maxHeight = 400,
@@ -212,13 +213,21 @@ const MembersList = ({
                   }}
                   onClick={() => handleMemberClick(member)}
                 >
-                  <CustomAvatar
-                    src={memberDetails.src}
-                    alt={memberDetails.name}
-                    sx={{ width: compact ? 32 : 40, height: compact ? 32 : 40 }}
-                  >
-                    {memberDetails.name?.charAt(0)?.toUpperCase()}
-                  </CustomAvatar>
+                  {member.member?.member_type === 'agent' && !memberDetails.src ? (
+                    <AgentOrbAvatar
+                      size={compact ? 32 : 40}
+                      agentId={member.member?.agent_id}
+                      agentState={null}
+                    />
+                  ) : (
+                    <CustomAvatar
+                      src={memberDetails.src}
+                      alt={memberDetails.name}
+                      sx={{ width: compact ? 32 : 40, height: compact ? 32 : 40 }}
+                    >
+                      {memberDetails.name?.charAt(0)?.toUpperCase()}
+                    </CustomAvatar>
+                  )}
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography

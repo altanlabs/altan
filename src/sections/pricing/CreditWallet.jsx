@@ -9,14 +9,11 @@ import {
   LinearProgress,
   Stack,
   Divider,
-  IconButton,
-  Tooltip,
   Alert,
   useTheme,
   alpha,
 } from '@mui/material';
 import { useState } from 'react';
-import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 
@@ -26,11 +23,11 @@ const BUNDLE_OPTIONS = [
   { amount: 200, euroValue: '€200', bonus: '€30 bonus' },
 ];
 
-export default function CreditWallet({ 
-  euroBalance = 12.50, // current balance in euros
+export default function CreditWallet({
+  euroBalance = 12.5, // current balance in euros
   euroAllowance = 30, // monthly allowance in euros
   burnRate = 0.45, // euros per day
-  plan = 'Solo'
+  plan = 'Solo',
 }) {
   const theme = useTheme();
   const [autoRecharge, setAutoRecharge] = useState(true);
@@ -38,7 +35,7 @@ export default function CreditWallet({
 
   const balancePercentage = (euroBalance / euroAllowance) * 100;
   const daysRemaining = Math.floor(euroBalance / burnRate);
-  
+
   const getBalanceColor = () => {
     if (balancePercentage > 50) return 'success';
     if (balancePercentage > 20) return 'warning';
@@ -57,72 +54,108 @@ export default function CreditWallet({
       <Stack spacing={3}>
         {/* Header */}
         <Box>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Usage Wallet
-          </Typography>
-            <Chip 
-              label={plan} 
-              size="small" 
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ mb: 1 }}
+          >
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 600 }}
+            >
+              Usage Wallet
+            </Typography>
+            <Chip
+              label={plan}
+              size="small"
               variant="outlined"
               sx={{ fontWeight: 600 }}
             />
           </Stack>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.secondary' }}
+          >
             Monitor your usage and manage auto-recharge settings
           </Typography>
         </Box>
 
         {/* Balance Overview */}
         <Box>
-          <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 1 }}>
-            <Typography variant="h3" sx={{ fontWeight: 700 }}>
+          <Stack
+            direction="row"
+            alignItems="baseline"
+            spacing={1}
+            sx={{ mb: 1 }}
+          >
+            <Typography
+              variant="h3"
+              sx={{ fontWeight: 700 }}
+            >
               €{euroBalance.toFixed(2)}
             </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="body1"
+              sx={{ color: 'text.secondary' }}
+            >
               remaining
             </Typography>
           </Stack>
 
-          
           <LinearProgress
             variant="determinate"
             value={balancePercentage}
             color={getBalanceColor()}
-            sx={{ 
-              height: 8, 
+            sx={{
+              height: 8,
               borderRadius: 4,
               backgroundColor: alpha(theme.palette.grey[500], 0.16),
-              mb: 1 
+              mb: 1,
             }}
           />
-          
-          <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            sx={{ mb: 2 }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary' }}
+            >
               €0
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary' }}
+            >
               €{euroAllowance} (monthly allowance)
             </Typography>
           </Stack>
 
-          <Alert 
-            severity={getBalanceColor()} 
+          <Alert
+            severity={getBalanceColor()}
             variant="outlined"
             sx={{ '& .MuiAlert-message': { width: '100%' } }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {getStatusMessage()}
-              </Typography>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="body2">{getStatusMessage()}</Typography>
               <Stack alignItems="flex-end">
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600 }}
+                >
                   ~{daysRemaining} days remaining
                 </Typography>
                 {balancePercentage < 20 && (
-                  <Button 
-                    size="small" 
-                    variant="contained" 
+                  <Button
+                    size="small"
+                    variant="contained"
                     color={getBalanceColor()}
                     sx={{ mt: 1, minWidth: 'auto', px: 2 }}
                   >
@@ -138,25 +171,46 @@ export default function CreditWallet({
 
         {/* Usage Stats */}
         <Box>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
             Usage Statistics
           </Typography>
           <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+            >
               <Typography variant="body2">Daily burn rate</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600 }}
+              >
                 €{burnRate.toFixed(2)}/day
               </Typography>
             </Stack>
-            <Stack direction="row" justifyContent="space-between">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+            >
               <Typography variant="body2">This month's usage</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600 }}
+              >
                 €{(euroAllowance - euroBalance).toFixed(2)}
               </Typography>
             </Stack>
-            <Stack direction="row" justifyContent="space-between">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+            >
               <Typography variant="body2">Projected monthly usage</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600 }}
+              >
                 €{(burnRate * 30).toFixed(2)}
               </Typography>
             </Stack>
@@ -167,10 +221,13 @@ export default function CreditWallet({
 
         {/* Auto-recharge Settings */}
         <Box>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
             Auto-recharge Settings
           </Typography>
-          
+
           <FormControlLabel
             control={
               <Switch
@@ -183,15 +240,23 @@ export default function CreditWallet({
           />
 
           {autoRecharge && (
-                          <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
+            <Alert
+              severity="info"
+              variant="outlined"
+              sx={{ mb: 2 }}
+            >
               <Typography variant="body2">
-                When balance drops below {triggerLevel}% of monthly allowance (€{(euroAllowance * triggerLevel / 100).toFixed(2)}),
-                automatically top up to the full €{euroAllowance} allowance.
+                When balance drops below {triggerLevel}% of monthly allowance (€
+                {((euroAllowance * triggerLevel) / 100).toFixed(2)}), automatically top up to the
+                full €{euroAllowance} allowance.
               </Typography>
             </Alert>
           )}
 
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction="row"
+            spacing={1}
+          >
             <Button
               variant="outlined"
               size="small"
@@ -223,10 +288,13 @@ export default function CreditWallet({
 
         {/* Manual Top-up */}
         <Box>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
             Manual Top-up Bundles
           </Typography>
-          
+
           <Stack spacing={2}>
             {BUNDLE_OPTIONS.map((bundle) => (
               <Stack
@@ -242,18 +310,27 @@ export default function CreditWallet({
                   '&:hover': {
                     backgroundColor: alpha(theme.palette.primary.main, 0.04),
                     borderColor: theme.palette.primary.main,
-                  }
+                  },
                 }}
               >
                 <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 600 }}
+                  >
                     {bundle.euroValue}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary' }}
+                  >
                     {bundle.bonus && `Includes ${bundle.bonus}`}
                   </Typography>
                 </Box>
-                <Button size="small" variant="outlined">
+                <Button
+                  size="small"
+                  variant="outlined"
+                >
                   Buy Now
                 </Button>
               </Stack>
@@ -263,4 +340,4 @@ export default function CreditWallet({
       </Stack>
     </Card>
   );
-} 
+}

@@ -1,4 +1,3 @@
-import { Room } from '@altanlabs/sdk';
 import {
   Box,
   Button,
@@ -25,12 +24,10 @@ import { useLocation, useHistory, useParams } from 'react-router-dom';
 // hooks
 import { useAuthContext } from '../../../auth/useAuthContext';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-// sdk
-// import { Room } from '../../../lib/agents/components';
-// auth
 // redux
 import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
+import { optimai_room, optimai } from '../../../utils/axios';
 import RoomComponent from '../../room/Room';
 // sections
 import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
@@ -66,6 +63,12 @@ const TABS = [
     icon: 'eva:message-circle-outline',
     component: ConversationsTab,
   },
+  {
+    id: 'creator',
+    label: 'Edit with AI',
+    icon: 'eva:edit-2-outline',
+    component: null, // We'll render this specially
+  },
 ];
 
 function Agent({ agentId, id, onGoBack, altanerComponentId }) {
@@ -81,12 +84,11 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Get initial tab from URL params or default to 'agent'
+  // Get initial tab from URL params or default to 'creator'
   const searchParams = new URLSearchParams(location.search);
-  const initialTab = searchParams.get('tab') || 'agent';
+  const initialTab = searchParams.get('tab') || 'creator';
 
   const [agentData, setAgentData] = useState(null);
-  console.log('agentData', agentData);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
@@ -95,8 +97,12 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [showTestDrawer, setShowTestDrawer] = useState(false);
+  const [showTestDrawer, setShowTestDrawer] = useState(true);
+  const [creatorRoomId, setCreatorRoomId] = useState(null);
+  const [dmRoomId, setDmRoomId] = useState(null);
+  const [initialMessage, setInitialMessage] = useState(null);
   const chatPanelRef = useRef(null);
+  const messageProcessedRef = useRef(false);
 
   // Handle tab change with URL update
   const handleTabChange = useCallback(
@@ -105,7 +111,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
       // Update URL with tab parameter
       const newSearchParams = new URLSearchParams(location.search);
-      if (tabId === 'agent') {
+      if (tabId === 'creator') {
         newSearchParams.delete('tab'); // Remove param for default tab
       } else {
         newSearchParams.set('tab', tabId);
@@ -127,13 +133,67 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   useEffect(() => {
     if (currentAgent) {
       setAgentData(currentAgent);
+
+      // Clear the old creator room ID when agent changes to prevent showing wrong room
+      setCreatorRoomId(null);
+      setDmRoomId(null);
+
+      // Fetch the creator room for AI-assisted editing
+      const fetchCreatorRoom = async () => {
+        try {
+          const creatorResponse = await optimai_room.get(
+            `/external/agent_${currentAgent.id}?account_id=${currentAgent.account_id}&autocreate=true`,
+          );
+          const roomId = creatorResponse.data.room.id;
+          setCreatorRoomId(roomId);
+
+          // Check for message query param (only process once)
+          if (!messageProcessedRef.current) {
+            const searchParams = new URLSearchParams(location.search);
+            const messageParam = searchParams.get('message');
+
+            if (messageParam) {
+              messageProcessedRef.current = true;
+
+              // Store the message to be sent in the creator room
+              setInitialMessage(decodeURIComponent(messageParam));
+
+              // Clear the message param and ensure we're on the creator tab
+              searchParams.delete('message');
+              searchParams.delete('tab'); // Remove tab param to default to 'creator'
+              const newSearch = searchParams.toString();
+              history.replace({
+                pathname: location.pathname,
+                search: newSearch ? `?${newSearch}` : '',
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch creator room:', error);
+        }
+      };
+
+      // Fetch the DM room for testing
+      const fetchDmRoom = async () => {
+        try {
+          const dmResponse = await optimai.get(
+            `/agent/${currentAgent.id}/dm?account_id=${currentAgent.account_id}`,
+          );
+          setDmRoomId(dmResponse.data.id);
+        } catch (error) {
+          console.error('Failed to fetch DM room:', error);
+        }
+      };
+
+      fetchCreatorRoom();
+      fetchDmRoom();
     }
-  }, [currentAgent]);
+  }, [currentAgent, location.search, history]);
 
   // Sync tab state with URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const urlTab = searchParams.get('tab') || 'agent';
+    const urlTab = searchParams.get('tab') || 'creator';
 
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
@@ -234,8 +294,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   };
 
   const handleTestAgentNewTab = () => {
-    const url = `/agent/${agentData?.id}/share`;
-    window.open(url, '_blank');
+    if (dmRoomId) {
+      const url = `/room/${dmRoomId}`;
+      window.open(url, '_blank');
+    }
   };
 
   const handleMenuOpen = (event) => {
@@ -246,8 +308,51 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     setAnchorEl(null);
   };
 
+  console.log('creatorRoomId', creatorRoomId);
+
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
+
+    // Special handling for creator tab
+    if (activeTab === 'creator') {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            {creatorRoomId ? (
+              <iframe
+                key={`${creatorRoomId}-${initialMessage ? 'with-message' : 'no-message'}`}
+                src={`/r/${creatorRoomId}${initialMessage ? `?message=${encodeURIComponent(initialMessage)}` : ''}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+                title="Creator Room"
+                allow="microphone; camera; clipboard-write"
+              />
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                <Typography>Loading creator room...</Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      );
+    }
 
     if (activeTabConfig?.component) {
       const TabComponent = activeTabConfig.component;
@@ -431,7 +536,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     );
   }
 
-  if (isLoading || !agentData) {
+  if (!agentData) {
     return <AltanLogo />;
   }
 
@@ -445,7 +550,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         <Panel
           id="agent-config-panel"
           order={1}
-          defaultSize={showTestDrawer ? 60 : 100}
+          defaultSize={showTestDrawer ? 50 : 100}
           minSize={35}
           className="overflow-hidden flex flex-col"
         >
@@ -526,8 +631,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {/* Test Agent Button - Always visible */}
-
                 {/* Desktop: Show all action buttons */}
                 {!isMobile && (
                   <>
@@ -638,28 +741,33 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   </>
                 )}
 
-                <Tooltip title="Test in new tab">
-                  <IconButton
-                    onClick={handleTestAgentNewTab}
-                    size="small"
-                    sx={{ color: 'text.secondary', mr: 0.5 }}
-                  >
-                    <Iconify icon="eva:external-link-outline" />
-                  </IconButton>
-                </Tooltip>
-                <Button
-                  onClick={handleTestAgent}
-                  variant={showTestDrawer ? 'contained' : 'soft'}
-                  color={showTestDrawer ? 'primary' : 'inherit'}
-                  size={isMobile ? 'small' : 'medium'}
-                  startIcon={<Iconify icon="eva:play-circle-outline" />}
-                  sx={{
-                    minWidth: 'auto',
-                    px: isMobile ? 1 : 2,
-                  }}
-                >
-                  {isMobile ? 'Test' : 'Test Agent'}
-                </Button>
+                {/* Test Agent Button - Only show when drawer is closed */}
+                {!showTestDrawer && (
+                  <>
+                    <Tooltip title="Test in new tab">
+                      <IconButton
+                        onClick={handleTestAgentNewTab}
+                        size="small"
+                        sx={{ color: 'text.secondary', mr: 0.5 }}
+                      >
+                        <Iconify icon="eva:external-link-outline" />
+                      </IconButton>
+                    </Tooltip>
+                    <Button
+                      onClick={handleTestAgent}
+                      variant="soft"
+                      color="inherit"
+                      size={isMobile ? 'small' : 'medium'}
+                      startIcon={<Iconify icon="eva:play-circle-outline" />}
+                      sx={{
+                        minWidth: 'auto',
+                        px: isMobile ? 1 : 2,
+                      }}
+                    >
+                      {isMobile ? 'Test' : 'Test Agent'}
+                    </Button>
+                  </>
+                )}
               </Box>
             </Box>
           </Box>
@@ -674,15 +782,15 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               display: 'flex',
               justifyContent: 'center',
               overflow: 'auto',
-              px: isMobile ? 1 : { xs: 1, sm: 2, md: 4 },
-              py: isMobile ? 0.5 : 1,
+              px: activeTab === 'creator' ? 0 : isMobile ? 1 : { xs: 1, sm: 2, md: 4 },
+              py: activeTab === 'creator' ? 0 : isMobile ? 0.5 : 1,
               minHeight: 0, // Important for proper flex sizing
             }}
           >
             <Box
               sx={{
                 width: '100%',
-                maxWidth: isMobile ? '100%' : '800px',
+                maxWidth: activeTab === 'creator' ? '100%' : isMobile ? '100%' : '800px',
                 overflow: 'auto',
                 minHeight: 0, // Important for proper flex sizing
               }}
@@ -700,123 +808,77 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </PanelResizeHandle>
         )}
 
-        {/* Test Chat Panel - DM Room */}
+        {/* Test Chat Panel - Iframe */}
         {showTestDrawer && !isMobile && (
           <Panel
             ref={chatPanelRef}
             id="test-chat-panel"
             order={2}
-            defaultSize={40}
+            defaultSize={50}
             minSize={25}
             maxSize={60}
             collapsible={false}
             className="overflow-hidden"
           >
-            {currentAgentDmRoomId && (
+            <Box
+              sx={{
+                height: '100%',
+                position: 'relative',
+                borderLeft: 1,
+                borderColor: theme.palette.divider,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Test drawer header */}
               <Box
                 sx={{
-                  height: '100%',
-                  position: 'relative',
-                  borderLeft: 1,
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: 1,
                   borderColor: theme.palette.divider,
-                  overflow: 'hidden',
                   display: 'flex',
-                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
                 }}
               >
-                {/* Test drawer header */}
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: 1,
-                    borderColor: theme.palette.divider,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Iconify
-                      icon="eva:message-circle-outline"
-                      sx={{ color: 'primary.main' }}
-                    />
-                    <Typography variant="subtitle2">Test Agent</Typography>
-                  </Box>
-                  <Tooltip title="Close test panel">
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowTestDrawer(false)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <Iconify icon="eva:close-outline" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                  <RoomComponent
-                    key={currentAgentDmRoomId}
-                    roomId={currentAgentDmRoomId}
-                    header={false}
-                    renderCredits={false}
-                    renderFeedback={false}
-                    settings={false}
-                    tabs={false}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Iconify
+                    icon="eva:message-circle-outline"
+                    sx={{ color: 'primary.main' }}
                   />
+                  <Typography variant="subtitle2">Test Agent</Typography>
                 </Box>
+                <Tooltip title="Close test panel">
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowTestDrawer(false)}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <Iconify icon="eva:close-outline" />
+                  </IconButton>
+                </Tooltip>
               </Box>
-            )}
+              <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                {dmRoomId && (
+                  <iframe
+                    src={`/r/${dmRoomId}`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                    }}
+                    title="Test Agent"
+                    allow="microphone; camera; clipboard-write"
+                  />
+                )}
+              </Box>
+            </Box>
           </Panel>
         )}
       </PanelGroup>
-
-      {/* Widget Preview - Only Visible on Widget Tab */}
-      {activeTab === 'widget' && agentData?.id && agentData?.account_id && (
-        <Room
-          key={`widget-preview-${agentData.id}-${activeTab}-${JSON.stringify(agentData.widget || {})}`}
-          mode="compact"
-          accountId={agentData.account_id}
-          agentId={agentData.id}
-          placeholder={agentData.widget?.placeholder || 'How can I help you?'}
-          guestInfo={{
-            external_id: user?.id?.toString() || 'preview-user',
-            first_name: user?.first_name || 'Preview',
-            last_name: user?.last_name || 'User',
-            email: user?.email || 'preview@example.com',
-          }}
-          // Use actual widget configuration from database
-          tabs={agentData.widget?.tabs ?? true}
-          conversation_history={agentData.widget?.conversation_history ?? true}
-          members={agentData.widget?.members ?? true}
-          settings={agentData.widget?.settings ?? true}
-          theme={agentData.widget?.theme || undefined}
-          title={agentData.widget?.title || undefined}
-          description={agentData.widget?.description || undefined}
-          voice_enabled={agentData.widget?.voice_enabled ?? true}
-          suggestions={agentData.widget?.suggestions || undefined}
-          primary_color={agentData.widget?.primary_color || '#007bff'}
-          background_color={agentData.widget?.background_color || '#ffffff'}
-          background_blur={agentData.widget?.background_blur ?? true}
-          position={agentData.widget?.position || 'bottom-right'}
-          widget_width={agentData.widget?.width || 350}
-          room_width={agentData.widget?.room_width || 450}
-          room_height={agentData.widget?.room_height || 600}
-          border_radius={agentData.widget?.border_radius || 16}
-          config={{
-            debug: false,
-          }}
-          onError={(error) => {
-            console.warn('Widget preview error:', error);
-          }}
-          onAuthSuccess={(guest) => {
-            console.log('🎯 Widget Preview: Auth successful', guest);
-          }}
-          onConversationReady={(room) => {
-            console.log('🎯 Widget Preview: Conversation ready', room);
-          }}
-        />
-      )}
 
       {/* Dialogs */}
       <DeleteDialog

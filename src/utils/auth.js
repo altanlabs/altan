@@ -1,5 +1,5 @@
-import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
 
 /**
@@ -120,10 +120,8 @@ export const clearStoredRefreshToken = () => {
  * otherwise uses web platform endpoint with cookies
  */
 export const refreshToken = async (axiosInstance) => {
-  console.log('🔄 refreshToken called for instance:', axiosInstance?.defaults?.name);
   try {
     const instanceName = axiosInstance.defaults.name;
-    console.log('📍 Instance name:', instanceName);
     const isMobile = isCapacitorPlatform();
 
     if (isMobile) {
@@ -139,7 +137,6 @@ export const refreshToken = async (axiosInstance) => {
         throw new Error('No refresh token available for mobile');
       }
 
-      console.debug('Using mobile token refresh endpoint:', mobileEndpoint);
       const res = await axios.post(mobileEndpoint, {
         refresh_token: storedRefreshToken,
         jid: false,
@@ -156,16 +153,10 @@ export const refreshToken = async (axiosInstance) => {
     } else {
       // Web/platform refresh logic (existing)
       const refreshEndpoint = AUTH_API_ENDPOINTS[instanceName];
-      console.log('🔍 Refresh endpoint lookup:', {
-        instanceName,
-        refreshEndpoint,
-        allEndpoints: Object.keys(AUTH_API_ENDPOINTS),
-      });
       if (!refreshEndpoint) {
         console.error('❌ No refresh endpoint found for instance:', instanceName);
         throw new Error('Invalid Axios instance');
       }
-      console.log('✅ Calling refresh endpoint:', refreshEndpoint);
       const res = await axios.get(refreshEndpoint, { withCredentials: true });
       const { user, token } = res.data;
 

@@ -21,6 +21,7 @@ import {
   switchToThread,
   selectRoomThreadMain,
   selectMainThread,
+  clearRoomState,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
@@ -62,6 +63,7 @@ const DesktopRoom = ({
   suggestions = [],
   renderCredits = false,
   renderFeedback = false,
+  initialMessage = null,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   // const { isOpen, subscribe, unsubscribe } = useWebSocket();
@@ -78,12 +80,29 @@ const DesktopRoom = ({
 
   // Track processed thread_id from URL to avoid loops
   const processedThreadIdRef = useRef(null);
+  
+  // Track previous roomId to detect room switches
+  const prevRoomIdRef = useRef(null);
+  
+  // Track if initialMessage has been sent to avoid duplicates
+  const initialMessageSentRef = useRef(false);
+
+  // Clear old room state when switching to a new room - MUST happen AFTER WebSocket unsubscribe
+  useEffect(() => {
+    if (prevRoomIdRef.current !== null && prevRoomIdRef.current !== roomId) {
+      // RoomId changed - clear the old room's state
+      // This runs AFTER the previous effect's cleanup (which unsubscribes from WebSocket)
+      dispatch(clearRoomState());
+    }
+    prevRoomIdRef.current = roomId;
+  }, [roomId]);
 
   useEffect(() => {
     if (isOpen && roomId) {
       const lastRoomId = roomId;
       subscribe(`room:${roomId}`);
       return () => {
+        // Unsubscribe from old room BEFORE state is cleared
         unsubscribe(`room:${lastRoomId}`);
       };
     }
@@ -92,29 +111,20 @@ const DesktopRoom = ({
 
   // Handle message query parameter
   useEffect(() => {
-    if (initialized.room && roomId && location.search) {
+    if (initialized.room && roomId && mainThreadId && location.search) {
       const searchParams = new URLSearchParams(location.search);
       const message = searchParams.get('message');
 
       if (message) {
-        // Create a new thread and send the message
-        dispatch(createNewThread())
-          .then((threadId) => {
-            if (threadId) {
-              // Send the message to the new thread
-              dispatch(
-                sendMessage({
-                  threadId,
-                  content: decodeURIComponent(message),
-                  attachments: [],
-                }),
-              );
-            }
-          })
-          .catch((error) => {
-            // eslint-disable-next-line no-console
-            console.error('Error creating thread or sending message:', error);
-          });
+        // Send the message to the MAIN thread (not a new thread)
+        // This keeps things simple for new users
+        dispatch(
+          sendMessage({
+            threadId: mainThreadId,
+            content: decodeURIComponent(message),
+            attachments: [],
+          }),
+        );
 
         // Clean up the URL by removing the message parameter
         searchParams.delete('message');
@@ -125,7 +135,29 @@ const DesktopRoom = ({
         });
       }
     }
-  }, [initialized.room, roomId, location.search, location.pathname, history]);
+  }, [initialized.room, roomId, mainThreadId, location.search, location.pathname, history]);
+
+  // Handle initialMessage prop (for embedded rooms)
+  useEffect(() => {
+    if (initialized.room && roomId && initialMessage && mainThreadId && !initialMessageSentRef.current) {
+      // Mark as sent to avoid duplicates
+      initialMessageSentRef.current = true;
+      
+      // Send the message to the main thread
+      dispatch(
+        sendMessage({
+          threadId: mainThreadId,
+          content: initialMessage,
+          attachments: [],
+        }),
+      );
+    }
+  }, [initialized.room, roomId, initialMessage, mainThreadId]);
+
+  // Reset the sent flag when roomId changes
+  useEffect(() => {
+    initialMessageSentRef.current = false;
+  }, [roomId]);
 
   // Handle thread_id query parameter - open thread from URL (once per URL change)
   useEffect(() => {

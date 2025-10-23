@@ -40,39 +40,19 @@ const Room = ({
   voice_enabled = null, // Boolean to override room.policy.voice_enabled
   renderCredits = false,
   renderFeedback = false,
+  initialMessage = null, // Initial message to send when room loads
 }) => {
   const history = useHistory();
-  const { guest, user, authenticated, loginAsGuest } = useAuthContext();
+  const { guest, user } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
-  // Check if this is a guest access by detecting iframe context
-  const isInIframe = window !== window.parent;
-  const isGuestAccess = isInIframe;
 
-  // Auto-trigger guest authentication if in iframe and not authenticated
-  useEffect(() => {
-    if (isGuestAccess && !authenticated.guest && !guest) {
-      // For iframe guest access, we don't need guestId/agentId from URL anymore
-      // The loginAsGuest function will handle requesting auth from parent
-      loginAsGuest(null, null)
-        .then((guestData) => {
-          console.log('🔐 ✅ Guest authentication successful:', guestData);
-        })
-        .catch((error) => {
-          console.error('🔐 ❌ Guest authentication failed:', error);
-        });
-    } else {
-      console.log('🔐 ⏳ Guest authentication not triggered - waiting for conditions');
-    }
-  }, [isGuestAccess, authenticated.guest, guest, loginAsGuest]);
-
-  // Clear room state when switching to a different room
+  // Clean up on unmount only
   useEffect(() => {
     return () => {
-      // Clean up the current room's state when component unmounts or roomId changes
       dispatch(clearRoomState());
     };
-  }, [roomId]);
+  }, []);
 
   const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))
@@ -92,11 +72,7 @@ const Room = ({
         switch (statusCode) {
           case 401:
             console.error('Authentication error:', error);
-            if (isGuestAccess) {
-              // Guest auth failed, redirect to error
-              console.error('Guest authentication failed, redirecting to 404');
-              history.replace('/404');
-            }
+            history.replace('/404');
             break;
           case 404:
             history.replace('/404');
@@ -108,19 +84,11 @@ const Room = ({
             console.error('Error fetching room:', error);
         }
       });
-  }, [guest, history, isGuestAccess, roomId, user, authenticated]);
+  }, [guest, history, roomId, user]);
 
   useEffect(() => {
     if (!!roomId && !initialized) {
-      if (isGuestAccess) {
-        if (authenticated.guest && guest) {
-          handleFetchRoom();
-        } else {
-          console.log('🏠 ⏳ Waiting for guest authentication...');
-          console.log('🏠 ⏳ Has authenticated.guest:', !!authenticated.guest);
-          console.log('🏠 ⏳ Has guest prop:', !!guest);
-        }
-      } else if (!!(user || guest)) {
+      if (!!(user || guest)) {
         handleFetchRoom();
       } else {
         console.log('🏠 ⏳ Waiting for user authentication...');
@@ -133,7 +101,7 @@ const Room = ({
         hasGuest: !!guest,
       });
     }
-  }, [roomId, initialized, handleFetchRoom, isGuestAccess, authenticated.guest, guest, user]);
+  }, [roomId, initialized, handleFetchRoom, guest, user]);
 
   if (!initialized || loading) {
     return null;
@@ -162,6 +130,7 @@ const Room = ({
           suggestions={suggestions}
           renderCredits={renderCredits}
           renderFeedback={renderFeedback}
+          initialMessage={initialMessage}
         />
       </VoiceConversationProvider>
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}

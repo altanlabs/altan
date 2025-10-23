@@ -1,4 +1,4 @@
-import { refreshToken, requestRefreshFromParent } from './auth';
+import { refreshToken } from './auth';
 import { setSessionForAllInstances } from './axios';
 
 const HTTP_STATUS_UNAUTHORIZED = 401;
@@ -23,13 +23,6 @@ const addRequestToQueue = (originalRequest, axiosInstance) => {
       originalRequest,
     });
   });
-};
-
-// Check if this is a guest session (iframe context)
-const isGuestSession = () => {
-  const isInIframe = window !== window.parent;
-  const hasGuestInContext = window.authContext?.authenticated?.guest === true;
-  return isInIframe || hasGuestInContext;
 };
 
 const onRequestFailure = async (error, axiosInstance) => {
@@ -63,41 +56,15 @@ const onRequestFailure = async (error, axiosInstance) => {
     isRefreshing = true;
 
     try {
-      // Check if this is a guest session
-      if (isGuestSession()) {
-        console.log('🔄 Guest session detected, requesting auth refresh from parent');
-
-        try {
-          // For guest sessions, request new auth from parent widget
-          const { accessToken } = await requestRefreshFromParent('guest');
-
-          if (accessToken) {
-            console.log('✅ Received new guest token from parent');
-            // Set session for all axios instances, not just the failing one
-            setSessionForAllInstances(accessToken, originalRequest);
-            processQueue(null);
-            return axiosInstance(originalRequest);
-          } else {
-            console.warn('⚠️ No access token received from parent');
-            throw new Error('No guest token received from parent');
-          }
-        } catch (guestAuthError) {
-          console.error('❌ Guest auth refresh failed:', guestAuthError);
-          // For guest auth failures, don't redirect to login - let the component handle it
-          processQueue(guestAuthError);
-          return Promise.reject(guestAuthError);
-        }
-      } else {
-        // Regular user session - use existing user token refresh logic
-        console.log('🔄 User session detected, refreshing user token');
-        const { accessToken } = await refreshToken(axiosInstance);
-        console.log('✅ Token refreshed successfully, setting sessions and retrying request');
-        // Set session for all axios instances, not just the failing one
-        setSessionForAllInstances(accessToken, originalRequest);
-        processQueue(null);
-        console.log('🔄 Retrying original request:', originalRequest.url);
-        return axiosInstance(originalRequest);
-      }
+      // Use user token refresh logic (works for both user and guest sessions)
+      console.log('🔄 Refreshing token');
+      const { accessToken } = await refreshToken(axiosInstance);
+      console.log('✅ Token refreshed successfully, setting sessions and retrying request');
+      // Set session for all axios instances, not just the failing one
+      setSessionForAllInstances(accessToken, originalRequest);
+      processQueue(null);
+      console.log('🔄 Retrying original request:', originalRequest.url);
+      return axiosInstance(originalRequest);
     } catch (err) {
       console.error('❌ Token refresh failed:', err);
 

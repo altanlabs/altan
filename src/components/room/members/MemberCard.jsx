@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import { capitalize } from 'lodash';
 import { memo, useState } from 'react';
 
+import AgentOrbAvatar from '../../agents/AgentOrbAvatar.jsx';
 import CustomAvatar from '../../custom-avatar/CustomAvatar.jsx';
 
 const CustomTypography = styled(Typography)(({ size, bold = undefined }) => {
@@ -59,19 +60,33 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
   }
 
   const badge = memberBadge || (!!member && (
-    <CustomAvatar
-      alt={name}
-      name={name}
-      src={src}
-      sx={{
-        width: badgeSize,
-        height: badgeSize,
-        borderColor: !member.is_kicked ? 'green' : '#000',
-        borderWidth: 2,
-        borderStyle: 'solid',
-        opacity: member.is_kicked ? 0.5 : 1,
-      }}
-    />
+    type === 'agent' && !src ? (
+      <AgentOrbAvatar
+        size={badgeSize}
+        agentId={member?.member?.agent_id || member?.id}
+        agentState={null}
+        sx={{
+          borderColor: !member.is_kicked ? 'green' : '#000',
+          borderWidth: 2,
+          borderStyle: 'solid',
+          opacity: member.is_kicked ? 0.5 : 1,
+        }}
+      />
+    ) : (
+      <CustomAvatar
+        alt={name}
+        name={name}
+        src={src}
+        sx={{
+          width: badgeSize,
+          height: badgeSize,
+          borderColor: !member.is_kicked ? 'green' : '#000',
+          borderWidth: 2,
+          borderStyle: 'solid',
+          opacity: member.is_kicked ? 0.5 : 1,
+        }}
+      />
+    )
   ));
 
   if (!member) {

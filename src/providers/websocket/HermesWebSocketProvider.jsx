@@ -14,7 +14,6 @@ import { useAuthContext } from '../../auth/useAuthContext';
 import { selectAccountId } from '../../redux/slices/general';
 import { selectRoomAccountId } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
-import { requestRefreshFromParent } from '../../utils/auth';
 import { authorizeUser } from '../../utils/axios';
 
 const HermesWebSocketContext = createContext(null);
@@ -187,14 +186,9 @@ const HermesWebSocketProvider = ({ children }) => {
       // Get the authentication token first
       const initializeWebSocket = async () => {
         try {
-          let accessToken;
-          if (guest) {
-            const result = await requestRefreshFromParent();
-            accessToken = result.accessToken;
-          } else {
-            const result = await authorizeUser();
-            accessToken = result.accessToken;
-          }
+          // Use authorizeUser for both user and guest sessions
+          const result = await authorizeUser();
+          const accessToken = result.accessToken;
 
           if (!accessToken) {
             console.error('❌ WS: No access token available');

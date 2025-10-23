@@ -220,13 +220,6 @@ function ConversationsTab({ agentData }) {
             >
               Overview
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 3 }}
-            >
-              Monitor your agent&apos;s conversation activity and engagement metrics.
-            </Typography>
-
             {/* Stats Cards */}
             <Grid
               container

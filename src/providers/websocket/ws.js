@@ -462,14 +462,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
       break;
     case 'CommitNew':
-      console.log('CommitNew - Full data:', data);
-      console.log('CommitNew - Attributes:', data.data.attributes);
       const commitPayload = {
         id: data.data.attributes.id,
         interface_id: data.data.attributes.interface_id,
         ...data.data.attributes,
       };
-      console.log('CommitNew - Dispatching payload:', commitPayload);
       dispatch(addInterfaceCommit(commitPayload));
       break;
     case 'CommitUpdate':
@@ -484,59 +481,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'CommitDelete':
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
-    case 'RecordsNew':
-      const newTableName = data.table_name || data.data?.table_name;
-      const newBaseId = data.base_id || data.data?.base_id;
-      const newRecords = data.records || data.data?.records;
-
-      if (newTableName && newBaseId && newRecords && Array.isArray(newRecords)) {
-        // Dispatch a thunk to access state and integrate updates
-        dispatch((dispatch, getState) => {
-          const state = getState();
-          const base = state.bases?.bases?.[newBaseId];
-          const table = base?.tables?.items?.find(
-            (t) => t.db_name === newTableName || t.name === newTableName,
-          );
-
-          if (table?.id) {
-            dispatch(
-              integrateRealTimeUpdates({
-                tableId: table.id,
-                additions: newRecords,
-              }),
-            );
-          } else {
-            console.warn('Could not find table ID for:', { newTableName, newBaseId });
-          }
-        });
-      }
-      break;
-    case 'RecordsUpdate':
-      const updateTableName = data.table_name || data.data?.table_name;
-      const updateBaseId = data.base_id || data.data?.base_id;
-      const updateRecords = data.records || data.data?.records;
-
-      if (updateTableName && updateBaseId && updateRecords && Array.isArray(updateRecords)) {
-        // Dispatch a thunk to access state and integrate updates
-        dispatch((dispatch, getState) => {
-          const state = getState();
-          const base = state.bases?.bases?.[updateBaseId];
-          const table = base?.tables?.items?.find(
-            (t) => t.db_name === updateTableName || t.name === updateTableName,
-          );
-
-          if (table?.id) {
-            dispatch(
-              integrateRealTimeUpdates({
-                tableId: table.id,
-                updates: updateRecords,
-              }),
-            );
-          }
-        });
-      }
-      break;
-    case 'RecordsDelete':
       const deleteTableName = data.table_name || data.data?.table_name;
       const deleteBaseId = data.base_id || data.data?.base_id;
       const deleteIds = data.ids || data.data?.ids;

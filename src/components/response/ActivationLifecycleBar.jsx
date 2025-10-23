@@ -3,6 +3,7 @@ import { memo, useMemo, useState } from 'react';
 
 import { selectActivationLifecycles, selectMembers } from '../../redux/slices/room.js';
 import { useSelector } from '../../redux/store.js';
+import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 
 // Status colors - activation phase states
@@ -123,18 +124,31 @@ const ActivationLifecycleBar = ({ threadId, className = '' }) => {
                         ease: 'easeInOut',
                       }}
                     >
-                      <CustomAvatar
-                        src={activation.agent?.avatar}
-                        name={activation.agent?.name || 'Agent'}
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          fontSize: '0.6rem',
-                          border: '2px solid',
-                          borderColor: 'background.paper',
-                          boxShadow: `0 0 0 1px ${statusColor}40`,
-                        }}
-                      />
+                      {!activation.agent?.avatar ? (
+                        <AgentOrbAvatar
+                          size={20}
+                          agentId={activation.agent?.id}
+                          agentState={isProcessing ? 'thinking' : null}
+                          sx={{
+                            border: '2px solid',
+                            borderColor: 'background.paper',
+                            boxShadow: `0 0 0 1px ${statusColor}40`,
+                          }}
+                        />
+                      ) : (
+                        <CustomAvatar
+                          src={activation.agent?.avatar}
+                          name={activation.agent?.name || 'Agent'}
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            fontSize: '0.6rem',
+                            border: '2px solid',
+                            borderColor: 'background.paper',
+                            boxShadow: `0 0 0 1px ${statusColor}40`,
+                          }}
+                        />
+                      )}
                     </m.div>
 
                     <m.div
@@ -181,15 +195,23 @@ const ActivationLifecycleBar = ({ threadId, className = '' }) => {
                     {/* Agent header */}
                     <div className="flex items-center gap-2">
                       <div className="relative">
-                        <CustomAvatar
-                          src={activation.agent?.avatar}
-                          name={activation.agent?.name || 'Agent'}
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            fontSize: '0.7rem',
-                          }}
-                        />
+                        {!activation.agent?.avatar ? (
+                          <AgentOrbAvatar
+                            size={28}
+                            agentId={activation.agent?.id}
+                            agentState={isProcessing ? 'thinking' : null}
+                          />
+                        ) : (
+                          <CustomAvatar
+                            src={activation.agent?.avatar}
+                            name={activation.agent?.name || 'Agent'}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              fontSize: '0.7rem',
+                            }}
+                          />
+                        )}
                         <m.div
                           className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900"
                           style={{ backgroundColor: statusColor }}
