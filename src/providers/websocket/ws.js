@@ -301,10 +301,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteAltaner(data.data.ids[0]));
       break;
     case 'AltanerComponentNew':
+      console.log('AltanerComponentNew', data);
       dispatch(
         addAltanerComponent({
-          altaner_id: data.data.attributes.altaner_id,
-          attributes: data.data.attributes,
+          altaner_id: data.data.altaner_id,
+          attributes: data.data,
         }),
       );
       break;
@@ -312,17 +313,17 @@ export const handleWebSocketEvent = async (data, user_id) => {
       console.log('AltanerComponentUpdate', data);
       dispatch(
         patchAltanerComponent({
-          altaner_id: data.altaner_id,
-          ids: data.data.ids,
-          changes: data.data.changes,
+          altaner_id: data.data.altaner_id,
+          ids: [data.data.id],
+          changes: data.data,
         }),
       );
       break;
     case 'AltanerComponentDelete':
       dispatch(
         deleteAltanerComponent({
-          altaner_id: data.altaner_id,
-          ids: data.data.ids,
+          altaner_id: data.data.altaner_id,
+          ids: [data.data.id],
         }),
       );
       break;
