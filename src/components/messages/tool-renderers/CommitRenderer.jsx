@@ -97,16 +97,19 @@ const CommitRenderer = memo(({ part, onToggle }) => {
     commitData?.hash ? selectIsRestoring(state, commitData.hash) : false,
   );
 
+  // Get current interfaceId from Redux state
+  const currentInterfaceId = useSelector((state) => state.general?.account?.interfaces?.[0]?.id);
+
   // Handle restore action
   const handleRestore = useCallback(() => {
     if (!commitData?.hash) return;
 
-    dispatchWithFeedback(() => dispatch(restoreCommit(commitData.hash)), {
+    dispatchWithFeedback(() => dispatch(restoreCommit(commitData.hash, currentInterfaceId)), {
       successMessage: 'Successfully restored to checkpoint',
       errorMessage: 'Failed to restore checkpoint',
       useSnackbar: true,
     });
-  }, [commitData?.hash, dispatch, dispatchWithFeedback]);
+  }, [commitData?.hash, currentInterfaceId, dispatch, dispatchWithFeedback]);
 
   // Don't render anything if we don't have a commit message yet
   if (!commitMessage && !commitData) {

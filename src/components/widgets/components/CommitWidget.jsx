@@ -15,15 +15,18 @@ const CommitWidget = ({ hash }) => {
   const { data: details, loading } = useSelector((state) => selectCommitDetails(state, hash));
   const restoring = useSelector((state) => selectIsRestoring(state, hash));
 
+  // Get current interfaceId from Redux state
+  const currentInterfaceId = useSelector((state) => state.general?.account?.interfaces?.[0]?.id);
+
   // Auto-fetch details on mount - only when hash changes and not already loaded
   useEffect(() => {
     if (hash) {
-      dispatch(fetchCommitDetails(hash));
+      dispatch(fetchCommitDetails(hash, currentInterfaceId));
     }
-  }, [hash, dispatch]);
+  }, [hash, currentInterfaceId, dispatch]);
 
   const handleRestore = async () => {
-    dispatchWithFeedback(() => dispatch(restoreCommit(hash)), {
+    dispatchWithFeedback(() => dispatch(restoreCommit(hash, currentInterfaceId)), {
       successMessage: 'Successfully restored to commit',
       errorMessage: 'Failed to restore commit',
       useSnackbar: true,
