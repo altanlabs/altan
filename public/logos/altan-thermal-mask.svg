@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Centered and scaled Altan logo for thermal effect -->
+  <g transform="translate(128, 140) scale(4.5)">
+    <path d="M52.001 46.001C46.389 42.9214 36.8383 40.8936 26 40.8936C15.162 40.8936 5.61202 42.9216 0 46.001L26 0L52.001 46.001Z" fill="white"/>
+  </g>
+</svg>
+
