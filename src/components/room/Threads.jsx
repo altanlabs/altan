@@ -21,6 +21,7 @@ const Threads = ({
   suggestions = [],
   renderCredits = false,
   renderFeedback = false,
+  show_mode_selector = false,
 }) => {
   const parentThreadInitialized = useSelector(selectMainThreadInitialized);
   const allThreadsInitialized = useSelector(selectAllThreadsInitialized);
@@ -47,6 +48,7 @@ const Threads = ({
       suggestions={suggestions}
       renderCredits={renderCredits}
       renderFeedback={renderFeedback}
+      show_mode_selector={show_mode_selector}
     />
   );
 };

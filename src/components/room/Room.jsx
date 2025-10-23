@@ -41,6 +41,7 @@ const Room = ({
   renderCredits = false,
   renderFeedback = false,
   initialMessage = null, // Initial message to send when room loads
+  show_mode_selector = false, // Boolean to show/hide the mode selector (auto/instant/plan)
 }) => {
   const history = useHistory();
   const { guest, user } = useAuthContext();
@@ -131,6 +132,7 @@ const Room = ({
           renderCredits={renderCredits}
           renderFeedback={renderFeedback}
           initialMessage={initialMessage}
+          show_mode_selector={show_mode_selector}
         />
       </VoiceConversationProvider>
       {/* {isMobile() ? <MobileRoom /> : <DesktopRoom />} */}

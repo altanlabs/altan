@@ -66,6 +66,7 @@ const DesktopRoom = ({
   renderCredits = false,
   renderFeedback = false,
   initialMessage = null,
+  show_mode_selector = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   // const { isOpen, subscribe, unsubscribe } = useWebSocket();
@@ -116,11 +117,12 @@ const DesktopRoom = ({
 
   // Extract and store context from URL on room initialization
   useEffect(() => {
-    if (initialized.room && roomId && location.search) {
+    if (initialized.room && roomId) {
       const searchParams = new URLSearchParams(location.search);
       const context = searchParams.get('context');
       
       if (context && !roomContext) {
+        console.log('🔧 Setting room context:', decodeURIComponent(context));
         // Store the context in Redux for use in all messages
         dispatch(setRoomContext(decodeURIComponent(context)));
         
@@ -331,6 +333,7 @@ const DesktopRoom = ({
               suggestions={suggestions}
               renderFeedback={renderFeedback}
               renderCredits={renderCredits}
+              show_mode_selector={show_mode_selector}
             />
           ) : (
             <div
@@ -411,6 +414,7 @@ const DesktopRoom = ({
             suggestions={suggestions}
             renderCredits={renderCredits}
             renderFeedback={renderFeedback}
+            show_mode_selector={show_mode_selector}
           />
         </div>
       </Panel>

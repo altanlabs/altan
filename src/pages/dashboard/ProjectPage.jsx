@@ -348,9 +348,9 @@ export default function ProjectPage() {
 
     // Always render mobile as portal with single Room instance
     const mobileContent = (
-      <div 
+      <div
         className="fixed inset-0 w-full h-full"
-        style={{ 
+        style={{
           zIndex: isFullscreenMobile ? 9999 : 1000,
           position: 'fixed',
           width: '100vw',
@@ -383,6 +383,7 @@ export default function ProjectPage() {
             renderFeedback={true}
             settings={false}
             tabs={true}
+            show_mode_selector={true}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
@@ -407,7 +408,8 @@ export default function ProjectPage() {
               isFullscreen={isFullscreenMobile}
               currentItemId={itemId}
               onItemSelect={handleItemSelect}
-            />
+              show_mode_selector={true}
+              />
           </div>
         </div>
       </div>
@@ -478,6 +480,7 @@ export default function ProjectPage() {
                     renderFeedback={true}
                     settings={false}
                     tabs={true}
+                    show_mode_selector={true}
                   />
                 </Box>
               )}

@@ -80,6 +80,7 @@ const FloatingTextArea = ({
   currentItemId = null,
   onItemSelect = null,
   onHeightChange = null,
+  show_mode_selector = false,
 }) => {
   const { altanerId } = useParams();
   const me = useSelector(selectMe);
@@ -136,18 +137,23 @@ const FloatingTextArea = ({
           setSelectedAgent(null);
         }
 
-        // Append mode instruction as hidden directive
-        const modeMapping = {
-          'auto': 'AUTO MODE',
-          'instant': 'INSTANT MODE',
-          'plan': 'PLAN MODE',
-        };
-        const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
-        finalContent = finalContent + '\n' + modeInstruction;
+        // Append mode instruction as hidden directive (only if mode selector is enabled)
+        if (show_mode_selector) {
+          const modeMapping = {
+            'auto': 'AUTO MODE',
+            'instant': 'INSTANT MODE',
+            'plan': 'PLAN MODE',
+          };
+          const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
+          finalContent = finalContent + '\n' + modeInstruction;
+        }
 
         // Append room context as hidden content if available
         if (roomContext) {
+          console.log('🔧 Appending room context to message:', roomContext);
           finalContent += `\n<hide>${roomContext}</hide>`;
+        } else {
+          console.log('⚠️ No room context available');
         }
 
         // Create a clean attachments array without `preview`
@@ -519,6 +525,7 @@ const FloatingTextArea = ({
                   isFullscreen={isFullscreen}
                   currentItemId={currentItemId}
                   onItemSelect={onItemSelect}
+                  show_mode_selector={show_mode_selector}
                 />
               </div>
             )}
