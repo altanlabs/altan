@@ -88,45 +88,47 @@ const isDataFresh = (versionData) => {
   if (!versionData || !versionData.lastFetch) {
     return false;
   }
-  return (Date.now() - versionData.lastFetch) < CACHE_TTL;
+  return Date.now() - versionData.lastFetch < CACHE_TTL;
 };
 
 // Thunk actions
-export const fetchTemplateVersion = (id, options = {}) => async (dispatch, getState) => {
-  const { forceRefresh = false } = options;
-  
-  if (!id) {
-    return Promise.resolve(null);
-  }
+export const fetchTemplateVersion =
+  (id, options = {}) =>
+  async (dispatch, getState) => {
+    const { forceRefresh = false } = options;
 
-  const state = getState();
-  const versionData = state.templateVersions.byId[id];
+    if (!id) {
+      return Promise.resolve(null);
+    }
 
-  // Check if we should skip the fetch
-  if (!forceRefresh && isDataFresh(versionData)) {
-    return Promise.resolve(versionData.data);
-  }
+    const state = getState();
+    const versionData = state.templateVersions.byId[id];
 
-  // Check if already loading
-  if (state.templateVersions.loading[id]) {
-    return Promise.resolve(null);
-  }
+    // Check if we should skip the fetch
+    if (!forceRefresh && isDataFresh(versionData)) {
+      return Promise.resolve(versionData.data);
+    }
 
-  dispatch(startLoading({ id }));
+    // Check if already loading
+    if (state.templateVersions.loading[id]) {
+      return Promise.resolve(null);
+    }
 
-  try {
-    const response = await optimai.get(`/templates/versions/${id}`);
-    const data = response.data.template_version;
-    
-    dispatch(setTemplateVersion({ id, data }));
-    
-    return Promise.resolve(data);
-  } catch (error) {
-    console.error('Error fetching template version:', error);
-    dispatch(setError({ id, error: 'Failed to load template version' }));
-    throw error;
-  }
-};
+    dispatch(startLoading({ id }));
+
+    try {
+      const response = await optimai.get(`/templates/versions/${id}`);
+      const data = response.data.template_version;
+
+      dispatch(setTemplateVersion({ id, data }));
+
+      return Promise.resolve(data);
+    } catch (error) {
+      console.error('Error fetching template version:', error);
+      dispatch(setError({ id, error: 'Failed to load template version' }));
+      throw error;
+    }
+  };
 
 // Selectors
 const selectTemplateVersionsState = (state) => state.templateVersions;
@@ -150,18 +152,18 @@ export const selectTemplateVersionFresh = (id) => (state) => {
 };
 
 // Composite selector for component convenience
-export const selectTemplateVersionState = (id) => createSelector(
-  [
-    selectTemplateVersion(id),
-    selectTemplateVersionLoading(id),
-    selectTemplateVersionError(id),
-    selectTemplateVersionFresh(id),
-  ],
-  (data, loading, error, isFresh) => ({
-    data,
-    loading,
-    error,
-    isFresh,
-  }),
-);
-
+export const selectTemplateVersionState = (id) =>
+  createSelector(
+    [
+      selectTemplateVersion(id),
+      selectTemplateVersionLoading(id),
+      selectTemplateVersionError(id),
+      selectTemplateVersionFresh(id),
+    ],
+    (data, loading, error, isFresh) => ({
+      data,
+      loading,
+      error,
+      isFresh,
+    }),
+  );

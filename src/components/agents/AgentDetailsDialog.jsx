@@ -20,7 +20,7 @@ import { useHistory } from 'react-router-dom';
 import Iconify from '../iconify';
 import InteractiveHoverButton from './InteractiveHoverButton';
 import { selectAccount } from '../../redux/slices/general';
-import { optimai_shop } from '../../utils/axios';
+import { optimai_shop, optimai_agent } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -29,6 +29,7 @@ export default function AgentDetailsDialog({ open, onClose, agentData = null }) 
   const history = useHistory();
   const account = useSelector(selectAccount);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Use agentData directly since we have all the information we need
   const agent = agentData;
@@ -64,6 +65,23 @@ export default function AgentDetailsDialog({ open, onClose, agentData = null }) 
       console.error('Error with template action:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!agent?.id) {
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      await optimai_agent.get(`/${agent.id}/sync-elevenlabs`);
+      // Optionally show a success message
+      console.log('ElevenLabs sync successful');
+    } catch (err) {
+      console.error('Error syncing with ElevenLabs:', err);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -148,6 +166,62 @@ export default function AgentDetailsDialog({ open, onClose, agentData = null }) 
                 {agent.description || agent.meta_data?.description}
               </Typography>
               <Divider sx={{ mb: 3 }} />
+            </>
+          )}
+
+          {/* ElevenLabs ID with Sync Button */}
+          {agent.elevenlabs_id && (
+            <>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  backgroundColor: theme.palette.background.default,
+                  borderRadius: 1,
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      display: 'block',
+                      mb: 0.5,
+                    }}
+                  >
+                    ElevenLabs Agent ID
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontFamily: 'monospace',
+                      color: theme.palette.text.primary,
+                    }}
+                  >
+                    {agent.elevenlabs_id}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={handleSync}
+                  disabled={syncing}
+                  size="small"
+                  sx={{
+                    color: theme.palette.primary.main,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.main + '20',
+                    },
+                  }}
+                >
+                  {syncing ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Iconify icon="mdi:sync" />
+                  )}
+                </IconButton>
+              </Stack>
             </>
           )}
 

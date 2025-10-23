@@ -11,13 +11,16 @@ import {
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import Iconify from '../../../iconify';
+
+import { optimai } from '../../../../utils/axios';
 import { fetchClonedTemplate } from '../../../clone/CloneTemplate';
+import Iconify from '../../../iconify';
 
 function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClipboard }) {
   const theme = useTheme();
   const [clonedTemplate, setClonedTemplate] = useState(null);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Fetch cloned template when dialog opens and agent has a cloned_template_id
   useEffect(() => {
@@ -28,6 +31,7 @@ function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClip
           setClonedTemplate(template);
         })
         .catch((error) => {
+          // eslint-disable-next-line no-console
           console.error('Failed to fetch cloned template:', error);
           setClonedTemplate(null);
         })
@@ -38,6 +42,22 @@ function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClip
       setClonedTemplate(null);
     }
   }, [open, agentData?.cloned_template_id]);
+
+  const handleSync = async () => {
+    if (!agentData?.id) {
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      await optimai.get(`/agent/${agentData.id}/sync-elevenlabs`);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error syncing with ElevenLabs:', err);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <Dialog
@@ -123,15 +143,29 @@ function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClip
               InputProps={{
                 readOnly: true,
                 endAdornment: agentData?.elevenlabs_id ? (
-                  <IconButton
-                    onClick={() =>
-                      onCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')
-                    }
-                    size="small"
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    <Iconify icon="eva:copy-outline" />
-                  </IconButton>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <IconButton
+                      onClick={handleSync}
+                      disabled={syncing}
+                      size="small"
+                      sx={{ color: 'text.secondary' }}
+                      title="Sync with ElevenLabs"
+                    >
+                      {syncing ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <Iconify icon="mdi:sync" />
+                      )}
+                    </IconButton>
+                    <IconButton
+                      onClick={() => onCopyToClipboard(agentData?.elevenlabs_id, 'ElevenLabs ID')}
+                      size="small"
+                      sx={{ color: 'text.secondary' }}
+                      title="Copy to clipboard"
+                    >
+                      <Iconify icon="eva:copy-outline" />
+                    </IconButton>
+                  </Box>
                 ) : null,
               }}
             />
@@ -227,9 +261,7 @@ function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClip
                         {agentData.cloned_template_id}
                       </Typography>
                       <IconButton
-                        onClick={() =>
-                          onCopyToClipboard(agentData.cloned_template_id, 'Template ID')
-                        }
+                        onClick={() => onCopyToClipboard(agentData.cloned_template_id, 'Template ID')}
                         size="small"
                         sx={{ color: 'text.secondary' }}
                       >
@@ -247,17 +279,16 @@ function AgentInfoDialog({ open, onClose, agentData, onFieldChange, onCopyToClip
           )}
         </Box>
       </DialogContent>
-      </Dialog>
-    );
-  }
-  
-  AgentInfoDialog.propTypes = {
-    open: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    agentData: PropTypes.object,
-    onFieldChange: PropTypes.func.isRequired,
-    onCopyToClipboard: PropTypes.func.isRequired,
-  };
-  
-  export default AgentInfoDialog;
+    </Dialog>
+  );
+}
 
+AgentInfoDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  agentData: PropTypes.object,
+  onFieldChange: PropTypes.func.isRequired,
+  onCopyToClipboard: PropTypes.func.isRequired,
+};
+
+export default AgentInfoDialog;
