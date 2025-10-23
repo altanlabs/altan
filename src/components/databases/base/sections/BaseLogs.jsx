@@ -14,8 +14,18 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Snackbar,
+  Skeleton,
 } from '@mui/material';
-import { RefreshCw, Download, Search, AlertCircle, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+import {
+  RefreshCw,
+  Download,
+  Search,
+  AlertCircle,
+  Info,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { setSession } from '../../../../utils/auth';
@@ -40,76 +50,88 @@ function BaseLogs({ baseId }) {
   const [levelFilter, setLevelFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [hasMore, setHasMore] = useState(true);
+  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   const observerTarget = useRef(null);
+  const lastFetchTimeRef = useRef(null);
 
-  const fetchLogs = useCallback(async (append = false) => {
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      // Ensure token is set
-      const authData = localStorage.getItem('oaiauth');
-      if (authData) {
-        try {
-          const { access_token: accessToken } = JSON.parse(authData);
-          if (accessToken) {
-            setSession(accessToken, optimai_cloud);
-          }
-        } catch {
-          // Ignore parse errors
-        }
-      }
-
-      // Always fetch more lines than we currently have
-      // Start with a larger number to get all available logs
-      const linesToFetch = append ? logs.length + 500 : 1000;
-
-      // Build URL based on service filter
-      let url = `/v1/instances/logs/cloud/${baseId}`;
-      if (serviceFilter !== 'all') {
-        url += `/service/${serviceFilter}`;
-      }
-      url += `?tail=${linesToFetch}`;
-
-      const response = await optimai_cloud.get(url);
-      const fetchedLogs = response.data?.lines || [];
-
-      // Sort by timestamp, most recent first
-      const sortedLogs = fetchedLogs.sort((a, b) =>
-        new Date(b.timestamp) - new Date(a.timestamp),
-      );
-
+  const fetchLogs = useCallback(
+    async (append = false) => {
       if (append) {
-        // Check if we got more logs than before
-        if (sortedLogs.length > logs.length) {
-          setLogs(sortedLogs);
-          setHasMore(true);
-        } else {
-          // No more logs available
-          setHasMore(false);
-        }
+        setLoadingMore(true);
       } else {
-        setLogs(sortedLogs);
-        setHasMore(sortedLogs.length >= 1000);
+        setLoading(true);
       }
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          'Failed to load logs',
-      );
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [baseId, logs.length, serviceFilter]);
+      setError(null);
+      try {
+        // Ensure token is set
+        const authData = localStorage.getItem('oaiauth');
+        if (authData) {
+          try {
+            const { access_token: accessToken } = JSON.parse(authData);
+            if (accessToken) {
+              setSession(accessToken, optimai_cloud);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        // Always fetch more lines than we currently have
+        // Start with a larger number to get all available logs
+        const linesToFetch = append ? logs.length + 500 : 1000;
+
+        // Build URL based on service filter
+        let url = `/v1/instances/logs/cloud/${baseId}`;
+        if (serviceFilter !== 'all') {
+          url += `/service/${serviceFilter}`;
+        }
+        url += `?tail=${linesToFetch}`;
+
+        const response = await optimai_cloud.get(url);
+        const fetchedLogs = response.data?.lines || [];
+
+        // Sort by timestamp, most recent first
+        const sortedLogs = fetchedLogs.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+        );
+
+        if (append) {
+          // Check if we got more logs than before
+          if (sortedLogs.length > logs.length) {
+            setLogs(sortedLogs);
+            setHasMore(true);
+          } else {
+            // No more logs available
+            setHasMore(false);
+          }
+        } else {
+          setLogs(sortedLogs);
+          setHasMore(sortedLogs.length >= 1000);
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Failed to load logs');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [baseId, logs.length, serviceFilter],
+  );
 
   useEffect(() => {
     fetchLogs(false);
   }, [baseId, serviceFilter, fetchLogs]);
+
+  // Auto-refresh logs every 10 seconds - silently append new logs
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !loadingMore) {
+        fetchLogs(true);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchLogs, loading, loadingMore]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -148,6 +170,16 @@ function BaseLogs({ baseId }) {
     URL.revokeObjectURL(url);
   };
 
+  const handleCopyLog = async (log) => {
+    const logText = `[${log.timestamp}] ${log.message}`;
+    try {
+      await navigator.clipboard.writeText(logText);
+      setShowCopyFeedback(true);
+    } catch (err) {
+      console.error('Failed to copy log:', err);
+    }
+  };
+
   const getLogLevel = (message) => {
     if (!message) return 'info';
     const msg = message.toLowerCase();
@@ -168,13 +200,33 @@ function BaseLogs({ baseId }) {
   const getLevelIcon = (level) => {
     switch (level) {
       case 'error':
-        return <AlertCircle size={16} className="text-red-500" />;
+        return (
+          <AlertCircle
+            size={16}
+            className="text-red-500"
+          />
+        );
       case 'warning':
-        return <AlertTriangle size={16} className="text-yellow-500" />;
+        return (
+          <AlertTriangle
+            size={16}
+            className="text-yellow-500"
+          />
+        );
       case 'success':
-        return <CheckCircle size={16} className="text-green-500" />;
+        return (
+          <CheckCircle
+            size={16}
+            className="text-green-500"
+          />
+        );
       default:
-        return <Info size={16} className="text-blue-500" />;
+        return (
+          <Info
+            size={16}
+            className="text-blue-500"
+          />
+        );
     }
   };
 
@@ -190,108 +242,231 @@ function BaseLogs({ baseId }) {
 
   const filteredLogs = logs.filter((log) => {
     const message = log.message || '';
-    const matchesSearch = !searchQuery ||
-      message.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === 'all' ||
-      getLogLevel(log.message) === levelFilter;
+    const matchesSearch = !searchQuery || message.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLevel = levelFilter === 'all' || getLogLevel(log.message) === levelFilter;
     return matchesSearch && matchesLevel;
   });
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', p: 3 }}>
-        <Stack spacing={2} alignItems="center">
-          <CircularProgress />
-          <Typography variant="body2" color="text.secondary">
-            Loading logs...
-          </Typography>
-        </Stack>
-      </Box>
-    );
-  }
+  const renderLogsSkeleton = () => (
+    <Box
+      sx={{
+        flex: 1,
+        bgcolor: 'grey.900',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'auto',
+        p: 1.5,
+      }}
+    >
+      {Array.from({ length: 15 }).map((_, index) => (
+        <Box
+          key={index}
+          sx={{
+            display: 'flex',
+            gap: 1,
+            py: 0.25,
+            px: 0.75,
+          }}
+        >
+          <Skeleton
+            variant="text"
+            width={90}
+            height={20}
+            sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+          />
+          <Skeleton
+            variant="text"
+            width={`${60 + Math.random() * 40}%`}
+            height={20}
+            sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+          />
+        </Box>
+      ))}
+    </Box>
+  );
 
   return (
-    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Stack spacing={3} sx={{ height: '100%' }}>
+    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Stack
+        spacing={2}
+        sx={{ height: '100%' }}
+      >
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Logs
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Real-time application logs and system events
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Refresh logs">
-              <IconButton onClick={fetchLogs} disabled={loading}>
-                <RefreshCw size={20} />
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 600 }}
+          >
+            Logs
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={0.5}
+          >
+            <Tooltip title="Refresh">
+              <IconButton
+                size="small"
+                onClick={fetchLogs}
+                disabled={loading}
+              >
+                <RefreshCw size={18} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Download logs">
-              <IconButton onClick={handleDownloadLogs} disabled={logs.length === 0}>
-                <Download size={20} />
+            <Tooltip title="Download">
+              <IconButton
+                size="small"
+                onClick={handleDownloadLogs}
+                disabled={logs.length === 0}
+              >
+                <Download size={18} />
               </IconButton>
             </Tooltip>
           </Stack>
         </Stack>
 
         {error && (
-          <Alert severity="error" onClose={() => setError(null)}>
+          <Alert
+            severity="error"
+            onClose={() => setError(null)}
+            sx={{ py: 0.5 }}
+          >
             {error}
           </Alert>
         )}
 
         {/* Filters */}
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <TextField
-            size="small"
-            placeholder="Search logs..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flex: 1, minWidth: 250 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Service</InputLabel>
-            <Select
-              value={serviceFilter}
-              label="Service"
-              onChange={(e) => setServiceFilter(e.target.value)}
-            >
-              {SERVICES.map((service) => (
-                <MenuItem key={service.value} value={service.value}>
-                  {service.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <ToggleButtonGroup
-            value={levelFilter}
-            exclusive
-            onChange={(e, value) => value && setLevelFilter(value)}
-            size="small"
+        <Box
+          sx={{
+            bgcolor: 'background.paper',
+            borderRadius: 1.5,
+            p: 1.5,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            flexWrap="wrap"
           >
-            <ToggleButton value="all">All</ToggleButton>
-            <ToggleButton value="error">Errors</ToggleButton>
-            <ToggleButton value="warning">Warnings</ToggleButton>
-            <ToggleButton value="success">Success</ToggleButton>
-            <ToggleButton value="info">Info</ToggleButton>
-          </ToggleButtonGroup>
-          <Typography variant="caption" color="text.secondary">
-            {filteredLogs.length} {filteredLogs.length !== logs.length && `of ${logs.length}`} logs
-          </Typography>
-        </Stack>
+            <TextField
+              size="small"
+              placeholder="Search logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                flex: 1,
+                minWidth: 220,
+                '& .MuiOutlinedInput-root': {
+                  height: 32,
+                  bgcolor: 'background.default',
+                  '& fieldset': {
+                    borderColor: 'divider',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  fontSize: '0.875rem',
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={16} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 150,
+                '& .MuiOutlinedInput-root': {
+                  height: 32,
+                  bgcolor: 'background.default',
+                  '& fieldset': {
+                    borderColor: 'divider',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+              }}
+            >
+              <InputLabel sx={{ fontSize: '0.875rem', top: -4 }}>Service</InputLabel>
+              <Select
+                value={serviceFilter}
+                label="Service"
+                onChange={(e) => setServiceFilter(e.target.value)}
+                sx={{ fontSize: '0.875rem' }}
+              >
+                {SERVICES.map((service) => (
+                  <MenuItem
+                    key={service.value}
+                    value={service.value}
+                    sx={{ fontSize: '0.875rem' }}
+                  >
+                    {service.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <ToggleButtonGroup
+              value={levelFilter}
+              exclusive
+              onChange={(e, value) => value && setLevelFilter(value)}
+              size="small"
+              sx={{
+                bgcolor: 'background.default',
+                borderRadius: 1,
+                '& .MuiToggleButtonGroup-grouped': {
+                  margin: 0,
+                  border: 0,
+                  borderRadius: '6px !important',
+                  mx: 0.25,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                },
+                '& .MuiToggleButton-root': {
+                  px: 1.5,
+                  py: 0.5,
+                  fontSize: '0.75rem',
+                  height: 32,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  border: 'none',
+                },
+              }}
+            >
+              <ToggleButton value="all">All</ToggleButton>
+              <ToggleButton value="error">Errors</ToggleButton>
+              <ToggleButton value="warning">Warnings</ToggleButton>
+              <ToggleButton value="success">Success</ToggleButton>
+              <ToggleButton value="info">Info</ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+        </Box>
 
         {/* Logs Console */}
-        {filteredLogs.length === 0 ? (
+        {loading ? (
+          renderLogsSkeleton()
+        ) : filteredLogs.length === 0 ? (
           <Box
             sx={{
               flex: 1,
@@ -304,11 +479,20 @@ function BaseLogs({ baseId }) {
               borderColor: 'divider',
             }}
           >
-            <Stack spacing={2} alignItems="center">
-              <Typography variant="h6" color="grey.500">
+            <Stack
+              spacing={2}
+              alignItems="center"
+            >
+              <Typography
+                variant="h6"
+                color="grey.500"
+              >
                 No logs found
               </Typography>
-              <Typography variant="body2" color="grey.600">
+              <Typography
+                variant="body2"
+                color="grey.600"
+              >
                 {searchQuery || levelFilter !== 'all'
                   ? 'Try adjusting your filters'
                   : 'Logs will appear here when your application generates them'}
@@ -324,9 +508,9 @@ function BaseLogs({ baseId }) {
               border: '1px solid',
               borderColor: 'divider',
               overflow: 'auto',
-              p: 2,
+              p: 1.5,
               fontFamily: 'monospace',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
             }}
           >
             {filteredLogs.map((log, index) => {
@@ -334,26 +518,25 @@ function BaseLogs({ baseId }) {
               return (
                 <Box
                   key={index}
+                  onClick={() => handleCopyLog(log)}
                   sx={{
                     display: 'flex',
-                    gap: 1.5,
-                    py: 0.5,
-                    px: 1,
-                    borderRadius: 1,
+                    gap: 1,
+                    py: 0.25,
+                    px: 0.75,
+                    borderRadius: 0.5,
+                    cursor: 'pointer',
                     '&:hover': {
                       bgcolor: 'rgba(255, 255, 255, 0.05)',
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 16 }}>
-                    {getLevelIcon(level)}
-                  </Box>
                   <Typography
                     component="span"
                     sx={{
                       color: 'grey.500',
-                      fontSize: '0.8rem',
-                      minWidth: 95,
+                      fontSize: '0.75rem',
+                      minWidth: 90,
                       fontFamily: 'monospace',
                     }}
                   >
@@ -362,13 +545,17 @@ function BaseLogs({ baseId }) {
                   <Typography
                     component="span"
                     sx={{
-                      color: level === 'error' ? 'error.light'
-                        : level === 'warning' ? 'warning.light'
-                          : level === 'success' ? 'success.light'
-                            : 'grey.300',
+                      color:
+                        level === 'error'
+                          ? 'error.light'
+                          : level === 'warning'
+                            ? 'warning.light'
+                            : level === 'success'
+                              ? 'success.light'
+                              : 'grey.300',
                       fontFamily: 'monospace',
-                      fontSize: '0.85rem',
-                      lineHeight: 1.6,
+                      fontSize: '0.8rem',
+                      lineHeight: 1.5,
                       wordBreak: 'break-word',
                       flex: 1,
                     }}
@@ -380,17 +567,33 @@ function BaseLogs({ baseId }) {
             })}
 
             {/* Intersection Observer Target */}
-            <Box ref={observerTarget} sx={{ height: 20, display: 'flex', justifyContent: 'center', py: 2 }}>
+            <Box
+              ref={observerTarget}
+              sx={{ height: 16, display: 'flex', justifyContent: 'center', py: 1 }}
+            >
               {loadingMore && (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={16} sx={{ color: 'grey.500' }} />
-                  <Typography variant="caption" color="grey.500">
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                >
+                  <CircularProgress
+                    size={14}
+                    sx={{ color: 'grey.500' }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{ fontSize: '0.7rem', color: 'grey.500' }}
+                  >
                     Loading more logs...
                   </Typography>
                 </Stack>
               )}
               {!hasMore && logs.length > 0 && (
-                <Typography variant="caption" color="grey.600">
+                <Typography
+                  variant="caption"
+                  sx={{ fontSize: '0.7rem', color: 'grey.600' }}
+                >
                   No more logs available
                 </Typography>
               )}
@@ -398,6 +601,14 @@ function BaseLogs({ baseId }) {
           </Box>
         )}
       </Stack>
+
+      <Snackbar
+        open={showCopyFeedback}
+        autoHideDuration={2000}
+        onClose={() => setShowCopyFeedback(false)}
+        message="Log copied to clipboard"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }
