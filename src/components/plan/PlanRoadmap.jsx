@@ -2,6 +2,7 @@ import { memo, useState, useCallback } from 'react';
 
 import PlanProgress from './PlanProgress';
 import { EmptyPlanState } from './PlanStates';
+import { calculateEstimatedTime } from './planUtils';
 import TaskItem from './TaskItem';
 
 const PlanRoadmap = memo(({ tasks, progress, onOpenSubthread }) => {
@@ -24,9 +25,11 @@ const PlanRoadmap = memo(({ tasks, progress, onOpenSubthread }) => {
     });
   }, []);
 
+  const estimatedTime = calculateEstimatedTime(tasks);
+
   return (
     <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border border-gray-200/30 dark:border-gray-700/30 rounded-2xl backdrop-blur-lg overflow-hidden shadow-sm">
-      <PlanProgress progress={progress} />
+      <PlanProgress progress={progress} estimatedTime={estimatedTime} />
 
       {tasks.length > 0 ? (
         <div className="divide-y divide-gray-200/30 dark:divide-gray-700/30">

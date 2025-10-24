@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react';
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { restoreCommit, selectIsRestoring } from '../../../redux/slices/commits.js';
@@ -13,6 +13,7 @@ import ToolPartHeader from '../tool-parts/ToolPartHeader.jsx';
 const CommitRenderer = memo(({ part, onToggle }) => {
   const dispatch = useDispatch();
   const [dispatchWithFeedback] = useFeedbackDispatch();
+  const [showBuildDetails, setShowBuildDetails] = useState(false);
 
   // Parse arguments to get commit message
   const commitMessage = useMemo(() => {
@@ -175,16 +176,65 @@ const CommitRenderer = memo(({ part, onToggle }) => {
           <div className="space-y-1.5">
             {/* Build Status */}
             {commitData?.buildResult && (
-              <div className="flex items-center gap-2">
-                <Icon
-                  icon={commitData.buildResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'}
-                  className={`text-base flex-shrink-0 ${commitData.buildResult.success ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
-                />
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  Build {commitData.buildResult.success ? 'successful' : 'failed'}
-                  {commitData.buildResult.durationMs &&
-                    ` (${(commitData.buildResult.durationMs / 1000).toFixed(2)}s)`}
-                </span>
+              <div>
+                <button
+                  onClick={() => !commitData.buildResult.success && setShowBuildDetails(!showBuildDetails)}
+                  className={`flex items-center gap-2 ${!commitData.buildResult.success ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-opacity w-full text-left`}
+                  disabled={commitData.buildResult.success}
+                >
+                  <Icon
+                    icon={commitData.buildResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'}
+                    className={`text-base flex-shrink-0 ${commitData.buildResult.success ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    Build {commitData.buildResult.success ? 'successful' : 'failed'}
+                    {commitData.buildResult.durationMs &&
+                      ` (${(commitData.buildResult.durationMs / 1000).toFixed(2)}s)`}
+                  </span>
+                  {!commitData.buildResult.success && (
+                    <Icon
+                      icon={showBuildDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                      className="text-base text-gray-500 dark:text-gray-400 ml-auto"
+                    />
+                  )}
+                </button>
+                
+                {/* Build Details - shown when build fails and user clicks */}
+                {!commitData.buildResult.success && showBuildDetails && (
+                  <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <div className="space-y-2">
+                      {/* Error message */}
+                      {commitData.buildResult.error && (
+                        <div>
+                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Error:</p>
+                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto">
+                            {commitData.buildResult.error}
+                          </pre>
+                        </div>
+                      )}
+                      
+                      {/* Build output/logs */}
+                      {commitData.buildResult.output && (
+                        <div>
+                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Build Output:</p>
+                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
+                            {commitData.buildResult.output}
+                          </pre>
+                        </div>
+                      )}
+                      
+                      {/* Show full build result as JSON if no specific error/output fields */}
+                      {!commitData.buildResult.error && !commitData.buildResult.output && (
+                        <div>
+                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Details:</p>
+                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
+                            {JSON.stringify(commitData.buildResult, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

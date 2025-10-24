@@ -512,7 +512,7 @@ export default function ProjectPage() {
               >
                 {isPlansRoute ? (
                   planId ? (
-                    <Plan planId={planId} />
+                    <Plan planId={planId} altanerId={altanerId} />
                   ) : (
                     <PlansList roomId={altaner?.room_id} />
                   )

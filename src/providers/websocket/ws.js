@@ -108,7 +108,7 @@ import {
   addResponseLifecycle,
   completeResponseLifecycle,
 } from '../../redux/slices/room';
-import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
+import { addTask, updateTask, removeTask, setPlanCompleted } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 import { messagePartBatcher } from '../../utils/eventBatcher';
 
@@ -994,6 +994,23 @@ export const handleWebSocketEvent = async (data, user_id) => {
               },
             }),
           );
+
+          // Check if all tasks are completed
+          if (taskEventData.all_tasks_completed) {
+            // eslint-disable-next-line no-console
+            console.log('🎉 All tasks completed! Plan finished:', {
+              mainthread_id: taskEventData.mainthread_id,
+              room_id: taskEventData.room_id,
+            });
+
+            // Dispatch plan completed event
+            dispatch(
+              setPlanCompleted({
+                planId: taskEventData.mainthread_id,
+                threadId: taskEventData.mainthread_id,
+              }),
+            );
+          }
 
           // Send browser notification
           dispatch(

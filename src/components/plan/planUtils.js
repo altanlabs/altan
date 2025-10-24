@@ -104,3 +104,25 @@ export const calculateProgress = (tasks) => {
   return { completed, total, percentage };
 };
 
+// Calculate estimated time for incomplete tasks
+// Each task is estimated at 2.5 minutes
+export const calculateEstimatedTime = (tasks) => {
+  if (!tasks || tasks.length === 0) return null;
+
+  const incompleteTasks = tasks.filter((task) => {
+    const status = task.status?.toLowerCase();
+    return status !== 'completed' && status !== 'done';
+  }).length;
+
+  if (incompleteTasks === 0) return null;
+
+  const totalMinutes = incompleteTasks * 2.5;
+
+  // Format the time nicely
+  if (totalMinutes < 60) {
+    return `~${totalMinutes.toFixed(1)} min`;
+  } else {
+    const hours = totalMinutes / 60;
+    return `~${hours.toFixed(1)} hr`;
+  }
+};
