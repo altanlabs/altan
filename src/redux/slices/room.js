@@ -800,12 +800,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in threadUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in threadUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 
@@ -863,12 +871,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in roomMemberUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in roomMemberUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 
@@ -1164,12 +1180,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in roomUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in roomUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 

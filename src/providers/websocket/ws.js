@@ -557,7 +557,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addGateRoom(data.data.attributes));
       break;
     case 'RoomUpdate':
-      dispatch(roomUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(roomUpdate(normalizedData));
+      } else {
+        console.error('Invalid RoomUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'RoomMemberJoined':
       console.log('RoomMemberJoined', data.data);
@@ -872,7 +885,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'RoomMemberUpdate':
-      dispatch(roomMemberUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(roomMemberUpdate(normalizedData));
+      } else {
+        console.error('Invalid RoomMemberUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'ThreadNew':
       console.log('ThreadNew', data);
@@ -883,7 +909,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addThread(thread));
       break;
     case 'ThreadUpdate':
-      dispatch(threadUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(threadUpdate(normalizedData));
+      } else {
+        console.error('Invalid ThreadUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'ThreadDelete':
       dispatch(removeThread(data.data));

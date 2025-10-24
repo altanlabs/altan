@@ -162,7 +162,7 @@ Returns: { cloud_id: "abc123", ... }
 ```
 Call: get_cloud(cloud_id="abc123")
 Returns: {
-  base_url: "https://abc123.altan.cloud",
+  base_url: "https://abc123.altan.ai",
   SUPABASE_URL: "https://xyz.supabase.co",
   SUPABASE_KEY: "eyJ..."
 }
@@ -198,7 +198,7 @@ User sends:
 ### Step 7: Upsert ALL Secrets
 ```
 # Store Supabase credentials from get_cloud
-Call: upsert_secret(cloud_id="abc123", key="SUPABASE_URL", value="https://xyz.supabase.co")
+Call: upsert_secret(cloud_id="abc123", key="SUPABASE_URL", value="{base_url}")
 Call: upsert_secret(cloud_id="abc123", key="SUPABASE_KEY", value="eyJ...")
 
 # Store third-party credentials from user
@@ -231,8 +231,8 @@ Call: create_service(
 
 ### Step 10: Test Endpoints
 ```
-POST https://abc123.altan.cloud/services/api/billing/stripe/checkout-session
-POST https://abc123.altan.cloud/services/api/billing/stripe/webhook
+POST https://{base_url}/services/api/billing/stripe/checkout-session
+POST https://{base_url}/services/api/billing/stripe/webhook
 ```
 
 ---

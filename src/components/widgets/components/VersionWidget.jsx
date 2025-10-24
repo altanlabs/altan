@@ -23,7 +23,7 @@ const VersionWidget = ({ id }) => {
   const templateVersion = useSelector(selectTemplateVersion(id));
   const loading = useSelector(selectTemplateVersionLoading(id));
   const error = useSelector(selectTemplateVersionError(id));
-  console.log('templateVersion', templateVersion);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchTemplateVersion(id));
