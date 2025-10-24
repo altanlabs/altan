@@ -123,7 +123,7 @@ const UpgradeDialog = ({ open, onClose, ...other }) => {
             component="h2"
             sx={{ mb: 1, fontWeight: 600 }}
           >
-            Unlock Pro for 5€
+            Unlock Pro
           </Typography>
           <Typography
             variant="body1"

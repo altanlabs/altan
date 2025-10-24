@@ -68,7 +68,7 @@ const ActivationLifecycleBar = ({ threadId, className = '' }) => {
   };
 
   return (
-    <div className={`flex justify-center ${className}`}>
+    <div className={`flex justify-start ${className}`}>
       <m.div
         layout
         onMouseEnter={() => setIsHovered(true)}

@@ -35,7 +35,7 @@ import { optimai, optimai_shop } from '../../utils/axios';
 // Discount Configuration
 const DISCOUNT_CONFIG = {
   // Set to true to show the Pro plan discount (€25 -> €5)
-  showProDiscount: true,
+  showProDiscount: false,
   originalPrice: 25,
   discountPrice: 5,
   discountLabel: 'First month offer',
@@ -54,12 +54,9 @@ const PRO_FEATURES = [
 const GROWTH_FEATURES = [
   { text: 'Everything in Pro', available: true },
   { text: 'Unlimited builders', available: true },
-  { text: 'Whatsapp support', available: true },
+  { text: 'Enhanced support', available: true },
   { text: 'Shared database pools', available: true },
   { text: 'Team collaboration tools', available: true },
-  { text: 'Advanced analytics', available: true },
-  { text: 'SLA guarantees', available: false },
-  { text: 'Custom integrations', available: false },
 ];
 
 const ENTERPRISE_FEATURES = [
@@ -173,7 +170,7 @@ function PricingCard({
         </Typography>
         <Typography
           variant="body2"
-          sx={{ color: 'text.secondary', mb: 2 }}
+          sx={{ color: 'text.secondary' }}
         >
           {description}
         </Typography>
@@ -450,7 +447,7 @@ export default function NewPricing() {
 
   if (!proPlan || growthPlans.length === 0 || !enterprisePlan) {
     return (
-      <Box sx={{ pt: 4 }}>
+      <Box sx={{ pt: 2 }}>
         <Box
           sx={{
             display: 'grid',
