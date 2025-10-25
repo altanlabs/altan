@@ -116,6 +116,39 @@ Common SDKs: `openai`, `stripe`, `sendgrid`, `twilio`, `anthropic`, `httpx`, `bo
 * External SDK calls succeed; errors handled
 * Useful logs; no unexpected stack traces
 
+## Terminal Commands for Testing (Context-Aware)
+
+**ONLY use terminal commands for `curl` to test service endpoints.** Be strategic to preserve context tokens:
+
+### Smart curl Usage
+
+
+# ✅ HEAD request to check status and headers only
+curl -I https://base_url/services/api/service_name/endpoint
+
+# ✅ Limit response output
+curl -s https://base_url/services/api/service_name/endpoint | head -n 20
+
+# ✅ Check only status code
+curl -o /dev/null -s -w "%{http_code}\n" https://base_url/services/api/service_name/endpoint
+
+
+**For normal endpoints:**
+# ✅ GET request
+curl https://base_url/services/api/service_name/endpoint
+
+# ✅ POST with JSON
+curl -X POST https://base_url/services/api/service_name/endpoint \
+  -H "Content-Type: application/json" \
+  -d '{"key": "value"}'
+
+
+**Key principles:**
+- If endpoint returns files/images/large JSON → use `-I`, `-o /dev/null`, or `| head`
+- If endpoint returns reasonable data → view full response
+- Always test critical paths but minimize output bloat
+- Use `-s` (silent) to avoid progress meters cluttering output
+
 ## Tool Usage Summary
 
 **Pre-deployment sequence (MANDATORY):**

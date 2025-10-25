@@ -70,7 +70,6 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
 
         if (data && data.task_name) {
           // eslint-disable-next-line no-console
-          console.log('CreateTaskRenderer - Got task from result:', data);
           return {
             id: data.id,
             task_name: data.task_name,
