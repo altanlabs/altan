@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { memo, useState } from 'react';
 
+import WebSearchConfig from './WebSearchConfig';
 import Iconify from '../../../iconify/Iconify';
 
 const models = [
@@ -55,7 +56,7 @@ const betaHeaderOptions = [
 
 const AgentModelSettings = ({ agentData, onFieldChange }) => {
   const [expanded, setExpanded] = useState(false);
-  
+
   const llmModel = agentData?.llm_config?.model_id || 'o3-mini';
   const provider = agentData?.llm_config?.provider || modelToProvider[llmModel];
   const temperature = agentData?.llm_config?.settings?.temperature ?? 0.7;
@@ -63,6 +64,7 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
   const reasoningEffort = agentData?.llm_config?.settings?.reasoning_effort || 'medium';
   const reasoningEnabled = agentData?.llm_config?.settings?.reasoning_enabled ?? false;
   const betaHeaders = agentData?.llm_config?.settings?.beta_headers ?? [];
+  const webSearchEnabled = agentData?.llm_config?.settings?.web_search?.enabled ?? false;
 
   const handleModelChange = (newModel) => {
     const newProvider = modelToProvider[newModel];
@@ -98,7 +100,7 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
     });
   };
 
-  const showReasoningControls = alwaysReasoningModels.includes(llmModel) || 
+  const showReasoningControls = alwaysReasoningModels.includes(llmModel) ||
     (optionalReasoningModels.includes(llmModel) && reasoningEnabled);
 
   return (
@@ -151,6 +153,20 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
                   color: 'warning.darker',
                   fontWeight: 500,
                   textTransform: 'capitalize',
+                }}
+              />
+            )}
+            {webSearchEnabled && (
+              <Chip
+                label="Web"
+                size="small"
+                icon={<Iconify icon="mdi:web" width={12} />}
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  bgcolor: 'success.lighter',
+                  color: 'success.darker',
+                  fontWeight: 500,
                 }}
               />
             )}
@@ -324,8 +340,7 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
                           />
                         )}
                       </Stack>
-                    )
-                  }
+                    )}
                   MenuProps={{
                     PaperProps: {
                       style: { maxHeight: 300 },
@@ -346,6 +361,13 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
               </FormControl>
             </Box>
           )}
+
+          {/* Web Search Configuration */}
+          <WebSearchConfig
+            agentData={agentData}
+            onFieldChange={onFieldChange}
+            provider={provider}
+          />
         </Stack>
       </AccordionDetails>
     </Accordion>
@@ -353,4 +375,3 @@ const AgentModelSettings = ({ agentData, onFieldChange }) => {
 };
 
 export default memo(AgentModelSettings);
-

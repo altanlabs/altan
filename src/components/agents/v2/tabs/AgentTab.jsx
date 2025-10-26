@@ -3,6 +3,8 @@ import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slid
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
+import WebSearchConfig from '../../../attachment/components/agent-detail/WebSearchConfig';
+
 const models = [
   {
     provider: 'Anthropic',
@@ -386,7 +388,7 @@ function AgentTab({ agentData, onFieldChange }) {
 
                 {/* Beta Headers - Only for Anthropic */}
                 {agentData?.llm_config?.provider?.toLowerCase() === 'anthropic' && (
-                  <Box>
+                  <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 1 }}>
                       Beta Headers
                     </Typography>
@@ -419,6 +421,21 @@ function AgentTab({ agentData, onFieldChange }) {
                     </FormControl>
                   </Box>
                 )}
+
+                {/* Web Search Configuration */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: 'text.primary', mb: 2 }}>
+                    Web Search
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    Enable web search capabilities for real-time information retrieval
+                  </Typography>
+                  <WebSearchConfig
+                    agentData={agentData}
+                    onFieldChange={onFieldChange}
+                    provider={modelToProvider[llmModel]}
+                  />
+                </Box>
               </AccordionDetails>
             </Accordion>
           </Box>
