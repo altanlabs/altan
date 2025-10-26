@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 
 import { cn } from '@lib/utils';
 
+import CitationChip from './CitationChip.jsx';
 import ClarifyingQuestions from './clarifying-questions/ClarifyingQuestions.jsx';
 import CustomIframe from './CustomIframe.jsx';
 import SuggestionButton from './SuggestionButton.jsx';
@@ -353,6 +354,7 @@ const CustomMarkdown = ({
   minified = false,
   noWrap = false,
   center = false,
+  citationAnnotations = null,
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
@@ -581,6 +583,21 @@ const CustomMarkdown = ({
             // Enhanced links
             a: (props) => {
               const href = props.href;
+
+              // Check for citation links (from TextPartRenderer)
+              if (props.className?.includes('citation-link')) {
+                return (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="citation-link inline-flex items-center gap-0.5 text-[11px] text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors no-underline"
+                  >
+                    {props.children}
+                  </a>
+                );
+              }
+
               if (isYouTubeUrl(href)) {
                 const videoId = extractYouTubeVideoId(href);
                 if (videoId) {
@@ -622,6 +639,21 @@ const CustomMarkdown = ({
             // Custom stripe component
             stripe: () => {
               return <StripeConnect />;
+            },
+            // Custom citation component
+            citation: ({ 'data-index': dataIndex, 'data-url': url, 'data-title': title, 'data-excerpt': excerpt }) => {
+              const index = parseInt(dataIndex);
+              const citation = citationAnnotations?.[index];
+
+              if (!citation) return null;
+
+              return (
+                <CitationChip
+                  citation={{ ...citation, url, title }}
+                  citationNumber={index + 1}
+                  excerpt={excerpt}
+                />
+              );
             },
             // Custom iframe component
             iframe: ({ src, title, style, ...props }) => {
@@ -693,8 +725,12 @@ export default memo(CustomMarkdown, (prevProps, nextProps) => {
   const textUnchanged = prevProps.text === nextProps.text &&
                         (prevProps.text?.length || 0) === (nextProps.text?.length || 0);
 
+  const annotationsUnchanged = JSON.stringify(prevProps.citationAnnotations) ===
+                                JSON.stringify(nextProps.citationAnnotations);
+
   return (
     textUnchanged &&
+    annotationsUnchanged &&
     prevProps.messageId === nextProps.messageId &&
     prevProps.threadId === nextProps.threadId &&
     prevProps.codeActive === nextProps.codeActive &&

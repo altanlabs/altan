@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
-import CustomMarkdown from './CustomMarkdown.jsx';
 import ErrorPartCard from './ErrorPartCard.jsx';
+import TextPartRenderer from './TextPartRenderer.jsx';
 import ThinkingPartCard from './ThinkingPartCard.jsx';
 import ToolPartCard from './ToolPartCard.jsx';
 
@@ -10,15 +10,11 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
   switch (partType) {
     case 'text':
       return (
-        <div className="message-part-text">
-          {part.text && (
-            <CustomMarkdown
-              text={part.text}
-              threadId={threadId}
-              minified={mode === 'mini'}
-            />
-          )}
-        </div>
+        <TextPartRenderer
+          part={part}
+          threadId={threadId}
+          mode={mode}
+        />
       );
     case 'tool':
       return (
@@ -78,14 +74,8 @@ const MessagePartRenderer = memo(({ part, threadId, mode }) => {
 
   // Type-specific properties
   if (partType === 'text') {
-    // For text parts, check both text content and is_done status
-    // Check text length as well to ensure streaming updates are caught
-    const textChanged = prevPart.text !== nextPart.text ||
-                        (prevPart.text?.length || 0) !== (nextPart.text?.length || 0);
-    const statusChanged = prevPart.is_done !== nextPart.is_done;
-
-    // Return true only if nothing changed (memo should skip render)
-    return !textChanged && !statusChanged;
+    // TextPartRenderer has its own memo comparison
+    return false;
   } else if (partType === 'tool') {
     // Tool parts use their own selectors, allow re-render for safety
     return true;
