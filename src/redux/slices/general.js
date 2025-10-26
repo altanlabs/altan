@@ -339,6 +339,11 @@ const slice = createSlice({
     },
     updateAccountAltaner(state, action) {
       const { ids, changes } = action.payload;
+      // Add defensive check for ids
+      if (!ids || !Array.isArray(ids)) {
+        console.warn('updateAccountAltaner: ids is undefined or not an array', action.payload);
+        return;
+      }
       ids.forEach((altanerId) => {
         const index = state.account.altaners.findIndex((a) => a.id === altanerId);
         if (index !== -1) {

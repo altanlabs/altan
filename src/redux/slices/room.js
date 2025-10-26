@@ -3162,6 +3162,20 @@ export const fetchAuthorizationRequests =
     }
   };
 
+export const fetchRoomParent = () => async (dispatch, getState) => {
+  try {
+    const roomId = selectRoomId(getState());
+    dispatch(slice.actions.setLoading('mainThread'));
+    const response = await optimai_room.post(`/${roomId}`, ROOM_PARENT_THREAD_GQ);
+    const room = response.data;
+    dispatch(slice.actions.setParentThread(room.threads.items[0]));
+    return Promise.resolve('success');
+  } catch (e) {
+    console.error('error fetching room', e);
+    return Promise.reject(e);
+  }
+};
+
 export const fetchRoom =
   ({ roomId, user, guest }) =>
   async (dispatch) => {
@@ -3170,6 +3184,9 @@ export const fetchRoom =
       const response = await optimai_room.post(`/${roomId}`, ROOM_GENERAL_GQ);
       const room = response.data;
       dispatch(slice.actions.setRoom({ room, guest, user }));
+
+      // Immediately fetch main thread to avoid race condition
+      dispatch(fetchRoomParent());
 
       // Fetch authorization requests for this room
       dispatch(fetchAuthorizationRequests(roomId));
@@ -3193,20 +3210,6 @@ export const connectAgentDM =
       return Promise.reject(e);
     }
   };
-
-export const fetchRoomParent = () => async (dispatch, getState) => {
-  try {
-    const roomId = selectRoomId(getState());
-    dispatch(slice.actions.setLoading('mainThread'));
-    const response = await optimai_room.post(`/${roomId}`, ROOM_PARENT_THREAD_GQ);
-    const room = response.data;
-    dispatch(slice.actions.setParentThread(room.threads.items[0]));
-    return Promise.resolve('success');
-  } catch (e) {
-    console.error('error fetching room', e);
-    return Promise.reject(e);
-  }
-};
 
 const THREADS_STATUSES = ['running', 'blocked', 'dead', 'fenix'];
 
