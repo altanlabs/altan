@@ -80,6 +80,12 @@ export const TOOL_REGISTRY = {
     renderer: 'CreateTaskRenderer',
   },
 
+  // Web search tools
+  web_search: {
+    icon: 'mdi:web',
+    renderer: 'WebSearchRenderer',
+  },
+
   // Add more tools here as needed
   // Example:
   // 'search': { icon: 'mdi:magnify', renderer: 'SearchRenderer' },

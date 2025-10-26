@@ -3,7 +3,7 @@ import { m } from 'framer-motion';
 import { memo, useMemo, useState, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
 
-import { selectMessagePartsById, sendMessage } from '../../redux/slices/room';
+import { makeSelectMemberById, retryResponse, selectMessagePartsById } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store';
 
 const EASE = [0.4, 0, 0.2, 1];
@@ -15,6 +15,7 @@ const selectErrorPartFields = (state, partId) => {
 
   // Try to get error from part first, then fallback to message meta_data
   const message = part.message_id ? state.room.messages.byId[part.message_id] : null;
+
   const messageMeta = message?.meta_data || {};
 
   return {
@@ -26,25 +27,28 @@ const selectErrorPartFields = (state, partId) => {
     total_attempts: part.total_attempts || messageMeta.total_attempts,
     thread_id: part.thread_id || message?.thread_id,
     message_id: part.message_id || message?.id,
+    member_id: message?.member_id,
+    room_id: message?.room_id,
   };
 };
 
 const ErrorPartCard = ({ partId }) => {
   // Use a selector that only returns the fields we need
   const part = useSelector((s) => selectErrorPartFields(s, partId), shallowEqual);
+  const member = useSelector((state) => makeSelectMemberById(state, part?.member_id));
+
   const [isExpanded, setIsExpanded] = useState(false);
 
   const onToggle = useMemo(() => () => setIsExpanded((v) => !v), []);
 
   // Retry handler
   const handleRetry = useCallback(() => {
-    if (part?.thread_id) {
-      dispatch(sendMessage({
-        content: 'continue',
-        threadId: part.thread_id,
-      }));
+    if (part?.thread_id && part?.message_id && part?.room_id && member?.member?.agent_id) {
+      dispatch(
+        retryResponse(part.message_id, part.thread_id, part.room_id, member.member.agent_id),
+      );
     }
-  }, [part?.thread_id]);
+  }, [part?.thread_id, part?.message_id, part?.room_id, member?.member?.agent_id]);
 
   // Extract user-friendly error message
   const displayMessage = useMemo(() => {

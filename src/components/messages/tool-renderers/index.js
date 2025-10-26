@@ -9,6 +9,7 @@ import CreateTaskRenderer from './CreateTaskRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
 import TerminalCommandRenderer from './TerminalCommandRenderer.jsx';
+import WebSearchRenderer from './WebSearchRenderer.jsx';
 import { TOOL_REGISTRY, getToolIcon, getToolRendererName } from './toolRendererConfig.js';
 
 // Map of renderer names to actual components
@@ -18,6 +19,7 @@ const RENDERERS = {
   FileEditorRenderer,
   ReadFileRenderer,
   TerminalCommandRenderer,
+  WebSearchRenderer,
 };
 
 /**
@@ -39,5 +41,6 @@ export {
   FileEditorRenderer,
   ReadFileRenderer,
   TerminalCommandRenderer,
+  WebSearchRenderer,
 };
 

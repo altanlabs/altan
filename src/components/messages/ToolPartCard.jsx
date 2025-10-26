@@ -1,12 +1,12 @@
-import React, { memo, useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 
-import { makeSelectMessagePartById, makeSelectToolPartArguments } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
-import { getCustomRenderer } from './tool-renderers/index.js';
 import ToolPartArguments from './tool-parts/ToolPartArguments.jsx';
 import ToolPartError from './tool-parts/ToolPartError.jsx';
-import ToolPartResult from './tool-parts/ToolPartResult.jsx';
 import ToolPartHeader from './tool-parts/ToolPartHeader.jsx';
+import ToolPartResult from './tool-parts/ToolPartResult.jsx';
+import { getCustomRenderer } from './tool-renderers/index.js';
+import { makeSelectMessagePartById, makeSelectToolPartArguments } from '../../redux/slices/room';
+import { useSelector } from '../../redux/store.js';
 
 const ToolPartCard = ({
   partId,
@@ -15,20 +15,26 @@ const ToolPartCard = ({
 }) => {
   const partSelector = useMemo(() => makeSelectMessagePartById(), []);
   const part = useSelector((state) => partSelector(state, partId));
-  
+
   const argumentsSelector = useMemo(() => makeSelectToolPartArguments(), []);
   const argsData = useSelector((state) => argumentsSelector(state, partId));
-  
+
   const [manuallyCollapsed, setManuallyCollapsed] = useState(true);
   const [showError, setShowError] = useState(false);
   const [showResult, setShowResult] = useState(false);
 
-  const isCompleted = part?.is_done;
-
   // Get custom renderer component if available
   const CustomRenderer = useMemo(() => {
-    return getCustomRenderer(part?.name);
-  }, [part?.name]);
+    // Try multiple ways to get the tool name for renderer lookup
+    const toolName = part?.name || part?.task_execution?.tool_name || part?.task_execution?.tool?.name;
+
+    // Special case: web search can be identified by metadata
+    if (part?.meta_data?.provider_item_type === 'web_search_call') {
+      return getCustomRenderer('web_search');
+    }
+
+    return getCustomRenderer(toolName);
+  }, [part?.name, part?.task_execution?.tool_name, part?.task_execution?.tool?.name, part?.meta_data?.provider_item_type]);
 
   // Keep collapsed by default for better performance
   const isExpanded = useMemo(() => !manuallyCollapsed, [manuallyCollapsed]);
@@ -63,14 +69,14 @@ const ToolPartCard = ({
   const hasError = !!part?.error;
   const hasResult = !!part?.result;
 
-  if (!part) {
-    return null;
-  }
-
   // Dummy onScroll handler for custom renderers (not critical for functionality)
   const handleScroll = useCallback(() => {
     // Custom renderers may use this for scroll tracking
   }, []);
+
+  if (!part) {
+    return null;
+  }
 
   return (
     <div className="w-full">
