@@ -9,16 +9,14 @@ const ReadFileRenderer = memo(({ part, isExpanded, onToggle }) => {
   // Parse arguments to get file info
   const fileInfo = useMemo(() => {
     if (!part?.arguments) return null;
-    
+
     try {
-      const args = typeof part.arguments === 'string' 
-        ? JSON.parse(part.arguments) 
-        : part.arguments;
-      
+      const args = typeof part.arguments === 'string' ? JSON.parse(part.arguments) : part.arguments;
+
       const filepath = args.file_path || args.target_file || args.path || 'unknown';
       const offset = args.offset || null;
       const limit = args.limit || null;
-      
+
       return {
         filepath,
         offset,
@@ -38,9 +36,12 @@ const ReadFileRenderer = memo(({ part, isExpanded, onToggle }) => {
   return (
     <div className="px-3 pb-2 pt-0.5">
       <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 font-mono">
-        <Icon icon="mdi:file-document-outline" className="text-sm flex-shrink-0" />
+        <Icon
+          icon="mdi:file-document-outline"
+          className="text-sm flex-shrink-0"
+        />
         <span className="truncate">{fileInfo.filepath}</span>
-        
+
         {fileInfo.hasRange && (
           <span className="text-xs opacity-60 ml-auto flex-shrink-0">
             {fileInfo.offset !== null && `offset: ${fileInfo.offset}`}
@@ -56,4 +57,3 @@ const ReadFileRenderer = memo(({ part, isExpanded, onToggle }) => {
 ReadFileRenderer.displayName = 'ReadFileRenderer';
 
 export default ReadFileRenderer;
-

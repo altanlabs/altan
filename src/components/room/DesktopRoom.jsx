@@ -21,6 +21,9 @@ import {
   switchToThread,
   selectRoomThreadMain,
   selectMainThread,
+  clearRoomState,
+  setRoomContext,
+  selectRoomContext,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store.js';
 
@@ -62,6 +65,8 @@ const DesktopRoom = ({
   suggestions = [],
   renderCredits = false,
   renderFeedback = false,
+  initialMessage = null,
+  show_mode_selector = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   // const { isOpen, subscribe, unsubscribe } = useWebSocket();
@@ -78,43 +83,84 @@ const DesktopRoom = ({
 
   // Track processed thread_id from URL to avoid loops
   const processedThreadIdRef = useRef(null);
+  
+  // Track previous roomId to detect room switches
+  const prevRoomIdRef = useRef(null);
+  
+  // Track if initialMessage has been sent to avoid duplicates
+  const initialMessageSentRef = useRef(false);
+
+  // Get room context from Redux store
+  const roomContext = useSelector(selectRoomContext);
+
+  // Clear old room state when switching to a new room - MUST happen AFTER WebSocket unsubscribe
+  useEffect(() => {
+    if (prevRoomIdRef.current !== null && prevRoomIdRef.current !== roomId) {
+      // RoomId changed - clear the old room's state
+      // This runs AFTER the previous effect's cleanup (which unsubscribes from WebSocket)
+      dispatch(clearRoomState());
+    }
+    prevRoomIdRef.current = roomId;
+  }, [roomId]);
 
   useEffect(() => {
     if (isOpen && roomId) {
       const lastRoomId = roomId;
       subscribe(`room:${roomId}`);
       return () => {
+        // Unsubscribe from old room BEFORE state is cleared
         unsubscribe(`room:${lastRoomId}`);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
 
+  // Extract and store context from URL on room initialization
+  useEffect(() => {
+    if (initialized.room && roomId) {
+      const searchParams = new URLSearchParams(location.search);
+      const context = searchParams.get('context');
+      
+      if (context && !roomContext) {
+        console.log('🔧 Setting room context:', decodeURIComponent(context));
+        // Store the context in Redux for use in all messages
+        dispatch(setRoomContext(decodeURIComponent(context)));
+        
+        // Clean up the URL by removing the context parameter
+        searchParams.delete('context');
+        const newSearch = searchParams.toString();
+        history.replace({
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : '',
+        });
+      }
+    }
+  }, [initialized.room, roomId, location.search, location.pathname, history, roomContext]);
+
   // Handle message query parameter
   useEffect(() => {
-    if (initialized.room && roomId && location.search) {
+    if (initialized.room && roomId && mainThreadId && location.search) {
       const searchParams = new URLSearchParams(location.search);
       const message = searchParams.get('message');
 
       if (message) {
-        // Create a new thread and send the message
-        dispatch(createNewThread())
-          .then((threadId) => {
-            if (threadId) {
-              // Send the message to the new thread
-              dispatch(
-                sendMessage({
-                  threadId,
-                  content: decodeURIComponent(message),
-                  attachments: [],
-                }),
-              );
-            }
-          })
-          .catch((error) => {
-            // eslint-disable-next-line no-console
-            console.error('Error creating thread or sending message:', error);
-          });
+        // Prepare the message content
+        let messageContent = decodeURIComponent(message);
+        
+        // Append context as hidden content if available
+        if (roomContext) {
+          messageContent += `\n<hide>${roomContext}</hide>`;
+        }
+
+        // Send the message to the MAIN thread (not a new thread)
+        // This keeps things simple for new users
+        dispatch(
+          sendMessage({
+            threadId: mainThreadId,
+            content: messageContent,
+            attachments: [],
+          }),
+        );
 
         // Clean up the URL by removing the message parameter
         searchParams.delete('message');
@@ -125,7 +171,37 @@ const DesktopRoom = ({
         });
       }
     }
-  }, [initialized.room, roomId, location.search, location.pathname, history]);
+  }, [initialized.room, roomId, mainThreadId, location.search, location.pathname, history, roomContext]);
+
+  // Handle initialMessage prop (for embedded rooms)
+  useEffect(() => {
+    if (initialized.room && roomId && initialMessage && mainThreadId && !initialMessageSentRef.current) {
+      // Mark as sent to avoid duplicates
+      initialMessageSentRef.current = true;
+      
+      // Prepare the message content
+      let messageContent = initialMessage;
+      
+      // Append context as hidden content if available
+      if (roomContext) {
+        messageContent += `\n<hide>${roomContext}</hide>`;
+      }
+      
+      // Send the message to the main thread
+      dispatch(
+        sendMessage({
+          threadId: mainThreadId,
+          content: messageContent,
+          attachments: [],
+        }),
+      );
+    }
+  }, [initialized.room, roomId, initialMessage, mainThreadId, roomContext]);
+
+  // Reset the sent flag when roomId changes
+  useEffect(() => {
+    initialMessageSentRef.current = false;
+  }, [roomId]);
 
   // Handle thread_id query parameter - open thread from URL (once per URL change)
   useEffect(() => {
@@ -257,6 +333,7 @@ const DesktopRoom = ({
               suggestions={suggestions}
               renderFeedback={renderFeedback}
               renderCredits={renderCredits}
+              show_mode_selector={show_mode_selector}
             />
           ) : (
             <div
@@ -337,6 +414,7 @@ const DesktopRoom = ({
             suggestions={suggestions}
             renderCredits={renderCredits}
             renderFeedback={renderFeedback}
+            show_mode_selector={show_mode_selector}
           />
         </div>
       </Panel>

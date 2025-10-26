@@ -17,6 +17,7 @@ const initialState = {
   initialized: {}, // Track initialization per threadId
   expandedState: {}, // Track expanded state per threadId
   threadExpandedState: {}, // Track thread area expanded state per threadId
+  completedPlanEvent: null, // Store { planId, timestamp } when a plan completes via websocket
 };
 
 const slice = createSlice({
@@ -249,6 +250,15 @@ const slice = createSlice({
         state.threadExpandedState = {};
       }
     },
+
+    setPlanCompleted(state, action) {
+      const { planId, threadId } = action.payload;
+      state.completedPlanEvent = {
+        planId,
+        threadId,
+        timestamp: Date.now(),
+      };
+    },
   },
 });
 
@@ -273,6 +283,7 @@ export const {
   setTasksExpanded,
   setThreadExpanded,
   clearTasks,
+  setPlanCompleted,
 } = slice.actions;
 
 // ----------------------------------------------------------------------
@@ -312,6 +323,9 @@ export const selectTasksExpanded = (threadId) => (state) =>
 
 export const selectThreadExpanded = (threadId) => (state) =>
   selectTasksState(state).threadExpandedState[threadId] || false;
+
+export const selectCompletedPlanEvent = (state) =>
+  selectTasksState(state).completedPlanEvent;
 
 export const selectPlansByRoom = (roomId) => (state) =>
   selectTasksState(state).plansByRoom[roomId] || [];

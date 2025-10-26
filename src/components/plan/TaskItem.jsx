@@ -5,11 +5,13 @@ import CustomMarkdown from '../messages/CustomMarkdown';
 import ToolPartCard from '../messages/ToolPartCard';
 import { makeSelectToolPartsByThreadId } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
+import { TextShimmer } from '../aceternity/text/text-shimmer';
 import { agentAvatars, getTaskIcon, getTaskIconColor, getTaskTextStyle } from './planUtils';
 import RunningTimer from './RunningTimer';
 
 const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
   const isRunning = task.status?.toLowerCase() === 'running';
+  const isCompleted = task.status?.toLowerCase() === 'completed' || task.status?.toLowerCase() === 'done';
   
   // Get tool parts for this task's subthread - only if expanded
   const toolPartsSelector = useMemo(() => makeSelectToolPartsByThreadId(), []);
@@ -34,15 +36,7 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
             />
           </div>
 
-          {/* Status Icon */}
-          <div className="flex-shrink-0 mt-1">
-            <Iconify
-              icon={getTaskIcon(task.status)}
-              className={`w-5 h-5 ${getTaskIconColor(task.status)} ${
-                task.status?.toLowerCase() === 'running' ? 'animate-spin' : ''
-              }`}
-            />
-          </div>
+
 
           <div className="flex-1 min-w-0">
             {/* Task Name and Agent */}
@@ -60,9 +54,13 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
                 </Tooltip>
               )}
               {isRunning ? (
-                <div className="text-base font-medium text-blue-600 dark:text-blue-400">
+                <TextShimmer
+                  as="div"
+                  className="text-base font-medium"
+                  duration={2.5}
+                >
                   {task.task_name || 'Running task...'}
-                </div>
+                </TextShimmer>
               ) : (
                 <Typography
                   variant="body1"
@@ -99,7 +97,7 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
                   />
                   <Iconify
                     icon="mdi:chat-processing-outline"
-                    className="w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform group-hover:scale-110 animate-pulse"
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform group-hover:scale-110"
                   />
                 </button>
               ) : (
@@ -138,16 +136,34 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-6 pb-4 pl-20 bg-gray-50/30 dark:bg-gray-800/20">
-          {/* Task Description */}
-          {task.task_description && (
-            <div className="mb-3 text-sm">
+        <div className="px-6 pb-2 pl-20 bg-gray-50/30 dark:bg-gray-800/20">
+          {/* Task Description - Only show for non-completed tasks */}
+          {!isCompleted && task.task_description && (
+            <div className="mb-2 text-sm">
               <CustomMarkdown text={task.task_description} />
             </div>
           )}
 
-          {/* Task Metadata */}
-          {task.summary && (
+          {/* Work Done - Only show for completed tasks */}
+          {isCompleted && task.summary && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Iconify
+                  icon="mdi:check-circle"
+                  className="w-4 h-4 text-green-600 dark:text-green-400"
+                />
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                  Work Done
+                </span>
+              </div>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                {task.summary}
+              </div>
+            </div>
+          )}
+
+          {/* Task Summary - Show for non-completed tasks if no description */}
+          {!isCompleted && task.summary && (
             <div className="mb-3 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="truncate max-w-md">{task.summary}</span>
             </div>

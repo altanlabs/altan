@@ -226,203 +226,53 @@ export function AuthProvider({ children }) {
       iframeState.activated = true;
       console.log('IframeChild activated by parent');
     }
-
-    // Handle guest authentication response from parent
-    if (data.type === 'guest_auth_response' && data.isAuthenticated && data.guest) {
-      console.log('📥 Received guest auth response, auto-authenticating:', data);
-
-      // Set up guest authentication for axios instances
-      if (data.accessToken) {
-        authorizeGuest(data.accessToken)
-          .then(() => {
-            console.log('✅ Auto guest axios authentication set up successfully');
-
-            dispatch({
-              type: 'GUEST_LOGIN',
-              payload: {
-                guest: data.guest,
-              },
-            });
-
-            console.log('✅ Auto guest login dispatch completed - authentication ready');
-          })
-          .catch((authError) => {
-            console.error('❌ Failed to set up auto guest axios authentication:', authError);
-          });
-      }
-    }
-
-    // Handle new access token from parent
-    if (data.type === 'new_access_token' && data.token && data.guest) {
-      console.log('📥 Received new access token, auto-authenticating:', data);
-
-      authorizeGuest(data.token)
-        .then(() => {
-          console.log('✅ Auto guest axios authentication with new token set up successfully');
-
-          dispatch({
-            type: 'GUEST_LOGIN',
-            payload: {
-              guest: data.guest,
-            },
-          });
-
-          console.log(
-            '✅ Auto guest login with new token dispatch completed - authentication ready',
-          );
-        })
-        .catch((authError) => {
-          console.error(
-            '❌ Failed to set up auto guest axios authentication with new token:',
-            authError,
-          );
-        });
-    }
   });
 
-  // Function to request guest authentication from parent window
-  const requestGuestAuthFromParent = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        window.removeEventListener('message', handleAuthResponse);
-        reject(new Error('Parent authentication request timeout'));
-      }, 10000); // 10 second timeout
-
-      function handleAuthResponse(event) {
-        const { data } = event;
-
-        if (data.type === 'guest_auth_response') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handleAuthResponse);
-
-          console.log('📥 Received guest auth response from parent:', data);
-
-          if (data.isAuthenticated && data.guest) {
-            resolve({
-              guest: data.guest,
-              accessToken: data.accessToken,
-            });
-          } else {
-            reject(new Error('Guest not authenticated in parent'));
-          }
-        }
-      }
-
-      window.addEventListener('message', handleAuthResponse);
-
-      // Request authentication from parent
-      window.parent.postMessage(
-        {
-          type: 'request_guest_auth',
-        },
-        '*',
-      );
-    });
-  }, []);
-
   // Guest login function (defined before useEffect to avoid "used before defined" error)
-  const loginAsGuest = useCallback(
-    async (guestId, agentId) => {
-      try {
-        // Check if we're in an iframe and should use parent authentication
-        const isInIframe = window !== window.parent;
-
-        if (isInIframe) {
-          // Request authentication from parent window
-          const guestData = await requestGuestAuthFromParent();
-
-          if (guestData && guestData.guest) {
-            // Set up guest authentication for axios instances
-            console.log('🔑 === SETTING UP GUEST AUTHENTICATION ===');
-            console.log('🔑 Guest data:', guestData.guest);
-            console.log('🔑 Access token present:', !!guestData.accessToken);
-
-            try {
-              await authorizeGuest(guestData.accessToken);
-              console.log('✅ Guest axios authentication set up successfully');
-              console.log('✅ Bearer token should now be available for API calls');
-            } catch (authError) {
-              console.error('❌ Failed to set up guest axios authentication:', authError);
-              throw authError;
-            }
-
-            dispatch({
-              type: 'GUEST_LOGIN',
-              payload: {
-                guest: guestData.guest,
-              },
-            });
-
-            console.log('✅ Guest login dispatch completed - authentication ready');
-            return guestData.guest;
-          } else {
-            throw new Error('Parent authentication failed or not available');
-          }
-        } else {
-          // Fallback to direct API call if not in iframe (only if guestId/agentId provided)
-          if (!guestId || !agentId) {
-            throw new Error('Guest ID and Agent ID are required for direct authentication');
-          }
-
-          const response = await optimai_auth.post(
-            `/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
-            {},
-          );
-
-          if (response.data && response.data.guest) {
-            const guestData = response.data.guest;
-            console.log('guestData', guestData);
-
-            // Set up guest authentication for axios instances
-            try {
-              await authorizeGuest(response.data.access_token);
-              console.log('✅ Direct guest axios authentication set up successfully');
-            } catch (authError) {
-              console.warn('⚠️ Failed to set up direct guest axios authentication:', authError);
-            }
-
-            dispatch({
-              type: 'GUEST_LOGIN',
-              payload: {
-                guest: guestData,
-              },
-            });
-
-            return guestData;
-          } else {
-            throw new Error('Guest authentication failed');
-          }
-        }
-      } catch (error) {
-        throw error;
+  const loginAsGuest = useCallback(async (guestId, agentId) => {
+    try {
+      // Direct API call for guest authentication
+      if (!guestId || !agentId) {
+        throw new Error('Guest ID and Agent ID are required for guest authentication');
       }
-    },
-    [requestGuestAuthFromParent],
-  );
+
+      const response = await optimai_auth.post(
+        `/login/guest?guest_id=${guestId}&agent_id=${agentId}`,
+        {},
+      );
+
+      if (response.data && response.data.guest) {
+        const guestData = response.data.guest;
+        console.log('guestData', guestData);
+
+        // Set up guest authentication for axios instances
+        try {
+          await authorizeGuest(response.data.access_token);
+          console.log('✅ Guest axios authentication set up successfully');
+        } catch (authError) {
+          console.warn('⚠️ Failed to set up guest axios authentication:', authError);
+        }
+
+        dispatch({
+          type: 'GUEST_LOGIN',
+          payload: {
+            guest: guestData,
+          },
+        });
+
+        return guestData;
+      } else {
+        throw new Error('Guest authentication failed');
+      }
+    } catch (error) {
+      throw error;
+    }
+  }, []);
 
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Check if we're in an iframe (guest mode)
-        const isInIframe = window !== window.parent;
-
-        if (isInIframe) {
-          console.log(
-            '🔄 In iframe mode - waiting for guest authentication before making API calls',
-          );
-          // In iframe mode, don't make immediate API calls
-          // Wait for guest authentication to be set up first
-          dispatch({
-            type: 'INITIAL',
-            payload: {
-              isAuthenticated: false,
-              user: null,
-            },
-          });
-          return;
-        }
-
-        // Only make API calls for regular (non-iframe) users
+        // Get user profile from session
         const userProfile = await getUserProfile();
 
         // Identify user in analytics on initialization
@@ -451,7 +301,7 @@ export function AuthProvider({ children }) {
       }
     };
     initialize();
-  }, [loginAsGuest]);
+  }, []);
 
   const loginWithGoogle = useCallback(async (invitation_id, idea_id) => {
     const isMobile = Capacitor.isNativePlatform();
@@ -511,7 +361,7 @@ export function AuthProvider({ children }) {
 
         // Send the Google token to your backend for verification
         const response = await optimai_auth.post(
-          `/oauth/google/mobile`,
+          '/oauth/google/mobile',
           {
             idToken,
             accessToken,
@@ -862,7 +712,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    await optimai_auth.post(`/logout/user`, null).finally(() => {
+    await optimai_auth.post('/logout/user', null).finally(() => {
       clearStoredRefreshToken(); // Clear mobile refresh token
       unauthorizeUser();
 
@@ -922,6 +772,11 @@ export function AuthProvider({ children }) {
     patchUser,
     loginAsGuest,
   ]);
+
+  // Don't render children until auth is initialized
+  if (!state.isInitialized) {
+    return null;
+  }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

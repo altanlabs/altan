@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { CircularProgress, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { m } from 'framer-motion';
 import { Activity, TrendingUp, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -15,6 +14,7 @@ import {
   Area,
   ComposedChart,
 } from 'recharts';
+
 import { useMetricsHistory } from '../hooks';
 
 const PERIODS = [
@@ -30,14 +30,14 @@ const PERIODS = [
 
 const formatTimestamp = (timestamp, period) => {
   const date = new Date(timestamp);
-  
+
   // For longer periods, show date
   if (['7d', '30d'].includes(period)) {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     return `${month}/${day}`;
   }
-  
+
   // For shorter periods, show time
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -65,8 +65,8 @@ const CustomTooltip = ({ active, payload, label }) => {
           {payload.map((entry, index) => (
             <div key={index} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
+                <div
+                  className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: entry.color }}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-300">{entry.name}</span>
@@ -87,9 +87,9 @@ const StatsCard = ({ label, value, icon: Icon, color }) => {
   // Extract base color for background
   const bgColorClass = color.includes('emerald') ? 'bg-emerald-100 dark:bg-emerald-900/30'
     : color.includes('teal') ? 'bg-teal-100 dark:bg-teal-900/30'
-    : color.includes('blue') && !color.includes('indigo') ? 'bg-blue-100 dark:bg-blue-900/30'
-    : color.includes('indigo') ? 'bg-indigo-100 dark:bg-indigo-900/30'
-    : 'bg-gray-100 dark:bg-gray-900/30';
+      : color.includes('blue') && !color.includes('indigo') ? 'bg-blue-100 dark:bg-blue-900/30'
+        : color.includes('indigo') ? 'bg-indigo-100 dark:bg-indigo-900/30'
+          : 'bg-gray-100 dark:bg-gray-900/30';
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
@@ -121,26 +121,15 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
     if (!metrics?.instance_type?.cpu_limit) return null;
     const limit = metrics.instance_type.cpu_limit;
 
-    // eslint-disable-next-line no-console
-    console.log('🔍 CPU Limit Debug:', {
-      raw: limit,
-      type: typeof limit,
-      instanceType: metrics.instance_type
-    });
-
     // Handle string format
     if (typeof limit === 'string') {
       if (limit.endsWith('m')) {
         const value = parseFloat(limit.replace('m', ''));
-        // eslint-disable-next-line no-console
-        console.log('✅ CPU Limit parsed from string with m:', value);
         return value;
       }
       // If it's just a number as string (cores)
       const parsed = parseFloat(limit);
       if (!isNaN(parsed)) {
-        // eslint-disable-next-line no-console
-        console.log('✅ CPU Limit parsed from string (cores):', parsed * 1000);
         return parsed * 1000; // Convert cores to millicores
       }
     }
@@ -149,13 +138,8 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
     if (typeof limit === 'number') {
       // If it's a very small number (like 0.4), it's likely cores
       if (limit < 10) {
-        // eslint-disable-next-line no-console
-        console.log('✅ CPU Limit from number (cores):', limit * 1000);
         return limit * 1000; // Convert to millicores
       }
-      // If it's already a large number, it's probably already in millicores
-      // eslint-disable-next-line no-console
-      console.log('✅ CPU Limit from number (already m):', limit);
       return limit;
     }
 
@@ -352,8 +336,8 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
               <ComposedChart data={cpuChartData}>
                 <defs>
                   <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -450,8 +434,8 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
               <ComposedChart data={memoryChartData}>
                 <defs>
                   <linearGradient id="colorMemory" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />

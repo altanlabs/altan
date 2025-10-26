@@ -250,7 +250,7 @@ export const fetchServiceDetails = (baseId, serviceName) => async (dispatch) => 
   dispatch(setServiceDetailsLoading({ serviceName, loading: true }));
   try {
     const response = await optimai_cloud.get(
-      `/v1/instances/${baseId}/services/services/${serviceName}`
+      `/v1/instances/${baseId}/services/services/${serviceName}`,
     );
     const serviceData = response.data;
     dispatch(setServiceDetails({ serviceName, data: serviceData }));
@@ -270,7 +270,7 @@ export const createService = (baseId, serviceData) => async (dispatch) => {
   try {
     const response = await optimai_cloud.post(
       `/v1/instances/${baseId}/services/services`,
-      serviceData
+      serviceData,
     );
     const newService = response.data;
 
@@ -290,7 +290,7 @@ export const createService = (baseId, serviceData) => async (dispatch) => {
  */
 export const updateServiceThunk = (baseId, serviceName, updates) => async (dispatch) => {
   try {
-    const response = await optimai_cloud.patch(`/v1/instances/${baseId}/services/services`, {
+    const response = await optimai_cloud.post(`/v1/instances/${baseId}/services/services`, {
       name: serviceName,
       ...updates,
     });
@@ -345,7 +345,7 @@ export const createOrUpdateSecret = (baseId, secretData) => async (dispatch) => 
   try {
     const response = await optimai_cloud.post(
       `/v1/instances/${baseId}/services/secrets`,
-      secretData
+      secretData,
     );
     const secret = response.data;
     dispatch(addSecret({ baseId, secret }));
@@ -384,13 +384,13 @@ export const selectServicesForBase = createSelector(
       loading: false,
       error: null,
       lastFetched: null,
-    }
+    },
 );
 
 export const selectSecretsForBase = createSelector(
   [selectServicesState, (_, baseId) => baseId],
   (servicesState, baseId) =>
-    servicesState.secrets[baseId] || { items: [], loading: false, error: null, lastFetched: null }
+    servicesState.secrets[baseId] || { items: [], loading: false, error: null, lastFetched: null },
 );
 
 export const selectServiceDetails = createSelector(
@@ -401,7 +401,7 @@ export const selectServiceDetails = createSelector(
       loading: false,
       error: null,
       lastFetched: null,
-    }
+    },
 );
 
 // Backward compatibility exports (keep old function names for gradual migration)
@@ -413,4 +413,3 @@ export const deleteFunction = deleteService;
 export const selectFunctionsState = selectServicesState;
 export const selectFunctionsForBase = selectServicesForBase;
 export const selectFunctionDetails = selectServiceDetails;
-

@@ -370,6 +370,7 @@ const initialState = {
   mainThread: null,
   isRealtimeCall: false,
   contextMenu: null,
+  roomContext: null, // Context to append to all messages in this room
 };
 
 const extractMessagesFromThread = (state, thread) => {
@@ -497,6 +498,9 @@ const slice = createSlice({
   reducers: {
     setContextMenu: (state, action) => {
       state.contextMenu = action.payload;
+    },
+    setRoomContext: (state, action) => {
+      state.roomContext = action.payload;
     },
     setDrawerOpen: (state, action) => {
       state.drawerOpen = action.payload;
@@ -796,12 +800,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in threadUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in threadUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 
@@ -859,12 +871,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in roomMemberUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in roomMemberUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 
@@ -1160,12 +1180,20 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids': Must be an array of strings or a single string.");
+        console.error("Invalid 'ids' in roomUpdate: Must be an array of strings or a single string.", {
+          received: action.payload,
+          ids,
+          idsType: typeof ids,
+        });
         return;
       }
 
       if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
-        console.error("Invalid 'changes': Must be an object.");
+        console.error("Invalid 'changes' in roomUpdate: Must be an object.", {
+          received: action.payload,
+          changes,
+          changesType: typeof changes,
+        });
         return;
       }
 
@@ -2163,6 +2191,7 @@ export const {
   clearMessageError,
   addMessageReaction,
   addThread,
+  setRoomContext,
   removeThread,
   setThreadMain,
   setThreadDrawer,
@@ -2248,6 +2277,8 @@ export const selectMe = (state) => selectRoomState(state).me;
 export const selectRealtime = (state) => selectRoomState(state)?.isRealtimeCall;
 
 export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
+
+export const selectRoomContext = (state) => selectRoomState(state).roomContext;
 
 export const selectMembers = (state) => selectRoomState(state).members;
 

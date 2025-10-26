@@ -919,7 +919,11 @@ export const selectGeneralLoading = (key) => (state) =>
 
 export const selectRoles = (state) => selectGeneralState(state).roles;
 
-export const selectAccountSubscriptions = (state) => selectAccount(state).subscriptions;
+export const selectAccountSubscriptions = (state) => {
+  const subscriptions = selectAccount(state)?.subscriptions;
+  // Ensure we always return an array
+  return Array.isArray(subscriptions) ? subscriptions : [];
+};
 
 // Free plan ID constant
 const FREE_PLAN_ID = 'a13e9a2b-f4c7-485c-8394-64e46bc7bf11';

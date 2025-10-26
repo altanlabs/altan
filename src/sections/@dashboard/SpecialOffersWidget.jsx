@@ -112,7 +112,7 @@ const SpecialOffersWidget = () => {
       ),
       title: 'Follow us on X',
       credits: 25,
-      link: 'https://x.com/altan_ai',
+      link: 'https://x.com/altanlabs',
     },
   ];
 

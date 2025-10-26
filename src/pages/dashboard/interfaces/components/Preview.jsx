@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { memo, useCallback, useState, useEffect } from 'react';
 
 import IframeControls from './IframeControls';
+import { handleIframeMessage } from './IframeMessageHandler';
 import PreviewErrorOverlay from './PreviewErrorOverlay';
 import {
   selectNavigationPath,
@@ -109,6 +110,60 @@ function Preview({
     handleIframeLoad,
     currentUrl,
   ]);
+
+  // Handler to trigger rebuild when needed
+  const handleRebuildNeeded = useCallback(
+    async (info) => {
+      try {
+        // eslint-disable-next-line no-console
+        console.log('🔄 Triggering rebuild for interface:', info.interfaceId);
+
+        const response = await optimai_pods.post(
+          `/interface/dev/${info.interfaceId}/build`,
+        );
+
+        if (response.status === 200) {
+          // eslint-disable-next-line no-console
+          console.log('✅ Build triggered successfully, refreshing iframe...');
+
+          // Refresh the iframe
+          if (iframeRef.current) {
+            const currentSrc = iframeRef.current.src;
+            // eslint-disable-next-line no-param-reassign
+            iframeRef.current.src = '';
+            // eslint-disable-next-line no-param-reassign
+            iframeRef.current.src = currentSrc;
+          }
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('❌ Failed to trigger rebuild:', error);
+      }
+    },
+    [iframeRef],
+  );
+
+  // Effect to listen to postMessages from iframe
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Process the message using the handler
+      handleIframeMessage(event, {
+        interfaceId,
+        iframeRef,
+        onError: (error) => {
+          // eslint-disable-next-line no-console
+          console.error('Error from iframe:', error);
+        },
+        onRebuildNeeded: handleRebuildNeeded,
+      });
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [iframeRef, interfaceId, handleRebuildNeeded]);
 
   // Handler to send error to agent (if targeting 'ai')
   const sendErrorToAgent = useCallback(

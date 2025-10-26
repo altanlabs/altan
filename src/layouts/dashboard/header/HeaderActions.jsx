@@ -85,8 +85,8 @@ const HeaderActions = ({ user, isDesktop }) => {
 
         <Button
           size="small"
-          color="primary"
-          variant="contained"
+          color="secondary"
+          variant="soft"
           startIcon={<Iconify icon="material-symbols:crown" />}
           onClick={() => history.push('/pricing')}
         >

@@ -57,6 +57,7 @@ const Thread = ({
   suggestions = [],
   renderCredits = false,
   renderFeedback = false,
+  show_mode_selector = false,
 }) => {
   useParams();
   const history = useHistory();
@@ -378,6 +379,7 @@ const Thread = ({
               mode={isMobile ? 'mobile' : 'standard'}
               renderCredits={renderCredits}
               onHeightChange={setFloatingTextAreaHeight}
+              show_mode_selector={show_mode_selector}
             />
           )}
         </div>

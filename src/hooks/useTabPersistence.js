@@ -9,6 +9,7 @@ import {
   clearTabs,
   updateTab,
   fetchThread,
+  closeTab,
 } from '../redux/slices/room';
 
 const STORAGE_KEY = 'roomTabState';
@@ -106,15 +107,26 @@ export const useTabPersistence = () => {
     // Only load once per room
     if (loadedRoomRef.current === roomId) return;
 
+    const previousRoom = loadedRoomRef.current;
+
     loadedRoomRef.current = roomId;
     fetchingThreadsRef.current.clear(); // Clear fetching state for new room
 
+    // IMPORTANT: Don't load tabs from localStorage when switching between rooms
+    // Only load from localStorage on initial page load (when previousRoom is null)
+    const isInitialLoad = previousRoom === null;
+    
+    if (!isInitialLoad) {
+      // Clear tabs and let GeneralToolbar create fresh ones
+      dispatch(clearTabs());
+      hasLoadedRef.current = true;
+      return;
+    }
+
     const savedTabs = loadTabsFromStorage(roomId);
+    
     if (savedTabs) {
       dispatch(loadTabs({ tabs: savedTabs }));
-    } else {
-      // Clear tabs if no saved state
-      dispatch(clearTabs());
     }
     
     hasLoadedRef.current = true;
@@ -143,11 +155,12 @@ export const useTabPersistence = () => {
             // Remove from fetching set after successful fetch
             fetchingThreadsRef.current.delete(threadId);
           })
-          .catch(error => {
-            // eslint-disable-next-line no-console
-            console.warn(`Failed to fetch thread ${threadId} for tab ${tab.id}:`, error);
-            // Remove from fetching set on error too
+          .catch(() => {
+            // Remove from fetching set on error
             fetchingThreadsRef.current.delete(threadId);
+            
+            // IMPORTANT: Close the orphan tab since it doesn't belong to this room
+            dispatch(closeTab({ tabId: tab.id }));
           });
       }
     });

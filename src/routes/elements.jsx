@@ -160,3 +160,9 @@ export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
 );
 export const SupportPage = Loadable(lazy(() => import('../pages/SupportPage.jsx')));
+
+// V2 VIRTUAL DESKTOP
+export const VirtualDesktopPage = Loadable(lazy(() => import('../pages/v2/VirtualDesktopPage.jsx')));
+export const V2LandingPage = Loadable(lazy(() => import('../pages/v2/LandingPage.jsx')));
+export const V2RoomsPage = Loadable(lazy(() => import('../pages/v2/V2RoomsPage.jsx')));
+export const V2RoomPage = Loadable(lazy(() => import('../pages/v2/V2RoomPage.jsx')));

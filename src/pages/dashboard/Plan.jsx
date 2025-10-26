@@ -7,15 +7,16 @@ import PlanRoadmap from '../../components/plan/PlanRoadmap';
 import { PlanError, PlanLoading } from '../../components/plan/PlanStates';
 import { calculateProgress, sortTasksByPriority } from '../../components/plan/planUtils';
 import { switchToThread } from '../../redux/slices/room';
-import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan } from '../../redux/slices/tasks';
+import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan, selectCompletedPlanEvent } from '../../redux/slices/tasks';
 import { useDispatch, useSelector } from '../../redux/store';
 
-const Plan = ({ planId }) => {
+const Plan = ({ planId, altanerId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const plan = useSelector(selectPlanById(planId));
   const isLoading = useSelector(selectPlanLoading(planId));
   const error = useSelector(selectPlanError(planId));
+  const completedPlanEvent = useSelector(selectCompletedPlanEvent);
   const [isApproving, setIsApproving] = useState(false);
   const [approveError, setApproveError] = useState(null);
 
@@ -27,6 +28,15 @@ const Plan = ({ planId }) => {
 
   const sortedTasks = useMemo(() => sortTasksByPriority(plan?.tasks), [plan?.tasks]);
   const progress = useMemo(() => calculateProgress(sortedTasks), [sortedTasks]);
+
+  // Auto-redirect when plan is completed via websocket event
+  useEffect(() => {
+    if (completedPlanEvent && completedPlanEvent.planId === planId && altanerId) {
+      // eslint-disable-next-line no-console
+      console.log('🎉 Plan completed, redirecting to project:', altanerId);
+      history.push(`/project/${altanerId}`);
+    }
+  }, [completedPlanEvent, planId, altanerId, history]);
 
   const handleOpenSubthread = useCallback((task) => {
     if (task.subthread_id) {

@@ -52,7 +52,7 @@ import {
   selectDisplayMode,
   setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
-import { makeSelectInterfaceById, getInterfaceById } from '../../../redux/slices/general.js';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general.js';
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
@@ -171,15 +171,45 @@ function ProjectHeader() {
   const isMobile = useResponsive('down', 'sm');
   const dispatch = useDispatch();
   const isIOS = isIOSCapacitor();
+  const isAccountFree = useSelector(selectIsAccountFree);
 
   const currentComponent = sortedComponents?.[componentId];
   const isInterfaceComponent = currentComponent?.type === 'interface';
   const isDatabaseComponent = currentComponent?.type === 'base';
   const interfaceId = isInterfaceComponent ? currentComponent?.params?.id : null;
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
+  const selectSortedCommits = useMemo(makeSelectSortedCommits, []);
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
+  const interfaceCommits = useSelector((state) => 
+    interfaceId ? selectSortedCommits(state, interfaceId) : []
+  );
+
+  // Check if interface has commits
+  const hasInterfaceCommits = useMemo(() => {
+    if (!interfaceId) return false;
+    // If interface data hasn't loaded yet, don't show URL bar
+    if (!ui) return false;
+    // Only show URL bar if interface has commits
+    return interfaceCommits && interfaceCommits.length > 0;
+  }, [interfaceId, ui, interfaceCommits]);
+
+  // Determine if publish button should be enabled
+  // For interface components: need commits to publish
+  // For other components: can always publish
+  const canPublish = useMemo(() => {
+    if (!isInterfaceComponent) return true; // Non-interface components can always publish
+    return hasInterfaceCommits; // Interface components need commits
+  }, [isInterfaceComponent, hasInterfaceCommits]);
+
+  // Determine if More Actions menu should be shown
+  // For interface components: only show if has commits
+  // For other components: always show
+  const shouldShowMoreActions = useMemo(() => {
+    if (!isInterfaceComponent) return true; // Non-interface components always show menu
+    return hasInterfaceCommits; // Interface components need commits
+  }, [isInterfaceComponent, hasInterfaceCommits]);
 
   // Calculate production URL for the interface
   const productionUrl = useMemo(() => {
@@ -378,7 +408,7 @@ function ProjectHeader() {
             )}
           </Stack>
 
-          {altaner?.id && isInterfaceComponent && !isMobile && (
+          {altaner?.id && isInterfaceComponent && !isMobile && hasInterfaceCommits && (
             <URLNavigationBar
               productionUrl={productionUrl}
               disabled={!ui || viewType === 'code'}
@@ -402,18 +432,17 @@ function ProjectHeader() {
                   spacing={1}
                   alignItems="center"
                 >
-                  {isInterfaceComponent && (
-                    <CodeToggleButton disabled={!ui} />
+                  {shouldShowMoreActions && (
+                    <MobileActionsMenu
+                      onDistribution={() => setOpenSettings(true)}
+                      onHistory={() => setOpenVersionHistory(true)}
+                      onSettings={
+                        isInterfaceComponent && interfaceId && hasInterfaceCommits ? () => setOpenSettingsDrawer(true) : null
+                      }
+                      onUpgrade={() => history.push('/pricing')}
+                    />
                   )}
-                  <MobileActionsMenu
-                    onDistribution={() => setOpenSettings(true)}
-                    onHistory={() => setOpenVersionHistory(true)}
-                    onSettings={
-                      isInterfaceComponent && interfaceId ? () => setOpenSettingsDrawer(true) : null
-                    }
-                    onUpgrade={() => history.push('/pricing')}
-                  />
-                  {isInterfaceComponent && (
+                  {isInterfaceComponent && hasInterfaceCommits && (
                     <Tooltip title="Deployment History">
                       <HeaderIconButton
                         onClick={() => setIsDeploymentHistoryOpen(true)}
@@ -431,54 +460,70 @@ function ProjectHeader() {
                     </Tooltip>
                   )}
                   <InvitationMenuPopover isDashboard={true} />
-                  <Tooltip title="Publish">
-                    <HeaderIconButton
-                      data-tour="publish-button"
-                      onClick={() => setOpenPublishDialog(true)}
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 1.5,
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                        },
-                      }}
-                    >
-                      <Iconify
-                        icon="mdi:rocket-launch-outline"
-                        sx={{ width: 16, height: 16 }}
-                      />
-                    </HeaderIconButton>
+                  {isAccountFree && (
+                    <Tooltip title="Upgrade to unlock more features">
+                      <HeaderIconButton
+                        onClick={() => history.push('/pricing')}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                        }}
+                      >
+                        <Iconify
+                          icon="material-symbols:crown"
+                          sx={{ width: 16, height: 16 }}
+                        />
+                      </HeaderIconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
+                    <span>
+                      <HeaderIconButton
+                        data-tour="publish-button"
+                        onClick={() => setOpenPublishDialog(true)}
+                        disabled={!canPublish}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                          bgcolor: canPublish ? 'primary.main' : 'action.disabledBackground',
+                          color: canPublish ? 'primary.contrastText' : 'action.disabled',
+                          '&:hover': {
+                            bgcolor: canPublish ? 'primary.dark' : 'action.disabledBackground',
+                          },
+                          '&.Mui-disabled': {
+                            bgcolor: 'action.disabledBackground',
+                            color: 'action.disabled',
+                          },
+                        }}
+                      >
+                        <Iconify
+                          icon="mdi:rocket-launch-outline"
+                          sx={{ width: 16, height: 16 }}
+                        />
+                      </HeaderIconButton>
+                    </span>
                   </Tooltip>
                 </Stack>
               ) : (
                 <Stack
                   direction="row"
-                  spacing={1}
+                  spacing={.5}
                   alignItems="center"
                 >
-                  <MobileActionsMenu
-                    onDistribution={() => setOpenSettings(true)}
-                    onHistory={() => setOpenVersionHistory(true)}
-                    onSettings={
-                      isInterfaceComponent && interfaceId ? () => setOpenSettingsDrawer(true) : null
-                    }
-                    onUpgrade={() => history.push('/pricing')}
-                  />
+                  {shouldShowMoreActions && (
+                    <MobileActionsMenu
+                      onDistribution={() => setOpenSettings(true)}
+                      onHistory={() => setOpenVersionHistory(true)}
+                      onSettings={
+                        isInterfaceComponent && interfaceId && hasInterfaceCommits ? () => setOpenSettingsDrawer(true) : null
+                      }
+                      onUpgrade={() => history.push('/pricing')}
+                    />
+                  )}
 
-                  {/* <Button
-                    size="small"
-                    color="inherit"
-                    variant="soft"
-                    startIcon={<Iconify icon="material-symbols:crown" />}
-                    onClick={() => history.push('/pricing')}
-                  >
-                    Upgrade
-                  </Button> */}
-
-                  {isInterfaceComponent && (
+                  {isInterfaceComponent && hasInterfaceCommits && (
                     <Tooltip title="Deployment History">
                       <HeaderIconButton
                         onClick={() => setIsDeploymentHistoryOpen(true)}
@@ -497,26 +542,46 @@ function ProjectHeader() {
                   )}
                   <InvitationMenuPopover isDashboard={true} />
 
-                  <Button
-                    size="small"
-                    variant="contained"
-                    data-tour="publish-button"
-                    startIcon={
-                      <Iconify
-                        icon="mdi:rocket-launch-outline"
-                        sx={{ width: 16, height: 16 }}
-                      />
-                    }
-                    onClick={() => setOpenPublishDialog(true)}
-                    sx={{
-                      height: 32,
-                      borderRadius: 1.5,
-                      px: 2,
-                      minWidth: 'auto',
-                    }}
-                  >
-                    Publish
-                  </Button>
+                  {isAccountFree && (
+                    <Button
+                      size="small"
+                      color="secondary"
+                      variant="soft"
+                      startIcon={<Iconify icon="material-symbols:crown" />}
+                      onClick={() => history.push('/pricing')}
+                      sx={{
+                        height: 32,
+                      }}
+                    >
+                      Upgrade
+                    </Button>
+                  )}
+
+                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
+                    <span>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        data-tour="publish-button"
+                        disabled={!canPublish}
+                        startIcon={
+                          <Iconify
+                            icon="mdi:rocket-launch-outline"
+                            sx={{ width: 16, height: 16 }}
+                          />
+                        }
+                        onClick={() => setOpenPublishDialog(true)}
+                        sx={{
+                          height: 32,
+                          borderRadius: 1.5,
+                          px: 2,
+                          minWidth: 'auto',
+                        }}
+                      >
+                        Publish
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </Stack>
               ))}
           </Stack>

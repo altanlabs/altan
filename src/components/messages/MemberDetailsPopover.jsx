@@ -18,6 +18,7 @@ import { dispatch } from '../../redux/store';
 import { formatDate } from '../../utils/dateUtils.js';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
+import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const DetailRow = ({ label, value, copyable = false }) => (
   <Box sx={{ display: 'flex', mb: 0.5 }}>
@@ -189,12 +190,20 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, roomMember, memberNam
             spacing={1.5}
             alignItems="center"
           >
-            <CustomAvatar
-              sx={{ width: 48, height: 48 }}
-              variant="circular"
-              src={picture}
-              name={memberName || 'Unknown User'}
-            />
+            {isAgent && !picture ? (
+              <AgentOrbAvatar
+                size={48}
+                agentId={member?.agent_id || member?.id}
+                agentState={null}
+              />
+            ) : (
+              <CustomAvatar
+                sx={{ width: 48, height: 48 }}
+                variant="circular"
+                src={picture}
+                name={memberName || 'Unknown User'}
+              />
+            )}
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="subtitle1"

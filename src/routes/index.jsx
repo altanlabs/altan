@@ -65,6 +65,10 @@ import {
   DemoTextVoicePage,
   SDKTestPage,
   SupportPage,
+  VirtualDesktopPage,
+  V2LandingPage,
+  V2RoomsPage,
+  V2RoomPage,
 } from './elements.jsx';
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
@@ -959,6 +963,43 @@ const Router = () => {
             <DashboardLayout>
               <PurchaseSuccessPage />
             </DashboardLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* V2 Virtual Desktop */}
+        <Route
+          path="/v2/landing"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <V2LandingPage />
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/v2/rooms/:roomId"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <V2RoomPage />
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/v2/rooms"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <V2RoomsPage />
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/v2"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <VirtualDesktopPage />
           </AuthGuard>
         </Route>
 

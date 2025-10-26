@@ -255,7 +255,7 @@ function ReferralsPage() {
                           variant="caption"
                           color="text.secondary"
                         >
-                          Tag @altan_ai on X or @altan-ai on LinkedIn for bonus credits.
+                          Tag @altanlabs on X or @altan-ai on LinkedIn for bonus credits.
                         </Typography>
                       </Box>
                     </Stack>

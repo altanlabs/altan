@@ -108,7 +108,7 @@ import {
   addResponseLifecycle,
   completeResponseLifecycle,
 } from '../../redux/slices/room';
-import { addTask, updateTask, removeTask } from '../../redux/slices/tasks';
+import { addTask, updateTask, removeTask, setPlanCompleted } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';
 import { messagePartBatcher } from '../../utils/eventBatcher';
 
@@ -173,7 +173,7 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  // console.log('handleWebSocketEvent', data);
+  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -301,10 +301,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteAltaner(data.data.ids[0]));
       break;
     case 'AltanerComponentNew':
+      console.log('AltanerComponentNew', data);
       dispatch(
         addAltanerComponent({
-          altaner_id: data.data.attributes.altaner_id,
-          attributes: data.data.attributes,
+          altaner_id: data.data.altaner_id,
+          attributes: data.data,
         }),
       );
       break;
@@ -312,17 +313,17 @@ export const handleWebSocketEvent = async (data, user_id) => {
       console.log('AltanerComponentUpdate', data);
       dispatch(
         patchAltanerComponent({
-          altaner_id: data.altaner_id,
-          ids: data.data.ids,
-          changes: data.data.changes,
+          altaner_id: data.data.altaner_id,
+          ids: [data.data.id],
+          changes: data.data,
         }),
       );
       break;
     case 'AltanerComponentDelete':
       dispatch(
         deleteAltanerComponent({
-          altaner_id: data.altaner_id,
-          ids: data.data.ids,
+          altaner_id: data.data.altaner_id,
+          ids: [data.data.id],
         }),
       );
       break;
@@ -461,14 +462,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
       break;
     case 'CommitNew':
-      console.log('CommitNew - Full data:', data);
-      console.log('CommitNew - Attributes:', data.data.attributes);
       const commitPayload = {
         id: data.data.attributes.id,
         interface_id: data.data.attributes.interface_id,
         ...data.data.attributes,
       };
-      console.log('CommitNew - Dispatching payload:', commitPayload);
       dispatch(addInterfaceCommit(commitPayload));
       break;
     case 'CommitUpdate':
@@ -483,59 +481,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
     case 'CommitDelete':
       dispatch(deleteInterfaceCommit(data.data.ids[0]));
       break;
-    case 'RecordsNew':
-      const newTableName = data.table_name || data.data?.table_name;
-      const newBaseId = data.base_id || data.data?.base_id;
-      const newRecords = data.records || data.data?.records;
-
-      if (newTableName && newBaseId && newRecords && Array.isArray(newRecords)) {
-        // Dispatch a thunk to access state and integrate updates
-        dispatch((dispatch, getState) => {
-          const state = getState();
-          const base = state.bases?.bases?.[newBaseId];
-          const table = base?.tables?.items?.find(
-            (t) => t.db_name === newTableName || t.name === newTableName,
-          );
-
-          if (table?.id) {
-            dispatch(
-              integrateRealTimeUpdates({
-                tableId: table.id,
-                additions: newRecords,
-              }),
-            );
-          } else {
-            console.warn('Could not find table ID for:', { newTableName, newBaseId });
-          }
-        });
-      }
-      break;
-    case 'RecordsUpdate':
-      const updateTableName = data.table_name || data.data?.table_name;
-      const updateBaseId = data.base_id || data.data?.base_id;
-      const updateRecords = data.records || data.data?.records;
-
-      if (updateTableName && updateBaseId && updateRecords && Array.isArray(updateRecords)) {
-        // Dispatch a thunk to access state and integrate updates
-        dispatch((dispatch, getState) => {
-          const state = getState();
-          const base = state.bases?.bases?.[updateBaseId];
-          const table = base?.tables?.items?.find(
-            (t) => t.db_name === updateTableName || t.name === updateTableName,
-          );
-
-          if (table?.id) {
-            dispatch(
-              integrateRealTimeUpdates({
-                tableId: table.id,
-                updates: updateRecords,
-              }),
-            );
-          }
-        });
-      }
-      break;
-    case 'RecordsDelete':
       const deleteTableName = data.table_name || data.data?.table_name;
       const deleteBaseId = data.base_id || data.data?.base_id;
       const deleteIds = data.ids || data.data?.ids;
@@ -612,7 +557,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addGateRoom(data.data.attributes));
       break;
     case 'RoomUpdate':
-      dispatch(roomUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(roomUpdate(normalizedData));
+      } else {
+        console.error('Invalid RoomUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'RoomMemberJoined':
       console.log('RoomMemberJoined', data.data);
@@ -927,7 +885,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'RoomMemberUpdate':
-      dispatch(roomMemberUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(roomMemberUpdate(normalizedData));
+      } else {
+        console.error('Invalid RoomMemberUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'ThreadNew':
       console.log('ThreadNew', data);
@@ -938,7 +909,20 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addThread(thread));
       break;
     case 'ThreadUpdate':
-      dispatch(threadUpdate(data.data));
+      // Validate data structure before dispatching
+      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
+        // Normalize ids field (handle both 'id' and 'ids' from backend)
+        const normalizedData = {
+          ids: data.data.ids || data.data.id,
+          changes: data.data.changes,
+        };
+        dispatch(threadUpdate(normalizedData));
+      } else {
+        console.error('Invalid ThreadUpdate data structure:', {
+          received: data.data,
+          expected: '{ ids: string | string[], changes: object }',
+        });
+      }
       break;
     case 'ThreadDelete':
       dispatch(removeThread(data.data));
@@ -1049,6 +1033,23 @@ export const handleWebSocketEvent = async (data, user_id) => {
               },
             }),
           );
+
+          // Check if all tasks are completed
+          if (taskEventData.all_tasks_completed) {
+            // eslint-disable-next-line no-console
+            console.log('🎉 All tasks completed! Plan finished:', {
+              mainthread_id: taskEventData.mainthread_id,
+              room_id: taskEventData.room_id,
+            });
+
+            // Dispatch plan completed event
+            dispatch(
+              setPlanCompleted({
+                planId: taskEventData.mainthread_id,
+                threadId: taskEventData.mainthread_id,
+              }),
+            );
+          }
 
           // Send browser notification
           dispatch(

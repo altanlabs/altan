@@ -397,27 +397,10 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
 
     setLoading(true);
     try {
-      const enhancementResponse = await fetch('https://api.altan.ai/galaxia/hook/IrrJw9', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: formData.useCase,
-        }),
-      });
-
-      if (!enhancementResponse.ok) {
-        throw new Error('Failed to enhance agent prompt');
-      }
-
-      const enhancementData = await enhancementResponse.json();
-      const agentName = enhancementData.name || formData.name || 'AI Assistant';
+      const agentName = formData.name || 'AI Assistant';
       const prompt =
-        enhancementData.prompt ||
         `You are a helpful AI assistant. Your goal is to assist users based on: ${formData.useCase}`;
       const description =
-        enhancementData.description ||
         formData.useCase.substring(0, 100) + (formData.useCase.length > 100 ? '...' : '');
 
       const agentData = {
@@ -443,12 +426,15 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
           use_case: formData.useCase,
           voice_name: formData.voice?.name || null,
           created_from: 'dashboard',
-          enhanced: true,
+          enhanced: false,
         },
       };
 
       const newAgent = await dispatch(createAgent(agentData));
-      history.push(`/agent/${newAgent.id}`);
+      
+      // Redirect to agent page with the use case as initial message
+      const messageParam = encodeURIComponent(formData.useCase);
+      history.push(`/agent/${newAgent.id}?message=${messageParam}`);
     } catch (error) {
       console.error('Error creating agent:', error);
     } finally {

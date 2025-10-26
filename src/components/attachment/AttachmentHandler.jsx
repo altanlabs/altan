@@ -45,6 +45,7 @@ const AttachmentHandler = ({
   isFullscreen = false,
   currentItemId = null,
   onItemSelect = null,
+  show_mode_selector = false,
 }) => {
   // Mobile detection
   const theme = useTheme();
@@ -256,13 +257,15 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
           {!isMobile && (
             <>
-              <ModeSelectionChip
-                selectedMode={selectedMode}
-                onModeSelect={handleModeSelect}
-                isVoiceActive={isVoiceActive}
-              />
+              {show_mode_selector && (
+                <ModeSelectionChip
+                  selectedMode={selectedMode}
+                  onModeSelect={handleModeSelect}
+                  isVoiceActive={isVoiceActive}
+                />
+              )}
               
-              {selectedMode === 'instant' && (
+              {show_mode_selector && selectedMode === 'instant' && (
                 <AgentSelectionChip
                   agents={agents}
                   selectedAgent={selectedAgent}

@@ -38,38 +38,6 @@ function extractAndCapitalize(str) {
     .join(' ');
 }
 
-const getTaskIcon = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'completed':
-    case 'done':
-      return 'mdi:check-circle';
-    case 'running':
-      return 'mdi:circle-slice-8';
-    case 'ready':
-      return 'mdi:circle-outline';
-    default:
-      return 'mdi:circle-outline';
-  }
-};
-
-const getTaskIconColor = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'completed':
-    case 'done':
-      return 'text-green-600 dark:text-green-400';
-    case 'ready':
-      return 'text-amber-600 dark:text-amber-400';
-    case 'running':
-      return 'text-blue-600 dark:text-blue-400';
-    case 'to-do':
-    case 'todo':
-    case 'pending':
-      return 'text-gray-500 dark:text-gray-400';
-    default:
-      return 'text-gray-500 dark:text-gray-400';
-  }
-};
-
 /**
  * Custom renderer for create_task tool
  * Fetches and displays the actual task from Redux with expand/collapse
@@ -102,7 +70,6 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
 
         if (data && data.task_name) {
           // eslint-disable-next-line no-console
-          console.log('CreateTaskRenderer - Got task from result:', data);
           return {
             id: data.id,
             task_name: data.task_name,
@@ -207,10 +174,18 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     return displayText;
   }, [duration, displayText]);
 
+  // Check Redux for latest task status (for real-time updates)
+  const reduxTask = useMemo(() => {
+    if (!taskData?.task_name) return null;
+    return tasks?.find((t) => t.task_name === taskData.task_name && !t.plan_id);
+  }, [tasks, taskData?.task_name]);
+
   const agentAvatar = taskData?.assigned_agent_name
     ? agentAvatars[taskData.assigned_agent_name]
     : null;
-  const isTaskRunning = taskData?.status?.toLowerCase() === 'running';
+  // Use Redux status if available (for real-time updates), otherwise use taskData status
+  const currentStatus = reduxTask?.status || taskData?.status;
+  const isTaskRunning = currentStatus?.toLowerCase() === 'running';
 
   if (!header) {
     return null;
@@ -282,15 +257,9 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
                     />
                   </Tooltip>
                 )}
-                {isTaskRunning ? (
-                  <TextShimmer className="text-sm font-medium text-blue-600 dark:text-blue-400" duration={2}>
-                    {taskData.task_name || 'Untitled Task'}
-                  </TextShimmer>
-                ) : (
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {taskData.task_name || 'Untitled Task'}
-                  </span>
-                )}
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {taskData.task_name || 'Untitled Task'}
+                </span>
               </div>
 
               {/* Task Description - only when collapsed */}

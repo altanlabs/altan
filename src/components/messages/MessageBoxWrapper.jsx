@@ -14,6 +14,7 @@ import { useSelector } from '../../redux/store.js';
 import { formatDate, formatTime } from '../../utils/dateUtils.js';
 import Reactions from '../room/thread/message/Reactions.jsx';
 import { getMemberName } from '../room/utils';
+import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const getPicture = (member) => {
   if (!member) {
@@ -96,27 +97,43 @@ const MessageBoxWrapper = ({
   const picture = getPicture(sender.member);
   const isMessagePotentialParent = message.id === drawerMessageId;
 
-  const renderAvatar = useMemo(
-    () =>
-      !!finalShouldShowMember && (
-        <CustomAvatar
-          alt={sender?.id}
-          sx={{
-            width: mode === 'mini' ? 16 : 24,
-            height: mode === 'mini' ? 16 : 24,
-            cursor: 'pointer',
-            '&:hover': {
-              opacity: 0.8,
-            },
-          }}
-          src={picture}
+  const renderAvatar = useMemo(() => {
+    if (!finalShouldShowMember) return null;
+
+    const isAgent = sender?.member?.member_type === 'agent';
+    const hasNoPicture = !picture;
+
+    if (isAgent && hasNoPicture) {
+      const size = mode === 'mini' ? 20 : 32;
+      return (
+        <AgentOrbAvatar
+          size={size}
+          agentId={sender?.id}
           ref={avatarRef}
-          name={sender?.member?.guest?.nickname || 'Member'}
           onClick={handleAvatarClick}
+          agentState={null}
         />
-      ),
-    [finalShouldShowMember, sender?.id, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode],
-  );
+      );
+    }
+
+    return (
+      <CustomAvatar
+        alt={sender?.id}
+        sx={{
+          width: mode === 'mini' ? 16 : 24,
+          height: mode === 'mini' ? 16 : 24,
+          cursor: 'pointer',
+          '&:hover': {
+            opacity: 0.8,
+          },
+        }}
+        src={picture}
+        ref={avatarRef}
+        name={sender?.member?.guest?.nickname || 'Member'}
+        onClick={handleAvatarClick}
+      />
+    );
+  }, [finalShouldShowMember, sender?.id, sender?.member?.member_type, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode]);
 
   return (
     <>

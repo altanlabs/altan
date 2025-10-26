@@ -16,11 +16,10 @@ export default function PricingPage() {
     <CompactLayout title="Pricing · Altan">
       <Container
         maxWidth="lg"
-        sx={{ pt: 4, pb: 5 }}
       >
         <Stack
           spacing={2}
-          sx={{ mb: 5, textAlign: 'center' }}
+          sx={{ mb: 2, textAlign: 'center' }}
         >
           <Typography
             variant="h2"

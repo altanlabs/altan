@@ -27,6 +27,7 @@ import {
   sendMessage,
   setThreadRespond,
   selectIsVoiceActive,
+  selectRoomContext,
 } from '../redux/slices/room';
 import { selectTasksByThread } from '../redux/slices/tasks';
 import { dispatch, useSelector } from '../redux/store.js';
@@ -79,6 +80,7 @@ const FloatingTextArea = ({
   currentItemId = null,
   onItemSelect = null,
   onHeightChange = null,
+  show_mode_selector = false,
 }) => {
   const { altanerId } = useParams();
   const me = useSelector(selectMe);
@@ -113,6 +115,9 @@ const FloatingTextArea = ({
     .filter((member) => member?.member?.member_type === 'agent')
     .map((member) => getMemberDetails(member));
 
+  // Get room context to append to all messages
+  const roomContext = useSelector(selectRoomContext);
+
   const isSendEnabled = !!(!editorEmpty || attachments?.length);
   const isViewer = useMemo(() => {
     // Don't show viewer state during loading/switching - only when explicitly a viewer
@@ -132,14 +137,24 @@ const FloatingTextArea = ({
           setSelectedAgent(null);
         }
 
-        // Append mode instruction as hidden directive
-        const modeMapping = {
-          'auto': 'AUTO MODE',
-          'instant': 'INSTANT MODE',
-          'plan': 'PLAN MODE',
-        };
-        const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
-        finalContent = finalContent + '\n' + modeInstruction;
+        // Append mode instruction as hidden directive (only if mode selector is enabled)
+        if (show_mode_selector) {
+          const modeMapping = {
+            'auto': 'AUTO MODE',
+            'instant': 'INSTANT MODE',
+            'plan': 'PLAN MODE',
+          };
+          const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
+          finalContent = finalContent + '\n' + modeInstruction;
+        }
+
+        // Append room context as hidden content if available
+        if (roomContext) {
+          console.log('🔧 Appending room context to message:', roomContext);
+          finalContent += `\n<hide>${roomContext}</hide>`;
+        } else {
+          console.log('⚠️ No room context available');
+        }
 
         // Create a clean attachments array without `preview`
         const sanitizedAttachments = attachments.map(({ preview, ...rest }) => rest);
@@ -162,7 +177,7 @@ const FloatingTextArea = ({
         setAttachments([]);
       }
     },
-    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode],
+    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode, roomContext],
   );
 
   // Removes a single attachment by index
@@ -355,7 +370,8 @@ const FloatingTextArea = ({
                 : undefined
             }
           >
-            {renderCredits && <CreditWallet />}
+            {/* {renderCredits && <CreditWallet />} */}
+            
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3 px-4">
                 {attachments.map((attachment, index) => {
@@ -510,6 +526,7 @@ const FloatingTextArea = ({
                   isFullscreen={isFullscreen}
                   currentItemId={currentItemId}
                   onItemSelect={onItemSelect}
+                  show_mode_selector={show_mode_selector}
                 />
               </div>
             )}
