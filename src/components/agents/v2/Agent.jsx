@@ -45,6 +45,7 @@ import AgentInfoDialog from './components/AgentInfoDialog';
 import AvatarSelectionModal from './components/AvatarSelectionModal';
 import AgentTab from './tabs/AgentTab';
 import ConversationsTab from './tabs/ConversationsTab';
+import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
@@ -55,6 +56,7 @@ const versionsSelector = (template) => template?.versions;
 const TABS = [
   { id: 'agent', label: 'Agent', icon: 'eva:settings-2-outline', component: AgentTab },
   { id: 'tools', label: 'Tools', icon: 'eva:grid-outline', component: ToolsTab },
+  { id: 'mcp', label: 'MCP', icon: 'mdi:server-network', component: McpTab },
   { id: 'voice', label: 'Voice', icon: 'eva:mic-outline', component: VoiceTab },
   { id: 'security', label: 'Security', icon: 'eva:shield-outline', component: SecurityTab },
   {
@@ -558,7 +560,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         <Panel
           id="agent-config-panel"
           order={1}
-          defaultSize={showTestDrawer ? 50 : 100}
+          defaultSize={showTestDrawer ? 70 : 100}
           minSize={35}
           className="overflow-hidden flex flex-col"
         >
@@ -822,7 +824,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
             ref={chatPanelRef}
             id="test-chat-panel"
             order={2}
-            defaultSize={50}
+            defaultSize={30}
             minSize={25}
             maxSize={60}
             collapsible={false}
