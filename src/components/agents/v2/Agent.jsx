@@ -86,9 +86,13 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Get initial tab from URL params or default to 'creator'
+  // Get initial tab from URL params
+  // Default to 'agent' tab for existing agents
+  // Default to 'creator' tab if there's a message param (coming from create flow)
   const searchParams = new URLSearchParams(location.search);
-  const initialTab = searchParams.get('tab') || 'creator';
+  const hasMessageParam = searchParams.has('message');
+  const urlTab = searchParams.get('tab');
+  const initialTab = urlTab || (hasMessageParam ? 'creator' : 'agent');
 
   const [agentData, setAgentData] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -99,7 +103,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [showTestDrawer, setShowTestDrawer] = useState(true);
+  // Default test drawer to closed when inside an altaner/project context
+  const [showTestDrawer, setShowTestDrawer] = useState(!altanerComponentId);
   const [creatorRoomId, setCreatorRoomId] = useState(null);
   const [dmRoomId, setDmRoomId] = useState(null);
   const [initialMessage, setInitialMessage] = useState(null);
@@ -113,7 +118,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
       // Update URL with tab parameter
       const newSearchParams = new URLSearchParams(location.search);
-      if (tabId === 'creator') {
+      if (tabId === 'agent') {
         newSearchParams.delete('tab'); // Remove param for default tab
       } else {
         newSearchParams.set('tab', tabId);
@@ -160,9 +165,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               // Store the message to be sent in the creator room
               setInitialMessage(decodeURIComponent(messageParam));
 
-              // Clear the message param and ensure we're on the creator tab
+              // Clear the message param and explicitly set to creator tab
               searchParams.delete('message');
-              searchParams.delete('tab'); // Remove tab param to default to 'creator'
+              searchParams.set('tab', 'creator'); // Explicitly set to creator tab
               const newSearch = searchParams.toString();
               history.replace({
                 pathname: location.pathname,
@@ -195,12 +200,15 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   // Sync tab state with URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const urlTab = searchParams.get('tab') || 'creator';
+    const hasMessage = searchParams.has('message');
+    // If we have an initialMessage set, we should stay on creator tab even if URL param was cleared
+    const shouldDefaultToCreator = hasMessage || (initialMessage && !searchParams.has('tab'));
+    const urlTab = searchParams.get('tab') || (shouldDefaultToCreator ? 'creator' : 'agent');
 
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
     }
-  }, [location.search, activeTab]);
+  }, [location.search, activeTab, initialMessage]);
 
   const timeoutRef = useRef();
   const debouncedUpdateAgent = useCallback(
@@ -550,7 +558,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     return <AltanLogo />;
   }
 
-  return (
+  const agentContent = (
     <div className="h-full flex flex-col overflow-hidden">
       <PanelGroup
         direction="horizontal"
@@ -945,12 +953,34 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       </Snackbar>
     </div>
   );
+
+  // Wrap in card-like container when rendered in altaner/project context
+  if (altanerComponentId) {
+    return (
+      <Box
+        className={`w-full h-full relative overflow-hidden ${
+          isMobile ? '' : 'pb-2 px-2'
+        }`}
+      >
+        <Box
+          className={`flex flex-col h-full overflow-hidden ${
+            isMobile ? '' : 'border border-divider rounded-xl'
+          }`}
+        >
+          {agentContent}
+        </Box>
+      </Box>
+    );
+  }
+
+  return agentContent;
 }
 
 Agent.propTypes = {
   agentId: PropTypes.string,
   id: PropTypes.string,
   onGoBack: PropTypes.func.isRequired,
+  altanerComponentId: PropTypes.string,
 };
 
 export default memo(Agent);

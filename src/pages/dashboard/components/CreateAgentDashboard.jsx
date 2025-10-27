@@ -398,8 +398,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
     setLoading(true);
     try {
       const agentName = formData.name || 'AI Assistant';
-      const prompt =
-        `You are a helpful AI assistant. Your goal is to assist users based on: ${formData.useCase}`;
+      const prompt = `You are a helpful AI assistant. Your goal is to assist users based on: ${formData.useCase}`;
       const description =
         formData.useCase.substring(0, 100) + (formData.useCase.length > 100 ? '...' : '');
 
@@ -431,7 +430,7 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
       };
 
       const newAgent = await dispatch(createAgent(agentData));
-      
+
       // Redirect to agent page with the use case as initial message
       const messageParam = encodeURIComponent(formData.useCase);
       history.push(`/agent/${newAgent.id}?message=${messageParam}`);
@@ -500,7 +499,7 @@ function CreateAgentDashboard({ handleVoice }) {
   const modeFromUrl = searchParams.get('mode');
 
   // For unauthenticated users, always default to 'create' mode
-  const defaultMode = isAuthenticated ? (modeFromUrl || 'chat') : 'create';
+  const defaultMode = isAuthenticated ? modeFromUrl || 'chat' : 'create';
   const [mode, setMode] = useState(defaultMode);
 
   // Update URL when mode changes

@@ -13,6 +13,9 @@ import {
   Tooltip,
   Skeleton,
   useTheme,
+  Collapse,
+  Chip,
+  Divider,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
@@ -30,6 +33,7 @@ function MCPToolsTab({ serverId, serverApprovalMode, existingToolPolicies }) {
   const [discoveryData, setDiscoveryData] = useState(null);
   const [tools, setTools] = useState([]);
   const [error, setError] = useState(null);
+  const [expandedTool, setExpandedTool] = useState(null);
 
   const handleDiscoverTools = async () => {
     if (!serverId) return;
@@ -115,6 +119,20 @@ function MCPToolsTab({ serverId, serverApprovalMode, existingToolPolicies }) {
       default:
         return policy;
     }
+  };
+
+  const toggleToolExpansion = (toolName) => {
+    setExpandedTool((prev) => (prev === toolName ? null : toolName));
+  };
+
+  const renderParameterType = (param) => {
+    if (param.type === 'object' && param.properties) {
+      return 'object';
+    }
+    if (param.type === 'array' && param.items) {
+      return `array<${param.items.type || 'any'}>`;
+    }
+    return param.type || 'any';
   };
 
   if (discovering) {
@@ -267,34 +285,41 @@ function MCPToolsTab({ serverId, serverApprovalMode, existingToolPolicies }) {
                 key={tool.name}
                 elevation={0}
                 sx={{
-                  p: 1.5,
                   border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 1.5,
                   bgcolor: theme.palette.background.paper,
                   opacity: tool.suggested_approval_policy === 'disabled' ? 0.5 : 1,
-                  transition: 'opacity 0.2s',
+                  transition: 'all 0.2s',
+                  overflow: 'hidden',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                  {/* Tool Icon */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      borderRadius: 1,
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
-                      flexShrink: 0,
-                      mt: 0.5,
-                    }}
-                  >
-                    <Iconify
-                      icon="eva:code-outline"
-                      sx={{ fontSize: '1rem', color: 'primary.main' }}
-                    />
-                  </Box>
+                <Box sx={{ p: 1.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  {/* Info Toggle Icon */}
+                  <Tooltip title={expandedTool === tool.name ? 'Hide details' : 'Show details'}>
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleToolExpansion(tool.name)}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        flexShrink: 0,
+                        mt: 0.5,
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.16),
+                        },
+                      }}
+                    >
+                      <Iconify
+                        icon={
+                          expandedTool === tool.name
+                            ? 'eva:arrow-ios-upward-outline'
+                            : 'eva:info-outline'
+                        }
+                        sx={{ fontSize: '1rem', color: 'primary.main' }}
+                      />
+                    </IconButton>
+                  </Tooltip>
 
                   {/* Tool Details */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -388,6 +413,98 @@ function MCPToolsTab({ serverId, serverApprovalMode, existingToolPolicies }) {
                     )}
                   </Box>
                 </Box>
+
+                {/* Expanded Details */}
+                <Collapse
+                  in={expandedTool === tool.name}
+                  timeout="auto"
+                >
+                  <Divider />
+                  <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+                    {/* Input Schema */}
+                    {tool.inputSchema && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontWeight: 600, color: 'text.secondary', mb: 1, display: 'block' }}
+                        >
+                          Input Parameters
+                        </Typography>
+
+                        {tool.inputSchema.properties &&
+                        Object.keys(tool.inputSchema.properties).length > 0 ? (
+                          <Stack spacing={1}>
+                            {Object.entries(tool.inputSchema.properties).map(([key, param]) => (
+                              <Box
+                                key={key}
+                                sx={{
+                                  p: 1.5,
+                                  borderRadius: 1,
+                                  bgcolor: theme.palette.background.paper,
+                                  border: `1px solid ${theme.palette.divider}`,
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 600, fontFamily: 'monospace' }}
+                                  >
+                                    {key}
+                                  </Typography>
+                                  <Chip
+                                    label={renderParameterType(param)}
+                                    size="small"
+                                    sx={{
+                                      height: 18,
+                                      fontSize: '0.65rem',
+                                      bgcolor: alpha(theme.palette.info.main, 0.08),
+                                      color: 'info.main',
+                                    }}
+                                  />
+                                  {tool.inputSchema.required?.includes(key) && (
+                                    <Chip
+                                      label="required"
+                                      size="small"
+                                      sx={{
+                                        height: 18,
+                                        fontSize: '0.65rem',
+                                        bgcolor: alpha(theme.palette.error.main, 0.08),
+                                        color: 'error.main',
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                                {param.description && (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ color: 'text.secondary', display: 'block' }}
+                                  >
+                                    {param.description}
+                                  </Typography>
+                                )}
+                                {param.title && param.title !== key && (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ color: 'text.secondary', display: 'block', fontStyle: 'italic' }}
+                                  >
+                                    Title: {param.title}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography
+                            variant="caption"
+                            sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+                          >
+                            No parameters required
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                </Collapse>
               </Paper>
             ))}
           </Stack>

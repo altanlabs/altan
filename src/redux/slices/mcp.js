@@ -112,6 +112,17 @@ export default reducer;
 
 // Helper function to map frontend data to backend schema
 const mapToBackendSchema = (data) => {
+  // Transform headers array [{key, value}] to dict {key: value}
+  let requestHeaders = null;
+  if (data.headers && data.headers.length > 0) {
+    requestHeaders = data.headers.reduce((acc, header) => {
+      if (header.key && header.value) {
+        acc[header.key] = header.value;
+      }
+      return acc;
+    }, {});
+  }
+
   const mapped = {
     name: data.name,
     description: data.description,
@@ -120,7 +131,7 @@ const mapToBackendSchema = (data) => {
     approval_policy: data.approvalMode,
     execution_mode: data.executionMode,
     secret_token: data.secret !== 'none' ? data.secretToken : null,
-    request_headers: data.headers && data.headers.length > 0 ? data.headers : null,
+    request_headers: requestHeaders,
     force_pre_tool_speech: data.forcePreToolSpeech,
     disable_interruptions: data.disableInterruptions,
     tool_approval_hashes: data.toolApprovalHashes || null,
@@ -128,7 +139,7 @@ const mapToBackendSchema = (data) => {
   };
 
   // Remove undefined/null values
-  return Object.fromEntries(Object.entries(mapped).filter(([_, v]) => v !== undefined));
+  return Object.fromEntries(Object.entries(mapped).filter(([, v]) => v !== undefined));
 };
 
 // Server Management Actions
@@ -328,8 +339,16 @@ export const discoverMCPServerTools = (serverId) => async () => {
 
 export const configureMCPServerTools = (serverId, tools) => async () => {
   try {
+    // Transform array of {tool_name, approval_policy} to dict {tool_name: policy}
+    const toolPolicies = Array.isArray(tools)
+      ? tools.reduce((acc, tool) => {
+          acc[tool.tool_name] = tool.approval_policy;
+          return acc;
+        }, {})
+      : tools; // If already a dict, use as-is
+
     const response = await optimai.post(`/mcp/servers/${serverId}/configure-tools`, {
-      tools,
+      tool_policies: toolPolicies,
     });
     return Promise.resolve(response.data);
   } catch (error) {
@@ -337,4 +356,3 @@ export const configureMCPServerTools = (serverId, tools) => async () => {
     return Promise.reject(errorMessage);
   }
 };
-
