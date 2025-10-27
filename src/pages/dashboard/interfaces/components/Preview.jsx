@@ -29,6 +29,7 @@ function Preview({
   isLoading,
 }) {
   const [isSendingError, setIsSendingError] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
 
   // Redux state selectors
   const navigationPath = useSelector(selectNavigationPath);
@@ -86,6 +87,7 @@ function Preview({
     }
 
     if (shouldRefresh && iframeRef.current) {
+      setInternalLoading(true);
       const iframe = iframeRef.current;
       const currentSrc = iframe.src;
       iframe.src = '';
@@ -118,9 +120,7 @@ function Preview({
         // eslint-disable-next-line no-console
         console.log('🔄 Triggering rebuild for interface:', info.interfaceId);
 
-        const response = await optimai_pods.post(
-          `/interface/dev/${info.interfaceId}/build`,
-        );
+        const response = await optimai_pods.post(`/interface/dev/${info.interfaceId}/build`);
 
         if (response.status === 200) {
           // eslint-disable-next-line no-console
@@ -222,10 +222,46 @@ function Preview({
             position: 'relative',
           }}
         >
+          {/* Loading bar - shows at the top when iframe is loading */}
+          {(isLoading || internalLoading) && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '2px',
+                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                zIndex: 1000,
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  height: '100%',
+                  width: '100%',
+                  backgroundColor: '#3b82f6',
+                  transformOrigin: 'left',
+                  animation: 'loadingProgress 2s ease-out forwards',
+                  '@keyframes loadingProgress': {
+                    '0%': {
+                      transform: 'scaleX(0)',
+                    },
+                    '100%': {
+                      transform: 'scaleX(1)',
+                    },
+                  },
+                }}
+              />
+            </Box>
+          )}
           <iframe
             id="preview-iframe"
             src={currentUrl}
-            onLoad={handleIframeLoad}
+            onLoad={() => {
+              handleIframeLoad();
+              setInternalLoading(false);
+            }}
             ref={iframeRef}
             allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation; payment; accelerometer; gyroscope; usb; midi; cross-origin-isolated; gamepad; xr-spatial-tracking; magnetometer; screen-wake-lock; autoplay"
             style={{

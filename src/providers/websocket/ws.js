@@ -76,6 +76,7 @@ import {
   deleteInterfaceCommit,
 } from '../../redux/slices/general';
 import { addNotification } from '../../redux/slices/notifications';
+import { refreshIframe } from '../../redux/slices/previewControl';
 import {
   addMessage,
   removeMessage,
@@ -173,7 +174,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -468,6 +468,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
         ...data.data.attributes,
       };
       dispatch(addInterfaceCommit(commitPayload));
+      // Wait 2 seconds before refreshing iframe to allow server to deploy
+      setTimeout(() => {
+        dispatch(refreshIframe());
+      }, 2000);
       break;
     case 'CommitUpdate':
       dispatch(

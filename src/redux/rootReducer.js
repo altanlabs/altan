@@ -17,6 +17,7 @@ import gateReducer from './slices/gate';
 import gatesReducer from './slices/gates';
 import generalReducer from './slices/general';
 import marketplaceReducer from './slices/marketplace';
+import mcpReducer from './slices/mcp';
 import mediaReducer from './slices/media';
 import moneyReducer from './slices/money';
 import notificationsReducer from './slices/notifications';
@@ -64,6 +65,7 @@ const rootReducer = combineReducers({
   subscriptions: subscriptionsReducer,
   money: moneyReducer,
   marketplace: marketplaceReducer,
+  mcp: mcpReducer,
   bases: basesReducer,
   codeEditor: codeEditorReducer,
   commits: commitsReducer,

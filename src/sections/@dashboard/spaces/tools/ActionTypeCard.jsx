@@ -261,6 +261,7 @@ const getIntentSettings = (tool) => ({
   intent_settings: {
     intent: tool?.meta_data?.intent_settings?.intent ?? false,
     ui_intent: tool?.meta_data?.intent_settings?.ui_intent ?? false,
+    async: tool?.meta_data?.intent_settings?.async ?? false,
   }
 });
 
@@ -475,6 +476,7 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
         intent_settings: {
           intent: intent_settings?.intent ?? false,
           ui_intent: intent_settings?.ui_intent ?? false,
+          async: intent_settings?.async ?? false,
         },
       },
       ...(isUpdate ? {} : { action_type_id: action.id, override_action: actionOverrides }),
@@ -723,6 +725,24 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                               sx={{ display: 'block', ml: 4, mt: -0.5 }}
                             >
                               Allow agent to dynamically rename tool display with contextual parameters
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  {...methods.register('intent_settings.async')}
+                                  defaultChecked={values.intent_settings?.async ?? false}
+                                />
+                              }
+                              label="Async"
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
+                            >
+                              This will stop the generation and will wait for the client to activate it again. 
                             </Typography>
                           </Box>
                         </Stack>

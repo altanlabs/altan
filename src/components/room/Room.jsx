@@ -48,12 +48,13 @@ const Room = ({
   const initialized = useSelector(selectInitializedRoom);
   const loading = useSelector(selectLoadingRoom);
 
-  // Clean up on unmount only
+  // Clean up when roomId changes or on unmount
   useEffect(() => {
+    // Clear state when roomId changes
     return () => {
       dispatch(clearRoomState());
     };
-  }, []);
+  }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
     dispatch(fetchRoom({ roomId, user, guest }))

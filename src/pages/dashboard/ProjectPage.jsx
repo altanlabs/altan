@@ -21,7 +21,7 @@ import {
   selectViewType,
 } from '../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../redux/slices/general';
-import { selectMainThread } from '../../redux/slices/room';
+import { selectMainThread, clearRoomState } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
@@ -113,6 +113,7 @@ export default function ProjectPage() {
     }
     return () => {
       dispatch(clearCurrentAltaner());
+      dispatch(clearRoomState());
     };
   }, [altanerId]);
 
@@ -338,9 +339,9 @@ export default function ProjectPage() {
     );
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  // if (isLoading) {
+  //   return <LoadingScreen />;
+  // }
 
   // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {

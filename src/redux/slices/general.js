@@ -339,6 +339,11 @@ const slice = createSlice({
     },
     updateAccountAltaner(state, action) {
       const { ids, changes } = action.payload;
+      // Add defensive check for ids
+      if (!ids || !Array.isArray(ids)) {
+        console.warn('updateAccountAltaner: ids is undefined or not an array', action.payload);
+        return;
+      }
       ids.forEach((altanerId) => {
         const index = state.account.altaners.findIndex((a) => a.id === altanerId);
         if (index !== -1) {
@@ -755,6 +760,7 @@ const slice = createSlice({
       state.agentsUsageData = {};
     },
     addInterfaceCommit(state, action) {
+      console.log('Redux addInterfaceCommit - Action:', action);
       const { id, interface_id, ...commitData } = action.payload;
       console.log('Redux addInterfaceCommit - Payload:', action.payload);
       console.log('Redux addInterfaceCommit - Looking for interface_id:', interface_id);
