@@ -53,7 +53,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const queryParams = new URLSearchParams({
       theme: theme.palette.mode,
       hideSnippet: 'true',
-      commit: latestCommit,
     });
     const baseUrl = `https://${ui.repo_name}.previews.altan.ai/`;
     console.log('baseUrl', baseUrl);
@@ -123,19 +122,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     }
   }, [ui, id]);
 
-  useEffect(() => {
-    let timeoutId;
-
-    if (status === 'running') {
-      timeoutId = setTimeout(handleReload, 1000);
-    }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [handleReload, status]);
 
   useEffect(() => {
     const iframe = iframeRef?.current;
@@ -162,20 +148,10 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
   }, [ui?.deployments?.items]);
 
   useEffect(() => {
-    if (!!baseIframeUrl) {
-      const latestCommit = commits?.[0]?.commit_hash;
-      const isNewCommit = latestCommit && latestCommit !== lastCommitRef.current;
-      
-      // If this is a new commit (not initial load), wait 2 seconds for server to deploy
-      const delay = isNewCommit ? 5000 : 0;
-      
-      const timeoutId = setTimeout(() => {
-        setIframeUrl(baseIframeUrl);
-      }, delay);
-      
-      return () => clearTimeout(timeoutId);
+    if (baseIframeUrl) {
+      setIframeUrl(baseIframeUrl);
     }
-  }, [baseIframeUrl, commits]);
+  }, [baseIframeUrl]);
 
   useEffect(() => {
     if (!ui?.repo_name || !ws?.isOpen) return;

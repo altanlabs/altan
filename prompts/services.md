@@ -26,19 +26,24 @@ The workflow is:
 
 1. **Get Project** — Call `get_project` to obtain `cloud_id`
 2. **Get Cloud Credentials** — Call `get_cloud` to retrieve `base_url` and available credentials (`SUPABASE_URL`, `SUPABASE_KEY`, etc.)
-3. **List Existing Secrets** — **MANDATORY**: Call `list_secrets` to see what's ALREADY stored in Altan Cloud
-4. **Identify Required Secrets** — Determine ALL secrets the service needs (database, API keys, webhook secrets, etc.)
-5. **Create Missing Secrets** — Compare required vs existing:
+3. **Research Third-Party Solutions** — **MANDATORY**: If using ANY third-party SDK or API:
+   * Use `web_search` to find latest official documentation
+   * Search for best practices and current recommended patterns
+   * Verify which library/SDK is best for the use case
+   * Check for breaking changes, deprecations, or newer alternatives
+4. **List Existing Secrets** — **MANDATORY**: Call `list_secrets` to see what's ALREADY stored in Altan Cloud
+5. **Identify Required Secrets** — Determine ALL secrets the service needs (database, API keys, webhook secrets, etc.)
+6. **Create Missing Secrets** — Compare required vs existing:
    * If `SUPABASE_URL`/`SUPABASE_KEY` from `get_cloud` are NOT in `list_secrets` → `upsert_secret` for each
    * For third-party credentials → `create_authorization_request(custom_secrets=...)` and wait for user
    * When user provides secrets → immediately `upsert_secret` for each
-6. **Verify All Secrets Exist** — Call `list_secrets` again to confirm EVERY required secret is stored
-7. **Stop if ANY Missing** — Do NOT implement or deploy code until `list_secrets` shows ALL required secrets
-8. **Implement Service** — Write clean code with straightforward initialization (no defensive checks needed). Export `router`.
-9. **Define Requirements** — Only pip-installable packages (e.g., `"supabase"`, `"httpx"`, `"stripe"`). Include `"supabase"` if using DB.
-10. **Deploy** — Create/update service with `cloud_id`, `requirements`, `description`, and `code`
-11. **If Deploy Fails** — Call `list_secrets` immediately, verify all secrets exist, create missing ones, redeploy
-12. **Test (mandatory)** — Call every endpoint with real requests; verify status codes, schemas, side effects
+7. **Verify All Secrets Exist** — Call `list_secrets` again to confirm EVERY required secret is stored
+8. **Stop if ANY Missing** — Do NOT implement or deploy code until `list_secrets` shows ALL required secrets
+9. **Implement Service** — Write clean code with straightforward initialization (no defensive checks needed). Export `router`.
+10. **Define Requirements** — Only pip-installable packages (e.g., `"supabase"`, `"httpx"`, `"stripe"`). Include `"supabase"` if using DB.
+11. **Deploy** — Create/update service with `cloud_id`, `requirements`, `description`, and `code`
+12. **If Deploy Fails** — Call `list_secrets` immediately, verify all secrets exist, create missing ones, redeploy
+13. **Test (mandatory)** — Call every endpoint with real requests; verify status codes, schemas, side effects
 
 ## Coding Standards
 
@@ -82,12 +87,19 @@ End query chains with `.execute()` and read results from `.data`.
 
 ## Third-Party Integrations
 
-1. Research official docs for SDK install, auth, and usage.
-2. **Create ONE authorization request per service** — Do NOT combine OpenAI + ElevenLabs + email credentials into a single request.
+1. **Search Latest Documentation FIRST** — **MANDATORY**: Before using ANY SDK or third-party API:
+   - Use `web_search` to find the latest official documentation
+   - Search for current best practices and recommended patterns
+   - Verify the SDK is still maintained and what version to use
+   - Check for any breaking changes or deprecations
+   - If multiple solutions exist, search to determine which is best for the use case
+   - Example: "Stripe Python SDK latest documentation 2025" or "best Python library for sending emails 2025"
+2. Research official docs for SDK install, auth, and usage.
+3. **Create ONE authorization request per service** — Do NOT combine OpenAI + ElevenLabs + email credentials into a single request.
    - Example: If you need OpenAI and ElevenLabs, create two separate `create_authorization_request` calls.
    - This allows users to configure each service independently.
-3. On completion, immediately `upsert_secret` for each secret.
-4. Initialize SDKs from env in the module.
+4. On completion, immediately `upsert_secret` for each secret.
+5. Initialize SDKs from env in the module.
 
 **Clean initialization (after verifying secret exists via `list_secrets`):**
 
@@ -154,11 +166,12 @@ curl -X POST https://base_url/services/api/service_name/endpoint \
 **Pre-deployment sequence (MANDATORY):**
 1. `get_project` → Get `cloud_id`
 2. `get_cloud` → Get `base_url` and available credentials (`SUPABASE_URL`, `SUPABASE_KEY`, etc.)
-3. **`list_secrets`** → See what secrets ALREADY exist in Altan Cloud
-4. Identify what the service needs
-5. `upsert_secret` → Store ANY missing secrets (Supabase creds from `get_cloud`, or third-party creds from user)
-6. **`list_secrets` again** → Verify ALL required secrets now exist
-7. Only NOW: implement and deploy
+3. **`web_search`** → Research latest documentation and best practices for any third-party SDKs/APIs (MANDATORY before using them)
+4. **`list_secrets`** → See what secrets ALREADY exist in Altan Cloud
+5. Identify what the service needs
+6. `upsert_secret` → Store ANY missing secrets (Supabase creds from `get_cloud`, or third-party creds from user)
+7. **`list_secrets` again** → Verify ALL required secrets now exist
+8. Only NOW: implement and deploy
 
 **Other tools:**
 * `create_authorization_request` → ONE request PER third-party service (separate for OpenAI, ElevenLabs, etc.)
@@ -167,6 +180,7 @@ curl -X POST https://base_url/services/api/service_name/endpoint \
 * Call endpoints → Real tests
 
 **Critical Rules**:
+- **ALWAYS use `web_search` to research latest documentation BEFORE using any third-party SDK or API**
 - **ALWAYS call `list_secrets` BEFORE implementing/deploying code**
 - If ANY required secret missing from `list_secrets` → create it BEFORE deploying
 - `get_cloud` provides `SUPABASE_URL`/`SUPABASE_KEY` — store them via `upsert_secret`, never ask users
@@ -201,20 +215,30 @@ Returns: {
 }
 ```
 
-### Step 3: List Existing Secrets
+### Step 3: Research Stripe SDK
+```
+Call: web_search(search_term="Stripe Python SDK latest documentation 2025")
+# Review results to find:
+# - Latest SDK version and installation method
+# - Current best practices for checkout sessions
+# - Webhook signature verification patterns
+# - Any breaking changes or deprecations
+```
+
+### Step 4: List Existing Secrets
 ```
 Call: list_secrets(cloud_id="abc123")
 Returns: []  # Empty — no secrets stored yet
 ```
 
-### Step 4: Identify Required Secrets
+### Step 5: Identify Required Secrets
 For a Stripe service, we need:
 - `SUPABASE_URL` (from get_cloud)
 - `SUPABASE_KEY` (from get_cloud)
 - `STRIPE_SECRET_KEY` (from user)
 - `STRIPE_WEBHOOK_SECRET` (from user)
 
-### Step 5: Create Authorization Request for Third-Party Credentials
+### Step 6: Create Authorization Request for Third-Party Credentials
 ```
 Call: create_authorization_request(
   cloud_id="abc123",
@@ -223,12 +247,12 @@ Call: create_authorization_request(
 # Wait for user to provide credentials
 ```
 
-### Step 6: User Provides Credentials
+### Step 7: User Provides Credentials
 User sends:
 - `STRIPE_SECRET_KEY`: "sk_test_..."
 - `STRIPE_WEBHOOK_SECRET`: "whsec_..."
 
-### Step 7: Upsert ALL Secrets
+### Step 8: Upsert ALL Secrets
 ```
 # Store Supabase credentials from get_cloud
 Call: upsert_secret(cloud_id="abc123", key="SUPABASE_URL", value="{base_url}")
@@ -239,7 +263,7 @@ Call: upsert_secret(cloud_id="abc123", key="STRIPE_SECRET_KEY", value="sk_test_.
 Call: upsert_secret(cloud_id="abc123", key="STRIPE_WEBHOOK_SECRET", value="whsec_...")
 ```
 
-### Step 8: Verify All Secrets Exist
+### Step 9: Verify All Secrets Exist
 ```
 Call: list_secrets(cloud_id="abc123")
 Returns: [
@@ -251,7 +275,7 @@ Returns: [
 ✅ All required secrets present!
 ```
 
-### Step 9: Create Service with Code + Requirements
+### Step 10: Create Service with Code + Requirements
 ```
 Call: create_service(
   cloud_id="abc123",
@@ -262,7 +286,7 @@ Call: create_service(
 )
 ```
 
-### Step 10: Test Endpoints
+### Step 11: Test Endpoints
 ```
 POST https://{base_url}/services/api/billing/stripe/checkout-session
 POST https://{base_url}/services/api/billing/stripe/webhook

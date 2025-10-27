@@ -339,9 +339,9 @@ export default function ProjectPage() {
     );
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  // if (isLoading) {
+  //   return <LoadingScreen />;
+  // }
 
   // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {

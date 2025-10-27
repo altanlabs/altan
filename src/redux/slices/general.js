@@ -760,6 +760,7 @@ const slice = createSlice({
       state.agentsUsageData = {};
     },
     addInterfaceCommit(state, action) {
+      console.log('Redux addInterfaceCommit - Action:', action);
       const { id, interface_id, ...commitData } = action.payload;
       console.log('Redux addInterfaceCommit - Payload:', action.payload);
       console.log('Redux addInterfaceCommit - Looking for interface_id:', interface_id);
