@@ -174,7 +174,6 @@ const TEMPLATE_ACTIONS = {
 };
 
 export const handleWebSocketEvent = async (data, user_id) => {
-  console.log('handleWebSocketEvent', data);
   switch (data.type) {
     case 'NotificationNew':
       dispatch(addNotification(data.data.attributes));
@@ -463,7 +462,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteInterfaceDeployment(data.data.ids[0]));
       break;
     case 'CommitNew':
-      console.log('CommitNew', data.data.attributes);
       const commitPayload = {
         id: data.data.attributes.id,
         interface_id: data.data.attributes.interface_id,
