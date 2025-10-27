@@ -1,9 +1,11 @@
 import { Stack } from '@mui/material';
 import { memo, useMemo } from 'react';
 
+import AggregatedPartsCard from './AggregatedPartsCard.jsx';
 import CustomMarkdown from './CustomMarkdown.jsx';
 import MessageError from './MessageError.jsx';
 import MessagePartRenderer from './MessagePartRenderer.jsx';
+import { groupConsecutiveParts } from './utils/aggregationUtils.js';
 import MessageMedia from './wrapper/MessageMedia.jsx';
 import {
   makeSelectHasMessageContent,
@@ -50,6 +52,11 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
         return blockOrderA - blockOrderB;
       });
   }, [messageParts, partsById]);
+
+  // Group consecutive tool/thinking parts for aggregation
+  const groupedParts = useMemo(() => {
+    return groupConsecutiveParts(sortedParts);
+  }, [sortedParts]);
 
   // Show "Thinking..." only if there's no content, no message parts, no media, and no error
   const hasMessageParts = messageParts.length > 0;
@@ -144,16 +151,30 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
             </div>
           </div>
         ) : hasMessageParts ? (
-          // Render message parts in order
+          // Render message parts in order (with aggregation)
           <div className="message-parts-container">
-            {sortedParts.map((part) => (
-              <MessagePartRenderer
-                key={part.id}
-                part={part}
-                threadId={threadId}
-                mode={mode}
-              />
-            ))}
+            {groupedParts.map((item) => {
+              if (item.type === 'aggregate') {
+                // Render aggregated card
+                return (
+                  <AggregatedPartsCard
+                    key={item.id}
+                    parts={item.parts}
+                  />
+                );
+              } else if (item.type === 'part') {
+                // Render individual part
+                return (
+                  <MessagePartRenderer
+                    key={item.part.id}
+                    part={item.part}
+                    threadId={threadId}
+                    mode={mode}
+                  />
+                );
+              }
+              return null;
+            })}
             {/* Show loading dots at bottom when more parts are expected */}
             {showLoadingDots && (
               <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
