@@ -1,6 +1,6 @@
 /**
  * Tool Renderers Index
- * 
+ *
  * Exports all custom tool renderers and provides utilities for retrieving them.
  */
 
@@ -9,8 +9,8 @@ import CreateTaskRenderer from './CreateTaskRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
 import TerminalCommandRenderer from './TerminalCommandRenderer.jsx';
-import WebSearchRenderer from './WebSearchRenderer.jsx';
 import { TOOL_REGISTRY, getToolIcon, getToolRendererName } from './toolRendererConfig.js';
+import WebSearchRenderer from './WebSearchRenderer.jsx';
 
 // Map of renderer names to actual components
 const RENDERERS = {
@@ -43,4 +43,3 @@ export {
   TerminalCommandRenderer,
   WebSearchRenderer,
 };
-

@@ -46,8 +46,6 @@ const ToolPartArguments = ({ partId, isExpanded, onScroll }) => {
     }
   }, [argsData?.arguments]);
 
-  const hasDisplayableArguments = !!(filteredArguments && filteredArguments.length > 0);
-
   // Track user scrolling
   const handleScroll = useCallback(() => {
     isUserScrollingRef.current = true;
@@ -90,7 +88,7 @@ const ToolPartArguments = ({ partId, isExpanded, onScroll }) => {
     };
   }, []);
 
-  if (!hasDisplayableArguments || !isExpanded) {
+  if (!filteredArguments || filteredArguments.length === 0) {
     return null;
   }
 
@@ -98,13 +96,13 @@ const ToolPartArguments = ({ partId, isExpanded, onScroll }) => {
     <div
       ref={contentRef}
       onScroll={handleScroll}
-      className="px-3 pb-3 pt-0.5 max-h-[100px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full"
+      className="px-3 py-2 max-h-[100px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full bg-gray-50/50 dark:bg-gray-900/50"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgb(209 213 219) transparent',
       }}
     >
-      <pre className="text-[11px] leading-relaxed opacity-60 whitespace-pre-wrap break-words font-mono">
+      <pre className="text-[10px] leading-relaxed text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words font-mono">
         {filteredArguments}
       </pre>
     </div>
@@ -118,4 +116,3 @@ export default memo(ToolPartArguments, (prevProps, nextProps) => {
     prevProps.isExpanded === nextProps.isExpanded
   );
 });
-

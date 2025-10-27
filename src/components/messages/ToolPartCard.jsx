@@ -20,8 +20,6 @@ const ToolPartCard = ({
   const argsData = useSelector((state) => argumentsSelector(state, partId));
 
   const [manuallyCollapsed, setManuallyCollapsed] = useState(true);
-  const [showError, setShowError] = useState(false);
-  const [showResult, setShowResult] = useState(false);
 
   // Get custom renderer component if available
   const CustomRenderer = useMemo(() => {
@@ -41,16 +39,6 @@ const ToolPartCard = ({
 
   const handleToggle = useCallback(() => {
     setManuallyCollapsed((v) => !v);
-  }, []);
-
-  const handleErrorClick = useCallback((e) => {
-    e.stopPropagation();
-    setShowError((v) => !v);
-  }, []);
-
-  const handleResultClick = useCallback((e) => {
-    e.stopPropagation();
-    setShowResult((v) => !v);
   }, []);
 
   // Determine if there are displayable arguments
@@ -79,7 +67,7 @@ const ToolPartCard = ({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full my-0.5">
       {/* Custom Renderer (handles own header) or Default Header + Content */}
       {CustomRenderer ? (
         <CustomRenderer
@@ -89,39 +77,52 @@ const ToolPartCard = ({
           onScroll={handleScroll}
         />
       ) : (
-        <>
+        <div className={`group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-md hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-150 ${isExpanded ? 'w-full' : 'inline-flex max-w-full'}`}>
           {/* Default Header */}
           <ToolPartHeader
             partId={partId}
             noClick={noClick}
             isExpanded={isExpanded}
             onToggle={handleToggle}
-            hasDisplayableArguments={hasDisplayableArguments}
             hasError={hasError}
-            onErrorClick={handleErrorClick}
-            hasResult={hasResult}
-            onResultClick={handleResultClick}
           />
 
-          {/* Default Arguments Display */}
-          <ToolPartArguments
-            partId={partId}
-            isExpanded={isExpanded}
-          />
-        </>
+          {/* Auto-show Arguments, Result, and Error when expanded */}
+          {isExpanded && (
+            <>
+              {/* Arguments Display */}
+              {hasDisplayableArguments && (
+                <div className="border-t border-gray-200/60 dark:border-gray-700/60">
+                  <ToolPartArguments
+                    partId={partId}
+                    isExpanded={isExpanded}
+                  />
+                </div>
+              )}
+
+              {/* Result Display */}
+              {hasResult && (
+                <div className="border-t border-gray-200/60 dark:border-gray-700/60">
+                  <ToolPartResult
+                    partId={partId}
+                    showResult={isExpanded}
+                  />
+                </div>
+              )}
+
+              {/* Error Display */}
+              {hasError && (
+                <div className="border-t border-gray-200/60 dark:border-gray-700/60">
+                  <ToolPartError
+                    partId={partId}
+                    showError={isExpanded}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
-
-      {/* Error Display - Only show when clicked */}
-      <ToolPartError
-        partId={partId}
-        showError={showError}
-      />
-
-      {/* Result Display - Only show when clicked */}
-      <ToolPartResult
-        partId={partId}
-        showResult={showResult}
-      />
 
       {children}
     </div>
