@@ -113,9 +113,9 @@ import { addTask, updateTask, removeTask, setPlanCompleted } from '../../redux/s
 import { dispatch } from '../../redux/store';
 import { messagePartBatcher } from '../../utils/eventBatcher';
 
-const SOUND_IN = new Audio(
-  'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
-);
+// const SOUND_IN = new Audio(
+//   'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
+// );
 
 // Register handler for high-frequency streaming updates
 // Only 'updated' events are batched - lifecycle events are processed immediately
@@ -301,7 +301,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(deleteAltaner(data.data.ids[0]));
       break;
     case 'AltanerComponentNew':
-      console.log('AltanerComponentNew', data);
       dispatch(
         addAltanerComponent({
           altaner_id: data.data.altaner_id,
@@ -310,7 +309,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'AltanerComponentUpdate':
-      console.log('AltanerComponentUpdate', data);
       dispatch(
         patchAltanerComponent({
           altaner_id: data.data.altaner_id,
@@ -577,7 +575,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'RoomMemberJoined':
-      console.log('RoomMemberJoined', data.data);
       const attrs = data.data.attributes;
 
       // Transform flat websocket structure to match expected nested member structure
@@ -881,11 +878,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
 
         default:
-          if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
-            console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
-          } else {
-            console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
-          }
+          break;
+          // if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
+          //   console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
+          // } else {
+          //   console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
+          // }
       }
       break;
     case 'RoomMemberUpdate':
@@ -905,7 +903,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       }
       break;
     case 'ThreadNew':
-      console.log('ThreadNew', data);
       dispatch(addThread(data.data.attributes));
       break;
     case 'ThreadOpened':
@@ -935,7 +932,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'TASK_EVENT':
-      console.log('TASK_EVENT', data);
+      // console.log('TASK_EVENT', data);
 
       const taskEvent = data.data?.task_event;
       if (!taskEvent) {
@@ -978,8 +975,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           );
           break;
         case 'task.updated':
-          // eslint-disable-next-line no-console
-          console.log('🔄 task.updated:', taskEventData);
+          // console.log('🔄 task.updated:', taskEventData);
           dispatch(
             updateTask({
               threadId: taskEventData.mainthread_id || taskEventData.room_id,
@@ -1004,8 +1000,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           );
           break;
         case 'task.deleted':
-          // eslint-disable-next-line no-console
-          console.log('🗑️ task.deleted:', taskEventData);
+          // console.log('🗑️ task.deleted:', taskEventData);
           dispatch(
             removeTask({
               threadId: taskEventData.mainthread_id || taskEventData.room_id,
@@ -1014,8 +1009,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           );
           break;
         case 'task.completed':
-          // eslint-disable-next-line no-console
-          console.log('✅ task.completed:', taskEventData);
+          // console.log('✅ task.completed:', taskEventData);
           dispatch(
             updateTask({
               threadId: taskEventData.mainthread_id || taskEventData.room_id,
@@ -1040,11 +1034,10 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
           // Check if all tasks are completed
           if (taskEventData.all_tasks_completed) {
-            // eslint-disable-next-line no-console
-            console.log('🎉 All tasks completed! Plan finished:', {
-              mainthread_id: taskEventData.mainthread_id,
-              room_id: taskEventData.room_id,
-            });
+            // console.log('🎉 All tasks completed! Plan finished:', {
+            //   mainthread_id: taskEventData.mainthread_id,
+            //   room_id: taskEventData.room_id,
+            // });
 
             // Dispatch plan completed event
             dispatch(
@@ -1083,7 +1076,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
           );
           break;
         default:
-          console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
+          break;
+          // console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
       }
       break;
     case 'MESSAGE':

@@ -152,8 +152,7 @@ const slice = createSlice({
 
     updateTask(state, action) {
       const { threadId, taskId, updates } = action.payload;
-      // eslint-disable-next-line no-console
-      console.log('📝 Redux updateTask:', { threadId, taskId, updates });
+      // console.log('📝 Redux updateTask:', { threadId, taskId, updates });
 
       // Filter out null/undefined values from updates to preserve existing data
       const filteredUpdates = Object.entries(updates).reduce((acc, [key, value]) => {

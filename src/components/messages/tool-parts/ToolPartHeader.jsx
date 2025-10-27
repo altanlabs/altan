@@ -1,9 +1,6 @@
 import { Icon } from '@iconify/react';
 import React, { memo, useMemo, useCallback } from 'react';
 
-import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
-import { cn } from '@lib/utils';
-
 import { useExecutionDialog } from '../../../providers/ExecutionDialogProvider.jsx';
 import { makeSelectToolPartHeader, makeSelectToolPartExecution } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store.js';
@@ -24,11 +21,7 @@ const ToolPartHeader = ({
   noClick = false,
   isExpanded,
   onToggle,
-  hasDisplayableArguments,
   hasError,
-  onErrorClick,
-  hasResult,
-  onResultClick,
 }) => {
   const { setExecutionId } = useExecutionDialog() || {};
 
@@ -74,12 +67,47 @@ const ToolPartHeader = ({
     return s < 10 ? s.toFixed(1) : Math.round(s);
   }, [isCompleted, header?.created_at, header?.finished_at]);
 
-  const headerText = useMemo(() => {
-    if (duration && parseFloat(duration) > 0) return `${displayText} (${duration}s)`;
-    return displayText;
-  }, [duration, displayText]);
+  // Get status info
+  const getStatusInfo = () => {
+    if (isExecuting) {
+      return {
+        icon: 'svg-spinners:ring-resize',
+        text: 'Running',
+        color: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-500/10',
+      };
+    }
+    if (hasError) {
+      return {
+        icon: 'mdi:close-circle',
+        text: 'Failed',
+        color: 'text-red-600 dark:text-red-400',
+        bgColor: 'bg-red-500/10',
+      };
+    }
+    return {
+      icon: 'mdi:check-circle',
+      text: 'Done',
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-500/10',
+    };
+  };
 
-  // Click handler to open execution dialog (only on icon, not on whole card)
+  const statusInfo = getStatusInfo();
+
+  // Text display
+  const textDisplay = useMemo(() => {
+    let text = displayText;
+    if (isExpanded && duration && parseFloat(duration) > 0) {
+      text += ` (${duration}s)`;
+    }
+    return text;
+  }, [displayText, duration, isExpanded]);
+
+  // Check if text is long enough to need fade
+  const needsFade = textDisplay.length > 40;
+
+  // Click handler to open execution dialog
   const handleIconClick = useCallback((e) => {
     e.stopPropagation();
     if (!noClick && executionId && setExecutionId) {
@@ -95,58 +123,63 @@ const ToolPartHeader = ({
     <button
       onClick={onToggle}
       aria-expanded={isExpanded}
-      className="w-full flex items-center gap-1.5 px-1 py-1.5 text-[12px] text-gray-400 dark:text-gray-300 group"
+      className={`inline-flex items-center gap-1.5 px-2 py-1 select-none relative min-w-0 group ${isExpanded ? 'w-full' : ''}`}
       title={header.intent || undefined}
     >
-      <span className="flex items-center gap-1">
-        <IconRenderer
-          icon={toolIcon}
-          className={cn(
-            'text-[11px] flex-shrink-0',
-            !isCompleted && 'animate-pulse',
-          )}
-          onClick={handleIconClick}
-        />
-        {!isCompleted && <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />}
-      </span>
+      {/* Expand Icon */}
+      <Icon
+        icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+        className="text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 text-[11px] flex-shrink-0 transition-all"
+      />
 
-      {!duration ? (
-        <TextShimmer className="inline-block">
-          {headerText}
-        </TextShimmer>
-      ) : (
-        <span className="font-medium">{headerText}</span>
-      )}
+      {/* Connection Type Icon - Always visible */}
+      <IconRenderer
+        icon={toolIcon}
+        size={10}
+        onClick={handleIconClick}
+        className="text-gray-400 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 text-[10px] flex-shrink-0 transition-colors"
+      />
 
-      {hasDisplayableArguments && (
+      {/* Status Icon - just icon when collapsed */}
+      {statusInfo && !isExpanded && (
         <Icon
-          icon="mdi:chevron-down"
-          className={cn(
-            'w-3.5 h-3.5 opacity-0 group-hover:opacity-70 transition-all duration-150',
-            isExpanded ? 'rotate-180' : 'rotate-0',
-          )}
+          icon={statusInfo.icon}
+          className={`text-[11px] flex-shrink-0 ${statusInfo.color.replace('text-', 'text-').replace('-600', '-500').replace('-400', '-500')}`}
         />
       )}
 
-      {hasResult && (
-        <Icon
-          icon="mdi:information-outline"
-          className="text-blue-500 text-sm flex-shrink-0 cursor-pointer hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ml-auto"
-          onClick={onResultClick}
-          title="Show output"
-        />
+      {/* Status Badge with text - only when expanded */}
+      {statusInfo && isExpanded && (
+        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+          <Icon icon={statusInfo.icon} className="text-[10px]" />
+          <span>{statusInfo.text}</span>
+        </div>
       )}
 
-      {hasError && (
-        <Icon
-          icon="mdi:alert-circle"
-          className={cn(
-            'text-red-500 text-sm flex-shrink-0 cursor-pointer hover:text-red-600',
-            !hasResult && 'ml-auto',
-          )}
-          onClick={onErrorClick}
-        />
+      {/* Text Display - with optional fade when collapsed and long */}
+      {!isExpanded && (
+        <div className="min-w-0 max-w-md overflow-hidden">
+          <span
+            className="text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 text-[10px] transition-colors block whitespace-nowrap"
+            style={needsFade ? {
+              maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+            } : {}}
+          >
+            {textDisplay}
+          </span>
+        </div>
       )}
+
+      {/* Text Display - full when expanded */}
+      {isExpanded && (
+        <span className="text-gray-700 dark:text-gray-300 text-[10px]">
+          {textDisplay}
+        </span>
+      )}
+
+      {/* Spacer when expanded */}
+      {isExpanded && <div className="flex-1" />}
     </button>
   );
 };
@@ -157,8 +190,6 @@ export default memo(ToolPartHeader, (prevProps, nextProps) => {
     prevProps.partId === nextProps.partId &&
     prevProps.noClick === nextProps.noClick &&
     prevProps.isExpanded === nextProps.isExpanded &&
-    prevProps.hasDisplayableArguments === nextProps.hasDisplayableArguments &&
-    prevProps.hasError === nextProps.hasError &&
-    prevProps.hasResult === nextProps.hasResult
+    prevProps.hasError === nextProps.hasError
   );
 });

@@ -58,13 +58,13 @@ const ToolPartError = ({ partId, showError }) => {
 
   return (
     <div
-      className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-red-300 dark:scrollbar-thumb-red-600 scrollbar-track-transparent hover:scrollbar-thumb-red-400 dark:hover:scrollbar-thumb-red-500 scrollbar-thumb-rounded-full"
+      className="px-3 py-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-red-300 dark:scrollbar-thumb-red-600 scrollbar-track-transparent hover:scrollbar-thumb-red-400 dark:hover:scrollbar-thumb-red-500 scrollbar-thumb-rounded-full bg-red-50/30 dark:bg-red-950/20"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgb(252 165 165) transparent',
       }}
     >
-      <pre className="text-[11px] text-red-600 dark:text-red-400 opacity-80 whitespace-pre-wrap break-words font-mono">
+      <pre className="text-[10px] text-red-700 dark:text-red-400 whitespace-pre-wrap break-words font-mono">
         {formattedError}
       </pre>
     </div>
@@ -78,4 +78,3 @@ export default memo(ToolPartError, (prevProps, nextProps) => {
     prevProps.showError === nextProps.showError
   );
 });
-

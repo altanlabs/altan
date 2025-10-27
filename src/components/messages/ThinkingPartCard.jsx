@@ -3,7 +3,6 @@ import { memo, useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
-import { cn } from '@lib/utils';
 
 import CustomMarkdown from './CustomMarkdown';
 import { selectMessagePartsById } from '../../redux/slices/room';
@@ -72,7 +71,15 @@ const ThinkingPartCard = ({ partId }) => {
     if (isCompleted) setManuallyCollapsed((v) => !v);
   }, [isCompleted]);
 
-  const headerText = useMemo(() => duration ? `Thought for ${duration}s` : 'Thinking…', [duration]);
+  const headerText = useMemo(() => {
+    if (duration) {
+      return isExpanded ? `Thought for ${duration}s` : `Thought for ${duration}s`;
+    }
+    return 'Thinking…';
+  }, [duration, isExpanded]);
+
+  // Check if text is long enough to need fade
+  const needsFade = headerText.length > 40;
 
   // Track user scrolling
   const handleScroll = useCallback(() => {
@@ -110,69 +117,109 @@ const ThinkingPartCard = ({ partId }) => {
   if (!part) return null;
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <button
-        onClick={onToggle}
-        aria-expanded={isExpanded}
-        className="w-full flex items-center gap-1.5 px-1 py-1.5 text-[12px] text-gray-400 dark:text-gray-300 group"
-      >
-        <span className="flex items-center gap-1">
+    <div className="w-full my-0.5">
+      <div className={`group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-md hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-150 ${isExpanded ? 'w-full' : 'inline-flex max-w-full'}`}>
+        {/* Header */}
+        <button
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+          className={`inline-flex items-center gap-1.5 px-2 py-1 select-none relative min-w-0 ${isExpanded ? 'w-full' : ''}`}
+        >
+          {/* Expand Icon */}
+          <Icon
+            icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+            className="text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 text-[11px] flex-shrink-0 transition-all"
+          />
+
+          {/* Brain Icon */}
           <Icon
             icon="mdi:brain"
-            className={cn(
-              'w-3.5 h-3.5',
-              !isCompleted && 'animate-pulse',
-            )}
+            className="text-gray-400 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 text-[10px] flex-shrink-0 transition-colors"
           />
-          {!isCompleted && <span className="inline-block w-1 h-3 rounded-sm bg-gray-400/70 animate-pulse" />}
-        </span>
 
-        {!duration ? (
-          <TextShimmer className="inline-block">
-            {headerText}
-          </TextShimmer>
-        ) : (
-          <span className="font-medium">{headerText}</span>
-        )}
+          {/* Status Icon - just icon when collapsed */}
+          {!isCompleted && !isExpanded && (
+            <Icon
+              icon="svg-spinners:ring-resize"
+              className="text-[11px] flex-shrink-0 text-blue-500"
+            />
+          )}
 
-        {hasContent && (
-          <Icon
-            icon="mdi:chevron-down"
-            className={cn(
-              'w-3.5 h-3.5 opacity-0 group-hover:opacity-70 transition-all duration-150',
-              isExpanded ? 'rotate-180' : 'rotate-0',
-            )}
-          />
-        )}
-      </button>
+          {/* Text Display - with optional fade when collapsed */}
+          {!isExpanded && (
+            <div className="min-w-0 max-w-md overflow-hidden">
+              {!isCompleted ? (
+                <TextShimmer
+                  className="text-[10px] block whitespace-nowrap"
+                  style={needsFade ? {
+                    maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                  } : {}}
+                >
+                  {headerText}
+                </TextShimmer>
+              ) : (
+                <span
+                  className="text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 text-[10px] transition-colors block whitespace-nowrap"
+                  style={needsFade ? {
+                    maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                  } : {}}
+                >
+                  {headerText}
+                </span>
+              )}
+            </div>
+          )}
 
-      {/* Content */}
-      {isExpanded && hasContent && (
-        <div
-          ref={contentRef}
-          onScroll={handleScroll}
-          className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full"
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent',
-          }}
-        >
-          <div className="opacity-60 [&_.markdown]:text-[11px] [&_.markdown]:leading-relaxed [&_p]:mb-1">
-            {part?.text ? (
-              <CustomMarkdown text={part.text} codeActive={false} minified />
-            ) : part?.summary && Array.isArray(part.summary) ? (
-              <div className="space-y-2">
-                {part.summary.map((item, idx) => (
-                  <div key={idx} className="border-l-2 border-gray-300/30 dark:border-gray-600/30 pl-2">
-                    <CustomMarkdown text={item} codeActive={false} minified />
+          {/* Text Display - full when expanded */}
+          {isExpanded && (
+            <>
+              {!isCompleted ? (
+                <TextShimmer className="text-[10px]">
+                  {headerText}
+                </TextShimmer>
+              ) : (
+                <span className="text-gray-700 dark:text-gray-300 text-[10px]">
+                  {headerText}
+                </span>
+              )}
+            </>
+          )}
+
+          {/* Spacer when expanded */}
+          {isExpanded && <div className="flex-1" />}
+        </button>
+
+        {/* Content */}
+        {isExpanded && hasContent && (
+          <div className="border-t border-gray-200/60 dark:border-gray-700/60">
+            <div
+              ref={contentRef}
+              onScroll={handleScroll}
+              className="px-3 py-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full bg-gray-50/50 dark:bg-gray-900/50"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent',
+              }}
+            >
+              <div className="text-gray-600 dark:text-gray-400 [&_.markdown]:text-[10px] [&_.markdown]:leading-relaxed [&_p]:mb-1">
+                {part?.text ? (
+                  <CustomMarkdown text={part.text} codeActive={false} minified />
+                ) : part?.summary && Array.isArray(part.summary) ? (
+                  <div className="space-y-2">
+                    {part.summary.map((item, idx) => (
+                      <div key={idx} className="border-l-2 border-gray-300/30 dark:border-gray-600/30 pl-2">
+                        <CustomMarkdown text={item} codeActive={false} minified />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -4,13 +4,11 @@ import React, { memo, useMemo, useCallback, useState } from 'react';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { restoreCommit, selectIsRestoring } from '../../../redux/slices/commits.js';
 import { useDispatch, useSelector } from '../../../redux/store.js';
-import ToolPartHeader from '../tool-parts/ToolPartHeader.jsx';
 
 /**
- * Custom renderer for commit tool
- * Displays commit information directly without backend calls
+ * Elegant commit renderer - always visible, compact, optimized for streaming
  */
-const CommitRenderer = memo(({ part, onToggle }) => {
+const CommitRenderer = memo(({ part }) => {
   const dispatch = useDispatch();
   const [dispatchWithFeedback] = useFeedbackDispatch();
   const [showBuildDetails, setShowBuildDetails] = useState(false);
@@ -38,7 +36,7 @@ const CommitRenderer = memo(({ part, onToggle }) => {
     const content = part?.task_execution?.content;
     if (content) {
       const payload = content?.payload || content;
-      
+
       const hash =
         payload?.commit_hash ||
         (payload?.sha && payload.sha.length > 7 ? payload.sha.substring(0, 7) : payload?.sha) ||
@@ -76,21 +74,6 @@ const CommitRenderer = memo(({ part, onToggle }) => {
     }
   }, [part?.result, part?.task_execution?.content]);
 
-  // Parse arguments for header display
-  const hasDisplayableArguments = useMemo(() => {
-    if (!part?.arguments) return false;
-    try {
-      const parsed =
-        typeof part.arguments === 'string' ? JSON.parse(part.arguments) : part.arguments;
-      const { __act_now, __act_done, __intent, __use_intent, ...filtered } = parsed;
-      return Object.keys(filtered).length > 0;
-    } catch {
-      return false;
-    }
-  }, [part?.arguments]);
-
-  const hasError = !!part?.error;
-  const hasResult = !!part?.result;
   const isCommitting = !part?.is_done;
 
   // Check if this commit is being restored
@@ -118,142 +101,128 @@ const CommitRenderer = memo(({ part, onToggle }) => {
   }
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <ToolPartHeader
-        partId={part?.id}
-        noClick={false}
-        isExpanded={true}
-        onToggle={onToggle}
-        hasDisplayableArguments={hasDisplayableArguments}
-        hasError={hasError}
-        onErrorClick={() => {}}
-        hasResult={hasResult}
-        onResultClick={() => {}}
-      />
+    <div className="w-full my-1">
+      <div className="border border-blue-200/50 dark:border-blue-700/50 rounded-lg bg-blue-50/30 dark:bg-blue-950/20 p-3">
+        {/* Header Row */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Icon
+              icon="mdi:source-commit"
+              className="text-blue-600 dark:text-blue-400 text-sm flex-shrink-0"
+            />
+            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Checkpoint
+            </span>
+            {isCommitting && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Icon icon="svg-spinners:ring-resize" className="text-[10px]" />
+                <span>Building...</span>
+              </div>
+            )}
+          </div>
 
-      {/* Commit Details */}
-      {(commitData || isCommitting) && (
-        <div className="my-2 mx-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
-          {/* Header with Checkpoint title and Restore button */}
-          <div className={`flex items-center justify-between ${commitMessage ? 'mb-4' : ''}`}>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Checkpoint</h3>
-              {isCommitting && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                  <Icon icon="svg-spinners:ring-resize" className="text-sm" />
-                  Building...
-                </span>
+          {/* Restore Button */}
+          {!isCommitting && commitData?.hash && (
+            <button
+              onClick={handleRestore}
+              disabled={restoring}
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium border border-blue-300 dark:border-blue-600 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+              title="Restore to this checkpoint"
+            >
+              {restoring ? (
+                <>
+                  <Icon icon="svg-spinners:ring-resize" className="text-xs" />
+                  <span>Restoring...</span>
+                </>
+              ) : (
+                <>
+                  <Icon icon="mdi:restore" className="text-xs" />
+                  <span>Restore</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Commit Message */}
+        {commitMessage && (
+          <div className="mb-2 text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed">
+            {commitMessage}
+          </div>
+        )}
+
+        {/* Build Status - Compact */}
+        {commitData?.buildResult && (
+          <div>
+            <div
+              className={`flex items-center gap-1.5 ${!commitData.buildResult.success ? 'cursor-pointer hover:opacity-80' : ''} transition-opacity`}
+              onClick={() => !commitData.buildResult.success && setShowBuildDetails(!showBuildDetails)}
+              role={!commitData.buildResult.success ? 'button' : undefined}
+            >
+              <Icon
+                icon={commitData.buildResult.success ? 'mdi:check-circle' : 'mdi:close-circle'}
+                className={`text-xs flex-shrink-0 ${commitData.buildResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+              />
+              <span className="text-[10px] text-gray-600 dark:text-gray-400">
+                Build {commitData.buildResult.success ? 'successful' : 'failed'}
+                {commitData.buildResult.durationMs &&
+                  ` (${(commitData.buildResult.durationMs / 1000).toFixed(2)}s)`}
+              </span>
+              {!commitData.buildResult.success && (
+                <Icon
+                  icon={showBuildDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                  className="text-xs text-gray-500 dark:text-gray-400 ml-auto"
+                />
               )}
             </div>
-            {!isCommitting && commitData?.hash && (
-              <button
-                onClick={handleRestore}
-                disabled={restoring}
-                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 dark:hover:border-blue-400 dark:hover:text-blue-400"
-                title="Restore to this checkpoint"
-              >
-                {restoring ? (
-                  <>
-                    <Icon icon="svg-spinners:ring-resize" className="text-base" />
-                    Restoring...
-                  </>
-                ) : (
-                  <>
-                    <Icon icon="mdi:restore" className="text-base" />
-                    Restore
-                  </>
+
+            {/* Build Error Details - Expandable */}
+            {!commitData.buildResult.success && showBuildDetails && (
+              <div className="mt-1.5 p-2 bg-red-50/50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-800/50 rounded-md">
+                {commitData.buildResult.error && (
+                  <pre className="text-[10px] text-red-700 dark:text-red-400 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
+                    {commitData.buildResult.error}
+                  </pre>
                 )}
-              </button>
-            )}
-          </div>
-
-          {/* Commit Message */}
-          {commitMessage && (
-            <div className="mb-2">
-              <p className="text-sm text-gray-600 dark:text-gray-400">{commitMessage}</p>
-            </div>
-          )}
-
-          {/* Stats section */}
-          <div className="space-y-1.5">
-            {/* Build Status */}
-            {commitData?.buildResult && (
-              <div>
-                <button
-                  onClick={() => !commitData.buildResult.success && setShowBuildDetails(!showBuildDetails)}
-                  className={`flex items-center gap-2 ${!commitData.buildResult.success ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-opacity w-full text-left`}
-                  disabled={commitData.buildResult.success}
-                >
-                  <Icon
-                    icon={commitData.buildResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'}
-                    className={`text-base flex-shrink-0 ${commitData.buildResult.success ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
-                  />
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                    Build {commitData.buildResult.success ? 'successful' : 'failed'}
-                    {commitData.buildResult.durationMs &&
-                      ` (${(commitData.buildResult.durationMs / 1000).toFixed(2)}s)`}
-                  </span>
-                  {!commitData.buildResult.success && (
-                    <Icon
-                      icon={showBuildDetails ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-                      className="text-base text-gray-500 dark:text-gray-400 ml-auto"
-                    />
-                  )}
-                </button>
-                
-                {/* Build Details - shown when build fails and user clicks */}
-                {!commitData.buildResult.success && showBuildDetails && (
-                  <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                    <div className="space-y-2">
-                      {/* Error message */}
-                      {commitData.buildResult.error && (
-                        <div>
-                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Error:</p>
-                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto">
-                            {commitData.buildResult.error}
-                          </pre>
-                        </div>
-                      )}
-                      
-                      {/* Build output/logs */}
-                      {commitData.buildResult.output && (
-                        <div>
-                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Build Output:</p>
-                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                            {commitData.buildResult.output}
-                          </pre>
-                        </div>
-                      )}
-                      
-                      {/* Show full build result as JSON if no specific error/output fields */}
-                      {!commitData.buildResult.error && !commitData.buildResult.output && (
-                        <div>
-                          <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Details:</p>
-                          <pre className="text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                            {JSON.stringify(commitData.buildResult, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {commitData.buildResult.output && (
+                  <pre className="text-[10px] text-red-700 dark:text-red-400 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
+                    {commitData.buildResult.output}
+                  </pre>
+                )}
+                {!commitData.buildResult.error && !commitData.buildResult.output && (
+                  <pre className="text-[10px] text-red-700 dark:text-red-400 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
+                    {JSON.stringify(commitData.buildResult, null, 2)}
+                  </pre>
                 )}
               </div>
             )}
-
-            {/* Show placeholder while committing */}
-            {isCommitting && !commitData && (
-              <div className="flex items-center gap-2">
-                <Icon icon="svg-spinners:pulse-rings-2" className="text-blue-500 dark:text-blue-400 text-base" />
-                <span className="text-xs text-gray-500 dark:text-gray-500 italic">
-                  Creating checkpoint...
-                </span>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Creating State */}
+        {isCommitting && !commitData && (
+          <div className="flex items-center gap-1.5">
+            <Icon icon="svg-spinners:pulse-rings-2" className="text-blue-500 dark:text-blue-400 text-xs" />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 italic">
+              Creating checkpoint...
+            </span>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}, (prevProps, nextProps) => {
+  // Optimize: only rerender if critical fields change (not full part object)
+  const prevPart = prevProps.part;
+  const nextPart = nextProps.part;
+
+  // Check only the fields we actually use
+  return (
+    prevPart?.is_done === nextPart?.is_done &&
+    prevPart?.arguments === nextPart?.arguments &&
+    prevPart?.result === nextPart?.result &&
+    prevPart?.task_execution?.arguments?.message === nextPart?.task_execution?.arguments?.message &&
+    prevPart?.task_execution?.content === nextPart?.task_execution?.content
   );
 });
 

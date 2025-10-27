@@ -28,13 +28,13 @@ const ToolPartResult = ({ partId, showResult }) => {
 
   return (
     <div
-      className="px-3 pb-3 pt-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-blue-600 scrollbar-track-transparent hover:scrollbar-thumb-blue-400 dark:hover:scrollbar-thumb-blue-500 scrollbar-thumb-rounded-full"
+      className="px-3 py-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 dark:scrollbar-thumb-blue-600 scrollbar-track-transparent hover:scrollbar-thumb-blue-400 dark:hover:scrollbar-thumb-blue-500 scrollbar-thumb-rounded-full bg-blue-50/30 dark:bg-blue-950/20"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgb(147 197 253) transparent',
       }}
     >
-      <pre className="text-[11px] text-blue-600 dark:text-blue-400 opacity-80 whitespace-pre-wrap break-words font-mono">
+      <pre className="text-[10px] text-blue-700 dark:text-blue-400 whitespace-pre-wrap break-words font-mono">
         {formattedResult}
       </pre>
     </div>
@@ -48,4 +48,3 @@ export default memo(ToolPartResult, (prevProps, nextProps) => {
     prevProps.showResult === nextProps.showResult
   );
 });
-
