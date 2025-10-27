@@ -1,4 +1,4 @@
-import { useMediaQuery, useTheme, DialogContent, CircularProgress } from '@mui/material';
+import { useMediaQuery, useTheme, DialogContent, CircularProgress, IconButton } from '@mui/material';
 import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -6,6 +6,7 @@ import {
   selectActiveResponsesByThread,
   selectActiveActivationsByThread,
   stopThreadGeneration,
+  sendMessage,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
@@ -13,6 +14,7 @@ import Iconify from '../iconify';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import { useSnackbar } from '../snackbar';
 import ConnectionManager from '../tools/ConnectionManager';
+import { LiveWaveform } from '../elevenlabs/ui/live-waveform.tsx';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
@@ -91,6 +93,7 @@ const AttachmentHandler = ({
   const [transcriptionError, setTranscriptionError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const shouldTranscribeRef = useRef(false);
 
   // Get altaner_id from route params
   const { altanerId } = useParams();
@@ -280,33 +283,19 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
       const result = await response.json();
 
-      console.log('Transcription result:', result);
-
       if (result.status === 'success' && result.text) {
-        console.log('Got transcription text:', result.text);
-        console.log('editorRef:', editorRef);
-        console.log('editorRef.current:', editorRef?.current);
-        console.log('onSendMessage:', onSendMessage);
-        
-        // Insert transcription into editor and send immediately
-        if (editorRef?.current?.insertText) {
-          console.log('Calling insertText with:', result.text);
-          editorRef.current.insertText(result.text);
-          console.log('Text inserted, waiting before sending...');
-          
-          // Send the message immediately after inserting
-          setTimeout(() => {
-            console.log('About to call onSendMessage');
-            if (onSendMessage) {
-              console.log('Calling onSendMessage now');
-              onSendMessage();
-              console.log('onSendMessage called');
-            } else {
-              console.error('onSendMessage is not defined!');
-            }
-          }, 100);
+        // Send the transcribed text directly using Redux action
+        if (threadId) {
+          console.log('Sending transcribed message via Redux:', result.text);
+          await dispatch(
+            sendMessage({
+              content: result.text,
+              attachments: [],
+              threadId,
+            })
+          );
         } else {
-          console.error('editorRef.current.insertText not available!');
+          console.error('No threadId available to send message');
         }
         // Reset audio blob after successful transcription
         setAudioBlob(null);
@@ -326,7 +315,7 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
     } finally {
       setIsTranscribing(false);
     }
-  }, [editorRef, enqueueSnackbar, onSendMessage]);
+  }, [threadId, enqueueSnackbar]);
 
   // Start recording audio
   const startRecording = useCallback(async () => {
@@ -353,11 +342,13 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         // Use the base MIME type without codecs
         const baseMimeType = mediaRecorder.mimeType.split(';')[0];
         const blob = new Blob(audioChunksRef.current, { type: baseMimeType });
-        setAudioBlob(blob);
-        // Automatically trigger transcription after recording stops
-        setTimeout(() => {
-          transcribeAudio(blob);
-        }, 100);
+        
+        // Only set blob if we have chunks (not cancelled)
+        // Don't auto-transcribe - wait for user to click accept button
+        if (audioChunksRef.current.length > 0) {
+          setAudioBlob(blob);
+        }
+        
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
       };
@@ -379,34 +370,116 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
     }
   }, [isRecording]);
 
-  // Handle transcription button click
-  const handleTranscriptionClick = useCallback(() => {
-    if (isRecording) {
-      // Stop recording - transcription will be triggered automatically in onstop handler
-      stopRecording();
-    } else {
-      // Start new recording
-      startRecording();
+  // Cancel recording without transcribing
+  const handleCancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      shouldTranscribeRef.current = false;
+      
+      // Stop the recorder
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      // Stop all tracks to release microphone
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Clear the audio blob to prevent transcription
+      audioChunksRef.current = [];
+      setAudioBlob(null);
     }
-  }, [isRecording, stopRecording, startRecording]);
+  }, [isRecording]);
+
+  // Accept recording and transcribe
+  const handleAcceptRecording = useCallback(() => {
+    if (isRecording) {
+      // Mark that we should transcribe when recording stops
+      shouldTranscribeRef.current = true;
+      // Stop recording first
+      stopRecording();
+    }
+  }, [isRecording, stopRecording]);
+
+  // Auto-transcribe when recording stops and user has clicked accept
+  useEffect(() => {
+    if (!isRecording && audioBlob && !isTranscribing && shouldTranscribeRef.current) {
+      shouldTranscribeRef.current = false;
+      // Wait a bit for the stop to complete
+      const timer = setTimeout(() => {
+        transcribeAudio(audioBlob);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isRecording, audioBlob, isTranscribing, transcribeAudio]);
 
   // The container into which we'll portal the overlay
   const overlayContainer = containerRef?.current;
 
   return (
-    <div className="relative flex flex-col w-full">
-      {/* Hidden File Input (multiple selection allowed) */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="*/*"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
+    <>
+      {/* Full-screen Recording Overlay */}
+      {(isRecording || isTranscribing) && (
+        <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex items-center justify-center px-4">
+          <div className="w-full max-w-2xl flex items-center gap-4 bg-gray-100 dark:bg-gray-800 rounded-full px-6 py-4">
+            {/* Cancel Button */}
+            <IconButton
+              size="medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelRecording();
+              }}
+              disabled={isTranscribing}
+              className="hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <Iconify icon="mdi:close" className="text-2xl text-gray-700 dark:text-gray-300" />
+            </IconButton>
 
-      {/* BOTTOM ROW: Buttons */}
-      <div className="flex items-center justify-between w-full">
+            {/* Live Waveform */}
+            <div className="flex-1 min-w-0 text-gray-700 dark:text-white">
+              <LiveWaveform
+                active={isRecording}
+                processing={isTranscribing}
+                mode="static"
+                height={60}
+                barWidth={4}
+                barGap={2}
+              />
+            </div>
+
+            {/* Accept Button */}
+            <IconButton
+              size="medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAcceptRecording();
+              }}
+              disabled={isTranscribing}
+              className="hover:bg-green-100 dark:hover:bg-green-900/50"
+            >
+              {isTranscribing ? (
+                <CircularProgress size={24} className="text-gray-700 dark:text-white" />
+              ) : (
+                <Iconify icon="mdi:check" className="text-2xl text-green-600 dark:text-green-400" />
+              )}
+            </IconButton>
+          </div>
+        </div>
+      )}
+
+      {/* Normal UI - Hidden when recording */}
+      <div className="relative flex flex-col w-full">
+        {/* Hidden File Input (multiple selection allowed) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="*/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
+        {/* BOTTOM ROW: Buttons */}
+        <div className="flex items-center justify-between w-full">
         {/* LEFT: Attach button with menu */}
         <div className="flex items-center gap-2">
           <AttachmentMenu
@@ -452,31 +525,18 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
         {/* RIGHT: Voice/Send button and Speech Recognition */}
         <div className="flex items-center gap-2">
-
           {/* Audio Transcription Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleTranscriptionClick();
+              startRecording();
             }}
-            disabled={isTranscribing}
-            className={`flex items-center justify-center p-2 rounded-full
-                     transition-all duration-200
-                     ${isRecording 
-                       ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                       : 'bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-                     }
-                     ${isTranscribing ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={isRecording ? 'Stop recording' : isTranscribing ? 'Transcribing...' : 'Record and transcribe'}
+            className="flex items-center justify-center p-2 rounded-full
+                     bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 
+                     text-gray-600 dark:text-gray-300 transition-all duration-200"
+            title="Record and transcribe"
           >
-            {isTranscribing ? (
-              <CircularProgress size={20} className="text-gray-600 dark:text-gray-300" />
-            ) : (
-              <Iconify
-                icon={isRecording ? "mdi:stop" : "mdi:microphone"}
-                className="text-xl"
-              />
-            )}
+            <Iconify icon="mdi:microphone" className="text-xl" />
           </button>
 
           {/* Main Send/Voice Button */}
@@ -491,43 +551,44 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         </div>
       </div>
 
-      {/* Speech Input Modal */}
-      <SpeechInputModal
-        open={showSpeechInput}
-        onClose={() => setShowSpeechInput(false)}
-        onTranscript={handleTranscript}
-        threadId={threadId}
-      />
+        {/* Speech Input Modal */}
+        <SpeechInputModal
+          open={showSpeechInput}
+          onClose={() => setShowSpeechInput(false)}
+          onTranscript={handleTranscript}
+          threadId={threadId}
+        />
 
-      {/* Flow Selection Dialog */}
-      <FlowSelectionDialog
-        open={isFlowDialogOpen}
-        onClose={() => setIsFlowDialogOpen(false)}
-        flows={flows}
-        onSelectFlow={handleSelectFlow}
-      />
+        {/* Flow Selection Dialog */}
+        <FlowSelectionDialog
+          open={isFlowDialogOpen}
+          onClose={() => setIsFlowDialogOpen(false)}
+          flows={flows}
+          onSelectFlow={handleSelectFlow}
+        />
 
-      {/* Tool Creation Dialog */}
-      <CustomDialog
-        open={isToolDialogOpen}
-        onClose={handleToolDialogClose}
-      >
-        <DialogContent className="py-6">
-          <ConnectionManager
-            onConnectionSelected={handleConnectionSelected}
-            onClose={handleToolDialogClose}
-            title="Add Tool Connection"
-          />
-        </DialogContent>
-      </CustomDialog>
+        {/* Tool Creation Dialog */}
+        <CustomDialog
+          open={isToolDialogOpen}
+          onClose={handleToolDialogClose}
+        >
+          <DialogContent className="py-6">
+            <ConnectionManager
+              onConnectionSelected={handleConnectionSelected}
+              onClose={handleToolDialogClose}
+              title="Add Tool Connection"
+            />
+          </DialogContent>
+        </CustomDialog>
 
-      {/* DRAG-AND-DROP OVERLAY */}
-      <DragOverlay
-        dragOver={dragOver}
-        overlayContainer={overlayContainer}
-        onDrop={handleDrop}
-      />
-    </div>
+        {/* DRAG-AND-DROP OVERLAY */}
+        <DragOverlay
+          dragOver={dragOver}
+          overlayContainer={overlayContainer}
+          onDrop={handleDrop}
+        />
+      </div>
+    </>
   );
 };
 
