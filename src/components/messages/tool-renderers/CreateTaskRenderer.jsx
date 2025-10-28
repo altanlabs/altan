@@ -13,22 +13,12 @@ import {
 } from '../../../redux/slices/room';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { useSelector, useDispatch } from '../../../redux/store.js';
+import { AgentOrbAvatar } from '../../agents/AgentOrbAvatar.jsx';
 import Iconify from '../../iconify/Iconify.jsx';
 import IconRenderer from '../../icons/IconRenderer.jsx';
+import { agentColors } from '../../plan/planUtils.js';
 import { getToolIcon } from '../tool-renderers/index.js';
 import ToolPartCard from '../ToolPartCard.jsx';
-
-// Agent avatar mapping
-const agentAvatars = {
-  Genesis:
-    'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-  Interface:
-    'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-  Cloud:
-    'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-  Services:
-    'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-};
 
 function extractAndCapitalize(str) {
   if (!str) return 'Tool';
@@ -186,8 +176,8 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     return tasks?.find((t) => t.task_name === taskData.task_name && !t.plan_id);
   }, [tasks, taskData?.task_name]);
 
-  const agentAvatar = taskData?.assigned_agent_name
-    ? agentAvatars[taskData.assigned_agent_name]
+  const agentColor = taskData?.assigned_agent_name
+    ? agentColors[taskData.assigned_agent_name]
     : null;
   // Use Redux status if available (for real-time updates), otherwise use taskData status
   const currentStatus = reduxTask?.status || taskData?.status;
@@ -248,16 +238,17 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
             />
 
             {/* Agent Avatar */}
-            {agentAvatar && (
+            {agentColor && (
               <Tooltip title={`Assigned to: ${taskData.assigned_agent_name}`}>
-                <img
-                  src={agentAvatar}
-                  alt={taskData.assigned_agent_name}
-                  className="w-5 h-5 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm flex-shrink-0"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
+                <div className="flex-shrink-0">
+                  <AgentOrbAvatar
+                    size={20}
+                    agentId={taskData.assigned_agent_name}
+                    colors={agentColor}
+                    isStatic={!isTaskRunning}
+                    agentState={isTaskRunning ? 'thinking' : null}
+                  />
+                </div>
               </Tooltip>
             )}
 

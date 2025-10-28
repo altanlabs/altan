@@ -1,16 +1,11 @@
 import { m } from 'framer-motion';
 import React, { useMemo, memo } from 'react';
 
+import { AgentOrbAvatar } from '../../../../components/agents/AgentOrbAvatar';
 import Iconify from '../../../../components/iconify/Iconify';
+import { agentColors } from '../../../../components/plan/planUtils';
 
 const DemoPlanWidget = ({ plan, onApprove, showApproveButton = false }) => {
-  const agentAvatars = {
-    Genesis: 'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Interface: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    Cloud: 'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Services: 'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-  };
-
   const sortedTasks = useMemo(() => {
     if (!plan?.tasks) return [];
     return [...plan.tasks].sort((a, b) => (a.priority || 999) - (b.priority || 999));
@@ -139,15 +134,16 @@ const DemoPlanWidget = ({ plan, onApprove, showApproveButton = false }) => {
                   />
 
                   {/* Assigned Agent Avatar */}
-                  {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
-                    <img
-                      src={agentAvatars[task.assigned_agent_name]}
-                      alt={task.assigned_agent_name}
-                      className="w-6 h-6 rounded-full border border-gray-600/50 shadow-sm flex-shrink-0"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
+                  {task.assigned_agent_name && agentColors[task.assigned_agent_name] && (
+                    <div className="flex-shrink-0">
+                      <AgentOrbAvatar
+                        size={24}
+                        agentId={task.assigned_agent_name}
+                        colors={agentColors[task.assigned_agent_name]}
+                        isStatic={task.status?.toLowerCase() !== 'running'}
+                        agentState={task.status?.toLowerCase() === 'running' ? 'thinking' : null}
+                      />
+                    </div>
                   )}
 
                   {/* Task Name */}

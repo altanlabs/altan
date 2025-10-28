@@ -4,11 +4,13 @@ import React, { memo } from 'react';
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
 
+import { AgentOrbAvatar } from '../../../../components/agents/AgentOrbAvatar';
 import Iconify from '../../../../components/iconify/Iconify';
 import IconRenderer from '../../../../components/icons/IconRenderer';
 import { getToolIcon } from '../../../../components/messages/tool-renderers/index.js';
+import { agentColors } from '../../../../components/plan/planUtils';
 
-const DemoPlanExecutionTask = ({ task, subtasks, isExpanded, agentAvatars }) => {
+const DemoPlanExecutionTask = ({ task, subtasks, isExpanded }) => {
   const getTaskIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'completed':
@@ -43,12 +45,16 @@ const DemoPlanExecutionTask = ({ task, subtasks, isExpanded, agentAvatars }) => 
             }`}
           />
 
-          {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
-            <img
-              src={agentAvatars[task.assigned_agent_name]}
-              alt={task.assigned_agent_name}
-              className="w-6 h-6 rounded-full border border-gray-600"
-            />
+          {task.assigned_agent_name && agentColors[task.assigned_agent_name] && (
+            <div className="flex-shrink-0">
+              <AgentOrbAvatar
+                size={24}
+                agentId={task.assigned_agent_name}
+                colors={agentColors[task.assigned_agent_name]}
+                isStatic={task.status !== 'running'}
+                agentState={task.status === 'running' ? 'thinking' : null}
+              />
+            </div>
           )}
 
           <div className="flex-1">

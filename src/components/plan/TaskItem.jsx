@@ -6,8 +6,9 @@ import ToolPartCard from '../messages/ToolPartCard';
 import { makeSelectToolPartsByThreadId } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
-import { agentAvatars, getTaskIcon, getTaskIconColor, getTaskTextStyle } from './planUtils';
+import { agentAvatars, agentColors, getTaskIcon, getTaskIconColor, getTaskTextStyle } from './planUtils';
 import RunningTimer from './RunningTimer';
+import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 
 const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
   const isRunning = task.status?.toLowerCase() === 'running';
@@ -41,16 +42,17 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
           <div className="flex-1 min-w-0">
             {/* Task Name and Agent */}
             <div className="flex items-center gap-2">
-              {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
+              {task.assigned_agent_name && agentColors[task.assigned_agent_name] && (
                 <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
-                  <img
-                    src={agentAvatars[task.assigned_agent_name]}
-                    alt={task.assigned_agent_name}
-                    className="w-6 h-6 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
+                  <div className="flex-shrink-0">
+                    <AgentOrbAvatar
+                      size={34}
+                      agentId={task.assigned_agent_name}
+                      colors={agentColors[task.assigned_agent_name]}
+                      isStatic={!isRunning}
+                      agentState={isRunning ? 'thinking' : null}
+                    />
+                  </div>
                 </Tooltip>
               )}
               {isRunning ? (

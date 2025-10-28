@@ -3,7 +3,9 @@ import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { TextShimmer } from './aceternity/text/text-shimmer.tsx';
+import { AgentOrbAvatar } from './agents/AgentOrbAvatar';
 import Iconify from './iconify/Iconify.jsx';
+import { agentColors } from './plan/planUtils';
 import { switchToThread } from '../redux/slices/room';
 import {
   fetchTasks,
@@ -21,21 +23,6 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
-
-  // Agent avatar mapping
-  const agentAvatars = {
-    Database:
-      'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Genesis:
-      'https://api.altan.ai/platform/media/a4ac5478-b3ae-477d-b1eb-ef47e710de7c?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Flow: 'https://api.altan.ai/platform/media/11bbbc50-3e4b-4465-96d2-e8f316e92130?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Interface:
-      'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    Cloud:
-      'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-    Services:
-      'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
-  };
 
   const tasks = useSelector(selectTasksByThread(threadId));
   console.log('TodoWidget - tasks:', tasks);
@@ -244,16 +231,15 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
 
             {/* Assigned Agent Avatar in collapsed view */}
-            {runningTask.assigned_agent_name && agentAvatars[runningTask.assigned_agent_name] && (
+            {runningTask.assigned_agent_name && agentColors[runningTask.assigned_agent_name] && (
               <Tooltip title={`Assigned to: ${runningTask.assigned_agent_name}`}>
                 <div className="flex-shrink-0">
-                  <img
-                    src={agentAvatars[runningTask.assigned_agent_name]}
-                    alt={runningTask.assigned_agent_name}
-                    className="w-3.5 h-3.5 rounded-full border border-white/20 dark:border-gray-700/50 shadow-sm"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
+                  <AgentOrbAvatar
+                    size={14}
+                    agentId={runningTask.assigned_agent_name}
+                    colors={agentColors[runningTask.assigned_agent_name]}
+                    isStatic={false}
+                    agentState="thinking"
                   />
                 </div>
               </Tooltip>
@@ -342,16 +328,15 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                   </div>
 
                   {/* Assigned Agent Avatar */}
-                  {task.assigned_agent_name && agentAvatars[task.assigned_agent_name] && (
+                  {task.assigned_agent_name && agentColors[task.assigned_agent_name] && (
                     <div className="flex-shrink-0">
                       <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
-                        <img
-                          src={agentAvatars[task.assigned_agent_name]}
-                          alt={task.assigned_agent_name}
-                          className="w-4 h-4 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm hover:shadow-md transition-shadow"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
+                        <AgentOrbAvatar
+                          size={16}
+                          agentId={task.assigned_agent_name}
+                          colors={agentColors[task.assigned_agent_name]}
+                          isStatic={task.status?.toLowerCase() !== 'running'}
+                          agentState={task.status?.toLowerCase() === 'running' ? 'thinking' : null}
                         />
                       </Tooltip>
                     </div>

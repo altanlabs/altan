@@ -1,21 +1,18 @@
 import { Tooltip } from '@mui/material';
+
 import Iconify from '../iconify/Iconify';
 import CustomMarkdown from '../messages/CustomMarkdown';
 
 const PlanHeader = ({ plan, isApproving, onApprove, onClose }) => (
-  <div className="mb-6 flex items-start justify-between gap-4">
+  <div className="mt-4 mb-6 flex items-start justify-between gap-4">
     <div className="flex-1">
       <div className="flex items-center gap-3 mb-2">
-        <Iconify
-          icon="mdi:road-variant"
-          className="w-8 h-8 text-blue-600 dark:text-blue-400 flex-shrink-0"
-        />
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
           {plan.title || 'Untitled Plan'}
         </h1>
       </div>
       {plan.description && (
-        <div className="ml-11 text-sm">
+        <div className=" text-sm">
           <CustomMarkdown text={plan.description} />
         </div>
       )}

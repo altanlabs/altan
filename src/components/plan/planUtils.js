@@ -1,4 +1,4 @@
-// Agent avatar mapping
+// Agent avatar mapping (fallback images)
 export const agentAvatars = {
   Database:
     'https://api.altan.ai/platform/media/3f19f77d-7144-4dc0-a30d-722e6eebf131?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
@@ -11,6 +11,15 @@ export const agentAvatars = {
     'https://api.altan.ai/platform/media/56a7aab7-7200-4367-856b-df82b6fa3eee?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
   Services:
     'https://api.altan.ai/platform/media/22ed3f84-a15c-4050-88f0-d33cc891dc50?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285',
+};
+
+// Agent orb colors for AgentOrbAvatar component
+export const agentColors = {
+  Interface: ['#f9cf39', '#fb190b'],
+  Cloud: ['#00fbff', '#68dffd'],
+  Services: ['#ae2cdd', '#ae00ff'],
+  Genesis: ['#ffdd00', '#9de5e7'],
+  Closer: ['#dd2c2c', '#9de7c7'],
 };
 
 // Status priority for sorting
