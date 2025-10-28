@@ -120,7 +120,7 @@ function Preview({
         // eslint-disable-next-line no-console
         console.log('🔄 Triggering rebuild for interface:', info.interfaceId);
 
-        const response = await optimai_pods.post(`/interface/dev/${info.interfaceId}/build`);
+        const response = await optimai_pods.post(`/interfaces/dev/${info.interfaceId}/build`);
 
         if (response.status === 200) {
           // eslint-disable-next-line no-console
