@@ -14,11 +14,11 @@ import { useSelector } from 'react-redux';
 
 import { selectMembers, selectMe, patchMember } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store';
+import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 import MemberInviteDialog from '../room/drawer/MemberInviteDialog.jsx';
 import { getMemberDetails } from '../room/utils';
-import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const MembersList = ({
   maxHeight = 400,
@@ -213,10 +213,11 @@ const MembersList = ({
                   }}
                   onClick={() => handleMemberClick(member)}
                 >
-                  {member.member?.member_type === 'agent' && !memberDetails.src ? (
-                    <AgentOrbAvatar
+                  {member.member?.member_type === 'agent' && member.member?.agent ? (
+                    <DynamicAgentAvatar
+                      agent={member.member.agent}
                       size={compact ? 32 : 40}
-                      agentId={member.member?.agent_id}
+                      agentId={member.member.agent_id}
                       agentState={null}
                       isStatic={false}
                     />

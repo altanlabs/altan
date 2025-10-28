@@ -7,7 +7,7 @@ import PlanRoadmap from '../../components/plan/PlanRoadmap';
 import { PlanError, PlanLoading } from '../../components/plan/PlanStates';
 import { calculateProgress, sortTasksByPriority } from '../../components/plan/planUtils';
 import { switchToThread } from '../../redux/slices/room';
-import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan, selectCompletedPlanEvent } from '../../redux/slices/tasks';
+import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan, selectCompletedPlanEvent, clearPlanCompleted } from '../../redux/slices/tasks';
 import { useDispatch, useSelector } from '../../redux/store';
 
 const Plan = ({ planId, altanerId }) => {
@@ -31,12 +31,25 @@ const Plan = ({ planId, altanerId }) => {
 
   // Auto-redirect when plan is completed via websocket event
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('🔍 Plan completion check:', {
+      completedPlanEvent,
+      planId,
+      altanerId,
+      matches: completedPlanEvent?.planId === planId,
+    });
+
     if (completedPlanEvent && completedPlanEvent.planId === planId && altanerId) {
       // eslint-disable-next-line no-console
       console.log('🎉 Plan completed, redirecting to project:', altanerId);
+
+      // Clear the completed plan event to prevent repeated redirects
+      dispatch(clearPlanCompleted());
+
+      // Navigate back to the project (will show the first component, typically the interface)
       history.push(`/project/${altanerId}`);
     }
-  }, [completedPlanEvent, planId, altanerId, history]);
+  }, [completedPlanEvent, planId, altanerId, history, dispatch]);
 
   const handleOpenSubthread = useCallback((task) => {
     if (task.subthread_id) {

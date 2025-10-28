@@ -44,7 +44,6 @@ import {
   clearRoomState,
 } from '../../redux/slices/room';
 import { useSelector, useDispatch } from '../../redux/store';
-import { fToNow } from '../../utils/formatTime';
 
 const DRAWER_WIDTH = 280;
 

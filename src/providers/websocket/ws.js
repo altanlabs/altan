@@ -943,7 +943,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(changeThreadReadState(data.data));
       break;
     case 'TASK_EVENT':
-      // console.log('TASK_EVENT', data);
+      console.log('TASK_EVENT', data);
 
       const taskEvent = data.data?.task_event;
       if (!taskEvent) {
@@ -1045,46 +1045,49 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
           // Check if all tasks are completed
           if (taskEventData.all_tasks_completed) {
-            // console.log('🎉 All tasks completed! Plan finished:', {
-            //   mainthread_id: taskEventData.mainthread_id,
-            //   room_id: taskEventData.room_id,
-            // });
+            // eslint-disable-next-line no-console
+            console.log('🎉 All tasks completed! Plan finished:', {
+              plan_id: taskEventData.plan_id,
+              mainthread_id: taskEventData.mainthread_id,
+              room_id: taskEventData.room_id,
+            });
 
-            // Dispatch plan completed event
+            // Dispatch plan completed event - use plan_id if available, otherwise mainthread_id
             dispatch(
               setPlanCompleted({
-                planId: taskEventData.mainthread_id,
+                planId: taskEventData.plan_id || taskEventData.mainthread_id,
                 threadId: taskEventData.mainthread_id,
               }),
             );
           }
 
           // Send browser notification
-          dispatch(
-            addNotification({
-              id: `task-completed-${taskEventData.task_id}-${Date.now()}`,
-              status: 'unopened',
-              notification: {
-                type: 'system',
-                title: 'Task Completed',
-                body: `✅ "${taskEventData.task_name}" has been completed!`,
-                message: `The task "${taskEventData.task_name}" has been marked as completed.`,
-                date_creation: new Date().toISOString(),
-                meta_data: {
-                  data: {
-                    category: 'task_completed',
-                    task: {
-                      id: taskEventData.task_id,
-                      name: taskEventData.task_name,
-                      room_id: taskEventData.room_id,
-                      mainthread_id: taskEventData.mainthread_id,
-                    },
-                  },
-                  avatar_url: '/logos/logoBlack.png',
-                },
-              },
-            }),
-          );
+
+          // dispatch(
+          //   addNotification({
+          //     id: `task-completed-${taskEventData.task_id}-${Date.now()}`,
+          //     status: 'unopened',
+          //     notification: {
+          //       type: 'system',
+          //       title: 'Task Completed',
+          //       body: `✅ "${taskEventData.task_name}" has been completed!`,
+          //       message: `The task "${taskEventData.task_name}" has been marked as completed.`,
+          //       date_creation: new Date().toISOString(),
+          //       meta_data: {
+          //         data: {
+          //           category: 'task_completed',
+          //           task: {
+          //             id: taskEventData.task_id,
+          //             name: taskEventData.task_name,
+          //             room_id: taskEventData.room_id,
+          //             mainthread_id: taskEventData.mainthread_id,
+          //           },
+          //         },
+          //         avatar_url: '/logos/logoBlack.png',
+          //       },
+          //     },
+          //   }),
+          // );
           break;
         default:
           break;

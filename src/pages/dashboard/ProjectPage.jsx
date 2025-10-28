@@ -202,15 +202,13 @@ export default function ProjectPage() {
         if (previewPanelRef.current.isCollapsed()) {
           previewPanelRef.current.expand();
         }
-        // Defer resize to next tick to batch with other DOM updates
-        // Using setTimeout instead of rAF to avoid blocking the frame
-        const timerId = setTimeout(() => {
+        // Always resize to proper percentages when showing preview
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
           if (chatPanelRef.current) {
             chatPanelRef.current.resize(30);
           }
-        }, 0);
-        
-        return () => clearTimeout(timerId);
+        });
       }
     }
   }, [shouldCollapsePreview]);

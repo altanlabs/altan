@@ -69,10 +69,7 @@ const processTextWithCitations = (text, annotations) => {
 /**
  * Main Text Part Renderer Component
  */
-const TextPartRenderer = memo(({ part, threadId, mode }) => {
-
-  console.log('@TextPartRenderer: part', part);
-  // Extract and group annotations
+const TextPartRenderer = memo(({ part, threadId, mode }) => {  // Extract and group annotations
   const citationData = useMemo(() => {
     const annotations = part?.meta_data?.annotations || [];
     const urlCitations = annotations.filter((a) => a.type === 'url_citation');

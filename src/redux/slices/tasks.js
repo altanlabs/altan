@@ -258,6 +258,10 @@ const slice = createSlice({
         timestamp: Date.now(),
       };
     },
+
+    clearPlanCompleted(state) {
+      state.completedPlanEvent = null;
+    },
   },
 });
 
@@ -283,6 +287,7 @@ export const {
   setThreadExpanded,
   clearTasks,
   setPlanCompleted,
+  clearPlanCompleted,
 } = slice.actions;
 
 // ----------------------------------------------------------------------
