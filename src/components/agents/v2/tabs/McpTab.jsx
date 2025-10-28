@@ -270,23 +270,6 @@ function McpTab({ agentData, onFieldChange }) {
                 sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Tooltip title={server.connection?.is_active ? 'Disable' : 'Enable'}>
-                  <IconButton
-                    size="small"
-                    onClick={(e) =>
-                      handleToggleServer(server.id, server.connection?.is_active, e)
-                    }
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    <Iconify
-                      icon={
-                        server.connection?.is_active
-                          ? 'eva:toggle-right-fill'
-                          : 'eva:toggle-left-outline'
-                      }
-                    />
-                  </IconButton>
-                </Tooltip>
                 <Tooltip title="Remove">
                   <IconButton
                     size="small"

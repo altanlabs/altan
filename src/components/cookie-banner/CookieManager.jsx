@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
-import useCookieConsent, {
-  executeWithConsent,
-  loadScriptWithConsent,
-} from '../../hooks/useCookieConsent';
+
+import useCookieConsent, { executeWithConsent } from '../../hooks/useCookieConsent';
 
 // ----------------------------------------------------------------------
 
@@ -51,11 +49,13 @@ export default function CookieManager() {
 // ----------------------------------------------------------------------
 
 function initializeAnalytics() {
-  // Google Analytics 4
+  // Google Analytics 4 - Update consent for analytics
   if (window.gtag) {
     window.gtag('consent', 'update', {
       analytics_storage: 'granted',
     });
+    // eslint-disable-next-line no-console
+    console.log('✅ Google Analytics consent updated to granted');
   }
 
   // Microsoft Clarity
@@ -63,17 +63,20 @@ function initializeAnalytics() {
     window.clarity('consent');
   }
 
+  // eslint-disable-next-line no-console
   console.log('Analytics services initialized with user consent');
 }
 
 function initializeMarketing() {
-  // Google Analytics 4 - Marketing
+  // Google Analytics 4 - Marketing & Advertising
   if (window.gtag) {
     window.gtag('consent', 'update', {
       ad_storage: 'granted',
       ad_user_data: 'granted',
       ad_personalization: 'granted',
     });
+    // eslint-disable-next-line no-console
+    console.log('✅ Google Ads consent updated to granted');
   }
 
   // Facebook Pixel
@@ -81,17 +84,25 @@ function initializeMarketing() {
     window.fbq('consent', 'grant');
   }
 
+  // eslint-disable-next-line no-console
   console.log('Marketing services initialized with user consent');
 }
 
 function initializeFunctional() {
+  // Update consent for functional storage
+  if (window.gtag) {
+    window.gtag('consent', 'update', {
+      functionality_storage: 'granted',
+      personalization_storage: 'granted',
+    });
+    // eslint-disable-next-line no-console
+    console.log('✅ Functional storage consent updated to granted');
+  }
+
   // Initialize functional cookies like preferences, chat widgets, etc.
+  // Example: Load chat widget script when functional consent is granted
 
-  // Example: Load chat widget
-  // loadScriptWithConsent('https://widget.intercom.io/widget/app_id', 'functional', preferences)
-  //   .then(() => console.log('Chat widget loaded'))
-  //   .catch(() => console.log('Chat widget not loaded - no consent'));
-
+  // eslint-disable-next-line no-console
   console.log('Functional services initialized with user consent');
 }
 

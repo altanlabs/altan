@@ -193,15 +193,34 @@
   <link rel="android-chrome" sizes="512x512" href="/favicon/android-chrome-512x512.png">
   <meta name="msapplication-TileColor" content="#161C24">
   
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KZ1YCKLN7C"></script>
+  <!-- Google tag (gtag.js) with Consent Mode v2 -->
   <script>
+    // Initialize dataLayer and gtag function FIRST
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
+    
+    // Set default consent to 'denied' as a baseline (REQUIRED for Consent Mode v2)
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted', // Always granted for security
+      'wait_for_update': 500 // Wait 500ms for consent update
+    });
+    
+    // Initialize gtag with timestamp
     gtag('js', new Date());
-
-    gtag('config', 'G-KZ1YCKLN7C');
+    
+    // Configure Google Analytics
+    gtag('config', 'G-KZ1YCKLN7C', {
+      'anonymize_ip': true, // IP anonymization for privacy
+      'cookie_flags': 'SameSite=None;Secure'
+    });
   </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KZ1YCKLN7C"></script>
   <script async>
     window.fbAsyncInit = function() {
       FB.init({
