@@ -475,32 +475,16 @@ export default function ProjectPage() {
                   overflow: 'hidden',
                 }}
               >
-                {altaner?.room_id ? (
-                  <Room
-                    key={`room-${altaner?.room_id}`}
-                    roomId={altaner?.room_id}
-                    header={false}
-                    renderCredits={true}
-                    renderFeedback={true}
-                    settings={false}
-                    tabs={true}
-                    show_mode_selector={true}
-                  />
-                ) : (
-                  isLoading && (
-                    <Box
-                      sx={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {/* Loading spinner or placeholder while altaner loads */}
-                    </Box>
-                  )
-                )}
+                <Room
+                  key={`room-${altaner?.room_id}`}
+                  roomId={altaner?.room_id}
+                  header={false}
+                  renderCredits={true}
+                  renderFeedback={true}
+                  settings={false}
+                  tabs={true}
+                  show_mode_selector={true}
+                />
               </Box>
             </Panel>
 

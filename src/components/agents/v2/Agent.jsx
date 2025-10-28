@@ -265,54 +265,77 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
 
-    // Special handling for creator tab
-    if (activeTab === 'creator') {
-      return (
-        <Box
-          sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            {currentAgentCreatorRoomId && agentData ? (
-              <iframe
-                key={`creator-${agentData.id}`}
-                src={`/r/${currentAgentCreatorRoomId}${(() => {
-                  const params = new URLSearchParams();
-                  // Add context about the agent being edited
-                  params.set('context', `User is editing agent: ${agentData.name} (ID: ${agentData.id})`);
-                  if (initialMessage) {
-                    params.set('message', encodeURIComponent(initialMessage));
-                  }
-                  return `?${params.toString()}`;
-                })()}`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-                title="Creator Room"
-                allow="microphone; camera; clipboard-write"
+  // Special handling for creator tab
+  if (activeTab === 'creator') {
+    return (
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          {currentAgentCreatorRoomId && agentData ? (
+            <iframe
+              key={`creator-${agentData.id}`}
+              src={`/r/${currentAgentCreatorRoomId}${(() => {
+                const params = new URLSearchParams();
+                // Add context about the agent being edited
+                params.set('context', `User is editing agent: ${agentData.name} (ID: ${agentData.id})`);
+                if (initialMessage) {
+                  params.set('message', encodeURIComponent(initialMessage));
+                }
+                return `?${params.toString()}`;
+              })()}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              }}
+              title="Creator Room"
+              allow="microphone; camera; clipboard-write"
+            />
+          ) : !isLoading && !currentAgentCreatorRoomId ? (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                gap: 2,
+                px: 3,
+              }}
+            >
+              <Iconify
+                icon="eva:alert-circle-outline"
+                sx={{ fontSize: '3rem', color: 'text.secondary', opacity: 0.5 }}
               />
-            ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                }}
-              >
-                <Typography>Loading creator room...</Typography>
-              </Box>
-            )}
-          </Box>
+              <Typography variant="h6" color="text.secondary">
+                Creator Room Not Available
+              </Typography>
+              <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', maxWidth: '400px' }}>
+                This agent doesn't have a creator room configured. You can still edit the agent using the other tabs.
+              </Typography>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+              }}
+            >
+              <Typography>Loading creator room...</Typography>
+            </Box>
+          )}
         </Box>
-      );
-    }
+      </Box>
+    );
+  }
 
     if (activeTabConfig?.component) {
       const TabComponent = activeTabConfig.component;

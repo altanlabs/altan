@@ -9,12 +9,12 @@ import {
   fetchRoom,
   clearRoomState,
   selectRoomStateInitialized,
-  selectRoomStateLoading,
+  // selectRoomStateLoading, // Not needed - let DesktopRoom handle loading
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 
 const selectInitializedRoom = selectRoomStateInitialized('room');
-const selectLoadingRoom = selectRoomStateLoading('room');
+// const selectLoadingRoom = selectRoomStateLoading('room'); // Not needed
 
 const Room = ({
   roomId,
@@ -46,7 +46,7 @@ const Room = ({
   const history = useHistory();
   const { guest, user } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);
-  const loading = useSelector(selectLoadingRoom);
+  // const loading = useSelector(selectLoadingRoom); // Not needed - let DesktopRoom handle loading
 
   // Clean up when roomId changes or on unmount
   useEffect(() => {
@@ -57,10 +57,14 @@ const Room = ({
   }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
+    console.log('🏠 🚀 Starting room fetch...', { roomId, hasUser: !!user, hasGuest: !!guest });
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => {
         if (!response) {
+          console.error('🏠 ❌ Room fetch returned no data');
           history.replace('/404');
+        } else {
+          console.log('🏠 ✅ Room fetch successful:', response);
         }
       })
       .catch((error) => {
@@ -73,8 +77,9 @@ const Room = ({
         const statusCode = error.response?.status || error?.status;
         switch (statusCode) {
           case 401:
-            console.error('Authentication error:', error);
-            history.replace('/404');
+            console.error('🏠 ❌ Authentication error - axios might not have auth headers set yet');
+            // Don't redirect on 401 - might just be a timing issue
+            // The interceptor will retry with refreshed token
             break;
           case 404:
             history.replace('/404');
@@ -103,8 +108,28 @@ const Room = ({
     }
   }, [roomId, initialized, handleFetchRoom, guest, user]);
 
-  if (!initialized || loading) {
+  // Only return null if there's no roomId at all
+  if (!roomId) {
     return null;
+  }
+
+  // Show loading state while room is initializing
+  // This prevents blank screens while waiting for fetch to complete
+  if (!initialized) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: 0.5,
+        }}
+      >
+        {/* Empty loading state - could add spinner here if needed */}
+      </div>
+    );
   }
 
   return (

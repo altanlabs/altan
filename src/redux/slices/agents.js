@@ -134,16 +134,23 @@ export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
       // Fetch DM room
       const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
 
-      // Fetch creator room
-      const creatorResponse = await optimai_room.get(
-        `/external/agent_${agent.id}?account_id=${agent.account_id}&autocreate=true`,
-      );
+      // Fetch creator room - some agents don't have a creator room, so handle 404 gracefully
+      let creatorRoomId = null;
+      try {
+        const creatorResponse = await optimai_room.get(
+          `/external/agent_${agent.id}?account_id=${agent.account_id}&autocreate=true`,
+        );
+        creatorRoomId = creatorResponse.data.room.id;
+      } catch {
+        // If creator room doesn't exist (404) or any other error, just continue without it
+        // creatorRoomId will remain null
+      }
 
       dispatch(
         slice.actions.setAgent({
           agent,
           dmRoomId: dmResponse.data.id,
-          creatorRoomId: creatorResponse.data.room.id,
+          creatorRoomId,
         }),
       );
     } else {
