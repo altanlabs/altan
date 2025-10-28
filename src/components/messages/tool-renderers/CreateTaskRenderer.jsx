@@ -9,6 +9,7 @@ import {
   makeSelectToolPartExecution,
   switchToThread,
   makeSelectToolPartsByThreadId,
+  selectActiveActivationsByThread,
 } from '../../../redux/slices/room';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { useSelector, useDispatch } from '../../../redux/store.js';
@@ -69,7 +70,6 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
         const data = result.payload?.data || result.data || result;
 
         if (data && data.task_name) {
-          // eslint-disable-next-line no-console
           return {
             id: data.id,
             task_name: data.task_name,
@@ -118,6 +118,12 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
   const toolParts = useSelector((state) =>
     taskData?.subthread_id ? toolPartsSelector(state, taskData.subthread_id) : [],
   );
+
+  // Check if the subthread has active activations (real-time indicator)
+  const activeActivations = useSelector((state) =>
+    taskData?.subthread_id ? selectActiveActivationsByThread(taskData.subthread_id)(state) : [],
+  );
+  const hasActiveActivation = activeActivations && activeActivations.length > 0;
 
   // Handlers
   const handleToggleTask = useCallback((e) => {
@@ -185,7 +191,7 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     : null;
   // Use Redux status if available (for real-time updates), otherwise use taskData status
   const currentStatus = reduxTask?.status || taskData?.status;
-  const isTaskRunning = currentStatus?.toLowerCase() === 'running';
+  const isTaskRunning = hasActiveActivation || currentStatus?.toLowerCase() === 'running';
 
   if (!header) {
     return null;
@@ -228,104 +234,87 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 overflow-hidden">
         {/* Task Header - Clickable to expand/collapse */}
         <div
-          className="px-4 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 cursor-pointer transition-colors"
+          className="px-3 py-2.5 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 cursor-pointer transition-colors"
           onClick={handleToggleTask}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Expand/Collapse Icon */}
-            <div className="flex-shrink-0 mt-0.5">
-              <Iconify
-                icon={taskExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
-                className={`w-4 h-4 transition-transform duration-200 ${
-                  isTaskRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'
-                }`}
-              />
-            </div>
+            <Iconify
+              icon={taskExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+              className={cn(
+                'w-4 h-4 transition-transform duration-200 flex-shrink-0',
+                isTaskRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400',
+              )}
+            />
 
-            <div className="flex-1 min-w-0">
-              {/* Task Name and Agent */}
-              <div className="flex items-center gap-2">
-                {agentAvatar && (
-                  <Tooltip title={`Assigned to: ${taskData.assigned_agent_name}`}>
-                    <img
-                      src={agentAvatar}
-                      alt={taskData.assigned_agent_name}
-                      className="w-5 h-5 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </Tooltip>
-                )}
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {taskData.task_name || 'Untitled Task'}
-                </span>
-              </div>
+            {/* Agent Avatar */}
+            {agentAvatar && (
+              <Tooltip title={`Assigned to: ${taskData.assigned_agent_name}`}>
+                <img
+                  src={agentAvatar}
+                  alt={taskData.assigned_agent_name}
+                  className="w-5 h-5 rounded-full border border-white/30 dark:border-gray-600/50 shadow-sm flex-shrink-0"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </Tooltip>
+            )}
 
-              {/* Task Description - only when collapsed */}
-              {!taskExpanded && taskData.task_description && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  {taskData.task_description}
-                </div>
+            {/* Task Name */}
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                {taskData.task_name || 'Untitled Task'}
+              </span>
+              {isTaskRunning && (
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
               )}
             </div>
 
             {/* Open Thread Button */}
             {taskData.subthread_id && (
-              <div className="flex-shrink-0">
-                <Tooltip title="View task execution details">
-                  <button
-                    onClick={handleOpenSubthread}
-                    className="p-1.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
-                  >
-                    <Iconify
-                      icon="mdi:open-in-new"
-                      className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                    />
-                  </button>
-                </Tooltip>
-              </div>
+              <Tooltip title="View task execution details">
+                <button
+                  onClick={handleOpenSubthread}
+                  className="p-1.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group flex-shrink-0"
+                >
+                  <Iconify
+                    icon="mdi:open-in-new"
+                    className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                  />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
 
         {/* Expanded Content - Subtasks */}
-        {taskExpanded && (
-          <div className="px-4 pb-3 pl-14 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
-            {/* Task Description */}
-            {taskData.task_description && (
-              <div className="mb-3 text-sm text-gray-700 dark:text-gray-300 pt-3">
-                {taskData.task_description}
+        {taskExpanded && toolParts.length > 0 && (
+          <div className="px-3 pb-3 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
+            <div className="ml-6.5 mt-3 space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Iconify
+                  icon="mdi:wrench-outline"
+                  className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                />
+                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                  Subtasks ({toolParts.length})
+                </span>
               </div>
-            )}
+              {toolParts.map((toolPart) => (
+                <ToolPartCard key={toolPart.id} partId={toolPart.id} noClick={false} />
+              ))}
+            </div>
+          </div>
+        )}
 
-            {/* Subtasks */}
-            {toolParts.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <Iconify
-                    icon="mdi:wrench-outline"
-                    className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
-                  />
-                  <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                    Subtasks ({toolParts.length})
-                  </span>
-                </div>
-                {toolParts.map((toolPart) => (
-                  <ToolPartCard
-                    key={toolPart.id}
-                    partId={toolPart.id}
-                    noClick={false}
-                  />
-                ))}
-              </div>
-            )}
-
-            {toolParts.length === 0 && isTaskRunning && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 italic mt-3">
-                Waiting for subtasks...
-              </div>
-            )}
+        {/* Loading state when task is running but no subtasks yet */}
+        {taskExpanded && toolParts.length === 0 && isTaskRunning && (
+          <div className="px-3 pb-3 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
+            <div className="ml-6.5 mt-3 text-xs text-gray-500 dark:text-gray-400 italic flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+              Waiting for subtasks...
+            </div>
           </div>
         )}
       </div>

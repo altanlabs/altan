@@ -177,8 +177,8 @@ const CompactLayout = ({
                   const isFirstProject = !altaners || altaners.length === 0;
                   const onboardingParam = isFirstProject ? '?onboarding=true' : '';
                   console.log(`📊 First project: ${isFirstProject}, adding onboarding: ${onboardingParam}`);
-                  // Use history.push for proper routing
-                  history.push(`/project/${projectId}${onboardingParam}`);
+                  // Use window.location.href to reload the page
+                  window.location.href = `/project/${projectId}${onboardingParam}`;
                 }, 800);
               }, remainingTime);
             } else {
