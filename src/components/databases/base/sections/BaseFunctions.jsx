@@ -13,7 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   IconButton,
   CircularProgress,
   Menu,
@@ -39,6 +38,7 @@ import {
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
+import ApiDocsViewer from './functions/ApiDocsViewer';
 import CreateFunctionDrawer from './functions/CreateFunctionDrawer';
 import CreateSecretDrawer from './functions/CreateSecretDrawer';
 import EditFunctionDrawer from './functions/EditFunctionDrawer';
@@ -52,6 +52,8 @@ import {
   deleteSecret,
 } from '../../../../redux/slices/services';
 import { dispatch } from '../../../../redux/store';
+import { setSession } from '../../../../utils/auth';
+import { optimai_cloud } from '../../../../utils/axios';
 
 // Helper to format date
 const formatDate = (dateString) => {
@@ -81,7 +83,7 @@ function BaseFunctions({ baseId }) {
   const [createSecretDrawerOpen, setCreateSecretDrawerOpen] = useState(false);
   const [operating, setOperating] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [activeTab, setActiveTab] = useState('functions'); // 'functions' or 'secrets'
+  const [activeTab, setActiveTab] = useState('api-docs'); // 'api-docs', 'functions', or 'secrets'
 
   // Function detail view state
   const [viewingFunction, setViewingFunction] = useState(null);
@@ -90,10 +92,42 @@ function BaseFunctions({ baseId }) {
   const [secretsMenuAnchor, setSecretsMenuAnchor] = useState(null);
   const [selectedSecret, setSelectedSecret] = useState(null);
 
+  // Cloud URL for API docs
+  const [cloudUrl, setCloudUrl] = useState(null);
+
   // Fetch functions and secrets on mount
   useEffect(() => {
     dispatch(fetchFunctions(baseId));
     dispatch(fetchSecrets(baseId));
+  }, [baseId]);
+
+  // Fetch cloud URL for API docs
+  useEffect(() => {
+    const fetchCloudUrl = async () => {
+      try {
+        // Ensure token is set
+        const authData = localStorage.getItem('oaiauth');
+        if (authData) {
+          try {
+            const { access_token: accessToken } = JSON.parse(authData);
+            if (accessToken) {
+              setSession(accessToken, optimai_cloud);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        const response = await optimai_cloud.get(`/v1/instances/metrics/cloud/${baseId}`);
+        if (response.data?.cloud_url) {
+          setCloudUrl(response.data.cloud_url);
+        }
+      } catch {
+        // Silently handle error - cloud URL is for optional API docs tab
+      }
+    };
+
+    fetchCloudUrl();
   }, [baseId]);
 
   const functions = functionsState.items || [];
@@ -199,9 +233,10 @@ function BaseFunctions({ baseId }) {
   const handleRefresh = () => {
     if (activeTab === 'functions') {
       dispatch(fetchFunctions(baseId));
-    } else {
+    } else if (activeTab === 'secrets') {
       dispatch(fetchSecrets(baseId));
     }
+    // API docs don't need refresh - they fetch directly from cloud_url
   };
 
   // Show loading state
@@ -316,7 +351,11 @@ function BaseFunctions({ baseId }) {
             onChange={(e, newValue) => setActiveTab(newValue)}
           >
             <Tab
-              label="Services"
+              label="API Overview"
+              value="api-docs"
+            />
+            <Tab
+              label="Code"
               value="functions"
             />
             <Tab
@@ -325,6 +364,37 @@ function BaseFunctions({ baseId }) {
             />
           </Tabs>
         </Box>
+
+        {/* API Docs Tab */}
+        {activeTab === 'api-docs' && (
+          <Box>
+            {cloudUrl ? (
+              <ApiDocsViewer cloudUrl={cloudUrl} />
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '400px',
+                }}
+              >
+                <Stack
+                  spacing={2}
+                  alignItems="center"
+                >
+                  <CircularProgress />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Loading API documentation...
+                  </Typography>
+                </Stack>
+              </Box>
+            )}
+          </Box>
+        )}
 
         {/* Functions Tab */}
         {activeTab === 'functions' && (
@@ -396,8 +466,8 @@ function BaseFunctions({ baseId }) {
                               color="text.secondary"
                             >
                               {searchQuery
-                                ? 'No services found matching your search'
-                                : 'No services yet'}
+                                ? 'No code found matching your search'
+                                : 'No code yet'}
                             </Typography>
                             {!searchQuery && (
                               <Button
@@ -406,7 +476,7 @@ function BaseFunctions({ baseId }) {
                                 startIcon={<Plus size={18} />}
                                 onClick={() => setCreateDrawerOpen(true)}
                               >
-                                Create Your First Service
+                                Create Your First Code
                               </Button>
                             )}
                           </Stack>
@@ -460,9 +530,7 @@ function BaseFunctions({ baseId }) {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">
-                              {formatDate(func.created_at)}
-                            </Typography>
+                            <Typography variant="body2">{formatDate(func.created_at)}</Typography>
                           </TableCell>
                           <TableCell align="right">
                             <IconButton
@@ -496,7 +564,7 @@ function BaseFunctions({ baseId }) {
                   color="text.secondary"
                 >
                   {filteredFunctions.length}{' '}
-                  {filteredFunctions.length === 1 ? 'service' : 'services'}
+                  {filteredFunctions.length === 1 ? 'code' : 'codes'}
                 </Typography>
               </Stack>
             )}

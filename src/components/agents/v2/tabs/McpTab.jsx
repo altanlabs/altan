@@ -13,27 +13,24 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import Iconify from '../../../iconify';
-import AddMCPServerDialog from '../components/AddMCPServerDialog';
-import CreateMCPDrawer from '../components/CreateMCPDrawer';
 import {
   fetchAgentMCPServers,
-  connectAgentToMCPServer,
-  updateAgentMCPConnection,
   disconnectAgentFromMCPServer,
 } from '../../../../redux/slices/mcp';
 import { optimai } from '../../../../utils/axios';
+import Iconify from '../../../iconify';
+import AddMCPServerDrawer from '../components/AddMCPServerDialog';
+import CreateMCPDrawer from '../components/CreateMCPDrawer';
 
-function McpTab({ agentData, onFieldChange }) {
+function McpTab({ agentData }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingServer, setEditingServer] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [connecting, setConnecting] = useState(null);
 
   // Get MCP servers from Redux state
-  const { servers: mcpServers, isLoading } = useSelector((state) => state.mcp);
+  const { servers: mcpServers } = useSelector((state) => state.mcp);
   const [accountServers, setAccountServers] = useState([]);
 
   // Fetch agent's MCP servers on mount
@@ -50,7 +47,7 @@ function McpTab({ agentData, onFieldChange }) {
       const fetchAccountServers = async () => {
         try {
           const response = await optimai.get(
-            `/mcp/servers?account_id=${agentData.account_id}&active_only=false`
+            `/mcp/servers?account_id=${agentData.account_id}&active_only=false`,
           );
           const allServers = response.data.mcp_servers || [];
           // Filter out already connected servers
@@ -91,25 +88,12 @@ function McpTab({ agentData, onFieldChange }) {
     setEditingServer(null);
   };
 
-  const handleConnectServer = async (serverId) => {
+  const handleConnectServer = async (mcpServerId) => {
     if (!agentData?.id) return;
 
-    setConnecting(serverId);
-    try {
-      await dispatch(
-        connectAgentToMCPServer(serverId, agentData.id, {
-          accessLevel: 'user',
-        }),
-      );
-      // Refresh the agent's MCP servers list
+    // Refresh the agent's MCP servers list after successful creation
+    if (mcpServerId) {
       await dispatch(fetchAgentMCPServers(agentData.id));
-      // Close dialog after connecting
-      handleCloseDialog();
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to connect MCP server:', error);
-    } finally {
-      setConnecting(null);
     }
   };
 
@@ -122,24 +106,8 @@ function McpTab({ agentData, onFieldChange }) {
       // Refresh the list
       dispatch(fetchAgentMCPServers(agentData.id));
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to disconnect MCP server:', error);
-    }
-  };
-
-  const handleToggleServer = async (serverId, currentEnabled, event) => {
-    event.stopPropagation();
-    if (!agentData?.id) return;
-
-    try {
-      await dispatch(
-        updateAgentMCPConnection(serverId, agentData.id, {
-          isActive: !currentEnabled,
-        })
-      );
-      // Refresh the list
-      dispatch(fetchAgentMCPServers(agentData.id));
-    } catch (error) {
-      console.error('Failed to toggle MCP server:', error);
     }
   };
 
@@ -290,14 +258,14 @@ function McpTab({ agentData, onFieldChange }) {
         ))}
       </Stack>
 
-      {/* Add MCP Server Dialog */}
-      <AddMCPServerDialog
+      {/* Add MCP Server Drawer */}
+      <AddMCPServerDrawer
         open={dialogOpen}
         onClose={handleCloseDialog}
         accountServers={accountServers}
-        connecting={connecting}
         onConnect={handleConnectServer}
         onCreateNew={handleCreateNew}
+        agentId={agentData?.id}
       />
 
       {/* MCP Drawer */}
@@ -313,7 +281,6 @@ function McpTab({ agentData, onFieldChange }) {
 
 McpTab.propTypes = {
   agentData: PropTypes.object.isRequired,
-  onFieldChange: PropTypes.func.isRequired,
 };
 
 export default McpTab;

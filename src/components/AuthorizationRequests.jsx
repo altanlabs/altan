@@ -94,7 +94,7 @@ const AuthorizationRequests = () => {
 
     // Find the Services agent
     const servicesAgent = Object.values(members.byId || {}).find(
-      (member) => member.member.agent.name === 'Services',
+      (member) => member?.member?.agent?.name === 'Services',
     );
     // Build help message with agent mention if found
     let helpMessage = 'I need help with this authorization request. Can you give me step-by-step instructions on how to find and provide the required credentials?';

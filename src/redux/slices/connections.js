@@ -197,11 +197,11 @@ export const getConnectionTypes = () => async (dispatch, getState) => {
   }
 };
 
-export const getConnections = (accountId) => async (dispatch, getState) => {
+export const getConnections = (accountId, forceRefresh = false) => async (dispatch, getState) => {
   const state = getState();
   const initialized = selectAccountConnectionsInitialized(state);
   const loading = selectAccountConnectionsLoading(state);
-  if (loading || initialized) {
+  if (!forceRefresh && (loading || initialized)) {
     return Promise.resolve(true);
   }
   if (!accountId) {
@@ -251,7 +251,7 @@ export const newConnection = (account, data) => async (dispatch, getState) => {
       data,
     );
     const { connection } = response.data;
-    dispatch(slice.actions.addConnection({ connection, accountId }));
+    dispatch(slice.actions.addConnection(connection));
     return Promise.resolve(connection);
   } catch (e) {
     dispatch(slice.actions.hasError({ error: e, accountId }));
