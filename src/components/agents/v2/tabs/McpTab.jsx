@@ -50,7 +50,7 @@ function McpTab({ agentData, onFieldChange }) {
       const fetchAccountServers = async () => {
         try {
           const response = await optimai.get(
-            `/mcp/servers?account_id=${agentData.account_id}&active_only=true`
+            `/mcp/servers?account_id=${agentData.account_id}&active_only=false`
           );
           const allServers = response.data.mcp_servers || [];
           // Filter out already connected servers

@@ -166,12 +166,14 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
-        {/* Public Agent Routes */}
+        {/* Agent Share Route - handles auth internally */}
         <Route
           path="/agent/:agentId/share"
           exact
         >
-          <AgentSharePage />
+          <AuthGuard requireAuth={false}>
+            <AgentSharePage />
+          </AuthGuard>
         </Route>
 
         <Route

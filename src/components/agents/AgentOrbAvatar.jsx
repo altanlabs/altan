@@ -34,6 +34,7 @@ class OrbErrorBoundary extends Component {
  * @param {React.Ref} ref - Optional ref to attach to the container
  * @param {function} onClick - Optional click handler
  * @param {string} agentState - Agent state: null, 'listening', 'talking', 'thinking'
+ * @param {array} colors - Array of two colors for the orb (default: ['#CADCFC', '#A0B9D1'])
  */
 export const AgentOrbAvatar = ({
   size = 32,
@@ -41,6 +42,8 @@ export const AgentOrbAvatar = ({
   ref,
   onClick,
   agentState = null,
+  colors = ['#CADCFC', '#A0B9D1'],
+  isStatic = true,
 }) => {
   const fallback = (
     <Box
@@ -48,7 +51,6 @@ export const AgentOrbAvatar = ({
         width: '100%',
         height: '100%',
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, #CADCFC 0%, #A0B9D1 100%)',
         animation: 'pulse 2s ease-in-out infinite',
         '@keyframes pulse': {
           '0%, 100%': { opacity: 0.8 },
@@ -68,7 +70,8 @@ export const AgentOrbAvatar = ({
         height: size,
         borderRadius: '50%',
         cursor: onClick ? 'pointer' : 'default',
-        padding: '1px',
+        padding: 0,
+        margin: 0,
       }}
     >
       <Box
@@ -77,14 +80,17 @@ export const AgentOrbAvatar = ({
           height: '100%',
           borderRadius: '50%',
           overflow: 'hidden',
+          padding: 0,
+          margin: 0,
         }}
       >
         <OrbErrorBoundary fallback={fallback}>
           <Suspense fallback={fallback}>
             <Orb
-              colors={['#CADCFC', '#A0B9D1']}
+              colors={colors}
               seed={agentId ? agentId.charCodeAt(0) * 1000 : 1000}
               agentState={agentState}
+              static={isStatic}
             />
           </Suspense>
         </OrbErrorBoundary>

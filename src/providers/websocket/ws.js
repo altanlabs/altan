@@ -633,13 +633,29 @@ export const handleWebSocketEvent = async (data, user_id) => {
       // 2. agent_event nested under data (e.g., response.started, response.completed)
       const agentEvent = data.agent_event || data.data?.agent_event;
       if (!agentEvent) {
-        console.error('AGENT_RESPONSE missing agent_event:', data);
+        console.warn('AGENT_RESPONSE missing agent_event, skipping:', {
+          type: data.type,
+          hasData: !!data.data,
+          dataKeys: data.data ? Object.keys(data.data) : [],
+        });
         break;
       }
 
       // Use event_data if available, otherwise use data directly
       const eventData = agentEvent.event_data || agentEvent.data;
-      const eventType = agentEvent.event_type;
+      const eventType =
+        agentEvent?.event_type || agentEvent?.event_name || agentEvent?.type || agentEvent?.name;
+
+      // Validate event_type exists
+      if (!eventType || typeof eventType !== 'string') {
+        console.warn('AGENT_RESPONSE missing or invalid event_type:', {
+          hasEventType: !!eventType,
+          eventType,
+          agentEventKeys: Object.keys(agentEvent),
+          agentEvent,
+        });
+        break;
+      }
 
       // Try multiple timestamp sources in order of preference
       const timestamp =
@@ -688,17 +704,24 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
         // Response lifecycle (after response starts)
         if (eventType.startsWith('response.')) {
-          // Add to response lifecycle
-          dispatch(
-            addResponseLifecycle({
-              response_id: eventData.response_id,
-              agent_id: eventData.agent_id,
-              thread_id: eventData.thread_id,
-              event_type: eventType,
-              event_data: eventData,
-              timestamp,
-            }),
-          );
+          // Add to response lifecycle - with safety check for eventData
+          if (eventData && eventData.response_id) {
+            dispatch(
+              addResponseLifecycle({
+                response_id: eventData.response_id,
+                agent_id: eventData.agent_id,
+                thread_id: eventData.thread_id,
+                event_type: eventType,
+                event_data: eventData,
+                timestamp,
+              }),
+            );
+          } else {
+            console.warn('⚠️ Received response event without response_id:', {
+              eventType,
+              eventData,
+            });
+          }
 
           // Complete response lifecycle on completion events
           if (
@@ -879,11 +902,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
         default:
           break;
-          // if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
-          //   console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
-          // } else {
-          //   console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
-          // }
+        // if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
+        //   console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
+        // } else {
+        //   console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
+        // }
       }
       break;
     case 'RoomMemberUpdate':
@@ -910,20 +933,8 @@ export const handleWebSocketEvent = async (data, user_id) => {
       dispatch(addThread(thread));
       break;
     case 'ThreadUpdate':
-      // Validate data structure before dispatching
-      if (data.data && (data.data.ids || data.data.id) && data.data.changes) {
-        // Normalize ids field (handle both 'id' and 'ids' from backend)
-        const normalizedData = {
-          ids: data.data.ids || data.data.id,
-          changes: data.data.changes,
-        };
-        dispatch(threadUpdate(normalizedData));
-      } else {
-        console.error('Invalid ThreadUpdate data structure:', {
-          received: data.data,
-          expected: '{ ids: string | string[], changes: object }',
-        });
-      }
+      // Pass data directly - reducer handles both old and new formats
+      dispatch(threadUpdate(data.data));
       break;
     case 'ThreadDelete':
       dispatch(removeThread(data.data));
@@ -1077,7 +1088,7 @@ export const handleWebSocketEvent = async (data, user_id) => {
           break;
         default:
           break;
-          // console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
+        // console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
       }
       break;
     case 'MESSAGE':

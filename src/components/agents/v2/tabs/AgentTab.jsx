@@ -3,6 +3,7 @@ import { Box, Typography, TextField, Select, MenuItem, FormControl, Button, Slid
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 
+import AvatarConfigCard from './AvatarConfigCard';
 import WebSearchConfig from '../../../attachment/components/agent-detail/WebSearchConfig';
 
 const models = [
@@ -47,10 +48,13 @@ const alwaysReasoningModels = [
 // Models that support optional reasoning (can be enabled/disabled)
 const optionalReasoningModels = [
   'gpt-5',
+  'gpt-5-mini',
+  'gpt-5-nano',
   'claude-4-1-opus-latest',
   'claude-4-opus-latest',
   'claude-4-5-sonnet-latest',
   'claude-4-sonnet-latest',
+  'claude-4-5-haiku-latest',
 ];
 
 const modelToProvider = {};
@@ -439,6 +443,13 @@ function AgentTab({ agentData, onFieldChange }) {
               </AccordionDetails>
             </Accordion>
           </Box>
+
+          {/* Avatar Configuration */}
+          <AvatarConfigCard
+            agentData={agentData}
+            onFieldChange={onFieldChange}
+            agentId={agentData?.id}
+          />
         </Box>
       </Box>
     </Box>

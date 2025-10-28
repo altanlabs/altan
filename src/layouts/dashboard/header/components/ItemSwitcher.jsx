@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import NavDropdown from './NavDropdown';
 import Iconify from '../../../../components/iconify';
+import DynamicAgentAvatar from '../../../../components/agents/DynamicAgentAvatar';
 import { selectAllAgents } from '../../../../redux/slices/agents';
 import { deleteWorkflow, duplicateWorkflow } from '../../../../redux/slices/flows';
 import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general';
@@ -171,28 +172,18 @@ const ItemSwitcher = memo(
 
     const renderAvatar = useCallback(
       (item, size = 16) => {
-        if (!item.avatar_url) return null;
-
         return (
-          <>
-            <img
-              src={item.avatar_url}
-              alt={item.name}
-              className={`w-${size / 4} h-${size / 4} rounded-full object-cover`}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DynamicAgentAvatar
+              agent={item}
+              size={Math.floor(size * 1.5)}
+              agentId={item.id}
+              agentState={null}
             />
-            <Iconify
-              icon={COMPONENT_ICONS[activeComponentType] || 'eva:file-outline'}
-              width={size}
-              className="text-gray-500 dark:text-gray-400 hidden"
-            />
-          </>
+          </Box>
         );
       },
-      [activeComponentType],
+      [],
     );
 
     const renderItemIcon = useCallback(
@@ -201,7 +192,7 @@ const ItemSwitcher = memo(
           return renderStatusIndicator(item, 'large');
         }
 
-        if (isAgentType(activeComponentType) && item.avatar_url) {
+        if (isAgentType(activeComponentType)) {
           return renderAvatar(item);
         }
 

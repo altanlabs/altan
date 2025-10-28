@@ -65,12 +65,7 @@ const MemberCard = ({ memberDetails, member, memberBadge = null, badgeSize = 20 
         size={badgeSize}
         agentId={member?.member?.agent_id || member?.id}
         agentState={null}
-        sx={{
-          borderColor: !member.is_kicked ? 'green' : '#000',
-          borderWidth: 2,
-          borderStyle: 'solid',
-          opacity: member.is_kicked ? 0.5 : 1,
-        }}
+        isStatic={false}
       />
     ) : (
       <CustomAvatar

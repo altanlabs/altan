@@ -195,6 +195,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, roomMember, memberNam
                 size={48}
                 agentId={member?.agent_id || member?.id}
                 agentState={null}
+                isStatic={false}
               />
             ) : (
               <CustomAvatar

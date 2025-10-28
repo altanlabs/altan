@@ -27,29 +27,24 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
-import { optimai_room, optimai } from '../../../utils/axios';
 import RoomComponent from '../../room/Room';
 // sections
 import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
-// utils
-import { uploadMedia } from '../../../utils/media';
 // components
 import DeleteDialog from '../../dialogs/DeleteDialog';
 import Iconify from '../../iconify';
 import AltanLogo from '../../loaders/AltanLogo';
 import ShareAgentDialog from '../../members/ShareAgentDialog';
 import TemplateDialog from '../../templates/TemplateDialog';
-import { UploadAvatar } from '../../upload';
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
 // local components
 import AgentInfoDialog from './components/AgentInfoDialog';
-import AvatarSelectionModal from './components/AvatarSelectionModal';
 import AgentTab from './tabs/AgentTab';
 import ConversationsTab from './tabs/ConversationsTab';
 import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
-import WidgetTab from './tabs/WidgetTab';
 
 const versionsSelector = (template) => template?.versions;
 
@@ -80,7 +75,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const history = useHistory();
   const { altanerId } = useParams();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const { currentAgent, isLoading, currentAgentDmRoomId } = useSelector((state) => state.agents);
+  const { currentAgent, isLoading, currentAgentDmRoomId, currentAgentCreatorRoomId } = useSelector((state) => state.agents);
   const { user } = useAuthContext();
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
   // Responsive breakpoints
@@ -97,7 +92,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [agentData, setAgentData] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
@@ -105,8 +99,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const [anchorEl, setAnchorEl] = useState(null);
   // Default test drawer to closed when inside an altaner/project context
   const [showTestDrawer, setShowTestDrawer] = useState(!altanerComponentId);
-  const [creatorRoomId, setCreatorRoomId] = useState(null);
-  const [dmRoomId, setDmRoomId] = useState(null);
   const [initialMessage, setInitialMessage] = useState(null);
   const chatPanelRef = useRef(null);
   const messageProcessedRef = useRef(false);
@@ -141,61 +133,29 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     if (currentAgent) {
       setAgentData(currentAgent);
 
-      // Clear the old creator room ID when agent changes to prevent showing wrong room
-      setCreatorRoomId(null);
-      setDmRoomId(null);
+      // Check for message query param (only process once)
+      if (!messageProcessedRef.current && currentAgentCreatorRoomId) {
+        const searchParams = new URLSearchParams(location.search);
+        const messageParam = searchParams.get('message');
 
-      // Fetch the creator room for AI-assisted editing
-      const fetchCreatorRoom = async () => {
-        try {
-          const creatorResponse = await optimai_room.get(
-            `/external/agent_${currentAgent.id}?account_id=${currentAgent.account_id}&autocreate=true`,
-          );
-          const roomId = creatorResponse.data.room.id;
-          setCreatorRoomId(roomId);
+        if (messageParam) {
+          messageProcessedRef.current = true;
 
-          // Check for message query param (only process once)
-          if (!messageProcessedRef.current) {
-            const searchParams = new URLSearchParams(location.search);
-            const messageParam = searchParams.get('message');
+          // Store the message to be sent in the creator room
+          setInitialMessage(decodeURIComponent(messageParam));
 
-            if (messageParam) {
-              messageProcessedRef.current = true;
-
-              // Store the message to be sent in the creator room
-              setInitialMessage(decodeURIComponent(messageParam));
-
-              // Clear the message param and explicitly set to creator tab
-              searchParams.delete('message');
-              searchParams.set('tab', 'creator'); // Explicitly set to creator tab
-              const newSearch = searchParams.toString();
-              history.replace({
-                pathname: location.pathname,
-                search: newSearch ? `?${newSearch}` : '',
-              });
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch creator room:', error);
+          // Clear the message param and explicitly set to creator tab
+          searchParams.delete('message');
+          searchParams.set('tab', 'creator'); // Explicitly set to creator tab
+          const newSearch = searchParams.toString();
+          history.replace({
+            pathname: location.pathname,
+            search: newSearch ? `?${newSearch}` : '',
+          });
         }
-      };
-
-      // Fetch the DM room for testing
-      const fetchDmRoom = async () => {
-        try {
-          const dmResponse = await optimai.get(
-            `/agent/${currentAgent.id}/dm?account_id=${currentAgent.account_id}`,
-          );
-          setDmRoomId(dmResponse.data.id);
-        } catch (error) {
-          console.error('Failed to fetch DM room:', error);
-        }
-      };
-
-      fetchCreatorRoom();
-      fetchDmRoom();
+      }
     }
-  }, [currentAgent, location.search, history]);
+  }, [currentAgent, currentAgentCreatorRoomId, location.search, history]);
 
   // Sync tab state with URL parameters
   useEffect(() => {
@@ -232,22 +192,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     [agentData, debouncedUpdateAgent],
   );
 
-  const handleAvatarChange = (newAvatarSrc) => {
-    handleFieldChange('avatar_url', newAvatarSrc);
-  };
-
-  const handleDropSingleFile = useCallback(
-    async (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      if (file) {
-        try {
-          const mediaUrl = await uploadMedia(file);
-          handleFieldChange('avatar_url', mediaUrl);
-        } catch {}
-      }
-    },
-    [handleFieldChange],
-  );
 
   const handleDelete = () => {
     dispatchWithFeedback(deleteAccountAgent(currentAgent.id), {
@@ -304,8 +248,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   };
 
   const handleTestAgentNewTab = () => {
-    if (dmRoomId) {
-      const url = `/room/${dmRoomId}`;
+    if (currentAgentDmRoomId) {
+      const url = `/room/${currentAgentDmRoomId}`;
       window.open(url, '_blank');
     }
   };
@@ -317,8 +261,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
-  console.log('creatorRoomId', creatorRoomId);
 
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
@@ -335,10 +277,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           }}
         >
           <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            {creatorRoomId && agentData ? (
+            {currentAgentCreatorRoomId && agentData ? (
               <iframe
-                key={`creator-${creatorRoomId}-${agentData.id}-${initialMessage ? 'with-message' : 'no-message'}`}
-                src={`/r/${creatorRoomId}${(() => {
+                key={`creator-${agentData.id}`}
+                src={`/r/${currentAgentCreatorRoomId}${(() => {
                   const params = new URLSearchParams();
                   // Add context about the agent being edited
                   params.set('context', `User is editing agent: ${agentData.name} (ID: ${agentData.id})`);
@@ -600,16 +542,12 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 )}
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                  <UploadAvatar
-                    sx={{ width: { xs: 48, sm: 56, md: 64 }, height: { xs: 48, sm: 56, md: 64 } }}
-                    file={agentData.avatar_url}
-                    onDrop={handleDropSingleFile}
-                    onDelete={() => handleFieldChange('avatar_url', null)}
-                    onEdit={() => setIsEditingAvatar(true)}
-                    editConfig={{
-                      icon: 'ic:outline-change-circle',
-                      tooltip: 'Choose another avatar',
-                    }}
+                  <DynamicAgentAvatar
+                    agent={agentData}
+                    size={isMobile ? 48 : 64}
+                    agentId={agentData?.id}
+                    agentState={null}
+                    isStatic={false}
                   />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <TextField
@@ -665,6 +603,14 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                         <Iconify icon="eva:trash-2-outline" />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title="Share">
+                      <IconButton
+                        onClick={() => setShareDialogOpen(true)}
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        <Iconify icon="eva:share-outline" />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Agent Information">
                       <IconButton
                         onClick={() => setInfoDialogOpen(true)}
@@ -711,6 +657,20 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                         horizontal: 'right',
                       }}
                     >
+                      <MenuItem
+                        onClick={() => {
+                          setShareDialogOpen(true);
+                          handleMenuClose();
+                        }}
+                      >
+                        <ListItemIcon>
+                          <Iconify
+                            icon="eva:share-outline"
+                            sx={{ color: 'text.secondary' }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText>Share</ListItemText>
+                      </MenuItem>
                       <MenuItem
                         onClick={() => {
                           setInfoDialogOpen(true);
@@ -880,9 +840,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 </Tooltip>
               </Box>
               <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                {dmRoomId && (
+                {currentAgentDmRoomId && (
                   <iframe
-                    src={`/r/${dmRoomId}`}
+                    key={`dm-${currentAgent.id}`}
+                    src={`/r/${currentAgentDmRoomId}`}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -920,11 +881,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         mode="agent"
         templateSelector={templateSelector}
         versionsSelector={versionsSelector}
-      />
-      <AvatarSelectionModal
-        open={isEditingAvatar}
-        onClose={() => setIsEditingAvatar(false)}
-        setAvatar={handleAvatarChange}
       />
 
       {/* Agent Information Dialog */}

@@ -1,6 +1,5 @@
 import {
   Chip,
-  Avatar,
   Popover,
   Box,
   Typography,
@@ -17,6 +16,7 @@ import { useAuthContext } from '../../../auth/useAuthContext';
 import { selectMembers, selectRoomId } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store';
 import Iconify from '../../iconify/Iconify.jsx';
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
 
 const AgentSelectionChip = ({
   agents = [],
@@ -116,11 +116,13 @@ const AgentSelectionChip = ({
       <Chip
         avatar={
           selectedAgent ? (
-            <Avatar
-              src={selectedAgent.src}
-              alt={selectedAgent.name}
-              sx={{ width: 20, height: 20 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <DynamicAgentAvatar
+                agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
+                size={20}
+                isStatic
+              />
+            </Box>
           ) : undefined
         }
         icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
@@ -191,11 +193,13 @@ const AgentSelectionChip = ({
                   },
                 }}
               >
-                <Avatar
-                  src={agent.src}
-                  alt={agent.name}
-                  sx={{ width: 24, height: 24, marginRight: 1 }}
-                />
+                <Box sx={{ marginRight: 1 }}>
+                  <DynamicAgentAvatar
+                    agent={originalMember?.member?.agent || agent}
+                    size={24}
+                    isStatic
+                  />
+                </Box>
                 <Typography
                   variant="body2"
                   noWrap

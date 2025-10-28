@@ -797,14 +797,34 @@ const slice = createSlice({
       }
     },
     threadUpdate: (state, action) => {
-      const { ids, changes } = action.payload;
+      // Handle both old format { ids, changes } and new format (full object with id)
+      let ids, changes;
+
+      if (action.payload.changes) {
+        // Old format: { ids, changes }
+        ids = action.payload.ids;
+        changes = action.payload.changes;
+      } else if (action.payload.id) {
+        // New format: full object with id
+        const { id, ...rest } = action.payload;
+        ids = id;
+        changes = rest;
+      } else {
+        console.error("Invalid threadUpdate payload: Must contain either 'changes' or 'id'", {
+          received: action.payload,
+        });
+        return;
+      }
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids' in threadUpdate: Must be an array of strings or a single string.", {
-          received: action.payload,
-          ids,
-          idsType: typeof ids,
-        });
+        console.error(
+          "Invalid 'ids' in threadUpdate: Must be an array of strings or a single string.",
+          {
+            received: action.payload,
+            ids,
+            idsType: typeof ids,
+          },
+        );
         return;
       }
 
@@ -871,11 +891,14 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids' in roomMemberUpdate: Must be an array of strings or a single string.", {
-          received: action.payload,
-          ids,
-          idsType: typeof ids,
-        });
+        console.error(
+          "Invalid 'ids' in roomMemberUpdate: Must be an array of strings or a single string.",
+          {
+            received: action.payload,
+            ids,
+            idsType: typeof ids,
+          },
+        );
         return;
       }
 
@@ -928,17 +951,18 @@ const slice = createSlice({
       if (state.messages.byId[message.id]) {
         // Update existing message properties, merging meta_data
         const existingMessage = state.messages.byId[message.id];
-        
+
         // Check if error was previously cleared (no error fields in existing message)
-        const errorWasCleared = !existingMessage.error && 
+        const errorWasCleared =
+          !existingMessage.error &&
           !existingMessage.meta_data?.error_code &&
           !existingMessage.meta_data?.error_message &&
           !existingMessage.meta_data?.error_type &&
           !existingMessage.meta_data?.has_error;
-        
+
         // If error was cleared, filter out error-related fields from incoming message
         const { error: incomingError, ...messageWithoutError } = message;
-        
+
         // Clean up incoming meta_data if error was cleared
         let cleanedIncomingMetaData = message.meta_data ? { ...message.meta_data } : undefined;
         if (errorWasCleared && cleanedIncomingMetaData) {
@@ -954,13 +978,13 @@ const slice = createSlice({
           cleanedIncomingMetaData = restMetaData;
           console.log('[addMessage] Filtered out error fields from incoming message:', message.id);
         }
-        
+
         // Create a new message object with merged data
         const updatedMessage = {
           ...existingMessage,
           ...messageWithoutError,
         };
-        
+
         // Merge meta_data carefully
         if (cleanedIncomingMetaData) {
           updatedMessage.meta_data = {
@@ -968,10 +992,10 @@ const slice = createSlice({
             ...cleanedIncomingMetaData,
           };
         }
-        
+
         // Replace with the new object to ensure immutability
         state.messages.byId[message.id] = updatedMessage;
-        
+
         return;
       }
 
@@ -1039,36 +1063,39 @@ const slice = createSlice({
       }
 
       console.log('[clearMessageError] Before clearing - meta_data:', message.meta_data);
-      
+
       // Create a completely new message object to ensure React detects the change
       const { error, meta_data, ...restMessage } = message;
-      
+
       // Clean meta_data if it exists
       let cleanedMetaData;
       if (meta_data) {
-        const { 
-          error_code, 
-          error_message, 
-          error_type, 
-          failed_in, 
-          total_attempts, 
+        const {
+          error_code,
+          error_message,
+          error_type,
+          failed_in,
+          total_attempts,
           has_error,
-          ...restMetaData 
+          ...restMetaData
         } = meta_data;
-        
+
         // Only include meta_data if there's something left
         if (Object.keys(restMetaData).length > 0) {
           cleanedMetaData = restMetaData;
         }
       }
-      
+
       // Replace the message with a new object (ensures immutability and re-render)
       state.messages.byId[id] = {
         ...restMessage,
         ...(cleanedMetaData ? { meta_data: cleanedMetaData } : {}),
       };
 
-      console.log('[clearMessageError] After clearing - meta_data:', state.messages.byId[id].meta_data);
+      console.log(
+        '[clearMessageError] After clearing - meta_data:',
+        state.messages.byId[id].meta_data,
+      );
     },
     addMessageReaction: (state, action) => {
       const reaction = action.payload;
@@ -1180,11 +1207,14 @@ const slice = createSlice({
       const { ids, changes } = action.payload;
 
       if (!ids || (!Array.isArray(ids) && typeof ids !== 'string')) {
-        console.error("Invalid 'ids' in roomUpdate: Must be an array of strings or a single string.", {
-          received: action.payload,
-          ids,
-          idsType: typeof ids,
-        });
+        console.error(
+          "Invalid 'ids' in roomUpdate: Must be an array of strings or a single string.",
+          {
+            received: action.payload,
+            ids,
+            idsType: typeof ids,
+          },
+        );
         return;
       }
 
@@ -1970,7 +2000,8 @@ const slice = createSlice({
     },
     // Activation lifecycle management (before response starts)
     addActivationLifecycle: (state, action) => {
-      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } = action.payload;
+      const { response_id, agent_id, thread_id, event_type, event_data, timestamp } =
+        action.payload;
 
       if (!state.activationLifecycles.byId[response_id]) {
         // Create new activation lifecycle
@@ -2158,7 +2189,9 @@ const slice = createSlice({
       Object.keys(state.activationLifecycles.byId).forEach((response_id) => {
         const lifecycle = state.activationLifecycles.byId[response_id];
         if (lifecycle.completed_at || lifecycle.discarded_at) {
-          const completedTime = new Date(lifecycle.completed_at || lifecycle.discarded_at).getTime();
+          const completedTime = new Date(
+            lifecycle.completed_at || lifecycle.discarded_at,
+          ).getTime();
           if (completedTime < cutoff) {
             delete state.activationLifecycles.byId[response_id];
           }
@@ -2781,19 +2814,16 @@ export const makeSelectMessagePartById = () =>
 
 // Granular selector for text parts to ensure streaming updates are detected
 export const makeSelectTextPartContent = () =>
-  createSelector(
-    [selectMessagePartsById, (state, partId) => partId],
-    (partsById, partId) => {
-      const part = partsById[partId];
-      if (!part) return null;
+  createSelector([selectMessagePartsById, (state, partId) => partId], (partsById, partId) => {
+    const part = partsById[partId];
+    if (!part) return null;
 
-      return {
-        text: part.text,
-        is_done: part.is_done,
-        type: part.type || part.part_type,
-      };
-    },
-  );
+    return {
+      text: part.text,
+      is_done: part.is_done,
+      type: part.type || part.part_type,
+    };
+  });
 
 // Granular selectors for tool parts to minimize re-renders
 export const makeSelectToolPartHeader = () =>
@@ -2944,37 +2974,34 @@ export const makeSelectToolPartsByThreadId = () =>
 export const selectActivationLifecycles = (state) => selectRoomState(state).activationLifecycles;
 
 export const selectActiveActivationsByThread = (threadId) =>
-  createSelector(
-    [selectActivationLifecycles, selectMembers],
-    (lifecycles, members) => {
-      const activeActivationIds = lifecycles.activeByThread[threadId] || [];
-      return activeActivationIds
-        .map((responseId) => {
-          const lifecycle = lifecycles.byId[responseId];
-          if (!lifecycle) return null;
+  createSelector([selectActivationLifecycles, selectMembers], (lifecycles, members) => {
+    const activeActivationIds = lifecycles.activeByThread[threadId] || [];
+    return activeActivationIds
+      .map((responseId) => {
+        const lifecycle = lifecycles.byId[responseId];
+        if (!lifecycle) return null;
 
-          // Get agent details from members
-          const roomMember = Object.values(members.byId || {}).find(
-            (member) =>
-              member?.member?.member_type === 'agent' &&
-              member?.member?.agent_id === lifecycle.agent_id,
-          );
+        // Get agent details from members
+        const roomMember = Object.values(members.byId || {}).find(
+          (member) =>
+            member?.member?.member_type === 'agent' &&
+            member?.member?.agent_id === lifecycle.agent_id,
+        );
 
-          return {
-            ...lifecycle,
-            agent: roomMember
-              ? {
-                  id: roomMember.member.agent_id,
-                  name: roomMember.member?.agent?.name || 'Agent',
-                  avatar: roomMember.member?.agent?.avatar_url,
-                }
-              : null,
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    },
-  );
+        return {
+          ...lifecycle,
+          agent: roomMember
+            ? {
+                id: roomMember.member.agent_id,
+                name: roomMember.member?.agent?.name || 'Agent',
+                avatar: roomMember.member?.agent?.avatar_url,
+              }
+            : null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  });
 
 // Response lifecycle selectors
 export const selectResponseLifecycles = (state) => selectRoomState(state).responseLifecycles;
@@ -2987,28 +3014,27 @@ export const selectActiveResponsesByThread = (threadId) =>
         const lifecycle = lifecycles.byId[responseId];
         if (!lifecycle) return null;
 
-          // Get agent details from members
-          const roomMember = Object.values(members.byId || {}).find(
-            (member) =>
-              member?.member?.member_type === 'agent' &&
-              member?.member?.agent_id === lifecycle.agent_id,
-          );
+        // Get agent details from members
+        const roomMember = Object.values(members.byId || {}).find(
+          (member) =>
+            member?.member?.member_type === 'agent' &&
+            member?.member?.agent_id === lifecycle.agent_id,
+        );
 
-          return {
-            ...lifecycle,
-            agent: roomMember
-              ? {
-                  id: roomMember.member.agent_id,
-                  name: roomMember.member?.agent?.name || 'Agent',
-                  avatar: roomMember.member?.agent?.avatar_url,
-                }
-              : null,
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    },
-  );
+        return {
+          ...lifecycle,
+          agent: roomMember
+            ? {
+                id: roomMember.member.agent_id,
+                name: roomMember.member?.agent?.name || 'Agent',
+                avatar: roomMember.member?.agent?.avatar_url,
+              }
+            : null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  });
 
 export const selectResponseLifecycleById = (responseId) =>
   createSelector([selectResponseLifecycles], (lifecycles) => lifecycles.byId[responseId] || null);

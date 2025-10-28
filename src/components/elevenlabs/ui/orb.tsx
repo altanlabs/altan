@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from "react"
-import { useTexture } from "@react-three/drei"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
@@ -19,6 +18,7 @@ type OrbProps = {
   getInputVolume?: () => number
   getOutputVolume?: () => number
   className?: string
+  static?: boolean
 }
 
 export function Orb({
@@ -35,9 +35,10 @@ export function Orb({
   getInputVolume,
   getOutputVolume,
   className,
+  static: isStatic = true,
 }: OrbProps) {
   return (
-    <div className={className ?? "relative h-full w-full"}>
+    <div className={className ?? "relative h-full w-full"} style={{ padding: 0, margin: 0, background: 'transparent' }}>
       <Canvas
         resize={{ debounce: resizeDebounce }}
         gl={{
@@ -45,6 +46,10 @@ export function Orb({
           antialias: true,
           premultipliedAlpha: true,
         }}
+        frameloop={isStatic ? "demand" : "always"}
+        style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
+        camera={{ position: [0, 0, 3.5], fov: 90 }}
+        orthographic={false}
       >
         <Scene
           colors={colors}
@@ -58,6 +63,7 @@ export function Orb({
           outputVolumeRef={outputVolumeRef}
           getInputVolume={getInputVolume}
           getOutputVolume={getOutputVolume}
+          isStatic={isStatic}
         />
       </Canvas>
     </div>
@@ -76,6 +82,7 @@ function Scene({
   outputVolumeRef,
   getInputVolume,
   getOutputVolume,
+  isStatic,
 }: {
   colors: [string, string]
   colorsRef?: React.RefObject<[string, string]>
@@ -88,17 +95,20 @@ function Scene({
   outputVolumeRef?: React.RefObject<number>
   getInputVolume?: () => number
   getOutputVolume?: () => number
+  isStatic: boolean
 }) {
-  const { gl } = useThree()
+  const { gl, invalidate } = useThree()
   const circleRef =
     useRef<THREE.Mesh<THREE.CircleGeometry, THREE.ShaderMaterial>>(null)
   const initialColorsRef = useRef<[string, string]>(colors)
   const targetColor1Ref = useRef(new THREE.Color(colors[0]))
   const targetColor2Ref = useRef(new THREE.Color(colors[1]))
   const animSpeedRef = useRef(0.1)
-  const perlinNoiseTexture = useTexture(
-    "https://storage.googleapis.com/eleven-public-cdn/images/perlin-noise.png"
-  )
+
+  // Set transparent background
+  useEffect(() => {
+    gl.setClearColor(0x000000, 0)
+  }, [gl])
 
   const agentRef = useRef<AgentState>(agentState)
   const modeRef = useRef<"auto" | "manual">(volumeMode)
@@ -140,13 +150,19 @@ function Scene({
   useEffect(() => {
     targetColor1Ref.current = new THREE.Color(colors[0])
     targetColor2Ref.current = new THREE.Color(colors[1])
-  }, [colors])
+    if (isStatic) {
+      invalidate() // Trigger one render for static orbs when colors change
+    }
+  }, [colors, isStatic, invalidate])
 
   useEffect(() => {
     const apply = () => {
       if (!circleRef.current) return
       const isDark = document.documentElement.classList.contains("dark")
       circleRef.current.material.uniforms.uInverted.value = isDark ? 1 : 0
+      if (isStatic) {
+        invalidate() // Trigger render when dark mode changes
+      }
     }
 
     apply()
@@ -157,7 +173,14 @@ function Scene({
       attributeFilter: ["class"],
     })
     return () => observer.disconnect()
-  }, [])
+  }, [isStatic, invalidate])
+  
+  // Trigger initial render for static orbs
+  useEffect(() => {
+    if (isStatic) {
+      invalidate()
+    }
+  }, [isStatic, invalidate])
 
   useFrame((_, delta: number) => {
     const mat = circleRef.current?.material
@@ -168,6 +191,13 @@ function Scene({
       if (live[1]) targetColor2Ref.current.set(live[1])
     }
     const u = mat.uniforms
+    
+    // Update colors even for static orbs
+    u.uColor1.value.lerp(targetColor1Ref.current, isStatic ? 1 : 0.08)
+    u.uColor2.value.lerp(targetColor2Ref.current, isStatic ? 1 : 0.08)
+    
+    if (isStatic) return // Skip animation for static orbs after color update
+    
     u.uTime.value += delta * 0.5
 
     if (u.uOpacity.value < 1) {
@@ -213,6 +243,11 @@ function Scene({
     u.uOutputVolume.value = curOutRef.current
     u.uColor1.value.lerp(targetColor1Ref.current, 0.08)
     u.uColor2.value.lerp(targetColor2Ref.current, 0.08)
+    
+    // Set agent active state (0 = idle, 1 = active)
+    const isActive = agentRef.current === "talking" || agentRef.current === "listening" || agentRef.current === "thinking"
+    const targetActive = isActive ? 1 : 0
+    u.uAgentActive.value += (targetActive - u.uAgentActive.value) * 0.1
   })
 
   useEffect(() => {
@@ -229,8 +264,6 @@ function Scene({
   }, [gl])
 
   const uniforms = useMemo(() => {
-    perlinNoiseTexture.wrapS = THREE.RepeatWrapping
-    perlinNoiseTexture.wrapT = THREE.RepeatWrapping
     const isDark =
       typeof document !== "undefined" &&
       document.documentElement.classList.contains("dark")
@@ -238,19 +271,19 @@ function Scene({
       uColor1: new THREE.Uniform(new THREE.Color(initialColorsRef.current[0])),
       uColor2: new THREE.Uniform(new THREE.Color(initialColorsRef.current[1])),
       uOffsets: { value: offsets },
-      uPerlinTexture: new THREE.Uniform(perlinNoiseTexture),
       uTime: new THREE.Uniform(0),
-      uAnimation: new THREE.Uniform(0.1),
+      uAnimation: new THREE.Uniform(isStatic ? 2.5 : 0.1), // Fixed value for static
       uInverted: new THREE.Uniform(isDark ? 1 : 0),
       uInputVolume: new THREE.Uniform(0),
-      uOutputVolume: new THREE.Uniform(0),
-      uOpacity: new THREE.Uniform(0),
+      uOutputVolume: new THREE.Uniform(isStatic ? 0.3 : 0), // Default value for static
+      uOpacity: new THREE.Uniform(isStatic ? 1 : 0), // Instant opacity for static
+      uAgentActive: new THREE.Uniform(0),
     }
-  }, [perlinNoiseTexture, offsets])
+  }, [offsets, isStatic])
 
   return (
     <mesh ref={circleRef}>
-      <circleGeometry args={[3.5, 64]} />
+      <circleGeometry args={[6.5, isStatic ? 64 : 128]} />
       <shaderMaterial
         uniforms={uniforms}
         fragmentShader={fragmentShader}
@@ -278,8 +311,6 @@ function clamp01(n: number) {
   return Math.min(1, Math.max(0, n))
 }
 const vertexShader = /* glsl */ `
-uniform float uTime;
-uniform sampler2D uPerlinTexture;
 varying vec2 vUv;
 
 void main() {
@@ -298,199 +329,118 @@ uniform vec3 uColor2;
 uniform float uInputVolume;
 uniform float uOutputVolume;
 uniform float uOpacity;
-uniform sampler2D uPerlinTexture;
+uniform float uAgentActive;
 varying vec2 vUv;
 
 const float PI = 3.14159265358979323846;
 
-// Draw a single oval with soft edges and calculate its gradient color
-bool drawOval(vec2 polarUv, vec2 polarCenter, float a, float b, bool reverseGradient, float softness, out vec4 color) {
-    vec2 p = polarUv - polarCenter;
-    float oval = (p.x * p.x) / (a * a) + (p.y * p.y) / (b * b);
-
-    float edge = smoothstep(1.0, 1.0 - softness, oval);
-
-    if (edge > 0.0) {
-        float gradient = reverseGradient ? (1.0 - (p.x / a + 1.0) / 2.0) : ((p.x / a + 1.0) / 2.0);
-        // Flatten gradient toward middle value for more uniform appearance
-        gradient = mix(0.5, gradient, 0.1);
-        color = vec4(vec3(gradient), 0.85 * edge);
-        return true;
-    }
-    return false;
-}
-
-// Map grayscale value to a 4-color ramp (color1, color2, color3, color4)
+// Map grayscale value to a 4-color ramp with better distribution
 vec3 colorRamp(float grayscale, vec3 color1, vec3 color2, vec3 color3, vec3 color4) {
-    if (grayscale < 0.33) {
-        return mix(color1, color2, grayscale * 3.0);
-    } else if (grayscale < 0.66) {
-        return mix(color2, color3, (grayscale - 0.33) * 3.0);
+    // Adjusted thresholds to give more weight to middle colors
+    if (grayscale < 0.25) {
+        return mix(color1, color2, grayscale * 4.0);
+    } else if (grayscale < 0.75) {
+        // This is where most of the action happens - blend the two main colors
+        return mix(color2, color3, (grayscale - 0.25) * 2.0);
     } else {
-        return mix(color3, color4, (grayscale - 0.66) * 3.0);
+        return mix(color3, color4, (grayscale - 0.75) * 4.0);
     }
 }
 
-vec2 hash2(vec2 p) {
-    return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
-}
-
-// 2D noise for the ring
-float noise2D(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    float n = mix(
-        mix(dot(hash2(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0)),
-            dot(hash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),
-        mix(dot(hash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)),
-            dot(hash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x),
-        u.y
-    );
-
-    return 0.5 + 0.5 * n;
-}
-
-float sharpRing(vec3 decomposed, float time) {
-    float ringStart = 1.0;
-    float ringWidth = 0.3;
-    float noiseScale = 5.0;
-
-    float noise = mix(
-        noise2D(vec2(decomposed.x, time) * noiseScale),
-        noise2D(vec2(decomposed.y, time) * noiseScale),
-        decomposed.z
-    );
-
-    noise = (noise - 0.5) * 2.5;
-
-    return ringStart + noise * ringWidth * 1.5;
-}
-
-float smoothRing(vec3 decomposed, float time) {
-    float ringStart = 0.9;
-    float ringWidth = 0.2;
-    float noiseScale = 6.0;
-
-    float noise = mix(
-        noise2D(vec2(decomposed.x, time) * noiseScale),
-        noise2D(vec2(decomposed.y, time) * noiseScale),
-        decomposed.z
-    );
-
-    noise = (noise - 0.5) * 5.0;
-
-    return ringStart + noise * ringWidth;
-}
-
-float flow(vec3 decomposed, float time) {
-    return mix(
-        texture(uPerlinTexture, vec2(time, decomposed.x / 2.0)).r,
-        texture(uPerlinTexture, vec2(time, decomposed.y / 2.0)).r,
-        decomposed.z
-    );
+// Smooth value noise-like function
+float smoothValue(float x) {
+    float i = floor(x);
+    float f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(sin(i * 12.9898) * 43758.5453, sin((i + 1.0) * 12.9898) * 43758.5453, f);
 }
 
 void main() {
-    // Normalize vUv to be centered around (0.0, 0.0)
+    // Normalize UV coordinates
     vec2 uv = vUv * 2.0 - 1.0;
-
-    // Convert uv to polar coordinates
+    
+    // Polar coordinates
     float radius = length(uv);
-    float theta = atan(uv.y, uv.x);
-    if (theta < 0.0) theta += 2.0 * PI; // Normalize theta to [0, 2*PI]
-
-    // Decomposed angle is used for sampling noise textures without seams:
-    // float noise = mix(sample(decomposed.x), sample(decomposed.y), decomposed.z);
-    vec3 decomposed = vec3(
-        // angle in the range [0, 1]
-        theta / (2.0 * PI),
-        // angle offset by 180 degrees in the range [1, 2]
-        mod(theta / (2.0 * PI) + 0.5, 1.0) + 1.0,
-        // mixing factor between two noises
-        abs(theta / PI - 1.0)
-    );
-
-    // Add noise to the angle for a flow-like distortion (reduced for flatter look)
-    float noise = flow(decomposed, radius * 0.03 - uAnimation * 0.2) - 0.5;
-    theta += noise * mix(0.08, 0.25, uOutputVolume);
-
-    // Initialize the base color to white
-    vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
-
-    // Original parameters for the ovals in polar coordinates
-    float originalCenters[7] = float[7](0.0, 0.5 * PI, 1.0 * PI, 1.5 * PI, 2.0 * PI, 2.5 * PI, 3.0 * PI);
-
-    // Parameters for the animated centers in polar coordinates
-    float centers[7];
-    for (int i = 0; i < 7; i++) {
-        centers[i] = originalCenters[i] + 0.5 * sin(uTime / 20.0 + uOffsets[i]);
-    }
-
-    float a, b;
-    vec4 ovalColor;
-
-    // Check if the pixel is inside any of the ovals
-    for (int i = 0; i < 7; i++) {
-        float noise = texture(uPerlinTexture, vec2(mod(centers[i] + uTime * 0.05, 1.0), 0.5)).r;
-        a = 0.5 + noise * 0.3; // Increased for more coverage
-        b = noise * mix(3.5, 2.5, uInputVolume); // Increased height for fuller appearance
-        bool reverseGradient = (i % 2 == 1); // Reverse gradient for every second oval
-
-        // Calculate the distance in polar coordinates
-        float distTheta = min(
-            abs(theta - centers[i]),
-            min(
-                abs(theta + 2.0 * PI - centers[i]),
-                abs(theta - 2.0 * PI - centers[i])
-            )
-        );
-        float distRadius = radius;
-
-        float softness = 0.6; // Increased softness for flatter, less pronounced edges
-
-        // Check if the pixel is inside the oval in polar coordinates
-        if (drawOval(vec2(distTheta, distRadius), vec2(0.0, 0.0), a, b, reverseGradient, softness, ovalColor)) {
-            // Blend the oval color with the existing color
-            color.rgb = mix(color.rgb, ovalColor.rgb, ovalColor.a);
-            color.a = max(color.a, ovalColor.a); // Max alpha
-        }
-    }
+    float angle = atan(uv.y, uv.x);
     
-    // Calculate both noisy rings
-    float ringRadius1 = sharpRing(decomposed, uTime * 0.1);
-    float ringRadius2 = smoothRing(decomposed, uTime * 0.1);
+    // Fade out at edges for smooth circular shape
+    float edgeFade = smoothstep(1.0, 0.3, radius);
     
-    // Adjust rings based on input volume (reduced for flatter appearance)
-    float inputRadius1 = radius + uInputVolume * 0.2;
-    float inputRadius2 = radius + uInputVolume * 0.15;
-    float opacity1 = mix(0.2, 0.6, uInputVolume);
-    float opacity2 = mix(0.15, 0.45, uInputVolume);
-
-    // Blend both rings
-    float ringAlpha1 = (inputRadius2 >= ringRadius1) ? opacity1 : 0.0;
-    float ringAlpha2 = smoothstep(ringRadius2 - 0.05, ringRadius2 + 0.05, inputRadius1) * opacity2;
+    // Adjust animation speeds based on agent activity
+    float speedMultiplier = mix(1.0, 2.5, uAgentActive);
+    float waveIntensity = mix(1.0, 1.8, uAgentActive);
     
-    float totalRingAlpha = max(ringAlpha1, ringAlpha2);
+    // Create multiple rotating layers with different speeds
+    float layer1Angle = angle + uAnimation * 0.8 * speedMultiplier;
+    float layer2Angle = angle - uAnimation * 0.5 * speedMultiplier;
+    float layer3Angle = angle + uAnimation * 1.2 * speedMultiplier;
     
-    // Apply screen blend mode for combined rings
-    vec3 ringColor = vec3(1.0); // White ring color
-    color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
-
-    // Define colours to ramp against greyscale (could increase the amount of colours in the ramp)
-    vec3 color1 = vec3(0.0, 0.0, 0.0); // Black
-    vec3 color2 = uColor1; // Darker Color
-    vec3 color3 = uColor2; // Lighter Color
-    vec3 color4 = vec3(1.0, 1.0, 1.0); // White
-
-    // Convert grayscale color to the color ramp
-    float luminance = mix(color.r, 1.0 - color.r, uInverted);
-    color.rgb = colorRamp(luminance, color1, color2, color3, color4); // Apply the color ramp
-
-    // Apply fade-in opacity
-    color.a *= uOpacity;
-
-    gl_FragColor = color;
+    // Create concentric wave patterns with increased intensity when active
+    float wave1 = sin(radius * 8.0 - uAnimation * 3.0 * speedMultiplier) * 0.5 + 0.5;
+    float wave2 = sin(radius * 12.0 + uAnimation * 2.0 * speedMultiplier) * 0.5 + 0.5;
+    float wave3 = sin(radius * 16.0 - uAnimation * 4.0 * speedMultiplier) * 0.5 + 0.5;
+    
+    // Add extra turbulence when active
+    float turbulence = sin(radius * 20.0 + uAnimation * 5.0 * speedMultiplier) * 
+                       sin(angle * 10.0 + uAnimation * 3.0 * speedMultiplier) * 0.5 + 0.5;
+    turbulence *= uAgentActive * 0.3;
+    
+    // Create angular segments with rotation
+    float segments1 = sin(layer1Angle * 5.0) * 0.5 + 0.5;
+    float segments2 = sin(layer2Angle * 7.0) * 0.5 + 0.5;
+    float segments3 = sin(layer3Angle * 3.0) * 0.5 + 0.5;
+    
+    // Combine waves and segments
+    float pattern1 = wave1 * segments1;
+    float pattern2 = wave2 * segments2;
+    float pattern3 = wave3 * segments3;
+    
+    // Add pulsing based on volume and activity
+    float volumePulse = mix(0.5, 1.0, uOutputVolume);
+    float activityPulse = mix(0.8, 1.2, uAgentActive);
+    float inputRing = smoothstep(0.6, 0.7, radius + sin(angle * 8.0 + uTime * 2.0) * 0.05) * 
+                      smoothstep(0.9, 0.8, radius) * uInputVolume * 0.5;
+    
+    // Combine all patterns with turbulence - increased weights for more variation
+    float combined = pattern1 * 0.45 + pattern2 * 0.35 + pattern3 * 0.3 + turbulence;
+    combined = combined * volumePulse * activityPulse + inputRing;
+    
+    // Create depth with radial gradient
+    float radialGrad = 1.0 - smoothstep(0.0, 1.0, radius);
+    radialGrad = pow(radialGrad, mix(1.3, 1.0, uAgentActive));
+    
+    // Mix patterns with radial gradient - show more pattern for better color distribution
+    float patternMix = mix(0.4, 0.6, uAgentActive);
+    float finalPattern = mix(combined, radialGrad, patternMix);
+    
+    // Enhance contrast to make colors pop more
+    finalPattern = smoothstep(0.1, 0.9, finalPattern);
+    // Add some remapping to spread colors more evenly
+    finalPattern = finalPattern * 0.9 + 0.1;
+    
+    // Apply edge fade
+    finalPattern *= edgeFade;
+    
+    // Define color ramp - use more of the custom colors
+    vec3 color1 = uColor1 * 0.3; // Dark tint of first color
+    vec3 color2 = uColor1; // First Color
+    vec3 color3 = uColor2; // Second Color
+    vec3 color4 = mix(uColor2, vec3(1.0), 0.3); // Bright tint of second color
+    
+    // Apply color based on pattern - enhanced contrast
+    float luminance = mix(finalPattern, 1.0 - finalPattern, uInverted);
+    // Boost the contrast to make colors more visible
+    luminance = pow(luminance, 0.8);
+    vec3 finalColor = colorRamp(luminance, color1, color2, color3, color4);
+    
+    // Increase overall brightness and visibility
+    finalColor = mix(finalColor, finalColor * 1.5, 0.4);
+    
+    // Calculate alpha with smooth falloff - make it more opaque
+    float alpha = clamp(finalPattern * 1.3, 0.0, 1.0) * edgeFade * uOpacity;
+    // Add minimum alpha for better visibility
+    alpha = max(alpha, finalPattern * 0.3 * uOpacity);
+    
+    gl_FragColor = vec4(finalColor, alpha);
 }
 `

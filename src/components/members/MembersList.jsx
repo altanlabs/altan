@@ -218,6 +218,7 @@ const MembersList = ({
                       size={compact ? 32 : 40}
                       agentId={member.member?.agent_id}
                       agentState={null}
+                      isStatic={false}
                     />
                   ) : (
                     <CustomAvatar

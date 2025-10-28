@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import { optimai } from '../../utils/axios';
+import { optimai, optimai_room } from '../../utils/axios';
 
 const initialState = {
   isLoading: false,
@@ -8,6 +8,7 @@ const initialState = {
   agents: [],
   currentAgent: null,
   currentAgentDmRoomId: null,
+  currentAgentCreatorRoomId: null,
   voices: {
     items: [],
     loading: false,
@@ -47,6 +48,7 @@ const slice = createSlice({
     setAgent(state, action) {
       state.currentAgent = action.payload.agent;
       state.currentAgentDmRoomId = action.payload.dmRoomId;
+      state.currentAgentCreatorRoomId = action.payload.creatorRoomId;
       state.isLoading = false;
     },
 
@@ -128,11 +130,20 @@ export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
 
     if (agent) {
       const { account } = getState().general;
+
+      // Fetch DM room
       const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
+
+      // Fetch creator room
+      const creatorResponse = await optimai_room.get(
+        `/external/agent_${agent.id}?account_id=${agent.account_id}&autocreate=true`,
+      );
+
       dispatch(
         slice.actions.setAgent({
           agent,
           dmRoomId: dmResponse.data.id,
+          creatorRoomId: creatorResponse.data.room.id,
         }),
       );
     } else {

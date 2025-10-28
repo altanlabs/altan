@@ -4,7 +4,7 @@ import StatusBadge from './badge/StatusBadge.jsx';
 import useLongPress from '../../../hooks/useLongPress.jsx';
 import { createMemberContextMenu } from '../../../redux/slices/room';
 import { dispatch } from '../../../redux/store.js';
-import AgentOrbAvatar from '../../agents/AgentOrbAvatar.jsx';
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar.jsx';
 import CustomAvatar from '../../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../../iconify/Iconify.jsx';
 
@@ -52,8 +52,9 @@ const MemberBadge = ({
       onContextMenu={onContextMenu}
       {...longPressParams}
     >
-      {member?.member?.member_type === 'agent' && !src ? (
-        <AgentOrbAvatar
+      {member?.member?.member_type === 'agent' ? (
+        <DynamicAgentAvatar
+          agent={member?.member?.agent}
           size={badgeSize}
           agentId={member?.member?.agent_id || member?.id}
           agentState={null}

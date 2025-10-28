@@ -25,7 +25,7 @@ import { selectMainThread, clearRoomState } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
-import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
+// import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
 import useGetInterfaceServerStatus from './interfaces/hooks/useGetInterfaceServerStatus.js';
 
 const COMPONENTS_PROPS_MAP = {
@@ -170,11 +170,15 @@ export default function ProjectPage() {
   // Only return true if we have confirmed the interface exists but has no commits
   const isInterfaceWithNoCommits = useMemo(() => {
     if (!interfaceId) return false;
-    // If interface data hasn't loaded yet, don't apply full-screen logic
-    if (!interfaceData) return false;
-    // Only show full-screen chat if interface is loaded and has no commits
+    // Don't collapse preview while altaner is still loading (no room yet)
+    // This prevents a black screen when both panels would be empty
+    if (!altaner || !altaner.room_id) return false;
+    // If interface is loading, collapse preview to show chat at full width
+    // This prevents showing an empty preview while data loads
+    if (!interfaceData) return true;
+    // Once loaded, only show full-screen chat if interface has no commits
     return !interfaceCommits || interfaceCommits.length === 0;
-  }, [interfaceId, interfaceData, interfaceCommits]);
+  }, [interfaceId, interfaceData, interfaceCommits, altaner]);
 
   // Fetch interface data if we're viewing an interface component
   useEffect(() => {
@@ -198,13 +202,15 @@ export default function ProjectPage() {
         if (previewPanelRef.current.isCollapsed()) {
           previewPanelRef.current.expand();
         }
-        // Always resize to proper percentages when showing preview
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
+        // Defer resize to next tick to batch with other DOM updates
+        // Using setTimeout instead of rAF to avoid blocking the frame
+        const timerId = setTimeout(() => {
           if (chatPanelRef.current) {
             chatPanelRef.current.resize(30);
           }
-        });
+        }, 0);
+        
+        return () => clearTimeout(timerId);
       }
     }
   }, [shouldCollapsePreview]);
@@ -434,11 +440,11 @@ export default function ProjectPage() {
       noPadding
       drawerVisible={false}
     >
-      {/* Onboarding Tour */}
-      <ProjectOnboardingTour
+      {/* Onboarding Tour - Temporarily disabled */}
+      {/* <ProjectOnboardingTour
         altanerId={altanerId}
         sortedComponents={sortedComponents}
-      />
+      /> */}
 
       <Box sx={{ display: 'flex', height: '100%' }}>
         {/* Main content */}
@@ -460,19 +466,18 @@ export default function ProjectPage() {
               minSize={shouldCollapsePreview ? 100 : 20}
               maxSize={shouldCollapsePreview ? 100 : 65}
               collapsible={true}
-              defaultCollapsed={displayMode === 'preview'}
               collapsedSize={0}
               className="overflow-hidden"
             >
-              {altaner?.room_id && (
-                <Box
-                  sx={{
-                    height: '100%',
-                    position: 'relative',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                  }}
-                >
+              <Box
+                sx={{
+                  height: '100%',
+                  position: 'relative',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                {altaner?.room_id ? (
                   <Room
                     key={`room-${altaner?.room_id}`}
                     roomId={altaner?.room_id}
@@ -483,8 +488,22 @@ export default function ProjectPage() {
                     tabs={true}
                     show_mode_selector={true}
                   />
-                </Box>
-              )}
+                ) : (
+                  isLoading && (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {/* Loading spinner or placeholder while altaner loads */}
+                    </Box>
+                  )
+                )}
+              </Box>
             </Panel>
 
             {/* Resize Handle - only show in both mode and when preview is NOT collapsed */}
@@ -504,7 +523,6 @@ export default function ProjectPage() {
               minSize={shouldCollapsePreview ? 0 : 35}
               collapsible={true}
               collapsedSize={0}
-              defaultCollapsed={shouldCollapsePreview}
               className="overflow-auto min-w-0"
             >
               <Box 

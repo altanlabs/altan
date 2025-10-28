@@ -6,15 +6,15 @@ import { cn } from '@lib/utils';
 import MemberDetailsPopover from './MemberDetailsPopover.jsx';
 import MessageEndButtons from './MessageEndButtons.jsx';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
+import DynamicAgentAvatar from '../agents/DynamicAgentAvatar.jsx';
 import MessageBox from './wrapper/MessageBox.tsx';
 import MessageReply from './wrapper/MessageReply.jsx';
 import useMessageThreads from './wrapper/useMessageThreads.jsx';
-import { selectMe, selectMembers, selectThreadDrawerDetails } from '../../redux/slices/room';
+import { selectMe, selectMembers, selectThreadDrawerDetails, makeSelectMessageHasStreamingParts } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store.js';
 import { formatDate, formatTime } from '../../utils/dateUtils.js';
 import Reactions from '../room/thread/message/Reactions.jsx';
 import { getMemberName } from '../room/utils';
-import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const getPicture = (member) => {
   if (!member) {
@@ -47,6 +47,12 @@ const MessageBoxWrapper = ({
   const me = useSelector(selectMe);
   const members = useSelector(selectMembers);
   const drawerMessageId = useSelector(selectDrawerMessageId);
+  
+  // Check if message is streaming (for agent avatar animation)
+  const selectMessageHasStreamingParts = useMemo(makeSelectMessageHasStreamingParts, []);
+  const hasStreamingParts = useSelector((state) => selectMessageHasStreamingParts(state, message.id));
+  const isMessageStreaming = message?.is_streaming || hasStreamingParts || message?.meta_data?.loading;
+  
   const avatarRef = useRef(null);
   const connectorRef = useRef(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -101,17 +107,19 @@ const MessageBoxWrapper = ({
     if (!finalShouldShowMember) return null;
 
     const isAgent = sender?.member?.member_type === 'agent';
-    const hasNoPicture = !picture;
+    const avatarSize = mode === 'mini' ? 20 : 32;
 
-    if (isAgent && hasNoPicture) {
-      const size = mode === 'mini' ? 20 : 32;
+    if (isAgent) {
+      // Use DynamicAgentAvatar which will show orb or image URL
+      // Show animated orb when agent is writing/streaming
       return (
-        <AgentOrbAvatar
-          size={size}
+        <DynamicAgentAvatar
+          agent={sender?.member?.agent}
+          size={avatarSize}
           agentId={sender?.id}
-          ref={avatarRef}
-          onClick={handleAvatarClick}
           agentState={null}
+          onClick={handleAvatarClick}
+          isStatic={!isMessageStreaming}
         />
       );
     }
@@ -120,8 +128,8 @@ const MessageBoxWrapper = ({
       <CustomAvatar
         alt={sender?.id}
         sx={{
-          width: mode === 'mini' ? 16 : 24,
-          height: mode === 'mini' ? 16 : 24,
+          width: avatarSize,
+          height: avatarSize,
           cursor: 'pointer',
           '&:hover': {
             opacity: 0.8,
@@ -133,7 +141,7 @@ const MessageBoxWrapper = ({
         onClick={handleAvatarClick}
       />
     );
-  }, [finalShouldShowMember, sender?.id, sender?.member?.member_type, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode]);
+  }, [finalShouldShowMember, sender?.id, sender?.member?.member_type, sender?.member?.agent, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode, isMessageStreaming]);
 
   return (
     <>

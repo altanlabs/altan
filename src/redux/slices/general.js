@@ -760,11 +760,7 @@ const slice = createSlice({
       state.agentsUsageData = {};
     },
     addInterfaceCommit(state, action) {
-      console.log('Redux addInterfaceCommit - Action:', action);
       const { id, interface_id, ...commitData } = action.payload;
-      console.log('Redux addInterfaceCommit - Payload:', action.payload);
-      console.log('Redux addInterfaceCommit - Looking for interface_id:', interface_id);
-      console.log('Redux addInterfaceCommit - Available interfaces:', state.account.interfaces.map(i => ({ id: i.id, name: i.name })));
       const interface_ = state.account.interfaces.find((i) => i.id === interface_id);
 
       if (interface_) {
@@ -1281,7 +1277,7 @@ const ACCOUNT_GQ = {
     '@fields': ['@base@exc:meta_data', 'name'],
   },
   agents: {
-    '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id', 'is_pinned'],
+    '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id', 'is_pinned', 'meta_data'],
     cloned_from: {
       '@fields': ['id'],
       version: {

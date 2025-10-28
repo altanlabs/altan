@@ -91,17 +91,15 @@ const Room = ({
   useEffect(() => {
     if (!!roomId && !initialized) {
       if (!!(user || guest)) {
+        console.log('🏠 ✅ Fetching room data...', { roomId, hasUser: !!user, hasGuest: !!guest });
         handleFetchRoom();
       } else {
         console.log('🏠 ⏳ Waiting for user authentication...');
       }
-    } else {
-      console.log('🏠 ❌ Conditions not met for room fetch:', {
-        hasRoomId: !!roomId,
-        notInitialized: !initialized,
-        hasUser: !!user,
-        hasGuest: !!guest,
-      });
+    } else if (!roomId) {
+      console.log('🏠 ❌ No roomId provided');
+    } else if (initialized) {
+      console.log('🏠 ✅ Room already initialized');
     }
   }, [roomId, initialized, handleFetchRoom, guest, user]);
 

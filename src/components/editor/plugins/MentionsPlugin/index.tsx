@@ -14,7 +14,7 @@ import {
   useBasicTypeaheadTriggerMatch,
 } from '@lexical/react/LexicalTypeaheadMenuPlugin';
 import {mergeRegister} from '@lexical/utils';
-import { Avatar, Box, Divider, Stack, TextField, Typography, useTheme } from '@mui/material';
+import { Avatar, Box, Divider, Stack, Typography, useTheme } from '@mui/material';
 import {COMMAND_PRIORITY_LOW, KEY_ENTER_COMMAND, TextNode} from 'lexical';
 import { capitalize } from 'lodash';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -22,6 +22,7 @@ import * as ReactDOM from 'react-dom';
 
 import { selectMe, selectMembers } from '../../../../redux/slices/room';
 import { useSelector } from '../../../../redux/store';
+import DynamicAgentAvatar from '../../../agents/DynamicAgentAvatar';
 import { getMemberDetails, getMemberName } from '../../../room/utils';
 import {$createMentionNode} from '../../nodes/MentionNode';
 
@@ -167,13 +168,15 @@ class MentionTypeaheadOption extends MenuOption {
   name: string;
   type: string;
   picture: string;
+  member: any;
 
-  constructor(id: string, name: string, type: string, picture: string) {
+  constructor(id: string, name: string, type: string, picture: string, member: any) {
     super(name);
     this.id = id;
     this.name = name;
     this.picture = picture;
     this.type = type;
+    this.member = member;
   }
 }
 
@@ -194,6 +197,9 @@ function MentionsTypeaheadMenuItem({
   if (isSelected) {
     className += ' selected';
   }
+  
+  const isAgent = option.type === 'agent';
+  
   return (
     <li
       key={option.id}
@@ -209,20 +215,23 @@ function MentionsTypeaheadMenuItem({
       <Stack
         direction="row"
         spacing={1}
+        alignItems="center"
       >
-        <Avatar
-          src={option.picture} 
-          sx={{
-            width: 20,
-            height: 20
-          }}
-          // imgProps={{
-          //   sx: {
-          //     width: 15,
-          //     height: 15
-          //   }
-          // }}
-        />
+        {isAgent ? (
+          <DynamicAgentAvatar
+            agent={option.member?.member?.agent}
+            size={20}
+            isStatic
+          />
+        ) : (
+          <Avatar
+            src={option.picture} 
+            sx={{
+              width: 20,
+              height: 20
+            }}
+          />
+        )}
         <span className="text">{option.name}</span>
       </Stack>
     </li>
@@ -268,11 +277,12 @@ export default function NewMentionsPlugin(): JSX.Element | null {
         if (a.type !== 'agent' && b.type === 'agent') return 1;
         return 0; // Keep original order if the same type or none is agent
       })
-      .map((member) => {
-        const { name, type, src } = member;
-        return new MentionTypeaheadOption(member.id, name, type, src);
+      .map((memberDetails) => {
+        const { name, type, src, id } = memberDetails;
+        const fullMember = members.byId[id];
+        return new MentionTypeaheadOption(id, name, type, src, fullMember);
       }),
-    [results],
+    [results, members],
   );
 
   const onSelectOption = useCallback(

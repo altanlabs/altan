@@ -16,6 +16,7 @@ import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog.j
 import { deleteAccountAgent, updateAgent } from '../../redux/slices/general';
 import { optimai } from '../../utils/axios';
 import { CustomAvatar } from '../custom-avatar';
+import StaticGradientAvatar from '../agents/StaticGradientAvatar.jsx';
 
 const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }) => {
   const history = useHistory();
@@ -124,15 +125,26 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
         >
           {/* Agent Avatar with Status Badge */}
           <div className="relative mb-2">
-            <CustomAvatar
-              src={agent.avatar_url}
-              alt={agent.name}
-              name={agent.name}
-              sx={{
-                width: 64,
-                height: 64,
-              }}
-            />
+            {agent.avatar_url && agent.avatar_url.trim() !== '' ? (
+              <CustomAvatar
+                src={agent.avatar_url}
+                alt={agent.name}
+                onClick={navigateToEditPage}
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                }}
+                name={agent.name}
+              />
+            ) : (
+              <StaticGradientAvatar
+                colors={agent?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1']}
+                size={64}
+                onClick={navigateToEditPage}
+              />
+            )}
             {/* Pin indicator */}
             {agent.is_pinned && (
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -165,21 +177,38 @@ const AgentCard = memo(({ agent, minified = false, tooltipText = null, onClick }
           followCursor
         >
           <div className="relative group">
-            <CustomAvatar
-              onClick={navigateToEditPage}
-              onContextMenu={handleContextMenu}
-              alt={agent.name}
-              name={agent.name}
-              src={agent.avatar_url}
-              className="cursor-pointer w-[30px] h-[30px] hover:scale-110 transition-transform"
-              sx={{
-                border: '2px solid rgba(255, 255, 255, 0.2)',
-                '&:hover': {
-                  border: '2px solid rgba(59, 130, 246, 0.5)',
-                  boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)',
-                },
-              }}
-            />
+            {agent.avatar_url && agent.avatar_url.trim() !== '' ? (
+              <CustomAvatar
+                onClick={navigateToEditPage}
+                onContextMenu={handleContextMenu}
+                alt={agent.name}
+                name={agent.name}
+                src={agent.avatar_url}
+                className="cursor-pointer w-[30px] h-[30px] hover:scale-110 transition-transform"
+                sx={{
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
+                  '&:hover': {
+                    border: '2px solid rgba(59, 130, 246, 0.5)',
+                    boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)',
+                  },
+                }}
+              />
+            ) : (
+              <StaticGradientAvatar
+                colors={agent?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1']}
+                size={30}
+                onClick={navigateToEditPage}
+                sx={{
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    border: '2px solid rgba(59, 130, 246, 0.5)',
+                    boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)',
+                  },
+                }}
+              />
+            )}
             {/* Pin indicator for minified mode */}
             {agent.is_pinned && (
               <div className="absolute -top-1 -left-1 w-3 h-3 bg-yellow-500 rounded-full flex items-center justify-center">
