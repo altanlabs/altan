@@ -30,10 +30,6 @@ const models = [
       'o4-mini-deep-research',
     ],
   },
-  {
-    provider: 'Deepseek',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
-  },
 ];
 
 // Models that always have reasoning enabled

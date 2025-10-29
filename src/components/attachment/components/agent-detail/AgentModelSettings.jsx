@@ -23,7 +23,6 @@ import Iconify from '../../../iconify/Iconify';
 const models = [
   { provider: 'Anthropic', models: ['claude-4-1-opus-latest', 'claude-4-opus-latest', 'claude-4-5-sonnet-latest', 'claude-4-sonnet-latest'] },
   { provider: 'OpenAI', models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'o4-mini', 'o3', 'o3-mini', 'o4-mini-deep-research'] },
-  { provider: 'Deepseek', models: ['deepseek-chat', 'deepseek-reasoner'] },
 ];
 
 const modelToProvider = {};

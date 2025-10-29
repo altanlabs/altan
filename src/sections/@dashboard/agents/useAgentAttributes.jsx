@@ -50,10 +50,6 @@ const models = [
       'o1',
     ],
   },
-  {
-    provider: 'Deepseek',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
-  },
 ];
 
 const reasoningModels = ['o1-mini', 'o1', 'o3-mini', 'o3', 'o4-mini'];

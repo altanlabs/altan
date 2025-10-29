@@ -1,5 +1,5 @@
 import { Tooltip } from '@mui/material';
-import React, { memo, useMemo, useState, useCallback } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
@@ -8,8 +8,8 @@ import {
   makeSelectToolPartHeader,
   makeSelectToolPartExecution,
   switchToThread,
-  makeSelectToolPartsByThreadId,
-  selectActiveActivationsByThread,
+  makeSelectSortedThreadMessageIds,
+  selectMessagesById,
 } from '../../../redux/slices/room';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { useSelector, useDispatch } from '../../../redux/store.js';
@@ -17,8 +17,8 @@ import { AgentOrbAvatar } from '../../agents/AgentOrbAvatar.jsx';
 import Iconify from '../../iconify/Iconify.jsx';
 import IconRenderer from '../../icons/IconRenderer.jsx';
 import { agentColors } from '../../plan/planUtils.js';
+import MessageContent from '../MessageContent.jsx';
 import { getToolIcon } from '../tool-renderers/index.js';
-import ToolPartCard from '../ToolPartCard.jsx';
 
 function extractAndCapitalize(str) {
   if (!str) return 'Tool';
@@ -35,11 +35,10 @@ function extractAndCapitalize(str) {
  */
 const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: toolOnToggle }) => {
   const dispatch = useDispatch();
-  const [taskExpanded, setTaskExpanded] = useState(true); // Auto-expand by default
 
   const headerSelector = useMemo(() => makeSelectToolPartHeader(), []);
   const executionSelector = useMemo(() => makeSelectToolPartExecution(), []);
-  const toolPartsSelector = useMemo(() => makeSelectToolPartsByThreadId(), []);
+  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
 
   const header = useSelector((state) => headerSelector(state, part?.id));
   const execution = useSelector((state) => executionSelector(state, part?.id));
@@ -104,23 +103,22 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     return null;
   }, [part?.result, part?.arguments, tasks]);
 
-  // Get tool parts from the task's subthread (where the actual work happens)
-  const toolParts = useSelector((state) =>
-    taskData?.subthread_id ? toolPartsSelector(state, taskData.subthread_id) : [],
+  // Get messages from the task's subthread (where the actual work happens)
+  const messageIds = useSelector((state) =>
+    taskData?.subthread_id ? messagesSelector(state, taskData.subthread_id) : [],
   );
+  const messagesById = useSelector(selectMessagesById);
 
-  // Check if the subthread has active activations (real-time indicator)
-  const activeActivations = useSelector((state) =>
-    taskData?.subthread_id ? selectActiveActivationsByThread(taskData.subthread_id)(state) : [],
-  );
-  const hasActiveActivation = activeActivations && activeActivations.length > 0;
+  // Get the second message (index 1) - this is the agent's response
+  const secondMessage = messageIds.length > 1 ? messagesById[messageIds[1]] : null;
+
+  // Determine if message is being generated (exists but not yet replied)
+  const isMessageGenerating = secondMessage && !secondMessage.replied;
+
+  // Auto-expand when message is generating, auto-collapse when complete
+  const taskExpanded = isMessageGenerating;
 
   // Handlers
-  const handleToggleTask = useCallback((e) => {
-    e?.stopPropagation();
-    setTaskExpanded((prev) => !prev);
-  }, []);
-
   const handleOpenSubthread = useCallback(
     (e) => {
       e?.stopPropagation();
@@ -170,18 +168,12 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     return displayText;
   }, [duration, displayText]);
 
-  // Check Redux for latest task status (for real-time updates)
-  const reduxTask = useMemo(() => {
-    if (!taskData?.task_name) return null;
-    return tasks?.find((t) => t.task_name === taskData.task_name && !t.plan_id);
-  }, [tasks, taskData?.task_name]);
-
   const agentColor = taskData?.assigned_agent_name
     ? agentColors[taskData.assigned_agent_name]
     : null;
-  // Use Redux status if available (for real-time updates), otherwise use taskData status
-  const currentStatus = reduxTask?.status || taskData?.status;
-  const isTaskRunning = hasActiveActivation || currentStatus?.toLowerCase() === 'running';
+
+  // Task is running if the second message exists and is still streaming
+  const isTaskRunning = isMessageGenerating;
 
   if (!header) {
     return null;
@@ -222,31 +214,30 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     <div className="w-full my-2">
       {/* Task Card */}
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 overflow-hidden">
-        {/* Task Header - Clickable to expand/collapse */}
-        <div
-          className="px-3 py-2.5 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 cursor-pointer transition-colors"
-          onClick={handleToggleTask}
-        >
+        {/* Task Header */}
+        <div className="px-3 py-2.5">
           <div className="flex items-center gap-2.5">
-            {/* Expand/Collapse Icon */}
-            <Iconify
-              icon={taskExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
-              className={cn(
-                'w-4 h-4 transition-transform duration-200 flex-shrink-0',
-                isTaskRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400',
-              )}
-            />
+            {/* Expand/Collapse Icon - only show when second message exists */}
+            {secondMessage && (
+              <Iconify
+                icon={taskExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
+                className={cn(
+                  'w-4 h-4 transition-transform duration-200 flex-shrink-0',
+                  isTaskRunning ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400',
+                )}
+              />
+            )}
 
             {/* Agent Avatar */}
             {agentColor && (
               <Tooltip title={`Assigned to: ${taskData.assigned_agent_name}`}>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 transition-all duration-300">
                   <AgentOrbAvatar
-                    size={20}
+                    size={isTaskRunning ? 30 : 20}
                     agentId={taskData.assigned_agent_name}
                     colors={agentColor}
-                    isStatic={!isTaskRunning}
                     agentState={isTaskRunning ? 'thinking' : null}
+                    isStatic={false}
                   />
                 </div>
               </Tooltip>
@@ -257,9 +248,6 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                 {taskData.task_name || 'Untitled Task'}
               </span>
-              {isTaskRunning && (
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
-              )}
             </div>
 
             {/* Open Thread Button */}
@@ -279,33 +267,14 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
           </div>
         </div>
 
-        {/* Expanded Content - Subtasks */}
-        {taskExpanded && toolParts.length > 0 && (
-          <div className="px-3 pb-3 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
-            <div className="ml-6.5 mt-3 space-y-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Iconify
-                  icon="mdi:wrench-outline"
-                  className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
-                />
-                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                  Subtasks ({toolParts.length})
-                </span>
-              </div>
-              {toolParts.map((toolPart) => (
-                <ToolPartCard key={toolPart.id} partId={toolPart.id} noClick={false} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Loading state when task is running but no subtasks yet */}
-        {taskExpanded && toolParts.length === 0 && isTaskRunning && (
-          <div className="px-3 pb-3 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
-            <div className="ml-6.5 mt-3 text-xs text-gray-500 dark:text-gray-400 italic flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-              Waiting for subtasks...
-            </div>
+        {/* Expanded Content - Second Message */}
+        {taskExpanded && secondMessage && (
+          <div className="px-3 py-3 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-200 dark:border-gray-700">
+            <MessageContent
+              message={secondMessage}
+              threadId={taskData.subthread_id}
+              mode="mini"
+            />
           </div>
         )}
       </div>
