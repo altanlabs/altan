@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { setViewType, selectViewType } from '../../redux/slices/altaners';
 import Iconify from '../iconify';
+import analytics from '../../lib/analytics';
 
 /**
  * A toggle button for switching between code and preview modes
@@ -17,7 +18,15 @@ function CodeToggleButton({ disabled = false }) {
 
   const handleToggle = () => {
     if (!disabled) {
-      dispatch(setViewType(viewType === 'preview' ? 'code' : 'preview'));
+      const newViewType = viewType === 'preview' ? 'code' : 'preview';
+      dispatch(setViewType(newViewType));
+      
+      // Track code editor feature usage
+      if (newViewType === 'code') {
+        analytics.featureUsed('code_editor', {
+          action: 'enabled',
+        });
+      }
     }
   };
 

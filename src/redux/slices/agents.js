@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+import analytics from '../../lib/analytics';
 import { optimai, optimai_room } from '../../utils/axios';
 
 const initialState = {
@@ -168,6 +169,17 @@ export const createAgent = (data) => async (dispatch, getState) => {
     const response = await optimai.post(`/account/${account.id}/agent`, data);
     const { agent } = response.data;
     dispatch(slice.actions.addAgent(agent));
+
+    // Track agent creation
+    analytics.track('created_agent', {
+      agent_id: agent.id,
+      agent_type: data.meta_data?.agent_type || 'General Assistant',
+      goal: data.meta_data?.goal || null,
+      industry: data.meta_data?.industry || null,
+      has_voice: !!data.voice,
+      created_from: data.meta_data?.created_from || 'unknown',
+    });
+
     return agent;
   } catch (e) {
     dispatch(slice.actions.hasError(e.toString()));
@@ -182,6 +194,13 @@ export const updateAgent = (agentId, data) => async (dispatch) => {
     const response = await optimai.patch(`/agent/${agentId}`, data);
     const { agent } = response.data;
     dispatch(slice.actions.patchAgent(agent));
+
+    // Track agent update
+    analytics.track('updated_agent', {
+      agent_id: agentId,
+      updated_fields: Object.keys(data),
+    });
+
     return Promise.resolve(agent);
   } catch (e) {
     if (e.response && e.response.data && e.response.data.detail) {

@@ -1,9 +1,8 @@
-// ANALYTICS DISABLED - No longer using Supabase for analytics
-// import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-// Supabase Analytics configuration - DISABLED
-// const supabaseUrl = 'https://database.altan.ai';
-// const supabaseKey = 'tenant_db49e5eb_2aa7_459f_8815_8f69889d90d5';
+const supabaseUrl = 'https://d2e5baf5-4f0.db-pool-europe-west1.altan.ai';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIwNzY4Nzk1NzcsImlhdCI6MTc2MTUxOTU3NywiaXNzIjoic3VwYWJhc2UiLCJyb2xlIjoiYW5vbiJ9.mnZyOqmzQNY9PwF6AiaWTO7IOaZBfNx7KaxCw0bZAVY';
 
 let supabase = null;
 
@@ -15,11 +14,15 @@ let currentUserContext = {
 };
 
 export const initializeAnalytics = () => {
-  // Analytics initialization disabled
-  console.log('Analytics disabled');
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Analytics initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize analytics:', error);
+  }
 };
 
-// Helper function to send events - DISABLED
+// Helper function to send events
 const trackEvent = async (
   eventName,
   userId,
@@ -28,16 +31,54 @@ const trackEvent = async (
   properties = {},
   source = 'web',
 ) => {
-  // Analytics tracking disabled
-  return { data: null, error: null };
+  if (!supabase) {
+    console.warn('Analytics not initialized. Call initializeAnalytics() first.');
+    return { data: null, error: null };
+  }
+
+  try {
+    // Use provided user context or fall back to global context
+    const finalUserId = userId || currentUserContext.user_id;
+    const finalUserEmail = userEmail || currentUserContext.user_email;
+    const finalAccountId = accountId || currentUserContext.account_id;
+
+    const eventData = {
+      event_name: eventName,
+      user_id: finalUserId,
+      user_email: finalUserEmail,
+      account_id: finalAccountId,
+      source,
+      properties: properties || {},
+      timestamp: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase.from('analytics_events').insert([eventData]);
+
+    if (error) {
+      console.error('Analytics tracking error:', error);
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Analytics tracking exception:', error);
+    return { data: null, error };
+  }
 };
 
 // Analytics event tracking functions
 export const analytics = {
   // User authentication events
   identify: async (userId, userProperties = {}) => {
-    // Analytics disabled
-    return { data: null, error: null };
+    // Update global user context
+    currentUserContext = {
+      user_id: userId,
+      user_email: userProperties.email || userProperties.user_email || null,
+      account_id: userProperties.account_id || null,
+    };
+
+    return trackEvent('user_identified', userId, currentUserContext.user_email, currentUserContext.account_id, {
+      ...userProperties,
+    });
   },
 
   // Page view tracking
@@ -200,15 +241,15 @@ export const analytics = {
   },
 
   // Error tracking - disabled for business analytics
-  errorOccurred: async (errorType, errorMessage, properties = {}) => {
+  errorOccurred: async () => {
     console.log('Error tracking disabled for business analytics');
   },
 
-  trackError: async (error, context = {}) => {
+  trackError: async () => {
     console.log('Error tracking disabled for business analytics');
   },
 
-  trackAPIError: async (error, endpoint, method = 'GET', context = {}) => {
+  trackAPIError: async () => {
     console.log('API error tracking disabled for business analytics');
   },
 
@@ -358,7 +399,7 @@ export const analytics = {
   },
 
   // Set user properties - handled via identify() for Supabase
-  setUserProperties: async (properties) => {
+  setUserProperties: async () => {
     console.log('Use analytics.identify() instead of setUserProperties for Supabase');
   },
 

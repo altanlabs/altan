@@ -1,19 +1,24 @@
 import { Tooltip } from '@mui/material';
 import { memo, useCallback } from 'react';
 
+import analytics from '../../lib/analytics';
 import { createNewThread } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 
-const NewTabButton = ({ onNewTab, disabled = false }) => {
+const NewTabButton = ({ disabled = false }) => {
   const handleNewTab = useCallback(async () => {
     if (disabled) return;
 
     try {
       await dispatch(createNewThread());
+
+      // Track chat creation
+      analytics.track('created_chat');
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error creating new tab:', error);
     }
-  }, [disabled, onNewTab]);
+  }, [disabled]);
 
   return (
     <Tooltip

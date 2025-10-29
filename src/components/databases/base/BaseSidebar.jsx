@@ -10,6 +10,8 @@ import {
 import { Database, Users, FolderOpen, Code, LayoutGrid, Radio, FileText, Terminal } from 'lucide-react';
 import React from 'react';
 
+import analytics from '../../../lib/analytics';
+
 const SIDEBAR_WIDTH = 175;
 
 const menuItems = [
@@ -24,6 +26,15 @@ const menuItems = [
 ];
 
 function BaseSidebar({ activeSection, onSectionChange, open }) {
+  const handleSectionClick = (sectionId) => {
+    // Track cloud feature usage for sidebar navigation
+    analytics.featureUsed('cloud', {
+      action: 'sidebar_navigation',
+      section: sectionId,
+    });
+    onSectionChange(sectionId);
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -55,7 +66,7 @@ function BaseSidebar({ activeSection, onSectionChange, open }) {
               >
                 <ListItemButton
                   selected={isActive}
-                  onClick={() => onSectionChange(item.id)}
+                  onClick={() => handleSectionClick(item.id)}
                   sx={{
                     mx: 1,
                     mt: 1,

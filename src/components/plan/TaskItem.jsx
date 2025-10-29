@@ -2,11 +2,11 @@ import { Tooltip, Typography } from '@mui/material';
 import { memo, useMemo } from 'react';
 import Iconify from '../iconify/Iconify';
 import CustomMarkdown from '../messages/CustomMarkdown';
-import ToolPartCard from '../messages/ToolPartCard';
-import { makeSelectToolPartsByThreadId } from '../../redux/slices/room';
+import MessageContent from '../messages/MessageContent';
+import { makeSelectSortedThreadMessageIds, selectMessagesById } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
-import { agentAvatars, agentColors, getTaskIcon, getTaskIconColor, getTaskTextStyle } from './planUtils';
+import { agentColors, getTaskTextStyle } from './planUtils';
 import RunningTimer from './RunningTimer';
 import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 
@@ -14,11 +14,15 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
   const isRunning = task.status?.toLowerCase() === 'running';
   const isCompleted = task.status?.toLowerCase() === 'completed' || task.status?.toLowerCase() === 'done';
   
-  // Get tool parts for this task's subthread - only if expanded
-  const toolPartsSelector = useMemo(() => makeSelectToolPartsByThreadId(), []);
-  const toolParts = useSelector((state) => 
-    isExpanded && task.subthread_id ? toolPartsSelector(state, task.subthread_id) : []
+  // Get messages from the task's subthread
+  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
+  const messageIds = useSelector((state) =>
+    task.subthread_id ? messagesSelector(state, task.subthread_id) : [],
   );
+  const messagesById = useSelector(selectMessagesById);
+
+  // Get the second message (index 1) - this is the agent's response
+  const secondMessage = messageIds.length > 1 ? messagesById[messageIds[1]] : null;
 
   return (
     <div className="transition-colors duration-150">
@@ -137,8 +141,8 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
       {/* Expanded Content */}
       {isExpanded && (
         <div className="px-6 pb-2 pl-20 bg-gray-50/30 dark:bg-gray-800/20">
-          {/* Task Description - Only show for non-completed tasks */}
-          {!isCompleted && task.task_description && (
+          {/* Task Description - Only show for non-completed and non-running tasks */}
+          {!isCompleted && !isRunning && task.task_description && (
             <div className="mb-2 text-sm">
               <CustomMarkdown text={task.task_description} />
             </div>
@@ -160,32 +164,21 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
             </div>
           )}
 
-          {/* Task Summary - Show for non-completed tasks if no description */}
-          {!isCompleted && task.summary && (
+          {/* Task Summary - Show for non-completed and non-running tasks if no description */}
+          {!isCompleted && !isRunning && task.summary && (
             <div className="mb-3 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="truncate max-w-md">{task.summary}</span>
             </div>
           )}
 
-          {/* Tool Executions (Subtasks) */}
-          {toolParts.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2 mb-3">
-                <Iconify
-                  icon="mdi:wrench-outline"
-                  className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                />
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                  Subtasks ({toolParts.length})
-                </span>
-              </div>
-              {toolParts.map((part) => (
-                <ToolPartCard
-                  key={part.id}
-                  partId={part.id}
-                  noClick={false}
-                />
-              ))}
+          {/* Agent's Work - Second Message */}
+          {isExpanded && secondMessage && (
+            <div className="mt-4">
+              <MessageContent
+                message={secondMessage}
+                threadId={task.subthread_id}
+                mode="mini"
+              />
             </div>
           )}
         </div>

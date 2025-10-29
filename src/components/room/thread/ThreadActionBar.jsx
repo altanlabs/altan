@@ -1,8 +1,8 @@
 import { IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
-import axios from 'axios';
 import { useMemo, useEffect, useCallback, useState, memo } from 'react';
 import { encoding_for_model } from 'tiktoken';
 
+import analytics from '../../../lib/analytics';
 import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 import {
   makeSelectThreadMessageCount,
@@ -284,23 +284,16 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
   // Feedback submission handler
   const handleFeedbackSubmit = useCallback(async (feedbackData) => {
     try {
-      const payload = {
-        feedback: {
-          message_id: feedbackData.messageId,
-          thread_id: feedbackData.threadId,
-          altaner_id: feedbackData.altanerId || currentAltaner?.id,
-          message_content: feedbackData.messageContent,
-          feedback_type: feedbackData.reason === 'like' ? 'like' : 'dislike',
-          reason: feedbackData.reason,
-          additional_feedback: feedbackData.additionalFeedback || '',
-          state: 'Open',
-        },
-      };
-
-      await axios.post('https://api.altan.ai/galaxia/hook/Exzd7H', payload, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const isLike = feedbackData.reason === 'like';
+      const eventName = isLike ? 'liked_message' : 'disliked_message';
+      
+      await analytics.track(eventName, {
+        message_id: feedbackData.messageId,
+        thread_id: feedbackData.threadId,
+        altaner_id: feedbackData.altanerId || currentAltaner?.id,
+        reason: feedbackData.reason,
+        additional_feedback: feedbackData.additionalFeedback || '',
+        message_length: feedbackData.messageContent?.length || 0,
       });
     } catch (error) {
       // Re-throw error to be handled by the dialog component
