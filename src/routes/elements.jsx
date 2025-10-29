@@ -67,8 +67,6 @@ export const MediaPage = Loadable(
   lazy(() => import('../pages/dashboard/assets/modules/MediaPage.jsx')),
 );
 
-export const GatesPage = Loadable(lazy(() => import('../pages/dashboard/GatesPage.jsx')));
-
 export const MarketplacePage = Loadable(
   lazy(() => import('../pages/dashboard/marketplace/MarketplacePage.jsx')),
 );
@@ -149,13 +147,6 @@ export const AccountsPage = Loadable(
 
 export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx')));
 
-// TESTING PAGES
-export const DemoTextVoicePage = Loadable(
-  lazy(() => import('../pages/testing/DemoTextVoicePage.jsx')),
-);
-export const AdvancedEditorPage = Loadable(
-  lazy(() => import('../pages/testing/AdvancedEditorPage.jsx')),
-);
 export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
 );

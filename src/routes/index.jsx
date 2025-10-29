@@ -62,7 +62,6 @@ import {
   Terms,
   Privacy,
   ContactPage,
-  DemoTextVoicePage,
   SDKTestPage,
   SupportPage,
   VirtualDesktopPage,
@@ -888,7 +887,6 @@ const Router = () => {
         >
           <AuthGuard requireAuth={false}>
             <DashboardLayout>
-              <DemoTextVoicePage />
             </DashboardLayout>
           </AuthGuard>
         </Route>

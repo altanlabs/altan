@@ -18,7 +18,6 @@ import useLocales from '../../locales/useLocales.js';
 import { getFlows } from '../../redux/slices/flows';
 import { getAccountAttribute } from '../../redux/slices/general';
 import { dispatch } from '../../redux/store';
-import Agents from '../../sections/@dashboard/agents/Agents.jsx';
 import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
 
 const DashboardPage = () => {

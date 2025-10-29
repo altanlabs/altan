@@ -13,8 +13,6 @@ import commitsReducer from './slices/commits';
 import connectionsReducer from './slices/connections';
 import flowsReducer from './slices/flows';
 import servicesReducer from './slices/services';
-import gateReducer from './slices/gate';
-import gatesReducer from './slices/gates';
 import generalReducer from './slices/general';
 import marketplaceReducer from './slices/marketplace';
 import mcpReducer from './slices/mcp';
@@ -59,10 +57,8 @@ const rootReducer = combineReducers({
   notifications: notificationsReducer,
   previewControl: previewControlReducer,
   connections: connectionsReducer,
-  gates: gatesReducer,
   flows: flowsReducer,
   altaners: altanersReducer,
-  subscriptions: subscriptionsReducer,
   money: moneyReducer,
   marketplace: marketplaceReducer,
   mcp: mcpReducer,
@@ -70,11 +66,11 @@ const rootReducer = combineReducers({
   codeEditor: codeEditorReducer,
   commits: commitsReducer,
   room: roomsReducer,
-  gate: gateReducer,
+  services: servicesReducer,
   tasks: tasksReducer,
   templates: templatesReducer,
   templateVersions: templateVersionsReducer,
-  services: servicesReducer,
+  subscriptions: subscriptionsReducer,
 });
 
 export default rootReducer;

@@ -29,7 +29,6 @@ import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
 import RoomComponent from '../../room/Room';
 // sections
-import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
 // components
 import DeleteDialog from '../../dialogs/DeleteDialog';
 import Iconify from '../../iconify';

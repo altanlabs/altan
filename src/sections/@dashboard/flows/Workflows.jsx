@@ -22,7 +22,6 @@ import {
   selectFlowStateLoading,
 } from '../../../redux/slices/flows';
 import { dispatch, useSelector } from '../../../redux/store';
-import CreateFlowDialog from '../jobs/CreateFlowDialog.jsx';
 
 const flowsLoadingSelector = selectFlowStateLoading('flows');
 const flowsInitializedSelector = selectFlowStateInitialized('flows');
