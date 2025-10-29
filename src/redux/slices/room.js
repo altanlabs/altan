@@ -2840,6 +2840,7 @@ export const makeSelectToolPartHeader = () =>
       finished_at: part.finished_at,
       created_at: part.created_at || part.date_creation,
       intent: part.intent,
+      meta_data: part.meta_data,
     };
   })((state, partId) => `toolPartHeader_${partId}`);
 

@@ -34,6 +34,15 @@ const ToolPartHeader = ({
   const isCompleted = header?.is_done;
   const isExecuting = !isCompleted && (header?.status === 'running' || header?.status === 'preparing');
 
+  // Get the tool name, checking for server_tool_use, mcp_call, and mcp_list_tools
+  const toolName = useMemo(() => {
+    const providerType = header?.meta_data?.provider_item_type;
+    if (['server_tool_use', 'mcp_call', 'mcp_list_tools'].includes(providerType) && header?.meta_data?.name) {
+      return header.meta_data.name;
+    }
+    return header?.name;
+  }, [header?.name, header?.meta_data?.provider_item_type, header?.meta_data?.name]);
+
   // Determine what to display as the main text
   const displayText = useMemo(() => {
     if (!header) return '';
@@ -43,15 +52,14 @@ const ToolPartHeader = ({
     if (!isExecuting && header.act_done) {
       return header.act_done;
     }
-    return extractAndCapitalize(header.name);
-  }, [header, isExecuting]);
+    return extractAndCapitalize(toolName);
+  }, [header, isExecuting, toolName]);
 
   // Get tool icon from registry
   const toolIcon = useMemo(() => {
-    const toolName = header?.name;
     const fallbackIcon = execution?.task_execution?.tool?.action_type?.connection_type?.icon || 'ri:hammer-fill';
     return getToolIcon(toolName, fallbackIcon);
-  }, [header?.name, execution?.task_execution?.tool?.action_type?.connection_type?.icon]);
+  }, [toolName, execution?.task_execution?.tool?.action_type?.connection_type?.icon]);
 
   // Get execution ID for the dialog
   const executionId = useMemo(() => {
