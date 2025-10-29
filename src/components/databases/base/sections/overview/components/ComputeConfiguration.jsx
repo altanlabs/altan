@@ -4,7 +4,7 @@ import { Server, ChevronDown, ChevronUp, Cpu, HardDrive } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 
 import Iconify from '../../../../../iconify';
-import analytics from '../../../../../lib/analytics';
+import analytics from '../../../../../../lib/analytics';
 
 export const ComputeConfiguration = ({
   base,

@@ -49,10 +49,9 @@ const trackEvent = async (
       account_id: finalAccountId,
       source,
       properties: properties || {},
-      timestamp: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase.from('analytics_events').insert([eventData]);
+    const { data, error } = await supabase.from('events').insert([eventData]);
 
     if (error) {
       console.error('Analytics tracking error:', error);

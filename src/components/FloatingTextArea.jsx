@@ -140,9 +140,9 @@ const FloatingTextArea = ({
         // Append mode instruction as hidden directive (only if mode selector is enabled)
         if (show_mode_selector) {
           const modeMapping = {
-            'auto': 'AUTO MODE',
-            'instant': 'INSTANT MODE',
-            'plan': 'PLAN MODE',
+            auto: 'AUTO MODE',
+            instant: 'INSTANT MODE',
+            plan: 'PLAN MODE',
           };
           const modeInstruction = `<hide>${modeMapping[selectedMode] || 'AUTO MODE'}</hide>`;
           finalContent = finalContent + '\n' + modeInstruction;
@@ -177,7 +177,16 @@ const FloatingTextArea = ({
         setAttachments([]);
       }
     },
-    [attachments, messageId, threadId, enqueueSnackbar, selectedAgent, setSelectedAgent, selectedMode, roomContext],
+    [
+      attachments,
+      messageId,
+      threadId,
+      enqueueSnackbar,
+      selectedAgent,
+      setSelectedAgent,
+      selectedMode,
+      roomContext,
+    ],
   );
 
   // Removes a single attachment by index
@@ -370,8 +379,8 @@ const FloatingTextArea = ({
                 : undefined
             }
           >
-            {/* {renderCredits && <CreditWallet />} */}
-            
+            {renderCredits && <CreditWallet />}
+
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3 px-4">
                 {attachments.map((attachment, index) => {
