@@ -19,6 +19,7 @@ import {
 } from '../../../../redux/slices/mcp';
 import { optimai } from '../../../../utils/axios';
 import Iconify from '../../../iconify';
+import IconRenderer from '../../../icons/IconRenderer';
 import AddMCPServerDrawer from '../components/AddMCPServerDialog';
 import CreateMCPDrawer from '../components/CreateMCPDrawer';
 
@@ -183,9 +184,9 @@ function McpTab({ agentData }) {
                   flexShrink: 0,
                 }}
               >
-                <Iconify
-                  icon="mdi:server"
-                  sx={{ fontSize: '1.5rem', color: 'text.primary' }}
+                <IconRenderer
+                  icon={server.meta_data?.icon || 'mdi:server'}
+                  size={24}
                 />
                 {server.connection?.is_active && (
                   <Box

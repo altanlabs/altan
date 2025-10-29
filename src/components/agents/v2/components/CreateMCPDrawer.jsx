@@ -25,6 +25,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import MCPToolsTab from './MCPToolsTab';
+import { selectAccount } from '../../../../redux/slices/general';
 import {
   createMCPServer,
   updateMCPServer,
@@ -33,12 +34,14 @@ import {
   fetchAgentMCPServers,
 } from '../../../../redux/slices/mcp';
 import Iconify from '../../../iconify';
+import IconRenderer from '../../../icons/IconRenderer';
 
 function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const { isLoading } = useSelector((state) => state.mcp);
   const { currentAgent } = useSelector((state) => state.agents);
+  const account = useSelector(selectAccount);
 
   // Tab state (only for editing)
   const [activeTab, setActiveTab] = useState(0);
@@ -47,6 +50,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    icon: 'mdi:server',
     serverType: 'streamable_http',
     urlType: 'value',
     url: '',
@@ -66,6 +70,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
       setFormData({
         name: editingServer.name || '',
         description: editingServer.description || '',
+        icon: editingServer.meta_data?.icon || 'mdi:server',
         serverType: editingServer.transport || 'streamable_http',
         urlType: editingServer.urlType || 'value',
         url: editingServer.url || '',
@@ -83,6 +88,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
       setFormData({
         name: '',
         description: '',
+        icon: 'mdi:server',
         serverType: 'streamable_http',
         urlType: 'value',
         url: '',
@@ -118,7 +124,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.url || !agentId) {
+    if (!formData.name || !formData.url) {
       return;
     }
 
@@ -126,15 +132,17 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
       if (editingServer) {
         // Update existing server
         await dispatch(updateMCPServer(editingServer.id, formData));
-        // Update connection settings if needed
-        await dispatch(
-          updateAgentMCPConnection(editingServer.id, agentId, {
-            isActive: true,
-          }),
-        );
+        // Update connection settings if needed (only if connected to an agent)
+        if (agentId) {
+          await dispatch(
+            updateAgentMCPConnection(editingServer.id, agentId, {
+              isActive: true,
+            }),
+          );
+        }
       } else {
         // Create new server
-        const accountId = currentAgent?.account_id;
+        const accountId = currentAgent?.account_id || account?.id;
         if (!accountId) {
           // eslint-disable-next-line no-console
           console.error('No account ID found');
@@ -142,16 +150,20 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
         }
 
         const newServer = await dispatch(createMCPServer(accountId, formData));
-        // Connect agent to the new server
-        await dispatch(
-          connectAgentToMCPServer(newServer.id, agentId, {
-            accessLevel: 'user',
-          }),
-        );
+        // Connect agent to the new server (only if agentId is provided)
+        if (agentId) {
+          await dispatch(
+            connectAgentToMCPServer(newServer.id, agentId, {
+              accessLevel: 'user',
+            }),
+          );
+        }
       }
 
-      // Refresh the agent's MCP servers list
-      await dispatch(fetchAgentMCPServers(agentId));
+      // Refresh the agent's MCP servers list (only if connected to an agent)
+      if (agentId) {
+        await dispatch(fetchAgentMCPServers(agentId));
+      }
 
       // Close the drawer
       onClose();
@@ -161,7 +173,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
     }
   };
 
-  const isFormValid = formData.name && formData.url && agentId;
+  const isFormValid = formData.name && formData.url;
 
   return (
     <Drawer
@@ -182,6 +194,7 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
           pb: 2,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -194,11 +207,12 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
               height: 40,
               borderRadius: 1.5,
               bgcolor: alpha(theme.palette.grey[500], 0.08),
+              position: 'relative',
             }}
           >
-            <Iconify
-              icon="mdi:server"
-              sx={{ fontSize: '1.25rem' }}
+            <IconRenderer
+              icon={formData.icon}
+              size={20}
             />
           </Box>
           <Typography
@@ -323,6 +337,47 @@ function CreateMCPDrawer({ open, onClose, editingServer = null, agentId }) {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ mb: 1, fontWeight: 500 }}
+                  >
+                    Icon
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Enter icon name (e.g., mdi:server, eva:code-outline)"
+                      value={formData.icon}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 1,
+                        bgcolor: alpha(theme.palette.grey[500], 0.08),
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IconRenderer
+                        icon={formData.icon}
+                        size={20}
+                      />
+                    </Box>
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}
+                  >
+                    Use Iconify icons (iconify.design), HTTP URLs, or /assets paths
+                  </Typography>
                 </Box>
 
                 <Box>

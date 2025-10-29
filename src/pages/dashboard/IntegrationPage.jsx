@@ -6,11 +6,12 @@ import ConnectionsPage from './ConnectionsPage.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import StaticDrawerNav from './altaners/nav/StaticDrawerNav.jsx';
+import { getAccountAttribute } from '../../redux/slices/general';
+import { dispatch, useSelector } from '../../redux/store';
+import AccountMCPServers from '../../sections/@dashboard/AccountMCPServers.jsx';
 import ConnectionTypeCreator from '../../sections/@dashboard/ConnectionTypeCreator.jsx';
 import CustomApps from '../../sections/@dashboard/CustomApps.jsx';
 import DevApps from '../../sections/@dashboard/DevApps.jsx';
-import { getAccountAttribute } from '../../redux/slices/general';
-import { dispatch, useSelector } from '../../redux/store';
 
 const TABS = {
   connections: {
@@ -18,6 +19,12 @@ const TABS = {
     name: 'Connections',
     icon: 'mdi:plug',
     component: <ConnectionsPage />,
+  },
+  mcp_servers: {
+    id: 'mcp_servers',
+    name: 'MCP Servers',
+    icon: 'mdi:server',
+    component: <AccountMCPServers />,
   },
   custom_apps: {
     id: 'custom_apps',
@@ -45,7 +52,7 @@ function IntegrationPage() {
   const location = useLocation();
   const history = useHistory();
   const [currentTab, setCurrentTab] = useState('connections');
-  
+
   // Selectors for conditional loading
   const accountId = useSelector((state) => state.general.account?.id);
   const appsInitialized = useSelector((state) => state.general.accountAssetsInitialized.apps);

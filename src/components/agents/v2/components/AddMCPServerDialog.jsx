@@ -559,8 +559,8 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
                       }}
                     >
                       <IconRenderer
-                        icon={connType?.icon || 'mdi:server'}
-                        size={40}
+                        icon={server.meta_data?.icon || connType?.icon || 'mdi:server'}
+                        size={20}
                         color={connType?.meta_data?.color}
                       />
                     </Box>

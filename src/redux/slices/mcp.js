@@ -136,6 +136,7 @@ const mapToBackendSchema = (data) => {
     disable_interruptions: data.disableInterruptions,
     tool_approval_hashes: data.toolApprovalHashes || null,
     config: data.config || null,
+    meta_data: data.icon ? { icon: data.icon } : null,
   };
 
   // Remove undefined/null values

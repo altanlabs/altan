@@ -37,8 +37,6 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
             />
           </div>
 
-
-
           <div className="flex-1 min-w-0">
             {/* Task Name and Agent */}
             <div className="flex items-center gap-2">
@@ -49,8 +47,8 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
                       size={34}
                       agentId={task.assigned_agent_name}
                       colors={agentColors[task.assigned_agent_name]}
-                      isStatic={!isRunning}
-                      agentState={isRunning ? 'thinking' : null}
+                      agentState={isRunning ? 'talking' : null}
+                      isStatic={false}
                     />
                   </div>
                 </Tooltip>
@@ -158,9 +156,7 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
                   Work Done
                 </span>
               </div>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                {task.summary}
-              </div>
+              <div className="text-sm text-gray-700 dark:text-gray-300">{task.summary}</div>
             </div>
           )}
 

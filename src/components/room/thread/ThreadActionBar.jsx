@@ -1,9 +1,8 @@
 import { IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import axios from 'axios';
-import { useMemo, useEffect, useCallback, useState } from 'react';
+import { useMemo, useEffect, useCallback, useState, memo } from 'react';
 import { encoding_for_model } from 'tiktoken';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
 import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 import {
   makeSelectThreadMessageCount,
@@ -25,11 +24,74 @@ import { useSnackbar } from '../../snackbar';
 // Maximum token limit for context window
 const MAX_TOKENS = 100000;
 
+// Mini pie chart component - extracted to prevent recreation on every render
+const TokenPieChart = memo(({ tokenPercentage }) => {
+  const size = 20;
+  const strokeWidth = 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDasharray = circumference;
+
+  // Cap the visual progress at 100% for the chart display
+  const displayPercentage = Math.min(tokenPercentage, 100);
+  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+
+  // Determine colors based on usage level
+  const isNearLimit = tokenPercentage >= 75;
+  const isOverLimit = tokenPercentage >= 100;
+
+  const getProgressColor = () => {
+    if (isOverLimit) return 'text-red-500 dark:text-red-400';
+    if (isNearLimit) return 'text-orange-500 dark:text-orange-400';
+    return 'text-gray-700 dark:text-gray-300';
+  };
+
+  const getTextColor = () => {
+    if (isOverLimit) return 'text-red-600 dark:text-red-400';
+    if (isNearLimit) return 'text-orange-600 dark:text-orange-400';
+    return 'text-gray-700 dark:text-gray-300';
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-gray-300 dark:text-gray-600"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className={getProgressColor()}
+        />
+      </svg>
+      {/* Percentage text next to chart */}
+      <span className={`text-xs font-medium ${getTextColor()}`}>
+        {tokenPercentage}%
+      </span>
+    </div>
+  );
+});
+TokenPieChart.displayName = 'TokenPieChart';
+
 const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { enqueueSnackbar } = useSnackbar();
-  const { user, guest } = useAuthContext();
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
 
   const messageCountSelector = useMemo(makeSelectThreadMessageCount, []);
@@ -45,15 +107,74 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
   const hasUserLiked = useSelector((state) => userLikedSelector(state, lastMessageId));
   const hasUserDisliked = useSelector((state) => userDislikedSelector(state, lastMessageId));
 
-  // Get messages and their content for token counting
-  const messagesIdsByThread = useSelector(selectMessagesIdsByThread);
-  const messagesContent = useSelector((state) => selectRoomState(state).messagesContent);
-  const messagesExecutions = useSelector(selectMessagesExecutions);
-  const executionsById = useSelector(selectExecutionsById);
+  // Create a stable selector for thread message IDs
+  const threadMessageIdsSelector = useMemo(
+    () => (state) => {
+      const idsByThread = selectMessagesIdsByThread(state);
+      return idsByThread[threadId] || [];
+    },
+    [threadId]
+  );
+  
+  // Create a stable selector for thread-specific messages data
+  const threadMessagesDataSelector = useMemo(
+    () => (state) => {
+      const roomState = selectRoomState(state);
+      const messagesContent = roomState.messagesContent;
+      const messagesExecutions = selectMessagesExecutions(state);
+      const executionsById = selectExecutionsById(state);
+      const threadIds = selectMessagesIdsByThread(state)[threadId] || [];
+      
+      // Create a stable reference by stringifying keys and checking values
+      const result = {
+        messagesContent: {},
+        messagesExecutions: {},
+        executionsById,
+        _version: 0, // Version for change detection
+      };
+      
+      let hasContent = false;
+      threadIds.forEach((msgId) => {
+        if (messagesContent[msgId]) {
+          result.messagesContent[msgId] = messagesContent[msgId];
+          hasContent = true;
+        }
+        if (messagesExecutions[msgId]) {
+          result.messagesExecutions[msgId] = messagesExecutions[msgId];
+        }
+      });
+      
+      // Create a version hash for shallow comparison
+      if (hasContent) {
+        result._version = threadIds.length + Object.keys(result.messagesContent).length;
+      }
+      
+      return result;
+    },
+    [threadId]
+  );
+  
+  const threadMessageIds = useSelector(threadMessageIdsSelector);
+  const threadMessagesData = useSelector(threadMessagesDataSelector, (prev, next) => {
+    // Only re-render if the version or content actually changed
+    if (!prev || !next) return false;
+    if (prev._version !== next._version) return false;
+    
+    // Deep check message content
+    const prevMsgKeys = Object.keys(prev.messagesContent);
+    const nextMsgKeys = Object.keys(next.messagesContent);
+    if (prevMsgKeys.length !== nextMsgKeys.length) return false;
+    
+    for (const key of prevMsgKeys) {
+      if (prev.messagesContent[key] !== next.messagesContent[key]) return false;
+    }
+    
+    return true;
+  });
 
   // Get current altaner and message content for feedback
   const currentAltaner = useSelector(selectCurrentAltaner);
-  const lastMessageContent = lastMessageId ? messagesContent[lastMessageId] : null;
+  const lastMessageContent = lastMessageId ? threadMessagesData.messagesContent[lastMessageId] : null;
 
   // Check if there's an upload in progress for this thread
   const isUploading = useSelector((state) => selectRoomState(state).isUploading);
@@ -96,23 +217,22 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
 
   // Calculate total tokens for this thread (including executions)
   const totalTokens = useMemo(() => {
-    if (!threadId || !messagesIdsByThread[threadId]) return 0;
+    if (!threadId || threadMessageIds.length === 0) return 0;
 
-    const threadMessageIds = messagesIdsByThread[threadId];
     let tokens = 0;
 
     threadMessageIds.forEach((messageId) => {
       // Count tokens from message text
-      const messageText = messagesContent[messageId];
+      const messageText = threadMessagesData.messagesContent[messageId];
       if (messageText) {
         tokens += countTokens(messageText);
       }
 
       // Count tokens from task executions (input and output)
-      const executionIds = messagesExecutions[messageId];
+      const executionIds = threadMessagesData.messagesExecutions[messageId];
       if (executionIds && executionIds.length > 0) {
         executionIds.forEach((executionId) => {
-          const execution = executionsById[executionId];
+          const execution = threadMessagesData.executionsById[executionId];
           if (execution) {
             // Count tokens from execution input
             if (execution.input && typeof execution.input === 'string') {
@@ -143,10 +263,8 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
     return tokens;
   }, [
     threadId,
-    messagesIdsByThread,
-    messagesContent,
-    messagesExecutions,
-    executionsById,
+    threadMessageIds,
+    threadMessagesData,
     countTokens,
   ]);
 
@@ -188,7 +306,7 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
       // Re-throw error to be handled by the dialog component
       throw error;
     }
-  }, [currentAltaner?.id, user, guest]);
+  }, [currentAltaner?.id]);
 
   // Action handlers
   const handleLike = useCallback(async () => {
@@ -261,69 +379,6 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
     return `${formattedUsed} of ${formattedLimit} context tokens used`;
   };
 
-  // Mini pie chart component
-  const TokenPieChart = () => {
-    const size = 20;
-    const strokeWidth = 2;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDasharray = circumference;
-
-    // Cap the visual progress at 100% for the chart display
-    const displayPercentage = Math.min(tokenPercentage, 100);
-    const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
-
-    // Determine colors based on usage level
-    const isNearLimit = tokenPercentage >= 75;
-    const isOverLimit = tokenPercentage >= 100;
-
-    const getProgressColor = () => {
-      if (isOverLimit) return 'text-red-500 dark:text-red-400';
-      if (isNearLimit) return 'text-orange-500 dark:text-orange-400';
-      return 'text-gray-700 dark:text-gray-300';
-    };
-
-    const getTextColor = () => {
-      if (isOverLimit) return 'text-red-600 dark:text-red-400';
-      if (isNearLimit) return 'text-orange-600 dark:text-orange-400';
-      return 'text-gray-700 dark:text-gray-300';
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        <svg width={size} height={size} className="transform -rotate-90">
-          {/* Background circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={strokeWidth}
-            className="text-gray-300 dark:text-gray-600"
-          />
-          {/* Progress circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className={getProgressColor()}
-          />
-        </svg>
-        {/* Percentage text next to chart */}
-        <span className={`text-xs font-medium ${getTextColor()}`}>
-          {tokenPercentage}%
-        </span>
-      </div>
-    );
-  };
-
   return (
     <div className="flex items-center justify-between w-full max-w-2xl mx-auto px-4 pb-4">
       {/* Left: Context warning message (when needed) */}
@@ -372,7 +427,7 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
           arrow
         >
           <div className="cursor-help">
-            <TokenPieChart />
+            <TokenPieChart tokenPercentage={tokenPercentage} />
           </div>
         </Tooltip>
 
@@ -466,4 +521,6 @@ const ThreadActionBar = ({ threadId, lastMessageId, isAgentMessage = false }) =>
   );
 };
 
-export default ThreadActionBar;
+ThreadActionBar.displayName = 'ThreadActionBar';
+
+export default memo(ThreadActionBar);
