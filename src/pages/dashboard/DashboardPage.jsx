@@ -19,6 +19,7 @@ import { getFlows } from '../../redux/slices/flows';
 import { getAccountAttribute } from '../../redux/slices/general';
 import { dispatch } from '../../redux/store';
 import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
+import Agents from '../../sections/@dashboard/agents/Agents.jsx';
 
 const DashboardPage = () => {
   const { mode = 'projects' } = useParams();

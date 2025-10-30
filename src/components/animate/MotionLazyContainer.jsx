@@ -16,7 +16,7 @@ function MotionLazyContainer({ children }) {
       strict
       features={loadFeatures}
     >
-      <m.div style={{ height: '100%' }}> {children} </m.div>
+      <m.div style={{ minHeight: '100%' }}> {children} </m.div>
     </LazyMotion>
   );
 }

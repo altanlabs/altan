@@ -4,3 +4,4 @@ globs:
 alwaysApply: true
 ---
 Never use npm, always use bun!
+ALways use shadcn+tailwind; not mui.

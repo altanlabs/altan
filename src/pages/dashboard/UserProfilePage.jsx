@@ -22,11 +22,9 @@ export default function UserProfilePage() {
       <Helmet>
         <title>Profile · Altan</title>
       </Helmet>
-      <CompactLayout>
-        <Container maxWidth={themeStretch ? false : 'lg'}>
+        <Container maxWidth={themeStretch ? false : 'lg'} className="pt-12">
           <Profile />
         </Container>
-      </CompactLayout>
     </>
   );
 }

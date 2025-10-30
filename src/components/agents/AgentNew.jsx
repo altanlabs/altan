@@ -3,7 +3,7 @@ import { Stack, Typography, Box, Button } from '@mui/material';
 import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../components/iconify/Iconify';
-import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes';
+import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes.jsx';
 
 function AgentNew({ altanerComponentId }) {
   const history = useHistory();;

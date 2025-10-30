@@ -11,10 +11,7 @@ import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import { selectAccount, getAccountAttribute } from '../../redux/slices/general';
 import { dispatch } from '../../redux/store';
-import {
-  AccountGeneral,
-  AccountMembers,
-} from '../../sections/@dashboard/user/account';
+import { AccountGeneral, AccountMembers } from '../../sections/@dashboard/user/account';
 import AccountBilling from '../../sections/@dashboard/user/account/AccountBilling';
 import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup';
 
@@ -30,7 +27,7 @@ function UserAccountPage() {
   const history = useHistory();
   const { tab } = queryString.parse(location.search);
   const [currentTab, setCurrentTab] = useState(tab || 'general');
-  
+
   // Selectors for conditional loading
   const accountId = useSelector((state) => state.general.account?.id);
   const apikeysInitialized = useSelector((state) => state.general.accountAssetsInitialized.apikeys);
@@ -99,7 +96,7 @@ function UserAccountPage() {
   }
 
   return (
-    <CompactLayout title="Workspace Settings · Altan" noPadding>
+    <div className="pt-12">
       <Stack
         height="100%"
         width="100%"
@@ -116,7 +113,7 @@ function UserAccountPage() {
           {!!currentTab && TABS[currentTab]?.component}
         </Box>
       </Stack>
-    </CompactLayout>
+    </div>
   );
 }
 

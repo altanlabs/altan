@@ -261,7 +261,7 @@ const TabBar = ({
 
   return (
     <>
-      <div className={cn('flex items-center', className)}>
+      <div className={cn('flex items-center bg-transparent', className)}>
         {/* Tabs section - only show when showTabs is true */}
         {showTabs ? (
           <>
