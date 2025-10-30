@@ -489,8 +489,6 @@ CreateMode.displayName = 'CreateMode';
 // Main Component
 function CreateAgentDashboard({ handleVoice }) {
   const { isAuthenticated } = useAuthContext();
-  const agents = useSelector(selectSortedAgents);
-  const account = useSelector(getAccount);
   const history = useHistory();
   const location = useLocation();
 
@@ -543,20 +541,6 @@ function CreateAgentDashboard({ handleVoice }) {
               handleVoice={handleVoice}
               onGoBack={() => updateMode('chat')}
             />
-            {/* {mode === 'chat' ? (
-              <ChatMode
-                agents={agents}
-                isAuthenticated={isAuthenticated}
-                handleVoice={handleVoice}
-                onCreateAgent={() => updateMode('create')}
-                account={account}
-              />
-            ) : (
-              <CreateMode
-                handleVoice={handleVoice}
-                onGoBack={() => updateMode('chat')}
-              />
-            )} */}
           </div>
         </div>
       </div>

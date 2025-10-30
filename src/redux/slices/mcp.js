@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+import analytics from '../../lib/analytics';
 import { optimai } from '../../utils/axios';
 
 const initialState = {
@@ -136,6 +137,7 @@ const mapToBackendSchema = (data) => {
     disable_interruptions: data.disableInterruptions,
     tool_approval_hashes: data.toolApprovalHashes || null,
     config: data.config || null,
+    meta_data: data.icon ? { icon: data.icon } : null,
   };
 
   // Remove undefined/null values
@@ -151,6 +153,15 @@ export const createMCPServer = (accountId, data) => async (dispatch) => {
     const response = await optimai.post(`/mcp/servers?account_id=${accountId}`, backendData);
     const { mcp_server } = response.data;
     dispatch(slice.actions.addServer(mcp_server));
+
+    // Track MCP server creation
+    analytics.track('created_mcp_server', {
+      server_id: mcp_server.id,
+      server_type: data.type,
+      has_env_vars: !!(data.env && Object.keys(data.env).length > 0),
+      has_args: !!(data.args && data.args.length > 0),
+    });
+
     return Promise.resolve(mcp_server);
   } catch (error) {
     const errorMessage = error.response?.data?.detail || error.message;
@@ -207,6 +218,13 @@ export const updateMCPServer = (serverId, data) => async (dispatch) => {
     const response = await optimai.patch(`/mcp/servers/${serverId}`, backendData);
     const { mcp_server } = response.data;
     dispatch(slice.actions.updateServer(mcp_server));
+
+    // Track MCP server update
+    analytics.track('updated_mcp_server', {
+      server_id: serverId,
+      updated_fields: Object.keys(data),
+    });
+
     return Promise.resolve(mcp_server);
   } catch (error) {
     const errorMessage = error.response?.data?.detail || error.message;
@@ -241,6 +259,14 @@ export const connectAgentToMCPServer = (serverId, agentId, data = {}) => async (
     );
     const { connection } = response.data;
     dispatch(slice.actions.addConnection(connection));
+
+    // Track agent-server connection
+    analytics.track('connected_agent_to_mcp_server', {
+      server_id: serverId,
+      agent_id: agentId,
+      access_level: connectionData.access_level,
+    });
+
     return Promise.resolve(connection);
   } catch (error) {
     const errorMessage = error.response?.data?.detail || error.message;

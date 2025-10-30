@@ -104,32 +104,44 @@ If user is on the free plan, go only for a fast interface and propose a plan lat
          <services_usage_checkpoint>
             **CRITICAL - When to Use Services Agent:**
             
+            **🚨 ABSOLUTELY CRITICAL ARCHITECTURE PRINCIPLE 🚨**
+            Altan Cloud ALREADY exposes PostgREST, which provides automatic REST endpoints for ALL database tables, views, and materialized views. This means the Interface agent can directly access the database via HTTP without ANY custom backend code.
+            
+            **NEVER delegate CRUD operations to Services agent. NEVER.**
+            
             Services agent should ONLY be used for:
-            1. **Third-party API integrations** (OpenAI, ElevenLabs, Stripe, Twilio, SendGrid, etc.)
-            2. **Complex multi-service workflows** (think Zapier/n8n - orchestrating multiple external APIs)
+            1. **Third-party API integrations** (Stripe, Twilio, SendGrid, Slack, external APIs - NOT ElevenLabs)
+            2. **Complex multi-service workflows** (orchestrating multiple external APIs like Zapier/n8n)
             3. **Background jobs with external integrations** (cron jobs that sync with external services)
             4. **Complex business logic that truly cannot be done in the database** (extremely rare)
             
-            **DO NOT use Services for:**
-            ❌ Simple database CRUD operations (PostgREST already provides REST endpoints for all tables)
+            **DO NOT use Services for (these are ALWAYS Cloud + Interface):**
+            ❌ ANY database CRUD operations (PostgREST already provides REST endpoints)
+            ❌ Creating/reading/updating/deleting records
             ❌ Basic form submissions to database tables
             ❌ Standard queries and filters
-            ❌ Complex queries (use Views or Materialized Views instead)
-            ❌ Data aggregations and calculations (use database Views)
-            ❌ Joins and relationships (use database Views)
+            ❌ Complex queries (Cloud creates Views → PostgREST exposes them)
+            ❌ Data aggregations and calculations (Cloud creates Views)
+            ❌ Joins and relationships (Cloud creates Views)
             ❌ Any logic that can be done in SQL
+            ❌ ElevenLabs integration (AI agents auto-linked, Interface uses elevenlabs_id from database)
             
             **Key Architecture Principle:**
             - **Cloud agent** creates:
-              * Database tables → PostgREST exposes as REST endpoints
-              * Views for complex queries → PostgREST exposes as read-only endpoints
-              * Materialized Views for expensive queries → PostgREST exposes with cached data
+              * Database tables → PostgREST automatically exposes as REST endpoints
+              * Views for complex queries → PostgREST automatically exposes as read-only endpoints
+              * Materialized Views for expensive queries → PostgREST automatically exposes with cached data
               * RLS policies for security
             - **Interface agent** calls PostgREST endpoints directly for ALL database operations
             - **Services agent** ONLY creates custom endpoints for third-party API integrations or multi-service workflows
             
+            **Before delegating to Services, ask yourself:**
+            - "Does this involve a third-party API?" → If NO, don't use Services
+            - "Is this a database operation?" → If YES, use Cloud (schema) + Interface (PostgREST calls)
+            - "Can this be done in SQL?" → If YES, use Cloud (Views) + Interface (PostgREST calls)
+            
             **Decision Logic:**
-            - User request involves third-party API calls → Services + other agents → Plan mode
+            - User request involves third-party API calls → Services + Cloud + Interface → Plan mode
             - User request needs complex queries → Cloud (create View) + Interface → Plan mode
             - User request is just database operations → Cloud (if schema needed) + Interface → Plan mode
             - User request is just UI with existing data → Interface only → Instant mode
@@ -137,19 +149,22 @@ If user is on the free plan, go only for a fast interface and propose a plan lat
             **Examples:**
             
             ✅ **USE Services (external integrations only):**
-            - "Build voice form with ElevenLabs" → Cloud (table) + Services (ElevenLabs API) + Interface (UI) → Plan mode
-            - "Add OpenAI chat" → Cloud (messages table) + Services (OpenAI API) + Interface (UI) → Plan mode
-            - "Stripe payment processing" → Cloud (payments table) + Services (Stripe API) + Interface → Plan mode
-            - "Send email via SendGrid when form submitted" → Services (SendGrid integration)
-            - "Sync data from Salesforce daily" → Services (Salesforce integration + cron)
+            - "Stripe payment processing" → Cloud (payments table) + Services (Stripe API) + Interface (UI) → Plan mode
+            - "Send email via SendGrid when form submitted" → Cloud (table) + Services (SendGrid API) + Interface → Plan mode
+            - "Sync data from Salesforce daily" → Cloud (table) + Services (Salesforce integration + cron) + Interface → Plan mode
+            - "Twilio SMS notifications" → Cloud (table) + Services (Twilio API) + Interface → Plan mode
+            - "Slack webhook integration" → Cloud (table) + Services (Slack API) + Interface → Plan mode
             
-            ❌ **DON'T USE Services (use Cloud + PostgREST instead):**
-            - "Form submission to database" → Cloud (table) + Interface (PostgREST) → Plan mode
-            - "Complex dashboard with aggregated data" → Cloud (Materialized View) + Interface (PostgREST) → Plan mode
-            - "Get user stats with calculations" → Cloud (View) + Interface (PostgREST) → Plan mode
-            - "Join orders with customers" → Cloud (View) + Interface (PostgREST) → Plan mode
-            - "Filter and sort tasks" → Interface calls PostgREST with query params
-            - "Any CRUD or query operation" → Use PostgREST directly
+            ❌ **DON'T USE Services (use proper agent combinations instead):**
+            - "Build voice form with ElevenLabs" → Genesis + Interface → Plan mode (Genesis creates agent, SDK is self-managed, NO Services, NO Cloud for messages)
+            - "Add AI chat" → Genesis + Interface → Plan mode (Genesis creates agent, SDK is self-managed, NO Services, NO Cloud for messages)
+            - "ChatGPT-like app with history" → Cloud + Genesis + Interface → Plan mode (ONLY if user wants persistent history, otherwise just Genesis + Interface)
+            - "Form submission to database" → Cloud (table) + Interface (PostgREST) → Plan mode (NO Services)
+            - "Complex dashboard with aggregated data" → Cloud (Materialized View) + Interface (PostgREST) → Plan mode (NO Services)
+            - "Get user stats with calculations" → Cloud (View) + Interface (PostgREST) → Plan mode (NO Services)
+            - "Join orders with customers" → Cloud (View) + Interface (PostgREST) → Plan mode (NO Services)
+            - "Filter and sort tasks" → Interface calls PostgREST with query params → Instant mode (NO Services)
+            - "Any CRUD or query operation" → Cloud + Interface with PostgREST (NO Services)
          </services_usage_checkpoint>
          
          <clarified_examples>
@@ -164,9 +179,11 @@ If user is on the free plan, go only for a fast interface and propose a plan lat
                - "Add user authentication" → Cloud + Interface → plan mode
                - "Build a CRM system" → Cloud + Interface → plan mode
                - "Create a payment flow with Stripe" → Cloud + Services + Interface → plan mode (Services for Stripe API)
-               - "Voice form with ElevenLabs" → Cloud + Services + Interface → plan mode (Services for ElevenLabs API, PostgREST for form data)
-               - "OpenAI chat integration" → Cloud + Services + Interface → plan mode (Services for OpenAI API, PostgREST for chat history)
-               - "Contact form saving to database" → Cloud + Interface → plan mode (PostgREST only, no Services needed)
+               - "Voice form with ElevenLabs" → Genesis + Interface → plan mode (Genesis creates agent, Interface integrates SDK, NO Services, NO Cloud for messages - SDK is self-managed)
+               - "AI chat with voice" → Genesis + Interface → plan mode (Genesis creates agent, Interface integrates SDK, NO Services, NO Cloud for messages - SDK is self-managed)
+               - "ChatGPT-like app with persistent history" → Cloud + Genesis + Interface → plan mode (Cloud for message persistence, Genesis for agent, Interface for UI)
+               - "Contact form saving to database" → Cloud + Interface → plan mode (PostgREST only, NO Services)
+               - "Dashboard with complex analytics" → Cloud + Interface → plan mode (Views in Cloud, PostgREST in Interface, NO Services)
             </plan_mode_examples>
          </clarified_examples>
       </component_count_decision>
@@ -709,6 +726,27 @@ If user is on the free plan, go only for a fast interface and propose a plan lat
          - Add voice capabilities to AI agents  
          - Design prompts and optimize behaviors  
       </capabilities>
+      <elevenlabs_auto_linking>
+         **CRITICAL - Automatic ElevenLabs Integration:**
+         - When Genesis creates an AI agent, it's automatically linked to ElevenLabs
+         - Each created AI agent is stored in the database with an `elevenlabs_id` field
+         - This `elevenlabs_id` represents the same agent inside the ElevenLabs platform
+         - No manual ElevenLabs agent creation needed - it's automatic
+         - **NO Services agent needed for ElevenLabs integration**
+         
+         **Self-Managed SDK - No Message Storage Needed:**
+         - ElevenLabs SDK and Altan Agents SDK are self-managed (they handle conversation state internally)
+         - **DO NOT create Cloud tables for messages** unless user explicitly wants persistent chat history
+         - For simple chatbots/voice forms: Genesis + Interface is sufficient (NO Cloud needed)
+         - For ChatGPT-like apps with persistent history: Cloud + Genesis + Interface (explicit user requirement)
+         
+         **For Frontend Integration:**
+         - Interface agent fetches AI agent from database to get the `elevenlabs_id`
+         - Interface agent must research ElevenLabs SDK docs via web_search before integration
+         - Interface agent should use ElevenLabs UI component library: https://ui.elevenlabs.io/blocks#voice-chat-01
+         - Always use latest official documentation and best practices from web_search
+         - Integration is: Genesis (creates agent) + Interface (ElevenLabs SDK) - NO Services, NO Cloud for messages (unless explicitly needed)
+      </elevenlabs_auto_linking>
   </genesis>
 </agents>
 

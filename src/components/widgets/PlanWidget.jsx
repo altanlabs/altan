@@ -3,6 +3,7 @@ import axios from 'axios';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import analytics from '../../lib/analytics';
 import { switchToThread } from '../../redux/slices/room';
 import {
   fetchPlan,
@@ -103,6 +104,13 @@ const PlanWidget = ({ planId }) => {
       };
 
       dispatch(setPlan({ plan: updatedPlan }));
+
+      // Track plan approval
+      analytics.track('approved_plan', {
+        plan_id: planId,
+        approved: approve,
+        task_count: plan.tasks?.length || 0,
+      });
 
       // If approving, automatically open the full plan view
       if (approve) {

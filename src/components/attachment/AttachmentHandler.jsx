@@ -27,6 +27,7 @@ import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
 import { BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM } from './utils/constants';
 import { fetchAltanerData } from './utils/fetchAltanerData';
+import analytics from '../../lib/analytics';
 
 const AttachmentHandler = ({
   threadId = null,
@@ -294,6 +295,12 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
               threadId,
             })
           );
+          
+          // Track speech-to-text usage
+          analytics.featureUsed('speech_to_text', {
+            thread_id: threadId,
+            text_length: result.text.length,
+          });
         } else {
           console.error('No threadId available to send message');
         }

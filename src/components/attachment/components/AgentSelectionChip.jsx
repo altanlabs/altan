@@ -116,13 +116,11 @@ const AgentSelectionChip = ({
       <Chip
         avatar={
           selectedAgent ? (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DynamicAgentAvatar
-                agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
-                size={20}
-                isStatic
-              />
-            </Box>
+            <DynamicAgentAvatar
+              agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
+              size={24}
+              isStatic
+            />
           ) : undefined
         }
         icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}

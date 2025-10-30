@@ -6,6 +6,7 @@ import PlanHeader from '../../components/plan/PlanHeader';
 import PlanRoadmap from '../../components/plan/PlanRoadmap';
 import { PlanError, PlanLoading } from '../../components/plan/PlanStates';
 import { calculateProgress, sortTasksByPriority } from '../../components/plan/planUtils';
+import analytics from '../../lib/analytics';
 import { switchToThread } from '../../redux/slices/room';
 import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan, selectCompletedPlanEvent, clearPlanCompleted } from '../../redux/slices/tasks';
 import { useDispatch, useSelector } from '../../redux/store';
@@ -85,6 +86,13 @@ const Plan = ({ planId, altanerId }) => {
         };
 
         dispatch(setPlan({ plan: updatedPlan }));
+
+        // Track plan approval
+        analytics.track('approved_plan', {
+          plan_id: planId,
+          approved: approve,
+          task_count: plan.tasks?.length || 0,
+        });
       } catch (err) {
         const errorMessage = err.response?.data?.message || err.message || 'Failed to approve plan';
         setApproveError(errorMessage);

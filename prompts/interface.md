@@ -227,7 +227,45 @@ const { data: user } = await supabase.auth.getUser();
 const { data: products } = await supabase.from('products').select('*');
 ```
 
-### 3.2. Altan Services Integration - CRITICAL
+### 3.2. AI Agent Integration - ElevenLabs Voice Agents
+
+**AI Agents** are conversational agents (chatbots, voice assistants, etc.) created by the Genesis agent. Each AI agent is automatically linked with ElevenLabs and stored in the database.
+
+**CRITICAL - Auto-Linking Architecture:**
+- When Genesis creates an AI agent, it's automatically linked to ElevenLabs
+- Each AI agent in the database has an `elevenlabs_id` field
+- This `elevenlabs_id` represents the same agent inside ElevenLabs platform
+- Use this ID for all frontend integrations with ElevenLabs SDK
+
+**Self-Managed SDK - No Message Storage Needed:**
+- ElevenLabs SDK and Altan Agents SDK are self-managed (they handle conversation state internally)
+- **DO NOT create database tables for messages** unless user explicitly wants persistent chat history
+- For simple chatbots/voice forms: Just fetch the `elevenlabs_id` and integrate the SDK
+- For ChatGPT-like apps with persistent history: Create message tables only if explicitly required by user
+
+**MANDATORY Requirements for Frontend Integration:**
+
+1. **Research ElevenLabs Documentation FIRST (ABSOLUTELY CRITICAL):**
+   - **BEFORE integrating any AI agent**, use `web_search` tool to research:
+     * Latest ElevenLabs React SDK documentation
+     * ElevenLabs UI component library: https://ui.elevenlabs.io/blocks#voice-chat-01
+     * How to properly register client tools
+     * Latest API patterns and best practices
+   - **NEVER integrate without researching first** - SDKs change frequently
+   - Use official documentation to ensure current, correct implementation
+
+2. **Use ElevenLabs UI Components:**
+   - Prefer pre-built components from https://ui.elevenlabs.io/blocks#voice-chat-01
+   - These are production-ready, tested, and follow best practices
+   - Customize them using the design system (never override with direct colors)
+
+**Example Use Cases:**
+- Voice chat interfaces for customer support
+- Interactive voice forms
+- AI-powered voice assistants
+- Conversational UI experiences
+
+### 3.3. Altan Services Integration - CRITICAL
 
 **Altan Services** are FastAPI routers deployed via the Services agent that provide custom backend logic beyond basic CRUD operations.
 
@@ -372,6 +410,36 @@ const { data: products } = await supabase.from('products').select('*');
 - **Just run**: `pnpm install <package>` directly
 - **Example**: `pnpm install @supabase/supabase-js` (correct)
 - **WRONG**: `cd src && pnpm install <package>` (unnecessary)
+
+### Third-Party SDK Integration - MANDATORY
+
+**CRITICAL**: Before integrating ANY third-party SDK or API (ElevenLabs, Stripe, OpenAI, etc.):
+
+1. **ALWAYS use `web_search` tool FIRST** to research:
+   - Latest official documentation
+   - Current best practices
+   - Recommended integration patterns
+   - Latest SDK versions and breaking changes
+
+2. **Why This Matters:**
+   - SDKs change frequently with breaking changes
+   - Documentation gets updated with new patterns
+   - Outdated integration patterns cause bugs
+   - Official docs show current recommended approaches
+
+3. **Integration Workflow:**
+   ```bash
+   # Step 1: Research via web_search (MANDATORY)
+   # Search: "ElevenLabs React SDK latest documentation"
+   # Search: "ElevenLabs UI components best practices"
+   
+   # Step 2: Install packages based on research
+   pnpm install @elevenlabs/react
+   
+   # Step 3: Implement using patterns from official docs
+   ```
+
+**Never skip the research step** - always verify you're using the latest, recommended approach.
 
 ### Efficient Tool Usage - Cardinal Rules
 

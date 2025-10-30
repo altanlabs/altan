@@ -2,6 +2,7 @@
 
 import { batch } from 'react-redux';
 
+import analytics from '../../lib/analytics';
 import {
   addAltaner,
   updateAltaner,
@@ -113,9 +114,9 @@ import { addTask, updateTask, removeTask, setPlanCompleted } from '../../redux/s
 import { dispatch } from '../../redux/store';
 import { messagePartBatcher } from '../../utils/eventBatcher';
 
-// const SOUND_IN = new Audio(
-//   'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
-// );
+const SOUND_IN = new Audio(
+  'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
+);
 
 // Register handler for high-frequency streaming updates
 // Only 'updated' events are batched - lifecycle events are processed immediately
@@ -888,6 +889,12 @@ export const handleWebSocketEvent = async (data, user_id) => {
               return `${splitTime[0]}.${microseconds}`;
             }
 
+            // Track credits finished event
+            analytics.track('credits_finished', {
+              thread_id: eventData.thread_id,
+              error_type: eventData.error_type,
+            });
+
             dispatch(
               addMessage({
                 text: '[no_credits](no_credits/no_credits)',
@@ -902,11 +909,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
 
         default:
           break;
-        // if (!eventType.startsWith('activation.') && !eventType.startsWith('response.')) {
-        //   console.log('Unknown AGENT_RESPONSE event:', eventType, agentEvent);
-        // } else {
-        //   console.log('Unknown AGENT_RESPONSE event ( not activation or response ):', eventType);
-        // }
       }
       break;
     case 'RoomMemberUpdate':
@@ -1051,6 +1053,14 @@ export const handleWebSocketEvent = async (data, user_id) => {
               mainthread_id: taskEventData.mainthread_id,
               room_id: taskEventData.room_id,
             });
+
+            // Play completion sound
+            try {
+              SOUND_IN.play();
+            } catch (error) {
+              // eslint-disable-next-line no-console
+              console.error('Failed to play completion sound:', error);
+            }
 
             // Dispatch plan completed event - use plan_id if available, otherwise mainthread_id
             dispatch(

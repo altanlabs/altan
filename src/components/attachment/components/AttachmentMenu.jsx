@@ -26,11 +26,8 @@ const AttachmentMenu = ({
     <>
       <button
         onClick={handleMenuOpen}
-        className="flex items-center justify-center w-7 h-7 rounded-lg
-                 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-700/90
-                 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
-                 border border-gray-200/50 dark:border-gray-600/50
-                 backdrop-blur-md shadow-sm hover:shadow-md
+        className="flex items-center justify-center w-7 h-7 rounded-xl
+                 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800
                  transition-all duration-150 ease-out"
       >
         <Iconify

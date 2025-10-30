@@ -99,7 +99,7 @@ export default function PrivacyPolicyPage() {
                     and reporting information anonymously. This helps us improve our website and services.
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Examples:</strong> Google Analytics, Microsoft Clarity, PostHog
+                    <strong>Examples:</strong> Google Analytics, Microsoft Clarit
                   </Typography>
                 </AccordionDetails>
               </Accordion>

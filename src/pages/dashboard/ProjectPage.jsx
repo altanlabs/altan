@@ -11,6 +11,7 @@ import Plan from './Plan.jsx';
 import PlansList from './PlansList.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
+import analytics from '../../lib/analytics';
 import {
   selectCurrentAltaner,
   selectSortedAltanerComponents,
@@ -131,6 +132,29 @@ export default function ProjectPage() {
     // Current component type for rendering logic
     return component || null;
   }, [activeComponentId, sortedComponents]);
+
+  // Track feature usage when component is viewed
+  useEffect(() => {
+    if (currentComponent && altaner && !isPlansRoute) {
+      // Map component types to feature names
+      const featureMap = {
+        'interface': 'interface',
+        'base': 'cloud',
+        'agents': 'agents',
+        'flows': 'agents', // flows are part of agents feature
+      };
+      
+      const featureName = featureMap[currentComponent.type];
+      
+      if (featureName) {
+        analytics.featureUsed(featureName, {
+          component_id: currentComponent.id,
+          project_id: altanerId,
+          component_type: currentComponent.type,
+        });
+      }
+    }
+  }, [currentComponent?.id, altanerId, isPlansRoute, altaner]);
 
   // Redirect to first component if the requested component doesn't exist
   useEffect(() => {
