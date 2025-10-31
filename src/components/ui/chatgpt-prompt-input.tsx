@@ -364,10 +364,34 @@ const SquaresIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="14" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect
+      x="3"
+      y="3"
+      width="7"
+      height="7"
+      rx="1"
+    />
+    <rect
+      x="14"
+      y="3"
+      width="7"
+      height="7"
+      rx="1"
+    />
+    <rect
+      x="14"
+      y="14"
+      width="7"
+      height="7"
+      rx="1"
+    />
+    <rect
+      x="3"
+      y="14"
+      width="7"
+      height="7"
+      rx="1"
+    />
   </svg>
 );
 const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -400,8 +424,9 @@ export const PromptBox = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
     onSend?: (value: string, imagePreview: string | null, selectedTool: string | null) => void;
+    externalValue?: string;
   }
->(({ className, onSend, ...props }, ref) => {
+>(({ className, onSend, externalValue, ...props }, ref) => {
   const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [value, setValue] = React.useState('');
@@ -409,6 +434,13 @@ export const PromptBox = React.forwardRef<
   const [selectedTool, setSelectedTool] = React.useState<string | null>('createProject');
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const [isImageDialogOpen, setIsImageDialogOpen] = React.useState(false);
+
+  // Update internal value when externalValue changes
+  React.useEffect(() => {
+    if (externalValue !== undefined) {
+      setValue(externalValue);
+    }
+  }, [externalValue]);
 
   React.useImperativeHandle(ref, () => internalTextareaRef.current!, []);
   React.useLayoutEffect(() => {
@@ -449,17 +481,17 @@ export const PromptBox = React.forwardRef<
   const hasValue = value.trim().length > 0 || imagePreview;
   const activeTool = selectedTool ? toolsList.find((t) => t.id === selectedTool) : null;
   const ActiveToolIcon = activeTool?.icon;
-  
+
   const getPlaceholder = () => {
-    if (selectedTool === 'createProject') return "Describe your next idea";
-    if (selectedTool === 'createAgent') return "Describe your next agent";
+    if (selectedTool === 'createProject') return 'Describe your next project';
+    if (selectedTool === 'createAgent') return 'Describe your next agent';
     return "What's on your mind?";
   };
 
   const handleSendClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!hasValue) return;
-    
+
     if (onSend) {
       onSend(value, imagePreview, selectedTool);
       // Clear the form after sending
@@ -556,6 +588,8 @@ export const PromptBox = React.forwardRef<
               </TooltipContent>{' '}
             </Tooltip>
 
+            {/* TOOLS POPOVER - COMMENTED OUT FOR NOW */}
+            {/* 
             <Popover
               open={isPopoverOpen}
               onOpenChange={setIsPopoverOpen}
@@ -604,9 +638,9 @@ export const PromptBox = React.forwardRef<
                   ))}
                 </div>
               </PopoverContent>
-            </Popover>
+            </Popover> */}
 
-            {activeTool && (
+            {/* {activeTool && (
               <>
                 <div className="h-4 w-px bg-border dark:bg-gray-600" />
                 <button
@@ -618,7 +652,7 @@ export const PromptBox = React.forwardRef<
                   <XIcon className="h-4 w-4" />
                 </button>
               </>
-            )}
+            )} */}
 
             <div className="ml-auto flex items-center gap-2">
               <Tooltip>
@@ -642,7 +676,7 @@ export const PromptBox = React.forwardRef<
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    type={onSend ? "button" : "submit"}
+                    type={onSend ? 'button' : 'submit'}
                     onClick={onSend ? handleSendClick : undefined}
                     disabled={!hasValue}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80 disabled:bg-black/40 dark:disabled:bg-[#515151]"

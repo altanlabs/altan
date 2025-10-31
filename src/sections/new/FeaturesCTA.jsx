@@ -4,7 +4,7 @@ import React from 'react';
 
 const FeaturesCTA = () => {
   return (
-    <section className="relative w-full py-24 md:py-32">
+    <section id="cta" className="relative w-full py-24 md:py-32">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <m.div
           initial={{ opacity: 0, y: 20 }}

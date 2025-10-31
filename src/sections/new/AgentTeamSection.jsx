@@ -11,7 +11,7 @@ const AgentTeamSection = () => {
   ];
 
   return (
-    <section className="relative w-full py-24 md:py-32">
+    <section id="agents" className="relative w-full py-24 md:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <m.div
@@ -23,14 +23,15 @@ const AgentTeamSection = () => {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 bg-background/50 backdrop-blur-sm mb-6">
             <Users className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">Team-Based Architecture</span>
+            <span className="text-sm font-medium text-foreground">Collective AGI</span>
           </div>
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-foreground mb-6">
-            The Future of{' '}
-            <span className="text-primary">Autonomous Software</span>
+            Your AI product team.
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            The first software engineering team of AI agents. Not just one agent—an entire team working together.
+            Altan works like a real development team.
+            Product, Design, Engineering, QA, and DevOps.
+            All collaborating to build and operate your system.
           </p>
         </m.div>
 
@@ -54,11 +55,12 @@ const AgentTeamSection = () => {
                 Collaborative Intelligence
               </h3>
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                Unlike single-agent solutions, Altan orchestrates specialized AI agents that work together
-                like a real development team. Each agent brings deep expertise in their domain, collaborating
-                in real-time to transform your ideas into production-ready software.
+                Unlike single-agent solutions, Altan orchestrates specialized AI agents that work
+                together like a real development team. Each agent brings deep expertise in their
+                domain, collaborating in real-time to transform your ideas into production-ready
+                software.
               </p>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <ArrowRight className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
@@ -122,8 +124,9 @@ const AgentTeamSection = () => {
             <div className="p-6 rounded-2xl border border-border/50 bg-background/50 backdrop-blur-sm hover:bg-background transition-colors">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">And more specialized agents</span> including QA Specialists, Data Scientists,
-                  Security Experts, and Technical Writers—all working together to deliver exceptional results.
+                  <span className="font-semibold text-foreground">And more specialized agents</span>{' '}
+                  including QA Specialists, Data Scientists, Security Experts, and Technical
+                  Writers—all working together to deliver exceptional results.
                 </p>
               </div>
             </div>

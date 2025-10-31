@@ -10,7 +10,7 @@ const AICloudSection = () => {
   ];
 
   return (
-    <section className="relative w-full py-24 md:py-32 bg-muted/30">
+    <section id="cloud" className="relative w-full py-24 md:py-32 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <m.div

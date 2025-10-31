@@ -13,14 +13,22 @@ import AuthDialog from '../../../sections/auth/AuthDialog';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator';
 import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
+import Footer from '../../main/Footer';
 
-const NewLayout = ({ children, agents = [], agentsLoading = false }) => {
+const NewLayout = ({ children, agents = [], agentsLoading = false, onRequestAuth }) => {
   const history = useHistory();
   const location = useLocation();
   const { resolvedThemeMode, onToggleMode } = useSettingsContext();
   const { isAuthenticated, user, logout } = useAuthContext();
   const { startTransition } = useThemeTransition();
   const [showAccessDialog, setShowAccessDialog] = useState(false);
+
+  // Expose auth dialog opener through callback
+  React.useEffect(() => {
+    if (onRequestAuth) {
+      onRequestAuth(() => setShowAccessDialog(true));
+    }
+  }, [onRequestAuth]);
 
   const handleThemeToggle = () => {
     startTransition(() => {
@@ -130,7 +138,7 @@ const NewLayout = ({ children, agents = [], agentsLoading = false }) => {
       </div>
 
       {/* Footer - Only render on homepage */}
-      {location.pathname === '/' && <V2CompactFooter />}
+      {location.pathname === '/' && <Footer />}
 
       {/* Access Dialog */}
       <AuthDialog open={showAccessDialog} onOpenChange={setShowAccessDialog} />

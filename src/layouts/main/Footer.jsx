@@ -190,7 +190,7 @@ export default function Footer() {
             textAlign: { xs: 'center', md: 'left' },
           }}
         >
-          © 2024. All rights reserved
+          © {new Date().getFullYear()}. All rights reserved
         </Typography>
       </Container>
     </Box>

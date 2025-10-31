@@ -24,6 +24,12 @@ const NewDashboardPage = () => {
   const [creationError, setCreationError] = useState(null);
   const apiCallStartedRef = useRef(false);
 
+  // Auth dialog opener ref
+  const openAuthDialogRef = useRef(null);
+  const handleRequestAuth = (opener) => {
+    openAuthDialogRef.current = opener;
+  };
+
   // Redux data
   const altaners = useSelector(selectAccountAltaners);
   const agents = useSelector(selectAccountAgents);
@@ -150,7 +156,7 @@ const NewDashboardPage = () => {
   }, [agents, user?.xsup]);
 
   return (
-    <NewLayout agents={allAgents} agentsLoading={agentsLoading}>
+    <NewLayout agents={allAgents} agentsLoading={agentsLoading} onRequestAuth={handleRequestAuth}>
       {/* Simple Creation Loader */}
       {isCreating && !creationError && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 dark:bg-[#0D0D0D]/80 backdrop-blur-sm">
@@ -192,6 +198,7 @@ const NewDashboardPage = () => {
         projects={sortedProjects}
         isLoading={altanersLoading || agentsLoading}
         isCreating={isCreating}
+        onRequestAuth={() => openAuthDialogRef.current?.()}
       />
 
       {/* Features Section - Only for unauthenticated users, appears after scroll */}
