@@ -6,8 +6,8 @@ import React, { memo, useRef } from 'react';
 
 import VarsEditorPlugins from './lexical/VarsEditorPlugins';
 import editorTheme from '../../../theme/editorTheme';
-import { parseContent } from '../../lexical/nodes/HelperNode';
-import PlaygroundNodes from '../../lexical/nodes/PlaygroundNodes';
+import { parseContent } from '../../legacy_lexical/nodes/HelperNode';
+import PlaygroundNodes from '../../legacy_lexical/nodes/PlaygroundNodes';
 // import { METHODS } from '../menuvars/helpers';
 // import { getNested } from '../../tools/dynamic/utils';
 // import { $createVarNode, VarOption } from '../../lexical/nodes/VarNode';

@@ -8,6 +8,7 @@ import ThreadMessages from './ThreadMessages.jsx';
 import useResponsive from '../../../hooks/useResponsive';
 import useLocales from '../../../locales/useLocales';
 import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useWhisperStreamWebSocket } from '../../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import {
   fetchThread,
@@ -62,6 +63,8 @@ const Thread = ({
   useParams();
   const history = useHistory();
   const { isOpen } = useHermesWebSocket();
+  const { isOpen: isOpenWhisperStream } = useWhisperStreamWebSocket();
+  const isWsOpen = isOpen || isOpenWhisperStream;
   const [lastThreadId, setLastThreadId] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [languageMenuAnchor, setLanguageMenuAnchor] = useState(null);
@@ -131,7 +134,7 @@ const Thread = ({
 
   // INITIALIZATION LOGIC
   useEffect(() => {
-    if (!!threadId && threadId !== lastThreadId && !isCreation && !!isOpen) {
+    if (!!threadId && threadId !== lastThreadId && !isCreation && !!isWsOpen) {
       setLastThreadId(threadId);
       setHasLoaded(false); // Reset loading state
 
@@ -153,14 +156,14 @@ const Thread = ({
       setHasLoaded(true);
     } else {
     }
-  }, [threadId, isCreation, isOpen]);
+  }, [threadId, isCreation, isWsOpen]);
 
   // Ensure messages are loaded when switching to an already-loaded thread
   useEffect(() => {
-    if (threadId && !isCreation && isOpen) {
+    if (threadId && !isCreation && isWsOpen) {
       dispatch(ensureThreadMessagesLoaded(threadId));
     }
-  }, [threadId, isCreation, isOpen]);
+  }, [threadId, isCreation, isWsOpen]);
 
   const helmetName = thread?.is_main
     ? room?.name || 'Room'

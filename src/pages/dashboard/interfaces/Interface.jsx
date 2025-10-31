@@ -49,7 +49,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     // Get the latest commit hash (first in the sorted array)
     const latestCommit = commits?.[0]?.commit_hash;
     if (!latestCommit) return '';
-    
+
     const queryParams = new URLSearchParams({
       theme: theme.palette.mode,
       hideSnippet: 'true',
@@ -122,7 +122,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     }
   }, [ui, id]);
 
-
   useEffect(() => {
     const iframe = iframeRef?.current;
     return () => {
@@ -191,7 +190,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
     const latestCommit = commits?.[0]?.commit_hash;
     if (latestCommit && latestCommit !== lastCommitRef.current) {
       lastCommitRef.current = latestCommit;
-      
+
       // Set loading state when new commit arrives
       if (viewType === 'preview') {
         setIsLoading(true);

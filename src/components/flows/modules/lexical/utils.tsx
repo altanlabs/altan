@@ -13,9 +13,9 @@ import {
   ParagraphNode,
 } from 'lexical';
 
-import { HelperNode } from '../../../lexical/nodes/HelperNode';
-import { $isSpanNode } from '../../../lexical/nodes/SpanNode';
-import { VarNode } from '../../../lexical/nodes/VarNode';
+import { HelperNode } from '../../../legacy_lexical/nodes/HelperNode';
+import { $isSpanNode } from '../../../legacy_lexical/nodes/SpanNode';
+import { VarNode } from '../../../legacy_lexical/nodes/VarNode';
 
 
 function calculateDepth(text: string, offset: number): number {

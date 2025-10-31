@@ -5,7 +5,7 @@ import { memo, useCallback } from 'react';
 import AttributeItem from './components/AttributeItem.jsx';
 import DynamicVirtuoso from './components/DynamicVirtuoso.jsx';
 import IteratorModule from './components/IteratorModule.jsx';
-import { VarOption } from '../../lexical/nodes/VarNode.tsx';
+import { VarOption } from '../../legacy_lexical/nodes/VarNode.tsx';
 
 /**
  * Resolve nested properties in an object using a dot notation reference.

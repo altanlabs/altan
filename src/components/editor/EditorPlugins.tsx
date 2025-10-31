@@ -28,9 +28,9 @@ import type { Attachment } from './plugins/ImageAttachmentPlugin';
 import ImageAttachmentPlugin from './plugins/ImageAttachmentPlugin';
 import { LayoutPlugin } from './plugins/LayoutPlugin/LayoutPlugin';
 import MentionsPlugin from './plugins/MentionsPlugin';
-import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
-import { selectMe, selectRoomId } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store';
+// import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
+// import { selectMe, selectRoomId } from '../../redux/slices/room';
+// import { useSelector } from '../../redux/store';
 
 // const EDITOR_NAMESPACE = 'lexical-editor';
 
@@ -75,9 +75,9 @@ const sendEventWriting = throttle(
 
 const EditorPlugins = (props: PluginProps): JSX.Element => {
   const [editor] = useLexicalComposerContext();
-  const { sendPayload }: { sendPayload: (payload: object) => void } = useHermesWebSocket();
-  const roomId: string = useSelector(selectRoomId);
-  const me = useSelector(selectMe);
+  // const { sendPayload }: { sendPayload: (payload: object) => void } = useHermesWebSocket();
+  // const roomId: string = useSelector(selectRoomId);
+  // const me = useSelector(selectMe);
 
   const onChange = useMemo(
     () =>
@@ -88,12 +88,12 @@ const EditorPlugins = (props: PluginProps): JSX.Element => {
 
           props.setEditorEmpty(isEmpty);
 
-          if (sendPayload && !isEmpty && me) {
-            sendEventWriting(sendPayload, roomId, props.threadId, me.id);
-          }
+          // if (sendPayload && !isEmpty && me) {
+          //   sendEventWriting(sendPayload, roomId, props.threadId, me.id);
+          // }
         });
       }, 1000) as (editorState: EditorState) => void,
-    [props.threadId, props.setEditorEmpty, sendPayload, roomId, me],
+    [props],
   );
 
   const sendMessage = useCallback(() => {

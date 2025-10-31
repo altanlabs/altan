@@ -21,10 +21,17 @@ const ToolPartCard = ({
 
   const [manuallyCollapsed, setManuallyCollapsed] = useState(true);
 
+  const toolName = useMemo(() => {
+    const providerType = part?.meta_data?.provider_item_type;
+    if (['server_tool_use', 'mcp_call', 'mcp_list_tools'].includes(providerType) && part?.meta_data?.name) {
+      return part.meta_data.name;
+    }
+    return part?.name || part?.task_execution?.tool_name || part?.task_execution?.tool?.name;
+  }, [part]);
+
   // Get custom renderer component if available
   const CustomRenderer = useMemo(() => {
     // Try multiple ways to get the tool name for renderer lookup
-    const toolName = part?.name || part?.task_execution?.tool_name || part?.task_execution?.tool?.name;
 
     // Special case: web search can be identified by metadata
     if (part?.meta_data?.provider_item_type === 'web_search_call') {
@@ -32,7 +39,7 @@ const ToolPartCard = ({
     }
 
     return getCustomRenderer(toolName);
-  }, [part?.name, part?.task_execution?.tool_name, part?.task_execution?.tool?.name, part?.meta_data?.provider_item_type]);
+  }, [part?.meta_data?.provider_item_type, toolName]);
 
   // Keep collapsed by default for better performance
   const isExpanded = useMemo(() => !manuallyCollapsed, [manuallyCollapsed]);

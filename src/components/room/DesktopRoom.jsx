@@ -9,12 +9,12 @@ import Threads from './Threads.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useWhisperStreamWebSocket } from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
 import {
   selectRoomId,
   selectRoomState,
   setDrawerOpen,
-  createNewThread,
   sendMessage,
   selectThreadsById,
   fetchThread,
@@ -69,6 +69,7 @@ const DesktopRoom = ({
   show_mode_selector = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
+  const { isOpen: isOpenWhisperStream, subscribe: subscribeWhisperStream, unsubscribe: unsubscribeWhisperStream } = useWhisperStreamWebSocket();
   // const { isOpen, subscribe, unsubscribe } = useWebSocket();
 
   const isSmallScreen = useResponsive('down', 'sm');
@@ -83,10 +84,10 @@ const DesktopRoom = ({
 
   // Track processed thread_id from URL to avoid loops
   const processedThreadIdRef = useRef(null);
-  
+
   // Track previous roomId to detect room switches
   const prevRoomIdRef = useRef(null);
-  
+
   // Track if initialMessage has been sent to avoid duplicates
   const initialMessageSentRef = useRef(false);
 
@@ -115,17 +116,29 @@ const DesktopRoom = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
 
+  useEffect(() => {
+    if (isOpenWhisperStream && roomId) {
+      const lastRoomId = roomId;
+      subscribeWhisperStream(`room:${roomId}`);
+      return () => {
+        // Unsubscribe from old room BEFORE state is cleared
+        unsubscribeWhisperStream(`room:${lastRoomId}`);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpenWhisperStream, roomId]);
+
   // Extract and store context from URL on room initialization
   useEffect(() => {
     if (initialized.room && roomId) {
       const searchParams = new URLSearchParams(location.search);
       const context = searchParams.get('context');
-      
+
       if (context && !roomContext) {
         console.log('🔧 Setting room context:', decodeURIComponent(context));
         // Store the context in Redux for use in all messages
         dispatch(setRoomContext(decodeURIComponent(context)));
-        
+
         // Clean up the URL by removing the context parameter
         searchParams.delete('context');
         const newSearch = searchParams.toString();
@@ -146,7 +159,7 @@ const DesktopRoom = ({
       if (message) {
         // Prepare the message content
         let messageContent = decodeURIComponent(message);
-        
+
         // Append context as hidden content if available
         if (roomContext) {
           messageContent += `\n<hide>${roomContext}</hide>`;
@@ -178,15 +191,15 @@ const DesktopRoom = ({
     if (initialized.room && roomId && initialMessage && mainThreadId && !initialMessageSentRef.current) {
       // Mark as sent to avoid duplicates
       initialMessageSentRef.current = true;
-      
+
       // Prepare the message content
       let messageContent = initialMessage;
-      
+
       // Append context as hidden content if available
       if (roomContext) {
         messageContent += `\n<hide>${roomContext}</hide>`;
       }
-      
+
       // Send the message to the main thread
       dispatch(
         sendMessage({
