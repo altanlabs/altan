@@ -42,12 +42,12 @@ import {
   HelperOption,
   Method,
   SerializedMethod,
-} from '../../../lexical/nodes/HelperNode';
+} from '../../../legacy_lexical/nodes/HelperNode';
 // import { METHODS } from '../../menuvars/helpers';
 // import { getNested } from '../../../tools/dynamic/utils';
 
-import { $isSpanNode } from '../../../lexical/nodes/SpanNode';
-import { $createVarNode, $isVarNode, VarNode, VarOption } from '../../../lexical/nodes/VarNode';
+import { $isSpanNode } from '../../../legacy_lexical/nodes/SpanNode';
+import { $createVarNode, $isVarNode, VarNode, VarOption } from '../../../legacy_lexical/nodes/VarNode';
 
 // const serializeContent = (node: ElementNode): string => {
 //   let text = "";

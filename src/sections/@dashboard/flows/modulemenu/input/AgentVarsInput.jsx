@@ -1,7 +1,7 @@
 import { Stack, Typography, Box } from '@mui/material';
 import React, { memo } from 'react';
 
-import { VarOption } from '../../../../../components/lexical/nodes/VarNode.tsx';
+import { VarOption } from '../../../../../components/legacy_lexical/nodes/VarNode.tsx';
 
 const AGENT_MODULE_VARS = {
   inputs: {

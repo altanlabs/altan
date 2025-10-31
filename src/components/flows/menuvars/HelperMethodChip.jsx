@@ -2,7 +2,7 @@ import { Chip, Tooltip } from '@mui/material';
 import { memo } from 'react';
 
 import HelperMethodTooltipCard from './HelperMethodTooltipCard';
-import { HelperOption } from '../../lexical/nodes/HelperNode';
+import { HelperOption } from '../../legacy_lexical/nodes/HelperNode';
 
 const HelperMethodChip = ({ prefix, method, onSelect = null }) => {
   return (
