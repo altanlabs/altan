@@ -2,7 +2,7 @@ import React, { memo, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import StarterCategories from './StarterCategories';
+import StarterCategories from './starters/StarterCategories';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { TextGenerateEffect } from '../../components/elevenlabs/ui/text-generate-effect';
 import { useSettingsContext } from '../../components/settings';
@@ -10,7 +10,7 @@ import { PromptBox } from '../../components/ui/chatgpt-prompt-input';
 import QuickAccessSection from '../../pages/dashboard/NewDashboardPage/QuickAccessSection';
 import { createAgent } from '../../redux/slices/general';
 
-const NewHeroSection = ({ onSubmit, projects = [], isLoading = false, isCreating = false, onRequestAuth }) => {
+const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const { resolvedThemeMode } = useSettingsContext();
   const { isAuthenticated } = useAuthContext();
   const dispatch = useDispatch();
@@ -126,11 +126,7 @@ const NewHeroSection = ({ onSubmit, projects = [], isLoading = false, isCreating
       {/* Quick Access Section - Projects only */}
       {isAuthenticated && (
         <div className="relative z-10 px-6">
-          <QuickAccessSection
-            projects={projects}
-            agents={[]}
-            isLoading={isLoading}
-          />
+          <QuickAccessSection />
         </div>
       )}
 

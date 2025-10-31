@@ -238,7 +238,7 @@
     "react-window": "^1.8.11",
     "reactflow": "^11.11.4",
     "reactjs-json-editor": "^0.1.2",
-    "recharts": "^2.15.3",
+    "recharts": "2.15.4",
     "redux": "^4.2.1",
     "redux-persist": "^6.0.0",
     "redux-thunk": "^2.4.2",

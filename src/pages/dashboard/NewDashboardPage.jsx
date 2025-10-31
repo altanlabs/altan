@@ -195,8 +195,6 @@ const NewDashboardPage = () => {
       {/* Hero Section - Always first */}
       <NewHeroSection
         onSubmit={handleSubmit}
-        projects={sortedProjects}
-        isLoading={altanersLoading || agentsLoading}
         isCreating={isCreating}
         onRequestAuth={() => openAuthDialogRef.current?.()}
       />
