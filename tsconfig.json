@@ -15,6 +15,7 @@
     "moduleResolution": "bundler",                          /* Use Node.js-style module resolution. */
     "baseUrl": "./",                                     /* Set the base directory for resolving paths. */
     "paths": {
+      "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@assets/*": ["src/assets/*"],
       "@pages/*": ["src/pages/*"],
@@ -62,6 +63,6 @@
     "preserveConstEnums": true,                          /* Preserve `const enum` declarations in output. */
     "downlevelIteration": true                           /* Emit more compatible JavaScript for iteration. */
   },
-  "include": ["src/**/*", "src/components/integration"],                               /* Include all TypeScript and JSX/TSX files in src folder. */
+  "include": ["src/**/*", "src/components/integration", "src/sections/@dashboard/agents/useAgentAttributes.jsx"],                               /* Include all TypeScript and JSX/TSX files in src folder. */
   "exclude": ["node_modules", "dist"]                    /* Exclude node_modules and output directory. */
 }

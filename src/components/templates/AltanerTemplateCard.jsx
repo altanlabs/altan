@@ -100,24 +100,6 @@ const AltanerTemplateCard = ({ template, onClick }) => {
           >
             {name}
           </Typography>
-
-          {/* Remix Count */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            <Iconify
-              icon="carbon:fork"
-              width={14} // Increased from 12 to 14
-              sx={{ color: 'text.secondary' }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontSize: '0.8rem', // Increased from 0.7rem
-              }}
-            >
-              {remixCount.toLocaleString()}
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </Box>

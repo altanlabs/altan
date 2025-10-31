@@ -11,7 +11,6 @@ import Iconify from '../../components/iconify';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog.jsx';
 import { createTemplate, deleteAccountAgent } from '../../redux/slices/general';
-import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes.jsx';
 import { DynamicIsland } from '../dynamic-island/DynamicIsland.jsx';
 import AltanLogo from '../loaders/AltanLogo.jsx';
 import TemplateDialog from '../templates/TemplateDialog.jsx';

@@ -53,22 +53,23 @@ const V2CompactFooter = () => {
   };
 
   return (
-    <footer className="w-full bg-black/40 backdrop-blur-sm">
+    <footer className="w-full backdrop-blur-sm relative z-10">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="relative grid grid-cols-3 items-center gap-4">
           {/* Left: Social Icons & Copyright */}
           <div className="flex items-center gap-4 justify-start">
+            <p className="text-xs text-gray-600">© {new Date().getFullYear()}</p>
             <div className="flex items-center gap-2">
               {_socials.map((social) => (
                 <button
                   key={social.name}
                   onClick={() => handleSocialClick(social.path)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 transition-all group"
+                  className="w-7 h-7 flex items-center justify-center transition-all group"
                   aria-label={social.name}
                 >
-                  <svg 
-                    className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-colors" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-colors"
+                    viewBox="0 0 24 24"
                     fill="currentColor"
                   >
                     <path d={social.icon} />
@@ -76,22 +77,11 @@ const V2CompactFooter = () => {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-600">
-              © {new Date().getFullYear()}
-            </p>
           </div>
 
           {/* Center: Navigation Links */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
-            {footerLinks.map((link) => (
-              <button
-                key={link.name}
-                onClick={() => handleLinkClick(link)}
-                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                {link.name}
-              </button>
-            ))}
+
           </div>
 
           {/* Right: Legal Links */}
@@ -113,4 +103,3 @@ const V2CompactFooter = () => {
 };
 
 export default memo(V2CompactFooter);
-

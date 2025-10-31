@@ -166,13 +166,8 @@ const SingleSelectAutocomplete = DynamicLoadable(
   lazy(() => import('../autocompletes/SingleSelectAutocomplete.jsx')),
 );
 
-const VoiceSelection = DynamicLoadable(
-  lazy(() => import('../../../../sections/@dashboard/agents/VoiceSelection.jsx')),
-);
-const FormAutocomplete = DynamicLoadable(lazy(() => import('../../../FormAutocomplete.jsx')));
 const CreateWithAI = DynamicLoadable(lazy(() => import('../../../CreateWithAI.jsx')));
 const AgentAutocomplete = DynamicLoadable(lazy(() => import('../../../AgentAutocomplete.jsx')));
-const AppsAutocomplete = DynamicLoadable(lazy(() => import('../../../AppsAutocomplete.jsx')));
 const AccountId = DynamicLoadable(lazy(() => import('../../../AccountId.jsx')));
 const TriggerType = DynamicLoadable(lazy(() => import('../../../TriggerType.jsx')));
 const IteratorAutocomplete = DynamicLoadable(
@@ -188,7 +183,6 @@ const AddressAutocompleteReal = DynamicLoadable(
 );
 const ThreadSelector = DynamicLoadable(lazy(() => import('../../../ThreadSelector.jsx')));
 const TableAutocomplete = DynamicLoadable(lazy(() => import('../../../TableAutocomplete.jsx')));
-const GateAutocomplete = DynamicLoadable(lazy(() => import('../../../GateAutocomplete.jsx')));
 const InterfaceAutocomplete = DynamicLoadable(
   lazy(() => import('../../../InterfaceAutocomplete.jsx')),
 );
@@ -238,19 +232,15 @@ export const COMPONENTS = {
   // X-COMPONENTS
   AccountId,
   TriggerType,
-  VoiceSelection,
   TemplatePublicName,
-  FormAutocomplete,
   CreateWithAI,
   AgentAutocomplete,
-  AppsAutocomplete,
   Webhook,
   FilterSpec,
   FileToUrl,
   AddressAutocompleteReal,
   ThreadSelector,
   TableAutocomplete,
-  GateAutocomplete,
   InterfaceAutocomplete,
   BaseAutocomplete,
   HTMLEditor,
