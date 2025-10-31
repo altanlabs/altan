@@ -17,7 +17,6 @@ import { CustomAvatar } from './custom-avatar';
 import { useSelector } from '../redux/store';
 import Iconify from './iconify/Iconify';
 import { useDebounce } from '../hooks/useDebounce.js';
-import CreateAgent from '../sections/@dashboard/agents/CreateAgent';
 
 const selectAccountAgents = (state) => state.general.account.agents;
 

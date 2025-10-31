@@ -54,7 +54,6 @@ import {
   addWebhookSubscription,
   deleteWebhookSubscription,
 } from '../../redux/slices/flows';
-import { addGateRoom } from '../../redux/slices/gate';
 import {
   addAccountAltaner,
   updateAccountAltaner,
@@ -557,7 +556,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
       );
       break;
     case 'RoomNew':
-      dispatch(addGateRoom(data.data.attributes));
       break;
     case 'RoomUpdate':
       // Validate data structure before dispatching

@@ -149,7 +149,7 @@ const Scene3_Simulation = () => {
 
   // Handler to move to landing page
   const handleContinue = () => {
-    history.push('/v2/landing?from=demo');
+    history.push('/demo/landing?from=demo');
   };
 
   // Closing sequence - show messages one by one

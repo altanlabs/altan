@@ -36,7 +36,7 @@ const V2TopBar = ({ onSearch }) => {
       <div className="flex items-center gap-3 flex-1">
         <button 
           className="cursor-pointer group flex items-center justify-center h-10 transition-transform hover:scale-105"
-          onClick={() => history.push('/v2')}
+          onClick={() => history.push('/')}
         >
           <img 
             src={logoSrc}

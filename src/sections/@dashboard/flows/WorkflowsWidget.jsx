@@ -35,7 +35,6 @@ import TemplateMarketplace from '../../../pages/dashboard/marketplace/templates/
 import { selectConnectionTypes } from '../../../redux/slices/connections';
 import { selectFlowStateInitialized, selectFlowStateLoading } from '../../../redux/slices/flows';
 import { selectCustomConnectionTypes } from '../../../redux/slices/general';
-import CreateFlowDialog from '../jobs/CreateFlowDialog';
 
 // Selector for all connection types (system + custom)
 const selectAllConnectionTypes = createSelector(

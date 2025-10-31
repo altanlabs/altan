@@ -12,8 +12,8 @@ const StyledModal = styled(Box)(({ theme }) => ({
   backgroundColor: '#2a2a2a',
   borderRadius: '16px',
   padding: '24px',
-  maxWidth: '380px',
-  width: '380px',
+  maxWidth: '300px',
+  width: '300px',
   zIndex: theme.zIndex.modal + 1,
   boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
   [theme.breakpoints.down('sm')]: {

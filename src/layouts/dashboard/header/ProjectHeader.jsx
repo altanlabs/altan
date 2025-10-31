@@ -25,7 +25,6 @@ import ProjectNav from './ProjectNav.jsx';
 import MobileNavigation from './components/MobileNavigation.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
-import CodeToggleButton from '../../../components/buttons/CodeToggleButton.jsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';

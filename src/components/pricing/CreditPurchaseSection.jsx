@@ -1,4 +1,3 @@
-import { Box, Typography, Stack, TextField, Chip, Button, Card } from '@mui/material';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
@@ -6,6 +5,10 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
+import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 
 // Credit packages with their Stripe price IDs
 const CREDIT_PACKAGES = [
@@ -110,51 +113,49 @@ export default function CreditPurchaseSection({ title = 'Pay as you go', compact
   };
 
   const content = (
-    <Box sx={{ p: 2 }}>
-      <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 2 }}>
+    <div className="p-4">
+      <h3 className={`font-semibold mb-4 ${compact ? 'text-lg' : 'text-xl'} text-gray-900 dark:text-white`}>
         {title}
-      </Typography>
+      </h3>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
+      <div className="flex flex-wrap gap-2 mb-4">
         {[20, 50, 100, 250, 500].map((amount) => (
-          <Chip
+          <Badge
             key={amount}
-            label={`€${amount}`}
-            variant={selectedAmount === amount ? 'filled' : 'outlined'}
-            color={selectedAmount === amount ? 'primary' : 'default'}
+            variant={selectedAmount === amount ? 'default' : 'outline'}
+            className={`cursor-pointer px-4 py-2 text-sm font-medium transition-all hover:scale-105 ${
+              selectedAmount === amount
+                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             onClick={() => handleAmountSelect(amount)}
-            sx={{
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: selectedAmount === amount ? 'primary.main' : 'action.hover',
-              },
-            }}
-          />
+          >
+            €{amount}
+          </Badge>
         ))}
-      </Stack>
+      </div>
 
-      <TextField
-        fullWidth
-        size="small"
-        value={selectedAmount}
-        onChange={handleCustomAmountChange}
-        InputProps={{
-          startAdornment: <Typography sx={{ mr: 1 }}>€</Typography>,
-        }}
-        sx={{ mb: 1 }}
-        type="number"
-        inputProps={{ min: 1 }}
-      />
+      <div className="relative mb-3">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 text-sm">
+          €
+        </span>
+        <Input
+          type="number"
+          value={selectedAmount}
+          onChange={handleCustomAmountChange}
+          className="pl-8 bg-white dark:bg-gray-800"
+          min={1}
+        />
+      </div>
 
       <Button
-        fullWidth
-        variant="contained"
         onClick={handlePurchase}
         disabled={!selectedAmount || selectedAmount <= 0}
+        className="w-full font-medium"
       >
         Purchase
       </Button>
-    </Box>
+    </div>
   );
 
   if (compact) {
@@ -162,7 +163,7 @@ export default function CreditPurchaseSection({ title = 'Pay as you go', compact
   }
 
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
       {content}
     </Card>
   );

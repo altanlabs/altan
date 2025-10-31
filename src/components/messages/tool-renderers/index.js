@@ -5,6 +5,7 @@
  */
 
 import CommitRenderer from './CommitRenderer.jsx';
+import CreateAgentRenderer from './CreateAgentRenderer.jsx';
 import CreateTaskRenderer from './CreateTaskRenderer.jsx';
 import FileEditorRenderer from './FileEditorRenderer.jsx';
 import ReadFileRenderer from './ReadFileRenderer.jsx';
@@ -15,6 +16,7 @@ import WebSearchRenderer from './WebSearchRenderer.jsx';
 // Map of renderer names to actual components
 const RENDERERS = {
   CommitRenderer,
+  CreateAgentRenderer,
   CreateTaskRenderer,
   FileEditorRenderer,
   ReadFileRenderer,
@@ -37,6 +39,7 @@ export {
   getToolIcon,
   getToolRendererName,
   CommitRenderer,
+  CreateAgentRenderer,
   CreateTaskRenderer,
   FileEditorRenderer,
   ReadFileRenderer,

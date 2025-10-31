@@ -6,13 +6,11 @@ import { memo, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import NavDropdown from './NavDropdown';
-import Iconify from '../../../../components/iconify';
 import DynamicAgentAvatar from '../../../../components/agents/DynamicAgentAvatar';
+import Iconify from '../../../../components/iconify';
 import { selectAllAgents } from '../../../../redux/slices/agents';
 import { deleteWorkflow, duplicateWorkflow } from '../../../../redux/slices/flows';
 import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general';
-import CreateAgentDialog from '../../../../sections/@dashboard/agents/CreateAgentDialog';
-import CreateFlowDialog from '../../../../sections/@dashboard/jobs/CreateFlowDialog';
 
 // Constants
 const COMPONENT_TYPES = {
@@ -41,8 +39,6 @@ const ItemSwitcher = memo(
     const agents = useSelector(selectAllAgents);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
-    const [createAgentDialogOpen, setCreateAgentDialogOpen] = useState(false);
 
     // Helper functions
     const isFlowType = useCallback(
@@ -133,30 +129,6 @@ const ItemSwitcher = memo(
 
     const currentItemName = currentItem?.name || 'Select Item';
 
-    // Get create placeholder configuration
-    const getCreatePlaceholder = useCallback(
-      (type) => {
-        if (isFlowType(type)) {
-          return {
-            label: 'Create New Flow',
-            icon: 'eva:plus-outline',
-            onClick: () => setCreateFlowDialogOpen(true),
-          };
-        }
-
-        if (isAgentType(type)) {
-          return {
-            label: 'Create New Agent',
-            icon: 'eva:plus-outline',
-            onClick: () => setCreateAgentDialogOpen(true),
-          };
-        }
-
-        return null;
-      },
-      [isFlowType, isAgentType],
-    );
-
     // Render functions
     const renderStatusIndicator = useCallback((item, size = 'small') => {
       const sizeClasses = size === 'small' ? 'w-2 h-2' : 'w-3 h-3';
@@ -237,71 +209,71 @@ const ItemSwitcher = memo(
               },
             }}
           >
-          {/* Item Icon/Avatar */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 28,
-              borderRadius: 1.25,
-              backgroundColor: 'transparent',
-            }}
-          >
-            {isFlowType(activeComponentType) && currentItem && renderStatusIndicator(currentItem)}
-            {isAgentType(activeComponentType) && currentItem && renderAvatar(currentItem)}
-            {!currentItem && (
-              <Iconify
-                icon={COMPONENT_ICONS[activeComponentType] || 'eva:file-outline'}
-                width={16}
-                height={16}
-                sx={{ color: theme.palette.text.secondary }}
-              />
-            )}
-          </Box>
-
-          {/* Item Name */}
-          <Box
-            sx={{
-              display: { xs: 'none', sm: 'flex' },
-              alignItems: 'center',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              color: theme.palette.text.primary,
-              whiteSpace: 'nowrap',
-              minWidth: 0, // Allow text to shrink
-              maxWidth: 80, // Much smaller to match component switcher
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {currentItemName || 'Select Item'}
-          </Box>
-
-          {/* Chevron */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 28,
-              borderRadius: 1.25,
-              backgroundColor: 'transparent',
-              color: theme.palette.text.secondary,
-            }}
-          >
-            <m.span
-              animate={{ rotate: isOpen ? 180 : 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            {/* Item Icon/Avatar */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 28,
+                borderRadius: 1.25,
+                backgroundColor: 'transparent',
+              }}
             >
-              <Iconify
-                icon="mdi:chevron-down"
-                width={16}
-              />
-            </m.span>
-          </Box>
+              {isFlowType(activeComponentType) && currentItem && renderStatusIndicator(currentItem)}
+              {isAgentType(activeComponentType) && currentItem && renderAvatar(currentItem)}
+              {!currentItem && (
+                <Iconify
+                  icon={COMPONENT_ICONS[activeComponentType] || 'eva:file-outline'}
+                  width={16}
+                  height={16}
+                  sx={{ color: theme.palette.text.secondary }}
+                />
+              )}
+            </Box>
+
+            {/* Item Name */}
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                alignItems: 'center',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                color: theme.palette.text.primary,
+                whiteSpace: 'nowrap',
+                minWidth: 0, // Allow text to shrink
+                maxWidth: 80, // Much smaller to match component switcher
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {currentItemName || 'Select Item'}
+            </Box>
+
+            {/* Chevron */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 28,
+                borderRadius: 1.25,
+                backgroundColor: 'transparent',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              <m.span
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+              >
+                <Iconify
+                  icon="mdi:chevron-down"
+                  width={16}
+                />
+              </m.span>
+            </Box>
           </Box>
         </Box>
       ),
@@ -461,51 +433,27 @@ const ItemSwitcher = memo(
         onItemSelect,
         renderItemIcon,
         isFlowType,
+        isAgentType,
         activeComponentType,
         handleDuplicate,
         handleDelete,
       ],
     );
 
-    // Dialog handlers
-    const handleCreateFlowDialogClose = useCallback(() => {
-      setCreateFlowDialogOpen(false);
-    }, []);
-
-    const handleCreateAgentDialogClose = useCallback(() => {
-      setCreateAgentDialogOpen(false);
-    }, []);
-
-    // Don't render if component type should be hidden
-    if (shouldHideComponent(activeComponentType)) {
+    // Don't render if component type should be hidden or no items available
+    if (shouldHideComponent(activeComponentType) || componentItems.length === 0) {
       return null;
     }
 
     return (
-      <>
-        <NavDropdown
-          triggerElement={renderTriggerElement}
-          items={filteredItems}
-          renderItem={renderItem}
-          addOption={getCreatePlaceholder(activeComponentType)}
-          dropdownStyle={{ right: -50 }}
-          dropdownWidth="18rem"
-          customHeader={renderSearchInput}
-        />
-        {createFlowDialogOpen && (
-          <CreateFlowDialog
-            open={createFlowDialogOpen}
-            handleClose={handleCreateFlowDialogClose}
-            altanerComponentId={componentId}
-          />
-        )}
-
-        <CreateAgentDialog
-          open={createAgentDialogOpen}
-          onClose={handleCreateAgentDialogClose}
-          altanerComponentId={componentId}
-        />
-      </>
+      <NavDropdown
+        triggerElement={renderTriggerElement}
+        items={filteredItems}
+        renderItem={renderItem}
+        dropdownStyle={{ right: -50 }}
+        dropdownWidth="18rem"
+        customHeader={renderSearchInput}
+      />
     );
   },
 );

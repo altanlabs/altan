@@ -1,16 +1,12 @@
 import React, { memo } from 'react';
 
-import TemplateMarketplace from './templates/TemplateMarketplace';
-import { CompactLayout } from '../../../layouts/dashboard';
+import AltanerTemplateMarketplace from '../../../components/templates/AltanerTemplateMarketplace';
 
 const MarketplacePage = () => {
   return (
-    <CompactLayout
-      fullWidth
-      title="Marketplace"
-    >
-      <TemplateMarketplace />
-    </CompactLayout>
+    <div className="p-4 pt-12">
+      <AltanerTemplateMarketplace />
+    </div>
   );
 };
 

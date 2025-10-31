@@ -1,9 +1,4 @@
-import {
-  Stack,
-  Typography,
-  Modal,
-  Card,
-} from '@mui/material';
+import { Stack, Typography, Modal, Card } from '@mui/material';
 import { memo } from 'react';
 
 import AvatarSelection from '../../../../components/avatar/AvatarSelection';

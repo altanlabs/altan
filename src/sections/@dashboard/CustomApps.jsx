@@ -2,7 +2,6 @@ import { Typography, Stack, Box } from '@mui/material';
 import React, { useCallback, useState, memo } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import CreateCustomApp from '../../components/CreateCustomApp.jsx';
 import DeleteDialog from '../../components/dialogs/DeleteDialog.jsx';
 import CustomAppEditor from '../../components/integration/CustomAppEditor.jsx';
 import CustomAppCard from '../../components/integrator/customapp/CustomAppCard.jsx';

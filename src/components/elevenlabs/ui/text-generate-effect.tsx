@@ -1,4 +1,3 @@
-"use client";
 import { useEffect } from "react";
 import { m, stagger, useAnimate } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -37,7 +36,7 @@ export const TextGenerateEffect = ({
           return (
             <m.span
               key={word + idx}
-              className="text-white opacity-0"
+              className="opacity-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text text-transparent"
               style={{
                 filter: filter ? "blur(10px)" : "none",
                 display: "inline-block",

@@ -9,7 +9,10 @@ module.exports = {
   	extend: {
   		'animation': {
   			shimmer: 'shimmer 2s linear infinite',
-  			pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+  			pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+  			'subtle-pulse': 'subtle-pulse 2s ease-in-out infinite',
+  			slideInUp: 'slideInUp 0.4s ease-out',
+  			rainbow: 'rainbow var(--speed, 2s) infinite linear'
   		},
   		'keyframes': {
   			shimmer: {
@@ -27,6 +30,28 @@ module.exports = {
   				'50%': {
   					opacity: '.5'
   				}
+  			},
+  			'subtle-pulse': {
+  				'0%, 100%': {
+  					opacity: '0.9'
+  				},
+  				'50%': {
+  					opacity: '1'
+  				}
+  			},
+  			slideInUp: {
+  				'0%': {
+  					transform: 'translateY(100%)',
+  					opacity: '0'
+  				},
+  				'100%': {
+  					transform: 'translateY(0)',
+  					opacity: '1'
+  				}
+  			},
+  			rainbow: {
+  				'0%': { 'background-position': '0%' },
+  				'100%': { 'background-position': '200%' }
   			}
   		},
   		inset: {

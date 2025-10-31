@@ -17,23 +17,16 @@ import { RHFSelect, RHFTextField, RHFUploadAvatar, RHFSlider } from '@components
 
 import AvatarSelectionModal from './components/AvatarSelectionModal.jsx';
 import InfoModal from '../../../components/helpers/InfoModal.jsx';
-import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { updateAltanerComponentById } from '../../../redux/slices/altaners';
-import {
-  createAgent,
-  updateAgent,
-} from '../../../redux/slices/general';
-import { uploadMedia } from '../../../utils/media';
-import { Space } from '../spaces';
+import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
+import { updateAltanerComponentById } from '../../../redux/slices/altaners.js';
+import { createAgent, updateAgent } from '../../../redux/slices/general.js';
+import { uploadMedia } from '../../../utils/media.js';
+import { Space } from '../spaces/index.js';
 
 const models = [
   {
     provider: 'Anthropic',
-    models: [
-      'claude-4-opus-latest',
-      'claude-4-sonnet-latest',
-      'claude-3-7-sonnet-latest',
-    ],
+    models: ['claude-4-opus-latest', 'claude-4-sonnet-latest', 'claude-3-7-sonnet-latest'],
   },
   {
     provider: 'OpenAI',
@@ -326,7 +319,6 @@ const CommandsSection = React.memo(
             description="Prompts and commands are instructions given to an AI language model to guide its responses. They help define the context, task, or specific information you want the model to focus on when generating text."
           />
         </div>
-
       </div>
     );
   },

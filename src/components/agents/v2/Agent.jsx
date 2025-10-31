@@ -27,9 +27,7 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
-import RoomComponent from '../../room/Room';
 // sections
-import CreateAgent from '../../../sections/@dashboard/agents/CreateAgent';
 // components
 import DeleteDialog from '../../dialogs/DeleteDialog';
 import Iconify from '../../iconify';
@@ -75,7 +73,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const history = useHistory();
   const { altanerId } = useParams();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const { currentAgent, isLoading, currentAgentDmRoomId, currentAgentCreatorRoomId } = useSelector((state) => state.agents);
+  const { currentAgent, isLoading, currentAgentDmRoomId, currentAgentCreatorRoomId } = useSelector(
+    (state) => state.agents,
+  );
   const { user } = useAuthContext();
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
   // Responsive breakpoints
@@ -192,7 +192,6 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     [agentData, debouncedUpdateAgent],
   );
 
-
   const handleDelete = () => {
     dispatchWithFeedback(deleteAccountAgent(currentAgent.id), {
       successMessage: 'Agent deleted successfully',
@@ -265,86 +264,106 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const renderTabContent = () => {
     const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
 
-  // Special handling for creator tab
-  if (activeTab === 'creator') {
-    return (
-      <Box
-        sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          {currentAgentCreatorRoomId && agentData ? (
-            <iframe
-              key={`creator-${agentData.id}`}
-              src={`/r/${currentAgentCreatorRoomId}${(() => {
-                const params = new URLSearchParams();
-                // Add context about the agent being edited
-                params.set('context', `User is editing agent: ${agentData.name} (ID: ${agentData.id})`);
-                if (initialMessage) {
-                  params.set('message', encodeURIComponent(initialMessage));
-                }
-                return `?${params.toString()}`;
-              })()}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
-              title="Creator Room"
-              allow="microphone; camera; clipboard-write"
-            />
-          ) : !isLoading && !currentAgentCreatorRoomId ? (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                gap: 2,
-                px: 3,
-              }}
-            >
-              <Iconify
-                icon="eva:alert-circle-outline"
-                sx={{ fontSize: '3rem', color: 'text.secondary', opacity: 0.5 }}
+    // Special handling for creator tab
+    if (activeTab === 'creator') {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            {currentAgentCreatorRoomId && agentData ? (
+              <iframe
+                key={`creator-${agentData.id}`}
+                src={`/r/${currentAgentCreatorRoomId}${(() => {
+                  const params = new URLSearchParams();
+                  // Add context about the agent being edited
+                  params.set(
+                    'context',
+                    `User is editing agent: ${agentData.name} (ID: ${agentData.id})`,
+                  );
+                  if (initialMessage) {
+                    params.set('message', encodeURIComponent(initialMessage));
+                  }
+                  return `?${params.toString()}`;
+                })()}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+                title="Creator Room"
+                allow="microphone; camera; clipboard-write"
               />
-              <Typography variant="h6" color="text.secondary">
-                Creator Room Not Available
-              </Typography>
-              <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', maxWidth: '400px' }}>
-                This agent doesn't have a creator room configured. You can still edit the agent using the other tabs.
-              </Typography>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-              }}
-            >
-              <Typography>Loading creator room...</Typography>
-            </Box>
-          )}
+            ) : !isLoading && !currentAgentCreatorRoomId ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: 2,
+                  px: 3,
+                }}
+              >
+                <Iconify
+                  icon="eva:alert-circle-outline"
+                  sx={{ fontSize: '3rem', color: 'text.secondary', opacity: 0.5 }}
+                />
+                <Typography
+                  variant="h6"
+                  color="text.secondary"
+                >
+                  Creator Room Not Available
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.disabled"
+                  sx={{ textAlign: 'center', maxWidth: '400px' }}
+                >
+                  This agent doesn't have a creator room configured. You can still edit the agent
+                  using the other tabs.
+                </Typography>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                <Typography>Loading creator room...</Typography>
+              </Box>
+            )}
+          </Box>
         </Box>
-      </Box>
-    );
-  }
+      );
+    }
 
     if (activeTabConfig?.component) {
       const TabComponent = activeTabConfig.component;
       return (
-        <TabComponent
-          key={agentData?.id}
-          agentData={agentData}
-          onFieldChange={handleFieldChange}
-        />
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'auto',
+          }}
+        >
+          <TabComponent
+            key={agentData?.id}
+            agentData={agentData}
+            onFieldChange={handleFieldChange}
+          />
+        </Box>
       );
     }
 
@@ -936,11 +955,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   // Wrap in card-like container when rendered in altaner/project context
   if (altanerComponentId) {
     return (
-      <Box
-        className={`w-full h-full relative overflow-hidden ${
-          isMobile ? '' : 'pb-2 px-2'
-        }`}
-      >
+      <Box className={`w-full h-full relative overflow-hidden ${isMobile ? '' : 'pb-2 px-2'}`}>
         <Box
           className={`flex flex-col h-full overflow-hidden ${
             isMobile ? '' : 'border border-divider rounded-xl'
