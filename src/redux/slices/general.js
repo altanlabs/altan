@@ -11,7 +11,6 @@ import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
 import { analytics } from '../../lib/analytics';
 import { optimai, optimai_integration } from '../../utils/axios';
-import { ALTAN_AGENT_TEMPLATE_IDS } from '../../utils/constants';
 import { checkArraysEqualsProperties, checkObjectsEqual } from '../helpers/memoize';
 
 // ----------------------------------------------------------------------
@@ -976,14 +975,15 @@ export const selectSortedAgents = createSelector(
     if (!agents) return [];
 
     // Filter out agents cloned from Altan's official templates
-    const filteredAgents = agents.filter((agent) => {
-      return !(
-        agent?.cloned_from?.version?.template_id &&
-        ALTAN_AGENT_TEMPLATE_IDS.includes(agent.cloned_from.version.template_id)
-      );
-    });
+    // const filteredAgents = agents.filter((agent) => {
+    //   return !(
+    //     agent?.cloned_from?.version?.template_id &&
+    //     ALTAN_AGENT_TEMPLATE_IDS.includes(agent.cloned_from.version.template_id)
+    //   );
+    // });
 
-    return filteredAgents.sort((a, b) => a.name.localeCompare(b.name));
+    // Create a copy before sorting (Redux state is immutable)
+    return [...agents].sort((a, b) => a.name.localeCompare(b.name));
   },
   {
     memoizeOptions: {

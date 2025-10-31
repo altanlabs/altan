@@ -58,6 +58,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
 
   // Determine window dimensions based on expanded state
   const windowWidth = isExpanded ? 600 : 400;
+  const windowHeight = isExpanded ? '95vh' : '70vh';
 
   // Use provided offset or fallback to simple calculation
   const rightOffset = providedOffset ?? (378 + windowIndex * 412);
@@ -70,7 +71,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
         right: `${rightOffset}px`,
         width: isMinimized ? '260px' : `${windowWidth}px`,
         maxHeight: isMinimized ? '52px' : 'calc(100vh - 1rem)',
-        height: isMinimized ? '52px' : '90vh',
+        height: isMinimized ? '52px' : windowHeight,
         zIndex: 9999,
       }}
     >
@@ -99,6 +100,25 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
 
           {/* Action buttons */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
+            {/* Open in new tab button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (agentRoom?.dmRoomId) {
+                  window.open(`/r/${agentRoom.dmRoomId}`, '_blank');
+                }
+              }}
+              className="p-2 hover:bg-accent/30 rounded transition-colors"
+              title="Open chat in new tab"
+              disabled={!agentRoom?.dmRoomId}
+            >
+              <Iconify
+                icon="mdi:open-in-new"
+                width={16}
+                className={agentRoom?.dmRoomId ? 'text-muted-foreground' : 'text-muted-foreground/30'}
+              />
+            </button>
+
             {/* Expand/Collapse width button */}
             <button
               onClick={(e) => {

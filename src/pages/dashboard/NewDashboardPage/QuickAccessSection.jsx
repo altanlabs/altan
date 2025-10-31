@@ -16,7 +16,6 @@ const QuickAccessSection = () => {
 
   // Get data from Redux
   const altaners = useSelector(selectAccountAltaners);
-  console.log(altaners);
   const altanersLoading = useSelector(selectAltanersLoading);
 
   // Filter and sort projects

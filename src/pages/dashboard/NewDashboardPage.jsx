@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
@@ -7,17 +7,14 @@ import { VoiceConversationProvider } from '../../providers/voice/VoiceConversati
 import { useSelector, dispatch } from '../../redux/store';
 import FeaturesSection from '../../sections/new/FeaturesSection';
 import NewHeroSection from '../../sections/new/NewHeroSection';
-import { shouldHideClonedAgent } from '../../utils/constants';
 
 // Redux selectors
 const selectAccountAltaners = (state) => state.general.account?.altaners;
-const selectAccountAgents = (state) => state.general.account?.agents;
-const selectAgentsLoading = (state) => state.general.accountAssetsLoading?.agents;
 
 const NewDashboardPage = () => {
   const history = useHistory();
   const location = useLocation();
-  const { isAuthenticated, user } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
 
   // Creation states
   const [isCreating, setIsCreating] = useState(false);
@@ -32,8 +29,6 @@ const NewDashboardPage = () => {
 
   // Redux data
   const altaners = useSelector(selectAccountAltaners);
-  const agents = useSelector(selectAccountAgents);
-  const agentsLoading = useSelector(selectAgentsLoading);
 
   // Handle URL parameter for creating projects from ideas
   useEffect(() => {
@@ -114,31 +109,8 @@ const NewDashboardPage = () => {
     }
   };
 
-  // Get all agents (including cloned ones, but hide Altan's official templates for non-superadmins)
-  const allAgents = useMemo(() => {
-    if (!agents) return [];
-    return [...agents]
-      .filter((agent) => {
-        // Show all agents for superadmins, otherwise hide agents cloned from Altan's official templates
-        if (!user?.xsup && shouldHideClonedAgent(agent)) {
-          return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        // Pinned first
-        if (a.is_pinned !== b.is_pinned) {
-          return a.is_pinned ? -1 : 1;
-        }
-        // Then by last_modified (most recent first)
-        const dateA = new Date(a.last_modified || a.date_creation || 0);
-        const dateB = new Date(b.last_modified || b.date_creation || 0);
-        return dateB.getTime() - dateA.getTime();
-      });
-  }, [agents, user?.xsup]);
-
   return (
-    <NewLayout agents={allAgents} agentsLoading={agentsLoading} onRequestAuth={handleRequestAuth}>
+    <NewLayout onRequestAuth={handleRequestAuth}>
       {/* Simple Creation Loader */}
       {isCreating && !creationError && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 dark:bg-[#0D0D0D]/80 backdrop-blur-sm">

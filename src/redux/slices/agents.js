@@ -160,6 +160,45 @@ export default slice.reducer;
 
 // Actions
 
+// Lightweight version that only fetches DM room (for prefetching)
+export const fetchAgentDmRoom = (agentId) => async (dispatch, getState) => {
+  // Check if room is already cached
+  const { agentRooms } = getState().agents;
+  if (agentRooms[agentId] && agentRooms[agentId].dmRoomId) {
+    return Promise.resolve(agentRooms[agentId]);
+  }
+
+  dispatch(slice.actions.startLoadingAgentRoom(agentId));
+
+  try {
+    const agentRes = await optimai.get(`/agent/${agentId}`);
+    const agent = agentRes.data.agent;
+
+    if (agent) {
+      const { account } = getState().general;
+
+      // Fetch DM room only
+      const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
+
+      const roomData = {
+        agentId: agent.id,
+        agent,
+        dmRoomId: dmResponse.data.id,
+        creatorRoomId: null, // Not fetched in lightweight version
+      };
+
+      // Store in agentRooms
+      dispatch(slice.actions.setAgentRoom(roomData));
+
+      return Promise.resolve(roomData);
+    } else {
+      throw new Error('Agent not found');
+    }
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
 export const fetchAgentRoom = (agentId, setAsCurrent = true) => async (dispatch, getState) => {
   // Check if room is already cached
   const { agentRooms } = getState().agents;

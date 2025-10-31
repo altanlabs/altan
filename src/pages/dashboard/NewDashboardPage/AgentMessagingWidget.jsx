@@ -1,5 +1,6 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
@@ -12,14 +13,32 @@ import Iconify from '../../../components/iconify/Iconify';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { ScrollArea } from '../../../components/ui/scroll-area';
+import { fetchAgentDmRoom } from '../../../redux/slices/agents';
+import { selectSortedAgents } from '../../../redux/slices/general';
+import { useSelector } from '../../../redux/store';
 import AgentChatWindow from './AgentChatWindow';
 
-const AgentMessagingWidget = ({ agents = [], isLoading = false }) => {
+const AgentMessagingWidget = () => {
+  // Fetch agents from Redux (already sorted alphabetically)
+  const agents = useSelector(selectSortedAgents) || [];
+  const agentsInitialized = useSelector((state) => state.general.accountAssetsInitialized?.agents);
+  const isLoading = !agentsInitialized;
+  const dispatch = useDispatch();
   const history = useHistory();
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openChats, setOpenChats] = useState([]);
   const [expandedChats, setExpandedChats] = useState(new Set()); // Track which chats are expanded
+
+  // Prefetch all agent DM rooms in the background for instant access
+  useEffect(() => {
+    if (agents.length > 0 && agentsInitialized) {
+      // Fetch DM rooms only (lightweight version that skips creator room fetch)
+      agents.forEach((agent) => {
+        dispatch(fetchAgentDmRoom(agent.id));
+      });
+    }
+  }, [agents, agentsInitialized, dispatch]);
 
   // Filter agents based on search
   const filteredAgents = useMemo(() => {

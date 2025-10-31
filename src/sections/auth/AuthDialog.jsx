@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState } from 'react';
+
 import { useAuthContext } from '../../auth/useAuthContext';
 import Logo from '../../components/logo/Logo';
 import {
@@ -9,17 +10,21 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../../components/ui/dialog';
+import AuthLoginForm from './AuthLoginForm';
+import AuthRegisterForm from './AuthRegisterForm';
 
 // ----------------------------------------------------------------------
 
 AuthDialog.propTypes = {
   open: PropTypes.bool.isRequired,
   onOpenChange: PropTypes.func.isRequired,
+  invitation: PropTypes.object,
+  idea: PropTypes.any,
 };
 
-export default function AuthDialog({ open, onOpenChange }) {
+export default function AuthDialog({ open, onOpenChange, invitation = null, idea = null }) {
   const { loginWithGoogle } = useAuthContext();
-  const [email, setEmail] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -35,20 +40,15 @@ export default function AuthDialog({ open, onOpenChange }) {
     }
   };
 
-  const handleEmailContinue = () => {
-    if (email) {
-      // Redirect to login/register page with email pre-filled
-      window.location.href = `/login?email=${encodeURIComponent(email)}`;
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="items-center text-center space-y-4">
           <Logo className="w-22 h-22" />
           <DialogTitle className="text-3xl font-bold">Welcome to Altan</DialogTitle>
-          <DialogDescription className="text-base">Log in or sign up</DialogDescription>
+          <DialogDescription className="text-base">
+            {isLogin ? 'Log in to continue' : 'Sign up to get started'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-6">
@@ -79,41 +79,32 @@ export default function AuthDialog({ open, onOpenChange }) {
             <span className="font-medium">Continue with Google</span>
           </button>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-background text-muted-foreground">OR</span>
-            </div>
+          {/* Login/Register Forms */}
+          {isLogin ? (
+            <AuthLoginForm idea={idea} invitation={invitation} />
+          ) : (
+            <AuthRegisterForm idea={idea} invitation={invitation} />
+          )}
+
+          {/* Toggle between Login and Register */}
+          <div className="text-center">
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isLogin ? (
+                <>
+                  Don't have an account?{' '}
+                  <span className="text-foreground font-medium underline">Sign up</span>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <span className="text-foreground font-medium underline">Log in</span>
+                </>
+              )}
+            </button>
           </div>
-
-          {/* Email Input */}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleEmailContinue();
-              }
-            }}
-            className="w-full px-4 py-3 bg-muted rounded-lg border-0 focus:ring-2 focus:ring-primary outline-none transition-all"
-          />
-
-          {/* Continue with Email Button */}
-          <button
-            onClick={handleEmailContinue}
-            disabled={!email || isLoading}
-            className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Continue with Email
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
 
           {/* Terms and Privacy */}
           <p className="text-xs text-center text-muted-foreground mt-4">
@@ -142,4 +133,3 @@ export default function AuthDialog({ open, onOpenChange }) {
     </Dialog>
   );
 }
-

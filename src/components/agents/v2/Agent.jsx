@@ -43,6 +43,7 @@ import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
+import CreateAgentDashboard from '../../../pages/dashboard/components/CreateAgentDashboard';
 
 const versionsSelector = (template) => template?.versions;
 
@@ -531,7 +532,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
           {/* Create Agent Component */}
           <Box>
-            <CreateAgent altanerComponentId={altanerComponentId} />
+            <CreateAgentDashboard handleVoice={() => {}} />
           </Box>
         </Box>
       </Box>

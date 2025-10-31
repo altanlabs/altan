@@ -15,7 +15,7 @@ import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator'
 import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
 import Footer from '../../main/Footer';
 
-const NewLayout = ({ children, agents = [], agentsLoading = false, onRequestAuth }) => {
+const NewLayout = ({ children, onRequestAuth }) => {
   const history = useHistory();
   const location = useLocation();
   const { resolvedThemeMode, onToggleMode } = useSettingsContext();
@@ -149,12 +149,7 @@ const NewLayout = ({ children, agents = [], agentsLoading = false, onRequestAuth
     </div>
     
     {/* Floating Agent Messaging Widget - Outside main container for proper fixed positioning */}
-    {isAuthenticated && (
-      <AgentMessagingWidget
-        agents={agents}
-        isLoading={agentsLoading}
-      />
-    )}
+    {isAuthenticated && <AgentMessagingWidget />}
     </>
   );
 };
