@@ -1,4 +1,5 @@
 import React, { memo, useState, useMemo } from 'react';
+import { useHistory } from 'react-router-dom';
 
 import CompactProjectCard from './CompactProjectCard';
 import Iconify from '../../../components/iconify/Iconify';
@@ -9,11 +10,13 @@ const selectAccountAltaners = (state) => state.general.account?.altaners;
 const selectAltanersLoading = (state) => state.general.accountAssetsLoading?.altaners;
 
 const QuickAccessSection = () => {
+  const history = useHistory();
   const [searchTerm, setSearchTerm] = useState('');
-  const [itemsToShow, setItemsToShow] = useState(8);
+  const [itemsToShow, setItemsToShow] = useState(4);
 
   // Get data from Redux
   const altaners = useSelector(selectAccountAltaners);
+  console.log(altaners);
   const altanersLoading = useSelector(selectAltanersLoading);
 
   // Filter and sort projects
@@ -47,6 +50,7 @@ const QuickAccessSection = () => {
   // Get visible projects based on itemsToShow
   const visibleProjects = filteredProjects.slice(0, itemsToShow);
   const hasMore = filteredProjects.length > itemsToShow;
+  const showingAll = itemsToShow > 4;
 
   const handleShowAll = () => {
     setItemsToShow(filteredProjects.length);
@@ -69,36 +73,52 @@ const QuickAccessSection = () => {
       {/* Projects Grid - Visual cards */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-sm font-semibold text-foreground">Projects</h3>
-          
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-xs">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Iconify icon="mdi:magnify" width={16} />
+          {/* Left side: Projects heading + Search */}
+          <div className="flex items-center gap-2 flex-1">
+            <h3 className="text-sm font-semibold text-foreground whitespace-nowrap">Projects</h3>
+            
+            {/* Search Input */}
+            <div className="relative max-w-xs flex-1">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none z-10">
+                <Iconify icon="mdi:magnify" width={16} />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-white/10 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Iconify icon="mdi:close" width={16} />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-white/10 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Iconify icon="mdi:close" width={16} />
-              </button>
-            )}
           </div>
+
+          {/* Right side: Explore Community Button */}
+          <button
+            onClick={() => history.push('/marketplace')}
+            className="group flex items-center gap-2 px-4 py-1.5 text-xs font-medium text-foreground rounded-lg border border-white/10 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-xl hover:bg-white/60 dark:hover:bg-white/10 hover:border-primary/30 transition-all whitespace-nowrap"
+          >
+            <Iconify icon="mdi:store" width={16} />
+            Explore community
+          </button>
         </div>
 
         {altanersLoading ? (
           <ProjectSkeleton />
         ) : filteredProjects.length > 0 ? (
           <>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {/* Horizontal scroll for initial 8, grid for more */}
+            <div className={showingAll 
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" 
+              : "flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
+            }>
               {visibleProjects.map((project) => (
                 <CompactProjectCard
                   key={project.id}

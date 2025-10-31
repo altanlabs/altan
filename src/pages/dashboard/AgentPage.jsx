@@ -7,7 +7,7 @@ export default function AgentPage() {
   const history = useHistory();
   const { agentId } = useParams();
 
-  const onGoBack = useCallback(() => history.push('/agents'), [history]);
+  const onGoBack = useCallback(() => history.push('/'), [history]);
 
   return (
     <div>

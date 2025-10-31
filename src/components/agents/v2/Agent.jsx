@@ -27,7 +27,6 @@ import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
 import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
-import RoomComponent from '../../room/Room';
 // sections
 // components
 import DeleteDialog from '../../dialogs/DeleteDialog';

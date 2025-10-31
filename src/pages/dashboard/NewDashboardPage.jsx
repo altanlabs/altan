@@ -3,6 +3,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../auth/useAuthContext';
 import NewLayout from '../../layouts/dashboard/new/NewLayout';
+import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider';
 import { useSelector, dispatch } from '../../redux/store';
 import FeaturesSection from '../../sections/new/FeaturesSection';
 import NewHeroSection from '../../sections/new/NewHeroSection';
@@ -11,7 +12,6 @@ import { shouldHideClonedAgent } from '../../utils/constants';
 // Redux selectors
 const selectAccountAltaners = (state) => state.general.account?.altaners;
 const selectAccountAgents = (state) => state.general.account?.agents;
-const selectAltanersLoading = (state) => state.general.accountAssetsLoading?.altaners;
 const selectAgentsLoading = (state) => state.general.accountAssetsLoading?.agents;
 
 const NewDashboardPage = () => {
@@ -33,7 +33,6 @@ const NewDashboardPage = () => {
   // Redux data
   const altaners = useSelector(selectAccountAltaners);
   const agents = useSelector(selectAccountAgents);
-  const altanersLoading = useSelector(selectAltanersLoading);
   const agentsLoading = useSelector(selectAgentsLoading);
 
   // Handle URL parameter for creating projects from ideas
@@ -115,23 +114,6 @@ const NewDashboardPage = () => {
     }
   };
 
-  // Filter and sort projects (altaners)
-  const sortedProjects = useMemo(() => {
-    if (!altaners) return [];
-    return [...altaners]
-      .filter((altaner) => !altaner.is_deleted)
-      .sort((a, b) => {
-        // Pinned first
-        if (a.is_pinned !== b.is_pinned) {
-          return a.is_pinned ? -1 : 1;
-        }
-        // Then by last_modified
-        const dateA = new Date(a.last_modified || a.date_creation || 0);
-        const dateB = new Date(b.last_modified || b.date_creation || 0);
-        return dateB.getTime() - dateA.getTime();
-      });
-  }, [altaners]);
-
   // Get all agents (including cloned ones, but hide Altan's official templates for non-superadmins)
   const allAgents = useMemo(() => {
     if (!agents) return [];
@@ -200,7 +182,11 @@ const NewDashboardPage = () => {
       />
 
       {/* Features Section - Only for unauthenticated users, appears after scroll */}
-      {!isAuthenticated && <FeaturesSection />}
+      {!isAuthenticated && (
+        <VoiceConversationProvider>
+          <FeaturesSection />
+        </VoiceConversationProvider>
+      )}
     </NewLayout>
   );
 };

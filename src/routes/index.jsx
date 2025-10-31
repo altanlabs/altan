@@ -73,6 +73,7 @@ import {
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
 import PageTracker from '../components/analytics/PageTracker.jsx';
+import ScrollToTop from '../components/scroll-to-top/ScrollToTop.js';
 import TrackingParamsCapture from '../components/tracking/TrackingParamsCapture.jsx';
 import CompactLayout from '../layouts/compact';
 import DashboardLayout from '../layouts/dashboard';
@@ -86,6 +87,7 @@ import DashboardDataProvider from '../providers/DashboardDataProvider.jsx';
 const Router = () => {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <PageTracker />
       <TrackingParamsCapture />
       <Switch>
@@ -1052,7 +1054,26 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
-        {/* V2 Virtual Desktop */}
+        {/* Demo Routes */}
+        <Route
+          path="/demo/landing"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <V2LandingPage />
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/demo"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <VirtualDesktopPage />
+          </AuthGuard>
+        </Route>
+
+        {/* V2 Virtual Desktop (Legacy - redirect to demo) */}
         <Route
           path="/v2/landing"
           exact

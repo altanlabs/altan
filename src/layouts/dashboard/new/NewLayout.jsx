@@ -108,7 +108,7 @@ const NewLayout = ({ children, agents = [], agentsLoading = false, onRequestAuth
           {!isAuthenticated && (
             <>
               <button
-                onClick={() => history.push('/v2?scene=demo')}
+                onClick={() => history.push('/demo')}
                 className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
               >
                 Enter demo
@@ -137,8 +137,12 @@ const NewLayout = ({ children, agents = [], agentsLoading = false, onRequestAuth
         {children}
       </div>
 
-      {/* Footer - Only render on homepage */}
-      {location.pathname === '/' && <Footer />}
+      {/* Footer - Show V2CompactFooter when authenticated, regular Footer on homepage when not */}
+      {isAuthenticated ? (
+        <V2CompactFooter />
+      ) : (
+        location.pathname === '/' && <Footer />
+      )}
 
       {/* Access Dialog */}
       <AuthDialog open={showAccessDialog} onOpenChange={setShowAccessDialog} />

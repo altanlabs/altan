@@ -500,7 +500,6 @@ export const UserDropdown = () => {
 
               {/* Preferences */}
               <div className="p-3">
-                <h4 className="text-xs font-semibold mb-2">Preferences</h4>
                 <div>
                   <Label className="text-xs mb-1 block">Language</Label>
                   <Select value={currentLang.value} onValueChange={onChangeLang}>

@@ -147,7 +147,7 @@ const WorkspaceIndicator = () => {
         localStorage.setItem('OAIPTACC', id);
       }
       handleClose();
-      history.replace('/v2');
+      history.replace('/');
     },
     [accounts, allAccounts, searchResults, account, location, history, showAllAccounts, hasAnySearchTerm, handleClose]
   );

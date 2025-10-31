@@ -58,7 +58,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
 
   // Determine window dimensions based on expanded state
   const windowWidth = isExpanded ? 600 : 400;
-  const windowHeight = isExpanded ? 700 : 600;
+  const windowHeight = isExpanded ? 900 : 700;
 
   // Use provided offset or fallback to simple calculation
   const rightOffset = providedOffset ?? (378 + windowIndex * 412);
@@ -74,11 +74,11 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
         zIndex: 9999,
       }}
     >
-      <div className="rounded-t-xl shadow-2xl overflow-hidden flex flex-col h-full bg-background border border-border/50">
+      <div className="rounded-t-xl shadow-2xl overflow-hidden flex flex-col h-full bg-background">
         {/* Chat Header */}
         <div
           onClick={() => setIsMinimized(!isMinimized)}
-          className="flex items-center gap-3 px-4 py-3 bg-background cursor-pointer hover:bg-accent/20 transition-colors flex-shrink-0 border-b border-border/50"
+          className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-background cursor-pointer hover:bg-accent/20 transition-colors flex-shrink-0"
         >
           {/* Avatar - clickable to navigate to agent page */}
           <div

@@ -11,7 +11,8 @@ module.exports = {
   			shimmer: 'shimmer 2s linear infinite',
   			pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
   			'subtle-pulse': 'subtle-pulse 2s ease-in-out infinite',
-  			slideInUp: 'slideInUp 0.4s ease-out'
+  			slideInUp: 'slideInUp 0.4s ease-out',
+  			rainbow: 'rainbow var(--speed, 2s) infinite linear'
   		},
   		'keyframes': {
   			shimmer: {
@@ -47,6 +48,10 @@ module.exports = {
   					transform: 'translateY(0)',
   					opacity: '1'
   				}
+  			},
+  			rainbow: {
+  				'0%': { 'background-position': '0%' },
+  				'100%': { 'background-position': '200%' }
   			}
   		},
   		inset: {

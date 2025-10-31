@@ -1,12 +1,8 @@
-import { Box, Grid, Link, Stack, Divider, Container, Typography, IconButton } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
-// @mui
-// routes
 import Iconify from '../../components/iconify';
 import Logo from '../../components/logo';
 import { PATH_PAGE } from '../../routes/paths';
-// _mock
 
 // ----------------------------------------------------------------------
 
@@ -79,122 +75,81 @@ export default function Footer() {
     window.open(path, '_blank', 'noopener noreferrer');
   };
 
-  const mainFooter = (
-    <Box
-      component="footer"
-    >
-      <Container sx={{ pt: 10 }}>
-        <Grid
-          container
-          justifyContent={{
-            xs: 'center',
-            md: 'space-between',
-          }}
-          sx={{
-            textAlign: {
-              xs: 'center',
-              md: 'left',
-            },
-          }}
-        >
-          <Grid
-            item
-            xs={12}
-            sx={{ mb: 3 }}
-          >
-            <Logo sx={{ mx: { xs: 'auto', md: 'inherit' } }} />
-          </Grid>
+  return (
+    <footer>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 text-center md:text-left">
+          <div className="col-span-12 mb-6">
+            <div className="mx-auto md:mx-0 w-fit">
+              <Logo />
+            </div>
+          </div>
 
-          <Grid
-            item
-            xs={8}
-            md={3}
-          >
-            <Typography
-              variant="body2"
-              sx={{ pr: { md: 5 } }}
-            >
+          <div className="col-span-12 md:col-span-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 md:pr-12 mb-8">
               Altan was founded in 2023 with the vision to create autonomous software.
-            </Typography>
+            </p>
 
-            <Stack
-              spacing={1}
-              direction="row"
-              justifyContent={{ xs: 'center', md: 'flex-start' }}
-              sx={{
-                mt: 5,
-                mb: { xs: 5, md: 0 },
-              }}
-            >
+            <div className="flex gap-3 justify-center md:justify-start mb-8 md:mb-0">
               {_socials.map((social) => (
-                <IconButton key={social.name} onClick={() => handleSocialClick(social.path)}>
-                  <Iconify icon={social.icon} />
-                </IconButton>
-              ))}
-            </Stack>
-          </Grid>
-
-          <Grid
-            item
-            xs={12}
-            md={7}
-          >
-            <Stack
-              spacing={5}
-              justifyContent="space-between"
-              direction={{ xs: 'column', md: 'row' }}
-            >
-              {LINKS.map((list) => (
-                <Stack
-                  key={list.headline}
-                  spacing={2}
-                  alignItems={{ xs: 'center', md: 'flex-start' }}
+                <button
+                  key={social.name}
+                  onClick={() => handleSocialClick(social.path)}
+                  className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                  aria-label={social.name}
                 >
-                  <Typography
-                    component="div"
-                    variant="h6"
-                  >
+                  <Iconify icon={social.icon} className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-12 md:col-span-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {LINKS.map((list) => (
+                <div
+                  key={list.headline}
+                  className="flex flex-col items-center md:items-start space-y-3"
+                >
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-base">
                     {list.headline}
-                  </Typography>
+                  </h3>
 
                   {list.children.map((link) => {
                     const isExternal = link.href.startsWith('http');
 
-                    return (
-                      <Link
+                    return isExternal ? (
+                      <a
                         key={link.key}
-                        component={isExternal ? 'a' : RouterLink}
-                        to={isExternal ? undefined : link.href}
-                        href={isExternal ? link.href : undefined}
-                        target={isExternal ? '_blank' : undefined}
-                        rel={isExternal ? 'noopener noreferrer' : undefined}
-                        color="inherit"
-                        variant="body2"
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                       >
                         {link.name}
-                      </Link>
+                      </a>
+                    ) : (
+                      <RouterLink
+                        key={link.key}
+                        to={link.href}
+                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        {link.name}
+                      </RouterLink>
                     );
                   })}
-                </Stack>
+                </div>
               ))}
-            </Stack>
-          </Grid>
-        </Grid>
+            </div>
+          </div>
+        </div>
 
-        <Typography
-          variant="caption"
-          component="div"
-          sx={{
-            mt: 10,
-            pb: 5,
-            textAlign: { xs: 'center', md: 'left' },
-          }}
-        >
-          © {new Date().getFullYear()}. All rights reserved
-        </Typography>
-      </Container>
-    </Box>
+        <div className="mt-16 pb-8 text-center md:text-left">
+          <p className="text-xs text-gray-500 dark:text-gray-500">
+            © {new Date().getFullYear()}. All rights reserved
+          </p>
+        </div>
+      </div>
+    </footer>
   );
-
-  return mainFooter;
 }

@@ -172,10 +172,10 @@ const AgentMessagingWidget = ({ agents = [], isLoading = false }) => {
           shadowIntensity="sm"
           glowIntensity="xs"
           borderRadius="12px 12px 0 0"
-          className="overflow-hidden border border-border/50"
+          className="overflow-hidden border border-border/50 h-full flex flex-col"
         >
           {/* Agent List view */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div 
               onClick={() => setIsExpanded(false)}
@@ -188,6 +188,20 @@ const AgentMessagingWidget = ({ agents = [], isLoading = false }) => {
                 className="flex-shrink-0 shadow-lg"
               />
               <h3 className="flex-1 font-semibold text-base text-foreground">Agents</h3>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const genesisAgent = agents.find(agent => agent.name.toLowerCase() === 'genesis');
+                  if (genesisAgent) {
+                    handleAgentClick(genesisAgent);
+                  }
+                }}
+                size="sm"
+                className="rounded-lg bg-primary/90 hover:bg-primary text-primary-foreground flex-shrink-0"
+              >
+                <Iconify icon="mdi:plus-circle" width={16} className="mr-1.5" />
+                Create Agent
+              </Button>
               <Iconify icon="mdi:chevron-down" width={20} className="text-muted-foreground" />
             </div>
 
@@ -264,53 +278,39 @@ const AgentMessagingWidget = ({ agents = [], isLoading = false }) => {
               ) : (
                 <div className="space-y-0">
                   {filteredAgents.map((agent, index) => (
-                    <button
+                    <div
                       key={agent.id}
-                      onClick={() => handleAgentClick(agent)}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 transition-all text-left group",
+                        "w-full flex items-center gap-3 px-4 py-3 transition-all group",
                         index % 2 === 0
                           ? "bg-accent/20 hover:bg-accent/30"
                           : "bg-background/20 hover:bg-background/30"
                       )}
                     >
-                      <div className="relative flex-shrink-0">
-                        {renderAgentAvatar(agent, 48)}
-                        {/* Online status indicator */}
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-0.5">
-                          <h4 className="font-semibold text-sm text-foreground truncate">
-                            {agent.name}
-                          </h4>
-                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                            {agent.date_creation && (
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(agent.date_creation).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </span>
-                            )}
-                            {/* Edit button - appears below date on hover */}
-                            <Button
-                              onClick={(e) => handleEditAgent(agent, e)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Edit agent"
-                            >
-                              <Iconify icon="mdi:pencil" width={12} className="text-muted-foreground mr-1" />
-                              Edit
-                            </Button>
-                          </div>
+                      <button
+                        onClick={() => handleAgentClick(agent)}
+                        className="flex-1 flex items-center gap-3 text-left min-w-0"
+                      >
+                        <div className="relative flex-shrink-0">
+                          {renderAgentAvatar(agent, 48)}
+                          {/* Online status indicator */}
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm" />
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {agent.description || 'AI Agent ready to assist'}
-                        </p>
-                      </div>
-                    </button>
+                        <h4 className="font-semibold text-sm text-foreground truncate">
+                          {agent.name}
+                        </h4>
+                      </button>
+                      <Button
+                        onClick={(e) => handleEditAgent(agent, e)}
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs flex-shrink-0"
+                        title="Edit agent"
+                      >
+                        <Iconify icon="mdi:pencil" width={14} className="text-muted-foreground mr-1" />
+                        Edit
+                      </Button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -325,7 +325,10 @@ const AgentMessagingWidget = ({ agents = [], isLoading = false }) => {
           key={agent.id}
           agent={agent}
           windowIndex={index}
+          isExpanded={expandedChats.has(agent.id)}
+          onToggleExpand={() => handleToggleExpand(agent.id)}
           onClose={() => handleCloseChat(agent.id)}
+          rightOffset={calculateWindowOffset(index)}
         />
       ))}
     </>,
