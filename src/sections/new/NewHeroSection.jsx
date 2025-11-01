@@ -94,12 +94,13 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
 
   return (
     <>
-      {/* Hero Section - Fixed viewport height with centered content */}
+      {/* Hero Section - Fixed viewport height with top-aligned content */}
       <div
         id="hero"
-        className={`relative min-h-screen flex flex-col items-center ${selectedCategory ? 'justify-start pt-24' : 'justify-center'} pb-64`}
+        className="relative min-h-screen"
       >
-        <div className="w-full flex flex-col gap-4 items-center relative z-10 px-6">
+        {/* Fixed position container for title, subtitle, prompt box at consistent position */}
+        <div className="w-full flex flex-col items-center relative z-10 px-6 pt-64 ">
           <div className="w-full max-w-2xl flex flex-col gap-4 items-center">
             <TextGenerateEffect
               words="Build without limits"
@@ -119,8 +120,8 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
             </div>
           </div>
 
-          {/* Starter Categories - Wider Container */}
-          <div className="w-full max-w-6xl">
+          {/* Starter Categories - Wider Container - Expands below */}
+          <div className="w-full max-w-6xl mt-4">
             <StarterCategories
               onSelectPrompt={setPrefillPrompt}
               selectedCategory={selectedCategory}

@@ -12,7 +12,7 @@ const selectAltanersLoading = (state) => state.general.accountAssetsLoading?.alt
 const QuickAccessSection = () => {
   const history = useHistory();
   const [searchTerm, setSearchTerm] = useState('');
-  const [itemsToShow, setItemsToShow] = useState(4);
+  const [itemsToShow, setItemsToShow] = useState(24);
 
   // Get data from Redux
   const altaners = useSelector(selectAccountAltaners);

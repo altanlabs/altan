@@ -94,6 +94,20 @@ export default function ProjectPage() {
     }
   }, [displayMode]);
 
+  // Ensure chat panel is visible when altaner first loads (with room_id)
+  // This prevents the "invisible chat" issue on new project creation
+  React.useEffect(() => {
+    if (altaner?.room_id && chatPanelRef.current && displayMode !== 'preview') {
+      // Small delay to ensure panel refs are ready
+      const timer = setTimeout(() => {
+        if (chatPanelRef.current?.isCollapsed()) {
+          chatPanelRef.current.expand();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [altaner?.room_id, displayMode]);
+
   const handleMobileToggle = React.useCallback((view) => {
     setMobileActiveView(view);
   }, []);
@@ -107,22 +121,19 @@ export default function ProjectPage() {
   const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
   // Get active component from URL path param
   const activeComponentId = componentId || null;
-  // Fetch the altaner on component mount
+  // Load display mode preference FIRST, then fetch the altaner
+  // This ensures the correct displayMode is set before panel effects run
   useEffect(() => {
     if (altanerId) {
+      // Load display mode synchronously first
+      dispatch(loadDisplayModeForProject(altanerId));
+      // Then fetch the altaner data
       dispatch(getAltanerById(altanerId));
     }
     return () => {
       dispatch(clearCurrentAltaner());
       dispatch(clearRoomState());
     };
-  }, [altanerId]);
-
-  // Load display mode preference for this project
-  useEffect(() => {
-    if (altanerId) {
-      dispatch(loadDisplayModeForProject(altanerId));
-    }
   }, [altanerId]);
 
   // Get the current component based on the active ID
@@ -367,9 +378,10 @@ export default function ProjectPage() {
     );
   };
 
-  // if (isLoading) {
-  //   return <LoadingScreen />;
-  // }
+  // Show loading screen while altaner is loading or doesn't have a room_id yet
+  if (!altaner || !altaner.room_id) {
+    return <LoadingScreen />;
+  }
 
   // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {

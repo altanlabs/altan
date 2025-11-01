@@ -84,7 +84,6 @@ const NewDashboardPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: message.trim(),
           idea: message.trim(),
           attachments: [],
           is_public: true,
