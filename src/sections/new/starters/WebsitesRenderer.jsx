@@ -46,7 +46,7 @@ const WebsitesRenderer = ({ onSelect }) => {
       {/* Get Started Section */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3">Start with an example:</h3>
-        <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {starters.map((starter) => (
             <button
               key={starter.title}

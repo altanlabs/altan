@@ -1,9 +1,8 @@
 import { m, useAnimation } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { AgentOrbAvatar } from '../../../../components/agents/AgentOrbAvatar';
-import { GlassButton } from '../../../../components/ui/glass-button';
 
 const GenesisAgentRenderer = ({ description }) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -48,6 +47,16 @@ const GenesisAgentRenderer = ({ description }) => {
     // End state - both agents remain visible
     setIsCreating(false);
   };
+
+  // Auto-trigger animation on mount
+  useEffect(() => {
+    // Small delay to let the initial render complete
+    const timer = setTimeout(() => {
+      handleCreateAgent();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -97,23 +106,19 @@ const GenesisAgentRenderer = ({ description }) => {
           </div>
         </m.div>
 
-        {/* Create Agent Button */}
+        {/* Status indicator */}
         <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
           className="flex justify-start"
         >
-          <GlassButton
-            onClick={handleCreateAgent}
-            disabled={isCreating}
-            size="default"
-            className="disabled:opacity-70 disabled:cursor-not-allowed"
-            contentClassName="flex items-center gap-2"
-          >
-            <Sparkles className="w-5 h-5" />
-            {isCreating ? 'Creating...' : 'Create New Agent'}
-          </GlassButton>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#ffdd00]/10 to-[#9de5e7]/10 border border-[#ffdd00]/20">
+            <Sparkles className="w-5 h-5 text-[#ffdd00]" />
+            <span className="text-sm font-medium">
+              {isCreating ? 'Creating agent...' : 'Agent creation enabled'}
+            </span>
+          </div>
         </m.div>
       </m.div>
 

@@ -1,8 +1,6 @@
 import { m } from 'framer-motion';
 import { Check, Code, GitBranch, Workflow, Zap } from 'lucide-react';
-import React, { useState } from 'react';
-
-import { GlassButton } from '../../../../components/ui/glass-button';
+import React, { useState, useEffect } from 'react';
 
 const ServicesAgentRenderer = ({ description }) => {
   const [isBuilding, setIsBuilding] = useState(false);
@@ -44,6 +42,16 @@ const ServicesAgentRenderer = ({ description }) => {
 
     setIsBuilding(false);
   };
+
+  // Auto-trigger build animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleBuild();
+    }, 800);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -93,27 +101,23 @@ const ServicesAgentRenderer = ({ description }) => {
           </div>
         </m.div>
 
-        {/* Build Services Button */}
+        {/* Status indicator */}
         <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
           className="flex justify-start"
         >
-          <GlassButton
-            onClick={handleBuild}
-            disabled={isBuilding || builtServices.length === services.length}
-            size="default"
-            className="disabled:opacity-70 disabled:cursor-not-allowed"
-            contentClassName="flex items-center gap-2"
-          >
-            <Code className="w-5 h-5" />
-            {builtServices.length === services.length
-              ? 'Services Live!'
-              : isBuilding
-                ? 'Building...'
-                : 'Build Services'}
-          </GlassButton>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#ae2cdd]/10 to-[#ae00ff]/10 border border-[#ae2cdd]/20">
+            <Code className="w-5 h-5 text-[#ae2cdd]" />
+            <span className="text-sm font-medium">
+              {builtServices.length === services.length
+                ? 'Services Live!'
+                : isBuilding
+                  ? 'Building...'
+                  : 'Services ready'}
+            </span>
+          </div>
         </m.div>
       </m.div>
 

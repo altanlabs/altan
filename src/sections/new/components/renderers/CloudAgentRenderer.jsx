@@ -1,8 +1,6 @@
 import { m } from 'framer-motion';
 import { Database, FolderOpen, Radio, Server, Zap } from 'lucide-react';
-import React, { useState } from 'react';
-
-import { GlassButton } from '../../../../components/ui/glass-button';
+import React, { useState, useEffect } from 'react';
 
 const CloudAgentRenderer = ({ description }) => {
   const [isDeploying, setIsDeploying] = useState(false);
@@ -25,6 +23,16 @@ const CloudAgentRenderer = ({ description }) => {
 
     setIsDeploying(false);
   };
+
+  // Auto-trigger deployment animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleDeploy();
+    }, 800);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -74,27 +82,23 @@ const CloudAgentRenderer = ({ description }) => {
           </div>
         </m.div>
 
-        {/* Deploy Infrastructure Button */}
+        {/* Status indicator */}
         <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
           className="flex justify-start"
         >
-          <GlassButton
-            onClick={handleDeploy}
-            disabled={isDeploying || deployedServices.length === services.length}
-            size="default"
-            className="disabled:opacity-70 disabled:cursor-not-allowed"
-            contentClassName="flex items-center gap-2"
-          >
-            <Zap className="w-5 h-5" />
-            {deployedServices.length === services.length
-              ? 'Infrastructure Live!'
-              : isDeploying
-                ? 'Deploying...'
-                : 'Deploy Infrastructure'}
-          </GlassButton>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#00fbff]/10 to-[#68dffd]/10 border border-[#00fbff]/20">
+            <Zap className="w-5 h-5 text-[#00fbff]" />
+            <span className="text-sm font-medium">
+              {deployedServices.length === services.length
+                ? 'Infrastructure Live!'
+                : isDeploying
+                  ? 'Deploying...'
+                  : 'Infrastructure ready'}
+            </span>
+          </div>
         </m.div>
       </m.div>
 
@@ -125,8 +129,8 @@ const CloudAgentRenderer = ({ description }) => {
               {services.map((service, index) => {
                 const Icon = service.icon;
                 const isDeployed = deployedServices.includes(service.id);
-                const isCurrentlyDeploying = 
-                  isDeploying && 
+                const isCurrentlyDeploying =
+                  isDeploying &&
                   deployedServices.length === index;
 
                 return (
@@ -154,7 +158,7 @@ const CloudAgentRenderer = ({ description }) => {
 
                     {/* Label */}
                     <div className="text-sm font-medium text-foreground mb-1">{service.label}</div>
-                    
+
                     {/* Status */}
                     <div className="flex items-center gap-1.5">
                       <div
@@ -221,4 +225,3 @@ const CloudAgentRenderer = ({ description }) => {
 };
 
 export default CloudAgentRenderer;
-

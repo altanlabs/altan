@@ -40,7 +40,7 @@ const VisualizationsRenderer = ({ onSelect }) => {
       {/* Sample Prompts */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3">Sample prompts</h3>
-        <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {samplePrompts.map((prompt) => (
             <button
               key={prompt.title}

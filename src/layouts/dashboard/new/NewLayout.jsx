@@ -81,9 +81,9 @@ const NewLayout = ({ children, onRequestAuth }) => {
 
   return (
     <>
-    <div className="min-h-screen w-full bg-background dark:bg-[#0D0D0D]">
+    <div className="min-h-screen w-full bg-background dark:bg-[#0D0D0D] overflow-x-hidden">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-6 pt-2 flex items-center justify-between bg-background/80 dark:bg-[#0D0D0D]/80 backdrop-blur-sm">
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-2 flex items-center justify-between bg-background/80 dark:bg-[#0D0D0D]/80 backdrop-blur-sm">
         {/* Logo and Workspace Switcher */}
         <div className="flex items-center gap-3 flex-1">
           <button
@@ -133,7 +133,7 @@ const NewLayout = ({ children, onRequestAuth }) => {
       </div>
 
       {/* Content Area */}
-      <div className="w-full">
+      <div className="w-full overflow-x-hidden">
         {children}
       </div>
 

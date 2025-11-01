@@ -75,6 +75,39 @@ const InterfaceAgentRenderer = ({ description }) => {
             <span>Modern UI patterns applied</span>
           </div>
         </m.div>
+
+        {/* Publish Button */}
+        <m.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="flex justify-start"
+        >
+          <GlassButton
+            onClick={handlePublish}
+            disabled={isDeploying || isDeployed}
+            size="default"
+            className="disabled:opacity-70 disabled:cursor-not-allowed"
+            contentClassName="flex items-center gap-2"
+          >
+            {isDeploying ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Publishing...
+              </>
+            ) : isDeployed ? (
+              <>
+                <Rocket className="w-5 h-5" />
+                Published!
+              </>
+            ) : (
+              <>
+                <Rocket className="w-5 h-5" />
+                Publish
+              </>
+            )}
+          </GlassButton>
+        </m.div>
       </m.div>
 
       {/* Right side - UI Preview */}
@@ -98,40 +131,7 @@ const InterfaceAgentRenderer = ({ description }) => {
               alt="Interface Preview"
               className="w-full h-auto"
             />
-            
-            {/* Publish Button Overlay - Top Right */}
-            <m.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="absolute top-4 right-4"
-            >
-              <GlassButton
-                onClick={handlePublish}
-                disabled={isDeploying || isDeployed}
-                size="sm"
-                className="disabled:opacity-70 disabled:cursor-not-allowed"
-                contentClassName="flex items-center gap-2 text-white"
-              >
-                {isDeploying ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Publishing...
-                  </>
-                ) : isDeployed ? (
-                  <>
-                    <Rocket className="w-4 h-4" />
-                    Published!
-                  </>
-                ) : (
-                  <>
-                    <Rocket className="w-4 h-4" />
-                    Publish
-                  </>
-                )}
-              </GlassButton>
-            </m.div>
-            
+
             {/* Deployment overlay */}
             {isDeploying && (
               <m.div
