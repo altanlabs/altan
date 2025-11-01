@@ -88,7 +88,10 @@ const FloatingTextArea = ({
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
   const messageSelector = useMemo(makeSelectMessage, []);
   const selectedMessage = useSelector((state) => messageSelector(state, messageId));
-  const tasks = useSelector(selectTasksByThread(threadId));
+  
+  // Create stable memoized selector for tasks
+  const tasksSelector = useMemo(() => selectTasksByThread(threadId), [threadId]);
+  const tasks = useSelector(tasksSelector);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);

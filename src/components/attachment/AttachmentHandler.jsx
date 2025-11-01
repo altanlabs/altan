@@ -1,5 +1,5 @@
 import { useMediaQuery, useTheme, DialogContent, CircularProgress, IconButton } from '@mui/material';
-import { memo, useState, useEffect, useCallback, useRef } from 'react';
+import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import {
@@ -10,11 +10,11 @@ import {
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
+import { LiveWaveform } from '../elevenlabs/ui/live-waveform.tsx';
 import Iconify from '../iconify';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import { useSnackbar } from '../snackbar';
 import ConnectionManager from '../tools/ConnectionManager';
-import { LiveWaveform } from '../elevenlabs/ui/live-waveform.tsx';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
@@ -25,9 +25,12 @@ import VoiceCallButton from './components/VoiceCallButton.jsx';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
-import { BASE_MENU_ITEMS, FLOW_MENU_ITEM, TOOL_MENU_ITEM } from './utils/constants';
+import { BASE_MENU_ITEMS, TOOL_MENU_ITEM } from './utils/constants';
 import { fetchAltanerData } from './utils/fetchAltanerData';
 import analytics from '../../lib/analytics';
+
+// Stable empty array reference to avoid creating new references
+const EMPTY_ARRAY = [];
 
 const AttachmentHandler = ({
   threadId = null,
@@ -60,13 +63,21 @@ const AttachmentHandler = ({
   const { isVoiceActive, isVoiceConnecting, startVoiceCall, stopVoiceCall } =
     useVoiceConversationHandler(threadId);
 
+  // Create stable memoized selectors to avoid unnecessary rerenders
+  const selectActiveResponsesStable = useMemo(
+    () => (threadId ? selectActiveResponsesByThread(threadId) : () => EMPTY_ARRAY),
+    [threadId],
+  );
+
+  const selectActiveActivationsStable = useMemo(
+    () => (threadId ? selectActiveActivationsByThread(threadId) : () => EMPTY_ARRAY),
+    [threadId],
+  );
+
   // Check for active agent generation (activations OR responses)
-  const activeResponses = useSelector((state) =>
-    threadId ? selectActiveResponsesByThread(threadId)(state) : [],
-  );
-  const activeActivations = useSelector((state) =>
-    threadId ? selectActiveActivationsByThread(threadId)(state) : [],
-  );
+  const activeResponses = useSelector(selectActiveResponsesStable);
+  const activeActivations = useSelector(selectActiveActivationsStable);
+
   // Show stop button if there are ANY active activations or responses
   const hasActiveGeneration =
     (activeResponses && activeResponses.length > 0) ||
@@ -81,7 +92,7 @@ const AttachmentHandler = ({
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [showSpeechInput, setShowSpeechInput] = useState(false);
   const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
-  
+
   // Use prop mode if provided, otherwise use local state
   const [localSelectedMode, setLocalSelectedMode] = useState('auto');
   const selectedMode = propSelectedMode !== null ? propSelectedMode : localSelectedMode;
@@ -293,9 +304,9 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
               content: result.text,
               attachments: [],
               threadId,
-            })
+            }),
           );
-          
+
           // Track speech-to-text usage
           analytics.featureUsed('speech_to_text', {
             thread_id: threadId,
@@ -328,13 +339,13 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Try to use MP4/M4A format first, fall back to WebM
       let options = { mimeType: 'audio/mp4' };
       if (!MediaRecorder.isTypeSupported('audio/mp4')) {
         options = { mimeType: 'audio/webm' };
       }
-      
+
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -349,13 +360,13 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         // Use the base MIME type without codecs
         const baseMimeType = mediaRecorder.mimeType.split(';')[0];
         const blob = new Blob(audioChunksRef.current, { type: baseMimeType });
-        
+
         // Only set blob if we have chunks (not cancelled)
         // Don't auto-transcribe - wait for user to click accept button
         if (audioChunksRef.current.length > 0) {
           setAudioBlob(blob);
         }
-        
+
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
       };
@@ -381,16 +392,16 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
   const handleCancelRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       shouldTranscribeRef.current = false;
-      
+
       // Stop the recorder
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
+
       // Stop all tracks to release microphone
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
-      
+
       // Clear the audio blob to prevent transcription
       audioChunksRef.current = [];
       setAudioBlob(null);
@@ -487,76 +498,76 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
         {/* BOTTOM ROW: Buttons */}
         <div className="flex items-center justify-between w-full">
-        {/* LEFT: Attach button with menu */}
-        <div className="flex items-center gap-2">
-          <AttachmentMenu
-            menuItems={displayMenuItems}
-            onFileInputClick={handleFileInputClick}
-          />
+          {/* LEFT: Attach button with menu */}
+          <div className="flex items-center gap-2">
+            <AttachmentMenu
+              menuItems={displayMenuItems}
+              onFileInputClick={handleFileInputClick}
+            />
 
-          {!isMobile && (
-            <>
-              {show_mode_selector && (
-                <ModeSelectionChip
-                  selectedMode={selectedMode}
-                  onModeSelect={handleModeSelect}
-                  isVoiceActive={isVoiceActive}
-                />
-              )}
-              
-              {show_mode_selector && selectedMode === 'instant' && (
-                <AgentSelectionChip
-                  agents={agents}
-                  selectedAgent={selectedAgent}
-                  onAgentSelect={handleAgentSelect}
-                  onAgentClear={handleAgentClear}
-                  isVoiceActive={isVoiceActive}
-                />
-              )}
-            </>
+            {!isMobile && (
+              <>
+                {show_mode_selector && (
+                  <ModeSelectionChip
+                    selectedMode={selectedMode}
+                    onModeSelect={handleModeSelect}
+                    isVoiceActive={isVoiceActive}
+                  />
+                )}
+
+                {show_mode_selector && selectedMode === 'instant' && (
+                  <AgentSelectionChip
+                    agents={agents}
+                    selectedAgent={selectedAgent}
+                    onAgentSelect={handleAgentSelect}
+                    onAgentClear={handleAgentClear}
+                    isVoiceActive={isVoiceActive}
+                  />
+                )}
+              </>
+            )}
+          </div>
+
+          {/* CENTER: Mobile toggle buttons */}
+          {mode === 'mobile' && onMobileToggle && (
+            <MobileViewToggle
+              mobileActiveView={mobileActiveView}
+              onMobileToggle={onMobileToggle}
+              activeComponent={activeComponent}
+              allComponents={allComponents}
+              isFullscreen={isFullscreen}
+              currentItemId={currentItemId}
+              onItemSelect={onItemSelect}
+            />
           )}
-        </div>
 
-        {/* CENTER: Mobile toggle buttons */}
-        {mode === 'mobile' && onMobileToggle && (
-          <MobileViewToggle
-            mobileActiveView={mobileActiveView}
-            onMobileToggle={onMobileToggle}
-            activeComponent={activeComponent}
-            allComponents={allComponents}
-            isFullscreen={isFullscreen}
-            currentItemId={currentItemId}
-            onItemSelect={onItemSelect}
-          />
-        )}
-
-        {/* RIGHT: Voice/Send button and Speech Recognition */}
-        <div className="flex items-center gap-2">
-          {/* Audio Transcription Button */}
-          <button
-            onClick={(e) => {
+          {/* RIGHT: Voice/Send button and Speech Recognition */}
+          <div className="flex items-center gap-2">
+            {/* Audio Transcription Button */}
+            <button
+              onClick={(e) => {
               e.stopPropagation();
               startRecording();
             }}
-            className="flex items-center justify-center p-2 rounded-full
-                     bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 
+              className="flex items-center justify-center p-2 rounded-full
+                     bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800
                      text-gray-600 dark:text-gray-300 transition-all duration-200"
-            title="Record and transcribe"
-          >
-            <Iconify icon="mdi:microphone" className="text-xl" />
-          </button>
+              title="Record and transcribe"
+            >
+              <Iconify icon="mdi:microphone" className="text-xl" />
+            </button>
 
-          {/* Main Send/Voice Button */}
-          <VoiceCallButton
-            isVoiceActive={isVoiceActive}
-            isVoiceConnecting={isVoiceConnecting}
-            isSendEnabled={isSendEnabled}
-            onSendMessage={handleSendMessage}
-            hasActiveGeneration={hasActiveGeneration}
-            onStopGeneration={handleStopGeneration}
-          />
+            {/* Main Send/Voice Button */}
+            <VoiceCallButton
+              isVoiceActive={isVoiceActive}
+              isVoiceConnecting={isVoiceConnecting}
+              isSendEnabled={isSendEnabled}
+              onSendMessage={handleSendMessage}
+              hasActiveGeneration={hasActiveGeneration}
+              onStopGeneration={handleStopGeneration}
+            />
+          </div>
         </div>
-      </div>
 
         {/* Speech Input Modal */}
         <SpeechInputModal

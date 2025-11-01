@@ -1,0 +1,24 @@
+/* Streaming text animation - fade in for new deltas */
+@keyframes streamingTextFadeIn {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.streaming-text-update {
+  animation: streamingTextFadeIn 0.15s ease-out forwards;
+}
+
+/* Smooth transitions for text updates */
+.message-part-text {
+  transition: opacity 0.05s ease-out;
+}
+
+/* Animated suffix for streaming text - appears inline with fade-in */
+.streaming-text-suffix {
+  animation: streamingTextFadeIn 0.15s ease-out forwards;
+  display: inline;
+}

@@ -148,7 +148,13 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const placeholderMessages = useSelector((state) => placeholderMessagesSelector(state, threadId));
   const messagesById = useSelector(selectMessagesById);
   const me = useSelector(selectMe);
-  const activeResponses = useSelector((state) => selectActiveResponsesByThread(threadId)(state));
+  
+  // Create stable memoized selector for active responses
+  const activeResponsesSelector = useMemo(
+    () => (threadId ? selectActiveResponsesByThread(threadId) : () => []),
+    [threadId],
+  );
+  const activeResponses = useSelector(activeResponsesSelector);
   
   // Merge real messages with placeholder messages
   const { messageIds, allMessagesById } = useMemo(() => {

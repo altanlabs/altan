@@ -69,7 +69,8 @@ const processTextWithCitations = (text, annotations) => {
 /**
  * Main Text Part Renderer Component
  */
-const TextPartRenderer = memo(({ part, threadId, mode }) => {  // Extract and group annotations
+const TextPartRenderer = memo(({ part, threadId, mode }) => {
+  // Extract and group annotations
   const citationData = useMemo(() => {
     const annotations = part?.meta_data?.annotations || [];
     const urlCitations = annotations.filter((a) => a.type === 'url_citation');
@@ -85,18 +86,39 @@ const TextPartRenderer = memo(({ part, threadId, mode }) => {  // Extract and gr
     };
   }, [part?.meta_data?.annotations]);
 
+  // Split text for streaming animation
+  const { mainText, animatedChunk } = useMemo(() => {
+    const isStreaming = !part.is_done;
+    const chunks = part?.streamingChunks || [];
+
+    if (isStreaming && chunks.length > 0) {
+      // Show all chunks except the last one as stable text
+      // Last chunk gets the animation
+      if (chunks.length === 1) {
+        return { mainText: '', animatedChunk: chunks[0] };
+      }
+      const allButLast = chunks.slice(0, -1).join('');
+      const last = chunks[chunks.length - 1];
+      return { mainText: allButLast, animatedChunk: last };
+    }
+
+    // Not streaming or no chunks: show all accumulated text, no animation
+    return { mainText: part.text, animatedChunk: null };
+  }, [part.text, part.streamingChunks, part.is_done]);
+
   // Process text with citation placeholders
   const processedText = useMemo(() => {
-    if (!citationData?.hasAnnotations) return part.text;
-    return processTextWithCitations(part.text, citationData.annotations);
-  }, [part.text, citationData]);
+    if (!citationData?.hasAnnotations) return mainText;
+    return processTextWithCitations(mainText, citationData.annotations);
+  }, [mainText, citationData]);
 
   return (
     <div className="message-part-text">
       {/* Main Content */}
-      {part.text && (
+      {(mainText || animatedChunk) && (
         <CustomMarkdown
-          text={processedText || part.text}
+          text={processedText || mainText}
+          animatedSuffix={animatedChunk}
           threadId={threadId}
           minified={mode === 'mini'}
           citationAnnotations={citationData?.annotations}

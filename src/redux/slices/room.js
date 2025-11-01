@@ -198,6 +198,9 @@ const normalizePart = (raw) => {
       ? raw.argumentsLastProcessedIndex
       : -1,
 
+    // Streaming chunks for animation (text/thinking parts)
+    streamingChunks: raw?.streamingChunks ?? [],
+
     // Revision counter for detecting updates even when text hasn't changed (e.g., buffered chunks)
     updateRevision: raw?.updateRevision ?? 0,
 
@@ -1586,7 +1589,10 @@ const slice = createSlice({
             // Consume as many consecutive chunks as possible
             let next = part.lastProcessedIndex + 1;
             while (Object.prototype.hasOwnProperty.call(part.deltaBuffer, next)) {
-              part.text = (part.text || '') + part.deltaBuffer[next];
+              const chunk = part.deltaBuffer[next];
+              part.text = (part.text || '') + chunk;
+              // Add to streaming chunks for animation
+              part.streamingChunks.push(chunk);
               delete part.deltaBuffer[next];
               part.lastProcessedIndex = next;
               next += 1;
@@ -1598,7 +1604,10 @@ const slice = createSlice({
           }
         } else {
           // No index → fallback to simple append (still idempotent if caller repeats exact same delta only when upstream avoids repeats)
-          part.text = (part.text || '') + String(delta);
+          const deltaStr = String(delta);
+          part.text = (part.text || '') + deltaStr;
+          // Add to streaming chunks for animation
+          part.streamingChunks.push(deltaStr);
           part.updateRevision = (part.updateRevision || 0) + 1;
         }
       }
@@ -1913,6 +1922,9 @@ const slice = createSlice({
       if (part.receivedIndices) part.receivedIndices = Object.create(null);
       if (isFiniteNumber(part.lastProcessedIndex))
         part.lastProcessedIndex = part.lastProcessedIndex; // keep as a watermark
+
+      // Clear streaming chunks array when done
+      part.streamingChunks = [];
 
       // Cleanup tool arguments streaming helpers
       if (part.argumentsDeltaBuffer) part.argumentsDeltaBuffer = Object.create(null);
@@ -2327,8 +2339,11 @@ export const selectTotalMembers = createSelector(
 
 export const selectThreads = (state) => selectRoomState(state).threads;
 
-export const selectAuthorizationRequests = (state) =>
-  selectRoomState(state).authorization_requests.filter((request) => !request.is_completed);
+// Memoized selector for authorization requests to prevent unnecessary rerenders
+export const selectAuthorizationRequests = createSelector(
+  [(state) => selectRoomState(state).authorization_requests],
+  (authorizationRequests) => authorizationRequests.filter((request) => !request.is_completed),
+);
 
 export const selectUserRooms = (state) => selectRoomState(state).userRooms;
 

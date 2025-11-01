@@ -1,4 +1,5 @@
 import { Stack } from '@mui/material';
+import { createSelector } from '@reduxjs/toolkit';
 import { memo, useMemo } from 'react';
 
 import AggregatedPartsCard from './AggregatedPartsCard.jsx';
@@ -10,48 +11,56 @@ import MessageMedia from './wrapper/MessageMedia.jsx';
 import {
   makeSelectHasMessageContent,
   makeSelectHasMessageMedia,
-  makeSelectMessageParts,
+  selectMessagePartsByMessageId,
   selectMessagePartsById,
 } from '../../redux/slices/room.js';
 import { useSelector } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
+
+// Stable empty array reference to avoid creating new references
+const EMPTY_ARRAY = [];
 
 const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const selectors = useMemo(
     () => ({
       hasContent: makeSelectHasMessageContent(),
       hasMedia: makeSelectHasMessageMedia(),
-      messageParts: makeSelectMessageParts(),
+      // Memoized selector for sorted parts - prevents unnecessary array recreation
+      sortedParts: createSelector(
+        [
+          // Use separate input selectors to avoid creating new references
+          selectMessagePartsByMessageId,
+          selectMessagePartsById,
+          () => message.id,
+        ],
+        (partsByMessageId, partsById, messageId) => {
+          const partIds = partsByMessageId[messageId];
+          // Use stable empty array reference
+          if (!partIds || partIds.length === 0) return EMPTY_ARRAY;
+
+          return partIds
+            .map((partId) => partsById[partId])
+            .filter(Boolean)
+            .sort((a, b) => {
+              const orderA = a.order ?? 0;
+              const orderB = b.order ?? 0;
+              if (orderA !== orderB) return orderA - orderB;
+
+              const blockOrderA = a.block_order ?? 0;
+              const blockOrderB = b.block_order ?? 0;
+              return blockOrderA - blockOrderB;
+            });
+        },
+      ),
     }),
-    [],
+    [message.id],
   );
 
   const hasContent = useSelector((state) => selectors.hasContent(state, message.id));
   const hasMessageMedia = useSelector((state) => selectors.hasMedia(state, message.id));
-  const messageParts = useSelector((state) => selectors.messageParts(state, message.id));
-  const partsById = useSelector(selectMessagePartsById);
 
-  // Create sorted parts - relies on partsById reference changing when parts are updated (via Immer)
-  // The MessagePartRenderer memoization will handle preventing unnecessary re-renders
-  const sortedParts = useMemo(() => {
-    if (messageParts.length === 0) return [];
-
-    return messageParts
-      .map((partId) => partsById[partId])
-      .filter(Boolean)
-      .sort((a, b) => {
-        // First, sort by order
-        const orderA = a.order ?? 0;
-        const orderB = b.order ?? 0;
-        if (orderA !== orderB) {
-          return orderA - orderB;
-        }
-        // Then, sort by block_order
-        const blockOrderA = a.block_order ?? 0;
-        const blockOrderB = b.block_order ?? 0;
-        return blockOrderA - blockOrderB;
-      });
-  }, [messageParts, partsById]);
+  // Use memoized selector - only recreates array when parts actually change
+  const sortedParts = useSelector(selectors.sortedParts);
 
   // Group consecutive tool/thinking parts for aggregation
   const groupedParts = useMemo(() => {
@@ -59,7 +68,7 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   }, [sortedParts]);
 
   // Show "Thinking..." only if there's no content, no message parts, no media, and no error
-  const hasMessageParts = messageParts.length > 0;
+  const hasMessageParts = sortedParts.length > 0;
 
   // Check if message has error in meta_data
   const hasMetaDataError = useMemo(() => {
@@ -80,6 +89,22 @@ const MessageContent = ({ message, threadId, mode = 'main' }) => {
   const warning = useMemo(() => {
     return message.meta_data?.warning;
   }, [message.meta_data]);
+
+  // TODO: check if this is a placeholder message (from activation lifecycle)
+  // Check if this is a placeholder message (from activation lifecycle)
+  const isPlaceholder = message.isPlaceholder || message.id?.startsWith('placeholder-');
+
+  if (isPlaceholder) {
+    // Placeholder messages show loading state (activation in progress)
+    return (
+      <Stack
+        spacing={1}
+        width="100%"
+      >
+        <Iconify icon="svg-spinners:3-dots-fade" />
+      </Stack>
+    );
+  }
 
   if (!hasContent && !hasMessageParts && !message.error && !hasMessageMedia && !hasMetaDataError && !isEmptyResponse) {
     return (

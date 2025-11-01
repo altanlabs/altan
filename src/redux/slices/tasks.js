@@ -296,8 +296,11 @@ export const {
 
 const selectTasksState = (state) => state.tasks;
 
+// Stable empty array reference to avoid creating new references
+const EMPTY_ARRAY = [];
+
 export const selectTasksByThread = (threadId) => (state) =>
-  selectTasksState(state).tasksByThread[threadId] || [];
+  selectTasksState(state).tasksByThread[threadId] || EMPTY_ARRAY;
 
 export const selectPlanById = (planId) => (state) =>
   selectTasksState(state).plansById[planId] || null;

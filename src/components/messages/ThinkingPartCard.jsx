@@ -21,6 +21,7 @@ const selectThinkingPartFields = (state, partId) => {
     summary: part.summary,
     provider: part.provider,
     provider_id: part.provider_id,
+    streamingChunks: part.streamingChunks,
   };
 };
 
@@ -32,6 +33,23 @@ const ThinkingPartCard = ({ partId }) => {
   const scrollTimeoutRef = useRef(null);
 
   const isCompleted = part?.is_done || part?.status === 'completed';
+
+  // Split text for streaming animation
+  const { mainText, animatedChunk } = useMemo(() => {
+    const isStreaming = !part?.is_done;
+    const chunks = part?.streamingChunks || [];
+
+    if (isStreaming && chunks.length > 0) {
+      if (chunks.length === 1) {
+        return { mainText: '', animatedChunk: chunks[0] };
+      }
+      const allButLast = chunks.slice(0, -1).join('');
+      const last = chunks[chunks.length - 1];
+      return { mainText: allButLast, animatedChunk: last };
+    }
+
+    return { mainText: part?.text || '', animatedChunk: null };
+  }, [part?.text, part?.streamingChunks, part?.is_done]);
 
   // Expand when thinking starts, collapse when thinking completes
   useEffect(() => {
@@ -49,7 +67,7 @@ const ThinkingPartCard = ({ partId }) => {
 
     // Stick to bottom
     contentEl.scrollTop = contentEl.scrollHeight;
-  }, [part?.text, part?.summary]);
+  }, [mainText, animatedChunk, part?.summary]);
 
   const duration = useMemo(() => {
     if (!isCompleted || !part?.created_at || !part?.finished_at) return null;
@@ -204,8 +222,8 @@ const ThinkingPartCard = ({ partId }) => {
               }}
             >
               <div className="text-gray-600 dark:text-gray-400 [&_.markdown]:text-[10px] [&_.markdown]:leading-relaxed [&_p]:mb-1">
-                {part?.text ? (
-                  <CustomMarkdown text={part.text} codeActive={false} minified />
+                {(mainText || animatedChunk) ? (
+                  <CustomMarkdown text={mainText} animatedSuffix={animatedChunk} codeActive={false} minified />
                 ) : part?.summary && Array.isArray(part.summary) ? (
                   <div className="space-y-2">
                     {part.summary.map((item, idx) => (

@@ -35,7 +35,10 @@ const selectErrorPartFields = (state, partId) => {
 const ErrorPartCard = ({ partId }) => {
   // Use a selector that only returns the fields we need
   const part = useSelector((s) => selectErrorPartFields(s, partId), shallowEqual);
-  const member = useSelector((state) => makeSelectMemberById(state, part?.member_id));
+  
+  // Create stable memoized selector for member
+  const memberSelector = useMemo(() => makeSelectMemberById(), []);
+  const member = useSelector((state) => memberSelector(state, part?.member_id));
 
   const [isExpanded, setIsExpanded] = useState(false);
 

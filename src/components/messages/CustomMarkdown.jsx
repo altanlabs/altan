@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 // import sanitizeHtml from 'sanitize-html';
 
 import { cn } from '@lib/utils';
+import './streaming-text-animation.css';
 
 import CitationChip from './CitationChip.jsx';
 import ClarifyingQuestions from './clarifying-questions/ClarifyingQuestions.jsx';
@@ -355,11 +356,20 @@ const CustomMarkdown = ({
   noWrap = false,
   center = false,
   citationAnnotations = null,
+  animatedSuffix = null,
 }) => {
   const messageContent = useMessageContent(messageId);
   const content = messageContent || text;
 
-  if (!content?.length && !messageId) {
+  // Append animated suffix to content so it appears inline with the text
+  const contentWithSuffix = useMemo(() => {
+    if (!content) return content;
+    if (!animatedSuffix) return content;
+    // Use rehypeRaw to inject the suffix with animation class inline
+    return content + `<span class="streaming-text-suffix">${animatedSuffix}</span>`;
+  }, [content, animatedSuffix]);
+
+  if (!content?.length && !messageId && !animatedSuffix) {
     return null;
   }
 
@@ -404,7 +414,7 @@ const CustomMarkdown = ({
         '--tw-prose-invert-td-borders': 'rgb(51 65 85)',
       }}
     >
-      <MarkdownErrorBoundary content={content}>
+      <MarkdownErrorBoundary content={contentWithSuffix}>
         <ReactMarkdown
           remarkPlugins={[
             remarkGfm,
@@ -559,7 +569,7 @@ const CustomMarkdown = ({
               <li className="mb-0.5 leading-relaxed text-slate-700 dark:text-slate-300">{children}</li>
             ),
             // Minimal ordered list
-            ol: ({ children, ...props }) => (
+            ol: ({ children, ordered, ...props }) => (
               <ol
                 className="list-decimal ml-5 mb-2 space-y-0.5"
                 {...props}
@@ -568,7 +578,7 @@ const CustomMarkdown = ({
               </ol>
             ),
             // Minimal unordered list
-            ul: ({ children, ...props }) => (
+            ul: ({ children, ordered, ...props }) => (
               <ul
                 className="list-disc ml-5 mb-2 space-y-0.5"
                 {...props}
@@ -693,7 +703,7 @@ const CustomMarkdown = ({
             ),
           }}
         >
-          {content}
+          {contentWithSuffix}
         </ReactMarkdown>
       </MarkdownErrorBoundary>
     </div>
@@ -709,9 +719,12 @@ export default memo(CustomMarkdown, (prevProps, nextProps) => {
   const annotationsUnchanged = JSON.stringify(prevProps.citationAnnotations) ===
                                 JSON.stringify(nextProps.citationAnnotations);
 
+  const animatedSuffixUnchanged = prevProps.animatedSuffix === nextProps.animatedSuffix;
+
   return (
     textUnchanged &&
     annotationsUnchanged &&
+    animatedSuffixUnchanged &&
     prevProps.messageId === nextProps.messageId &&
     prevProps.threadId === nextProps.threadId &&
     prevProps.codeActive === nextProps.codeActive &&

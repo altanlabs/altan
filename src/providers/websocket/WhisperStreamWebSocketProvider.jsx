@@ -16,7 +16,10 @@
  *   - activation.* events (acknowledged, scheduled, rescheduled, discarded, failed)
  *   - response.* events (started, completed, empty, failed, stopped, interrupted, suspended, requeued)
  *   - message_part.* events (added, updated, completed, deleted)
- * - Uses messagePartBatcher for high-frequency streaming updates
+ * - Uses intelligent batching for smooth streaming:
+ *   - Updates batch via RAF at 60 FPS (~16ms intervals)
+ *   - Lifecycle events trigger immediate flush for proper ordering
+ *   - React-Redux ensures instant re-renders on state changes
  * - Dispatches directly to Redux store for real-time state updates
  * - Handles credits exhaustion notifications (activation.failed with not_enough_credits)
  * - Automatic subscription queue management for pending subscriptions
@@ -27,7 +30,14 @@
  * @architecture
  * Unlike HermesWebSocketProvider which delegates to the central handleWebSocketEvent,
  * this provider extracts and handles AGENT_RESPONSE events directly for specialized
- * WhisperStream processing
+ * WhisperStream processing.
+ *
+ * **Batching Strategy** (optimized for smooth 60 FPS streaming):
+ * - message_part.updated: Batched via RAF (~16ms) for 60 FPS smooth streaming
+ * - Lifecycle events (completed, deleted, response.*): Flush batched updates first, then process immediately
+ * - message_part.added: Process immediately (no batching needed)
+ * - React-Redux default equality checks ensure instant re-renders when state changes
+ * - This ensures smooth streaming without custom equality checks that block renders
  *
  * @example
  * // Wrap your component tree with the provider
@@ -132,29 +142,21 @@ export const useWhisperStreamWebSocket = () => useContext(WhisperStreamWebSocket
  */
 const handleAgentResponseEvent = (data) => {
   // Handle different event structures:
-  // 1. agent_event at root level (e.g., activation.acknowledged)
-  // 2. agent_event nested under data (e.g., response.started, response.completed)
-  const eventData = data.data?.agent_event; //  || data.data?.agent_event;
+  // NEW FORMAT: Event data is directly in data (not nested under agent_event)
+  // The event has: { type: "AGENT_RESPONSE", event: "agent_response", agent_id, thread_id, event_name, ... }
+  const eventData = data.data?.agent_event || data.data;
+
   if (!eventData) {
-    console.warn('WhisperStream WS: AGENT_RESPONSE missing agent_event, skipping:', {
-      type: data.type,
-      hasData: !!data.data,
-      dataKeys: data.data ? Object.keys(data.data) : [],
-    });
+    console.warn('WhisperStream WS: AGENT_RESPONSE missing event data, skipping');
     return;
   }
 
-  // Use event_data if available, otherwise use data directly
-  const eventType = eventData?.event_name; // || agentEvent?.type || agentEvent?.name;
+  // Use event_name from the event data
+  const eventType = eventData?.event_name || eventData?.event_type;
 
   // Validate event_type exists
   if (!eventType || typeof eventType !== 'string') {
-    console.warn('WhisperStream WS: AGENT_RESPONSE missing or invalid event_type:', {
-      hasEventType: !!eventType,
-      eventType,
-      eventDataKeys: Object.keys(eventData),
-      eventData,
-    });
+    console.warn('WhisperStream WS: AGENT_RESPONSE missing or invalid event_type');
     return;
   }
 
@@ -163,47 +165,12 @@ const handleAgentResponseEvent = (data) => {
 
   // Handle activation and response lifecycle events
   if (eventType.startsWith('activation.') || eventType.startsWith('response.')) {
-    // Activation lifecycle (before response starts)
-    if (eventType.startsWith('activation.')) {
-      // Add to activation lifecycle
-      dispatch(
-        addActivationLifecycle({
-          response_id: eventData.response_id,
-          agent_id: eventData.agent_id,
-          thread_id: eventData.thread_id,
-          event_type: eventType,
-          event_data: eventData,
-          timestamp,
-        }),
-      );
-
-      // Complete activation lifecycle when scheduled or rescheduled
-      if (['activation.scheduled', 'activation.rescheduled'].includes(eventType)) {
+    batch(() => {
+      // Activation lifecycle (before response starts)
+      if (eventType.startsWith('activation.')) {
+        // Add to activation lifecycle
         dispatch(
-          completeActivationLifecycle({
-            response_id: eventData.response_id,
-            thread_id: eventData.thread_id,
-          }),
-        );
-      }
-
-      // Discard activation when discarded
-      if (eventType === 'activation.discarded') {
-        dispatch(
-          discardActivationLifecycle({
-            response_id: eventData.response_id,
-            thread_id: eventData.thread_id,
-          }),
-        );
-      }
-    }
-
-    // Response lifecycle (after response starts)
-    if (eventType.startsWith('response.')) {
-      // Add to response lifecycle - with safety check for eventData
-      if (eventData && eventData.response_id) {
-        dispatch(
-          addResponseLifecycle({
+          addActivationLifecycle({
             response_id: eventData.response_id,
             agent_id: eventData.agent_id,
             thread_id: eventData.thread_id,
@@ -212,68 +179,118 @@ const handleAgentResponseEvent = (data) => {
             timestamp,
           }),
         );
-      } else {
-        console.warn('⚠️ WhisperStream WS: Received response event without response_id:', {
-          eventType,
-          eventData,
-        });
+
+        // Complete activation lifecycle when scheduled or rescheduled
+        if (['activation.scheduled', 'activation.rescheduled'].includes(eventType)) {
+          dispatch(
+            completeActivationLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+            }),
+          );
+        }
+
+        // Discard activation when discarded
+        if (eventType === 'activation.discarded') {
+          dispatch(
+            discardActivationLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+            }),
+          );
+        }
       }
 
-      // Complete response lifecycle on completion events
-      if (
-        [
-          'response.completed',
-          'response.failed',
-          'response.empty',
-          'response.stopped',
-          'response.interrupted',
-          'response.suspended',
-          'response.requeued',
-        ].includes(eventType)
-      ) {
-        dispatch(
-          completeResponseLifecycle({
-            response_id: eventData.response_id,
-            thread_id: eventData.thread_id,
-            message_id: eventData.message_id,
-            status: eventType.replace('response.', ''),
-          }),
-        );
+      // Response lifecycle (after response starts)
+      if (eventType.startsWith('response.')) {
+        // Add to response lifecycle - with safety check for eventData
+        if (eventData && eventData.response_id) {
+          dispatch(
+            addResponseLifecycle({
+              response_id: eventData.response_id,
+              agent_id: eventData.agent_id,
+              thread_id: eventData.thread_id,
+              event_type: eventType,
+              event_data: eventData,
+              timestamp,
+            }),
+          );
+        } else {
+          console.warn('⚠️ WhisperStream WS: Received response event without response_id');
+        }
+
+        // Complete response lifecycle on completion events
+        if (
+          [
+            'response.completed',
+            'response.failed',
+            'response.empty',
+            'response.stopped',
+            'response.interrupted',
+            'response.suspended',
+            'response.requeued',
+          ].includes(eventType)
+        ) {
+          dispatch(
+            completeResponseLifecycle({
+              response_id: eventData.response_id,
+              thread_id: eventData.thread_id,
+              message_id: eventData.message_id,
+              status: eventType.replace('response.', ''),
+            }),
+          );
+        }
       }
-    }
+    });
   }
 
   // Handle specific events
   switch (eventType) {
+    // this is what makes the loading dots appear
+    // if we receive a response.scheduled event, stream delay for many seconds
+    case 'response.scheduled':
     case 'response.started':
-      const messageData = {
-        id: eventData.message_id,
-        thread_id: eventData.thread_id,
-        member_id: eventData.room_member_id,
-        date_creation: timestamp,
-        text: '',
-        is_streaming: true,
-      };
-      dispatch(addMessage(messageData));
-      dispatch(addRunningResponse(eventData));
+      // Flush pending updates before starting new response
+      messagePartBatcher.flush();
+      batch(() => {
+        // Create message if we have a message_id
+        if (eventData.message_id) {
+          const messageData = {
+            id: eventData.message_id,
+            thread_id: eventData.thread_id,
+            member_id: eventData.room_member_id,
+            date_creation: timestamp,
+            text: '',
+            is_streaming: true,
+          };
+          dispatch(addMessage(messageData));
+        }
+        dispatch(addRunningResponse(eventData));
+      });
       break;
 
     case 'response.completed':
-      dispatch(deleteRunningResponse(eventData));
-      if (eventData.message_id) {
-        dispatch(
-          updateMessageStreamingState({
-            messageId: eventData.message_id,
-            isStreaming: false,
-          }),
-        );
-      }
+      // Flush pending updates before completing response
+      messagePartBatcher.flush();
+      batch(() => {
+        dispatch(deleteRunningResponse(eventData));
+        if (eventData.message_id) {
+          dispatch(
+            updateMessageStreamingState({
+              messageId: eventData.message_id,
+              isStreaming: false,
+            }),
+          );
+        }
+      });
       break;
 
     case 'response.empty':
-      dispatch(deleteRunningResponse(eventData));
-      if (eventData.message_id) {
-        batch(() => {
+      // Flush pending updates before marking as empty
+      messagePartBatcher.flush();
+      batch(() => {
+        dispatch(deleteRunningResponse(eventData));
+        if (eventData.message_id) {
           dispatch(
             updateMessageStreamingState({
               messageId: eventData.message_id,
@@ -291,14 +308,16 @@ const handleAgentResponseEvent = (data) => {
               },
             }),
           );
-        });
-      }
+        }
+      });
       break;
 
     case 'response.failed':
-      dispatch(deleteRunningResponse(eventData));
-      if (eventData.message_id) {
-        batch(() => {
+      // Flush pending updates before handling failure
+      messagePartBatcher.flush();
+      batch(() => {
+        dispatch(deleteRunningResponse(eventData));
+        if (eventData.message_id) {
           dispatch(
             updateMessageStreamingState({
               messageId: eventData.message_id,
@@ -341,15 +360,13 @@ const handleAgentResponseEvent = (data) => {
               is_done: true,
             }),
           );
-        });
-      }
+        }
+      });
       break;
 
     case 'message_part.added':
-      // Process immediately - lifecycle event
-      batch(() => {
-        dispatch(addMessagePart(eventData));
-      });
+      // Process immediately - new part lifecycle event
+      dispatch(addMessagePart(eventData));
       break;
 
     case 'message_part.updated':
@@ -358,19 +375,15 @@ const handleAgentResponseEvent = (data) => {
       break;
 
     case 'message_part.completed':
-      // Process immediately - critical completion event
-      // Flush any pending updates first to ensure correct order
+      // Flush pending updates before marking as completed (ensures proper ordering)
       messagePartBatcher.flush();
-      batch(() => {
-        dispatch(markMessagePartDone(eventData));
-      });
+      dispatch(markMessagePartDone(eventData));
       break;
 
     case 'MessagePartDeleted':
-      // Process immediately - lifecycle event
-      batch(() => {
-        dispatch(deleteMessagePart(eventData));
-      });
+      // Flush pending updates before deletion (ensures proper ordering)
+      messagePartBatcher.flush();
+      dispatch(deleteMessagePart(eventData));
       break;
 
     case 'activation.failed':
@@ -405,14 +418,33 @@ const handleAgentResponseEvent = (data) => {
       }
       break;
 
+      // Lifecycle events that are already handled above but don't need specific switch handling
+      // case 'activation.acknowledged':
+      // case 'activation.scheduled':
+      // case 'activation.rescheduled':
+      // case 'activation.discarded':
+      // case 'activation.failed':
+      // case 'response.scheduled':
+      // case 'response.started':
+      // case 'response.completed':
+      // case 'response.failed':
+      // case 'response.empty':
+      // case 'response.stopped':
+      // case 'response.interrupted':
+      // case 'response.suspended':
+      // case 'response.requeued':
+      //   // These are already handled by lifecycle logic above (lines 179-260)
+      //   // No additional action needed in switch
+      //   break;
+
     default:
-      console.log(`🎙️ WhisperStream WS: Unhandled AGENT_RESPONSE event type: ${eventType}`);
+      // Lifecycle events are already handled above, no additional logging needed
       break;
   }
 };
 
-// Register handler for high-frequency streaming updates
-// Only 'updated' events are batched - lifecycle events are processed immediately
+// Register the message part batcher handler once
+// This handler processes all batched message_part.updated events
 messagePartBatcher.registerHandler('updated', (eventData) => {
   dispatch(updateMessagePart(eventData));
 });
@@ -763,8 +795,6 @@ const WhisperStreamWebSocketProvider = ({ children }) => {
             } else if (data.type === 'AGENT_RESPONSE') {
               // Handle AGENT_RESPONSE events directly in WhisperStream provider
               handleAgentResponseEvent(data);
-            } else {
-              console.log('📨 WhisperStream WS: Unhandled event type:', data.type);
             }
           };
           return () => {
