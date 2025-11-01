@@ -10,6 +10,8 @@ const initialState = {
   currentAgent: null,
   currentAgentDmRoomId: null,
   currentAgentCreatorRoomId: null,
+  // New structure for multiple agent rooms
+  agentRooms: {}, // { [agentId]: { agent, dmRoomId, creatorRoomId, loading } }
   voices: {
     items: [],
     loading: false,
@@ -51,6 +53,41 @@ const slice = createSlice({
       state.currentAgentDmRoomId = action.payload.dmRoomId;
       state.currentAgentCreatorRoomId = action.payload.creatorRoomId;
       state.isLoading = false;
+
+      // Also store in agentRooms for multi-agent support
+      if (action.payload.agent) {
+        state.agentRooms[action.payload.agent.id] = {
+          agent: action.payload.agent,
+          dmRoomId: action.payload.dmRoomId,
+          creatorRoomId: action.payload.creatorRoomId,
+          loading: false,
+        };
+      }
+    },
+
+    // New actions for multi-agent support
+    startLoadingAgentRoom(state, action) {
+      const agentId = action.payload;
+      if (!state.agentRooms[agentId]) {
+        state.agentRooms[agentId] = { loading: true };
+      } else {
+        state.agentRooms[agentId].loading = true;
+      }
+    },
+
+    setAgentRoom(state, action) {
+      const { agentId, agent, dmRoomId, creatorRoomId } = action.payload;
+      state.agentRooms[agentId] = {
+        agent,
+        dmRoomId,
+        creatorRoomId,
+        loading: false,
+      };
+    },
+
+    removeAgentRoom(state, action) {
+      const agentId = action.payload;
+      delete state.agentRooms[agentId];
     },
 
     addAgent(state, action) {
@@ -123,8 +160,66 @@ export default slice.reducer;
 
 // Actions
 
-export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
-  dispatch(slice.actions.startLoading());
+// Lightweight version that only fetches DM room (for prefetching)
+export const fetchAgentDmRoom = (agentId) => async (dispatch, getState) => {
+  // Check if room is already cached
+  const { agentRooms } = getState().agents;
+  if (agentRooms[agentId] && agentRooms[agentId].dmRoomId) {
+    return Promise.resolve(agentRooms[agentId]);
+  }
+
+  dispatch(slice.actions.startLoadingAgentRoom(agentId));
+
+  try {
+    const agentRes = await optimai.get(`/agent/${agentId}`);
+    const agent = agentRes.data.agent;
+
+    if (agent) {
+      const { account } = getState().general;
+
+      // Fetch DM room only
+      const dmResponse = await optimai.get(`/agent/${agent.id}/dm?account_id=${account.id}`);
+
+      const roomData = {
+        agentId: agent.id,
+        agent,
+        dmRoomId: dmResponse.data.id,
+        creatorRoomId: null, // Not fetched in lightweight version
+      };
+
+      // Store in agentRooms
+      dispatch(slice.actions.setAgentRoom(roomData));
+
+      return Promise.resolve(roomData);
+    } else {
+      throw new Error('Agent not found');
+    }
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const fetchAgentRoom = (agentId, setAsCurrent = true) => async (dispatch, getState) => {
+  // Check if room is already cached
+  const { agentRooms } = getState().agents;
+  if (agentRooms[agentId] && agentRooms[agentId].dmRoomId) {
+    // Already loaded, just set as current if requested
+    if (setAsCurrent) {
+      const roomData = agentRooms[agentId];
+      dispatch(slice.actions.setAgent({
+        agent: roomData.agent,
+        dmRoomId: roomData.dmRoomId,
+        creatorRoomId: roomData.creatorRoomId,
+      }));
+    }
+    return Promise.resolve(agentRooms[agentId]);
+  }
+
+  if (setAsCurrent) {
+    dispatch(slice.actions.startLoading());
+  }
+  dispatch(slice.actions.startLoadingAgentRoom(agentId));
+
   try {
     const agentRes = await optimai.get(`/agent/${agentId}`);
     const agent = agentRes.data.agent;
@@ -147,18 +242,36 @@ export const fetchAgentRoom = (agentId) => async (dispatch, getState) => {
         // creatorRoomId will remain null
       }
 
-      dispatch(
-        slice.actions.setAgent({
-          agent,
-          dmRoomId: dmResponse.data.id,
-          creatorRoomId,
-        }),
-      );
+      const roomData = {
+        agentId: agent.id,
+        agent,
+        dmRoomId: dmResponse.data.id,
+        creatorRoomId,
+      };
+
+      // Store in agentRooms
+      dispatch(slice.actions.setAgentRoom(roomData));
+
+      // Also set as current if requested (for backwards compatibility)
+      if (setAsCurrent) {
+        dispatch(
+          slice.actions.setAgent({
+            agent,
+            dmRoomId: dmResponse.data.id,
+            creatorRoomId,
+          }),
+        );
+      }
+
+      return Promise.resolve(roomData);
     } else {
       throw new Error('Agent not found');
     }
   } catch (error) {
-    dispatch(slice.actions.hasError(error.toString()));
+    if (setAsCurrent) {
+      dispatch(slice.actions.hasError(error.toString()));
+    }
+    return Promise.reject(error);
   }
 };
 
@@ -300,7 +413,7 @@ export const fetchAgentById = (agentId) => async (dispatch, getState) => {
   }
 };
 
-export const { setAgents, resetVoices } = slice.actions;
+export const { setAgents, resetVoices, removeAgentRoom } = slice.actions;
 
 // Selectors
 export const selectAllAgents = (state) => {
@@ -314,4 +427,9 @@ export const selectAllAgents = (state) => {
       (a) => !agentsFromAgentsStore.find((agent) => agent.id === a.id),
     ),
   ];
+};
+
+// Selector for getting a specific agent's room data
+export const selectAgentRoom = (agentId) => (state) => {
+  return state.agents.agentRooms[agentId] || null;
 };

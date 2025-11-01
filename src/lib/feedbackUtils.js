@@ -157,11 +157,11 @@ export const updateLastActivity = () => {
 };
 
 /**
- * Calculate NPS category from score
+ * Calculate NPS category from score (1-5 scale)
  */
 export const getNPSCategory = (score) => {
-  if (score >= 9) return 'promoter';
-  if (score >= 7) return 'passive';
+  if (score >= 4) return 'promoter';
+  if (score >= 3) return 'passive';
   return 'detractor';
 };
 

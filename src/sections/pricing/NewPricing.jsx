@@ -1,29 +1,14 @@
-import {
-  Box,
-  Card,
-  Button,
-  Typography,
-  Stack,
-  Select,
-  MenuItem,
-  FormControl,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  useTheme,
-  alpha,
-  CircularProgress,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { Check, Loader2 } from 'lucide-react';
 
 import { useAuthContext } from '../../auth/useAuthContext';
-import Iconify from '../../components/iconify';
-import { SkeletonPricingCard } from '../../components/skeleton';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Skeleton } from '../../components/ui/skeleton';
+import { Switch } from '../../components/ui/switch';
+import { Badge } from '../../components/ui/badge';
 import { analytics } from '../../lib/analytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
@@ -132,144 +117,98 @@ function PricingCard({
   children,
   onButtonClick,
   loading = false,
-  sx,
   ...other
 }) {
-  const theme = useTheme();
-
   return (
     <Card
-      sx={{
-        p: 4,
-        position: 'relative',
-        ...(highlighted && {
-          transform: 'scale(1.05)',
-          zIndex: 1,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.main, 0.02)})`,
-            borderRadius: 'inherit',
-            zIndex: -1,
-          },
-        }),
-        ...sx,
-      }}
+      className={`relative p-8 transition-all duration-200 ${
+        highlighted
+          ? 'bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900/50 shadow-xl scale-105 border-2 border-gray-900 dark:border-white'
+          : 'bg-white dark:bg-gray-900/50 hover:shadow-lg border border-gray-200 dark:border-gray-800'
+      }`}
       {...other}
     >
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{ mb: 1, fontWeight: 600 }}
-        >
-          {title}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: 'text.secondary' }}
-        >
-          {description}
-        </Typography>
+      {highlighted && (
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white text-white dark:text-gray-900">
+          Most Popular
+        </Badge>
+      )}
 
-        <Box sx={{ mb: 2 }}>
+      <div className="mb-6">
+        <h3 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+
+        <div className="mt-4">
           {typeof price === 'string' ? (
-            <Typography
-              variant="h3"
-              sx={{ fontWeight: 700 }}
-            >
-              {price}
-            </Typography>
+            <div className="text-4xl font-bold text-gray-900 dark:text-white">{price}</div>
           ) : (
-            <Stack
-              direction="row"
-              alignItems="baseline"
-              spacing={0.5}
-            >
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 700 }}
-              >
-                €{price}
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ color: 'text.secondary' }}
-              >
-                /mo
-              </Typography>
-            </Stack>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">€{price}</span>
+              <span className="text-lg text-gray-600 dark:text-gray-400">/mo</span>
+            </div>
           )}
-          {priceSubtext && (
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', display: 'block' }}
-            >
-              {priceSubtext}
-            </Typography>
-          )}
-        </Box>
-      </Box>
+          {priceSubtext && <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{priceSubtext}</div>}
+        </div>
+      </div>
 
       {children}
 
-      <Divider sx={{ my: 3 }} />
+      <div className="border-t border-gray-200 dark:border-gray-800 my-6" />
 
-      <List
-        disablePadding
-        sx={{ mb: 3 }}
-      >
+      <ul className="space-y-3 mb-6">
         {features.map((feature, index) => (
-          <ListItem
-            key={index}
-            disablePadding
-            sx={{ py: 0.5 }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <Iconify
-                icon={feature.available ? 'eva:checkmark-circle-2-fill' : 'eva:close-circle-fill'}
-                sx={{
-                  color: feature.available ? 'success.main' : 'text.disabled',
-                  width: 20,
-                  height: 20,
-                }}
-              />
-            </ListItemIcon>
-            <ListItemText
-              primary={feature.text}
-              primaryTypographyProps={{
-                variant: 'body2',
-                sx: {
-                  color: feature.available ? 'text.primary' : 'text.disabled',
-                },
-              }}
+          <li key={index} className="flex items-start gap-3">
+            <Check
+              className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                feature.available
+                  ? 'text-green-600 dark:text-green-500'
+                  : 'text-gray-300 dark:text-gray-700'
+              }`}
             />
-          </ListItem>
+            <span
+              className={`text-sm ${
+                feature.available
+                  ? 'text-gray-700 dark:text-gray-300'
+                  : 'text-gray-400 dark:text-gray-600'
+              }`}
+            >
+              {feature.text}
+            </span>
+          </li>
         ))}
-      </List>
+      </ul>
 
       <Button
-        fullWidth
-        size="large"
-        variant="soft"
-        color="inherit"
         onClick={onButtonClick}
         disabled={loading}
-        sx={{ py: 1.5, fontWeight: 600 }}
-        startIcon={
-          loading ? (
-            <CircularProgress
-              size={20}
-              color="inherit"
-            />
-          ) : null
-        }
+        className="w-full h-12 font-semibold"
+        variant={highlighted ? 'default' : 'outline'}
       >
-        {loading ? 'Processing...' : buttonText}
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          buttonText
+        )}
       </Button>
+    </Card>
+  );
+}
+
+function SkeletonPricingCard({ highlighted = false }) {
+  return (
+    <Card className={`p-8 ${highlighted ? 'scale-105' : ''}`}>
+      <Skeleton className="h-8 w-32 mb-2" />
+      <Skeleton className="h-4 w-full mb-6" />
+      <Skeleton className="h-12 w-24 mb-6" />
+      <div className="space-y-3 mb-6">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-5 w-full" />
+        ))}
+      </div>
+      <Skeleton className="h-12 w-full" />
     </Card>
   );
 }
@@ -328,8 +267,8 @@ export default function NewPricing() {
     fetchPricing();
   }, []);
 
-  const handleGrowthTierChange = (event) => {
-    setSelectedGrowthTier(event.target.value);
+  const handleGrowthTierChange = (value) => {
+    setSelectedGrowthTier(parseInt(value));
   };
 
   const getBillingOption = (plan, frequency) => {
@@ -447,93 +386,39 @@ export default function NewPricing() {
 
   if (!proPlan || growthPlans.length === 0 || !enterprisePlan) {
     return (
-      <Box sx={{ pt: 2 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: 'repeat(3, 1fr)',
-            },
-            alignItems: 'start',
-          }}
-        >
+      <div className="pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           <SkeletonPricingCard />
-          <SkeletonPricingCard
-            highlighted
-            sx={{ mt: { md: -2 } }}
-          />
+          <SkeletonPricingCard highlighted />
           <SkeletonPricingCard />
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box>
+    <div>
       {/* Billing Toggle */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isYearlyBilling}
-              onChange={(e) => setIsYearlyBilling(e.target.checked)}
-              color="primary"
-            />
-          }
-          label={
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-            >
-              <Typography
-                variant="body2"
-                sx={{ color: !isYearlyBilling ? 'primary.main' : 'text.secondary' }}
-              >
-                Monthly
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: isYearlyBilling ? 'primary.main' : 'text.secondary' }}
-              >
-                Yearly
-              </Typography>
-              {isYearlyBilling && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: 'success.lighter',
-                    color: 'success.main',
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                  }}
-                >
-                  Save ~17%
-                </Typography>
-              )}
-            </Stack>
-          }
-          sx={{ m: 0 }}
+      <div className="flex justify-center items-center gap-4 mb-8">
+        <span className={`text-sm font-medium ${!isYearlyBilling ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+          Monthly
+        </span>
+        <Switch
+          checked={isYearlyBilling}
+          onCheckedChange={setIsYearlyBilling}
         />
-      </Box>
+        <span className={`text-sm font-medium ${isYearlyBilling ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+          Yearly
+        </span>
+        {isYearlyBilling && (
+          <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+            Save ~17%
+          </Badge>
+        )}
+      </div>
 
       {/* Pricing Cards */}
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            lg: 'repeat(3, 1fr)',
-          },
-          alignItems: 'start',
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
         {/* Pro Plan */}
         <PricingCard
           title="Pro"
@@ -546,79 +431,16 @@ export default function NewPricing() {
           }
           description={proPlan?.description}
           priceSubtext={
-            isAuthenticated && proBillingOption ? (
-              <Stack spacing={1}>
-                {isYearlyBilling && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    €{Math.round(proBillingOption.price / 100 / 12)}/mo billed yearly
-                  </Typography>
-                )}
-                {!isYearlyBilling && DISCOUNT_CONFIG.showProDiscount && (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'text.secondary',
-                        textDecoration: 'line-through',
-                      }}
-                    >
-                      €{DISCOUNT_CONFIG.originalPrice}/mo
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 600,
-                        backgroundColor: 'primary.lighter',
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                      }}
-                    >
-                      {DISCOUNT_CONFIG.discountLabel}
-                    </Typography>
-                  </Stack>
-                )}
-              </Stack>
-            ) : (
-              <Stack spacing={1}>
-                {DISCOUNT_CONFIG.showProDiscount && (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'text.secondary',
-                        textDecoration: 'line-through',
-                      }}
-                    >
-                      €{DISCOUNT_CONFIG.originalPrice}/mo
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 600,
-                        backgroundColor: 'primary.lighter',
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                      }}
-                    >
-                      {DISCOUNT_CONFIG.discountLabel}
-                    </Typography>
-                  </Stack>
-                )}
-              </Stack>
-            )
+            isAuthenticated && proBillingOption && isYearlyBilling ? (
+              <span>€{Math.round(proBillingOption.price / 100 / 12)}/mo billed yearly</span>
+            ) : DISCOUNT_CONFIG.showProDiscount ? (
+              <div className="flex items-center gap-2">
+                <span className="line-through text-gray-400">€{DISCOUNT_CONFIG.originalPrice}/mo</span>
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+                  {DISCOUNT_CONFIG.discountLabel}
+                </Badge>
+              </div>
+            ) : null
           }
           features={PRO_FEATURES}
           buttonText="Choose Plan"
@@ -637,23 +459,14 @@ export default function NewPricing() {
           description={currentGrowthPlan?.description}
           priceSubtext={
             growthBillingOption ? (
-              <Stack spacing={1}>
-
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'success.main',
-                    fontWeight: 600,
-                  }}
-                >
-                  + €
-                  {Math.round(
-                    currentGrowthPlan.credits / 100 -
-                      formatPrice(growthBillingOption.price, billingFrequency),
-                  )}{' '}
-                  free credits
-                </Typography>
-              </Stack>
+              <span className="text-green-600 dark:text-green-500 font-semibold">
+                + €
+                {Math.round(
+                  currentGrowthPlan.credits / 100 -
+                    formatPrice(growthBillingOption.price, billingFrequency),
+                )}{' '}
+                free credits
+              </span>
             ) : null
           }
           features={GROWTH_FEATURES}
@@ -662,23 +475,15 @@ export default function NewPricing() {
           loading={loadingStates.growth}
           onButtonClick={handleGrowthClick}
         >
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{ mb: 2, fontWeight: 600 }}
-            >
+          <div className="mb-6">
+            <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
               Choose your credit tier:
-            </Typography>
-            <FormControl fullWidth>
-              <Select
-                value={selectedGrowthTier}
-                onChange={handleGrowthTierChange}
-                sx={{
-                  '& .MuiSelect-select': {
-                    py: 1.5,
-                  },
-                }}
-              >
+            </label>
+            <Select value={selectedGrowthTier.toString()} onValueChange={handleGrowthTierChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {growthPlans.map((plan, index) => {
                   const billingOption = getBillingOption(plan, billingFrequency);
                   const price = billingOption
@@ -686,35 +491,17 @@ export default function NewPricing() {
                     : 0;
 
                   return (
-                    <MenuItem
-                      key={plan.id}
-                      value={index}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        width="100%"
-                      >
-                        <Typography
-                          variant="body2"
-                          fontWeight={600}
-                        >
-                          €{plan.credits / 100} credits
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="success.main"
-                          fontWeight={600}
-                        >
-                          €{price}/mo
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
+                    <SelectItem key={plan.id} value={index.toString()}>
+                      <div className="flex justify-between items-center w-full gap-8">
+                        <span className="font-semibold">€{plan.credits / 100} credits</span>
+                        <span className="text-green-600 dark:text-green-500 font-semibold">€{price}/mo</span>
+                      </div>
+                    </SelectItem>
                   );
                 })}
-              </Select>
-            </FormControl>
-          </Box>
+              </SelectContent>
+            </Select>
+          </div>
         </PricingCard>
 
         {/* Enterprise Plan */}
@@ -728,7 +515,7 @@ export default function NewPricing() {
           loading={loadingStates.enterprise}
           onButtonClick={handleEnterpriseClick}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

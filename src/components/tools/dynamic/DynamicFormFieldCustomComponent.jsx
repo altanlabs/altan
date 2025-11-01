@@ -7,7 +7,6 @@ import { COMPONENTS } from './components/index.js';
 
 const componentMapping = {
   TriggerType: 'TriggerType',
-  AppsAutocomplete: 'AppsAutocomplete',
   AccountId: 'AccountId',
   IteratorAutocomplete: 'IteratorAutocomplete',
   HTMLEditor: 'HTMLEditor',
@@ -15,10 +14,7 @@ const componentMapping = {
   AltanerVariablesInstallationOverride: 'AltanerVariablesInstallationOverride',
   InvokeFlowInputVars: 'InvokeFlowInputVars',
   AltanerSubscriptionGroup: 'AltanerSubscriptionGroup',
-  FormAutocomplete: 'FormAutocomplete',
   CreateWithAI: 'CreateWithAI',
-  FormAutocompleteMultiple: 'FormAutocomplete', // same component as FormAutocomplete
-  VoiceSection: 'VoiceSelection',
   markdown: 'RichAceEditor',
   CodeEditor: 'RichAceEditor', // same RichAceEditor for these
   python: 'RichAceEditor',
@@ -50,7 +46,6 @@ const componentMapping = {
 
 const getComponentProps = ({ title, schema, fieldKey }) => ({
   TriggerType: {},
-  AppsAutocomplete: {},
   AccountId: {},
   IteratorAutocomplete: {},
   HTMLEditor: {},

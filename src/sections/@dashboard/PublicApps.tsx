@@ -42,7 +42,7 @@ function PublicApps() {
     setLoading(true);
 
     try {
-        const currentOffset = append ? offset : 0;
+      const currentOffset = append ? offset : 0;
       const url = `/altaner/?offset=${currentOffset}`;
 
       const response = await optimai.get(url);
@@ -98,7 +98,6 @@ function PublicApps() {
                 xs={12}
                 sm={6}
                 md={3}
-                
               >
                 <PublicAppCard
                   key={altaner.id}
@@ -123,9 +122,7 @@ function PublicApps() {
           )}
         </>
       ) : (
-        <div className="text-center text-slate-400 py-8">
-          No public apps found
-        </div>
+        <div className="text-center text-slate-400 py-8">No public apps found</div>
       )}
     </div>
   );

@@ -5,14 +5,12 @@ import { batch } from 'react-redux';
 import { clearAltanerState } from './altaners';
 import { clearConnectionsState } from './connections';
 import { clearFlowState } from './flows';
-import { clearGateState } from './gates';
 import { clearMediaState } from './media';
 import { clearNotificationsState } from './notifications';
 import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
 import { analytics } from '../../lib/analytics';
 import { optimai, optimai_integration } from '../../utils/axios';
-import { ALTAN_AGENT_TEMPLATE_IDS } from '../../utils/constants';
 import { checkArraysEqualsProperties, checkObjectsEqual } from '../helpers/memoize';
 
 // ----------------------------------------------------------------------
@@ -42,13 +40,12 @@ const initialState = {
     id: null,
     stripe_id: null,
     webhooks: [],
-    forms: [],
     members: [],
     rooms: [],
     attributes: [],
     subscriptions: [],
     agents: [],
-    gates: [],
+
     altaners: [],
     payments: [],
     developer_apps: [],
@@ -65,8 +62,6 @@ const initialState = {
     rooms: false,
     workflows: false,
     payments: false,
-    gates: false,
-    forms: false,
     webhooks: false,
     subscriptions: false,
     apikeys: false,
@@ -83,8 +78,6 @@ const initialState = {
     rooms: false,
     workflows: false,
     payments: false,
-    gates: false,
-    forms: false,
     webhooks: false,
     subscriptions: false,
     apikeys: false,
@@ -101,8 +94,6 @@ const initialState = {
     rooms: null,
     workflows: null,
     payments: null,
-    gates: null,
-    forms: null,
     webhooks: null,
     subscriptions: null,
     apikeys: null,
@@ -251,28 +242,10 @@ const slice = createSlice({
     addWebhook(state, action) {
       state.account.webhooks.push(action.payload);
     },
-    addForm(state, action) {
-      state.account.forms.push(action.payload);
-    },
-    patchForm(state, action) {
-      const patchForm = action.payload;
-      const form = state.account.forms.find((a) => a.id === patchForm.id);
-      Object.assign(form, patchForm);
-    },
-    addFormResponses(state, action) {
-      const { formId, responses } = action.payload;
-      const form = state.account.forms.find((form) => form.id === formId);
-      if (form) {
-        form.responses = responses;
-      }
-    },
     patchAgent(state, action) {
       const patchedAgent = action.payload;
       const agent = state.account.agents.find((a) => a.id === patchedAgent.id);
       Object.assign(agent, patchedAgent);
-    },
-    deleteForm(state, action) {
-      state.account.forms = state.account.forms.filter((f) => f.id !== action.payload);
     },
     deleteAgent(state, action) {
       state.account.agents = state.account.agents.filter((agent) => agent.id !== action.payload);
@@ -840,9 +813,6 @@ export const {
   deleteAgent,
   addWebhook,
   deleteWebhook,
-  deleteForm,
-  addForm,
-  patchForm,
   addAgent,
   openPermissionDialog,
   closePermissionDialog,
@@ -1005,14 +975,15 @@ export const selectSortedAgents = createSelector(
     if (!agents) return [];
 
     // Filter out agents cloned from Altan's official templates
-    const filteredAgents = agents.filter((agent) => {
-      return !(
-        agent?.cloned_from?.version?.template_id &&
-        ALTAN_AGENT_TEMPLATE_IDS.includes(agent.cloned_from.version.template_id)
-      );
-    });
+    // const filteredAgents = agents.filter((agent) => {
+    //   return !(
+    //     agent?.cloned_from?.version?.template_id &&
+    //     ALTAN_AGENT_TEMPLATE_IDS.includes(agent.cloned_from.version.template_id)
+    //   );
+    // });
 
-    return filteredAgents.sort((a, b) => a.name.localeCompare(b.name));
+    // Create a copy before sorting (Redux state is immutable)
+    return [...agents].sort((a, b) => a.name.localeCompare(b.name));
   },
   {
     memoizeOptions: {
@@ -1052,30 +1023,8 @@ export const selectNav = createSelector(
       'view_flows',
       'view_agents',
       'view_bases',
-      'view_forms',
       'view_interfaces',
     ],
-  {
-    memoizeOptions: {
-      resultEqualityCheck: checkArraysEqualsProperties(),
-    },
-  },
-);
-
-export const selectForms = createSelector(
-  [selectAccount],
-  (account) => {
-    // Defensive check: ensure account and forms exist
-    if (!account || !Array.isArray(account.forms)) {
-      console.warn('selectForms: account.forms is not available or not an array:', {
-        account,
-        forms: account?.forms,
-      });
-      return [];
-    }
-
-    return account.forms.map((f) => ({ details: f, resource_type_id: 'form' }));
-  },
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -1143,26 +1092,6 @@ export const selectRooms = createSelector(
   },
 );
 
-export const selectGates = createSelector(
-  [selectAccount],
-  (account) => {
-    // Defensive check: ensure account and gates exist
-    if (!account || !Array.isArray(account.gates)) {
-      console.warn('selectGates: account.gates is not available or not an array:', {
-        account,
-        gates: account?.gates,
-      });
-      return [];
-    }
-
-    return account.gates.map((r) => ({ details: r, resource_type_id: 'gate' }));
-  },
-  {
-    memoizeOptions: {
-      resultEqualityCheck: checkArraysEqualsProperties(),
-    },
-  },
-);
 
 export const selectApps = createSelector(
   [selectAccount],
@@ -1195,19 +1124,15 @@ export const selectApps = createSelector(
 export const selectExtendedResources = createSelector(
   [
     selectRooms,
-    selectForms,
-    selectGates,
     selectTables,
     selectAccountId,
     (state, internal = false) => internal,
   ],
-  (rooms, forms, gates, tables, accountId, internal) =>
+  (rooms, tables, accountId, internal) =>
     !internal
       ? []
       : [
           ...rooms,
-          ...forms,
-          ...gates,
           ...tables,
           { details: { id: accountId, name: 'This Workspace' }, resource_type_id: 'account' },
         ],
@@ -1273,11 +1198,16 @@ const ACCOUNT_GQ = {
   apikeys: {
     '@fields': ['@base@exc:meta_data', 'name'],
   },
-  gates: {
-    '@fields': ['@base@exc:meta_data', 'name'],
-  },
   agents: {
-    '@fields': ['id', 'name', 'date_creation', 'avatar_url', 'cloned_template_id', 'is_pinned', 'meta_data'],
+    '@fields': [
+      'id',
+      'name',
+      'date_creation',
+      'avatar_url',
+      'cloned_template_id',
+      'is_pinned',
+      'meta_data',
+    ],
     cloned_from: {
       '@fields': ['id'],
       version: {
@@ -1343,8 +1273,6 @@ const KEY_MAPPING = {
   connections: 'connections',
   workflows: 'workflows',
   webhooks: 'webhooks',
-  forms: 'forms',
-  gates: 'gates',
   altaners: 'altaners',
   organisation: 'organisation',
   owner: 'user',
@@ -1882,51 +1810,6 @@ export const updateAgent = (agentId, data) => async (dispatch) => {
   }
 };
 
-//  forms -----------------------------------------------------------------------------------------
-
-export const createForm = (data) => async (dispatch, getState) => {
-  try {
-    const { account } = getState().general;
-    const response = await optimai.post(`/account/${account.id}/form`, data);
-    const { form } = response.data;
-    return form;
-  } catch (e) {
-    if (e.response && e.response.data && e.response.data.detail) {
-      return Promise.reject(e.response.data.detail);
-    } else {
-      return Promise.reject(e.message);
-    }
-  }
-};
-
-export const updateForm = (formId, data) => async () => {
-  try {
-    const response = await optimai.patch(`/form/${formId}`, data);
-    const { field } = response.data;
-    return Promise.resolve(field);
-  } catch (e) {
-    if (e.response && e.response.data && e.response.data.detail) {
-      return Promise.reject(e.response.data.detail);
-    } else {
-      return Promise.reject(e.message);
-    }
-  }
-};
-
-export const fetchFormResponses = (formId) => async (dispatch) => {
-  try {
-    const response = await optimai.get(`/form/${formId}/responses`);
-    const { form_responses } = response.data;
-    dispatch(slice.actions.addFormResponses({ formId: formId, responses: form_responses }));
-    return Promise.resolve(form_responses);
-  } catch (e) {
-    console.error(`error: could not update info: ${e}`);
-    dispatch(slice.actions.hasError(e.toString()));
-    return Promise.reject(e.toString());
-  } finally {
-  }
-};
-
 //  webhooks -----------------------------------------------------------------------------------------
 
 export const createWebhook = (data) => async (dispatch, getState) => {
@@ -2318,7 +2201,6 @@ export const clearAccountState = () => async (dispatch) =>
     dispatch(clearMediaState());
     dispatch(clearNotificationsState());
     dispatch(clearFlowState());
-    dispatch(clearGateState());
     dispatch(clearAltanerState());
     dispatch(clearAgentsUsage());
     dispatch(clearSpacesState());

@@ -27,8 +27,8 @@ export const openUrl = async (url, options = {}) => {
       // Use Browser plugin for mobile platforms
       await Browser.open({ url, ...options });
     } else {
-      // Use window.location.href for web platforms
-      window.location.href = url;
+      // Use window.open for web platforms to open in a new tab
+      window.open(url, '_blank');
     }
   } catch (error) {
     console.error('Error opening URL:', error);

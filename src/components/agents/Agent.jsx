@@ -17,7 +17,7 @@ import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import useMessageListener from '../../hooks/useMessageListener';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog';
 import { deleteAccountAgent, createTemplate } from '../../redux/slices/general';
-import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes';
+import useAgentAttributes from '../../sections/@dashboard/agents/useAgentAttributes.jsx';
 import { optimai, optimai_room } from '../../utils/axios';
 import Iconify from '../iconify';
 import AltanLogo from '../loaders/AltanLogo';

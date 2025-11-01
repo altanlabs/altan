@@ -679,12 +679,8 @@ const UsagePage = () => {
   };
 
   return (
-    <CompactLayout
-      noPadding
-      title="Usage · Altan"
-      className="min-h-screen"
-    >
-      <Container sx={{ pb: 6, pt: 4 }}>
+    <>
+      <Container sx={{ pb: 6, pt: 10 }}>
         {/* Usage Overview Section */}
         <UsageOverview
           stats={stats}
@@ -902,7 +898,7 @@ const UsagePage = () => {
           </div>
         </div>
       </Container>
-    </CompactLayout>
+    </>
   );
 };
 

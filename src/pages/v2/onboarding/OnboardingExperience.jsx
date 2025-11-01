@@ -14,12 +14,12 @@ const OnboardingExperience = () => {
   const params = new URLSearchParams(location.search);
   const sceneParam = params.get('scene');
 
-  const [currentScene, setCurrentScene] = useState(sceneParam || 'welcome'); // welcome | demo | direct
+  const [currentScene, setCurrentScene] = useState(sceneParam || 'demo'); // welcome | demo | direct - default to demo
   const [showSignup, setShowSignup] = useState(false);
 
-  // Update URL when scene changes
+  // Update URL when scene changes (only if not default 'demo')
   useEffect(() => {
-    if (currentScene !== 'welcome') {
+    if (currentScene !== 'demo') {
       const newParams = new URLSearchParams(location.search);
       newParams.set('scene', currentScene);
       history.replace({ search: newParams.toString() });
@@ -31,7 +31,7 @@ const OnboardingExperience = () => {
       setCurrentScene('demo');
     } else if (path === 'direct') {
       // Redirect to landing page for direct input
-      history.push('/v2/landing');
+      history.push('/demo/landing');
     }
   };
 

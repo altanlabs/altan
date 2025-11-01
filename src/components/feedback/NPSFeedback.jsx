@@ -1,6 +1,7 @@
-import { Box, Button, Stack, TextField, Typography } from '@mui/material';
 import { memo, useState } from 'react';
 
+import FeedbackPopup from './FeedbackPopup';
+import { useAuthContext } from '../../auth/useAuthContext';
 import analytics from '../../lib/analytics';
 import {
   getNPSCategory,
@@ -8,18 +9,21 @@ import {
   markFeedbackGiven,
   shouldShowNPS,
 } from '../../lib/feedbackUtils';
-import FeedbackPopup from './FeedbackPopup';
+import { cn } from '../../lib/utils';
+import { Button } from '../ui/button.tsx';
+import { Textarea } from '../ui/textarea.tsx';
 
 // ----------------------------------------------------------------------
 
 const NPSFeedback = memo(({ onClose }) => {
+  const { isAuthenticated } = useAuthContext();
   const [step, setStep] = useState('score'); // score, comment
   const [score, setScore] = useState(null);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if we should show NPS
-  if (!shouldShowNPS()) {
+  // Check if we should show NPS (must be authenticated)
+  if (!isAuthenticated || !shouldShowNPS()) {
     return null;
   }
 
@@ -88,82 +92,41 @@ const NPSFeedback = memo(({ onClose }) => {
 
   if (step === 'score') {
     return (
-      <FeedbackPopup
-        title="Quick question"
-        onClose={handleDismiss}
-      >
-        <Stack spacing={2.5}>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#b0b0b0',
-              lineHeight: 1.5,
-              fontSize: '14px',
-            }}
-          >
+      <FeedbackPopup title="Quick question" onClose={handleDismiss}>
+        <div className="space-y-6">
+          <p className="text-sm text-[#b0b0b0] leading-relaxed">
             How likely are you to recommend Altan to a colleague?
-          </Typography>
+          </p>
 
-          {/* Score buttons 0-10 */}
-          <Box>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{ mb: 1 }}
-            >
-              {[...Array(11)].map((_, index) => (
+          {/* Score buttons 1-5 */}
+          <div>
+            <div className="flex gap-2 mb-2">
+              {[1, 2, 3, 4, 5].map((value) => (
                 <Button
-                  key={index}
-                  variant="outlined"
-                  onClick={() => handleScoreClick(index)}
-                  sx={{
-                    minWidth: '32px',
-                    width: '32px',
-                    height: '32px',
-                    padding: 0,
-                    borderRadius: '8px',
-                    borderColor: '#444',
-                    color: '#b0b0b0',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    '&:hover': {
-                      borderColor:
-                        index >= 9 ? '#4caf50' : index >= 7 ? '#ff9800' : '#f44336',
-                      backgroundColor:
-                        index >= 9
-                          ? 'rgba(76, 175, 80, 0.1)'
-                          : index >= 7
-                            ? 'rgba(255, 152, 0, 0.1)'
-                            : 'rgba(244, 67, 54, 0.1)',
-                      color: index >= 9 ? '#4caf50' : index >= 7 ? '#ff9800' : '#f44336',
-                    },
-                  }}
+                  key={value}
+                  variant="outline"
+                  onClick={() => handleScoreClick(value)}
+                  className={cn(
+                    'min-w-[48px] h-12 p-0 rounded-lg border-[#444] text-[#b0b0b0] text-sm font-semibold transition-all',
+                    'hover:scale-105',
+                    value >= 4
+                      ? 'hover:border-green-500 hover:bg-green-500/10 hover:text-green-500'
+                      : value === 3
+                        ? 'hover:border-orange-500 hover:bg-orange-500/10 hover:text-orange-500'
+                        : 'hover:border-red-500 hover:bg-red-500/10 hover:text-red-500',
+                  )}
                 >
-                  {index}
+                  {value}
                 </Button>
               ))}
-            </Stack>
+            </div>
 
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              sx={{ px: 0.5 }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ color: '#666', fontSize: '11px' }}
-              >
-                Not likely
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: '#666', fontSize: '11px' }}
-              >
-                Very likely
-              </Typography>
-            </Stack>
-          </Box>
-        </Stack>
+            <div className="flex justify-between px-1">
+              <span className="text-[11px] text-[#666]">Not likely</span>
+              <span className="text-[11px] text-[#666]">Very likely</span>
+            </div>
+          </div>
+        </div>
       </FeedbackPopup>
     );
   }
@@ -172,103 +135,44 @@ const NPSFeedback = memo(({ onClose }) => {
     const category = getNPSCategory(score);
     const promptText =
       category === 'promoter'
-        ? "What do you love most about Altan?"
+        ? 'What do you love most about Altan?'
         : category === 'passive'
-          ? "What would make you more likely to recommend Altan?"
+          ? 'What would make you more likely to recommend Altan?'
           : "What's the main reason for your score?";
 
     return (
-      <FeedbackPopup
-        title={`Thanks for the ${score}!`}
-        onClose={handleDismiss}
-      >
-        <Stack spacing={2}>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#b0b0b0',
-              lineHeight: 1.5,
-              fontSize: '14px',
-            }}
-          >
-            {promptText}
-          </Typography>
+      <FeedbackPopup title={`Thanks for the ${score}!`} onClose={handleDismiss}>
+        <div className="space-y-4">
+          <p className="text-sm text-[#b0b0b0] leading-relaxed">{promptText}</p>
 
-          <TextField
-            multiline
+          <Textarea
             rows={3}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Your feedback helps us improve..."
-            variant="outlined"
-            fullWidth
             autoFocus
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                color: 'white',
-                borderRadius: '12px',
-                '& fieldset': {
-                  borderColor: '#444',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#666',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#888',
-                },
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: '#666',
-                opacity: 1,
-              },
-            }}
+            className="bg-white/5 text-white border-[#444] rounded-xl placeholder:text-[#666] focus-visible:border-[#888] resize-none"
           />
 
-          <Stack
-            direction="row"
-            spacing={1.5}
-          >
+          <div className="flex gap-3">
             <Button
-              variant="contained"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              fullWidth
-              sx={{
-                backgroundColor: 'white',
-                color: 'black',
-                fontWeight: 600,
-                borderRadius: '50px',
-                py: 1,
-                fontSize: '14px',
-                '&:hover': {
-                  backgroundColor: '#f0f0f0',
-                },
-                '&:disabled': {
-                  backgroundColor: '#444',
-                  color: '#888',
-                },
-              }}
+              className="flex-1 bg-white text-black font-semibold rounded-full py-2 text-sm hover:bg-[#f0f0f0] disabled:bg-[#444] disabled:text-[#888]"
             >
               {isSubmitting ? 'Sending...' : 'Submit'}
             </Button>
 
             <Button
-              variant="text"
+              variant="ghost"
               onClick={handleSkipComment}
               disabled={isSubmitting}
-              sx={{
-                color: '#888',
-                fontSize: '14px',
-                '&:hover': {
-                  color: '#b0b0b0',
-                },
-              }}
+              className="text-[#888] text-sm hover:text-[#b0b0b0] hover:bg-transparent"
             >
               Skip
             </Button>
-          </Stack>
-        </Stack>
+          </div>
+        </div>
       </FeedbackPopup>
     );
   }
@@ -279,4 +183,3 @@ const NPSFeedback = memo(({ onClose }) => {
 NPSFeedback.displayName = 'NPSFeedback';
 
 export default NPSFeedback;
-

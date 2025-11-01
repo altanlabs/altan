@@ -21,6 +21,7 @@ import {
   BasesPage,
   ExecutionsPage,
   DashboardPage,
+  NewDashboardPage,
   UsagePage,
   UsageDatabasePage,
   TestNotificationsPage,
@@ -62,7 +63,6 @@ import {
   Terms,
   Privacy,
   ContactPage,
-  DemoTextVoicePage,
   SDKTestPage,
   SupportPage,
   VirtualDesktopPage,
@@ -73,17 +73,21 @@ import {
 import AuthGuard from '../auth/AuthGuard.jsx';
 import GuestGuard from '../auth/GuestGuard.jsx';
 import PageTracker from '../components/analytics/PageTracker.jsx';
+import ScrollToTop from '../components/scroll-to-top/ScrollToTop.js';
 import TrackingParamsCapture from '../components/tracking/TrackingParamsCapture.jsx';
 import CompactLayout from '../layouts/compact';
 import DashboardLayout from '../layouts/dashboard';
+import NewLayout from '../layouts/dashboard/new/NewLayout.jsx';
 import ProjectLayout from '../layouts/dashboard/ProjectLayout.jsx';
 import SuperAdminLayout from '../layouts/superadmin/SuperAdminLayout.jsx';
+import DashboardDataProvider from '../providers/DashboardDataProvider.jsx';
 
 // ----------------------------------------------------------------------
 
 const Router = () => {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <PageTracker />
       <TrackingParamsCapture />
       <Switch>
@@ -148,9 +152,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <RoomPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <RoomPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -160,9 +166,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <ChatPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <ChatPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -512,9 +520,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <FlowPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <FlowPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -524,9 +534,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <AccountsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <AccountsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -535,9 +547,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <AccountPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <AccountPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -547,9 +561,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasesPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasesPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -558,9 +574,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -569,9 +587,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -580,9 +600,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -591,9 +613,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -602,9 +626,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <BasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <BasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -614,9 +640,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <AccountMembers />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <AccountMembers />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -625,9 +653,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <MemberPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <MemberPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -637,9 +667,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <AgentsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <AgentsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -648,9 +680,9 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
+            <DashboardDataProvider>
               <AgentPage />
-            </DashboardLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -660,9 +692,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={true}>
-            <DashboardLayout>
-              <RoomsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <RoomsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -671,9 +705,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={true}>
-            <DashboardLayout>
-              <RoomsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <RoomsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -683,9 +719,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <InterfacesPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <InterfacesPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -694,9 +732,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <InterfacePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <InterfacePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -706,9 +746,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <Redirect to="/account/settings" />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <Redirect to="/account/settings" />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -717,9 +759,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <UserAccountPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <UserAccountPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -728,9 +772,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <APIKeys />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <APIKeys />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -740,9 +786,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <UsagePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <UsagePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -751,9 +799,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <ExecutionsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <ExecutionsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -762,9 +812,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <UsageDatabasePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <UsageDatabasePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -774,9 +826,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <TestNotificationsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <TestNotificationsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -786,9 +840,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <MarketplacePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <MarketplacePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -797,9 +853,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <TemplatePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <TemplatePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -808,9 +866,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <CloneTemplatePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <CloneTemplatePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -820,9 +880,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <UserProfilePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <UserProfilePage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -831,9 +893,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <ReferralsPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <ReferralsPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -842,9 +906,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <PermissionDeniedPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <PermissionDeniedPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -853,9 +919,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <AdminPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <AdminPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -864,9 +932,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <IntegrationPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <IntegrationPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -875,9 +945,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <MediaPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <MediaPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -887,9 +959,9 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <DemoTextVoicePage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout></NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -898,9 +970,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <SDKTestPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <SDKTestPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -909,9 +983,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <Terms />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <Terms />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -920,9 +996,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <Privacy />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <Privacy />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -930,9 +1008,11 @@ const Router = () => {
           path="/contact"
           exact
         >
-          <DashboardLayout>
-            <ContactPage />
-          </DashboardLayout>
+          <DashboardDataProvider>
+            <NewLayout>
+              <ContactPage />
+            </NewLayout>
+          </DashboardDataProvider>
         </Route>
 
         <Route
@@ -940,9 +1020,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <SupportPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <SupportPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -951,9 +1033,11 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <PricingPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <PricingPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
@@ -962,13 +1046,34 @@ const Router = () => {
           exact
         >
           <AuthGuard requireAuth={true}>
-            <DashboardLayout>
-              <PurchaseSuccessPage />
-            </DashboardLayout>
+            <DashboardDataProvider>
+              <NewLayout>
+                <PurchaseSuccessPage />
+              </NewLayout>
+            </DashboardDataProvider>
           </AuthGuard>
         </Route>
 
-        {/* V2 Virtual Desktop */}
+        {/* Demo Routes */}
+        <Route
+          path="/demo/landing"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <V2LandingPage />
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/demo"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <VirtualDesktopPage />
+          </AuthGuard>
+        </Route>
+
+        {/* V2 Virtual Desktop (Legacy - redirect to demo) */}
         <Route
           path="/v2/landing"
           exact
@@ -1006,8 +1111,21 @@ const Router = () => {
         </Route>
 
         {/* Main Dashboard Routes */}
+
         <Route
           path="/"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardDataProvider>
+              <NewDashboardPage />
+            </DashboardDataProvider>
+          </AuthGuard>
+        </Route>
+
+        {/* Legacy Dashboard - Deprecated */}
+        <Route
+          path="/legacy"
           exact
         >
           <AuthGuard requireAuth={false}>
@@ -1018,7 +1136,7 @@ const Router = () => {
         </Route>
 
         <Route
-          path="/:mode"
+          path="/legacy/:mode"
           exact
         >
           <AuthGuard requireAuth={false}>

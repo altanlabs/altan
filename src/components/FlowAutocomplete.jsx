@@ -10,7 +10,6 @@ import { useState, memo, useCallback } from 'react';
 import { useSelector } from '../redux/store';
 import { CardTitle } from './aceternity/cards/card-hover-effect';
 import InteractiveButton from './buttons/InteractiveButton';
-import CreateFlowDialog from '../sections/@dashboard/jobs/CreateFlowDialog';
 import FlowStatusBadge from './flows/canvas/nodes/modulenode/FlowStatusBadge';
 
 const selectAccountFlows = (state) => state.flows.flows;

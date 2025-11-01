@@ -86,6 +86,12 @@ export const TOOL_REGISTRY = {
     renderer: 'WebSearchRenderer',
   },
 
+  // Agent creation tools
+  create_agent: {
+    icon: 'mdi:robot-happy',
+    renderer: 'CreateAgentRenderer',
+  },
+
   // Add more tools here as needed
   // Example:
   // 'search': { icon: 'mdi:magnify', renderer: 'SearchRenderer' },

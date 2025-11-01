@@ -25,6 +25,7 @@ export const ChatPage = Loadable(lazy(() => import('../pages/ChatPage.jsx')));
 // DASHBOARD: GENERAL
 // export const GeneralAppPage = Loadable(lazy(() => import('../pages/dashboard/GeneralAppPage')));
 export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));
+export const NewDashboardPage = Loadable(lazy(() => import('../pages/dashboard/NewDashboardPage.jsx')));
 export const UsagePage = Loadable(lazy(() => import('../pages/dashboard/UsagePage.jsx')));
 export const ExecutionsPage = Loadable(lazy(() => import('../pages/dashboard/ExecutionsPage.jsx')));
 export const UsageDatabasePage = Loadable(lazy(() => import('../pages/dashboard/UsageDatabasePage.jsx')));
@@ -66,8 +67,6 @@ export const InterfacesPage = Loadable(
 export const MediaPage = Loadable(
   lazy(() => import('../pages/dashboard/assets/modules/MediaPage.jsx')),
 );
-
-export const GatesPage = Loadable(lazy(() => import('../pages/dashboard/GatesPage.jsx')));
 
 export const MarketplacePage = Loadable(
   lazy(() => import('../pages/dashboard/marketplace/MarketplacePage.jsx')),
@@ -149,13 +148,6 @@ export const AccountsPage = Loadable(
 
 export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx')));
 
-// TESTING PAGES
-export const DemoTextVoicePage = Loadable(
-  lazy(() => import('../pages/testing/DemoTextVoicePage.jsx')),
-);
-export const AdvancedEditorPage = Loadable(
-  lazy(() => import('../pages/testing/AdvancedEditorPage.jsx')),
-);
 export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
 );

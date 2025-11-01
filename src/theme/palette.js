@@ -1,85 +1,80 @@
 import { alpha } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
+// Unified palette that matches Tailwind CSS variables
+// This ensures MUI and shadcn/ui look identical
 
-// SETUP COLORS
+// Helper to get CSS variable value
+const getCSSVar = (varName) => `hsl(var(--${varName}))`;
 
-// const GREY = {
-//   0: '#FFFFFF',
-//   100: '#F9FAFB',
-//   200: '#F4F6F8',
-//   300: '#DFE3E8',
-//   400: '#C4CDD5',
-//   500: '#919EAB',
-//   600: '#637381',
-//   700: '#454F5B',
-//   800: '#212B36',
-//   900: '#161C24',
-// };
-
-// prettier-ignore
+// Grey scale matching Tailwind
 const GREY = {
-  '0': '#F5F5F5', // Soft matte white
-  '100': '#EAEAEA', // Light grey
-  '200': '#D6D6D6', // Muted grey
-  '300': '#BEBEBE', // Neutral grey
-  '400': '#9E9E9E', // Medium grey
-  '500': '#7E7E7E', // Standard matte grey
-  '600': '#5E5E5E', // Dark grey
-  '700': '#3E3E3E', // Deep grey
-  '800': '#2A2A2A', // Charcoal grey
-  '900': '#121212', // Matte black
+  0: '#F5F5F5',    // Soft matte white
+  100: '#EAEAEA',  // Light grey
+  200: '#D6D6D6',  // Muted grey (--muted)
+  300: '#BEBEBE',  // Neutral grey
+  400: '#9E9E9E',  // Medium grey
+  500: '#7E7E7E',  // Standard matte grey (--muted-foreground dark)
+  600: '#5E5E5E',  // Dark grey (--muted-foreground light)
+  700: '#3E3E3E',  // Deep grey (--muted dark, --accent dark)
+  800: '#2A2A2A',  // Charcoal grey (--card dark, --foreground light)
+  900: '#121212',  // Matte black (--background dark)
 };
 
+// Primary - matches --primary CSS variable (#1E52F1)
 const PRIMARY = {
   lighter: '#C8FACD',
   light: '#5BE584',
-  main: '#1E52F1',
-  dark: '#007B55',
+  main: '#1E52F1',  // hsl(226 89% 53%)
+  dark: '#1239B7',
   darker: '#005249',
   contrastText: '#FFFFFF',
 };
 
+// Secondary - matches --secondary CSS variable (#8E33FF)
 const SECONDARY = {
-  lighter: '#D6E4FF',
-  light: '#84A9FF',
-  main: '#3366FF',
-  dark: '#1939B7',
-  darker: '#091A7A',
+  lighter: '#EFD6FF',
+  light: '#C684FF',
+  main: '#8E33FF',  // hsl(270 100% 60%)
+  dark: '#5119B7',
+  darker: '#27097A',
   contrastText: '#FFFFFF',
 };
 
+// Info - matches --info CSS variable (#00B8D9)
 const INFO = {
   lighter: '#CAFDF5',
   light: '#61F3F3',
-  main: '#00B8D9',
+  main: '#00B8D9',  // hsl(189 100% 42.5%)
   dark: '#006C9C',
   darker: '#003768',
   contrastText: '#FFFFFF',
 };
 
+// Success - matches --success CSS variable (#22C55E)
 const SUCCESS = {
-  lighter: '#D8FBDE',
-  light: '#86E8AB',
-  main: '#36B37E',
-  dark: '#1B806A',
-  darker: '#0A5554',
+  lighter: '#D3FCD2',
+  light: '#77ED8B',
+  main: '#22C55E',  // hsl(142 71% 45%)
+  dark: '#118D57',
+  darker: '#065E49',
   contrastText: '#FFFFFF',
 };
 
+// Warning - matches --warning CSS variable (#FFAB00)
 const WARNING = {
   lighter: '#FFF5CC',
   light: '#FFD666',
-  main: '#55d9d4',
+  main: '#FFAB00',  // hsl(40 100% 50%)
   dark: '#B76E00',
   darker: '#7A4100',
   contrastText: GREY[800],
 };
 
+// Error - matches --destructive CSS variable (#FF5630)
 const ERROR = {
   lighter: '#FFE9D5',
   light: '#FFAC82',
-  main: '#FF5630',
+  main: '#FF5630',  // hsl(11 100% 60%)
   dark: '#B71D18',
   darker: '#7A0916',
   contrastText: '#FFFFFF',
@@ -111,11 +106,15 @@ export default function palette(themeMode) {
     ...COMMON,
     mode: 'light',
     text: {
-      primary: GREY[800],
-      secondary: GREY[600],
+      primary: GREY[800],     // --foreground
+      secondary: GREY[600],   // --muted-foreground
       disabled: GREY[500],
     },
-    background: { paper: '#FFFFFF', default: '#FFFFFF', neutral: GREY[200] },
+    background: {
+      paper: '#FFFFFF',       // --card
+      default: '#FFFFFF',     // --background
+      neutral: GREY[200],     // --muted
+    },
     action: {
       ...COMMON.action,
       active: GREY[600],
@@ -126,13 +125,13 @@ export default function palette(themeMode) {
     ...COMMON,
     mode: 'dark',
     text: {
-      primary: '#FFFFFF',
-      secondary: GREY[500],
+      primary: '#FFFFFF',     // --foreground
+      secondary: GREY[500],   // --muted-foreground
       disabled: GREY[600],
     },
     background: {
-      paper: GREY[800],
-      default: GREY[900],
+      paper: GREY[800],       // --card (#2A2A2A)
+      default: GREY[900],     // --background (#121212)
       neutral: alpha(GREY[500], 0.16),
     },
     action: {
@@ -144,88 +143,13 @@ export default function palette(themeMode) {
   return themeMode === 'light' ? light : dark;
 }
 
-// export const grey = {
-//   0: '#FFFFFF',
-//   100: '#F9FAFB',
-//   200: '#F4F6F8',
-//   300: '#DFE3E8',
-//   400: '#C4CDD5',
-//   500: '#919EAB',
-//   600: '#637381',
-//   700: '#454F5B',
-//   800: '#212B36',
-//   900: '#161C24',
-// };
+// Export individual colors for direct use
+export const grey = GREY;
+export const primary = PRIMARY;
+export const secondary = SECONDARY;
+export const info = INFO;
+export const success = SUCCESS;
+export const warning = WARNING;
+export const error = ERROR;
+export const common = { black: '#000000', white: '#FFFFFF' };
 
-// prettier-ignore
-export const grey = {
-  '0': '#F5F5F5', // Soft matte white
-  '100': '#EAEAEA', // Light grey
-  '200': '#D6D6D6', // Muted grey
-  '300': '#BEBEBE', // Neutral grey
-  '400': '#9E9E9E', // Medium grey
-  '500': '#7E7E7E', // Standard matte grey
-  '600': '#5E5E5E', // Dark grey
-  '700': '#3E3E3E', // Deep grey
-  '800': '#2A2A2A', // Charcoal grey
-  '900': '#121212', // Matte black
-};
-
-export const primary = {
-  lighter: '#C8FAD6',
-  light: '#5BE49B',
-  main: '#00A76F',
-  dark: '#007867',
-  darker: '#004B50',
-  contrastText: '#FFFFFF',
-};
-
-export const secondary = {
-  lighter: '#EFD6FF',
-  light: '#C684FF',
-  main: '#8E33FF',
-  dark: '#5119B7',
-  darker: '#27097A',
-  contrastText: '#FFFFFF',
-};
-
-export const info = {
-  lighter: '#CAFDF5',
-  light: '#61F3F3',
-  main: '#00B8D9',
-  dark: '#006C9C',
-  darker: '#003768',
-  contrastText: '#FFFFFF',
-};
-
-export const success = {
-  lighter: '#D3FCD2',
-  light: '#77ED8B',
-  main: '#22C55E',
-  dark: '#118D57',
-  darker: '#065E49',
-  contrastText: '#ffffff',
-};
-
-export const warning = {
-  lighter: '#FFF5CC',
-  light: '#FFD666',
-  main: '#FFAB00',
-  dark: '#B76E00',
-  darker: '#7A4100',
-  contrastText: grey[800],
-};
-
-export const error = {
-  lighter: '#FFE9D5',
-  light: '#FFAC82',
-  main: '#FF5630',
-  dark: '#B71D18',
-  darker: '#7A0916',
-  contrastText: '#FFFFFF',
-};
-
-export const common = {
-  black: '#000000',
-  white: '#FFFFFF',
-};

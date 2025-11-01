@@ -1,25 +1,14 @@
-import {
-  Box,
-  Card,
-  Button,
-  Typography,
-  Stack,
-  Grid,
-  Chip,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Select,
-  MenuItem,
-  FormControl,
-} from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { Check } from 'lucide-react';
 
-import Iconify from '../../components/iconify';
 import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Badge } from '../../components/ui/badge';
+import { Separator } from '../../components/ui/separator';
+import { Progress } from '../../components/ui/progress';
 import {
   selectAccountId,
   selectAccountSubscriptions,
@@ -129,8 +118,8 @@ export default function SubscribedPricing() {
     }
   }, [growthPlans, currentMonthlyPrice, selectedGrowthTier]);
 
-  const handleGrowthTierChange = (event) => {
-    setSelectedGrowthTier(event.target.value);
+  const handleGrowthTierChange = (value) => {
+    setSelectedGrowthTier(parseInt(value));
   };
 
   const handleUpgradeGrowth = async () => {
@@ -164,381 +153,200 @@ export default function SubscribedPricing() {
   const growthBillingOption = getBillingOption(currentGrowthPlan, 'monthly');
 
   return (
-    <Box>
-      <Grid
-        container
-        spacing={2}
-      >
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Left side - Upgrade Options */}
-        <Grid
-          item
-          xs={12}
-          md={8}
-        >
+        <div className="md:col-span-8 space-y-6">
           {filteredGrowthPlans.length > 0 && (
-            <Card sx={{ p: 4, mb: 4 }}>
-              <Typography
-                variant="h5"
-                sx={{ mb: 3, fontWeight: 600 }}
-              >
+            <Card className="p-8 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 Growth Plan
-              </Typography>
+              </h2>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3 }}
-              >
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                 Scale your operations with more credits and advanced features.
-              </Typography>
+              </p>
 
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ mb: 2, fontWeight: 600 }}
-                >
+              <div className="mb-6">
+                <label className="block text-sm font-semibold mb-3 text-gray-900 dark:text-white">
                   Choose your credit tier:
-                </Typography>
-                <FormControl
-                  fullWidth
-                  sx={{ mb: 3 }}
-                >
-                  <Select
-                    value={selectedGrowthTier}
-                    onChange={handleGrowthTierChange}
-                    sx={{
-                      '& .MuiSelect-select': {
-                        py: 1.5,
-                      },
-                    }}
-                  >
+                </label>
+                <Select value={selectedGrowthTier.toString()} onValueChange={handleGrowthTierChange}>
+                  <SelectTrigger className="w-full h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     {filteredGrowthPlans.map((plan, index) => {
                       const billingOption = getBillingOption(plan, 'monthly');
                       const price = billingOption ? formatPrice(billingOption.price, 'monthly') : 0;
 
                       return (
-                        <MenuItem
-                          key={plan.id}
-                          value={index}
-                        >
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            width="100%"
-                          >
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
-                            >
-                              €{plan.credits / 100} credits
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="success.main"
-                              fontWeight={600}
-                            >
-                              €{price}/mo
-                            </Typography>
-                          </Stack>
-                        </MenuItem>
+                        <SelectItem key={plan.id} value={index.toString()}>
+                          <div className="flex justify-between items-center w-full gap-8">
+                            <span className="font-semibold">€{plan.credits / 100} credits</span>
+                            <span className="text-green-600 dark:text-green-500 font-semibold">€{price}/mo</span>
+                          </div>
+                        </SelectItem>
                       );
                     })}
-                  </Select>
-                </FormControl>
-              </Box>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Current Selection Details */}
               {currentGrowthPlan && growthBillingOption && (
-                <Box sx={{ mb: 4 }}>
-                  <Stack
-                    direction="row"
-                    alignItems="baseline"
-                    spacing={0.5}
-                    sx={{ mb: 2 }}
-                  >
-                    <Typography
-                      variant="h4"
-                      sx={{ fontWeight: 700 }}
-                    >
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-4xl font-bold text-gray-900 dark:text-white">
                       €{formatPrice(growthBillingOption.price, 'monthly')}
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      color="text.secondary"
-                    >
-                      /mo
-                    </Typography>
-                  </Stack>
+                    </span>
+                    <span className="text-lg text-gray-600 dark:text-gray-400">/mo</span>
+                  </div>
 
-                  <Typography
-                    variant="body2"
-                    color="primary.main"
-                    sx={{ mb: 3, fontWeight: 600 }}
-                  >
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-6">
                     €{currentGrowthPlan.credits / 100} in monthly credits
-                  </Typography>
+                  </p>
 
-                  <List
-                    disablePadding
-                    sx={{ mb: 3 }}
-                  >
+                  <ul className="space-y-3 mb-6">
                     {GROWTH_FEATURES.map((feature, index) => (
-                      <ListItem
-                        key={index}
-                        disablePadding
-                        sx={{ py: 0.5 }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <Iconify
-                            icon="eva:checkmark-circle-2-fill"
-                            sx={{ color: 'success.main', width: 20, height: 20 }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={feature.text}
-                          primaryTypographyProps={{ variant: 'body2' }}
-                        />
-                      </ListItem>
+                      <li key={index} className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 dark:text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature.text}</span>
+                      </li>
                     ))}
-                  </List>
+                  </ul>
 
                   <Button
-                    variant="contained"
                     onClick={handleUpgradeGrowth}
-                    size="large"
-                    sx={{ px: 4, py: 1.5, fontWeight: 600 }}
+                    size="lg"
+                    className="font-semibold px-8"
                   >
                     Upgrade to Growth
                   </Button>
-                </Box>
+                </div>
               )}
             </Card>
           )}
 
           {/* No Growth upgrades available */}
           {filteredGrowthPlans.length === 0 && (
-            <Card sx={{ p: 4, mb: 4, textAlign: 'center' }}>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, fontWeight: 600 }}
-              >
-                You&apos;re on our highest Growth plan!
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
+            <Card className="p-8 text-center bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+                You're on our highest Growth plan!
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Consider upgrading to Enterprise for more advanced features and dedicated support.
-              </Typography>
+              </p>
             </Card>
           )}
 
           {/* Enterprise Plan */}
           {enterprisePlan && (
-            <Card sx={{ p: 4 }}>
-              <Typography
-                variant="h5"
-                sx={{ mb: 3, fontWeight: 600 }}
-              >
+            <Card className="p-8 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 Enterprise
-              </Typography>
+              </h2>
 
-              <Grid
-                container
-                spacing={4}
-              >
-                <Grid
-                  item
-                  xs={12}
-                  md={8}
-                >
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                  >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                     {enterprisePlan.description}
-                  </Typography>
+                  </p>
 
-                  <List disablePadding>
+                  <ul className="space-y-3">
                     {ENTERPRISE_FEATURES.map((feature, index) => (
-                      <ListItem
-                        key={index}
-                        disablePadding
-                        sx={{ py: 0.5 }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <Iconify
-                            icon="eva:checkmark-circle-2-fill"
-                            sx={{ color: 'success.main', width: 20, height: 20 }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={feature.text}
-                          primaryTypographyProps={{ variant: 'body2' }}
-                        />
-                      </ListItem>
+                      <li key={index} className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-600 dark:text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature.text}</span>
+                      </li>
                     ))}
-                  </List>
-                </Grid>
-                <Grid
-                  item
-                  xs={12}
-                  md={4}
-                >
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h4"
-                      sx={{ fontWeight: 700, mb: 1 }}
-                    >
-                      Custom
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 3 }}
-                    >
-                      Custom credit allocation
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      onClick={handleEnterpriseContact}
-                      sx={{ px: 4, py: 1.5, fontWeight: 600 }}
-                    >
-                      Contact Sales
-                    </Button>
-                  </Box>
-                </Grid>
-              </Grid>
+                  </ul>
+                </div>
+                <div className="text-center flex flex-col items-center justify-center">
+                  <div className="text-4xl font-bold mb-2 text-gray-900 dark:text-white">
+                    Custom
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Custom credit allocation
+                  </p>
+                  <Button
+                    onClick={handleEnterpriseContact}
+                    className="font-semibold px-8"
+                  >
+                    Contact Sales
+                  </Button>
+                </div>
+              </div>
             </Card>
           )}
-        </Grid>
+        </div>
 
         {/* Right side - Current Plan Info & Credit Purchase */}
-        <Grid
-          item
-          xs={12}
-          md={4}
-        >
-          <Card sx={{ p: 2, position: 'sticky', top: 20 }}>
-            <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600 }}
-              >
+        <div className="md:col-span-4">
+          <Card className="p-4 sticky top-5 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
                 Your Current Plan
-              </Typography>
-              <Chip
-                label={currentPlan?.name || 'Unknown Plan'}
-                color="primary"
-                variant="filled"
-                sx={{ px: 2, py: 1, fontWeight: 600 }}
-              />
-            </Box>
+              </h3>
+              <Badge className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-600 text-white">
+                {currentPlan?.name || 'Unknown Plan'}
+              </Badge>
+            </div>
 
-            <Divider sx={{ my: 1 }} />
+            <Separator className="my-4" />
 
             {/* Subscription Credits */}
-            <Box sx={{ mb: 2 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{ mb: 1 }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Subscription credits
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                >
+                </span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
                   {usagePercentage}%
-                </Typography>
-              </Stack>
+                </span>
+              </div>
 
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 8,
-                  borderRadius: 1,
-                  bgcolor: 'grey.200',
-                  overflow: 'hidden',
-                }}
-              >
-                <Box
-                  sx={{
-                    width: `${usagePercentage}%`,
-                    height: '100%',
-                    bgcolor: usagePercentage > 80 ? 'warning.main' : 'primary.main',
-                    transition: 'width 0.3s ease',
-                  }}
-                />
-              </Box>
+              <Progress
+                value={usagePercentage}
+                className="h-2 mb-3"
+              />
 
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{ mt: 1 }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 dark:text-gray-400">
                   €{Math.round((totalCredits - remainingCredits) / 100)} used
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
                   €{Math.round(remainingCredits / 100)} remaining
-                </Typography>
-              </Stack>
-            </Box>
+                </span>
+              </div>
+            </div>
 
             {/* Additional Credits */}
             {creditBalance > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 1 }}
-                >
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     Additional credits
-                  </Typography>
-                  <Chip
-                    label="Never expire"
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                    sx={{ fontSize: '0.7rem' }}
-                  />
-                </Stack>
-                <Typography
-                  variant="body1"
-                  sx={{ fontWeight: 600, color: 'success.main' }}
-                >
+                  </span>
+                  <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                    Never expire
+                  </Badge>
+                </div>
+                <div className="text-lg font-semibold text-green-600 dark:text-green-500">
                   €{Math.round(creditBalance / 100)} available
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
 
-            <Divider sx={{ my: 1 }} />
+            <Separator className="my-4" />
 
             <CreditPurchaseSection
               title="Buy More Credits"
               compact
             />
           </Card>
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
