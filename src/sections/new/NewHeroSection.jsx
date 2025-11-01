@@ -97,10 +97,10 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
       {/* Hero Section - Fixed viewport height with top-aligned content */}
       <div
         id="hero"
-        className="relative min-h-screen"
+        className="relative min-h-screen overflow-x-hidden"
       >
         {/* Fixed position container for title, subtitle, prompt box at consistent position */}
-        <div className="w-full flex flex-col items-center relative z-10 px-6 pt-64 ">
+        <div className="w-full flex flex-col items-center relative z-10 px-4 sm:px-6 pt-32 md:pt-64">
           <div className="w-full max-w-2xl flex flex-col gap-4 items-center">
             <TextGenerateEffect
               words="Build without limits"
@@ -143,7 +143,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
 
       {/* Quick Access Section - Separate section, pulled up with negative margin */}
       {isAuthenticated && (
-        <div className="-mt-64 relative z-10 px-6 flex justify-center">
+        <div className="-mt-32 md:-mt-64 relative z-10 px-4 sm:px-6 flex justify-center overflow-x-hidden">
           <QuickAccessSection />
         </div>
       )}
