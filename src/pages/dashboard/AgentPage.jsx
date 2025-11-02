@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
 
 import Agent from '../../components/agents/v2/Agent';
 
@@ -10,11 +11,22 @@ export default function AgentPage() {
   const onGoBack = useCallback(() => history.push('/'), [history]);
 
   return (
-    <div>
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Agent
         agentId={agentId}
         onGoBack={onGoBack}
       />
-    </div>
+    </Box>
   );
 }

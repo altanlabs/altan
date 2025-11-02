@@ -267,83 +267,78 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
     // Special handling for creator tab
     if (activeTab === 'creator') {
+      if (currentAgentCreatorRoomId && agentData) {
+        return (
+          <iframe
+            key={`creator-${agentData.id}`}
+            src={`/r/${currentAgentCreatorRoomId}${(() => {
+              const params = new URLSearchParams();
+              // Add context about the agent being edited
+              params.set(
+                'context',
+                `User is editing agent: ${agentData.name} (ID: ${agentData.id})`,
+              );
+              if (initialMessage) {
+                params.set('message', encodeURIComponent(initialMessage));
+              }
+              return `?${params.toString()}`;
+            })()}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+            }}
+            title="Creator Room"
+            allow="microphone; camera; clipboard-write"
+          />
+        );
+      }
+      
+      if (!isLoading && !currentAgentCreatorRoomId) {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: 2,
+              px: 3,
+            }}
+          >
+            <Iconify
+              icon="eva:alert-circle-outline"
+              sx={{ fontSize: '3rem', color: 'text.secondary', opacity: 0.5 }}
+            />
+            <Typography
+              variant="h6"
+              color="text.secondary"
+            >
+              Creator Room Not Available
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.disabled"
+              sx={{ textAlign: 'center', maxWidth: '400px' }}
+            >
+              This agent doesn't have a creator room configured. You can still edit the agent
+              using the other tabs.
+            </Typography>
+          </Box>
+        );
+      }
+      
       return (
         <Box
           sx={{
-            height: '100%',
             display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
           }}
         >
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            {currentAgentCreatorRoomId && agentData ? (
-              <iframe
-                key={`creator-${agentData.id}`}
-                src={`/r/${currentAgentCreatorRoomId}${(() => {
-                  const params = new URLSearchParams();
-                  // Add context about the agent being edited
-                  params.set(
-                    'context',
-                    `User is editing agent: ${agentData.name} (ID: ${agentData.id})`,
-                  );
-                  if (initialMessage) {
-                    params.set('message', encodeURIComponent(initialMessage));
-                  }
-                  return `?${params.toString()}`;
-                })()}`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-                title="Creator Room"
-                allow="microphone; camera; clipboard-write"
-              />
-            ) : !isLoading && !currentAgentCreatorRoomId ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  gap: 2,
-                  px: 3,
-                }}
-              >
-                <Iconify
-                  icon="eva:alert-circle-outline"
-                  sx={{ fontSize: '3rem', color: 'text.secondary', opacity: 0.5 }}
-                />
-                <Typography
-                  variant="h6"
-                  color="text.secondary"
-                >
-                  Creator Room Not Available
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.disabled"
-                  sx={{ textAlign: 'center', maxWidth: '400px' }}
-                >
-                  This agent doesn't have a creator room configured. You can still edit the agent
-                  using the other tabs.
-                </Typography>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                }}
-              >
-                <Typography>Loading creator room...</Typography>
-              </Box>
-            )}
-          </Box>
+          <Typography>Loading creator room...</Typography>
         </Box>
       );
     }
@@ -394,6 +389,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const renderTabNavigation = () => (
     <Box
       sx={{
+        flexShrink: 0,
         borderBottom: 1,
         borderColor: theme.palette.divider,
         bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
@@ -544,10 +540,18 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   }
 
   const agentContent = (
-    <div className="h-full flex flex-col overflow-hidden">
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
       <PanelGroup
         direction="horizontal"
-        className="w-full h-full"
+        style={{ width: '100%', height: '100%', overflow: 'hidden' }}
       >
         {/* Main Agent Configuration Panel */}
         <Panel
@@ -555,11 +559,12 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           order={1}
           defaultSize={showTestDrawer ? 70 : 100}
           minSize={35}
-          className="overflow-hidden flex flex-col"
+          style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
           {/* Header */}
           <Box
             sx={{
+              flexShrink: 0,
               borderBottom: 1,
               borderColor: theme.palette.divider,
               px: { xs: 1, sm: 2, md: 3 },
@@ -802,7 +807,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               flex: 1,
               display: 'flex',
               justifyContent: 'center',
-              overflow: 'auto',
+              overflow: activeTab === 'creator' ? 'hidden' : 'auto',
               px: activeTab === 'creator' ? 0 : isMobile ? 1 : { xs: 1, sm: 2, md: 4 },
               py: activeTab === 'creator' ? 0 : isMobile ? 0.5 : 1,
               minHeight: 0, // Important for proper flex sizing
@@ -812,7 +817,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               sx={{
                 width: '100%',
                 maxWidth: activeTab === 'creator' ? '100%' : isMobile ? '100%' : '800px',
-                overflow: 'auto',
+                height: activeTab === 'creator' ? '100%' : 'auto',
+                overflow: activeTab === 'creator' ? 'hidden' : 'auto',
                 minHeight: 0, // Important for proper flex sizing
               }}
             >
@@ -839,7 +845,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
             minSize={25}
             maxSize={60}
             collapsible={false}
-            className="overflow-hidden"
+            style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
           >
             <Box
               sx={{
@@ -950,7 +956,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           {copySuccess}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 
   // Wrap in card-like container when rendered in altaner/project context
