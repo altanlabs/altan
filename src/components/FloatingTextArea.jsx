@@ -382,7 +382,7 @@ const FloatingTextArea = ({
                 : undefined
             }
           >
-            {renderCredits && <CreditWallet />}
+            {/* {renderCredits && <CreditWallet />} */}
 
             {attachments?.length > 0 && (
               <div className="flex w-full overflow-x-auto space-x-3 px-4">
