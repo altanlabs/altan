@@ -4,12 +4,18 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../../auth/useAuthContext';
 import NewLayout from '../../layouts/dashboard/new/NewLayout';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider';
+import {
+  getAccountAttribute,
+  startAccountAttributeLoading,
+  stopAccountAttributeLoading,
+} from '../../redux/slices/general';
 import { useSelector, dispatch } from '../../redux/store';
 import FeaturesSection from '../../sections/new/FeaturesSection';
 import NewHeroSection from '../../sections/new/NewHeroSection';
 
 // Redux selectors
 const selectAccountAltaners = (state) => state.general.account?.altaners;
+const selectAccountId = (state) => state.general.account?.id;
 
 const NewDashboardPage = () => {
   const history = useHistory();
@@ -29,6 +35,21 @@ const NewDashboardPage = () => {
 
   // Redux data
   const altaners = useSelector(selectAccountAltaners);
+  const accountId = useSelector(selectAccountId);
+
+  // Refetch altaners when navigating back to dashboard
+  // This ensures the project list is always up-to-date
+  useEffect(() => {
+    if (isAuthenticated && accountId && !location.search.includes('idea=')) {
+      // Always refetch altaners to ensure we have the latest data
+      // This solves the issue where navigating back from a project doesn't show updates
+      // Reset the initialized flag to force a refetch
+      dispatch(startAccountAttributeLoading('altaners'));
+      dispatch(stopAccountAttributeLoading('altaners'));
+      // Now fetch the data
+      dispatch(getAccountAttribute(accountId, ['altaners']));
+    }
+  }, [isAuthenticated, accountId, location.pathname, location.search]);
 
   // Handle URL parameter for creating projects from ideas
   useEffect(() => {
@@ -70,13 +91,26 @@ const NewDashboardPage = () => {
     }
   }, [location.search, isAuthenticated, altaners]);
 
-  const handleSubmit = async (message) => {
+  const handleSubmit = async (message, files = [], githubData = null) => {
     if (!message || !message.trim()) return;
 
     setIsCreating(true);
     setCreationError(null);
 
     try {
+      // Prepare file attachments
+      const attachments = await Promise.all(
+        files.map(async (file) => {
+          const fileType = file.file.type;
+          const extension = fileType.split('/')[1] || fileType.split('.').pop() || 'bin';
+          return {
+            file_name: file.name || `file.${extension}`,
+            mime_type: fileType,
+            file_content: file.url.split(',')[1],
+          };
+        }),
+      );
+
       // First, create the idea
       const response = await fetch('https://api.altan.ai/platform/idea', {
         method: 'POST',
@@ -85,8 +119,13 @@ const NewDashboardPage = () => {
         },
         body: JSON.stringify({
           idea: message.trim(),
-          attachments: [],
+          attachments: attachments,
           is_public: true,
+          // Include GitHub data if provided
+          ...(githubData?.url && {
+            github_url: githubData.url,
+            branch: githubData.branch || 'main',
+          }),
         }),
       });
 

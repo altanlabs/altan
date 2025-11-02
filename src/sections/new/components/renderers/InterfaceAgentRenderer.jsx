@@ -86,23 +86,23 @@ const InterfaceAgentRenderer = ({ description }) => {
           <GlassButton
             onClick={handlePublish}
             disabled={isDeploying || isDeployed}
-            size="default"
+            size="sm"
             className="disabled:opacity-70 disabled:cursor-not-allowed"
             contentClassName="flex items-center gap-2"
           >
             {isDeploying ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Publishing...
               </>
             ) : isDeployed ? (
               <>
-                <Rocket className="w-5 h-5" />
+                <Rocket className="w-4 h-4" />
                 Published!
               </>
             ) : (
               <>
-                <Rocket className="w-5 h-5" />
+                <Rocket className="w-4 h-4" />
                 Publish
               </>
             )}

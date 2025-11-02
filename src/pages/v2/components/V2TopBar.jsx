@@ -118,7 +118,7 @@ const V2TopBar = ({ onSearch }) => {
             onClick={() => history.push('/auth/login')}
             className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/20 transition-all"
           >
-            Sign In
+           Get started Free
           </button>
         )}
       </div>

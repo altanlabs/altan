@@ -262,6 +262,7 @@ const handleAgentResponseEvent = (data) => {
             date_creation: timestamp,
             text: '',
             is_streaming: true,
+            response_id: eventData.response_id, // Include response_id to match with placeholder
           };
           dispatch(addMessage(messageData));
         }

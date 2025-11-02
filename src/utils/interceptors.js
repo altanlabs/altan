@@ -41,33 +41,25 @@ const onRequestFailure = async (error, axiosInstance) => {
 
   if (is401Error || isNetworkErrorPossibly401) {
     if (originalRequest._retryCount >= MAX_RETRY_COUNT) {
-      console.error('❌ Max retry count reached for request:', originalRequest.url);
       return Promise.reject(error);
     }
 
     originalRequest._retryCount++;
 
     if (isRefreshing) {
-      console.log('⏳ Already refreshing, adding to queue');
       return addRequestToQueue(originalRequest, axiosInstance);
     }
 
-    console.log('🚀 Starting token refresh...');
     isRefreshing = true;
 
     try {
       // Use user token refresh logic (works for both user and guest sessions)
-      console.log('🔄 Refreshing token');
       const { accessToken } = await refreshToken(axiosInstance);
-      console.log('✅ Token refreshed successfully, setting sessions and retrying request');
       // Set session for all axios instances, not just the failing one
       setSessionForAllInstances(accessToken, originalRequest);
       processQueue(null);
-      console.log('🔄 Retrying original request:', originalRequest.url);
       return axiosInstance(originalRequest);
     } catch (err) {
-      console.error('❌ Token refresh failed:', err);
-
       if (err.response && err.response.status === HTTP_STATUS_UNAUTHORIZED) {
         setSessionForAllInstances(null);
       }

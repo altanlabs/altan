@@ -2,7 +2,6 @@
 
 import { batch } from 'react-redux';
 
-import analytics from '../../lib/analytics';
 import {
   addAltaner,
   updateAltaner,
@@ -91,23 +90,10 @@ import {
   addMessageExecution,
   updateMessageExecution,
   removeThread,
-  addRunningResponse,
-  deleteRunningResponse,
   updateAuthorizationRequest,
   addAuthorizationRequest,
   // Message parts actions
-  addMessagePart,
   updateMessagePart,
-  markMessagePartDone,
-  deleteMessagePart,
-  updateMessageStreamingState,
-  // Activation lifecycle actions
-  addActivationLifecycle,
-  completeActivationLifecycle,
-  discardActivationLifecycle,
-  // Response lifecycle actions
-  addResponseLifecycle,
-  completeResponseLifecycle,
 } from '../../redux/slices/room';
 import { addTask, updateTask, removeTask, setPlanCompleted } from '../../redux/slices/tasks';
 import { dispatch } from '../../redux/store';

@@ -1,5 +1,4 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 
@@ -33,30 +32,37 @@ const TooltipContent = React.forwardRef<
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-const Popover = PopoverPrimitive.Root;
-const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = 'center', sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn(
-        'z-50 w-64 rounded-xl bg-popover dark:bg-[#303030] p-2 text-popover-foreground dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-        className,
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-));
-PopoverContent.displayName = PopoverPrimitive.Content.displayName;
+// --- XIcon needed by Dialog components ---
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    {' '}
+    <line
+      x1="18"
+      y1="6"
+      x2="6"
+      y2="18"
+    />{' '}
+    <line
+      x1="6"
+      y1="6"
+      x2="18"
+      y2="18"
+    />{' '}
+  </svg>
+);
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
-const DialogTrigger = DialogPrimitive.Trigger;
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -176,31 +182,36 @@ const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />{' '}
   </svg>
 );
-const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="24"
     height="24"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
   >
-    {' '}
-    <line
-      x1="18"
-      y1="6"
-      x2="6"
-      y2="18"
-    />{' '}
-    <line
-      x1="6"
-      y1="6"
-      x2="18"
-      y2="18"
-    />{' '}
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
   </svg>
 );
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -419,21 +430,42 @@ const toolsList = [
   { id: 'createAgent', name: 'Create an agent', shortName: 'Agent', icon: SparklesIcon },
 ];
 
+// --- Types for file attachments and GitHub data ---
+export interface FileAttachment {
+  name: string;
+  url: string;
+  file: File;
+  type: string;
+}
+
+export interface GitHubData {
+  url: string;
+  branch: string;
+}
+
 // --- The Final, Self-Contained PromptBox Component ---
 export const PromptBox = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    onSend?: (value: string, imagePreview: string | null, selectedTool: string | null) => void;
+    onSend?: (
+      value: string,
+      files: FileAttachment[],
+      selectedTool: string | null,
+      githubData: GitHubData | null
+    ) => void;
     externalValue?: string;
   }
 >(({ className, onSend, externalValue, ...props }, ref) => {
   const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [value, setValue] = React.useState('');
-  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
-  const [selectedTool, setSelectedTool] = React.useState<string | null>('createProject');
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-  const [isImageDialogOpen, setIsImageDialogOpen] = React.useState(false);
+  const [files, setFiles] = React.useState<FileAttachment[]>([]);
+  const selectedTool = 'createProject'; // Fixed to createProject for now
+  const [isFileDialogOpen, setIsFileDialogOpen] = React.useState(false);
+  const [selectedFileIndex, setSelectedFileIndex] = React.useState<number | null>(null);
+  const [isGithubDialogOpen, setIsGithubDialogOpen] = React.useState(false);
+  const [githubUrl, setGithubUrl] = React.useState('');
+  const [githubBranch, setGithubBranch] = React.useState('main');
 
   // Update internal value when externalValue changes
   React.useEffect(() => {
@@ -460,27 +492,54 @@ export const PromptBox = React.forwardRef<
     fileInputRef.current?.click();
   };
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const selectedFiles = event.target.files;
+    if (selectedFiles) {
+      const filePromises = Array.from(selectedFiles).map((file) => {
+        return new Promise<FileAttachment>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve({
+              name: file.name,
+              url: reader.result as string,
+              file: file,
+              type: file.type,
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      void Promise.all(filePromises).then((newFiles) => {
+        setFiles((prev) => [...prev, ...newFiles]);
+      });
     }
-    event.target.value = '';
-  };
-  const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
-  const hasValue = value.trim().length > 0 || imagePreview;
-  const activeTool = selectedTool ? toolsList.find((t) => t.id === selectedTool) : null;
-  const ActiveToolIcon = activeTool?.icon;
+  const handleViewFile = (index: number) => {
+    setSelectedFileIndex(index);
+    setIsFileDialogOpen(true);
+  };
+
+  const handleGithubConnect = () => {
+    setIsGithubDialogOpen(true);
+  };
+
+  const handleGithubSave = () => {
+    setIsGithubDialogOpen(false);
+  };
+
+  const handleGithubRemove = () => {
+    setGithubUrl('');
+    setGithubBranch('main');
+  };
+
+  const hasValue = value.trim().length > 0 || files.length > 0;
 
   const getPlaceholder = () => {
     if (selectedTool === 'createProject') return 'Describe your next project';
@@ -493,10 +552,13 @@ export const PromptBox = React.forwardRef<
     if (!hasValue) return;
 
     if (onSend) {
-      onSend(value, imagePreview, selectedTool);
+      const githubData = githubUrl ? { url: githubUrl, branch: githubBranch } : null;
+      onSend(value, files, selectedTool, githubData);
       // Clear the form after sending
       setValue('');
-      setImagePreview(null);
+      setFiles([]);
+      setGithubUrl('');
+      setGithubBranch('main');
     }
   };
 
@@ -512,48 +574,126 @@ export const PromptBox = React.forwardRef<
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept="image/*"
+        accept="*/*"
+        multiple
       />
 
-      {imagePreview && (
-        <Dialog
-          open={isImageDialogOpen}
-          onOpenChange={setIsImageDialogOpen}
-        >
-          {' '}
-          <div className="relative mb-1 w-fit rounded-[1rem] px-1 pt-1">
-            {' '}
-            <button
-              type="button"
-              className="transition-transform"
-              onClick={() => setIsImageDialogOpen(true)}
-            >
-              {' '}
-              <img
-                src={imagePreview}
-                alt="Image preview"
-                className="h-16 w-16 rounded-[1rem] object-cover"
-              />{' '}
-            </button>{' '}
-            <button
-              onClick={handleRemoveImage}
-              className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-white/50 dark:bg-[#303030] text-black dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151]"
-              aria-label="Remove image"
-            >
-              {' '}
-              <XIcon className="h-4 w-4" />{' '}
-            </button>{' '}
-          </div>{' '}
-          <DialogContent>
-            {' '}
-            <img
-              src={imagePreview}
-              alt="Full size preview"
-              className="w-full max-h-[95vh] object-contain rounded-[24px]"
-            />{' '}
-          </DialogContent>{' '}
-        </Dialog>
+      {/* File Previews */}
+      {files.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2 px-2">
+          {files.map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            return (
+              <div
+                key={index}
+                className="relative group"
+              >
+                <button
+                  type="button"
+                  className="transition-transform hover:scale-105"
+                  onClick={() => isImage && handleViewFile(index)}
+                >
+                  {isImage ? (
+                    <img
+                      src={file.url}
+                      alt={file.name}
+                      className="h-16 w-16 rounded-lg object-cover border border-border dark:border-gray-600"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-lg border border-border dark:border-gray-600 bg-accent dark:bg-[#404040] flex flex-col items-center justify-center p-2">
+                      <FileIcon className="h-6 w-6 text-muted-foreground dark:text-gray-400" />
+                      <span className="text-[8px] text-muted-foreground dark:text-gray-400 mt-1 truncate w-full text-center">
+                        {file.name.split('.').pop()?.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleRemoveFile(index)}
+                  className="absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black transition-colors hover:bg-black/80 dark:hover:bg-white/80"
+                  aria-label="Remove file"
+                >
+                  <XIcon className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
       )}
+
+      {/* File Preview Dialog */}
+      <Dialog
+        open={isFileDialogOpen}
+        onOpenChange={setIsFileDialogOpen}
+      >
+        <DialogContent>
+          {selectedFileIndex !== null && files[selectedFileIndex] && (
+            <>
+              {files[selectedFileIndex].type.startsWith('image/') ? (
+                <img
+                  src={files[selectedFileIndex].url}
+                  alt={files[selectedFileIndex].name}
+                  className="w-full max-h-[95vh] object-contain rounded-[24px]"
+                />
+              ) : (
+                <div className="p-8 text-center">
+                  <FileIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground dark:text-gray-400" />
+                  <p className="text-foreground dark:text-white">{files[selectedFileIndex].name}</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mt-2">
+                    {(files[selectedFileIndex].file.size / 1024).toFixed(2)} KB
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* GitHub Connection Dialog */}
+      <Dialog
+        open={isGithubDialogOpen}
+        onOpenChange={setIsGithubDialogOpen}
+      >
+        <DialogContent>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-white">
+              Connect GitHub Repository
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground dark:text-white">
+                  Repository URL
+                </label>
+                <input
+                  type="text"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  placeholder="https://github.com/username/repo"
+                  className="w-full px-3 py-2 rounded-lg border border-border dark:border-gray-600 bg-background dark:bg-[#202020] text-foreground dark:text-white focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground dark:text-white">
+                  Branch
+                </label>
+                <input
+                  type="text"
+                  value={githubBranch}
+                  onChange={(e) => setGithubBranch(e.target.value)}
+                  placeholder="main"
+                  className="w-full px-3 py-2 rounded-lg border border-border dark:border-gray-600 bg-background dark:bg-[#202020] text-foreground dark:text-white focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <button
+                onClick={handleGithubSave}
+                className="w-full px-4 py-2 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <textarea
         ref={internalTextareaRef}
@@ -577,16 +717,56 @@ export const PromptBox = React.forwardRef<
                   className="flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none"
                 >
                   <PlusIcon className="h-6 w-6" />
-                  <span className="sr-only">Attach image</span>
+                  <span className="sr-only">Attach files</span>
                 </button>
               </TooltipTrigger>{' '}
               <TooltipContent
                 side="top"
                 showArrow={true}
               >
-                <p>Attach image</p>
+                <p>Attach files</p>
               </TooltipContent>{' '}
             </Tooltip>
+
+            <Tooltip>
+              {' '}
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleGithubConnect}
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
+                    githubUrl
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-foreground dark:text-white'
+                  )}
+                >
+                  <GithubIcon className="h-5 w-5" />
+                  <span className="sr-only">Connect GitHub</span>
+                </button>
+              </TooltipTrigger>{' '}
+              <TooltipContent
+                side="top"
+                showArrow={true}
+              >
+                <p>{githubUrl ? 'GitHub connected' : 'Connect GitHub'}</p>
+              </TooltipContent>{' '}
+            </Tooltip>
+
+            {githubUrl && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30">
+                <span className="text-xs text-green-700 dark:text-green-300 truncate max-w-[120px]">
+                  {githubUrl.split('/').pop()}
+                </span>
+                <button
+                  onClick={handleGithubRemove}
+                  className="flex items-center justify-center"
+                  aria-label="Remove GitHub connection"
+                >
+                  <XIcon className="h-3 w-3 text-green-700 dark:text-green-300" />
+                </button>
+              </div>
+            )}
 
             {/* TOOLS POPOVER - COMMENTED OUT FOR NOW */}
             {/* 

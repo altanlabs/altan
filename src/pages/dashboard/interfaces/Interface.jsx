@@ -55,7 +55,6 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
       hideSnippet: 'true',
     });
     const baseUrl = `https://${ui.repo_name}.previews.altan.ai/`;
-    console.log('baseUrl', baseUrl);
     return baseUrl ? `${baseUrl}?${queryParams.toString()}` : '';
   }, [ui?.repo_name, commits, theme.palette.mode, currentPath]);
 

@@ -158,14 +158,26 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   
   // Merge real messages with placeholder messages
   const { messageIds, allMessagesById } = useMemo(() => {
-    // Create a map for placeholder messages
+    // Get all response_ids from real messages
+    const realResponseIds = new Set(
+      Object.values(messagesById)
+        .filter(msg => msg.response_id)
+        .map(msg => msg.response_id)
+    );
+    
+    // Filter out placeholders that have a corresponding real message
+    const validPlaceholders = placeholderMessages.filter(
+      placeholder => !realResponseIds.has(placeholder.response_id)
+    );
+    
+    // Create a map for valid placeholder messages
     const placeholderMap = {};
-    placeholderMessages.forEach(msg => {
+    validPlaceholders.forEach(msg => {
       placeholderMap[msg.id] = msg;
     });
     
-    // Get placeholder IDs
-    const placeholderIds = placeholderMessages.map(p => p.id);
+    // Get valid placeholder IDs
+    const placeholderIds = validPlaceholders.map(p => p.id);
     // Combine real and placeholder IDs
     const combinedIds = [...realMessageIds, ...placeholderIds];
     

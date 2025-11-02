@@ -241,15 +241,15 @@ export const analytics = {
 
   // Error tracking - disabled for business analytics
   errorOccurred: async () => {
-    console.log('Error tracking disabled for business analytics');
+    // Silently disabled for business analytics
   },
 
   trackError: async () => {
-    console.log('Error tracking disabled for business analytics');
+    // Silently disabled for business analytics
   },
 
   trackAPIError: async () => {
-    console.log('API error tracking disabled for business analytics');
+    // Silently disabled for business analytics
   },
 
   // Performance events

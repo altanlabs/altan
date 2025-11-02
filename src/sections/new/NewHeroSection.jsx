@@ -42,7 +42,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
     return () => window.removeEventListener('fillHeroPrompt', handleFillPrompt);
   }, []);
 
-  const handleSend = async (value, imagePreview, selectedTool) => {
+  const handleSend = async (value, files, selectedTool, githubData) => {
     if (!value.trim()) return;
 
     // Check authentication first for any action
@@ -87,8 +87,8 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
         // Silent catch - could add error UI here in the future
       }
     } else {
-      // Default to project creation
-      onSubmit(value.trim());
+      // Default to project creation - pass files and GitHub data to onSubmit
+      onSubmit(value.trim(), files, githubData);
     }
   };
 
