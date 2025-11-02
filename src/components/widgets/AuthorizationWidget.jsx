@@ -1,10 +1,8 @@
-
 import { Add as AddIcon, Check as CheckIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
   Typography,
-  Avatar,
   IconButton,
   Tooltip,
   Skeleton,
@@ -27,8 +25,8 @@ import {
 import { selectAccount, selectCustomConnectionTypes } from '../../redux/slices/general';
 import { sendMessage } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
-import CreateConnection from '../tools/CreateConnection';
 import IconRenderer from '../icons/IconRenderer';
+import CreateConnection from '../tools/CreateConnection';
 
 // Create a selector to combine all connection types (like in CreateConnection)
 const selectAllConnectionTypes = createSelector(
@@ -51,9 +49,9 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
   const connectionsByType = useSelector(selectAccountConnectionsByType(connectionTypeId));
 
   // Find the connection type details
-  const connectionType = useMemo(() =>
-    allConnectionTypes?.find(type => type.id === connectionTypeId),
-  [allConnectionTypes, connectionTypeId],
+  const connectionType = useMemo(
+    () => allConnectionTypes?.find((type) => type.id === connectionTypeId),
+    [allConnectionTypes, connectionTypeId],
   );
 
   // localStorage key for this specific authorization
@@ -76,30 +74,35 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
     }
   }, [accountId, connectionsInitialized, connectionsLoading]);
 
-  const handleSelectConnection = useCallback((connectionId) => {
-    const connection = connectionsByType?.find(c => c.id === connectionId);
-    if (!connection) return;
+  const handleSelectConnection = useCallback(
+    (connectionId) => {
+      const connection = connectionsByType?.find((c) => c.id === connectionId);
+      if (!connection) return;
 
-    setSelectedConnectionId(connectionId);
+      setSelectedConnectionId(connectionId);
 
-    // Store authorization in localStorage
-    const authData = {
-      connectionId,
-      connectionName: connection.name,
-      connectionType: connectionType?.name,
-      timestamp: new Date().toISOString(),
-    };
-    localStorage.setItem(storageKey, JSON.stringify(authData));
-    setIsAuthorized(authData);
+      // Store authorization in localStorage
+      const authData = {
+        connectionId,
+        connectionName: connection.name,
+        connectionType: connectionType?.name,
+        timestamp: new Date().toISOString(),
+      };
+      localStorage.setItem(storageKey, JSON.stringify(authData));
+      setIsAuthorized(authData);
 
-    // Send message to the room
-    if (threadId && connectionId) {
-      dispatch(sendMessage({
-        content: `Authorized connection, Connection id is: ${connectionId}`,
-        threadId,
-      }));
-    }
-  }, [threadId, connectionsByType, connectionType, storageKey]);
+      // Send message to the room
+      if (threadId && connectionId) {
+        dispatch(
+          sendMessage({
+            content: `Authorized connection, Connection id is: ${connectionId}`,
+            threadId,
+          }),
+        );
+      }
+    },
+    [threadId, connectionsByType, connectionType, storageKey],
+  );
 
   const handleCreateNew = () => {
     setShowCreateNew(true);
@@ -155,8 +158,17 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
   if (connectionsLoading) {
     return (
       <Box sx={{ p: 1.5 }}>
-        <Skeleton variant="text" width="60%" height={20} />
-        <Skeleton variant="rectangular" width="100%" height={40} sx={{ mt: 1 }} />
+        <Skeleton
+          variant="text"
+          width="60%"
+          height={20}
+        />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={40}
+          sx={{ mt: 1 }}
+        />
       </Box>
     );
   }
@@ -175,12 +187,21 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckIcon color="success" size="small" />
+            <CheckIcon
+              color="success"
+              size="small"
+            />
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 500, color: 'success.main' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 500, color: 'success.main' }}
+              >
                 Authorized
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography
+                variant="caption"
+                color="textSecondary"
+              >
                 {isAuthorized.connectionName}
               </Typography>
             </Box>
@@ -209,12 +230,18 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
         backgroundColor: alpha(theme.palette.background.paper, 0.8),
       }}
     >
-      <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 500 }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ mb: 1.5, fontWeight: 500 }}
+      >
         Authorize {connectionType?.name || 'Connection'}
       </Typography>
 
       {connectionsByType && connectionsByType.length > 0 ? (
-        <FormControl fullWidth size="small">
+        <FormControl
+          fullWidth
+          size="small"
+        >
           <InputLabel>Select Connection</InputLabel>
           <Select
             value={selectedConnectionId}
@@ -222,10 +249,16 @@ const AuthorizationWidget = ({ connectionTypeId, threadId }) => {
             label="Select Connection"
           >
             {connectionsByType.map((connection) => (
-              <MenuItem key={connection.id} value={connection.id}>
+              <MenuItem
+                key={connection.id}
+                value={connection.id}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                   <IconRenderer icon={connection.connection_type?.icon} />
-                  <Typography variant="body2" noWrap>
+                  <Typography
+                    variant="body2"
+                    noWrap
+                  >
                     {connection.name}
                   </Typography>
                 </Box>

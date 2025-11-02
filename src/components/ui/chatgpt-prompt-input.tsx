@@ -2,6 +2,8 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 
+import { GitHubDialog } from './github-dialog';
+
 // --- Utility Function & Radix Primitives ---
 type ClassValue = string | number | boolean | null | undefined;
 function cn(...inputs: ClassValue[]): string {
@@ -441,6 +443,7 @@ export interface FileAttachment {
 export interface GitHubData {
   url: string;
   branch: string;
+  token?: string;
 }
 
 // --- The Final, Self-Contained PromptBox Component ---
@@ -466,6 +469,7 @@ export const PromptBox = React.forwardRef<
   const [isGithubDialogOpen, setIsGithubDialogOpen] = React.useState(false);
   const [githubUrl, setGithubUrl] = React.useState('');
   const [githubBranch, setGithubBranch] = React.useState('main');
+  const [githubToken, setGithubToken] = React.useState('');
 
   // Update internal value when externalValue changes
   React.useEffect(() => {
@@ -537,6 +541,7 @@ export const PromptBox = React.forwardRef<
   const handleGithubRemove = () => {
     setGithubUrl('');
     setGithubBranch('main');
+    setGithubToken('');
   };
 
   const hasValue = value.trim().length > 0 || files.length > 0;
@@ -552,13 +557,20 @@ export const PromptBox = React.forwardRef<
     if (!hasValue) return;
 
     if (onSend) {
-      const githubData = githubUrl ? { url: githubUrl, branch: githubBranch } : null;
+      const githubData = githubUrl 
+        ? { 
+            url: githubUrl, 
+            branch: githubBranch, 
+            ...(githubToken && { token: githubToken })
+          } 
+        : null;
       onSend(value, files, selectedTool, githubData);
       // Clear the form after sending
       setValue('');
       setFiles([]);
       setGithubUrl('');
       setGithubBranch('main');
+      setGithubToken('');
     }
   };
 
@@ -650,50 +662,17 @@ export const PromptBox = React.forwardRef<
       </Dialog>
 
       {/* GitHub Connection Dialog */}
-      <Dialog
+      <GitHubDialog
         open={isGithubDialogOpen}
         onOpenChange={setIsGithubDialogOpen}
-      >
-        <DialogContent>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-white">
-              Connect GitHub Repository
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground dark:text-white">
-                  Repository URL
-                </label>
-                <input
-                  type="text"
-                  value={githubUrl}
-                  onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder="https://github.com/username/repo"
-                  className="w-full px-3 py-2 rounded-lg border border-border dark:border-gray-600 bg-background dark:bg-[#202020] text-foreground dark:text-white focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground dark:text-white">
-                  Branch
-                </label>
-                <input
-                  type="text"
-                  value={githubBranch}
-                  onChange={(e) => setGithubBranch(e.target.value)}
-                  placeholder="main"
-                  className="w-full px-3 py-2 rounded-lg border border-border dark:border-gray-600 bg-background dark:bg-[#202020] text-foreground dark:text-white focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <button
-                onClick={handleGithubSave}
-                className="w-full px-4 py-2 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        githubUrl={githubUrl}
+        githubBranch={githubBranch}
+        githubToken={githubToken}
+        onGithubUrlChange={setGithubUrl}
+        onGithubBranchChange={setGithubBranch}
+        onGithubTokenChange={setGithubToken}
+        onSave={handleGithubSave}
+      />
 
       <textarea
         ref={internalTextareaRef}

@@ -1,29 +1,26 @@
 import { memo, useEffect, useMemo } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory, useParams } from 'react-router-dom';
 
 import Iconify from '../../components/iconify/Iconify';
 import CustomMarkdown from '../../components/messages/CustomMarkdown';
-import { 
-  fetchPlansByRoomId, 
-  selectPlansByRoom, 
-  selectRoomPlansLoading, 
-  selectRoomPlansError 
+import {
+  fetchPlansByRoomId,
+  selectPlansByRoom,
+  selectRoomPlansLoading,
+  selectRoomPlansError,
 } from '../../redux/slices/tasks';
 
 const PlansList = ({ roomId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const { altanerId } = useParams();
-  
+
   const plans = useSelector(selectPlansByRoom(roomId));
   const isLoading = useSelector(selectRoomPlansLoading(roomId));
   const error = useSelector(selectRoomPlansError(roomId));
 
-  console.log('PlansList render:', { roomId, plans, isLoading, error, plansCount: plans?.length });
-
   useEffect(() => {
-    console.log('PlansList: Fetching plans for roomId:', roomId);
     if (roomId) {
       dispatch(fetchPlansByRoomId(roomId));
     } else {
@@ -33,10 +30,10 @@ const PlansList = ({ roomId }) => {
 
   // Calculate progress for each plan
   const plansWithProgress = useMemo(() => {
-    return plans.map(plan => {
+    return plans.map((plan) => {
       const tasks = plan.tasks || [];
       const total = tasks.length;
-      const completed = tasks.filter(task => {
+      const completed = tasks.filter((task) => {
         const status = task.status?.toLowerCase();
         return status === 'completed' || status === 'done';
       }).length;
@@ -44,7 +41,7 @@ const PlansList = ({ roomId }) => {
 
       return {
         ...plan,
-        progress: { completed, total, percentage }
+        progress: { completed, total, percentage },
       };
     });
   }, [plans]);
@@ -73,10 +70,10 @@ const PlansList = ({ roomId }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   };
 
@@ -87,7 +84,10 @@ const PlansList = ({ roomId }) => {
           <div className="flex items-center justify-center h-full p-8">
             <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border border-gray-200/30 dark:border-gray-700/30 rounded-2xl backdrop-blur-lg p-8 max-w-md">
               <div className="flex items-center gap-3">
-                <Iconify icon="mdi:loading" className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+                <Iconify
+                  icon="mdi:loading"
+                  className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400"
+                />
                 <span className="text-base text-gray-600 dark:text-gray-400">Loading plans...</span>
               </div>
             </div>
@@ -104,9 +104,14 @@ const PlansList = ({ roomId }) => {
           <div className="flex items-center justify-center h-full p-8">
             <div className="bg-red-50/90 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-2xl backdrop-blur-lg p-8 max-w-md">
               <div className="flex flex-col items-center gap-3 text-center">
-                <Iconify icon="mdi:alert-circle" className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <Iconify
+                  icon="mdi:alert-circle"
+                  className="w-8 h-8 text-red-600 dark:text-red-400"
+                />
                 <div>
-                  <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">Failed to load plans</p>
+                  <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">
+                    Failed to load plans
+                  </p>
                   <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               </div>
@@ -125,7 +130,10 @@ const PlansList = ({ roomId }) => {
             <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border border-gray-200/30 dark:border-gray-700/30 rounded-2xl backdrop-blur-lg p-12 max-w-md text-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <Iconify icon="mdi:road-variant" className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                  <Iconify
+                    icon="mdi:road-variant"
+                    className="w-8 h-8 text-blue-600 dark:text-blue-400"
+                  />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -154,9 +162,7 @@ const PlansList = ({ roomId }) => {
                 icon="mdi:road-variant"
                 className="w-8 h-8 text-blue-600 dark:text-blue-400 flex-shrink-0"
               />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                Plans
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Plans</h1>
             </div>
             <p className="ml-11 text-sm text-gray-600 dark:text-gray-400">
               View and manage all plans for this project
@@ -178,7 +184,9 @@ const PlansList = ({ roomId }) => {
                       {plan.title || 'Untitled Plan'}
                     </h3>
                     {plan.status && (
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(plan.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(plan.status)}`}
+                      >
                         {plan.status}
                       </span>
                     )}
@@ -210,15 +218,12 @@ const PlansList = ({ roomId }) => {
                   {/* Metadata */}
                   <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
-                      <Iconify icon="mdi:calendar" className="w-4 h-4" />
+                      <Iconify
+                        icon="mdi:calendar"
+                        className="w-4 h-4"
+                      />
                       <span>Created {formatDate(plan.created_at)}</span>
                     </div>
-                    {plan.estimated_minutes && (
-                      <div className="flex items-center gap-1.5">
-                        <Iconify icon="mdi:clock-outline" className="w-4 h-4" />
-                        <span>{plan.estimated_minutes} min</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -228,9 +233,9 @@ const PlansList = ({ roomId }) => {
                     <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       View Plan
                     </span>
-                    <Iconify 
-                      icon="mdi:chevron-right" 
-                      className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform" 
+                    <Iconify
+                      icon="mdi:chevron-right"
+                      className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform"
                     />
                   </div>
                 </div>
@@ -244,4 +249,3 @@ const PlansList = ({ roomId }) => {
 };
 
 export default memo(PlansList);
-
