@@ -19,13 +19,11 @@ import {
 import { useSelector, useDispatch } from '../redux/store';
 
 const TodoWidget = ({ threadId, mode = 'standard' }) => {
-  console.log('TodoWidget - threadId:', threadId);
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const tasks = useSelector(selectTasksByThread(threadId));
-  console.log('TodoWidget - tasks:', tasks);
   const plan = useSelector(selectPlanByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));

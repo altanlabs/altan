@@ -398,7 +398,7 @@ export const fetchPlan = (planId) => async (dispatch, getState) => {
   }
 };
 
-// Fetch plan by threadId (for TodoWidget)
+// Fetch standalone tasks by threadId (for TodoWidget) - tasks without a plan_id
 export const fetchTasks = (threadId) => async (dispatch, getState) => {
   const state = getState();
   const isLoading = selectTasksLoading(threadId)(state);
@@ -412,30 +412,20 @@ export const fetchTasks = (threadId) => async (dispatch, getState) => {
   dispatch(startLoadingTasks({ threadId }));
 
   try {
+    // Fetch tasks without a plan_id for this thread
     const response = await axios.get(
-      `https://cagi.altan.ai/plans/?mainthread_id=${threadId}&order_by=created_at&ascending=false&include_tasks=true`,
+      `https://cagi.altan.ai/tasks/?mainthread_id=${threadId}`,
     );
-    const planData = response.data.data || {};
-    const tasks = planData.tasks || [];
+    
+    // The response could be an array or an object with a data property
+    const responseData = response.data.data || response.data || [];
+    const tasks = Array.isArray(responseData) ? responseData : [responseData];
+    
+    // Filter to only include tasks without a plan_id
+    const standaloneTasks = tasks.filter((task) => !task.plan_id);
 
-    // Extract plan metadata
-    const plan = {
-      id: planData.id,
-      title: planData.title,
-      description: planData.description,
-      status: planData.status,
-      is_approved: planData.is_approved,
-      estimated_minutes: planData.estimated_minutes,
-      created_at: planData.created_at,
-      updated_at: planData.updated_at,
-      finished_at: planData.finished_at,
-      room_id: planData.room_id,
-      tasks: tasks,
-    };
-
-    dispatch(setTasks({ threadId, tasks }));
-    dispatch(setPlan({ plan, threadId }));
-    return tasks;
+    dispatch(setTasks({ threadId, tasks: standaloneTasks }));
+    return standaloneTasks;
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch tasks';
     dispatch(setTasksError({ threadId, error: errorMessage }));
