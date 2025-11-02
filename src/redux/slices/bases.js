@@ -601,9 +601,27 @@ const slice = createSlice({
       const deduplicateRecords = (recordsArray) => {
         const seen = new Map();
         return recordsArray.filter((record) => {
-          if (!record || !record.id) return false;
-          if (seen.has(record.id)) return false;
-          seen.set(record.id, true);
+          if (!record) return false;
+          
+          // For tables without an 'id' column, create a composite key from all fields
+          // This handles junction tables like company_members with composite primary keys
+          let recordKey;
+          if (record.id) {
+            recordKey = record.id;
+          } else {
+            // Create a stable key from all record properties
+            recordKey = JSON.stringify(
+              Object.keys(record)
+                .sort()
+                .reduce((acc, key) => {
+                  acc[key] = record[key];
+                  return acc;
+                }, {})
+            );
+          }
+          
+          if (seen.has(recordKey)) return false;
+          seen.set(recordKey, true);
           return true;
         });
       };

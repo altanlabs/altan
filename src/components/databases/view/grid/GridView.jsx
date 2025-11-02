@@ -133,8 +133,23 @@ export const GridView = memo(
     // Use ref for tracking when component is mounted to avoid updates during unmount
     const isMounted = useRef(true);
 
-    // Use optimized row data hook
-    const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
+  // Use optimized row data hook
+  const optimizedRowData = useOptimizedRowData(records, fields, recentlyAddedRecordIds.current);
+
+  // Helper function to generate a unique ID for records without an id field
+  // This is needed for junction tables with composite primary keys
+  const getRecordId = useCallback((record) => {
+    if (record?.id) return record.id;
+
+    // For records without an id field, create a stable composite key
+    // Sort the keys to ensure consistency
+    const sortedKeys = Object.keys(record || {}).sort();
+    const keyParts = sortedKeys
+      .filter(key => key !== '__typename') // Exclude GraphQL metadata
+      .map(key => `${key}:${record[key]}`);
+
+    return keyParts.join('|') || 'unknown';
+  }, []);
 
     // Calculate max width for email fields
     const getEmailColumnWidths = useCallback(
@@ -673,11 +688,15 @@ export const GridView = memo(
     // Add data loading states to show in the UI
     // const isDataLoading = !isReady || !initialGridSetupComplete.current;
 
-    // Check if table is empty (no real records, only the '+' row for new records)
-    const hasRealRecords = useMemo(() => {
-      if (!Array.isArray(records)) return false;
-      return records.some((record) => record && record.id !== '+');
-    }, [records]);
+  // Check if table is empty (no real records, only the '+' row for new records)
+  const hasRealRecords = useMemo(() => {
+    if (!Array.isArray(records)) return false;
+    return records.some((record) => {
+      if (!record) return false;
+      const recordId = getRecordId(record);
+      return recordId !== '+' && recordId !== '__new__';
+    });
+  }, [records, getRecordId]);
 
     // Handler for CSV import
     const handleImportCSV = useCallback(() => {
@@ -844,7 +863,7 @@ export const GridView = memo(
               rowData={localRowData}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
-              getRowId={(params) => params.data.id}
+              getRowId={(params) => getRecordId(params.data)}
               onGridReady={onGridReady}
               onCellKeyPress={onCellKeyPress}
               getRowHeight={() => 48}
