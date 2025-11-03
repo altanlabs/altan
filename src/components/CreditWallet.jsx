@@ -123,8 +123,8 @@ const CreditWallet = () => {
         </Tooltip>
         <Button
           size="small"
-          variant="contained"
-          color="primary"
+          variant="soft"
+          color="inherit"
           startIcon={<Iconify icon="material-symbols:crown" />}
           onClick={handleUpgrade}
         >

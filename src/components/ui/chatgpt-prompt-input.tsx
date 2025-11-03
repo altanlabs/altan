@@ -457,8 +457,9 @@ export const PromptBox = React.forwardRef<
       githubData: GitHubData | null,
     ) => void;
     externalValue?: string;
+    isAccountFree?: boolean;
   }
->(({ className, onSend, externalValue, ...props }, ref) => {
+>(({ className, onSend, externalValue, isAccountFree = false, ...props }, ref) => {
   const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [value, setValue] = React.useState('');
@@ -557,6 +558,16 @@ export const PromptBox = React.forwardRef<
     if (!hasValue) return;
 
     if (onSend) {
+      let finalPrompt = value.trim();
+
+      // Append free account prompt when user is on free plan
+      if (isAccountFree) {
+        finalPrompt +=
+          "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, api services, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - after the user can view his first interface you can create a sophisticated plan for the next version of his app .</hide>";
+        console.log('✅ PromptBox - Added <hide> message');
+      } else {
+        console.log('❌ PromptBox - NOT adding <hide> message (isAccountFree is false)');
+      }
       const githubData = githubUrl
         ? {
             url: githubUrl,
@@ -564,7 +575,7 @@ export const PromptBox = React.forwardRef<
             ...(githubToken && { token: githubToken }),
           }
         : null;
-      onSend(value, files, selectedTool, githubData);
+      onSend(finalPrompt, files, selectedTool, githubData);
       // Clear the form after sending
       setValue('');
       setFiles([]);

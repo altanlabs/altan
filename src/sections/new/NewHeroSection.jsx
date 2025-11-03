@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import StarterCategories from './starters/StarterCategories';
@@ -9,7 +9,7 @@ import { useSettingsContext } from '../../components/settings';
 import { PromptBox } from '../../components/ui/chatgpt-prompt-input';
 import useLocales from '../../locales/useLocales';
 import QuickAccessSection from '../../pages/dashboard/NewDashboardPage/QuickAccessSection';
-import { createAgent } from '../../redux/slices/general';
+import { createAgent, selectIsAccountFree } from '../../redux/slices/general';
 
 const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const { resolvedThemeMode } = useSettingsContext();
@@ -20,6 +20,12 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const [prefillPrompt, setPrefillPrompt] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const promptBoxRef = useRef(null);
+  
+  // Check if account is free (for unauthenticated users or users on free plan)
+  const isAccountFree = useSelector(selectIsAccountFree);
+  
+  console.log('🔍 NewHeroSection - isAuthenticated:', isAuthenticated);
+  console.log('🔍 NewHeroSection - isAccountFree:', isAccountFree);
 
   // Background logo based on theme
   const backgroundLogoSrc = resolvedThemeMode === 'dark' ? '/ALTAN.svg' : '/ALTAN_LIGHT.svg';
@@ -174,6 +180,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
                 onSend={handleSend}
                 disabled={isCreating}
                 externalValue={prefillPrompt}
+                isAccountFree={isAccountFree}
               />
             </div>
           </div>
