@@ -8,7 +8,6 @@ import StaticDrawerNav from './altaners/nav/StaticDrawerNav';
 import APIKeys from './APIKeys';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen';
 import useResponsive from '../../hooks/useResponsive';
-import { CompactLayout } from '../../layouts/dashboard';
 import { selectAccount, getAccountAttribute } from '../../redux/slices/general';
 import { dispatch } from '../../redux/store';
 import { AccountGeneral, AccountMembers } from '../../sections/@dashboard/user/account';
@@ -36,7 +35,7 @@ function UserAccountPage() {
   useEffect(() => {
     // Update URL when currentTab changes
     history.push(`?tab=${currentTab}`, { replace: true });
-  }, [currentTab, history.push]);
+  }, [currentTab, history]);
 
   // Conditional resource loading based on current tab
   useEffect(() => {
@@ -96,11 +95,24 @@ function UserAccountPage() {
   }
 
   return (
-    <div className="pt-12">
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        pt: 8,
+      }}
+    >
       <Stack
         height="100%"
         width="100%"
         direction={isSmallScreen ? 'column' : 'row'}
+        sx={{ overflow: 'hidden' }}
       >
         <StaticDrawerNav
           components={navItems}
@@ -109,11 +121,11 @@ function UserAccountPage() {
           showSettings={false}
           showRoom={false}
         />
-        <Box sx={{ flexGrow: 1, p: 3, overflowY: 'auto' }}>
+        <Box sx={{ flexGrow: 1, p: 3, overflowY: 'auto', minHeight: 0 }}>
           {!!currentTab && TABS[currentTab]?.component}
         </Box>
       </Stack>
-    </div>
+    </Box>
   );
 }
 

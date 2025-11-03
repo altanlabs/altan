@@ -110,6 +110,11 @@ const CreditWallet = () => {
     return `${formattedRemaining} of ${formattedTotal} credits remaining`;
   };
 
+  // Only render if credits are below 500
+  if (creditBalance >= 500) {
+    return null;
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mx-4 py-1 mt-[-10px] backdrop-blur-sm border-b border-gray-200/30 dark:border-gray-700/30">
@@ -117,7 +122,7 @@ const CreditWallet = () => {
           <div className="flex items-center gap-2 cursor-help">
             <CreditPieChart creditPercentage={creditPercentage} isLowCredits={isLowCredits} />
             <span className={`text-sm font-bold ${getTextColor()}`}>
-              {creditBalance.toFixed(0)} credits left
+              {formatCredits(creditBalance)} credits left
             </span>
           </div>
         </Tooltip>

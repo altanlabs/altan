@@ -53,6 +53,16 @@ import {
 // @ts-expect-error - JS file without type definitions
 import UpgradeButton from '../UpgradeButton';
 
+// Format credit count for display
+const formatCredits = (credits: number) => {
+  if (credits >= 1000000) {
+    return `${(credits / 1000000).toFixed(1)}M`;
+  } else if (credits >= 1000) {
+    return `${(credits / 1000).toFixed(1)}k`;
+  }
+  return credits.toString();
+};
+
 export const UserDropdown = () => {
   const history = useHistory();
   const dispatch = useDispatch();
@@ -234,7 +244,7 @@ export const UserDropdown = () => {
                     ) : (
                       <div className="flex items-center gap-1 flex-1 justify-end">
                         <span className="text-gray-900 dark:text-gray-100">
-                          {(accountCreditBalance ?? 0).toFixed(0)} credits
+                          {formatCredits(accountCreditBalance ?? 0)}
                         </span>
                         <Button
                           size="sm"
@@ -395,10 +405,10 @@ export const UserDropdown = () => {
                               </div>
                             ) : (
                               <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
-                                {Number(sub.credit_balance / 100 || 0).toFixed(2)} /{' '}
+                                {formatCredits(Number(sub.credit_balance || 0))} /{' '}
                                 {sub.meta_data?.custom_subscription
-                                  ? Number(sub.meta_data?.total_credits / 100 || 0).toFixed(2)
-                                  : Number(sub.billing_option?.plan?.credits / 100 || 0).toFixed(2)}
+                                  ? formatCredits(Number(sub.meta_data?.total_credits || 0))
+                                  : formatCredits(Number(sub.billing_option?.plan?.credits || 0))}
                               </span>
                             )}
                           </div>

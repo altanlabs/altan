@@ -53,6 +53,7 @@ const NoCredits = () => {
   useCreditBalancePolling(true);
 
   // Calculate credit balance in euros
+  const creditBalanceInEuros = accountCreditBalance / 100;
   const isLowBalance = creditBalanceInEuros < 5;
 
   // Determine current plan
@@ -216,14 +217,6 @@ const NoCredits = () => {
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
             Out of Credits
           </Typography>
-          {isLowBalance && (
-            <Chip
-              label={`€${creditBalanceInEuros.toFixed(2)} remaining`}
-              size="small"
-              color="error"
-              sx={{ mb: 1, fontWeight: 600 }}
-            />
-          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Upgrade to Pro to get 25€ in credits and unlock all features
           </Typography>

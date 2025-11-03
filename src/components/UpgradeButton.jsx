@@ -120,7 +120,7 @@ const UpgradeButton = ({ large = false, prominent = false, superAdminExpanded = 
                 color="text.primary"
                 sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
-                {Number(creditInfo.remaining + safeAccountCreditBalance).toFixed(0)} credits
+                {formatCredits(Number(creditInfo.remaining + safeAccountCreditBalance))}
               </Typography>
               <Typography
                 variant="body2"

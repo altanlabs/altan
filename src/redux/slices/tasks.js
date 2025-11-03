@@ -126,6 +126,9 @@ const slice = createSlice({
       }
       state.tasksByThread[threadId].push(task);
 
+      // Mark as initialized so the widget knows there are tasks available
+      state.initialized[threadId] = true;
+
       // Also add task to the plan if it exists for this thread
       const planId = state.planIdByThread[threadId];
       if (planId && state.plansById[planId]) {
@@ -148,16 +151,26 @@ const slice = createSlice({
         return acc;
       }, {});
 
+      // Initialize tasksByThread for this threadId if it doesn't exist
+      if (!state.tasksByThread[threadId]) {
+        state.tasksByThread[threadId] = [];
+      }
+
       const tasks = state.tasksByThread[threadId];
-      if (tasks) {
-        const taskIndex = tasks.findIndex((task) => task.id === taskId);
-        if (taskIndex !== -1) {
-          const currentTask = tasks[taskIndex];
-          state.tasksByThread[threadId][taskIndex] = {
-            ...currentTask,
-            ...filteredUpdates,
-          };
-        }
+      const taskIndex = tasks.findIndex((task) => task.id === taskId);
+
+      if (taskIndex !== -1) {
+        // Task exists - update it
+        const currentTask = tasks[taskIndex];
+        state.tasksByThread[threadId][taskIndex] = {
+          ...currentTask,
+          ...filteredUpdates,
+        };
+      } else {
+        // Task doesn't exist - create it (this handles late-arriving WebSocket events)
+        state.tasksByThread[threadId].push(filteredUpdates);
+        // Mark as initialized so the widget knows there are tasks available
+        state.initialized[threadId] = true;
       }
 
       // Also update task within plans

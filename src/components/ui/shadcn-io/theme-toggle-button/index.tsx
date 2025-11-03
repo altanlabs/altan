@@ -1,10 +1,10 @@
 'use client';
 
-import { Moon, Sun } from 'lucide-react';
+import { Tooltip } from '@mui/material';
 import { useCallback } from 'react';
 
-import { Button } from '../../button';
-import { cn } from '../../../../lib/utils';
+import HeaderIconButton from '../../../HeaderIconButton';
+import Iconify from '../../../iconify';
 
 type AnimationVariant = 
   | 'circle' 
@@ -183,28 +183,19 @@ export const ThemeToggleButton = ({
   }, [onClick, variant, start, url, theme]);
 
   return (
-    <Button
-      variant="outline"
-      size={showLabel ? 'default' : 'icon'}
-      onClick={handleClick}
-      className={cn(
-        'relative overflow-hidden transition-all',
-        showLabel && 'gap-2',
-        className
-      )}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+    <Tooltip
+      arrow
+      followCursor
+      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      {theme === 'light' ? (
-        <Sun className="h-[1.2rem] w-[1.2rem]" />
-      ) : (
-        <Moon className="h-[1.2rem] w-[1.2rem]" />
-      )}
-      {showLabel && (
-        <span className="text-sm">
-          {theme === 'light' ? 'Light' : 'Dark'}
-        </span>
-      )}
-    </Button>
+      <HeaderIconButton onClick={handleClick}>
+        <Iconify
+          icon={theme === 'light' ? 'mdi:white-balance-sunny' : 'mdi:moon-waning-crescent'}
+          width={18}
+          height={18}
+        />
+      </HeaderIconButton>
+    </Tooltip>
   );
 };
 

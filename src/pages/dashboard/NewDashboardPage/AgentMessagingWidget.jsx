@@ -305,34 +305,31 @@ const AgentMessagingWidget = () => {
                     <div
                       key={agent.id}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 transition-all group",
+                        "w-full relative flex items-center gap-2 pl-3 pr-12 py-3 transition-all group cursor-pointer",
                         index % 2 === 0
                           ? "bg-accent/20 hover:bg-accent/30"
                           : "bg-background/20 hover:bg-background/30"
                       )}
+                      onClick={() => handleAgentClick(agent)}
                     >
-                      <button
-                        onClick={() => handleAgentClick(agent)}
-                        className="flex-1 flex items-center gap-3 text-left min-w-0"
-                      >
-                        <div className="relative flex-shrink-0">
-                          {renderAgentAvatar(agent, 48)}
-                          {/* Online status indicator */}
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm" />
-                        </div>
+                      <div className="relative flex-shrink-0">
+                        {renderAgentAvatar(agent, 44)}
+                        {/* Online status indicator */}
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm" />
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <h4 className="font-semibold text-sm text-foreground truncate">
                           {agent.name}
                         </h4>
-                      </button>
+                      </div>
                       <Button
                         onClick={(e) => handleEditAgent(agent, e)}
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs flex-shrink-0"
+                        variant="default"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-primary-foreground z-10"
                         title="Edit agent"
                       >
-                        <Iconify icon="mdi:pencil" width={14} className="text-muted-foreground mr-1" />
-                        Edit
+                        <Iconify icon="mdi:pencil" width={16} />
                       </Button>
                     </div>
                   ))}

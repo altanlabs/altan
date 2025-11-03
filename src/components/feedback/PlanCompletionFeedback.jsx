@@ -86,49 +86,39 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
   if (step === 'initial') {
     return (
       <FeedbackPopup
-        title="🎉 Plan completed!"
+        title="Plan completed!"
         onClose={handleSkip}
       >
-        <Stack spacing={2.5}>
+        <Stack spacing={1.5}>
           <Typography
             variant="body2"
             sx={{
               color: '#b0b0b0',
-              lineHeight: 1.5,
+              lineHeight: 1.4,
               fontSize: '14px',
             }}
           >
             Did this plan achieve what you wanted?
           </Typography>
 
-          <Stack
-            direction="row"
-            spacing={2}
-          >
+          <Stack spacing={1}>
             <Button
               variant="contained"
               fullWidth
               onClick={() => handleSatisfactionClick(true)}
               sx={{
-                backgroundColor: '#4caf50',
-                color: 'white',
+                backgroundColor: 'white',
+                color: 'black',
                 fontWeight: 600,
-                borderRadius: '12px',
-                py: 1.5,
+                borderRadius: '50px',
+                py: 1,
                 fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                textTransform: 'none',
                 '&:hover': {
-                  backgroundColor: '#45a049',
+                  backgroundColor: '#f0f0f0',
                 },
               }}
             >
-              <Iconify
-                icon="eva:checkmark-circle-2-fill"
-                width={20}
-                height={20}
-              />
               Yes, it worked!
             </Button>
 
@@ -140,23 +130,16 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                 borderColor: '#666',
                 color: '#b0b0b0',
                 fontWeight: 600,
-                borderRadius: '12px',
-                py: 1.5,
+                borderRadius: '50px',
+                py: 1,
                 fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                textTransform: 'none',
                 '&:hover': {
                   borderColor: '#888',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 },
               }}
             >
-              <Iconify
-                icon="eva:close-circle-fill"
-                width={20}
-                height={20}
-              />
               Not quite
             </Button>
           </Stack>
@@ -171,12 +154,12 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
         title="Help us improve"
         onClose={handleSkip}
       >
-        <Stack spacing={2}>
+        <Stack spacing={1.5}>
           <Typography
             variant="body2"
             sx={{
               color: '#b0b0b0',
-              lineHeight: 1.5,
+              lineHeight: 1.4,
               fontSize: '14px',
             }}
           >
@@ -188,7 +171,7 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
             rows={3}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Tell us what went wrong or what you expected..."
+            placeholder="Tell us what went wrong..."
             variant="outlined"
             fullWidth
             autoFocus
@@ -197,6 +180,7 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 color: 'white',
                 borderRadius: '12px',
+                fontSize: '14px',
                 '& fieldset': {
                   borderColor: '#444',
                 },
@@ -207,6 +191,9 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                   borderColor: '#888',
                 },
               },
+              '& .MuiInputBase-input': {
+                padding: '10px 12px',
+              },
               '& .MuiInputBase-input::placeholder': {
                 color: '#666',
                 opacity: 1,
@@ -216,7 +203,8 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
 
           <Stack
             direction="row"
-            spacing={1.5}
+            spacing={1}
+            alignItems="center"
           >
             <Button
               variant="contained"
@@ -230,6 +218,7 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                 borderRadius: '50px',
                 py: 1,
                 fontSize: '14px',
+                textTransform: 'none',
                 '&:hover': {
                   backgroundColor: '#f0f0f0',
                 },
@@ -249,8 +238,12 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
               sx={{
                 color: '#888',
                 fontSize: '14px',
+                minWidth: 'auto',
+                px: 1.5,
+                textTransform: 'none',
                 '&:hover': {
                   color: '#b0b0b0',
+                  backgroundColor: 'transparent',
                 },
               }}
             >

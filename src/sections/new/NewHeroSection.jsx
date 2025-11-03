@@ -23,9 +23,6 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   
   // Check if account is free (for unauthenticated users or users on free plan)
   const isAccountFree = useSelector(selectIsAccountFree);
-  
-  console.log('🔍 NewHeroSection - isAuthenticated:', isAuthenticated);
-  console.log('🔍 NewHeroSection - isAccountFree:', isAccountFree);
 
   // Background logo based on theme
   const backgroundLogoSrc = resolvedThemeMode === 'dark' ? '/ALTAN.svg' : '/ALTAN_LIGHT.svg';
