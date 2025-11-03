@@ -2142,11 +2142,13 @@ export const exportDatabaseToCSV =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const params = tableName ? { table_name: tableName } : {};
-      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
-        params,
-        responseType: 'blob',
-      });
+      const response = await optimai_cloud.post(
+        `/v1/instances/${baseId}/export-csv`,
+        { table_name: tableName },
+        {
+          responseType: 'blob',
+        }
+      );
 
       return Promise.resolve(response.data);
     } catch (e) {
