@@ -42,7 +42,6 @@ import {
   selectTablePaginationInfo,
 } from '../../../../redux/slices/bases';
 import { selectAccount } from '../../../../redux/slices/general';
-import { createMedia } from '../../../../redux/slices/media';
 import { dispatch, useSelector } from '../../../../redux/store';
 import Iconify from '../../../iconify';
 import CreateFieldDrawer from '../../fields/CreateFieldDrawer.jsx';
@@ -52,19 +51,6 @@ import CreateRecordDrawer from '../../records/CreateRecordDrawer';
 import EditRecordDrawer from '../../records/EditRecordDrawer';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
-
-// Helper function to convert file to base64
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = reader.result.split(',')[1]; // Remove data:type;base64, prefix
-      resolve(base64String);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -707,50 +693,12 @@ export const GridView = memo(
     const handleCSVImport = useCallback(
       async (file, previewData) => {
         try {
-          // Step 1: Upload the CSV file as media to get a URL
-          const mediaUrl = await dispatch(
-            createMedia({
-              fileName: file.name,
-              fileContent: await fileToBase64(file),
-              fileType: file.type || 'text/csv',
-            }),
-          );
-
-          if (!mediaUrl) {
-            throw new Error('Failed to upload CSV file');
-          }
-
-          // Step 2: Create column mapping from CSV headers to table fields
-          const columnMapping = {};
-          const tableFields = fields || [];
-          // Map CSV headers to database field names
-          previewData.headers.forEach((csvHeader, index) => {
-            // Try to find a matching field by name (case insensitive)
-            const matchingField = tableFields.find(
-              (field) =>
-                field.name.toLowerCase() === csvHeader.toLowerCase() ||
-                field.db_field_name.toLowerCase() === csvHeader.toLowerCase(),
-            );
-
-            if (matchingField) {
-              columnMapping[csvHeader] = matchingField.db_field_name;
-            } else {
-              // If no exact match, use index-based mapping
-              columnMapping[index.toString()] = csvHeader.toLowerCase().replace(/\s+/g, '_');
-            }
-          });
-
-          // Step 3: Call the import endpoint
-          const importData = {
-            file_url: mediaUrl,
-            column_mapping: columnMapping,
-            has_header: true,
-            batch_size: 1000,
-            use_staging: false,
-            validate_only: false,
-          };
-
-          const response = await dispatch(importCSVToTable(table.id, importData));
+          // Call the new upload-csv endpoint with FormData
+          // Use db_name (actual database table name) if available, fallback to name
+          const tableName = table.db_name || table.name;
+          const schema = table.schema || 'public';
+          // Use baseId from props, not from table object
+          const response = await dispatch(importCSVToTable(baseId, tableName, file, schema));
 
           // Refresh the table records after successful import
           await dispatch(loadTableRecords(table.id, { forceReload: true }));
@@ -761,7 +709,7 @@ export const GridView = memo(
           throw error;
         }
       },
-      [fields, table?.id],
+      [table?.id, table?.name, table?.db_name, table?.schema, baseId],
     );
 
     // Watch for import trigger from context menu
