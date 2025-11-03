@@ -112,7 +112,6 @@ function DatabaseNavigationBar({ disabled = false }) {
     setOpenDatabaseInfo(true);
   }, []);
 
-  // Cleanup debounced function on unmount
   useEffect(() => {
     return () => {
       debouncedSearch.cancel();

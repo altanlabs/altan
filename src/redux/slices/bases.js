@@ -2104,10 +2104,25 @@ export const preloadBucketsForBase = (baseId) => async (dispatch, getState) => {
   }
 };
 
-export const importCSVToTable = (tableId, importData) => async (dispatch) => {
+export const importCSVToTable = (baseId, tableName, file, schema = 'public') => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const response = await optimai_tables.post(`/table/${tableId}/import-csv`, importData);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await optimai_cloud.post(
+      `/v1/instances/${baseId}/upload-csv`,
+      formData,
+      {
+        params: { 
+          table_name: tableName,
+          schema: schema
+        },
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
     return Promise.resolve(response.data);
   } catch (e) {
     dispatch(slice.actions.hasError(e.message));
@@ -2127,11 +2142,13 @@ export const exportDatabaseToCSV =
   async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const params = tableName ? { table_name: tableName } : {};
-      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
-        params,
-        responseType: 'blob',
-      });
+      const response = await optimai_cloud.post(
+        `/v1/instances/${baseId}/export-csv`,
+        { table_name: tableName },
+        {
+          responseType: 'blob',
+        }
+      );
 
       return Promise.resolve(response.data);
     } catch (e) {

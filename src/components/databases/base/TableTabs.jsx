@@ -25,7 +25,7 @@ import Iconify from '../../iconify';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';
 import EditTableDrawer from '../table/EditTableDrawer.jsx';
 import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
-import { optimai_tables_v4 } from '../../../utils/axios.js';
+import { optimai_cloud } from '../../../utils/axios.js';
 
 const StyledTabs = styled(Tabs)(() => ({
   minHeight: '30px',
@@ -451,13 +451,15 @@ function TableTabs({
     }
 
     try {
-      // Call the export API endpoint
-      const response = await optimai_tables_v4.get(`/databases/${baseId}/export/csv`, {
-        params: {
-          table_name: currentTable.name,
-        },
-        responseType: 'blob',
-      });
+      // Call the new export API endpoint (POST)
+      const tableName = currentTable.db_name || currentTable.name;
+      const response = await optimai_cloud.post(
+        `/v1/instances/${baseId}/export-csv`,
+        { table_name: tableName },
+        {
+          responseType: 'blob',
+        }
+      );
 
       // Create a download link and trigger download
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
@@ -467,7 +469,7 @@ function TableTabs({
       link.setAttribute('href', url);
       link.setAttribute(
         'download',
-        `${currentTable.name || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`,
+        `${tableName || 'table'}_export_${new Date().toISOString().split('T')[0]}.csv`,
       );
       link.style.visibility = 'hidden';
 
