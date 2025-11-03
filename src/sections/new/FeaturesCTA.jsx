@@ -1,8 +1,11 @@
 import { m } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 
 const FeaturesCTA = () => {
+  const history = useHistory();
+
   return (
     <section id="cta" className="relative w-full py-24 md:py-32">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -23,6 +26,7 @@ const FeaturesCTA = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <button
               type="button"
+              onClick={() => history.push('/auth/register')}
               className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-medium text-lg hover:bg-primary/90 transition-colors"
             >
               Get started free
@@ -30,6 +34,7 @@ const FeaturesCTA = () => {
             </button>
             <button
               type="button"
+              onClick={() => history.push('/demo')}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm text-foreground font-medium text-lg hover:bg-background transition-colors"
             >
               Enter demo
@@ -42,4 +47,3 @@ const FeaturesCTA = () => {
 };
 
 export default FeaturesCTA;
-
