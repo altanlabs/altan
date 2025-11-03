@@ -123,6 +123,7 @@ const QuickAccessSection = () => {
                   key={project.id}
                   id={project.id}
                   name={project.name}
+                  description={project.description}
                   icon_url={project.icon_url}
                   is_pinned={project.is_pinned}
                   components={project.components?.items || []}

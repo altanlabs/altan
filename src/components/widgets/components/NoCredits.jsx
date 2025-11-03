@@ -10,6 +10,7 @@ import {
   ListItemText,
   Divider,
   CircularProgress,
+  Chip,
 } from '@mui/material';
 import UpgradeDialog from '../../dialogs/UpgradeDialog';
 import Iconify from '../../iconify/Iconify';
@@ -19,9 +20,11 @@ import {
   selectAccountId,
   selectAccountSubscriptions,
   selectIsAccountFree,
+  selectAccountCreditBalance,
 } from '../../../redux/slices/general';
 import { openUrl } from '../../../utils/auth';
 import { optimai, optimai_shop } from '../../../utils/axios';
+import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
 
 const GROWTH_FEATURES = [
   { text: 'Higher credit limits', icon: 'material-symbols:account-balance-wallet' },
@@ -44,6 +47,13 @@ const NoCredits = () => {
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
+  const accountCreditBalance = useSelector(selectAccountCreditBalance);
+
+  // Enable polling for real-time credit balance updates
+  useCreditBalancePolling(true);
+
+  // Calculate credit balance in euros
+  const isLowBalance = creditBalanceInEuros < 5;
 
   // Determine current plan
   const currentSubscription = activeSubscriptions?.[0];
@@ -206,6 +216,14 @@ const NoCredits = () => {
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
             Out of Credits
           </Typography>
+          {isLowBalance && (
+            <Chip
+              label={`€${creditBalanceInEuros.toFixed(2)} remaining`}
+              size="small"
+              color="error"
+              sx={{ mb: 1, fontWeight: 600 }}
+            />
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Upgrade to Pro to get 25€ in credits and unlock all features
           </Typography>
@@ -245,6 +263,14 @@ const NoCredits = () => {
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               Out of Credits
             </Typography>
+            {isLowBalance && (
+              <Chip
+                label={`€${creditBalanceInEuros.toFixed(2)} remaining`}
+                size="small"
+                color="error"
+                sx={{ mb: 1, fontWeight: 600 }}
+              />
+            )}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Upgrade to Growth for higher limits and priority support
             </Typography>
@@ -386,6 +412,14 @@ const NoCredits = () => {
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               Out of Credits
             </Typography>
+            {isLowBalance && (
+              <Chip
+                label={`€${creditBalanceInEuros.toFixed(2)} remaining`}
+                size="small"
+                color="error"
+                sx={{ mb: 1, fontWeight: 600 }}
+              />
+            )}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Upgrade to a higher Growth tier for more credits
             </Typography>
@@ -522,6 +556,14 @@ const NoCredits = () => {
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
             Out of Credits
           </Typography>
+          {isLowBalance && (
+            <Chip
+              label={`€${creditBalanceInEuros.toFixed(2)} remaining`}
+              size="small"
+              color="error"
+              sx={{ mb: 1, fontWeight: 600 }}
+            />
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Purchase additional credits to continue
           </Typography>

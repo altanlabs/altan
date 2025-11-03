@@ -47,18 +47,17 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const handleSend = async (value, files, selectedTool, githubData) => {
     if (!value.trim()) return;
 
-    // Check authentication first for any action
-    if (!isAuthenticated) {
-      if (onRequestAuth) {
-        onRequestAuth();
-      }
-      return;
-    }
-
     // Handle based on selected tool
     if (selectedTool === 'createAgent') {
-      // Agent creation logic from CreateAgentDashboard
+      // Check authentication for agent creation
+      if (!isAuthenticated) {
+        if (onRequestAuth) {
+          onRequestAuth();
+        }
+        return;
+      }
 
+      // Agent creation logic from CreateAgentDashboard
       try {
         const agentName = 'AI Assistant';
         const prompt = `You are a helpful AI assistant. Your goal is to assist users based on: ${value.trim()}`;
@@ -89,8 +88,65 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
         // Silent catch - could add error UI here in the future
       }
     } else {
-      // Default to project creation - pass files and GitHub data to onSubmit
-      onSubmit(value.trim(), files, githubData);
+      // Default to project creation
+      // Create the idea first (even without auth) to preserve the user's input
+      if (!isAuthenticated) {
+        try {
+          const attachments = await Promise.all(
+            (files || []).map(async (file) => {
+              const fileType = file.file.type;
+              const extension = fileType.split('/')[1] || fileType.split('.').pop() || 'bin';
+              return {
+                file_name: file.name || `file.${extension}`,
+                mime_type: fileType,
+                file_content: file.url.split(',')[1],
+              };
+            }),
+          );
+
+          const response = await fetch('https://api.altan.ai/platform/idea', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: 'Untitled Project',
+              idea: value.trim(),
+              icon: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+              attachments,
+              is_public: true,
+              // Include GitHub data if provided
+              ...(githubData?.url && {
+                github_url: githubData.url,
+                branch: githubData.branch || 'main',
+              }),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const data = await response.json();
+
+          // Store the idea ID in sessionStorage so we can redirect after auth
+          sessionStorage.setItem('pendingIdeaId', data.id);
+
+          // Show auth popup
+          if (onRequestAuth) {
+            onRequestAuth();
+          }
+        } catch (error) {
+          console.error('Error creating idea:', error);
+          // Fallback to auth request if idea creation fails
+          if (onRequestAuth) {
+            onRequestAuth();
+          }
+        }
+      } else {
+        // User is authenticated - pass to onSubmit handler
+        onSubmit(value.trim(), files, githubData);
+      }
     }
   };
 

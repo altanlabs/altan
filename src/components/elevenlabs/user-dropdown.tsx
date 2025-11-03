@@ -234,7 +234,7 @@ export const UserDropdown = () => {
                     ) : (
                       <div className="flex items-center gap-1 flex-1 justify-end">
                         <span className="text-gray-900 dark:text-gray-100">
-                          €{((accountCreditBalance ?? 0) / 100).toFixed(2)}
+                          {(accountCreditBalance ?? 0).toFixed(0)} credits
                         </span>
                         <Button
                           size="sm"

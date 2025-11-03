@@ -361,7 +361,7 @@ export default function AccountPopover() {
                 ) : (
                   <Stack direction="row" spacing={0.5} alignItems="center" flex={1} justifyContent="flex-end">
                     <Typography className="detail-value">
-                      €{((accountCreditBalance ?? 0) / 100).toFixed(2)}
+                      {(accountCreditBalance ?? 0).toFixed(0)} credits
                     </Typography>
                     <IconButton
                       size="small"

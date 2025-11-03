@@ -229,6 +229,11 @@ const slice = createSlice({
       const account = action.payload;
       state.account = account;
     },
+    updateAccountCreditBalance(state, action) {
+      if (state.account) {
+        state.account.credit_balance = action.payload;
+      }
+    },
     updateAccountMetadata(state, action) {
       const meta_data = action.payload;
       state.account.meta_data = meta_data;
@@ -810,6 +815,7 @@ export const {
   setAccount,
   setAccounts,
   updateAccount,
+  updateAccountCreditBalance,
   deleteAgent,
   addWebhook,
   deleteWebhook,

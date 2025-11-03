@@ -218,7 +218,7 @@ export default function NewPricing() {
   const [proPlan, setProPlan] = useState(null);
   const [growthPlans, setGrowthPlans] = useState([]);
   const [enterprisePlan, setEnterprisePlan] = useState(null);
-  const [isYearlyBilling, setIsYearlyBilling] = useState(true);
+  const [isYearlyBilling, setIsYearlyBilling] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
     pro: false,
     growth: false,

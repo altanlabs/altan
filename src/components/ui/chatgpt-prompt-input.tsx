@@ -454,7 +454,7 @@ export const PromptBox = React.forwardRef<
       value: string,
       files: FileAttachment[],
       selectedTool: string | null,
-      githubData: GitHubData | null
+      githubData: GitHubData | null,
     ) => void;
     externalValue?: string;
   }
@@ -557,12 +557,12 @@ export const PromptBox = React.forwardRef<
     if (!hasValue) return;
 
     if (onSend) {
-      const githubData = githubUrl 
-        ? { 
-            url: githubUrl, 
-            branch: githubBranch, 
-            ...(githubToken && { token: githubToken })
-          } 
+      const githubData = githubUrl
+        ? {
+            url: githubUrl,
+            branch: githubBranch,
+            ...(githubToken && { token: githubToken }),
+          }
         : null;
       onSend(value, files, selectedTool, githubData);
       // Clear the form after sending
@@ -717,7 +717,7 @@ export const PromptBox = React.forwardRef<
                     'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
                     githubUrl
                       ? 'text-green-600 dark:text-green-400'
-                      : 'text-foreground dark:text-white'
+                      : 'text-foreground dark:text-white',
                   )}
                 >
                   <GithubIcon className="h-5 w-5" />

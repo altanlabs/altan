@@ -107,8 +107,15 @@ function AuthGuard({ children, requireAuth = false }) {
 
       // Close login modal if user successfully authenticates
       setShowLoginModal(false);
+
+      // Check for pending idea and redirect if exists
+      const pendingIdeaId = sessionStorage.getItem('pendingIdeaId');
+      if (pendingIdeaId) {
+        sessionStorage.removeItem('pendingIdeaId');
+        history.push(`/?idea=${pendingIdeaId}`);
+      }
     }
-  }, [isAuthenticated, accounts, user]);
+  }, [isAuthenticated, accounts, user, history]);
 
   useEffect(() => {
     if (isAuthenticated && user && !user.is_disabled) {

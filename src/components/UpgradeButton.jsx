@@ -6,6 +6,7 @@ import { useHistory } from 'react-router-dom';
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
 import { useAuthContext } from '../auth/useAuthContext';
+import { useCreditBalancePolling } from '../hooks/useCreditBalancePolling';
 import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
 import { useSelector } from '../redux/store';
 
@@ -24,6 +25,9 @@ const UpgradeButton = ({ large = false, prominent = false, superAdminExpanded = 
   const activeSubscriptions = useSelector(selectAccountSubscriptions);
   const accountCreditBalance = useSelector(selectAccountCreditBalance);
 
+  // Enable real-time credit balance polling
+  useCreditBalancePolling(true);
+
   const safeAccountCreditBalance = accountCreditBalance ?? 0;
   const getCreditsInfo = useCallback(() => {
     if (!activeSubscriptions?.[0]) {
@@ -39,9 +43,9 @@ const UpgradeButton = ({ large = false, prominent = false, superAdminExpanded = 
       subscriptionPlanCredits > 0 && (remainingCredits === 0 || remainingCredits / subscriptionPlanCredits <= 0.15) && (safeAccountCreditBalance < 2000);
 
     return {
-      total: Number(subscriptionPlanCredits / 100),
-      remaining: Number(remainingCredits / 100),
-      used: Number(subscriptionPlanCredits - remainingCredits) / 100,
+      total: Number(subscriptionPlanCredits),
+      remaining: Number(remainingCredits),
+      used: Number(subscriptionPlanCredits - remainingCredits),
       isLowCredits,
     };
   }, [activeSubscriptions, safeAccountCreditBalance]);
@@ -116,7 +120,7 @@ const UpgradeButton = ({ large = false, prominent = false, superAdminExpanded = 
                 color="text.primary"
                 sx={{ fontWeight: 600, lineHeight: 1.1 }}
               >
-                €{Number(creditInfo.remaining + safeAccountCreditBalance / 100).toFixed(2)}
+                {Number(creditInfo.remaining + safeAccountCreditBalance).toFixed(0)} credits
               </Typography>
               <Typography
                 variant="body2"
