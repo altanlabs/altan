@@ -1,13 +1,16 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { selectAccountId } from '../redux/slices/general.js';
-import { selectAuthorizationRequests, selectMembers, sendMessage } from '../redux/slices/room.js';
+import { selectAuthorizationRequests, selectMembers, sendMessage, removeAuthorizationRequest } from '../redux/slices/room.js';
 import { dispatch } from '../redux/store.js';
 import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
 import CreateConnection from './tools/CreateConnection.jsx';
+import { Button } from './ui/button.tsx';
+import { Input } from './ui/input.tsx';
+import { Label } from './ui/label.tsx';
 
 const AuthorizationRequests = () => {
   const accountId = useSelector(selectAccountId);
@@ -19,6 +22,24 @@ const AuthorizationRequests = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const history = useHistory();
   const location = useLocation();
+
+  // Auto-expand if there's only one authorization request
+  useEffect(() => {
+    if (authorizations?.length === 1 && !expandedRequest) {
+      setIsExpanded(true);
+      const request = authorizations[0];
+      setExpandedRequest(request);
+
+      // Initialize secret values for secrets type
+      if (request.meta_data?.type === 'secrets' && request.meta_data?.requested_secrets) {
+        const initialValues = {};
+        request.meta_data.requested_secrets.forEach((secret) => {
+          initialValues[secret.key] = '';
+        });
+        setSecretValues(initialValues);
+      }
+    }
+  }, [authorizations, expandedRequest]);
 
   // Don't render if no account ID (prevents crashes during loading)
   if (!accountId) {
@@ -38,18 +59,21 @@ const AuthorizationRequests = () => {
   };
 
   const handleReject = async (request) => {
+    // Immediately remove from Redux state to make UI responsive
+    dispatch(removeAuthorizationRequest(request.id));
+
+    // Reset expanded state
+    if (expandedRequest?.id === request.id) {
+      setExpandedRequest(null);
+    }
+
+    // Make API call in the background
     try {
-      const response = await optimai_integration.patch(
+      await optimai_integration.patch(
         `/authorization-request/${request.id}/reject`,
       );
-      if (response.status === 200) {
-        // Reset expanded state
-        if (expandedRequest?.id === request.id) {
-          setExpandedRequest(null);
-        }
-      }
     } catch {
-      // Error rejecting authorization request
+      // Error rejecting authorization request - could add error handling here
     }
   };
 
@@ -122,70 +146,72 @@ const AuthorizationRequests = () => {
 
   return (
     <div className="flex flex-col sm:w-[95%] md:w-[96%] max-w-[520px] mx-auto mb-4">
-      <div
+      <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between px-4 py-3 cursor-pointer bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/10 border border-amber-200/50 dark:border-amber-900/30 backdrop-blur-xl text-gray-900 dark:text-gray-100 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 dark:hover:shadow-amber-500/5 hover:border-amber-300/60 dark:hover:border-amber-800/40 rounded-xl shadow-md"
+        className="flex items-center justify-between px-4 py-3 cursor-pointer bg-gradient-to-br from-blue-50/50 to-blue-100/30 dark:from-blue-950/10 dark:to-blue-900/5 border border-blue-200/40 dark:border-blue-900/20 backdrop-blur-sm transition-all duration-200 hover:shadow-md hover:border-blue-300/50 dark:hover:border-blue-800/30 rounded-xl"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 dark:border-amber-500/30">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/10 dark:bg-blue-500/15">
             <Iconify
               icon="mdi:key-alert"
-              className="text-amber-600 dark:text-amber-400 w-4.5 h-4.5"
+              className="text-blue-600 dark:text-blue-400 w-5 h-5"
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div className="flex flex-col items-start">
+            <span className="text-sm font-semibold text-foreground">
               Authorization Required
             </span>
-            <span className="text-xs text-gray-600 dark:text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {authorizations.length} pending request{authorizations.length !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
         <Iconify
           icon={isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-          className="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-300"
+          className="w-5 h-5 text-muted-foreground transition-transform duration-200"
         />
-      </div>
+      </button>
       <div
-        className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[600px] overflow-y-auto opacity-100 mt-2' : 'max-h-0 overflow-hidden opacity-0'}`}
+        className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[600px] overflow-y-auto opacity-100 mt-3' : 'max-h-0 overflow-hidden opacity-0'}`}
       >
-        <div className="bg-white/80 dark:bg-gray-900/80 border border-gray-200/60 dark:border-gray-800/60 backdrop-blur-xl rounded-xl shadow-lg overflow-hidden divide-y divide-gray-200/60 dark:divide-gray-800/60">
+        <div className="bg-card/50 border border-border backdrop-blur-sm rounded-xl shadow-sm overflow-hidden divide-y divide-border/50">
           {authorizations.map((request) => (
             <div key={request.id}>
               {expandedRequest?.id === request.id ? (
-                <div className="p-5 bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/30 dark:to-gray-900/20">
+                <div className="p-5 bg-accent/30">
                   {request.meta_data?.type === 'secrets' ? (
                     // Secrets form
                     <div className="space-y-4">
-                      <div className="flex items-start gap-3 pb-3 border-b border-gray-200/60 dark:border-gray-700/60">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 dark:from-amber-500/30 dark:to-orange-500/30 border border-amber-500/30 dark:border-amber-500/40 shadow-sm">
+                      <div className="flex items-start gap-3 pb-4 border-b border-border/50">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/15">
                           <Iconify
                             icon="mdi:key-variant"
-                            className="w-5 h-5 text-amber-600 dark:text-amber-400"
+                            className="w-5 h-5 text-blue-600 dark:text-blue-400"
                           />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-3">
                             <div>
-                              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              <h3 className="text-sm font-semibold text-foreground">
                                 Secret Authorization Required
                               </h3>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Please provide the requested credentials to continue
                               </p>
                             </div>
-                            <button
+                            <Button
                               onClick={() => handleGetHelp(request)}
-                              className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/50 rounded-md flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-blue-200 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-blue-800/60 shadow-sm hover:shadow active:scale-[0.98] whitespace-nowrap"
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
                               title="Get step-by-step help with this authorization"
                             >
                               <Iconify
                                 icon="mdi:help-circle"
-                                className="w-3.5 h-3.5"
+                                className="w-4 h-4 mr-1.5"
                               />
-                              Get Help
-                            </button>
+                              Help
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -194,39 +220,46 @@ const AuthorizationRequests = () => {
                           key={secret.key}
                           className="space-y-2"
                         >
-                          <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                          <Label className="text-xs font-medium flex items-center gap-1.5">
                             {secret.label}
                             {secret.required && (
-                              <span className="text-red-500 dark:text-red-400 text-sm">*</span>
+                              <span className="text-destructive">*</span>
                             )}
-                          </label>
+                          </Label>
                           {secret.description && (
-                            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed -mt-1">
+                            <p className="text-[11px] text-muted-foreground -mt-1">
                               {secret.description}
                             </p>
                           )}
-                          <input
+                          <Input
                             type={secret.type || 'text'}
                             placeholder={secret.placeholder}
                             value={secretValues[secret.key] || ''}
                             onChange={(e) => handleSecretChange(secret.key, e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-white dark:bg-gray-950/50 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-amber-400 dark:focus:border-amber-600 focus:ring-2 focus:ring-amber-400/20 dark:focus:ring-amber-600/20 transition-all duration-200 shadow-sm hover:border-gray-400 dark:hover:border-gray-600"
                             required={secret.required}
                           />
                         </div>
                       ))}
-                      <div className="flex items-center gap-3 pt-3">
-                        <button
-                          onClick={() => setExpandedRequest(null)}
-                          className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm font-semibold transition-all duration-200 border border-gray-300 dark:border-gray-700 shadow-sm hover:shadow active:scale-[0.98]"
+                      <div className="flex items-center gap-3 pt-2">
+                        <Button
+                          onClick={() => handleReject(request)}
+                          variant="outline"
+                          className="flex-1"
                           disabled={isSubmitting}
                         >
-                          Cancel
-                        </button>
-                        <button
+                          Reject
+                        </Button>
+                        <Button
                           onClick={() => handleSubmitSecrets(request)}
-                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 text-white hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800 rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                          disabled={isSubmitting}
+                          className="flex-1"
+                          disabled={
+                            isSubmitting ||
+                            !request.meta_data.requested_secrets?.every(
+                              (secret) =>
+                                !secret.required ||
+                                (secretValues[secret.key] && secretValues[secret.key].trim() !== ''),
+                            )
+                          }
                         >
                           {isSubmitting ? (
                             <span className="flex items-center justify-center gap-2">
@@ -254,7 +287,7 @@ const AuthorizationRequests = () => {
                           ) : (
                             'Authorize'
                           )}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -268,23 +301,23 @@ const AuthorizationRequests = () => {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-between p-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200 group">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-all duration-200 group">
                   <div className="flex items-center gap-3 flex-1">
                     {request.meta_data?.type === 'secrets' && (
-                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 dark:border-amber-500/30 group-hover:bg-amber-500/15 dark:group-hover:bg-amber-500/25 transition-colors">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors">
                         <Iconify
                           icon="mdi:key-variant"
-                          className="w-4 h-4 text-amber-600 dark:text-amber-400"
+                          className="w-4.5 h-4.5 text-blue-600 dark:text-blue-400"
                         />
                       </div>
                     )}
                     <div className="flex flex-col gap-0.5 flex-1">
-                      <span className="text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                      <span className="text-sm text-foreground font-semibold">
                         {request.meta_data?.type === 'secrets'
                           ? request.meta_data.requested_secrets?.[0]?.label || 'API Credentials'
                           : request?.name || 'New Connection Request'}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(request.date_creation).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -299,37 +332,39 @@ const AuthorizationRequests = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       onClick={() => handleGetHelp(request)}
-                      className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/50 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-blue-200 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-blue-800/60 shadow-sm hover:shadow active:scale-[0.98]"
+                      variant="outline"
+                      size="sm"
                       title="Get step-by-step help with this authorization"
                     >
                       <Iconify
                         icon="mdi:help-circle"
-                        className="w-3.5 h-3.5"
+                        className="w-3.5 h-3.5 mr-1"
                       />
                       Help
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleReject(request)}
-                      className="px-3 py-2 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-red-200 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-800/60 shadow-sm hover:shadow active:scale-[0.98]"
+                      variant="destructive"
+                      size="sm"
                     >
                       <Iconify
                         icon="mdi:close"
-                        className="w-3.5 h-3.5"
+                        className="w-3.5 h-3.5 mr-1"
                       />
                       Reject
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleAccept(request)}
-                      className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all duration-200 border border-emerald-200 dark:border-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-800/60 shadow-sm hover:shadow active:scale-[0.98]"
+                      size="sm"
                     >
                       <Iconify
                         icon="mdi:check"
-                        className="w-3.5 h-3.5"
+                        className="w-3.5 h-3.5 mr-1"
                       />
                       View
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

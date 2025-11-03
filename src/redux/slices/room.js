@@ -1206,6 +1206,12 @@ const slice = createSlice({
       }, []);
       state.authorization_requests = uniqueRequests;
     },
+    removeAuthorizationRequest: (state, action) => {
+      const requestId = action.payload;
+      state.authorization_requests = state.authorization_requests.filter(
+        (req) => req.id !== requestId,
+      );
+    },
     roomUpdate: (state, action) => {
       const { ids, changes } = action.payload;
 
@@ -2258,6 +2264,7 @@ export const {
   addAuthorizationRequest,
   updateAuthorizationRequest,
   setAuthorizationRequests,
+  removeAuthorizationRequest,
   setPublicRooms,
   setUserRooms,
   setUserRoomsLoadingMore,
