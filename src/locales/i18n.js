@@ -13,6 +13,7 @@ import deLocales from './langs/de';
 import enLocales from './langs/en';
 import esLocales from './langs/es';
 import frLocales from './langs/fr';
+import ruLocales from './langs/ru';
 import viLocales from './langs/vi';
 
 // ----------------------------------------------------------------------
@@ -37,6 +38,7 @@ i18n
       ar: { translations: arLocales },
       es: { translations: esLocales },
       de: { translations: deLocales },
+      ru: { translations: ruLocales },
     },
     lng,
     fallbackLng: defaultLang.value,

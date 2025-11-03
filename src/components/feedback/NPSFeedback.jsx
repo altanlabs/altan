@@ -10,20 +10,27 @@ import {
   shouldShowNPS,
 } from '../../lib/feedbackUtils';
 import { cn } from '../../lib/utils';
+import { useSelector } from '../../redux/store';
 import { Button } from '../ui/button.tsx';
 import { Textarea } from '../ui/textarea.tsx';
 
 // ----------------------------------------------------------------------
 
+// Redux selector
+const selectAccountAltaners = (state) => state.general.account?.altaners;
+
 const NPSFeedback = memo(({ onClose }) => {
   const { isAuthenticated } = useAuthContext();
+  const altaners = useSelector(selectAccountAltaners);
   const [step, setStep] = useState('score'); // score, comment
   const [score, setScore] = useState(null);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if we should show NPS (must be authenticated)
-  if (!isAuthenticated || !shouldShowNPS()) {
+  // Check if we should show NPS (must be authenticated and have at least one altaner)
+  const hasAltaners = altaners && altaners.length > 0;
+  
+  if (!isAuthenticated || !shouldShowNPS() || !hasAltaners) {
     return null;
   }
 

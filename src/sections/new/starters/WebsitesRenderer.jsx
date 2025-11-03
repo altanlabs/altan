@@ -1,6 +1,7 @@
 import React from 'react';
 
 import AltanerSectionCategory from '../../../components/templates/AltanerSectionCategory';
+import useLocales from '../../../locales/useLocales';
 
 const WebsiteTemplatesGrid = ({ onSelect }) => {
   const handleTemplateClick = (templateId) => {
@@ -18,25 +19,27 @@ const WebsiteTemplatesGrid = ({ onSelect }) => {
 };
 
 const WebsitesRenderer = ({ onSelect }) => {
+  const { translate } = useLocales();
+
   const starters = [
     {
-      title: 'Show my work',
-      description: 'Portfolio with projects and about section',
+      title: translate('starters.websites.showWork.title'),
+      description: translate('starters.websites.showWork.description'),
       prompt: 'Create a modern portfolio website with projects showcase, about section, and contact form',
     },
     {
-      title: 'Launch a product page',
-      description: 'High-converting landing page',
+      title: translate('starters.websites.launchProduct.title'),
+      description: translate('starters.websites.launchProduct.description'),
       prompt: 'Create a landing page for a SaaS product with hero section, features, pricing, and CTA',
     },
     {
-      title: 'Sell products online',
-      description: 'Complete e-commerce store',
-      prompt: 'Create an e-commerce website with product catalog, shopping cart, and checkout',
+      title: translate('starters.websites.promoteEvent.title'),
+      description: translate('starters.websites.promoteEvent.description'),
+      prompt: 'Create an event page with event details, schedule, speakers section, and registration form',
     },
     {
-      title: 'Publish a blog',
-      description: 'Share your thoughts and stories',
+      title: translate('starters.websites.publishBlog.title'),
+      description: translate('starters.websites.publishBlog.description'),
       prompt: 'Create a blog website with article listing, individual posts, and author profiles',
     },
   ];
@@ -72,4 +75,3 @@ const WebsitesRenderer = ({ onSelect }) => {
 };
 
 export default WebsitesRenderer;
-

@@ -7,12 +7,14 @@ import { useAuthContext } from '../../auth/useAuthContext';
 import { TextGenerateEffect } from '../../components/elevenlabs/ui/text-generate-effect';
 import { useSettingsContext } from '../../components/settings';
 import { PromptBox } from '../../components/ui/chatgpt-prompt-input';
+import useLocales from '../../locales/useLocales';
 import QuickAccessSection from '../../pages/dashboard/NewDashboardPage/QuickAccessSection';
 import { createAgent } from '../../redux/slices/general';
 
 const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const { resolvedThemeMode } = useSettingsContext();
   const { isAuthenticated } = useAuthContext();
+  const { translate } = useLocales();
   const dispatch = useDispatch();
   const history = useHistory();
   const [prefillPrompt, setPrefillPrompt] = useState('');
@@ -103,12 +105,12 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
         <div className="w-full flex flex-col items-center relative z-10 px-4 sm:px-6 pt-32 md:pt-64 pb-48 md:pb-80">
           <div className="w-full max-w-2xl flex flex-col gap-4 items-center">
             <TextGenerateEffect
-              words="Build without limits"
+              words={translate('hero.title')}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-center"
               duration={0.8}
             />
             <p className="text-center text-foreground/70">
-              Describe the goal. Altan does the rest.{' '}
+              {translate('hero.subtitle')}
             </p>
             <div className="w-full">
               <PromptBox

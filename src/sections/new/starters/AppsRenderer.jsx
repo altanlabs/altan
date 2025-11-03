@@ -1,85 +1,89 @@
 import React from 'react';
 
+import useLocales from '../../../locales/useLocales';
+
 const AppsRenderer = ({ onSelect }) => {
+  const { translate } = useLocales();
+
   const starters = [
     {
-      title: 'Manage my team',
-      description: 'Dashboard with task management',
+      title: translate('starters.apps.manageTeam.title'),
+      description: translate('starters.apps.manageTeam.description'),
       prompt: 'Create a team management app with task boards, team members, and progress tracking',
     },
     {
-      title: 'Track my inventory',
-      description: 'Inventory management system',
+      title: translate('starters.apps.trackInventory.title'),
+      description: translate('starters.apps.trackInventory.description'),
       prompt: 'Create an inventory management app with stock tracking, alerts, and reporting',
     },
     {
-      title: 'Organize my contacts',
-      description: 'CRM and contact manager',
+      title: translate('starters.apps.organizeContacts.title'),
+      description: translate('starters.apps.organizeContacts.description'),
       prompt: 'Create a CRM app with contact management, notes, and interaction history',
     },
     {
-      title: 'Run my bookings',
-      description: 'Scheduling and appointments',
+      title: translate('starters.apps.runBookings.title'),
+      description: translate('starters.apps.runBookings.description'),
       prompt: 'Create a booking app with calendar, availability management, and customer notifications',
     },
     {
-      title: 'Build custom forms',
-      description: 'Form builder and submissions',
-      prompt: 'Create a form builder app with drag-and-drop editor, submission management, and data export',
+      title: translate('starters.apps.collectFeedback.title'),
+      description: translate('starters.apps.collectFeedback.description'),
+      prompt: 'Create a feedback form with rating, comments, category selection, and thank you message',
     },
     {
-      title: 'Track my time',
-      description: 'Time tracking and timesheets',
+      title: translate('starters.apps.trackTime.title'),
+      description: translate('starters.apps.trackTime.description'),
       prompt: 'Create a time tracking app with project timers, timesheet approval, and billing reports',
     },
     {
-      title: 'Manage invoices',
-      description: 'Billing and invoicing',
+      title: translate('starters.apps.manageInvoices.title'),
+      description: translate('starters.apps.manageInvoices.description'),
       prompt: 'Create an invoicing app with client management, invoice generation, payment tracking, and reminders',
     },
     {
-      title: 'Handle support tickets',
-      description: 'Customer support system',
+      title: translate('starters.apps.handleTickets.title'),
+      description: translate('starters.apps.handleTickets.description'),
       prompt: 'Create a support ticket app with ticket creation, assignment, status tracking, and customer portal',
     },
     {
-      title: 'Track expenses',
-      description: 'Expense management',
+      title: translate('starters.apps.trackExpenses.title'),
+      description: translate('starters.apps.trackExpenses.description'),
       prompt: 'Create an expense tracking app with receipt uploads, category management, and approval workflows',
     },
     {
-      title: 'Manage projects',
-      description: 'Project planning and tracking',
+      title: translate('starters.apps.manageProjects.title'),
+      description: translate('starters.apps.manageProjects.description'),
       prompt: 'Create a project management app with milestones, tasks, team assignments, and progress dashboards',
     },
     {
-      title: 'Organize documents',
-      description: 'Document management system',
+      title: translate('starters.apps.organizeDocuments.title'),
+      description: translate('starters.apps.organizeDocuments.description'),
       prompt: 'Create a document management app with file upload, folders, version control, and sharing permissions',
     },
     {
-      title: 'Run surveys',
-      description: 'Survey creation and analytics',
+      title: translate('starters.apps.runSurveys.title'),
+      description: translate('starters.apps.runSurveys.description'),
       prompt: 'Create a survey app with question builder, response collection, and analytics dashboard',
     },
     {
-      title: 'Track leads',
-      description: 'Sales pipeline management',
+      title: translate('starters.apps.trackLeads.title'),
+      description: translate('starters.apps.trackLeads.description'),
       prompt: 'Create a lead tracking app with pipeline stages, activity logging, and conversion analytics',
     },
     {
-      title: 'Manage HR',
-      description: 'Employee management',
+      title: translate('starters.apps.manageHR.title'),
+      description: translate('starters.apps.manageHR.description'),
       prompt: 'Create an HR app with employee profiles, leave management, onboarding workflows, and performance reviews',
     },
     {
-      title: 'Handle orders',
-      description: 'Order management system',
+      title: translate('starters.apps.handleOrders.title'),
+      description: translate('starters.apps.handleOrders.description'),
       prompt: 'Create an order management app with order tracking, fulfillment status, inventory sync, and customer notifications',
     },
     {
-      title: 'Plan events',
-      description: 'Event planning and coordination',
+      title: translate('starters.apps.planEvents.title'),
+      description: translate('starters.apps.planEvents.description'),
       prompt: 'Create an event planning app with guest lists, vendor management, budget tracking, and schedules',
     },
   ];
@@ -109,4 +113,3 @@ const AppsRenderer = ({ onSelect }) => {
 };
 
 export default AppsRenderer;
-

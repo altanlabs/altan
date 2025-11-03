@@ -280,14 +280,6 @@ const DashboardPage = () => {
                         />
                       </span>
                     </span>
-
-                    {/* {translate(
-                      mode === 'agents'
-                        ? 'dashboard.agents.title'
-                        : mode === 'flows'
-                          ? 'dashboard.flows.title'
-                          : 'dashboard.createAnything.title',
-                    )} */}
                   </Typography>
                   <Typography
                     variant="h6"
@@ -297,14 +289,13 @@ const DashboardPage = () => {
                       mb: 2,
                     }}
                   >
-                    Your AI team to build and run anything you imagine
-                    {/* {translate(
+                    {translate(
                       mode === 'agents'
                         ? 'dashboard.agents.subtitle'
                         : mode === 'flows'
                           ? 'dashboard.flows.subtitle'
                           : 'dashboard.createAnything.subtitle',
-                    )} */}
+                    )}
                   </Typography>
                   {/* Only show original voice component when not floating or when not in voice mode */}
                   {isVoice ? (

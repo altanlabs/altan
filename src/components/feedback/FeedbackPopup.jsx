@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 
 const FeedbackPopup = memo(({ title, children, onClose, showCloseButton = true }) => {
   return (
-    <div className="fixed bottom-5 right-5 z-50 w-[400px] max-w-[400px] animate-slideInUp sm:w-[calc(100vw-40px)] sm:max-w-[calc(100vw-40px)] sm:left-5">
+    <div className="fixed bottom-5 right-5 z-50 w-[300px] max-w-[300px] animate-slideInUp sm:w-[calc(100vw-40px)] sm:max-w-[calc(100vw-40px)] sm:left-5">
       <div className="bg-[#2a2a2a] rounded-2xl p-6 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
         {showCloseButton && (
           <Button

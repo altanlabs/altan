@@ -52,13 +52,6 @@ const slice = createSlice({
     setPlan(state, action) {
       const { plan, threadId } = action.payload;
       if (plan && plan.id) {
-        // eslint-disable-next-line no-console
-        console.log('📋 Redux setPlan:', {
-          planId: plan.id,
-          threadId,
-          tasksCount: plan.tasks?.length,
-        });
-
         // If plan already exists, merge tasks carefully to preserve websocket updates
         const existingPlan = state.plansById[plan.id];
         if (existingPlan?.tasks) {
@@ -71,13 +64,6 @@ const slice = createSlice({
 
               // Keep the newer task data
               if (existingTime > newTime) {
-                // eslint-disable-next-line no-console
-                console.log('⚠️ Preserving newer task from store:', existingTask.task_name, {
-                  existingStatus: existingTask.status,
-                  newStatus: newTask.status,
-                  existingTime: existingTask.updated_at,
-                  newTime: newTask.updated_at,
-                });
                 return existingTask;
               }
             }
@@ -171,12 +157,6 @@ const slice = createSlice({
             ...currentTask,
             ...filteredUpdates,
           };
-          // eslint-disable-next-line no-console
-          console.log('✅ Updated task in tasksByThread:', {
-            before: currentTask,
-            updates: filteredUpdates,
-            after: state.tasksByThread[threadId][taskIndex],
-          });
         }
       }
 
@@ -191,12 +171,6 @@ const slice = createSlice({
               ...currentTask,
               ...filteredUpdates,
             };
-            // eslint-disable-next-line no-console
-            console.log('✅ Updated task in plan:', planId, {
-              before: currentTask,
-              updates: filteredUpdates,
-              after: state.plansById[planId].tasks[planTaskIndex],
-            });
           }
         }
       });
@@ -331,8 +305,7 @@ export const selectTasksExpanded = (threadId) => (state) =>
 export const selectThreadExpanded = (threadId) => (state) =>
   selectTasksState(state).threadExpandedState[threadId] || false;
 
-export const selectCompletedPlanEvent = (state) =>
-  selectTasksState(state).completedPlanEvent;
+export const selectCompletedPlanEvent = (state) => selectTasksState(state).completedPlanEvent;
 
 export const selectPlansByRoom = (roomId) => (state) =>
   selectTasksState(state).plansByRoom[roomId] || [];
@@ -355,19 +328,13 @@ export const fetchPlan = (planId) => async (dispatch, getState) => {
 
   // Don't fetch if already loading or already exists
   if (isLoading) {
-    // eslint-disable-next-line no-console
-    console.log('⏳ Plan already loading, skipping fetch:', planId);
     return existingPlan;
   }
 
   if (existingPlan) {
-    // eslint-disable-next-line no-console
-    console.log('✅ Using existing plan from store:', planId);
     return existingPlan;
   }
 
-  // eslint-disable-next-line no-console
-  console.log('📡 Fetching plan from API:', planId);
   dispatch(startLoadingPlan({ planId }));
 
   try {
@@ -413,14 +380,12 @@ export const fetchTasks = (threadId) => async (dispatch, getState) => {
 
   try {
     // Fetch tasks without a plan_id for this thread
-    const response = await axios.get(
-      `https://cagi.altan.ai/tasks/?mainthread_id=${threadId}`,
-    );
-    
+    const response = await axios.get(`https://cagi.altan.ai/tasks/?mainthread_id=${threadId}`);
+
     // The response could be an array or an object with a data property
     const responseData = response.data.data || response.data || [];
     const tasks = Array.isArray(responseData) ? responseData : [responseData];
-    
+
     // Filter to only include tasks without a plan_id
     const standaloneTasks = tasks.filter((task) => !task.plan_id);
 

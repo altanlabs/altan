@@ -7,6 +7,7 @@ import AppsRenderer from './AppsRenderer';
 import SystemsRenderer from './SystemsRenderer';
 import VisualizationsRenderer from './VisualizationsRenderer';
 import WebsitesRenderer from './WebsitesRenderer';
+import useLocales from '../../../locales/useLocales';
 
 // Simple Circle Icon for Agents (ChatGPT-style)
 const CircleIcon = ({ className }) => (
@@ -26,36 +27,38 @@ const CircleIcon = ({ className }) => (
 );
 
 const StarterCategories = ({ onSelectPrompt, selectedCategory, onCategoryChange }) => {
+  const { translate } = useLocales();
+
   const categories = [
     {
       id: 'websites',
-      label: 'Websites',
+      label: translate('categories.websites'),
       icon: Globe,
-      autofill: 'Create a modern website with a clean layout and responsive sections.',
+      autofill: translate('categories.autofill.websites'),
     },
     {
       id: 'apps',
-      label: 'Apps',
+      label: translate('categories.apps'),
       icon: LayoutGrid,
-      autofill: 'Create a web app with login, a main dashboard, and structured data.',
+      autofill: translate('categories.autofill.apps'),
     },
     {
       id: 'agents',
-      label: 'Agents',
+      label: translate('categories.agents'),
       icon: CircleIcon,
-      autofill: 'Create an AI agent that can handle tasks autonomously and interact with users.',
+      autofill: translate('categories.autofill.agents'),
     },
     {
       id: 'systems',
-      label: 'Systems',
+      label: translate('categories.systems'),
       icon: Layers,
-      autofill: 'Create a workflow system with software and an AI operator that runs the tasks.',
+      autofill: translate('categories.autofill.systems'),
     },
     {
       id: 'visualizations',
-      label: 'Visualizations',
+      label: translate('categories.visualizations'),
       icon: BarChart3,
-      autofill: 'Create an interactive dashboard with data visualizations and real-time insights.',
+      autofill: translate('categories.autofill.visualizations'),
     },
   ];
 
@@ -121,4 +124,3 @@ const StarterCategories = ({ onSelectPrompt, selectedCategory, onCategoryChange 
 };
 
 export default StarterCategories;
-
