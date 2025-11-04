@@ -20,6 +20,14 @@ const ar = {
     switchToText: 'التبديل إلى وضع النص',
     switchToVoice: 'التبديل إلى وضع الصوت',
     startCall: 'بدء الصوت',
+    startACall: 'بدء مكالمة',
+    endCall: 'إنهاء المكالمة',
+    talkToInterrupt: 'تحدث للمقاطعة',
+  },
+  prompt: {
+    describeProject: 'صف مشروعك التالي',
+    describeAgent: 'صف وكيلك التالي',
+    whatsOnYourMind: 'ما الذي يدور في ذهنك؟',
   },
   room: {
     howCanIHelp: 'كيف يمكنني مساعدتك؟',

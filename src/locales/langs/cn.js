@@ -20,6 +20,14 @@ const cn = {
     switchToText: '切换到文本模式',
     switchToVoice: '切换到语音模式',
     startCall: '开始语音',
+    startACall: '开始通话',
+    endCall: '结束通话',
+    talkToInterrupt: '说话以打断',
+  },
+  prompt: {
+    describeProject: '描述您的下一个项目',
+    describeAgent: '描述您的下一个代理',
+    whatsOnYourMind: '您在想什么？',
   },
   room: {
     howCanIHelp: '我可以如何帮助您？',

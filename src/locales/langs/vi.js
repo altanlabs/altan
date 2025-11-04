@@ -20,6 +20,14 @@ const vi = {
     switchToText: 'Chuyển sang chế độ văn bản',
     switchToVoice: 'Chuyển sang chế độ giọng nói',
     startCall: 'Bắt Đầu Giọng Nói',
+    startACall: 'Bắt đầu cuộc gọi',
+    endCall: 'Kết thúc cuộc gọi',
+    talkToInterrupt: 'Nói để ngắt lời',
+  },
+  prompt: {
+    describeProject: 'Mô tả dự án tiếp theo của bạn',
+    describeAgent: 'Mô tả đại lý tiếp theo của bạn',
+    whatsOnYourMind: 'Bạn đang nghĩ gì?',
   },
   room: {
     howCanIHelp: 'Tôi có thể giúp gì cho bạn?',

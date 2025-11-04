@@ -190,11 +190,13 @@ const NewDashboardPage = () => {
       )}
 
       {/* Hero Section - Always first */}
-      <NewHeroSection
-        onSubmit={handleSubmit}
-        isCreating={isCreating}
-        onRequestAuth={() => openAuthDialogRef.current?.()}
-      />
+      <VoiceConversationProvider>
+        <NewHeroSection
+          onSubmit={handleSubmit}
+          isCreating={isCreating}
+          onRequestAuth={() => openAuthDialogRef.current?.()}
+        />
+      </VoiceConversationProvider>
 
       {/* Features Section - Only for unauthenticated users, appears after scroll */}
       {!isAuthenticated && (

@@ -20,6 +20,14 @@ const en = {
     switchToText: 'Switch to text mode',
     switchToVoice: 'Switch to voice mode',
     startCall: 'Start Voice',
+    startACall: 'Start a call',
+    endCall: 'End Call',
+    talkToInterrupt: 'Talk to interrupt',
+  },
+  prompt: {
+    describeProject: 'Describe your next project',
+    describeAgent: 'Describe your next agent',
+    whatsOnYourMind: "What's on your mind?",
   },
   room: {
     howCanIHelp: 'How can I help?',
