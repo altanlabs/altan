@@ -288,6 +288,9 @@ export default function ProjectPage() {
         return;
       }
       
+      // Mark as sent immediately to prevent duplicate runs in StrictMode
+      initialMessageSentRef.current = true;
+      
       console.log('📥 Fetching idea:', ideaId);
       
       try {
@@ -300,8 +303,6 @@ export default function ProjectPage() {
         const attachments = ideaData.attachments || [];
         
         if (prompt) {
-          initialMessageSentRef.current = true;
-          
           console.log('📤 Sending message to thread:', mainThreadId);
           
           await dispatch(sendMessage({
