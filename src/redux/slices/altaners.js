@@ -3,7 +3,10 @@ import { batch } from 'react-redux';
 
 import { switchAccount } from './general';
 import { optimai } from '../../utils/axios';
-import { getDisplayModeForProject, setDisplayModeForProject as saveDisplayModeToStorage } from '../../utils/displayModeStorage';
+import {
+  getDisplayModeForProject,
+  setDisplayModeForProject as saveDisplayModeToStorage,
+} from '../../utils/displayModeStorage';
 import { checkObjectsEqual } from '../helpers/memoize';
 
 const initialState = {
@@ -293,18 +296,12 @@ export const createAltaner =
 
     dispatch(slice.actions.startLoading());
     try {
-      let url = `/account/v2/${accountId}/project`;
+      let url = `/account/v3/${accountId}/project`;
       if (idea) {
         url += `?idea=${encodeURIComponent(idea)}`;
       }
       const response = await optimai.post(url, data);
-      const { altaner } = response.data;
-
-      if (!altaner || !altaner.id) {
-        throw new Error('Invalid altaner response');
-      }
-
-      return altaner;
+      return response.data;
     } catch (e) {
       console.error(`error: could not create altaner: ${e.message}`);
       dispatch(slice.actions.hasError(e.message));
