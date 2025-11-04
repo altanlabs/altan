@@ -40,9 +40,11 @@ import { useSelector } from 'react-redux';
 
 import ApiDocsViewer from './functions/ApiDocsViewer';
 import CreateFunctionDrawer from './functions/CreateFunctionDrawer';
+import CreateMCPAppDrawer from './functions/CreateMCPAppDrawer';
 import CreateSecretDrawer from './functions/CreateSecretDrawer';
 import EditFunctionDrawer from './functions/EditFunctionDrawer';
 import FunctionDetailView from './functions/FunctionDetailView';
+import { selectAccountId } from '../../../../redux/slices/general';
 import {
   selectFunctionsForBase,
   selectSecretsForBase,
@@ -53,7 +55,7 @@ import {
 } from '../../../../redux/slices/services';
 import { dispatch } from '../../../../redux/store';
 import { setSession } from '../../../../utils/auth';
-import { optimai_cloud } from '../../../../utils/axios';
+import { optimai_cloud, optimai_integration } from '../../../../utils/axios';
 
 // Helper to format date
 const formatDate = (dateString) => {
@@ -74,6 +76,7 @@ const formatDate = (dateString) => {
 function BaseFunctions({ baseId }) {
   const functionsState = useSelector((state) => selectFunctionsForBase(state, baseId));
   const secretsState = useSelector((state) => selectSecretsForBase(state, baseId));
+  const accountId = useSelector(selectAccountId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -94,6 +97,11 @@ function BaseFunctions({ baseId }) {
 
   // Cloud URL for API docs
   const [cloudUrl, setCloudUrl] = useState(null);
+
+  // MCP drawer state
+  const [mcpDrawerOpen, setMcpDrawerOpen] = useState(false);
+  const [existingMcp, setExistingMcp] = useState(null);
+  const [checkingMcp, setCheckingMcp] = useState(false);
 
   // Fetch functions and secrets on mount
   useEffect(() => {
@@ -129,6 +137,54 @@ function BaseFunctions({ baseId }) {
 
     fetchCloudUrl();
   }, [baseId]);
+
+  // Check if MCP already exists for this database
+  useEffect(() => {
+    const checkExistingMcp = async () => {
+      if (!cloudUrl || !accountId) return;
+
+      setCheckingMcp(true);
+      setExistingMcp(null);
+
+      try {
+        // Ensure token is set
+        const authData = localStorage.getItem('oaiauth');
+        if (authData) {
+          try {
+            const { access_token: accessToken } = JSON.parse(authData);
+            if (accessToken) {
+              setSession(accessToken, optimai_integration);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        const openapiUrl = `${cloudUrl}/services/openapi.json`;
+
+        const response = await optimai_integration.get('/connection-type/find', {
+          params: {
+            openapi_schema_url: openapiUrl,
+            account_id: accountId,
+            is_compact: true,
+          },
+        });
+
+        if (response.data?.connection_type) {
+          setExistingMcp(response.data.connection_type);
+        }
+      } catch (error) {
+        // If 404 or error, means it doesn't exist - which is fine
+        if (error.response?.status !== 404) {
+          // Silently handle - not critical
+        }
+      } finally {
+        setCheckingMcp(false);
+      }
+    };
+
+    checkExistingMcp();
+  }, [cloudUrl, accountId]);
 
   const functions = functionsState.items || [];
   const secrets = secretsState.items || [];
@@ -239,6 +295,61 @@ function BaseFunctions({ baseId }) {
     // API docs don't need refresh - they fetch directly from cloud_url
   };
 
+  const handleOpenMcpDrawer = () => {
+    if (existingMcp) {
+      // Navigate to the existing MCP connector or show details
+      // For now, just show a message
+      setSnackbar({
+        open: true,
+        message: `MCP app "${existingMcp.name}" already exists for this database`,
+        severity: 'info',
+      });
+      return;
+    }
+    setMcpDrawerOpen(true);
+  };
+
+  const handleCloseMcpDrawer = () => {
+    setMcpDrawerOpen(false);
+  };
+
+  const handleMcpSuccess = (message) => {
+    setSnackbar({ open: true, message, severity: 'success' });
+    // Refresh the MCP check after successful creation
+    if (cloudUrl && accountId) {
+      setTimeout(async () => {
+        try {
+          const authData = localStorage.getItem('oaiauth');
+          if (authData) {
+            try {
+              const { access_token: accessToken } = JSON.parse(authData);
+              if (accessToken) {
+                setSession(accessToken, optimai_integration);
+              }
+            } catch {
+              // Ignore
+            }
+          }
+
+          const openapiUrl = `${cloudUrl}/services/openapi.json`;
+          const response = await optimai_integration.get('/connection-type/find', {
+            params: {
+              openapi_schema_url: openapiUrl,
+              account_id: accountId,
+              is_compact: true,
+            },
+          });
+
+          if (response.data?.connection_type) {
+            setExistingMcp(response.data.connection_type);
+          }
+        } catch {
+          // Ignore
+        }
+      }, 1000);
+    }
+  };
+
   // Show loading state
   if (functionsState.loading && functions.length === 0) {
     return (
@@ -334,14 +445,39 @@ function BaseFunctions({ baseId }) {
               Services
             </Typography>
           </Box>
-          <Button
-            startIcon={<RefreshCw size={18} />}
-            onClick={handleRefresh}
-            variant="soft"
-            color="inherit"
+          <Stack
+            direction="row"
+            spacing={2}
           >
-            Refresh
-          </Button>
+            {existingMcp ? (
+              <Button
+                startIcon={<Code size={18} />}
+                onClick={handleOpenMcpDrawer}
+                variant="soft"
+                color="primary"
+              >
+                View MCP Connector
+              </Button>
+            ) : (
+              <Button
+                startIcon={<Plus size={18} />}
+                onClick={handleOpenMcpDrawer}
+                variant="soft"
+                color="primary"
+                disabled={!cloudUrl || checkingMcp}
+              >
+                {checkingMcp ? 'Checking...' : 'Turn into MCP'}
+              </Button>
+            )}
+            <Button
+              startIcon={<RefreshCw size={18} />}
+              onClick={handleRefresh}
+              variant="soft"
+              color="inherit"
+            >
+              Refresh
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Tabs */}
@@ -465,9 +601,7 @@ function BaseFunctions({ baseId }) {
                               variant="body2"
                               color="text.secondary"
                             >
-                              {searchQuery
-                                ? 'No code found matching your search'
-                                : 'No code yet'}
+                              {searchQuery ? 'No code found matching your search' : 'No code yet'}
                             </Typography>
                             {!searchQuery && (
                               <Button
@@ -563,8 +697,7 @@ function BaseFunctions({ baseId }) {
                   variant="body2"
                   color="text.secondary"
                 >
-                  {filteredFunctions.length}{' '}
-                  {filteredFunctions.length === 1 ? 'code' : 'codes'}
+                  {filteredFunctions.length} {filteredFunctions.length === 1 ? 'code' : 'codes'}
                 </Typography>
               </Stack>
             )}
@@ -821,6 +954,19 @@ function BaseFunctions({ baseId }) {
           setCreateSecretDrawerOpen(false);
           setSnackbar({ open: true, message, severity: 'success' });
         }}
+        onError={(message) => {
+          setSnackbar({ open: true, message, severity: 'error' });
+        }}
+      />
+
+      {/* MCP Drawer */}
+      <CreateMCPAppDrawer
+        open={mcpDrawerOpen}
+        onClose={handleCloseMcpDrawer}
+        cloudUrl={cloudUrl}
+        accountId={accountId}
+        baseId={baseId}
+        onSuccess={handleMcpSuccess}
         onError={(message) => {
           setSnackbar({ open: true, message, severity: 'error' });
         }}

@@ -44,7 +44,7 @@ function CustomAppEditor({ connectionTypeId }) {
   if (!appsInitialized || appsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <TextShimmer>Loading custom apps...</TextShimmer>
+        <TextShimmer>Loading custom connectors...</TextShimmer>
       </div>
     );
   }

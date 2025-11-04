@@ -129,7 +129,7 @@ const ExternalConnectionTypes = ({
           variant="h3"
           textAlign="center"
         >
-          No Custom Apps Found
+          No Connectors Found
         </Typography>
         <Typography
           variant="body2"

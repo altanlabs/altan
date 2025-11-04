@@ -12,6 +12,7 @@ import {
   selectCustomConnectionTypes,
 } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
+import CreateCustomApp from '../../components/CreateCustomApp.jsx';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -92,7 +93,7 @@ function CustomApps() {
         alignItems="center"
         sx={{ mb: 3 }}
       >
-        <Typography variant="h5">Custom Apps</Typography>
+        <Typography variant="h5">Custom Connectors</Typography>
         <div style={{ maxWidth: '250px' }}>
           <CreateCustomApp />
         </div>

@@ -43,7 +43,9 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
   const account = useSelector(selectAccount);
   const [searchTerm, setSearchTerm] = useState('');
   const [mcpConnectionTypes, setMcpConnectionTypes] = useState([]);
+  const [mcpAccountConnections, setMcpAccountConnections] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingAccountConnections, setLoadingAccountConnections] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedConnectionType, setSelectedConnectionType] = useState(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState(null);
@@ -54,12 +56,13 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
   useEffect(() => {
     if (open) {
       setLoading(true);
-      setSearchTerm(''); // Reset search when opening
+      setSearchTerm('');
       optimai_integration
         .get('/connection-type/all', {
           params: {
             is_mcp: true,
             is_compact: false,
+            account_id: account?.id,
           },
         })
         .then((response) => {

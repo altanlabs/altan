@@ -173,7 +173,7 @@ const UsagePage = () => {
         const processed = Object.entries(response.data.daily_usage || {}).map(([date, types]) => ({
           date,
           ai_credits: types.ai?.credits || 0,
-          cloud_credits: (types.task?.credits || 0) + (types.database?.credits || 0), // Combine old task+database into cloud
+          cloud_credits: types.cloud?.credits || 0,
           ai_input_tokens: types.ai?.input_tokens || 0,
           ai_output_tokens: types.ai?.output_tokens || 0,
         }));
@@ -710,45 +710,64 @@ const UsagePage = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="text-right">Credits</TableHead>
-                      <TableHead className="text-right">Input Tokens</TableHead>
-                      <TableHead className="text-right">Output Tokens</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
+                      <TableHead className="text-right">Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((transaction, index) => (
-                      <TableRow key={transaction.id || index}>
-                        <TableCell className="font-medium">
-                          {transaction.date_creation
-                            ? format(parseISO(transaction.date_creation), 'MMM dd, yyyy HH:mm')
-                            : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="capitalize"
-                            style={{
-                              borderColor: CREDIT_TYPES[transaction.credit_type]?.color || '#ccc',
-                              color: CREDIT_TYPES[transaction.credit_type]?.color || '#666',
-                            }}
-                          >
-                            {transaction.credit_type || 'unknown'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {transaction.altan_credits?.toLocaleString() || 0}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {transaction.input_tokens?.toLocaleString() || '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {transaction.output_tokens?.toLocaleString() || '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          €{((transaction.altan_credits || 0) / 100).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {transactions.map((transaction, index) => {
+                      const isAI = transaction.credit_type === 'ai';
+                      const isCloud = transaction.credit_type === 'cloud';
+                      
+                      return (
+                        <TableRow key={transaction.id || index}>
+                          <TableCell className="font-medium">
+                            {transaction.date_creation
+                              ? format(parseISO(transaction.date_creation), 'MMM dd, yyyy HH:mm')
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="capitalize"
+                              style={{
+                                borderColor: CREDIT_TYPES[transaction.credit_type]?.color || '#ccc',
+                                color: CREDIT_TYPES[transaction.credit_type]?.color || '#666',
+                              }}
+                            >
+                              {transaction.credit_type || 'unknown'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {transaction.altan_credits?.toFixed(3) || '0.000'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isAI ? (
+                              <div className="flex flex-col gap-0.5 text-xs font-mono">
+                                <div className="text-muted-foreground">
+                                  In: {transaction.input_tokens?.toLocaleString() || '0'}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  Out: {transaction.output_tokens?.toLocaleString() || '0'}
+                                </div>
+                              </div>
+                            ) : isCloud && transaction.meta_data ? (
+                              <div className="flex flex-col gap-0.5 text-xs">
+                                <div className="font-medium">
+                                  {transaction.meta_data.instance_type || 'Unknown'}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {transaction.meta_data.charge_type === 'full_instance' 
+                                    ? 'Running' 
+                                    : transaction.meta_data.charge_type || '-'}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
 

@@ -28,7 +28,7 @@ const TABS = {
   },
   custom_apps: {
     id: 'custom_apps',
-    name: 'Custom Apps',
+    name: 'Custom Connectors',
     icon: 'mdi:package-variant-closed',
     component: <CustomApps />,
   },
