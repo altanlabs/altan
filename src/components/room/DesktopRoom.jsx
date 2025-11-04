@@ -9,7 +9,6 @@ import Threads from './Threads.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
-import { useWhisperStreamWebSocket } from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
 import {
   selectRoomId,
@@ -69,8 +68,6 @@ const DesktopRoom = ({
   show_mode_selector = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
-  const { isOpen: isOpenWhisperStream, subscribe: subscribeWhisperStream, unsubscribe: unsubscribeWhisperStream } = useWhisperStreamWebSocket();
-  // const { isOpen, subscribe, unsubscribe } = useWebSocket();
 
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
@@ -115,18 +112,6 @@ const DesktopRoom = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
-
-  useEffect(() => {
-    if (isOpenWhisperStream && roomId) {
-      const lastRoomId = roomId;
-      subscribeWhisperStream(`room:${roomId}`);
-      return () => {
-        // Unsubscribe from old room BEFORE state is cleared
-        unsubscribeWhisperStream(`room:${lastRoomId}`);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpenWhisperStream, roomId]);
 
   // Extract and store context from URL on room initialization
   useEffect(() => {

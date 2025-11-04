@@ -5,7 +5,7 @@ import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
-import WhisperStreamWebSocketProvider from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
+import HermesWebSocketProvider from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   fetchRoom,
   clearRoomState,
@@ -135,7 +135,7 @@ const Room = ({
 
   return (
     <RoomAuthGuard>
-      <WhisperStreamWebSocketProvider>
+      <HermesWebSocketProvider>
         <VoiceConversationProvider voiceEnabled={voice_enabled}>
           <DesktopRoom
             header={header}
@@ -161,7 +161,7 @@ const Room = ({
             show_mode_selector={show_mode_selector}
           />
         </VoiceConversationProvider>
-      </WhisperStreamWebSocketProvider>
+      </HermesWebSocketProvider>
     </RoomAuthGuard>
   );
 };
