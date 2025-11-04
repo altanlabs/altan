@@ -2064,6 +2064,40 @@ export const preloadUsersForBase = (baseId) => async (dispatch, getState) => {
   }
 };
 
+/**
+ * Delete a user from auth.users table
+ * @param {string} baseId - Base/database ID
+ * @param {string} userId - User ID to delete
+ */
+export const deleteUserFromBase = (baseId, userId) => async (dispatch, getState) => {
+  dispatch(slice.actions.startLoading());
+  
+  try {
+    // Delete from auth.users table
+    const query = `DELETE FROM auth.users WHERE id = '${escapeSql(userId)}';`;
+    await executeSQL(baseId, query);
+
+    // Remove from Redux cache
+    const state = getState();
+    if (state.bases.userCache[baseId] && state.bases.userCache[baseId][userId]) {
+      const updatedCache = { ...state.bases.userCache[baseId] };
+      delete updatedCache[userId];
+      
+      dispatch(setUserCache({ 
+        users: Object.values(updatedCache), 
+        baseId 
+      }));
+    }
+
+    return Promise.resolve();
+  } catch (error) {
+    dispatch(slice.actions.hasError(error.message));
+    throw error;
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
 export const preloadBucketsForBase = (baseId) => async (dispatch, getState) => {
   const state = getState();
   const bucketCacheState = state.bases.bucketCacheState;

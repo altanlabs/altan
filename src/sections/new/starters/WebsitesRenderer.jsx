@@ -4,8 +4,16 @@ import AltanerSectionCategory from '../../../components/templates/AltanerSection
 import useLocales from '../../../locales/useLocales';
 
 const WebsiteTemplatesGrid = ({ onSelect }) => {
-  const handleTemplateClick = (templateId) => {
-    onSelect(`Remix template ${templateId} and customize it for my needs`);
+  const handleTemplateClick = (template) => {
+    // Dispatch custom event to add template as chip
+    window.dispatchEvent(
+      new CustomEvent('selectHeroTemplate', {
+        detail: {
+          templateId: template.id,
+          templateName: template.name || template.public_name || 'Template',
+        },
+      }),
+    );
   };
 
   return (
@@ -25,17 +33,20 @@ const WebsitesRenderer = ({ onSelect }) => {
     {
       title: translate('starters.websites.showWork.title'),
       description: translate('starters.websites.showWork.description'),
-      prompt: 'Create a modern portfolio website with projects showcase, about section, and contact form',
+      prompt:
+        'Create a modern portfolio website with projects showcase, about section, and contact form',
     },
     {
       title: translate('starters.websites.launchProduct.title'),
       description: translate('starters.websites.launchProduct.description'),
-      prompt: 'Create a landing page for a SaaS product with hero section, features, pricing, and CTA',
+      prompt:
+        'Create a landing page for a SaaS product with hero section, features, pricing, and CTA',
     },
     {
       title: translate('starters.websites.promoteEvent.title'),
       description: translate('starters.websites.promoteEvent.description'),
-      prompt: 'Create an event page with event details, schedule, speakers section, and registration form',
+      prompt:
+        'Create an event page with event details, schedule, speakers section, and registration form',
     },
     {
       title: translate('starters.websites.publishBlog.title'),

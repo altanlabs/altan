@@ -53,14 +53,15 @@ const AltanerSectionCategory = memo(
 
     const handleTemplateClick = useCallback(
       (templateId) => {
+        const template = templates.find((t) => t.id === templateId);
+        
         // If external onTemplateClick handler is provided, use it instead
-        if (onTemplateClick) {
-          onTemplateClick(templateId);
+        if (onTemplateClick && template) {
+          onTemplateClick(template);
           return;
         }
 
         // Fallback to local dialog handling for backward compatibility
-        const template = templates.find((t) => t.id === templateId);
         if (template) {
           const transformedTemplate = transformTemplateForDisplay(template);
           setSelectedTemplate(transformedTemplate);

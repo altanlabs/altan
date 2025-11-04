@@ -130,10 +130,10 @@ const CompactLayout = ({
     const params = new URLSearchParams(location.search);
     const ideaId = params.get('idea');
     
-    console.log('🔍 Checking for idea param:', ideaId);
-    console.log('🔍 API call started ref:', apiCallStartedRef.current);
+    // Skip animation if we're on a project page (idea will be handled by ProjectPage)
+    const isProjectPage = location.pathname.includes('/project/');
     
-    if (ideaId && !apiCallStartedRef.current) {
+    if (ideaId && !apiCallStartedRef.current && !isProjectPage) {
       console.log('🎬 STARTING ANIMATION & API CALL');
       apiCallStartedRef.current = true;
       setIsConverging(true);

@@ -69,9 +69,10 @@ const NewDashboardPage = () => {
               // Check if this is the first project (for onboarding)
               const isFirstProject = !altaners || altaners.length === 0;
               const onboardingParam = isFirstProject ? '?onboarding=true' : '';
+              const ideaParam = `${onboardingParam ? '&' : '?'}idea=${ideaId}`;
 
-              // Navigate to the new project
-              window.location.href = `/project/${projectId}${onboardingParam}`;
+              // Navigate to the new project with idea parameter
+              window.location.href = `/project/${projectId}${onboardingParam}${ideaParam}`;
             } else {
               setCreationError('Failed to create project. Please try again.');
               setIsCreating(false);
@@ -91,7 +92,7 @@ const NewDashboardPage = () => {
     }
   }, [location.search, isAuthenticated, altaners]);
 
-  const handleSubmit = async (message, files = [], githubData = null) => {
+  const handleSubmit = async (message, files = [], githubData = null, templateData = null) => {
     if (!message || !message.trim()) return;
 
     setIsCreating(true);
@@ -125,6 +126,10 @@ const NewDashboardPage = () => {
           ...(githubData?.url && {
             github_url: githubData.url,
             branch: githubData.branch || 'main',
+          }),
+          // Include template_id if provided
+          ...(templateData?.id && {
+            template_id: templateData.id,
           }),
         }),
       });

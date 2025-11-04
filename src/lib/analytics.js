@@ -95,19 +95,6 @@ export const analytics = {
   },
 
   // User authentication events
-  signUp: async (method = 'email', properties = {}) => {
-    return trackEvent(
-      'user_signed_up',
-      properties.user_id,
-      properties.user_email,
-      properties.account_id,
-      {
-        method,
-        ...properties,
-      },
-    );
-  },
-
   signIn: async (method = 'email', properties = {}) => {
     return trackEvent(
       'user_signed_in',

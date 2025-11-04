@@ -22,8 +22,9 @@ import {
   selectViewType,
 } from '../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../redux/slices/general';
-import { selectMainThread, clearRoomState } from '../../redux/slices/room';
+import { selectMainThread, clearRoomState, sendMessage } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
+import { optimai } from '../../utils/axios';
 import AltanerComponent from './altaners/components/AltanerComponent.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
@@ -54,6 +55,7 @@ export default function ProjectPage() {
   const mobileContainerRef = React.useRef(null);
   const chatPanelRef = React.useRef(null);
   const previewPanelRef = React.useRef(null);
+  const initialMessageSentRef = React.useRef(false);
   const history = useHistory();
   const location = useLocation();
   const { altanerId, componentId, itemId, planId } = useParams();
@@ -97,14 +99,15 @@ export default function ProjectPage() {
   // Ensure chat panel is visible when altaner first loads (with room_id)
   // This prevents the "invisible chat" issue on new project creation
   React.useEffect(() => {
-    if (altaner?.room_id && chatPanelRef.current && displayMode !== 'preview') {
-      // Small delay to ensure panel refs are ready
-      const timer = setTimeout(() => {
-        if (chatPanelRef.current?.isCollapsed()) {
-          chatPanelRef.current.expand();
-        }
-      }, 100);
-      return () => clearTimeout(timer);
+    if (altaner?.room_id && displayMode !== 'preview') {
+      // Use requestAnimationFrame to ensure DOM and refs are fully ready
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chatPanelRef.current?.isCollapsed()) {
+            chatPanelRef.current.expand();
+          }
+        });
+      });
     }
   }, [altaner?.room_id, displayMode]);
 
@@ -227,26 +230,27 @@ export default function ProjectPage() {
 
   // Programmatically collapse/expand preview panel and set correct sizes
   useEffect(() => {
-    if (previewPanelRef.current && chatPanelRef.current) {
-      if (shouldCollapsePreview) {
-        // Interface with no commits: 100% chat, 0% preview
-        previewPanelRef.current.collapse();
-        chatPanelRef.current.resize(100);
-      } else {
-        // Plans route or interface with commits: 30% chat, 70% preview
-        if (previewPanelRef.current.isCollapsed()) {
-          previewPanelRef.current.expand();
-        }
-        // Always resize to proper percentages when showing preview
-        // Use requestAnimationFrame to ensure DOM is ready
+    if (previewPanelRef.current && chatPanelRef.current && displayMode !== 'preview') {
+      // Use double requestAnimationFrame to ensure DOM and refs are fully ready
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (chatPanelRef.current) {
-            chatPanelRef.current.resize(30);
+          if (shouldCollapsePreview) {
+            // Interface with no commits: 100% chat, 0% preview
+            previewPanelRef.current?.collapse();
+            chatPanelRef.current?.resize(100);
+          } else {
+            // Plans route or interface with commits: 30% chat, 70% preview
+            if (previewPanelRef.current?.isCollapsed()) {
+              previewPanelRef.current.expand();
+            }
+            if (chatPanelRef.current) {
+              chatPanelRef.current.resize(30);
+            }
           }
         });
-      }
+      });
     }
-  }, [shouldCollapsePreview]);
+  }, [shouldCollapsePreview, displayMode]);
 
   // Initialize dev server status polling for interfaces (regardless of commits)
   // This ensures the dev server starts even when showing full-screen chat
@@ -266,6 +270,63 @@ export default function ProjectPage() {
       history.push(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
     }
   }, [sortedComponents, activeComponentId, altanerId, history, isPlansRoute]);
+
+  // Fetch idea and send initial message when project loads with idea parameter
+  useEffect(() => {
+    const fetchAndSendIdea = async () => {
+      const params = new URLSearchParams(location.search);
+      const ideaId = params.get('idea');
+      
+      console.log('💡 Idea fetch check:', {
+        ideaId,
+        alreadySent: initialMessageSentRef.current,
+        hasRoomId: !!altaner?.room_id,
+        hasMainThread: !!mainThreadId,
+      });
+      
+      if (!ideaId || initialMessageSentRef.current || !altaner?.room_id || !mainThreadId) {
+        return;
+      }
+      
+      console.log('📥 Fetching idea:', ideaId);
+      
+      try {
+        const response = await optimai.get(`/idea/${ideaId}`);
+        const ideaData = response.data;
+        
+        console.log('📦 Idea data received:', ideaData);
+        
+        const prompt = ideaData.idea || '';
+        const attachments = ideaData.attachments || [];
+        
+        if (prompt) {
+          initialMessageSentRef.current = true;
+          
+          console.log('📤 Sending message to thread:', mainThreadId);
+          
+          await dispatch(sendMessage({
+            content: prompt,
+            attachments,
+            threadId: mainThreadId,
+          }));
+          
+          console.log('✅ Message sent successfully');
+          
+          const newParams = new URLSearchParams(location.search);
+          newParams.delete('idea');
+          const newSearch = newParams.toString();
+          history.replace({
+            pathname: location.pathname,
+            search: newSearch ? `?${newSearch}` : '',
+          });
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch or send idea:', error);
+      }
+    };
+    
+    fetchAndSendIdea();
+  }, [altaner?.room_id, mainThreadId, location.search, dispatch, history, location.pathname]);
 
   // Note: Removed automatic display mode switching to preserve user's chat sidebar preference
 
@@ -524,13 +585,17 @@ export default function ProjectPage() {
               </Box>
             </Panel>
 
-            {/* Resize Handle - only show in both mode and when preview is NOT collapsed */}
-            {displayMode === 'both' && !shouldCollapsePreview && (
-              <PanelResizeHandle className="relative w-0.5 group cursor-ew-resize">
-                <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
-                <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
-              </PanelResizeHandle>
-            )}
+            {/* Resize Handle - always render to avoid PanelGroup errors, but hide when not needed */}
+            <PanelResizeHandle 
+              className={`relative w-0.5 group ${displayMode === 'both' && !shouldCollapsePreview ? 'cursor-ew-resize' : 'pointer-events-none opacity-0'}`}
+            >
+              {displayMode === 'both' && !shouldCollapsePreview && (
+                <>
+                  <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
+                  <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
+                </>
+              )}
+            </PanelResizeHandle>
 
             {/* Preview Panel - 0% width when interface has no commits, 70% otherwise */}
             <Panel

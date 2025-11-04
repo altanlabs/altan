@@ -446,6 +446,11 @@ export interface GitHubData {
   token?: string;
 }
 
+export interface TemplateData {
+  id: string;
+  name: string;
+}
+
 // --- The Final, Self-Contained PromptBox Component ---
 export const PromptBox = React.forwardRef<
   HTMLTextAreaElement,
@@ -455,11 +460,13 @@ export const PromptBox = React.forwardRef<
       files: FileAttachment[],
       selectedTool: string | null,
       githubData: GitHubData | null,
+      templateData: TemplateData | null,
     ) => void;
     externalValue?: string;
     isAccountFree?: boolean;
+    externalTemplate?: TemplateData | null;
   }
->(({ className, onSend, externalValue, isAccountFree = false, ...props }, ref) => {
+>(({ className, onSend, externalValue, isAccountFree = false, externalTemplate, ...props }, ref) => {
   const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [value, setValue] = React.useState('');
@@ -471,6 +478,7 @@ export const PromptBox = React.forwardRef<
   const [githubUrl, setGithubUrl] = React.useState('');
   const [githubBranch, setGithubBranch] = React.useState('main');
   const [githubToken, setGithubToken] = React.useState('');
+  const [template, setTemplate] = React.useState<TemplateData | null>(null);
 
   // Update internal value when externalValue changes
   React.useEffect(() => {
@@ -478,6 +486,13 @@ export const PromptBox = React.forwardRef<
       setValue(externalValue);
     }
   }, [externalValue]);
+
+  // Update template when externalTemplate changes
+  React.useEffect(() => {
+    if (externalTemplate !== undefined) {
+      setTemplate(externalTemplate);
+    }
+  }, [externalTemplate]);
 
   React.useImperativeHandle(ref, () => internalTextareaRef.current!, []);
   React.useLayoutEffect(() => {
@@ -564,9 +579,6 @@ export const PromptBox = React.forwardRef<
       if (isAccountFree) {
         finalPrompt +=
           "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, api services, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - after the user can view his first interface you can create a sophisticated plan for the next version of his app .</hide>";
-        console.log('✅ PromptBox - Added <hide> message');
-      } else {
-        console.log('❌ PromptBox - NOT adding <hide> message (isAccountFree is false)');
       }
       const githubData = githubUrl
         ? {
@@ -575,13 +587,15 @@ export const PromptBox = React.forwardRef<
             ...(githubToken && { token: githubToken }),
           }
         : null;
-      onSend(finalPrompt, files, selectedTool, githubData);
+      
+      onSend(finalPrompt, files, selectedTool, githubData, template);
       // Clear the form after sending
       setValue('');
       setFiles([]);
       setGithubUrl('');
       setGithubBranch('main');
       setGithubToken('');
+      setTemplate(null);
     }
   };
 
@@ -754,6 +768,22 @@ export const PromptBox = React.forwardRef<
                   aria-label="Remove GitHub connection"
                 >
                   <XIcon className="h-3 w-3 text-green-700 dark:text-green-300" />
+                </button>
+              </div>
+            )}
+
+            {template && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <SquaresIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 truncate max-w-[120px]">
+                  {template.name}
+                </span>
+                <button
+                  onClick={() => setTemplate(null)}
+                  className="flex items-center justify-center"
+                  aria-label="Remove template"
+                >
+                  <XIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
                 </button>
               </div>
             )}

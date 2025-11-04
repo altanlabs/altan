@@ -19,6 +19,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const history = useHistory();
   const [prefillPrompt, setPrefillPrompt] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const promptBoxRef = useRef(null);
   
   // Check if account is free (for unauthenticated users or users on free plan)
@@ -47,7 +48,21 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
     return () => window.removeEventListener('fillHeroPrompt', handleFillPrompt);
   }, []);
 
-  const handleSend = async (value, files, selectedTool, githubData) => {
+  // Listen for custom event to select template
+  useEffect(() => {
+    const handleSelectTemplate = (event) => {
+      const templateData = {
+        id: event.detail.templateId,
+        name: event.detail.templateName,
+      };
+      setSelectedTemplate(templateData);
+    };
+
+    window.addEventListener('selectHeroTemplate', handleSelectTemplate);
+    return () => window.removeEventListener('selectHeroTemplate', handleSelectTemplate);
+  }, []);
+
+  const handleSend = async (value, files, selectedTool, githubData, templateData) => {
     if (!value.trim()) return;
 
     // Handle based on selected tool
@@ -107,23 +122,29 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
             }),
           );
 
+          const requestBody = {
+            name: 'Untitled Project',
+            idea: value.trim(),
+            icon: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+            attachments,
+            is_public: true,
+            // Include GitHub data if provided
+            ...(githubData?.url && {
+              github_url: githubData.url,
+              branch: githubData.branch || 'main',
+            }),
+            // Include template_id if provided
+            ...(templateData?.id && {
+              template_id: templateData.id,
+            }),
+          };
+
           const response = await fetch('https://api.altan.ai/platform/idea', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              name: 'Untitled Project',
-              idea: value.trim(),
-              icon: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-              attachments,
-              is_public: true,
-              // Include GitHub data if provided
-              ...(githubData?.url && {
-                github_url: githubData.url,
-                branch: githubData.branch || 'main',
-              }),
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           if (!response.ok) {
@@ -148,7 +169,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
         }
       } else {
         // User is authenticated - pass to onSubmit handler
-        onSubmit(value.trim(), files, githubData);
+        onSubmit(value.trim(), files, githubData, templateData);
       }
     }
   };
@@ -178,6 +199,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
                 disabled={isCreating}
                 externalValue={prefillPrompt}
                 isAccountFree={isAccountFree}
+                externalTemplate={selectedTemplate}
               />
             </div>
           </div>

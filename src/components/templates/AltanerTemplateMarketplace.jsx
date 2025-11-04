@@ -68,7 +68,10 @@ const AltanerTemplateMarketplace = () => {
 
   // Handle template click - append query parameter
   const handleTemplateClick = useCallback(
-    (templateId) => {
+    (template) => {
+      // Support both old (templateId string) and new (template object) formats
+      const templateId = typeof template === 'string' ? template : template.id;
+      
       // Update URL with template parameter
       const newSearchParams = new URLSearchParams(location.search);
       newSearchParams.set('template', templateId);

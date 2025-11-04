@@ -24,18 +24,19 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import React, { useState, useMemo, useEffect } from 'react';
 import { Search, UserPlus, Settings, MoreVertical, CheckCircle, Mail, Trash2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
+import InviteUserDialog from './InviteUserDialog.jsx';
+import { useSnackbar } from '../../../../components/snackbar';
 import {
-  selectBaseById,
   selectUserCacheForBase,
   selectUserCacheState,
   preloadUsersForBase,
+  deleteUserFromBase,
 } from '../../../../redux/slices/bases';
 import { dispatch } from '../../../../redux/store';
-import InviteUserDialog from './InviteUserDialog.jsx';
 
 // Helper to extract login method from Supabase auth.users
 const getLoginMethod = (user) => {
@@ -52,13 +53,13 @@ const getUserDisplayName = (user) => {
   const metadata = user.raw_user_meta_data || {};
   const name = metadata.name || '';
   const surname = metadata.surname || '';
-  
+
   if (name && surname) {
     return `${name} ${surname}`;
   }
   if (name) return name;
   if (surname) return surname;
-  
+
   return user.email || 'Unknown User';
 };
 
@@ -79,7 +80,7 @@ const SignupChart = ({ timeRange, users }) => {
     const days = timeRange === 'Last 7 days' ? 7 : timeRange === 'Last 30 days' ? 30 : 90;
     const now = new Date();
     const startDate = new Date(now - days * 24 * 60 * 60 * 1000);
-    
+
     // Initialize all days with 0 signups
     const signupsByDay = Array.from({ length: days }, (_, i) => ({
       date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
@@ -144,14 +145,15 @@ const SignupChart = ({ timeRange, users }) => {
 };
 
 function BaseUsers({ baseId, onNavigate }) {
-  const base = useSelector((state) => selectBaseById(state, baseId));
   const userCacheObject = useSelector((state) => selectUserCacheForBase(state, baseId));
   const userCacheState = useSelector(selectUserCacheState);
+  const { enqueueSnackbar } = useSnackbar();
   const [searchQuery, setSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState('Last 7 days');
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch users from database on mount
   useEffect(() => {
@@ -199,14 +201,33 @@ function BaseUsers({ baseId, onNavigate }) {
 
   const handleVerifyEmail = () => {
     // TODO: Implement email verification via Supabase admin API
-    console.log('Verify email for user:', selectedUser?.email);
     handleMenuClose();
   };
 
-  const handleDeleteUser = () => {
-    // TODO: Implement user deletion via Supabase admin API
-    console.log('Delete user:', selectedUser?.email);
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    // Confirm deletion
+    const userEmail = getUserEmail(selectedUser);
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleteLoading(true);
     handleMenuClose();
+
+    try {
+      await dispatch(deleteUserFromBase(baseId, selectedUser.id));
+      enqueueSnackbar(`User "${userEmail}" deleted successfully`, { variant: 'success' });
+
+      // Refresh user list
+      await dispatch(preloadUsersForBase(baseId));
+    } catch (error) {
+      enqueueSnackbar(`Failed to delete user: ${error.message}`, { variant: 'error' });
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleInviteSuccess = () => {
@@ -365,7 +386,7 @@ function BaseUsers({ baseId, onNavigate }) {
                       const loginMethod = getLoginMethod(user);
                       const lastSignIn = user.last_sign_in_at || user.last_login || user.updated_at || user.created_at;
                       const verified = isEmailVerified(user);
-                      
+
                       return (
                         <TableRow key={user.id} hover>
                           <TableCell>
@@ -476,11 +497,15 @@ function BaseUsers({ baseId, onNavigate }) {
           </ListItemIcon>
           <ListItemText>Send Reset Email</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleDeleteUser} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDeleteUser} disabled={deleteLoading} sx={{ color: 'error.main' }}>
           <ListItemIcon>
-            <Trash2 size={18} color="currentColor" />
+            {deleteLoading ? (
+              <CircularProgress size={18} color="inherit" />
+            ) : (
+              <Trash2 size={18} color="currentColor" />
+            )}
           </ListItemIcon>
-          <ListItemText>Delete User</ListItemText>
+          <ListItemText>{deleteLoading ? 'Deleting...' : 'Delete User'}</ListItemText>
         </MenuItem>
       </Menu>
 
