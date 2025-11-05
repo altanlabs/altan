@@ -2,8 +2,6 @@
  * Common types shared across all providers
  */
 
-import { CSSProperties, ReactNode } from 'react';
-
 // ============================================================================
 // Agent Configuration Types
 // ============================================================================

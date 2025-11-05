@@ -17,7 +17,6 @@ export const Conversation: React.FC<ConversationProps> = ({
 }) => {
   const {
     isLoading,
-    agentName,
   } = useVoiceAgent();
 
   const messages: Message[] = externalMessages || [];

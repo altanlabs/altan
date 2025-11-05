@@ -45,7 +45,6 @@ import {
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general.js';
 import { useSelector } from '../../../redux/store';
-import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 
 // shadcn components
 import { Button } from '../../../components/ui/button';
