@@ -1,0 +1,39 @@
+{
+  "name": "@altan/agents-sdk",
+  "version": "0.1.0",
+  "description": "Easy-to-use SDK for integrating Altan AI voice agents with ElevenLabs and OpenAI Realtime API support",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "keywords": [
+    "altan",
+    "ai",
+    "voice",
+    "agents",
+    "elevenlabs",
+    "openai",
+    "realtime",
+    "sdk"
+  ],
+  "author": "Altan AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/altan-ai/agents-sdk"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "^0.1.0",
+    "@react-three/fiber": "^8.0.0",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/three": "^0.160.0"
+  }
+}
+

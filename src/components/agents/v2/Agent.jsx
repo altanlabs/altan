@@ -17,26 +17,11 @@ import {
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useDispatch, useSelector } from 'react-redux';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation, useHistory, useParams } from 'react-router-dom';
 
 // hooks
-import { useAuthContext } from '../../../auth/useAuthContext';
-import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-// redux
-import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
-import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
-// sections
-// components
-import DeleteDialog from '../../dialogs/DeleteDialog';
-import Iconify from '../../iconify';
-import AltanLogo from '../../loaders/AltanLogo';
-import ShareAgentDialog from '../../members/ShareAgentDialog';
-import TemplateDialog from '../../templates/TemplateDialog';
-import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
-import HybridTabs from '../../ui/hybrid-tabs';
-// local components
 import AgentInfoDialog from './components/AgentInfoDialog';
 import AgentTab from './tabs/AgentTab';
 import ConversationsTab from './tabs/ConversationsTab';
@@ -44,7 +29,22 @@ import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
+import { useAuthContext } from '../../../auth/useAuthContext';
+import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
+// redux
 import CreateAgentDashboard from '../../../pages/dashboard/components/CreateAgentDashboard';
+import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
+import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
+// sections
+// components
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
+import DeleteDialog from '../../dialogs/DeleteDialog';
+import Iconify from '../../iconify';
+import AltanLogo from '../../loaders/AltanLogo';
+import ShareAgentDialog from '../../members/ShareAgentDialog';
+import TemplateDialog from '../../templates/TemplateDialog';
+import HybridTabs from '../../ui/hybrid-tabs';
+// local components
 
 const versionsSelector = (template) => template?.versions;
 
@@ -294,7 +294,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           />
         );
       }
-      
+
       if (!isLoading && !currentAgentCreatorRoomId) {
         return (
           <Box
@@ -329,7 +329,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </Box>
         );
       }
-      
+
       return (
         <Box
           sx={{

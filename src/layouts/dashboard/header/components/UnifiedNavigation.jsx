@@ -1,12 +1,12 @@
-import { Box, Divider } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
-import { AnimatePresence, m } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { memo, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import Iconify from '../../../../components/iconify';
 import Logo from '../../../../components/logo/Logo';
+import HybridTabs from '../../../../components/ui/hybrid-tabs';
+import { cn } from '../../../../lib/utils';
 
 const UnifiedNavigation = memo(({
   altaner,
@@ -16,7 +16,6 @@ const UnifiedNavigation = memo(({
   onBackToDashboard,
   onEditAltaner,
 }) => {
-  const theme = useTheme();
   const history = useHistory();
 
   const handleBackClick = useCallback((event) => {
@@ -35,209 +34,67 @@ const UnifiedNavigation = memo(({
     }
   }, [onEditAltaner]);
 
-  const handleComponentClick = useCallback((componentId) => {
+  const handleComponentChange = useCallback((componentId) => {
     onComponentSelect(componentId);
   }, [onComponentSelect]);
 
+  // Transform components for HybridTabs
+  const tabItems = components?.map((component) => ({
+    value: component.id,
+    icon: component.icon ? (
+      <Iconify icon={component.icon} className="w-[15px] h-[15px]" />
+    ) : null,
+    label: component.name === 'Database' ? 'Cloud' : component.name,
+  })) || [];
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        borderRadius: 1.5,
-        marginTop: .5,
-        background: `linear-gradient(135deg, 
-          ${alpha(theme.palette.background.paper, 0.8)} 0%, 
-          ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-        backdropFilter: 'blur(10px)',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        overflow: 'hidden',
-        p: 0.25,
-        gap: 0.5,
-      }}
-    >
+    <div className="flex items-center gap-2">
       {/* Back to Dashboard Button */}
-      <Box
-        component="button"
+      <button
         onClick={handleBackClick}
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 36,
-          height: 30,
-          border: 'none',
-          borderRadius: 1.25,
-          backgroundColor: 'transparent',
-          color: theme.palette.text.secondary,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease-in-out',
-          overflow: 'hidden',
-          '&:hover': {
-            color: theme.palette.text.primary,
-            backgroundColor: alpha(theme.palette.primary.main, 0.08),
-            '& .altaner-icon': { opacity: 0, transform: 'scale(0.8)' },
-            '& .back-icon': { opacity: 1, transform: 'scale(1)' },
-          },
-        }}
+        className={cn(
+          'group relative flex items-center justify-center',
+          'w-9 h-8 rounded-lg border-none bg-transparent',
+          'text-muted-foreground cursor-pointer overflow-hidden',
+          'transition-all duration-200 ease-in-out',
+          'hover:text-foreground hover:bg-primary/10',
+        )}
       >
-        <Box
-          className="altaner-icon"
-          sx={{
-            position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            opacity: 1,
-            transform: 'scale(1)',
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
+        <div className="absolute flex items-center justify-center w-full h-full opacity-100 scale-100 transition-all duration-200 group-hover:opacity-0 group-hover:scale-75">
           <Logo minimal />
-        </Box>
-        <Box
-          className="back-icon"
-          sx={{
-            position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            opacity: 0,
-            transform: 'scale(0.8)',
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          <Iconify
-            icon="mdi:arrow-left"
-            width={16}
-            height={16}
-          />
-        </Box>
-      </Box>
+        </div>
+        <div className="absolute flex items-center justify-center w-full h-full opacity-0 scale-75 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+          <ArrowLeft className="w-4 h-4" />
+        </div>
+      </button>
 
       {/* Altaner Name */}
       {altaner?.name && (
-        <>
-          <Box
-            component="button"
-            onClick={handleAltanerClick}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 28,
-              px: 0.75,
-              border: 'none',
-              borderRadius: 1.25,
-              backgroundColor: 'transparent',
-              color: theme.palette.text.primary,
-              cursor: 'pointer',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              },
-            }}
-          >
-            {altaner.name}
-          </Box>
-
-          {/* Divider */}
-          <Divider
-            orientation="vertical"
-            flexItem
-            sx={{
-              height: 16,
-              alignSelf: 'center',
-              borderColor: alpha(theme.palette.divider, 0.3),
-            }}
-          />
-        </>
+        <button
+          onClick={handleAltanerClick}
+          className={cn(
+            'flex items-center justify-center h-7 px-2 rounded-lg',
+            'border-none bg-transparent text-foreground cursor-pointer',
+            'text-[0.8125rem] font-medium whitespace-nowrap',
+            'transition-all duration-200',
+            'hover:bg-primary/10',
+          )}
+        >
+          {altaner.name}
+        </button>
       )}
 
-      {/* Component Switcher */}
-      <Box 
-        data-tour="component-switcher" 
-        sx={{ 
-          display: 'flex', 
-          gap: 0.5,
-          alignItems: 'center',
-        }}
-      >
-        {components && components.length > 0 && components.map((component) => {
-          const isActive = component.id === activeComponent?.id;
-          
-          // Add data-tour attributes based on component type
-          const getTourAttribute = () => {
-            if (component.type === 'base') return 'component-cloud';
-            if (component.type === 'agents') return 'component-agents';
-            if (component.type === 'interface') return 'component-interface';
-            return null;
-          };
-          
-          return (
-            <Box
-              key={component.id}
-              component="button"
-              data-tour={getTourAttribute()}
-              onClick={() => handleComponentClick(component.id)}
-              sx={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-                height: 28,
-                px: isActive ? 1 : 0.5,
-                border: 'none',
-                borderRadius: 10,
-                backgroundColor: isActive 
-                  ? alpha(theme.palette.primary.main, 0.12)
-                  : 'transparent',
-                color: isActive
-                  ? theme.palette.primary.main
-                  : theme.palette.text.secondary,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease-in-out',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-
-                '&:hover': {
-                  color: theme.palette.text.primary,
-                  backgroundColor: isActive 
-                    ? alpha(theme.palette.primary.main, 0.16)
-                    : alpha(theme.palette.text.primary, 0.05),
-                },
-              }}
-            >
-              {component.icon && (
-                <Iconify
-                  icon={component.icon}
-                  width={15}
-                  height={15}
-                />
-              )}
-              
-              {isActive && (
-                <Box component="span">
-                  {component.name === 'Database' ? 'Cloud' : component.name}
-                </Box>
-              )}
-
-             
-            </Box>
-          );
-        })}
-      </Box>
-    </Box>
+      {/* Component Switcher using HybridTabs */}
+      {tabItems.length > 0 && (
+        <div data-tour="component-switcher">
+          <HybridTabs
+            items={tabItems}
+            value={activeComponent?.id || tabItems[0]?.value}
+            onValueChange={handleComponentChange}
+          />
+        </div>
+      )}
+    </div>
   );
 });
 

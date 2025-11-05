@@ -187,6 +187,31 @@ export default function Register() {
             }}
           />
           <Typography variant="h3">Welcome to Altan</Typography>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '16px',
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}`,
+            }}
+          >
+            <Box component="span" sx={{ fontSize: '14px' }}>
+              🎁
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                color: (theme) => theme.palette.mode === 'dark' ? '#818cf8' : '#6366f1',
+              }}
+            >
+              500 Free Credits
+            </Typography>
+          </Box>
 
           {hasReferral && !invitation && (
             <ReferralBanner />

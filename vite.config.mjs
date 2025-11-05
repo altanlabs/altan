@@ -170,11 +170,13 @@ export default defineConfig(({ mode }) => {
       https: isDev,
       host: isDev ? 'dev-local.altan.ai' : undefined,
     },
-    ...(isMobile && {
-      esbuild: {
+    esbuild: isMobile ? {
         target: 'es2019',
         supported: { 'top-level-await': false },
+      drop: !isDev ? ['console', 'debugger'] : undefined,
+    } : {
+      // Drop console logs in production builds
+      drop: !isDev ? ['console', 'debugger'] : undefined,
       },
-    }),
   };
 });

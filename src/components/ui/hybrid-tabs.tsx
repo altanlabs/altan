@@ -26,7 +26,7 @@ export default function HybridTabs({
 }: HybridTabsProps) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className={cn("w-auto", className)}>
-      <TabsList className="inline-flex w-auto h-auto justify-center gap-0.5 bg-background/60 backdrop-blur-md p-0.5 rounded-lg border shadow-sm">
+      <TabsList className="inline-flex w-auto h-auto justify-center gap-0.5 bg-transparent p-0">
         {items.map((item) => {
           const isActive = value === item.value;
           return (
@@ -34,7 +34,7 @@ export default function HybridTabs({
               key={item.value}
               value={item.value}
               className={cn(
-                "relative flex items-center gap-1.5 rounded-md transition-all px-2 py-1 h-auto min-h-0",
+                "relative flex items-center gap-1.5 rounded-lg transition-all px-2 py-1 h-8 min-h-0",
                 "data-[state=active]:bg-primary/10 data-[state=active]:text-primary",
                 "hover:bg-primary/5"
               )}

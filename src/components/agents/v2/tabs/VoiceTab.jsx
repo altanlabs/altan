@@ -6,14 +6,28 @@ import ElevenlabsVoiceConfig from './ElevenlabsVoiceConfig';
 import OpenAIVoiceConfig from './OpenAIVoiceConfig';
 import Iconify from '../../../iconify';
 
+// Normalize provider names to handle legacy/variant formats
+const normalizeProvider = (provider) => {
+  if (!provider) return 'elevenlabs';
+  const normalized = provider.toLowerCase().replace(/_/g, '');
+  if (normalized.includes('openai')) return 'openai';
+  if (normalized.includes('eleven')) return 'elevenlabs';
+  return 'elevenlabs'; // default fallback
+};
+
 function VoiceTab({ agentData, onFieldChange }) {
-  const [voiceProvider, setVoiceProvider] = useState(agentData?.voice?.provider || 'elevenlabs');
-  const [voiceSettings, setVoiceSettings] = useState(
-    agentData?.voice || {
+  const [voiceProvider, setVoiceProvider] = useState(
+    normalizeProvider(agentData?.voice?.provider),
+  );
+  const [voiceSettings, setVoiceSettings] = useState(() => {
+    const settings = agentData?.voice || {
       provider: 'elevenlabs',
       model_id: 'eleven_flash_v2_5',
       voice_id: 'cjVigY5qzO86Huf0OWal',
-      openai: 'alloy', // Default OpenAI voice
+      openai_config: {
+        voice_id: 'alloy',
+        preview_url: 'https://cdn.openai.com/API/voice-previews/alloy.flac',
+      },
       supported_voices: [],
       agent_output_audio_format: 'pcm_24000',
       optimize_streaming_latency: 3,
@@ -25,24 +39,47 @@ function VoiceTab({ agentData, onFieldChange }) {
         language: 'en',
         language_presets: {},
       },
-    },
-  );
+    };
+    // Normalize the provider
+    return {
+      ...settings,
+      provider: normalizeProvider(settings.provider),
+    };
+  });
 
   useEffect(() => {
-    // Always ensure provider is set to elevenlabs if not explicitly set to something else
-    if (!agentData?.voice?.provider || agentData?.voice?.provider === 'elevenlabs') {
-      const defaultSettings = {
+    // Normalize the provider in agentData if it exists
+    const normalizedProvider = normalizeProvider(agentData?.voice?.provider);
+
+    // Update voiceSettings to use normalized provider only if it's different
+    if (voiceSettings.provider !== normalizedProvider) {
+      const updatedSettings = {
         ...voiceSettings,
-        provider: 'elevenlabs',
+        provider: normalizedProvider,
       };
-      // Only update if not already set
-      if (voiceSettings.provider !== 'elevenlabs') {
-        setVoiceSettings(defaultSettings);
-        setVoiceProvider('elevenlabs');
-        onFieldChange('voice', defaultSettings);
-      }
+      setVoiceSettings(updatedSettings);
+      setVoiceProvider(normalizedProvider);
+      onFieldChange('voice', updatedSettings);
     }
-  }, [agentData?.voice?.provider, onFieldChange, voiceSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentData?.voice?.provider]);
+
+  // Migrate legacy `openai` string to `openai_config`
+  useEffect(() => {
+    if (voiceSettings?.openai && !voiceSettings?.openai_config) {
+      const id = voiceSettings.openai;
+      const migrated = {
+        ...voiceSettings,
+        openai_config: {
+          voice_id: id,
+          preview_url: `https://cdn.openai.com/API/voice-previews/${id}.flac`,
+        },
+      };
+      delete migrated.openai;
+      setVoiceSettings(migrated);
+      onFieldChange('voice', migrated);
+    }
+  }, [voiceSettings, onFieldChange]);
 
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
@@ -52,8 +89,9 @@ function VoiceTab({ agentData, onFieldChange }) {
 
   const handleProviderChange = (event, newProvider) => {
     if (newProvider !== null) {
-      setVoiceProvider(newProvider);
-      const newSettings = { ...voiceSettings, provider: newProvider };
+      const normalizedProvider = normalizeProvider(newProvider);
+      setVoiceProvider(normalizedProvider);
+      const newSettings = { ...voiceSettings, provider: normalizedProvider };
       setVoiceSettings(newSettings);
       onFieldChange('voice', newSettings);
     }

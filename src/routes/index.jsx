@@ -64,6 +64,7 @@ import {
   Privacy,
   ContactPage,
   SDKTestPage,
+  SDKCookbookPage,
   SupportPage,
   VirtualDesktopPage,
   V2LandingPage,
@@ -975,6 +976,15 @@ const Router = () => {
                 <SDKTestPage />
               </NewLayout>
             </DashboardDataProvider>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/sdk/cookbook"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <SDKCookbookPage />
           </AuthGuard>
         </Route>
 

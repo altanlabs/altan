@@ -86,7 +86,12 @@ export default function OpenAIVoiceConfig({ agentData, settings, onSettingChange
   );
 
   const handleVoiceChange = (voiceId) => {
-    onSettingChange('openai', voiceId);
+    const prev = settings.openai_config || {};
+    onSettingChange('openai_config', {
+      ...prev,
+      voice_id: voiceId,
+      preview_url: getPreviewUrl(voiceId),
+    });
   };
 
   const handleTestRealtime = async () => {
@@ -262,7 +267,7 @@ export default function OpenAIVoiceConfig({ agentData, settings, onSettingChange
       </Typography>
 
       <RadioGroup
-        value={settings.openai || 'alloy'}
+        value={settings.openai_config?.voice_id || 'alloy'}
         onChange={(e) => handleVoiceChange(e.target.value)}
       >
         {OPENAI_VOICES.map((voice) => {

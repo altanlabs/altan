@@ -149,6 +149,7 @@ export const PATH_DASHBOARD = {
     root: path(ROOTS_DASHBOARD, '/testing'),
     textVoiceDemo: path(ROOTS_DASHBOARD, '/testing/text-voice-demo'),
     advancedEditor: path(ROOTS_DASHBOARD, '/testing/advanced-editor'),
+    sdkDemo: path(ROOTS_DASHBOARD, '/testing/sdk-demo'),
   },
 };
 

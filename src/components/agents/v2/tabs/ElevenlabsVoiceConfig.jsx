@@ -207,7 +207,7 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
       </Box>
 
       {/* Agent Language */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -243,7 +243,7 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
       </Box>
 
       {/* Additional Languages */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -325,7 +325,7 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
       </Box>
 
       {/* First Message */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
         >
@@ -417,7 +417,7 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
       </Box>
 
       {/* Model Selection */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box>
             <Typography
@@ -476,7 +476,7 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
       </Box>
 
       {/* Sliders */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -497,11 +497,11 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
           max={4}
           step={1}
           marks
-          sx={{ mt: 1 }}
+          sx={{ mt: 0 }}
         />
       </Box>
 
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -521,11 +521,11 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
           min={0}
           max={1}
           step={0.01}
-          sx={{ mt: 1 }}
+          sx={{ mt: 0 }}
         />
       </Box>
 
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -546,11 +546,11 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
           min={0.7}
           max={1.2}
           step={0.01}
-          sx={{ mt: 1 }}
+          sx={{ mt: 0 }}
         />
       </Box>
 
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Typography
           variant="h6"
           sx={{ color: 'text.primary', mb: 1 }}
@@ -570,12 +570,12 @@ export default function ElevenlabsVoiceConfig({ agentData, settings, onUpdate })
           min={0}
           max={1}
           step={0.01}
-          sx={{ mt: 1 }}
+          sx={{ mt: 0 }}
         />
       </Box>
 
       {/* TTS output format */}
-      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 3 }}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mt: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
             <Typography

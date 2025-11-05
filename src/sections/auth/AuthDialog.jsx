@@ -43,9 +43,17 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader className="items-center text-center space-y-4">
+        <DialogHeader className="items-center text-center space-y-3">
           <Logo className="w-22 h-22" />
           <DialogTitle className="text-3xl font-bold">Welcome to Altan</DialogTitle>
+          {!isLogin && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
+              <span className="text-sm">🎁</span>
+              <span className="text-xs font-semibold text-primary">
+                500 Free Credits
+              </span>
+            </div>
+          )}
           <DialogDescription className="text-base">
             {isLogin ? 'Log in to continue' : 'Sign up to get started'}
           </DialogDescription>

@@ -151,6 +151,9 @@ export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx'
 export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
 );
+export const SDKCookbookPage = Loadable(
+  lazy(() => import('../pages/SDKCookbookPage.jsx')),
+);
 export const SupportPage = Loadable(lazy(() => import('../pages/SupportPage.jsx')));
 
 // V2 VIRTUAL DESKTOP

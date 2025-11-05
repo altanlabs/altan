@@ -1,28 +1,34 @@
-import {
-  Drawer,
-  Stack,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Divider,
-} from '@mui/material';
 import { memo, useCallback, useState, useEffect } from 'react';
 import { useForm, FormProvider, useFieldArray, Controller } from 'react-hook-form';
+import { X, Plus, Check, Trash2, Monitor } from 'lucide-react';
 
 import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
 import { updateCurrentTool, getSpace } from '../../../../redux/slices/spaces';
 import { dispatch, useSelector } from '../../../../redux/store';
 import { optimai } from '../../../../utils/axios';
-import { bgBlur } from '../../../../utils/cssStyles';
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '../../../../components/ui/sheet';
+import { Button } from '../../../../components/ui/button';
+import { Input } from '../../../../components/ui/input';
+import { Textarea } from '../../../../components/ui/textarea';
+import { Checkbox } from '../../../../components/ui/checkbox';
+import { Label } from '../../../../components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../../components/ui/select';
+import { Separator } from '../../../../components/ui/separator';
+import { cn } from '../../../../lib/utils';
 
 const DATA_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 
@@ -191,491 +197,385 @@ const ClientToolDrawer = ({ open, onClose, toolToEdit = null }) => {
   });
 
   const renderHeader = (
-    <Stack
-      direction="row"
-      alignItems="center"
-      justifyContent="space-between"
-      sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}
-    >
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={1}
-      >
-        <Iconify
-          icon="mdi:desktop-classic"
-          width={24}
-        />
-        <Typography variant="h6">{isEditMode ? 'Edit' : 'Add'} client tool</Typography>
-      </Stack>
-      <IconButton onClick={handleClose}>
-        <Iconify icon="mingcute:close-line" />
-      </IconButton>
-    </Stack>
+    <SheetHeader className="p-6 pb-4 border-b">
+      <div className="flex items-center gap-3">
+        <Monitor className="h-6 w-6" />
+        <SheetTitle className="text-xl">{isEditMode ? 'Edit' : 'Add'} client tool</SheetTitle>
+      </div>
+    </SheetHeader>
   );
 
   const renderConfigurationSection = (
-    <Box sx={{ p: 2 }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-      >
-        Configuration
-      </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ mb: 2 }}
-      >
-        Describe to the LLM how and when to use the tool.
-      </Typography>
+    <div className="p-6 space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Configuration</h3>
+        <p className="text-sm text-muted-foreground">
+          Describe to the LLM how and when to use the tool.
+        </p>
+      </div>
 
-      <Stack spacing={2}>
-        <TextField
-          variant="filled"
-          label="Name"
-          placeholder="Tool name"
-          {...methods.register('name', { required: true })}
-          fullWidth
-        />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            placeholder="Tool name"
+            {...methods.register('name', { required: true })}
+          />
+        </div>
 
-        <TextField
-          variant="filled"
-          label="Description"
-          placeholder="Tool description"
-          {...methods.register('description')}
-          multiline
-          rows={3}
-          fullWidth
-        />
-      </Stack>
-    </Box>
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Tool description"
+            {...methods.register('description')}
+            rows={3}
+          />
+        </div>
+      </div>
+    </div>
   );
 
   const renderBehaviorSection = (
-    <Box sx={{ p: 2 }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-      >
-        Behavior Settings
-      </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ mb: 2 }}
-      >
-        Configure how the tool executes and interacts with the agent.
-      </Typography>
+    <div className="p-6 space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Behavior Settings</h3>
+        <p className="text-sm text-muted-foreground">
+          Configure how the tool executes and interacts with the agent.
+        </p>
+      </div>
 
-      <Stack spacing={2}>
-        <Controller
-          name="meta_data.execution_mode"
-          control={control}
-          render={({ field }) => (
-            <FormControl
-              fullWidth
-              size="small"
-            >
-              <InputLabel>Execution Mode</InputLabel>
-              <Select
-                {...field}
-                label="Execution Mode"
-                variant="filled"
-              >
-                {EXECUTION_MODES.map((mode) => (
-                  <MenuItem
-                    key={mode.value}
-                    value={mode.value}
-                  >
-                    {mode.label}
-                  </MenuItem>
-                ))}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="execution_mode">Execution Mode</Label>
+          <Controller
+            name="meta_data.execution_mode"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger id="execution_mode">
+                  <SelectValue placeholder="Select execution mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXECUTION_MODES.map((mode) => (
+                    <SelectItem key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Determines when and how the tool executes relative to agent speech.
-        </Typography>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Determines when and how the tool executes relative to agent speech.
+          </p>
+        </div>
 
-        <Controller
-          name="meta_data.expects_response"
-          control={control}
-          render={({ field }) => (
-            <FormControlLabel
-              control={
+        <div className="space-y-2">
+          <Controller
+            name="meta_data.expects_response"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
                 <Checkbox
+                  id="expects_response"
                   checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
+                  onCheckedChange={field.onChange}
                 />
-              }
-              label="Expects response"
-            />
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Select this box to make the agent wait for the tool to finish executing before resuming
-          the conversation.
-        </Typography>
+                <Label htmlFor="expects_response" className="cursor-pointer">
+                  Expects response
+                </Label>
+              </div>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Select this box to make the agent wait for the tool to finish executing before resuming
+            the conversation.
+          </p>
+        </div>
 
-        <TextField
-          variant="filled"
-          label="Response Timeout (seconds)"
-          type="number"
-          {...methods.register('meta_data.response_timeout_secs', { valueAsNumber: true })}
-          fullWidth
-          inputProps={{ min: 1, max: 600 }}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          How long to wait for the client tool to respond before timing out. Default is 120 seconds.
-        </Typography>
+        <div className="space-y-2">
+          <Label htmlFor="response_timeout">Response Timeout (seconds)</Label>
+          <Input
+            id="response_timeout"
+            type="number"
+            {...methods.register('meta_data.response_timeout_secs', { valueAsNumber: true })}
+            min={1}
+            max={600}
+          />
+          <p className="text-xs text-muted-foreground">
+            How long to wait for the client tool to respond before timing out. Default is 120 seconds.
+          </p>
+        </div>
 
-        <Controller
-          name="meta_data.disable_interruptions"
-          control={control}
-          render={({ field }) => (
-            <FormControlLabel
-              control={
+        <div className="space-y-2">
+          <Controller
+            name="meta_data.disable_interruptions"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
                 <Checkbox
+                  id="disable_interruptions"
                   checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
+                  onCheckedChange={field.onChange}
                 />
-              }
-              label="Disable interruptions"
-            />
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Select this box to disable interruptions while the tool is running.
-        </Typography>
+                <Label htmlFor="disable_interruptions" className="cursor-pointer">
+                  Disable interruptions
+                </Label>
+              </div>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Select this box to disable interruptions while the tool is running.
+          </p>
+        </div>
 
-        <Controller
-          name="meta_data.force_pre_tool_speech"
-          control={control}
-          render={({ field }) => (
-            <FormControlLabel
-              control={
+        <div className="space-y-2">
+          <Controller
+            name="meta_data.force_pre_tool_speech"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
                 <Checkbox
+                  id="force_pre_tool_speech"
                   checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
+                  onCheckedChange={field.onChange}
                 />
-              }
-              label="Force pre-tool speech"
-            />
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Force agent speech before tool execution or let it decide automatically based on recent execution times.
-        </Typography>
+                <Label htmlFor="force_pre_tool_speech" className="cursor-pointer">
+                  Force pre-tool speech
+                </Label>
+              </div>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Force agent speech before tool execution or let it decide automatically based on recent execution times.
+          </p>
+        </div>
 
-        <Controller
-          name="meta_data.tool_call_sound"
-          control={control}
-          render={({ field }) => (
-            <FormControl
-              fullWidth
-              size="small"
-            >
-              <InputLabel>Tool Call Sound</InputLabel>
-              <Select
-                {...field}
-                label="Tool Call Sound"
-                variant="filled"
-              >
-                {TOOL_CALL_SOUNDS.map((sound) => (
-                  <MenuItem
-                    key={sound.value}
-                    value={sound.value}
-                  >
-                    {sound.label}
-                  </MenuItem>
-                ))}
+        <div className="space-y-2">
+          <Label htmlFor="tool_call_sound">Tool Call Sound</Label>
+          <Controller
+            name="meta_data.tool_call_sound"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger id="tool_call_sound">
+                  <SelectValue placeholder="Select sound" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TOOL_CALL_SOUNDS.map((sound) => (
+                    <SelectItem key={sound.value} value={sound.value}>
+                      {sound.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Optional sound effect that plays during tool execution.
-        </Typography>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional sound effect that plays during tool execution.
+          </p>
+        </div>
 
-        <Controller
-          name="meta_data.tool_call_sound_behavior"
-          control={control}
-          render={({ field }) => (
-            <FormControl
-              fullWidth
-              size="small"
-            >
-              <InputLabel>Sound Behavior</InputLabel>
-              <Select
-                {...field}
-                label="Sound Behavior"
-                variant="filled"
-              >
-                {SOUND_BEHAVIORS.map((behavior) => (
-                  <MenuItem
-                    key={behavior.value}
-                    value={behavior.value}
-                  >
-                    {behavior.label}
-                  </MenuItem>
-                ))}
+        <div className="space-y-2">
+          <Label htmlFor="sound_behavior">Sound Behavior</Label>
+          <Controller
+            name="meta_data.tool_call_sound_behavior"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger id="sound_behavior">
+                  <SelectValue placeholder="Select behavior" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOUND_BEHAVIORS.map((behavior) => (
+                    <SelectItem key={behavior.value} value={behavior.value}>
+                      {behavior.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          )}
-        />
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Determines when the tool call sound should play.
-        </Typography>
-      </Stack>
-    </Box>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Determines when the tool call sound should play.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 
   const renderParametersSection = (
-    <Box sx={{ p: 2 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Box>
-          <Typography variant="h6">Parameters</Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
+    <div className="p-6 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-1">Parameters</h3>
+          <p className="text-sm text-muted-foreground">
             Define the parameters that will be sent with the event.
-          </Typography>
-        </Box>
+          </p>
+        </div>
         <Button
-          variant="soft"
-          color="inherit"
+          variant="outline"
+          size="sm"
           onClick={handleAddParameter}
-          startIcon={<Iconify icon="mdi:plus" />}
-          size="small"
+          className="flex-shrink-0"
         >
+          <Plus className="h-4 w-4 mr-2" />
           Add param
         </Button>
-      </Stack>
+      </div>
 
-      <Stack spacing={2}>
+      <div className="space-y-3">
         {fields.map((field, index) => (
-          <Box
+          <div
             key={field.id}
-            sx={{
-              p: 2,
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              position: 'relative',
-            }}
+            className="relative p-4 border rounded-lg space-y-4"
           >
-            <IconButton
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => handleRemoveParameter(index)}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                color: 'error.main',
-              }}
-              size="small"
+              className="absolute top-2 right-2 h-8 w-8 text-destructive hover:text-destructive"
             >
-              <Iconify icon="mdi:delete" />
-            </IconButton>
+              <Trash2 className="h-4 w-4" />
+            </Button>
 
-            <Stack spacing={2}>
-              <Stack
-                direction="row"
-                spacing={2}
-              >
-                <Controller
-                  name={`parameters.${index}.type`}
-                  control={control}
-                  render={({ field: controllerField }) => (
-                    <FormControl
-                      size="small"
-                      sx={{ minWidth: 120 }}
-                    >
-                      <InputLabel>Data type</InputLabel>
-                      <Select
-                        {...controllerField}
-                        variant="filled"
-                      >
-                        {DATA_TYPES.map((type) => (
-                          <MenuItem
-                            key={type}
-                            value={type}
-                          >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </MenuItem>
-                        ))}
+            <div className="space-y-4 pr-8">
+              <div className="flex gap-2">
+                <div className="w-[140px]">
+                  <Label htmlFor={`param-type-${index}`}>Data type</Label>
+                  <Controller
+                    name={`parameters.${index}.type`}
+                    control={control}
+                    render={({ field: controllerField }) => (
+                      <Select onValueChange={controllerField.onChange} value={controllerField.value}>
+                        <SelectTrigger id={`param-type-${index}`}>
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DATA_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
-                    </FormControl>
-                  )}
-                />
+                    )}
+                  />
+                </div>
 
-                <TextField
-                  label="Identifier"
-                  {...methods.register(`parameters.${index}.id`, { required: true })}
-                  size="small"
-                  variant="filled"
-                  fullWidth
-                />
-              </Stack>
+                <div className="flex-1">
+                  <Label htmlFor={`param-id-${index}`}>Identifier</Label>
+                  <Input
+                    id={`param-id-${index}`}
+                    {...methods.register(`parameters.${index}.id`, { required: true })}
+                  />
+                </div>
+              </div>
 
               <Controller
                 name={`parameters.${index}.required`}
                 control={control}
                 render={({ field }) => (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                      />
-                    }
-                    label="Required"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`param-required-${index}`}
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <Label htmlFor={`param-required-${index}`} className="cursor-pointer">
+                      Required
+                    </Label>
+                  </div>
                 )}
               />
 
-              <Controller
-                name={`parameters.${index}.value_type`}
-                control={control}
-                render={({ field: controllerField }) => (
-                  <FormControl
-                    size="small"
-                    fullWidth
-                  >
-                    <InputLabel>Value Type</InputLabel>
-                    <Select
-                      {...controllerField}
-                      label="Value Type"
-                      variant="filled"
-                    >
-                      {VALUE_TYPES.map((type) => (
-                        <MenuItem
-                          key={type.value}
-                          value={type.value}
-                        >
-                          {type.label}
-                        </MenuItem>
-                      ))}
+              <div className="space-y-2">
+                <Label htmlFor={`param-value-type-${index}`}>Value Type</Label>
+                <Controller
+                  name={`parameters.${index}.value_type`}
+                  control={control}
+                  render={({ field: controllerField }) => (
+                    <Select onValueChange={controllerField.onChange} value={controllerField.value}>
+                      <SelectTrigger id={`param-value-type-${index}`}>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VALUE_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
-                  </FormControl>
-                )}
-              />
+                  )}
+                />
+              </div>
 
-              <TextField
-                variant="filled"
-                label="Description"
-                {...methods.register(`parameters.${index}.description`)}
-                placeholder="This field will be passed to the LLM and should describe in detail how to extract the data from the transcript."
-                multiline
-                rows={3}
-                size="small"
-                fullWidth
-              />
-            </Stack>
-          </Box>
+              <div className="space-y-2">
+                <Label htmlFor={`param-desc-${index}`}>Description</Label>
+                <Textarea
+                  id={`param-desc-${index}`}
+                  {...methods.register(`parameters.${index}.description`)}
+                  placeholder="This field will be passed to the LLM and should describe in detail how to extract the data from the transcript."
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
         ))}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 
   const renderActions = (
-    <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-      <Stack
-        direction="row"
-        spacing={2}
-        justifyContent="flex-end"
-      >
+    <div className="p-6 pt-4 border-t">
+      <div className="flex justify-end gap-2">
         <Button
-          variant="soft"
-          color="inherit"
+          variant="outline"
           onClick={handleClose}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
         <Button
-          variant="soft"
-          color="primary"
           onClick={onSubmit}
           disabled={isSubmitting}
-          startIcon={<Iconify icon="mdi:check" />}
         >
-          {isEditMode ? 'Update Tool' : 'Create Tool'}
+          {isSubmitting ? (
+            'Saving...'
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              {isEditMode ? 'Update Tool' : 'Create Tool'}
+            </>
+          )}
         </Button>
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 
   return (
-    <Drawer
-      open={open}
-      onClose={handleClose}
-      anchor="right"
-      PaperProps={{
-        sx: {
-          width: 1,
-          maxWidth: 600,
-          backgroundColor: 'transparent',
-          padding: 1,
-          pb: 2,
-          ...bgBlur({ opacity: 0.1 }),
-        },
-      }}
-      slotProps={{
-        backdrop: { invisible: true },
-      }}
-    >
-      <FormProvider {...methods}>
-        <Box
-          sx={{
-            height: '100%',
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {renderHeader}
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <SheetContent className="w-full sm:max-w-[600px] p-0 flex flex-col overflow-hidden">
+        <FormProvider {...methods}>
+          <div className="h-full flex flex-col">
+            {renderHeader}
 
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
-            {renderConfigurationSection}
-            <Divider />
-            {renderParametersSection}
-            <Divider />
-            {renderBehaviorSection}
-          </Box>
+            <div className="flex-1 overflow-y-auto">
+              {renderConfigurationSection}
+              <Separator />
+              {renderParametersSection}
+              <Separator />
+              {renderBehaviorSection}
+            </div>
 
-          {renderActions}
-        </Box>
-      </FormProvider>
-    </Drawer>
+            {renderActions}
+          </div>
+        </FormProvider>
+      </SheetContent>
+    </Sheet>
   );
 };
 
