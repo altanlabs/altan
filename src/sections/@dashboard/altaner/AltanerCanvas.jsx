@@ -44,7 +44,6 @@ const selector = (state) => ({
 });
 
 const AltanerCanvas = () => {
-  // const { sendCommand } = useWebSocket();
   // const connectingNode = useRef(null);
   const ref = useRef(null);
   const [initializedFlow, setInitializedFlow] = useState(false);
@@ -102,28 +101,6 @@ const AltanerCanvas = () => {
         : setModuleInMenu({ anchorEl: e.currentTarget, module: { id: node.id, after: null } }),
     );
   }, []);
-
-  // const throttledUpdatePositions = useCallback(throttle((nodes, persist = false) => {
-  //   dispatch(updateModuleCanvasPositions(sendCommand, nodes, persist));
-  // }, 500), [sendCommand]);
-
-  // const onNodeDragStop = useCallback((event, node, nodes) => {
-  //   if (!dragging) {
-  //     return;
-  //   }
-  //   if (!!throttledUpdatePositions) {
-  //     throttledUpdatePositions(nodes, true)
-  //   }
-  //   setDragging(false);
-  // }, [dragging, throttledUpdatePositions]);
-
-  // const onNodeDrag = useCallback((event, node, nodes) => {
-  //   setDragging(true);
-  //   if (!!throttledUpdatePositions) {
-  //     throttledUpdatePositions(nodes)
-  //   }
-  //   // setDragging(false);
-  // }, [throttledUpdatePositions]);
 
   return (
     <>

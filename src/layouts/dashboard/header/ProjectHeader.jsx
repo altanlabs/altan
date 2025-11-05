@@ -13,16 +13,16 @@ import {
 
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
-import ProjectNav from './ProjectNav.jsx';
 import MobileNavigation from './components/MobileNavigation.jsx';
+import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
-import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
 // config
 import { HEADER } from '../../../config-global';
@@ -134,8 +134,8 @@ function ProjectHeader() {
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
-  const interfaceCommits = useSelector((state) => 
-    interfaceId ? selectSortedCommits(state, interfaceId) : []
+  const interfaceCommits = useSelector((state) =>
+    interfaceId ? selectSortedCommits(state, interfaceId) : [],
   );
 
   // Check if interface has commits
@@ -200,7 +200,6 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
-
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat' && altanerId) {

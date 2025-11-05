@@ -29,7 +29,6 @@ import RenameModuleDialog from '../../../components/flows/canvas/nodes/RenameMod
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 import useKeyShortcutListener from '../../../hooks/useKeyShortcutListener.ts';
 import { selectFlowEdges, selectFlowNodes } from '../../../providers/flows/utils';
-import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   addNewModule,
   deleteFlowModule,
@@ -141,7 +140,6 @@ const FlowCanvas = (
     // altanerComponentType = null,
   },
 ) => {
-  const ws = useHermesWebSocket();
   const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
   const location = useLocation();
   const history = useHistory();
@@ -158,7 +156,6 @@ const FlowCanvas = (
   // const [selectionOnDrag, setSelectionOnDrag] = useState(false);
   const selectionOnDrag = useKeyPress(['Meta', 'Ctrl']);
   const [isHelpOpen, setHelpOpen] = useState(false);
-  const sendCommand = ws?.sendCommand;
 
   const connectingNode = useRef(null);
   const ref = useRef(null);
@@ -573,9 +570,9 @@ const FlowCanvas = (
   const throttledUpdatePositions = useMemo(
     () =>
       throttle((nodes, persist = false) => {
-        dispatch(updateModuleCanvasPositions(sendCommand, nodes, persist));
+        dispatch(updateModuleCanvasPositions(() => null, nodes, persist));
       }, 500),
-    [sendCommand],
+    [],
   );
 
   const onNodeDragStop = useCallback(
@@ -585,10 +582,10 @@ const FlowCanvas = (
         return;
       }
       setFromTemplate(false);
-      dispatch(updateModuleCanvasPositions(sendCommand, nodes, true));
+      dispatch(updateModuleCanvasPositions(() => null, nodes, true));
       setDragging(false);
     },
-    [dragging, sendCommand],
+    [dragging],
   );
 
   const onNodeDrag = useCallback(
