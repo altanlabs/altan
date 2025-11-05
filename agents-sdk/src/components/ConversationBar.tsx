@@ -17,7 +17,9 @@ const LiveWaveform: React.FC<LiveWaveformProps> = ({ active, barCount = 25 }) =>
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    let animationId;
+    if (!ctx) return;
+    
+    let animationId: number | undefined;
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -42,7 +44,11 @@ const LiveWaveform: React.FC<LiveWaveformProps> = ({ active, barCount = 25 }) =>
     };
 
     draw();
-    return () => cancelAnimationFrame(animationId);
+    return () => {
+      if (animationId !== undefined) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [active, barCount]);
 
   return <canvas ref={canvasRef} width={120} height={20} style={{ width: '120px', height: '20px' }} />;
