@@ -84,7 +84,7 @@ function VoiceTab({ agentData, onFieldChange }) {
   const [voiceSettings, setVoiceSettings] = useState(
     agentData?.voice || {
       provider: 'elevenlabs',
-      model_id: 'eleven_flash_v2',
+      model_id: 'eleven_flash_v2_5',
       voice_id: 'cjVigY5qzO86Huf0OWal',
       openai: 'alloy', // Default OpenAI voice
       supported_voices: [],
@@ -109,6 +109,24 @@ function VoiceTab({ agentData, onFieldChange }) {
   const dataChannelRef = useRef(null);
   const audioElementRef = useRef(null);
   const mediaStreamRef = useRef(null);
+
+  // Ensure ElevenLabs is set as default provider on mount
+  useEffect(() => {
+    // Always ensure provider is set to elevenlabs if not explicitly set to something else
+    if (!agentData?.voice?.provider || agentData?.voice?.provider === 'elevenlabs') {
+      const defaultSettings = {
+        ...voiceSettings,
+        provider: 'elevenlabs',
+      };
+      
+      // Only update if not already set
+      if (voiceSettings.provider !== 'elevenlabs') {
+        setVoiceSettings(defaultSettings);
+        setVoiceProvider('elevenlabs');
+        onFieldChange('voice', defaultSettings);
+      }
+    }
+  }, [agentData?.voice?.provider]);
 
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
@@ -503,7 +521,7 @@ function VoiceTab({ agentData, onFieldChange }) {
               <ToggleButton value="elevenlabs">
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Iconify
-                    icon="mdi:voice"
+                    icon="simple-icons:elevenlabs"
                     width={20}
                   />
                   <span>ElevenLabs</span>
