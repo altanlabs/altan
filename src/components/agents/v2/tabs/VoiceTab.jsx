@@ -8,12 +8,17 @@ import {
   Chip,
   TextField,
   Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { memo, useState } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 
 import Iconify from '../../../iconify';
 import VoiceSelector from '../components/VoiceSelector';
+import { optimai } from '../../../../utils/axios';
 
 const AUDIO_FORMATS = [
   'pcm_8000',
@@ -29,6 +34,15 @@ const VOICE_MODELS = [
   { id: 'eleven_turbo_v2', name: 'Turbo v2' },
   { id: 'eleven_flash_v2', name: 'Flash v2' },
   { id: 'eleven_flash_v2_5', name: 'Flash v2.5' },
+];
+
+const OPENAI_VOICES = [
+  { id: 'alloy', name: 'Alloy' },
+  { id: 'echo', name: 'Echo' },
+  { id: 'fable', name: 'Fable' },
+  { id: 'onyx', name: 'Onyx' },
+  { id: 'nova', name: 'Nova' },
+  { id: 'shimmer', name: 'Shimmer' },
 ];
 
 const LANGUAGES = [
@@ -67,10 +81,13 @@ const LANGUAGES = [
 ];
 
 function VoiceTab({ agentData, onFieldChange }) {
+  const [voiceProvider, setVoiceProvider] = useState(agentData?.voice?.provider || 'elevenlabs');
   const [voiceSettings, setVoiceSettings] = useState(
     agentData?.voice || {
+      provider: 'elevenlabs',
       model_id: 'eleven_flash_v2',
       voice_id: 'cjVigY5qzO86Huf0OWal',
+      openai: 'alloy', // Default OpenAI voice
       supported_voices: [],
       agent_output_audio_format: 'pcm_24000',
       optimize_streaming_latency: 3,
@@ -86,6 +103,11 @@ function VoiceTab({ agentData, onFieldChange }) {
   );
 
   const [selectedLanguageForFirstMessage, setSelectedLanguageForFirstMessage] = useState('en');
+  const [isTestingRealtime, setIsTestingRealtime] = useState(false);
+  const [realtimeError, setRealtimeError] = useState(null);
+  const [realtimeStatus, setRealtimeStatus] = useState(null);
+  const realtimeConnectionRef = useRef(null);
+  const audioContextRef = useRef(null);
 
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
@@ -242,12 +264,324 @@ function VoiceTab({ agentData, onFieldChange }) {
     return Array.from(new Set(allLanguages));
   };
 
+  const handleProviderChange = (event, newProvider) => {
+    if (newProvider !== null) {
+      setVoiceProvider(newProvider);
+      const newSettings = { ...voiceSettings, provider: newProvider };
+      setVoiceSettings(newSettings);
+      onFieldChange('voice', newSettings);
+    }
+  };
+
+  const handleOpenAIVoiceChange = (e) => {
+    handleSettingChange('openai', e.target.value);
+  };
+
+  const handleTestRealtime = async () => {
+    setIsTestingRealtime(true);
+    setRealtimeError(null);
+    setRealtimeStatus('Initializing session...');
+
+    try {
+      // Call the backend endpoint to get session using axios
+      const response = await optimai.get(`/agent/${agentData.id}/openai-realtime`);
+      const data = response.data;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create session');
+      }
+
+      setRealtimeStatus('Connecting to OpenAI...');
+
+      // Connect to OpenAI Realtime API using WebSocket
+      // Note: Browser WebSocket doesn't support custom headers, so we use the ephemeral token approach
+      const ws = new WebSocket(
+        `${data.websocket_url}?model=gpt-4o-realtime-preview-2024-12-17`,
+        ['realtime', `openai-insecure-api-key.${data.session.client_secret.value}`],
+      );
+
+      realtimeConnectionRef.current = ws;
+
+      ws.onopen = () => {
+        setRealtimeStatus('Connected! Say something...');
+        console.log('WebSocket connected');
+
+        // Send session update with voice
+        ws.send(
+          JSON.stringify({
+            type: 'session.update',
+            session: {
+              voice: voiceSettings.openai || 'alloy',
+              turn_detection: {
+                type: 'server_vad',
+              },
+            },
+          }),
+        );
+
+        // Request microphone access and start audio capture
+        startAudioCapture(ws);
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log('Received:', message);
+
+        if (message.type === 'response.audio.delta') {
+          // Handle audio playback
+          playAudioChunk(message.delta);
+        } else if (message.type === 'error') {
+          setRealtimeError(message.error.message);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setRealtimeError('WebSocket connection error');
+        setIsTestingRealtime(false);
+      };
+
+      ws.onclose = () => {
+        setRealtimeStatus(null);
+        setIsTestingRealtime(false);
+        console.log('WebSocket closed');
+      };
+    } catch (error) {
+      console.error('Failed to test realtime:', error);
+      setRealtimeError(error.message);
+      setIsTestingRealtime(false);
+    }
+  };
+
+  const stopRealtimeTest = () => {
+    if (realtimeConnectionRef.current) {
+      realtimeConnectionRef.current.close();
+      realtimeConnectionRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setIsTestingRealtime(false);
+    setRealtimeStatus(null);
+  };
+
+  const startAudioCapture = async (ws) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext({ sampleRate: 24000 });
+      audioContextRef.current = audioContext;
+
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+      processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        // Convert Float32Array to Int16Array (PCM16)
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+
+        // Convert to base64
+        const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pcm16.buffer)));
+
+        // Send audio chunk
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: base64,
+            }),
+          );
+        }
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+    } catch (error) {
+      console.error('Failed to capture audio:', error);
+      setRealtimeError('Microphone access denied');
+    }
+  };
+
+  const playAudioChunk = (base64Audio) => {
+    // Implement audio playback logic here
+    // This is a simplified version - you may want to use a proper audio queue
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+    }
+
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const int16Array = new Int16Array(bytes.buffer);
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) {
+      float32Array[i] = int16Array[i] / 32768;
+    }
+
+    const audioBuffer = audioContextRef.current.createBuffer(1, float32Array.length, 24000);
+    audioBuffer.getChannelData(0).set(float32Array);
+
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContextRef.current.destination);
+    source.start();
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (realtimeConnectionRef.current) {
+        realtimeConnectionRef.current.close();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
       {/* Left Panel: Configuration */}
       <Box sx={{ overflow: 'auto', width: '100%' }}>
         <Box sx={{ p: 2, pb: { xs: 10, md: 2 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Voice Card */}
+          {/* Provider Toggle and Test Button */}
+          <Box
+            sx={{
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 2,
+              p: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography
+                variant="h6"
+                sx={{ color: 'text.primary' }}
+              >
+                Voice Provider
+              </Typography>
+              {voiceProvider === 'openai' && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={isTestingRealtime ? stopRealtimeTest : handleTestRealtime}
+                  disabled={isTestingRealtime && !realtimeStatus}
+                  startIcon={
+                    isTestingRealtime ? (
+                      <Iconify
+                        icon="mdi:stop"
+                        width={16}
+                      />
+                    ) : (
+                      <Iconify
+                        icon="mdi:play"
+                        width={16}
+                      />
+                    )
+                  }
+                  color={isTestingRealtime ? 'error' : 'primary'}
+                >
+                  {isTestingRealtime ? 'Stop Test' : 'Test Realtime'}
+                </Button>
+              )}
+            </Box>
+
+            <ToggleButtonGroup
+              value={voiceProvider}
+              exclusive
+              onChange={handleProviderChange}
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              <ToggleButton value="elevenlabs">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Iconify
+                    icon="mdi:voice"
+                    width={20}
+                  />
+                  <span>ElevenLabs</span>
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="openai">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Iconify
+                    icon="simple-icons:openai"
+                    width={20}
+                  />
+                  <span>OpenAI Realtime</span>
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {voiceProvider === 'openai' && realtimeStatus && (
+              <Alert
+                severity="info"
+                sx={{ mb: 2 }}
+              >
+                {realtimeStatus}
+              </Alert>
+            )}
+
+            {voiceProvider === 'openai' && realtimeError && (
+              <Alert
+                severity="error"
+                sx={{ mb: 2 }}
+              >
+                {realtimeError}
+              </Alert>
+            )}
+          </Box>
+
+          {/* OpenAI Voice Selection (only shown when OpenAI is selected) */}
+          {voiceProvider === 'openai' && (
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ color: 'text.primary', mb: 1 }}
+              >
+                OpenAI Voice
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary', mb: 2 }}
+              >
+                Select the OpenAI voice for realtime conversations.
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  size="small"
+                  value={voiceSettings.openai || 'alloy'}
+                  onChange={handleOpenAIVoiceChange}
+                >
+                  {OPENAI_VOICES.map((voice) => (
+                    <MenuItem
+                      key={voice.id}
+                      value={voice.id}
+                    >
+                      {voice.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+
+          {/* Voice Card (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -284,8 +618,10 @@ function VoiceTab({ agentData, onFieldChange }) {
               }}
             />
           </Box>
+          )}
 
-          {/* Agent Language Card */}
+          {/* Agent Language Card (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -327,8 +663,10 @@ function VoiceTab({ agentData, onFieldChange }) {
               </Select>
             </FormControl>
           </Box>
+          )}
 
-          {/* Additional Languages Card */}
+          {/* Additional Languages Card (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -419,8 +757,10 @@ function VoiceTab({ agentData, onFieldChange }) {
               </Select>
             </FormControl>
           </Box>
+          )}
 
-          {/* First Message Card */}
+          {/* First Message Card (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -522,8 +862,10 @@ function VoiceTab({ agentData, onFieldChange }) {
 
             </Box>
           </Box>
+          )}
 
-          {/* Model Selection */}
+          {/* Model Selection (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -589,9 +931,11 @@ function VoiceTab({ agentData, onFieldChange }) {
               </Box>
             </Box>
           </Box>
+          )}
 
           {/* Pronunciation Dictionaries */}
-          {/* <Box
+          {/* {voiceProvider === 'elevenlabs' && (
+          <Box
             sx={{
               border: 1,
               borderColor: 'divider',
@@ -625,9 +969,12 @@ function VoiceTab({ agentData, onFieldChange }) {
             >
               .pls .txt .xml Max 1.6 MB
             </Typography>
-          </Box> */}
+          </Box>
+          )} */}
 
-          {/* Sliders */}
+          {/* Sliders (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
+          <>
           <Box
             sx={{
               border: 1,
@@ -754,8 +1101,11 @@ function VoiceTab({ agentData, onFieldChange }) {
               sx={{ mt: 1 }}
             />
           </Box>
+          </>
+          )}
 
-          {/* TTS output format */}
+          {/* TTS output format (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
           <Box
             sx={{
               border: 1,
@@ -797,6 +1147,7 @@ function VoiceTab({ agentData, onFieldChange }) {
               </FormControl>
             </Box>
           </Box>
+          )}
         </Box>
       </Box>
     </Box>

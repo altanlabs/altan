@@ -107,90 +107,80 @@ export const useTabPersistence = () => {
     // Only load once per room
     if (loadedRoomRef.current === roomId) return;
 
-    const previousRoom = loadedRoomRef.current;
-
     loadedRoomRef.current = roomId;
     fetchingThreadsRef.current.clear(); // Clear fetching state for new room
 
-    // IMPORTANT: Don't load tabs from localStorage when switching between rooms
-    // Only load from localStorage on initial page load (when previousRoom is null)
-    const isInitialLoad = previousRoom === null;
-    
-    if (!isInitialLoad) {
-      // Clear tabs and let GeneralToolbar create fresh ones
-      dispatch(clearTabs());
-      hasLoadedRef.current = true;
-      return;
-    }
-
-    const savedTabs = loadTabsFromStorage(roomId);
-    
-    if (savedTabs) {
-      dispatch(loadTabs({ tabs: savedTabs }));
-    }
-    
+    // DISABLED: localStorage tab persistence causes race conditions
+    // Always clear tabs on room load - GeneralToolbar will create the main thread tab
+    // This ensures we always start with a clean slate and avoid stale thread_ids
+    dispatch(clearTabs());
     hasLoadedRef.current = true;
-  }, [roomId, dispatch, loadTabsFromStorage]);
+  }, [roomId, dispatch]);
 
-  // Fetch threads for tabs that don't have their threads loaded yet
-  useEffect(() => {
-    if (!tabs || !threadsById || !roomId) return;
+  // DISABLED: Fetch threads for tabs that don't have their threads loaded yet
+  // This was needed for localStorage persistence to handle stale tabs.
+  // Since we no longer load tabs from storage, we don't need orphan tab cleanup.
+  // Tabs are now always created fresh from the main thread or URL parameters.
+  // useEffect(() => {
+  //   if (!tabs || !threadsById || !roomId) return;
+  //
+  //   const tabsArray = Object.values(tabs.byId);
+  //
+  //   tabsArray.forEach(tab => {
+  //     const threadId = tab.threadId;
+  //     if (!threadId) return;
+  //
+  //     const threadExists = threadsById[threadId];
+  //     const isFetching = fetchingThreadsRef.current.has(threadId);
+  //
+  //     if (!threadExists && !isFetching) {
+  //       // Mark as fetching
+  //       fetchingThreadsRef.current.add(threadId);
+  //
+  //       // Fetch the thread
+  //       dispatch(fetchThread({ threadId }))
+  //         .then(() => {
+  //           // Remove from fetching set after successful fetch
+  //           fetchingThreadsRef.current.delete(threadId);
+  //         })
+  //         .catch(() => {
+  //           // Remove from fetching set on error
+  //           fetchingThreadsRef.current.delete(threadId);
+  //           
+  //           // IMPORTANT: Close the orphan tab since it doesn't belong to this room
+  //           dispatch(closeTab({ tabId: tab.id }));
+  //         });
+  //     }
+  //   });
+  // }, [tabs, threadsById, roomId, dispatch]);
 
-    const tabsArray = Object.values(tabs.byId);
-
-    tabsArray.forEach(tab => {
-      const threadId = tab.threadId;
-      if (!threadId) return;
-
-      const threadExists = threadsById[threadId];
-      const isFetching = fetchingThreadsRef.current.has(threadId);
-
-      if (!threadExists && !isFetching) {
-        // Mark as fetching
-        fetchingThreadsRef.current.add(threadId);
-
-        // Fetch the thread
-        dispatch(fetchThread({ threadId }))
-          .then(() => {
-            // Remove from fetching set after successful fetch
-            fetchingThreadsRef.current.delete(threadId);
-          })
-          .catch(() => {
-            // Remove from fetching set on error
-            fetchingThreadsRef.current.delete(threadId);
-            
-            // IMPORTANT: Close the orphan tab since it doesn't belong to this room
-            dispatch(closeTab({ tabId: tab.id }));
-          });
-      }
-    });
-  }, [tabs, threadsById, roomId, dispatch]);
-
-  // Save tabs when they change (debounced)
-  useEffect(() => {
-    if (!roomId || !tabs || Object.keys(tabs.byId).length === 0) return;
-
-    // Only save if tabs have been initialized (not empty)
-    if (tabs.allIds.length === 0) return;
-
-    // Clear existing timer
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-
-    // Set new debounced save
-    saveTimerRef.current = setTimeout(() => {
-      saveTabsToStorageImmediate(roomId, tabs);
-      saveTimerRef.current = null;
-    }, SAVE_DEBOUNCE_MS);
-
-    // Cleanup on unmount
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
-    };
-  }, [roomId, tabs, saveTabsToStorageImmediate]);
+  // DISABLED: Save tabs when they change (debounced)
+  // Tab persistence to localStorage has been disabled to prevent race conditions
+  // where users could send messages to wrong threads from stale localStorage data
+  // useEffect(() => {
+  //   if (!roomId || !tabs || Object.keys(tabs.byId).length === 0) return;
+  //
+  //   // Only save if tabs have been initialized (not empty)
+  //   if (tabs.allIds.length === 0) return;
+  //
+  //   // Clear existing timer
+  //   if (saveTimerRef.current) {
+  //     clearTimeout(saveTimerRef.current);
+  //   }
+  //
+  //   // Set new debounced save
+  //   saveTimerRef.current = setTimeout(() => {
+  //     saveTabsToStorageImmediate(roomId, tabs);
+  //     saveTimerRef.current = null;
+  //   }, SAVE_DEBOUNCE_MS);
+  //
+  //   // Cleanup on unmount
+  //   return () => {
+  //     if (saveTimerRef.current) {
+  //       clearTimeout(saveTimerRef.current);
+  //     }
+  //   };
+  // }, [roomId, tabs, saveTabsToStorageImmediate]);
 
   // Sync tab names with thread names when threads change
   useEffect(() => {
