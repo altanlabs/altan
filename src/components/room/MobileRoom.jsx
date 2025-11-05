@@ -9,7 +9,7 @@ import DrawerToggle from './drawer/DrawerToggle.jsx';
 import RoomContent from './RoomContent.jsx';
 import Threads from './Threads.jsx';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
-import { useWhisperStreamWebSocket } from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   selectRoom,
   selectRoomId,
@@ -32,7 +32,7 @@ const MobileRoom = ({
   onSidebar,
   onClose,
 } = {}) => {
-  const { isOpen, subscribe, unsubscribe } = useWhisperStreamWebSocket();
+  const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
   const theme = useTheme();
   const isCreation = useSelector(selectIsCreation);
 
