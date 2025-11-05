@@ -11,7 +11,6 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Alert,
-  CircularProgress,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { memo, useState, useRef, useEffect } from 'react';
@@ -106,8 +105,10 @@ function VoiceTab({ agentData, onFieldChange }) {
   const [isTestingRealtime, setIsTestingRealtime] = useState(false);
   const [realtimeError, setRealtimeError] = useState(null);
   const [realtimeStatus, setRealtimeStatus] = useState(null);
-  const realtimeConnectionRef = useRef(null);
-  const audioContextRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const dataChannelRef = useRef(null);
+  const audioElementRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
@@ -280,168 +281,165 @@ function VoiceTab({ agentData, onFieldChange }) {
   const handleTestRealtime = async () => {
     setIsTestingRealtime(true);
     setRealtimeError(null);
-    setRealtimeStatus('Initializing session...');
+    setRealtimeStatus('Initializing WebRTC...');
 
     try {
-      // Call the backend endpoint to get session using axios
-      const response = await optimai.get(`/agent/${agentData.id}/openai-realtime`);
-      const data = response.data;
+      // Create RTCPeerConnection
+      const pc = new RTCPeerConnection();
+      peerConnectionRef.current = pc;
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create session');
-      }
+      // Set up audio element to auto-play remote audio from the model
+      const audioEl = document.createElement('audio');
+      audioEl.autoplay = true;
+      audioElementRef.current = audioEl;
+      pc.ontrack = (e) => {
+        console.log('Received remote audio track');
+        audioEl.srcObject = e.streams[0];
+      };
 
-      setRealtimeStatus('Connecting to OpenAI...');
+      // Add local audio track for microphone input
+      setRealtimeStatus('Requesting microphone access...');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      mediaStreamRef.current = stream;
+      pc.addTrack(stream.getTracks()[0]);
 
-      // Connect to OpenAI Realtime API using WebSocket
-      // Note: Browser WebSocket doesn't support custom headers, so we use the ephemeral token approach
-      const ws = new WebSocket(
-        `${data.websocket_url}?model=gpt-4o-realtime-preview-2024-12-17`,
-        ['realtime', `openai-insecure-api-key.${data.session.client_secret.value}`],
-      );
+      // Set up data channel for sending and receiving events
+      const dc = pc.createDataChannel('oai-events');
+      dataChannelRef.current = dc;
 
-      realtimeConnectionRef.current = ws;
-
-      ws.onopen = () => {
+      // Handle data channel events
+      dc.addEventListener('open', () => {
+        console.log('Data channel opened');
         setRealtimeStatus('Connected! Say something...');
-        console.log('WebSocket connected');
+      });
 
-        // Send session update with voice
-        ws.send(
-          JSON.stringify({
-            type: 'session.update',
-            session: {
-              voice: voiceSettings.openai || 'alloy',
-              turn_detection: {
-                type: 'server_vad',
-              },
-            },
-          }),
-        );
+      dc.addEventListener('message', (e) => {
+        const event = JSON.parse(e.data);
+        console.log('Received event:', event.type);
 
-        // Request microphone access and start audio capture
-        startAudioCapture(ws);
-      };
-
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        console.log('Received:', message);
-
-        if (message.type === 'response.audio.delta') {
-          // Handle audio playback
-          playAudioChunk(message.delta);
-        } else if (message.type === 'error') {
-          setRealtimeError(message.error.message);
+        if (event.type === 'error') {
+          console.error('OpenAI error:', event.error);
+          setRealtimeError(event.error.message);
         }
-      };
+      });
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setRealtimeError('WebSocket connection error');
-        setIsTestingRealtime(false);
-      };
-
-      ws.onclose = () => {
+      dc.addEventListener('close', () => {
+        console.log('Data channel closed');
         setRealtimeStatus(null);
         setIsTestingRealtime(false);
-        console.log('WebSocket closed');
+      });
+
+      // Generate SDP offer
+      setRealtimeStatus('Creating WebRTC offer...');
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Send SDP offer to backend
+      setRealtimeStatus('Connecting to OpenAI...');
+      const formData = new FormData();
+      formData.append('sdp', offer.sdp);
+
+      const response = await optimai.post(
+        `/agent/${agentData.id}/openai-realtime-webrtc`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      // Apply SDP answer from backend
+      const answer = {
+        type: 'answer',
+        sdp: response.data,
       };
+      await pc.setRemoteDescription(answer);
+
+      console.log('WebRTC peer connection established');
     } catch (error) {
-      console.error('Failed to test realtime:', error);
-      setRealtimeError(error.message);
+      console.error('Failed to start WebRTC session:', error);
+      setRealtimeError(error.message || 'Failed to start session');
       setIsTestingRealtime(false);
+
+      // Cleanup on error
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
     }
   };
 
   const stopRealtimeTest = () => {
-    if (realtimeConnectionRef.current) {
-      realtimeConnectionRef.current.close();
-      realtimeConnectionRef.current = null;
+    console.log('Stopping WebRTC session...');
+
+    // Close data channel
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
+
+    // Stop all media tracks (microphone)
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.getSenders().forEach((sender) => {
+        if (sender.track) {
+          sender.track.stop();
+        }
+      });
     }
+
+    // Stop media stream
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    // Close peer connection
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // Remove audio element
+    if (audioElementRef.current) {
+      audioElementRef.current.srcObject = null;
+      audioElementRef.current = null;
+    }
+
     setIsTestingRealtime(false);
     setRealtimeStatus(null);
-  };
-
-  const startAudioCapture = async (ws) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new AudioContext({ sampleRate: 24000 });
-      audioContextRef.current = audioContext;
-
-      const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-
-      processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        // Convert Float32Array to Int16Array (PCM16)
-        const pcm16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]));
-          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-        }
-
-        // Convert to base64
-        const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pcm16.buffer)));
-
-        // Send audio chunk
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: 'input_audio_buffer.append',
-              audio: base64,
-            }),
-          );
-        }
-      };
-
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-    } catch (error) {
-      console.error('Failed to capture audio:', error);
-      setRealtimeError('Microphone access denied');
-    }
-  };
-
-  const playAudioChunk = (base64Audio) => {
-    // Implement audio playback logic here
-    // This is a simplified version - you may want to use a proper audio queue
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-    }
-
-    const binaryString = atob(base64Audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const int16Array = new Int16Array(bytes.buffer);
-    const float32Array = new Float32Array(int16Array.length);
-    for (let i = 0; i < int16Array.length; i++) {
-      float32Array[i] = int16Array[i] / 32768;
-    }
-
-    const audioBuffer = audioContextRef.current.createBuffer(1, float32Array.length, 24000);
-    audioBuffer.getChannelData(0).set(float32Array);
-
-    const source = audioContextRef.current.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContextRef.current.destination);
-    source.start();
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (realtimeConnectionRef.current) {
-        realtimeConnectionRef.current.close();
+      // Clean up WebRTC resources
+      if (dataChannelRef.current) {
+        dataChannelRef.current.close();
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.getSenders().forEach((sender) => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
+        peerConnectionRef.current.close();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (audioElementRef.current) {
+        audioElementRef.current.srcObject = null;
       }
     };
   }, []);
@@ -460,7 +458,9 @@ function VoiceTab({ agentData, onFieldChange }) {
               p: 2,
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
               <Typography
                 variant="h6"
                 sx={{ color: 'text.primary' }}
@@ -582,167 +582,74 @@ function VoiceTab({ agentData, onFieldChange }) {
 
           {/* Voice Card (only shown for ElevenLabs) */}
           {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Voice
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Select the voice you want to use for the agent. Hover over a voice to preview it.
-            </Typography>
-            <VoiceSelector
-              value={voiceSettings}
-              onChange={(voice) => {
-                // Create a new voice settings object with all required properties
-                const newVoiceSettings = {
-                  ...voiceSettings,
-                  voice_id: voice.voice_id,
-                  name: voice.name,
-                  preview_url: voice.preview_url,
-                };
-                // Update the voice settings in a single operation
-                setVoiceSettings(newVoiceSettings);
-                onFieldChange('voice', newVoiceSettings);
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
               }}
-            />
-          </Box>
+            >
+              <Typography
+                variant="h6"
+                sx={{ color: 'text.primary', mb: 1 }}
+              >
+                Voice
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary', mb: 2 }}
+              >
+                Select the voice you want to use for the agent. Hover over a voice to preview it.
+              </Typography>
+              <VoiceSelector
+                value={voiceSettings}
+                onChange={(voice) => {
+                  // Create a new voice settings object with all required properties
+                  const newVoiceSettings = {
+                    ...voiceSettings,
+                    voice_id: voice.voice_id,
+                    name: voice.name,
+                    preview_url: voice.preview_url,
+                  };
+                  // Update the voice settings in a single operation
+                  setVoiceSettings(newVoiceSettings);
+                  onFieldChange('voice', newVoiceSettings);
+                }}
+              />
+            </Box>
           )}
 
           {/* Agent Language Card (only shown for ElevenLabs) */}
           {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
+              }}
             >
-              Agent Language
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Choose the default language the agent will communicate in.
-            </Typography>
-            <FormControl fullWidth>
-              <Select
-                size="small"
-                value={voiceSettings.meta_data?.language || 'en'}
-                onChange={handleLanguageChange}
-                renderValue={(selected) => getLanguageName(selected)}
+              <Typography
+                variant="h6"
+                sx={{ color: 'text.primary', mb: 1 }}
               >
-                {LANGUAGES.map((language) => (
-                  <MenuItem
-                    key={language.code}
-                    value={language.code}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span>{language.flag}</span>
-                      <span>{language.name}</span>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-          )}
-
-          {/* Additional Languages Card (only shown for ElevenLabs) */}
-          {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Additional Languages
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Specify additional languages which callers can choose from.
-            </Typography>
-            <FormControl fullWidth>
-              <Select
-                size="small"
-                multiple
-                value={(() => {
-                  const selectedLanguages = getAdditionalLanguages();
-                  const availableLanguages = LANGUAGES.filter(
-                    (lang) => lang.code !== voiceSettings.meta_data?.language,
-                  ).map((lang) => lang.code);
-
-                  // If all languages are selected, include the "__ALL__" value to show it as selected
-                  if (
-                    selectedLanguages.length === availableLanguages.length &&
-                    availableLanguages.every((lang) => selectedLanguages.includes(lang))
-                  ) {
-                    return [...selectedLanguages, '__ALL__'];
-                  }
-
-                  return selectedLanguages;
-                })()}
-                onChange={handleAdditionalLanguagesChange}
-                renderValue={(selected) => {
-                  if (selected.length === 0) {
-                    return (
-                      <Typography
-                        variant="body2"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        Add additional languages
-                      </Typography>
-                    );
-                  }
-                  return (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected
-                        .filter((lang) => !lang.startsWith('__'))
-                        .map((value) => (
-                          <Chip
-                            key={value}
-                            label={getLanguageName(value)}
-                            size="small"
-                          />
-                        ))}
-                    </Box>
-                  );
-                }}
-                displayEmpty
+                Agent Language
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary', mb: 2 }}
               >
-                <MenuItem value="__ALL__">
-                  <em>All</em>
-                </MenuItem>
-                <MenuItem value="__NONE__">
-                  <em>None</em>
-                </MenuItem>
-                {LANGUAGES.filter((lang) => lang.code !== voiceSettings.meta_data?.language).map(
-                  (language) => (
+                Choose the default language the agent will communicate in.
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  size="small"
+                  value={voiceSettings.meta_data?.language || 'en'}
+                  onChange={handleLanguageChange}
+                  renderValue={(selected) => getLanguageName(selected)}
+                >
+                  {LANGUAGES.map((language) => (
                     <MenuItem
                       key={language.code}
                       value={language.code}
@@ -752,185 +659,277 @@ function VoiceTab({ agentData, onFieldChange }) {
                         <span>{language.name}</span>
                       </Box>
                     </MenuItem>
-                  ),
-                )}
-              </Select>
-            </FormControl>
-          </Box>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+
+          {/* Additional Languages Card (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ color: 'text.primary', mb: 1 }}
+              >
+                Additional Languages
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary', mb: 2 }}
+              >
+                Specify additional languages which callers can choose from.
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  size="small"
+                  multiple
+                  value={(() => {
+                    const selectedLanguages = getAdditionalLanguages();
+                    const availableLanguages = LANGUAGES.filter(
+                      (lang) => lang.code !== voiceSettings.meta_data?.language,
+                    ).map((lang) => lang.code);
+
+                    // If all languages are selected, include the "__ALL__" value to show it as selected
+                    if (
+                      selectedLanguages.length === availableLanguages.length &&
+                      availableLanguages.every((lang) => selectedLanguages.includes(lang))
+                    ) {
+                      return [...selectedLanguages, '__ALL__'];
+                    }
+
+                    return selectedLanguages;
+                  })()}
+                  onChange={handleAdditionalLanguagesChange}
+                  renderValue={(selected) => {
+                    if (selected.length === 0) {
+                      return (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          Add additional languages
+                        </Typography>
+                      );
+                    }
+                    return (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected
+                          .filter((lang) => !lang.startsWith('__'))
+                          .map((value) => (
+                            <Chip
+                              key={value}
+                              label={getLanguageName(value)}
+                              size="small"
+                            />
+                          ))}
+                      </Box>
+                    );
+                  }}
+                  displayEmpty
+                >
+                  <MenuItem value="__ALL__">
+                    <em>All</em>
+                  </MenuItem>
+                  <MenuItem value="__NONE__">
+                    <em>None</em>
+                  </MenuItem>
+                  {LANGUAGES.filter((lang) => lang.code !== voiceSettings.meta_data?.language).map(
+                    (language) => (
+                      <MenuItem
+                        key={language.code}
+                        value={language.code}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <span>{language.flag}</span>
+                          <span>{language.name}</span>
+                        </Box>
+                      </MenuItem>
+                    ),
+                  )}
+                </Select>
+              </FormControl>
+            </Box>
           )}
 
           {/* First Message Card (only shown for ElevenLabs) */}
           {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
             <Box
               sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                mb: 2,
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
               }}
             >
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ color: 'text.primary', mb: 1 }}
-                >
-                  First Message
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'text.secondary' }}
-                >
-                  Customize the first message for different languages. Switch between languages to
-                  view and edit translations.
-                </Typography>
-              </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Iconify icon="solar:translation-outline" />}
-                sx={{ flexShrink: 0, ml: 2 }}
-                disabled
-              >
-                Translate all
-              </Button>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Language Selector */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ minWidth: 'fit-content' }}
-                >
-                  Language:
-                </Typography>
-                <FormControl
-                  size="small"
-                  sx={{ minWidth: 200 }}
-                >
-                  <Select
-                    value={selectedLanguageForFirstMessage}
-                    onChange={(e) => setSelectedLanguageForFirstMessage(e.target.value)}
-                    renderValue={(selected) => getLanguageName(selected)}
-                  >
-                    {getAvailableLanguagesForFirstMessage().map((language) => (
-                      <MenuItem
-                        key={language}
-                        value={language}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span>{LANGUAGES.find((l) => l.code === language)?.flag || '🏳️'}</span>
-                          <span>
-                            {LANGUAGES.find((l) => l.code === language)?.name || language}
-                          </span>
-                          {language === (voiceSettings.meta_data?.language || 'en') && (
-                            <Chip
-                              label="Default"
-                              size="small"
-                              color="primary"
-                              sx={{ ml: 1, height: 20 }}
-                            />
-                          )}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              {/* First Message Input */}
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={getFirstMessageForLanguage(selectedLanguageForFirstMessage)}
-                onChange={(e) => {
-                  handleFirstMessageChange(selectedLanguageForFirstMessage, e.target.value);
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  mb: 2,
                 }}
-                placeholder={`Enter the first message in ${getLanguageName(selectedLanguageForFirstMessage)}...`}
-                variant="outlined"
-                size="small"
-              />
+              >
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{ color: 'text.primary', mb: 1 }}
+                  >
+                    First Message
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Customize the first message for different languages. Switch between languages to
+                    view and edit translations.
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Iconify icon="solar:translation-outline" />}
+                  sx={{ flexShrink: 0, ml: 2 }}
+                  disabled
+                >
+                  Translate all
+                </Button>
+              </Box>
 
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Language Selector */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ minWidth: 'fit-content' }}
+                  >
+                    Language:
+                  </Typography>
+                  <FormControl
+                    size="small"
+                    sx={{ minWidth: 200 }}
+                  >
+                    <Select
+                      value={selectedLanguageForFirstMessage}
+                      onChange={(e) => setSelectedLanguageForFirstMessage(e.target.value)}
+                      renderValue={(selected) => getLanguageName(selected)}
+                    >
+                      {getAvailableLanguagesForFirstMessage().map((language) => (
+                        <MenuItem
+                          key={language}
+                          value={language}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>{LANGUAGES.find((l) => l.code === language)?.flag || '🏳️'}</span>
+                            <span>
+                              {LANGUAGES.find((l) => l.code === language)?.name || language}
+                            </span>
+                            {language === (voiceSettings.meta_data?.language || 'en') && (
+                              <Chip
+                                label="Default"
+                                size="small"
+                                color="primary"
+                                sx={{ ml: 1, height: 20 }}
+                              />
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* First Message Input */}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={getFirstMessageForLanguage(selectedLanguageForFirstMessage)}
+                  onChange={(e) => {
+                    handleFirstMessageChange(selectedLanguageForFirstMessage, e.target.value);
+                  }}
+                  placeholder={`Enter the first message in ${getLanguageName(selectedLanguageForFirstMessage)}...`}
+                  variant="outlined"
+                  size="small"
+                />
+              </Box>
             </Box>
-          </Box>
           )}
 
           {/* Model Selection (only shown for ElevenLabs) */}
           {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography
-                  variant="h6"
-                  sx={{ color: 'text.primary', mb: 1 }}
-                >
-                  Voice Model
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'text.secondary', mb: 2 }}
-                >
-                  Select the voice model to use for text-to-speech. Flash models are optimized for
-                  low latency, while Turbo models provide higher quality at the cost of higher
-                  latency.
-                </Typography>
-              </Box>
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: 'text.primary', mb: 1 }}
-                >
-                  Model
-                </Typography>
-                <FormControl fullWidth>
-                  <Select
-                    size="small"
-                    value={voiceSettings.model_id}
-                    onChange={handleModelChange}
-                  >
-                    {VOICE_MODELS.map((model) => (
-                      <MenuItem
-                        key={model.id}
-                        value={model.id}
-                      >
-                        {model.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'text.secondary' }}
-                >
-                  Currently selected:{' '}
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
                   <Typography
-                    component="span"
-                    sx={{ fontWeight: 'medium' }}
+                    variant="h6"
+                    sx={{ color: 'text.primary', mb: 1 }}
                   >
-                    {getModelName(voiceSettings.model_id)}
+                    Voice Model
                   </Typography>
-                </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: 'text.secondary', mb: 2 }}
+                  >
+                    Select the voice model to use for text-to-speech. Flash models are optimized for
+                    low latency, while Turbo models provide higher quality at the cost of higher
+                    latency.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: 'text.primary', mb: 1 }}
+                  >
+                    Model
+                  </Typography>
+                  <FormControl fullWidth>
+                    <Select
+                      size="small"
+                      value={voiceSettings.model_id}
+                      onChange={handleModelChange}
+                    >
+                      {VOICE_MODELS.map((model) => (
+                        <MenuItem
+                          key={model.id}
+                          value={model.id}
+                        >
+                          {model.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Currently selected:{' '}
+                    <Typography
+                      component="span"
+                      sx={{ fontWeight: 'medium' }}
+                    >
+                      {getModelName(voiceSettings.model_id)}
+                    </Typography>
+                  </Typography>
+                </Box>
               </Box>
             </Box>
-          </Box>
           )}
 
           {/* Pronunciation Dictionaries */}
@@ -974,179 +973,181 @@ function VoiceTab({ agentData, onFieldChange }) {
 
           {/* Sliders (only shown for ElevenLabs) */}
           {voiceProvider === 'elevenlabs' && (
-          <>
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Optimize streaming latency
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Configure latency optimizations for the speech generation. Latency can be optimized at
-              the cost of quality.
-            </Typography>
-            <Slider
-              value={voiceSettings.optimize_streaming_latency}
-              onChange={(e, value) => handleSettingChange('optimize_streaming_latency', value)}
-              min={0}
-              max={4}
-              step={1}
-              marks
-              sx={{ mt: 1 }}
-            />
-          </Box>
-
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Stability
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Higher values will make speech more consistent, but it can also make it sound
-              monotone. Lower values will make speech sound more expressive, but may lead to
-              instabilities.
-            </Typography>
-            <Slider
-              value={voiceSettings.stability}
-              onChange={(e, value) => handleSettingChange('stability', value)}
-              min={0}
-              max={1}
-              step={0.01}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Speed
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Controls the speed of the generated speech. Values below 1.0 will slow down the
-              speech, while values above 1.0 will speed it up. Extreme values may affect the quality
-              of the generated speech.
-            </Typography>
-            <Slider
-              value={voiceSettings.speed}
-              onChange={(e, value) => handleSettingChange('speed', value)}
-              min={0.7}
-              max={1.2}
-              step={0.01}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'text.primary', mb: 1 }}
-            >
-              Similarity
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', mb: 2 }}
-            >
-              Higher values will boost the overall clarity and consistency of the voice. Adjusting
-              this value to find the right balance is key.
-            </Typography>
-            <Slider
-              value={voiceSettings.similarity_boost}
-              onChange={(e, value) => handleSettingChange('similarity_boost', value)}
-              min={0}
-              max={1}
-              step={0.01}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-          </>
-          )}
-
-          {/* TTS output format (only shown for ElevenLabs) */}
-          {voiceProvider === 'elevenlabs' && (
-          <Box
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
+            <>
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
                 <Typography
                   variant="h6"
                   sx={{ color: 'text.primary', mb: 1 }}
                 >
-                  TTS output format
+                  Optimize streaming latency
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: 'text.secondary' }}
+                  sx={{ color: 'text.secondary', mb: 2 }}
                 >
-                  Select the output format you want to use for ElevenLabs text to speech.
+                  Configure latency optimizations for the speech generation. Latency can be
+                  optimized at the cost of quality.
                 </Typography>
+                <Slider
+                  value={voiceSettings.optimize_streaming_latency}
+                  onChange={(e, value) => handleSettingChange('optimize_streaming_latency', value)}
+                  min={0}
+                  max={4}
+                  step={1}
+                  marks
+                  sx={{ mt: 1 }}
+                />
               </Box>
-              <FormControl sx={{ minWidth: 120 }}>
-                <Select
-                  value={voiceSettings.agent_output_audio_format}
-                  onChange={(e) => handleSettingChange('agent_output_audio_format', e.target.value)}
-                  size="small"
+
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.primary', mb: 1 }}
                 >
-                  {AUDIO_FORMATS.map((format) => (
-                    <MenuItem
-                      key={format}
-                      value={format}
-                    >
-                      {format.replace('_', ' ').toUpperCase()}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  Stability
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', mb: 2 }}
+                >
+                  Higher values will make speech more consistent, but it can also make it sound
+                  monotone. Lower values will make speech sound more expressive, but may lead to
+                  instabilities.
+                </Typography>
+                <Slider
+                  value={voiceSettings.stability}
+                  onChange={(e, value) => handleSettingChange('stability', value)}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  sx={{ mt: 1 }}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.primary', mb: 1 }}
+                >
+                  Speed
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', mb: 2 }}
+                >
+                  Controls the speed of the generated speech. Values below 1.0 will slow down the
+                  speech, while values above 1.0 will speed it up. Extreme values may affect the
+                  quality of the generated speech.
+                </Typography>
+                <Slider
+                  value={voiceSettings.speed}
+                  onChange={(e, value) => handleSettingChange('speed', value)}
+                  min={0.7}
+                  max={1.2}
+                  step={0.01}
+                  sx={{ mt: 1 }}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.primary', mb: 1 }}
+                >
+                  Similarity
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', mb: 2 }}
+                >
+                  Higher values will boost the overall clarity and consistency of the voice.
+                  Adjusting this value to find the right balance is key.
+                </Typography>
+                <Slider
+                  value={voiceSettings.similarity_boost}
+                  onChange={(e, value) => handleSettingChange('similarity_boost', value)}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  sx={{ mt: 1 }}
+                />
+              </Box>
+            </>
+          )}
+
+          {/* TTS output format (only shown for ElevenLabs) */}
+          {voiceProvider === 'elevenlabs' && (
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                p: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ color: 'text.primary', mb: 1 }}
+                  >
+                    TTS output format
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Select the output format you want to use for ElevenLabs text to speech.
+                  </Typography>
+                </Box>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <Select
+                    value={voiceSettings.agent_output_audio_format}
+                    onChange={(e) =>
+                      handleSettingChange('agent_output_audio_format', e.target.value)
+                    }
+                    size="small"
+                  >
+                    {AUDIO_FORMATS.map((format) => (
+                      <MenuItem
+                        key={format}
+                        value={format}
+                      >
+                        {format.replace('_', ' ').toUpperCase()}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
             </Box>
-          </Box>
           )}
         </Box>
       </Box>
