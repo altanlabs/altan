@@ -21,8 +21,8 @@ import { useHistory, useParams } from 'react-router-dom';
 
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
-import ProjectNav from './ProjectNav.jsx';
 import MobileNavigation from './components/MobileNavigation.jsx';
+import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
@@ -31,6 +31,7 @@ import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
 import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
 // config
 import { HEADER } from '../../../config-global';
@@ -55,7 +56,6 @@ import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, sel
 import { useSelector } from '../../../redux/store';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
-import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -181,8 +181,8 @@ function ProjectHeader() {
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
-  const interfaceCommits = useSelector((state) => 
-    interfaceId ? selectSortedCommits(state, interfaceId) : []
+  const interfaceCommits = useSelector((state) =>
+    interfaceId ? selectSortedCommits(state, interfaceId) : [],
   );
 
   // Check if interface has commits
@@ -247,7 +247,6 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
-
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat' && altanerId) {
@@ -476,7 +475,7 @@ function ProjectHeader() {
                       </HeaderIconButton>
                     </Tooltip>
                   )}
-                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
+                  <Tooltip title={!canPublish ? 'Make some changes to publish your site to the internet, connect it to a domain' : 'Publish'}>
                     <span>
                       <HeaderIconButton
                         data-tour="publish-button"
@@ -556,7 +555,7 @@ function ProjectHeader() {
                     </Button>
                   )}
 
-                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
+                  <Tooltip title={!canPublish ? 'Make some changes to publish your site to the internet, connect it to a domain' : 'Publish'}>
                     <span>
                       <Button
                         size="small"
