@@ -21,7 +21,7 @@ import {
   loadDisplayModeForProject,
   selectViewType,
 } from '../../redux/slices/altaners';
-import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../redux/slices/general';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, getAccountAttribute } from '../../redux/slices/general';
 import { selectMainThread, clearRoomState, sendMessage } from '../../redux/slices/room';
 import { useSelector, dispatch } from '../../redux/store';
 import { optimai } from '../../utils/axios';
@@ -67,6 +67,11 @@ export default function ProjectPage() {
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
+  
+  // Get account info and workflows state
+  const accountId = useSelector((state) => state.general.account?.id);
+  const workflowsInitialized = useSelector((state) => state.general.accountAssetsInitialized.workflows);
+  const workflowsLoading = useSelector((state) => state.general.accountAssetsLoading.workflows);
 
   // Detect if we're on a plans route
   const isPlansRoute = location.pathname.includes('/plans');
@@ -138,6 +143,20 @@ export default function ProjectPage() {
       dispatch(clearRoomState());
     };
   }, [altanerId]);
+
+  // Fetch workflows if the altaner has flow components
+  useEffect(() => {
+    if (!accountId || !sortedComponents) return;
+    
+    // Check if any component is of type 'flows' or 'flow'
+    const hasFlowComponent = Object.values(sortedComponents).some(
+      (comp) => comp.type === 'flows' || comp.type === 'flow'
+    );
+    
+    if (hasFlowComponent && !workflowsInitialized && !workflowsLoading) {
+      dispatch(getAccountAttribute(accountId, ['workflows']));
+    }
+  }, [accountId, sortedComponents, workflowsInitialized, workflowsLoading]);
 
   // Get the current component based on the active ID
   const currentComponent = useMemo(() => {
