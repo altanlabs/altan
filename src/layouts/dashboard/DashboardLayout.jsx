@@ -6,7 +6,10 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
+import CreditBalanceWarningDialog from '../../components/CreditBalanceWarningDialog';
 import useBrowserNotifications from '../../hooks/useBrowserNotifications';
+import { useCreditBalancePolling } from '../../hooks/useCreditBalancePolling';
+import { useCreditWarnings } from '../../hooks/useCreditWarnings';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
@@ -17,6 +20,8 @@ import {
   getAccountAttribute,
   getAccountMembers,
   getRoles,
+  selectAccountCreditBalance,
+  selectIsAccountFree,
 } from '../../redux/slices/general';
 import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
@@ -40,9 +45,22 @@ const DashboardLayout = ({ children }) => {
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
+  const creditBalance = useSelector(selectAccountCreditBalance);
+  const isAccountFree = useSelector(selectIsAccountFree);
 
   // Enable browser notifications for this user
   useBrowserNotifications();
+
+  // Poll credit balance every 30 seconds
+  useCreditBalancePolling(true);
+
+  // Manage credit warning state
+  const {
+    showZeroBalanceWarning,
+    showLowBalanceWarning,
+    dismissZeroWarning,
+    dismissLowWarning,
+  } = useCreditWarnings(creditBalance, isAccountFree, accountId);
 
   const handleToggleNav = useCallback(() => {
     // Toggle navigation handler - kept for compatibility
@@ -144,6 +162,14 @@ const DashboardLayout = ({ children }) => {
       {!hideHeader && <Header onOpenNav={handleToggleNav} />}
       {!shouldHideFloatingNav && <FloatingNavigation />}
       {/* {shouldShowAgentWidget() && <AltanAgentWidget />} */}
+
+      {/* Credit Balance Warning Dialog */}
+      <CreditBalanceWarningDialog
+        showZeroBalanceWarning={showZeroBalanceWarning}
+        showLowBalanceWarning={showLowBalanceWarning}
+        onDismissZero={dismissZeroWarning}
+        onDismissLow={dismissLowWarning}
+      />
 
       {/* Project creation animation now handled by CompactLayout bubble convergence */}
       <Box

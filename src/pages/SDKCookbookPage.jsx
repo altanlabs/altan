@@ -6,16 +6,16 @@
 import React, { useState, useEffect } from 'react';
 
 import { AgentOrb } from '../../agents-sdk/src/components/AgentOrb';
-import { Conversation } from '../../agents-sdk/src/components/Conversation';
-import { ConversationWithMessages } from '../../agents-sdk/src/components/ConversationWithMessages';
 import { ConversationBar } from '../../agents-sdk/src/components/ConversationBar';
+import { ConversationWithMessages } from '../../agents-sdk/src/components/ConversationWithMessages';
 import { VoiceCallButton } from '../../agents-sdk/src/components/VoiceCallButton';
 import { VoiceCallCard } from '../../agents-sdk/src/components/VoiceCallCard';
 import { useVoiceAgent } from '../../agents-sdk/src/hooks/useVoiceAgent';
 import { VoiceAgentProvider } from '../../agents-sdk/src/providers/VoiceAgentProvider';
 
-// Test agent ID (OpenAI Realtime enabled)
-const AGENT_ID = 'b199b05b-f3e2-4cc9-91d4-95a9581379f1';
+// Test agent IDs
+const AGENT_ID = 'b199b05b-f3e2-4cc9-91d4-95a9581379f1'; // OpenAI Realtime
+const TODO_AGENT_ID = '977b892f-7fa0-43dc-9c55-953284dc72bf'; // ElevenLabs with client tools
 
 // Example implementations
 const examples = [
@@ -196,6 +196,99 @@ function App() {
   <VoiceCallButton />
 </VoiceAgentProvider>`,
   },
+  {
+    id: 'conversation-with-tools',
+    title: '9. Conversation with Client Tools',
+    description: 'Todo management with voice agent using client tools',
+    code: `import { VoiceAgentProvider, ConversationWithMessages } from '@altan/agents-sdk';
+import { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: '1', title: 'Buy groceries', completed: false },
+    { id: '2', title: 'Call mom', completed: true },
+  ]);
+
+  // Simulated client tools (match agent configuration)
+  const clientTools = {
+    get_todos: async ({ filter }) => {
+      console.log('🔧 get_todos called:', filter);
+      let filtered = todos;
+      if (filter === 'active') filtered = todos.filter(t => !t.completed);
+      if (filter === 'completed') filtered = todos.filter(t => t.completed);
+      return { todos: filtered, count: filtered.length };
+    },
+    
+    create_todo: async ({ title, description }) => {
+      console.log('🔧 create_todo called:', title);
+      const newTodo = {
+        id: String(Date.now()),
+        title,
+        description: description || '',
+        completed: false
+      };
+      setTodos([...todos, newTodo]);
+      return { success: true, message: \`Created: \${title}\` };
+    },
+    
+    update_todo: async ({ id, title, description, completed }) => {
+      console.log('🔧 update_todo called:', id);
+      setTodos(todos.map(t => 
+        t.id === id 
+          ? { ...t, title: title || t.title, completed: completed ?? t.completed }
+          : t
+      ));
+      return { success: true, message: 'Todo updated' };
+    },
+    
+    delete_todo: async ({ id }) => {
+      console.log('🔧 delete_todo called:', id);
+      setTodos(todos.filter(t => t.id !== id));
+      return { success: true, message: 'Todo deleted' };
+    },
+    
+    redirect: async ({ path }) => {
+      console.log('🔧 redirect called:', path);
+      alert(\`Would redirect to: \${path}\`);
+      return { success: true, message: \`Redirected to \${path}\` };
+    }
+  };
+
+  return (
+    <VoiceAgentProvider 
+      agentId="${TODO_AGENT_ID}"
+      clientTools={clientTools}
+      onToolCall={(tool, args, result) => {
+        console.log(\`✅ Tool "\${tool}" executed\`, { args, result });
+      }}
+    >
+      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <h2>Voice Todo Manager</h2>
+        <p>Try: "Show my todos", "Add a task", "Mark task as done"</p>
+        
+        <ConversationWithMessages 
+          agentId="${TODO_AGENT_ID}"
+          maxHeight="500px"
+        />
+        
+        {/* Display current todos */}
+        <div style={{ marginTop: '20px' }}>
+          <h3>Current Todos:</h3>
+          <ul>
+            {todos.map(todo => (
+              <li key={todo.id} style={{ 
+                textDecoration: todo.completed ? 'line-through' : 'none' 
+              }}>
+                {todo.title}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </VoiceAgentProvider>
+  );
+}`,
+  },
 ];
 
 // Live example components
@@ -261,7 +354,7 @@ const ConversationBarExample = () => (
 
 const ConversationExample = () => (
   <div style={{ width: '100%', maxWidth: '600px' }}>
-    <ConversationWithMessages 
+    <ConversationWithMessages
       agentId={AGENT_ID}
       maxHeight="500px"
     />
@@ -274,6 +367,64 @@ const MinimalExample = () => (
   </div>
 );
 
+const ConversationWithToolsExample = () => {
+  const todos = [
+    { id: '1', title: 'Buy groceries', description: 'Milk, eggs, bread', completed: false },
+    { id: '2', title: 'Call mom', description: 'Weekly check-in', completed: true },
+    { id: '3', title: 'Finish project', description: 'Complete SDK integration', completed: false },
+  ];
+
+  return (
+    <div style={{ width: '100%', maxWidth: '600px' }}>
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600' }}>Voice Todo Manager</h3>
+        <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
+          Try: &quot;Show my todos&quot;, &quot;Add a new task&quot;, &quot;Mark first task as done&quot;
+        </p>
+      </div>
+
+      <ConversationWithMessages
+        agentId={TODO_AGENT_ID}
+        maxHeight="400px"
+      />
+
+      {/* Display current todos */}
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: '#f9fafb',
+          borderRadius: '12px',
+          border: '1px solid #e5e7eb',
+        }}
+      >
+        <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: '600' }}>
+          Current Todos ({todos.length}):
+        </h4>
+        <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '13px' }}>
+          {todos.map((todo) => (
+            <li
+              key={todo.id}
+              style={{
+                marginBottom: '8px',
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                color: todo.completed ? '#9ca3af' : '#000',
+              }}
+            >
+              <strong>{todo.title}</strong>
+              {todo.description && (
+                <span style={{ color: '#6b7280', marginLeft: '8px' }}>
+                  — {todo.description}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 // Map example IDs to components
 const exampleComponents = {
   'basic-card': BasicCardExample,
@@ -282,8 +433,9 @@ const exampleComponents = {
   'just-orb': JustOrbExample,
   'with-overrides': WithOverridesExample,
   'conversation-bar': ConversationBarExample,
-  'conversation': ConversationExample,
-  'minimal': MinimalExample,
+  conversation: ConversationExample,
+  minimal: MinimalExample,
+  'conversation-with-tools': ConversationWithToolsExample,
 };
 
 // Info Panel Component (reads actual provider)
@@ -323,20 +475,66 @@ const InfoPanel = () => {
 
 // Get client tools for examples that need them
 const getClientTools = (exampleId) => {
-  if (exampleId !== 'with-tools') return {};
+  if (exampleId === 'with-tools') {
+    return {
+      redirect: async ({ path }) => {
+        console.log('🔗 Redirect tool called:', path);
+        alert(`Agent wants to redirect to: ${path}\n\n(Would navigate in production)`);
+        return { success: true, path };
+      },
+      showAlert: async ({ message }) => {
+        console.log('🔔 Alert tool called:', message);
+        alert(`Agent says: ${message}`);
+        return { success: true };
+      },
+    };
+  }
 
-  return {
-    redirect: async ({ path }) => {
-      console.log('🔗 Redirect tool called:', path);
-      alert(`Agent wants to redirect to: ${path}\n\n(Would navigate in production)`);
-      return { success: true, path };
-    },
-    showAlert: async ({ message }) => {
-      console.log('🔔 Alert tool called:', message);
-      alert(`Agent says: ${message}`);
-      return { success: true };
-    },
-  };
+  if (exampleId === 'conversation-with-tools') {
+    return {
+      get_todos: async ({ filter }) => {
+        console.log('🔧 [Client Tool] get_todos called:', { filter: filter || 'all' });
+        // Return simulated todos
+        const todos = [
+          { id: '1', title: 'Buy groceries', description: 'Milk, eggs, bread', completed: false },
+          { id: '2', title: 'Call mom', description: 'Weekly check-in', completed: true },
+          { id: '3', title: 'Finish project', description: 'Complete SDK integration', completed: false },
+        ];
+        let filtered = todos;
+        if (filter === 'active') filtered = todos.filter(t => !t.completed);
+        if (filter === 'completed') filtered = todos.filter(t => t.completed);
+        console.log('✅ [Client Tool] Returning', filtered.length, 'todos');
+        return { todos: filtered, count: filtered.length };
+      },
+
+      create_todo: async ({ title, description }) => {
+        console.log('🔧 [Client Tool] create_todo called:', { title, description });
+        console.log('✅ [Client Tool] Simulated todo creation');
+        return { success: true, message: `Created: ${title}` };
+      },
+
+      update_todo: async ({ id, title, description, completed }) => {
+        console.log('🔧 [Client Tool] update_todo called:', { id, title, description, completed });
+        console.log('✅ [Client Tool] Simulated todo update');
+        return { success: true, message: 'Todo updated' };
+      },
+
+      delete_todo: async ({ id }) => {
+        console.log('🔧 [Client Tool] delete_todo called:', { id });
+        console.log('✅ [Client Tool] Simulated todo deletion');
+        return { success: true, message: 'Todo deleted' };
+      },
+
+      redirect: async ({ path }) => {
+        console.log('🔧 [Client Tool] redirect called:', { path });
+        // eslint-disable-next-line no-alert
+        alert(`Would redirect to: ${path}`);
+        return { success: true, message: `Redirected to ${path}` };
+      },
+    };
+  }
+
+  return {};
 };
 
 // Get overrides for examples that need them
@@ -365,6 +563,9 @@ export default function SDKCookbookPage() {
   const CurrentComponent = exampleComponents[selectedExample];
   const clientTools = getClientTools(selectedExample);
   const overridesToApply = getOverrides(selectedExample);
+
+  // Use the correct agent ID based on the example
+  const agentIdToUse = selectedExample === 'conversation-with-tools' ? TODO_AGENT_ID : AGENT_ID;
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f9fafb' }}>
@@ -508,14 +709,14 @@ export default function SDKCookbookPage() {
         </div>
 
         <VoiceAgentProvider
-          agentId={AGENT_ID}
+          agentId={agentIdToUse}
           clientTools={clientTools}
           overrides={overridesToApply}
           onConnect={() => console.log('✅ Connected!')}
           onDisconnect={() => console.log('🛑 Disconnected')}
           onError={(error) => console.error('❌ Error:', error)}
-          onToolCall={(tool, args) => console.log('🔧 Tool called:', tool, args)}
-          onMessage={(event) => console.log('📨 Event:', event.type)}
+          onToolCall={(tool, args, result) => console.log('🔧 Tool called:', tool, 'Args:', args, 'Result:', result)}
+          onMessage={(event) => console.log('📨 Event:', event)}
         >
           {/* Live Component */}
           <div
