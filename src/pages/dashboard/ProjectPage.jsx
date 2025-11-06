@@ -5,6 +5,8 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 
 import Base from '../../components/databases/base/Base.jsx';
+import Cloud from '../../components/cloud/Cloud.jsx';
+import LoadingFallback from '../../components/LoadingFallback.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import Room from '../../components/room/Room.jsx';
 import Plan from './Plan.jsx';
@@ -310,7 +312,6 @@ export default function ProjectPage() {
       // Mark as sent immediately to prevent duplicate runs in StrictMode
       initialMessageSentRef.current = true;
       
-      console.log('📥 Fetching idea:', ideaId);
       
       try {
         const response = await optimai.get(`/idea/${ideaId}`);
@@ -353,10 +354,13 @@ export default function ProjectPage() {
   const { acType, acProps } = useMemo(() => {
     if (!altaner || !currentComponent) return {};
 
+    console.log('currentComponent', currentComponent);
+
     // Map component types to the expected types in AltanerComponent
     const componentTypeMap = {
       interface: 'interface',
-      base: 'base',
+      base: 'base', // Legacy support
+      cloud: 'cloud', // New type
       flows: 'flows',
       agents: 'agents',
     };
@@ -366,11 +370,17 @@ export default function ProjectPage() {
     // Handle special props for specific component types
     const typeSpecificProps = {};
 
-    // For base component, ensure we're passing the base IDs correctly
-    if (type === 'base' && currentComponent.params?.ids) {
-      typeSpecificProps.ids = currentComponent.params.ids;
-      typeSpecificProps.altanerComponentType = type;
-      typeSpecificProps.filterIds = currentComponent.params.ids; // Some components expect filterIds
+    // For cloud/base component, ensure we're passing the IDs correctly
+    if ((type === 'cloud' || type === 'base')) {
+      // Prefer cloud_id if available (new structure), otherwise fall back to ids (legacy)
+      if (currentComponent.cloud_id) {
+        typeSpecificProps.cloud_id = currentComponent.cloud_id;
+        typeSpecificProps.altanerComponentType = type;
+      } else if (currentComponent.params?.ids) {
+        typeSpecificProps.ids = currentComponent.params.ids;
+        typeSpecificProps.altanerComponentType = type;
+        typeSpecificProps.filterIds = currentComponent.params.ids;
+      }
     }
 
     return {
@@ -388,50 +398,36 @@ export default function ProjectPage() {
 
     // Get the item ID from URL path params if available
 
-    if (acType === 'base' && currentComponent?.params?.ids?.[0]) {
-      // Handle navigation between base, table, and view
-      const handleBaseNavigation = (altanerComponentId, params) => {
-        const { baseId, tableId, viewId, recordId } = params;
-        let path = `/project/${altanerId}/c/${componentId}`;
+    // Handle cloud/base components - ALWAYS render Cloud component
+    // Both "cloud" and "base" types use the new Cloud component
+    if (acType === 'cloud' || acType === 'base') {
+      // Get cloud_id from component (prefer cloud_id, fallback to ids[0] for legacy)
+      const instanceId = currentComponent.cloud_id || currentComponent.params?.ids?.[0];
 
-        if (baseId) {
-          path += `/b/${baseId}`;
-          if (tableId) {
-            path += `/tables/${tableId}`;
-            if (viewId) {
-              path += `/views/${viewId}`;
-              if (recordId) {
-                path += `/records/${recordId}`;
-              }
-            }
-          }
-        }
+      if (!instanceId) {
+        return <div className="flex items-center justify-center h-full">No cloud ID found</div>;
+      }
 
-        history.push(path);
-      };
+      // Navigate to /cloud/{cloudId} path immediately if not already there
+      const currentPath = location.pathname;
+      if (!currentPath.includes(`/cloud/${instanceId}`)) {
+        history.replace(`/project/${altanerId}/c/${componentId}/cloud/${instanceId}`);
+        return <LoadingFallback />;
+      }
 
       return (
         <div
           className="w-full h-full min-w-0 max-w-full overflow-hidden flex flex-col relative"
           style={{
-            width: '100% !important',
-            height: '100% !important',
-            minWidth: '0 !important',
-            maxWidth: '100% !important',
-            overflow: 'hidden !important',
-            display: 'flex !important',
-            flexDirection: 'column !important',
-            position: 'relative !important',
-            contain: 'layout style size',
-            boxSizing: 'border-box',
+            width: '100%',
+            height: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Base
-            ids={currentComponent.params.ids}
-            onNavigate={handleBaseNavigation}
-            altanerComponentId={currentComponent.id}
-            hideChat={displayMode === 'preview'}
-          />
+          <Cloud />
         </div>
       );
     }

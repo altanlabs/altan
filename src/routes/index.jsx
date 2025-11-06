@@ -16,6 +16,7 @@ import {
   AgentSharePage,
   AgentCardPage,
   BasePage,
+  CloudPage,
   ProjectPage,
   ProjectPageMobileTest,
   BasesPage,
@@ -305,6 +306,52 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
+        {/* Cloud routes - section-based structure */}
+        <Route
+          path="/project/:altanerId/c/:componentId/cloud/:cloudId/tables/:tableId/records/:recordId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/c/:componentId/cloud/:cloudId/tables/:tableId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/c/:componentId/cloud/:cloudId/:section"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/project/:altanerId/c/:componentId/cloud/:cloudId"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
+        {/* Legacy base routes - kept for backwards compatibility */}
         <Route
           path="/project/:altanerId/c/:componentId/b/:baseId/tables/:tableId"
           exact
@@ -570,6 +617,47 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
+        {/* Cloud Routes - New routing structure */}
+        <Route
+          path="/cloud/:cloudId"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardDataProvider>
+              <NewLayout>
+                <CloudPage />
+              </NewLayout>
+            </DashboardDataProvider>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/cloud/:cloudId/tables/:tableId"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardDataProvider>
+              <NewLayout>
+                <CloudPage />
+              </NewLayout>
+            </DashboardDataProvider>
+          </AuthGuard>
+        </Route>
+
+        <Route
+          path="/cloud/:cloudId/tables/:tableId/records/:recordId"
+          exact
+        >
+          <AuthGuard requireAuth={false}>
+            <DashboardDataProvider>
+              <NewLayout>
+                <CloudPage />
+              </NewLayout>
+            </DashboardDataProvider>
+          </AuthGuard>
+        </Route>
+
+        {/* Legacy Base Routes - Redirect to Cloud */}
         <Route
           path="/bases/:baseId"
           exact

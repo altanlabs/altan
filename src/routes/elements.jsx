@@ -53,6 +53,7 @@ export const NewAltanerPage = Loadable(
 export const FlowsPage = Loadable(lazy(() => import('../pages/dashboard/flows/FlowsPage.jsx')));
 
 export const BasePage = Loadable(lazy(() => import('../pages/dashboard/databases/BasePage.jsx')));
+export const CloudPage = Loadable(lazy(() => import('../pages/dashboard/CloudPage.jsx')));
 export const BasesPage = Loadable(lazy(() => import('../pages/dashboard/databases/BasesPage.jsx')));
 
 export const InterfacePage = Loadable(

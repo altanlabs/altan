@@ -2,7 +2,6 @@ import React, { memo, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
-import CreditBalanceWarningDialog from '../../../components/CreditBalanceWarningDialog';
 import Logo from '../../../components/logo/Logo';
 import { useSettingsContext } from '../../../components/settings';
 import {
@@ -11,19 +10,12 @@ import {
 } from '../../../components/ui/shadcn-io/theme-toggle-button';
 import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
 import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
-import { useCreditWarnings } from '../../../hooks/useCreditWarnings';
 import AuthDialog from '../../../sections/auth/AuthDialog';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator';
 import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
 import Footer from '../../main/Footer';
 import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
-import {
-  selectAccountCreditBalance,
-  selectIsAccountFree,
-  selectAccountId,
-} from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
 
 const NewLayout = ({ children, onRequestAuth }) => {
   const history = useHistory();
@@ -33,21 +25,8 @@ const NewLayout = ({ children, onRequestAuth }) => {
   const { startTransition } = useThemeTransition();
   const [showAccessDialog, setShowAccessDialog] = useState(false);
 
-  // Credit balance monitoring
-  const accountId = useSelector(selectAccountId);
-  const creditBalance = useSelector(selectAccountCreditBalance);
-  const isAccountFree = useSelector(selectIsAccountFree);
-
   // Poll credit balance every 30 seconds
   useCreditBalancePolling(isAuthenticated);
-
-  // Manage credit warning state
-  const {
-    showZeroBalanceWarning,
-    showLowBalanceWarning,
-    dismissZeroWarning,
-    dismissLowWarning,
-  } = useCreditWarnings(creditBalance, isAccountFree, accountId);
 
   // Expose auth dialog opener through callback
   React.useEffect(() => {
@@ -107,16 +86,6 @@ const NewLayout = ({ children, onRequestAuth }) => {
 
   return (
     <>
-      {/* Credit Balance Warning Dialog */}
-      {isAuthenticated && (
-        <CreditBalanceWarningDialog
-          showZeroBalanceWarning={showZeroBalanceWarning}
-          showLowBalanceWarning={showLowBalanceWarning}
-          onDismissZero={dismissZeroWarning}
-          onDismissLow={dismissLowWarning}
-        />
-      )}
-
       <div className="min-h-screen w-full bg-background dark:bg-[#0D0D0D] overflow-x-hidden">
         {/* Header */}
         <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-2 flex items-center justify-between bg-background/80 dark:bg-[#0D0D0D]/80 backdrop-blur-sm">
