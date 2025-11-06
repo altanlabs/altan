@@ -4,6 +4,19 @@ import { cn } from '@lib/utils';
 
 import QuestionOption from './QuestionOption';
 
+// Helper to create a stable key from children options
+const createOptionsKey = (children) => {
+  const parts = [];
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+    const optionValue = child.props?.value || child.props?.['data-mo-value'];
+    if (optionValue !== undefined) {
+      parts.push(optionValue);
+    }
+  });
+  return parts.join('|');
+};
+
 // Question Group Component - represents a single question with options
 const QuestionGroup = ({
   title,
@@ -14,30 +27,36 @@ const QuestionGroup = ({
   isExpanded,
   onToggle,
 }) => {
-  // Process children to inject props
-  const enhancedChildren = React.Children.map(children, (child) => {
-    if (!React.isValidElement(child)) return null;
+  // Create stable key to prevent unnecessary recalculations during streaming
+  const optionsKey = React.useMemo(() => createOptionsKey(children), [children]);
 
-    // Check for multi-option - look for value prop or data-mo-value attribute
-    const optionValue = child.props?.value || child.props?.['data-mo-value'];
-    const recommendedProp = child.props?.recommended || child.props?.['data-mo-recommended'];
-    const isRecommended = recommendedProp === 'true' || recommendedProp === true;
+  // Process children to inject props - use stable key for memoization
+  const enhancedChildren = React.useMemo(() => {
+    return React.Children.map(children, (child) => {
+      if (!React.isValidElement(child)) return null;
 
-    if (optionValue !== undefined) {
-      return (
-        <QuestionOption
-          value={optionValue}
-          isSelected={selectedValue === optionValue}
-          isRecommended={isRecommended}
-          onSelect={onSelect}
-          groupId={groupId}
-        >
-          {child.props?.children}
-        </QuestionOption>
-      );
-    }
-    return null;
-  });
+      // Check for multi-option - look for value prop or data-mo-value attribute
+      const optionValue = child.props?.value || child.props?.['data-mo-value'];
+      const recommendedProp = child.props?.recommended || child.props?.['data-mo-recommended'];
+      const isRecommended = recommendedProp === 'true' || recommendedProp === true;
+
+      if (optionValue !== undefined) {
+        return (
+          <QuestionOption
+            key={optionValue}
+            value={optionValue}
+            isSelected={selectedValue === optionValue}
+            isRecommended={isRecommended}
+            onSelect={onSelect}
+            groupId={groupId}
+          >
+            {child.props?.children}
+          </QuestionOption>
+        );
+      }
+      return null;
+    });
+  }, [optionsKey, selectedValue, onSelect, groupId]);
 
   const hasSelection = !!selectedValue;
 
@@ -117,4 +136,5 @@ const QuestionGroup = ({
   );
 };
 
-export default QuestionGroup;
+// Memoize to prevent unnecessary re-renders during streaming
+export default React.memo(QuestionGroup);
