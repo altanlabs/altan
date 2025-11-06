@@ -2,6 +2,7 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 import { batch } from 'react-redux';
 
 import { switchAccount } from './general';
+import { analytics } from '../../lib/analytics';
 import { optimai } from '../../utils/axios';
 import { getDisplayModeForProject, setDisplayModeForProject as saveDisplayModeToStorage } from '../../utils/displayModeStorage';
 import { checkObjectsEqual } from '../helpers/memoize';
@@ -294,7 +295,10 @@ export const getAltanerById = (altanerId) => async (dispatch, getState) => {
 export const createAltaner =
   (data = {}, idea) =>
   async (dispatch, getState) => {
-    const accountId = getState().general.account?.id;
+    const state = getState();
+    const accountId = state.general.account?.id;
+    const user = state.general.user;
+
     if (!accountId) throw new Error('undefined account');
 
     dispatch(slice.actions.startLoading());
@@ -308,6 +312,51 @@ export const createAltaner =
 
       if (!altaner || !altaner.id) {
         throw new Error('Invalid altaner response');
+      }
+
+      // Track project creation in analytics
+      // Read idea metadata from localStorage if available
+      let ideaMetadata = null;
+      try {
+        const storedMetadata = localStorage.getItem('altan_idea_metadata');
+        if (storedMetadata) {
+          ideaMetadata = JSON.parse(storedMetadata);
+          // Only use metadata if it's recent (within last 5 minutes) and matches the idea ID
+          const isRecent = Date.now() - (ideaMetadata.timestamp || 0) < 5 * 60 * 1000;
+          const matchesIdea = !idea || ideaMetadata.idea_id === idea;
+          if (!isRecent || !matchesIdea) {
+            ideaMetadata = null;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse idea metadata:', err);
+      }
+
+      // Track analytics with all available details
+      const projectName = ideaMetadata?.project_name || data.name || altaner.name || 'New Project';
+      const projectType = ideaMetadata?.project_type || 'direct';
+
+      await analytics.createProject(projectName, projectType, {
+        user_id: user?.id,
+        user_email: user?.email,
+        account_id: accountId,
+        project_id: altaner.id,
+        ...(ideaMetadata?.idea_id && { idea_id: ideaMetadata.idea_id }),
+        ...(ideaMetadata?.has_attachments !== undefined && {
+          has_attachments: ideaMetadata.has_attachments,
+        }),
+        ...(ideaMetadata?.attachment_count !== undefined && {
+          attachment_count: ideaMetadata.attachment_count,
+        }),
+        ...(ideaMetadata?.template_id && { template_id: ideaMetadata.template_id }),
+        ...(ideaMetadata?.template_name && { template_name: ideaMetadata.template_name }),
+        ...(ideaMetadata?.github_url && { github_url: ideaMetadata.github_url }),
+        ...(ideaMetadata?.github_branch && { github_branch: ideaMetadata.github_branch }),
+      });
+
+      // Clear idea metadata from localStorage after tracking
+      if (ideaMetadata) {
+        localStorage.removeItem('altan_idea_metadata');
       }
 
       return altaner;

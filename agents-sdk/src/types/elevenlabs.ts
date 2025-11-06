@@ -16,6 +16,8 @@ export interface ElevenLabsConversation {
   status?: string;
   isSpeaking?: boolean;
   setVolume?(volume: number): void;
+  setMuted?(isMuted: boolean): void;
+  isMuted?: boolean;
 }
 
 // ============================================================================
