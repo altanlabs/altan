@@ -11,6 +11,7 @@ const initialState = {
   error: null,
   initialized: false,
   altaners: {},
+  altanersList: [], // List of altaners from account
   current: null,
   viewType: 'preview', // 'preview' or 'code'
   displayMode: 'both', // 'chat', 'preview', 'both'
@@ -33,6 +34,10 @@ const slice = createSlice({
     },
     clearState(state) {
       Object.assign(state, initialState);
+    },
+    setAltanersList(state, action) {
+      state.altanersList = action.payload;
+      state.initialized = true;
     },
     addAltaner(state, action) {
       const altaner = action.payload;
@@ -240,6 +245,7 @@ export const {
   patchAltanerComponent,
   clearCurrentAltaner,
   clearState: clearAltanerState,
+  setAltanersList,
   setViewType,
   setDisplayMode,
   setDisplayModeForProject,
@@ -432,11 +438,45 @@ export const duplicateAltaner = (altanerId, duplicateData) => async (dispatch) =
   }
 };
 
+// Custom fetcher for altaners using the new paginated endpoint
+export const fetchAltanersList = async (accountId, limit = 100, offset = 0) => {
+  const response = await optimai.get('/altaner/list', {
+    params: {
+      account_id: accountId,
+      limit,
+      offset,
+    },
+  });
+  return response.data;
+};
+
+// Load altaners list for account
+export const loadAltanersList = (accountId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const data = await fetchAltanersList(accountId, 100, 0);
+    dispatch(setAltanersList(data.altaners || []));
+    return Promise.resolve(data.altaners);
+  } catch (e) {
+    console.error('error: could not load altaners list:', e);
+    dispatch(slice.actions.hasError(e.message));
+    return Promise.reject(e);
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
 const selectAltanerState = (state) => state.altaners;
 
 const selectCurrentAltanerId = (state) => selectAltanerState(state).current;
 
 const selectAltaners = (state) => selectAltanerState(state).altaners;
+
+export const selectAltanersList = (state) => selectAltanerState(state).altanersList;
+
+export const selectAltanersLoading = (state) => selectAltanerState(state).isLoading;
+
+export const selectAltanersInitialized = (state) => selectAltanerState(state).initialized;
 
 export const selectCurrentAltaner = (state) =>
   selectAltaners(state)?.[selectCurrentAltanerId(state)];

@@ -2,7 +2,7 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 // utils
 import { batch } from 'react-redux';
 
-import { clearAltanerState } from './altaners';
+import { clearAltanerState, setAltanersList, fetchAltanersList } from './altaners';
 import { clearConnectionsState } from './connections';
 import { clearFlowState } from './flows';
 import { clearMediaState } from './media';
@@ -766,7 +766,10 @@ const slice = createSlice({
             interface_id,
             ...commitData,
           });
-          console.log('Redux addInterfaceCommit - Total commits now:', interface_.commits.items.length);
+          console.log(
+            'Redux addInterfaceCommit - Total commits now:',
+            interface_.commits.items.length,
+          );
         }
       } else {
         console.error('Redux addInterfaceCommit - Interface not found!');
@@ -1025,12 +1028,7 @@ export const selectAccountConnections = (state) => selectAccount(state).connecti
 export const selectNav = createSelector(
   [selectAccount],
   (account) =>
-    account.meta_data?.nav || [
-      'view_flows',
-      'view_agents',
-      'view_bases',
-      'view_interfaces',
-    ],
+    account.meta_data?.nav || ['view_flows', 'view_agents', 'view_bases', 'view_interfaces'],
   {
     memoizeOptions: {
       resultEqualityCheck: checkArraysEqualsProperties(),
@@ -1098,7 +1096,6 @@ export const selectRooms = createSelector(
   },
 );
 
-
 export const selectApps = createSelector(
   [selectAccount],
   (account) => {
@@ -1128,12 +1125,7 @@ export const selectApps = createSelector(
 );
 
 export const selectExtendedResources = createSelector(
-  [
-    selectRooms,
-    selectTables,
-    selectAccountId,
-    (state, internal = false) => internal,
-  ],
+  [selectRooms, selectTables, selectAccountId, (state, internal = false) => internal],
   (rooms, tables, accountId, internal) =>
     !internal
       ? []
@@ -1320,24 +1312,64 @@ export const getAccountAttribute = (selectedAccountId, keys) => async (dispatch,
   try {
     const accountId = state.general.account?.id;
     const finalAccount = selectedAccountId || accountId;
-    const response = await optimai.post(
-      `/account/${finalAccount}/gq`,
-      FILTER_ACCOUNT_GQ(keys, 'id'),
-    );
-    const accountBody = response.data;
-    if (accountBody?.id !== finalAccount) {
-      throw Error('invalid account!');
-    }
-    batch(() => {
-      for (const key of keys) {
-        dispatch(
-          slice.actions.setAccountAttribute({
-            key,
-            value: accountBody[KEY_MAPPING[key]]?.items ?? [],
-          }),
-        );
+
+    // Use custom altaners endpoint if altaners is in the keys
+    if (filteredKeys.includes('altaners')) {
+      try {
+        // Fetch altaners using the new paginated endpoint
+        const altanersData = await fetchAltanersList(finalAccount, 100, 0);
+        // Dispatch to altaners reducer, not general
+        dispatch(setAltanersList(altanersData.altaners ?? []));
+        // Remove altaners from keys to fetch
+        const remainingKeys = filteredKeys.filter((k) => k !== 'altaners');
+        if (!remainingKeys.length) {
+          return;
+        }
+        // Fetch other attributes if any
+        if (remainingKeys.length > 0) {
+          const response = await optimai.post(
+            `/account/${finalAccount}/gq`,
+            FILTER_ACCOUNT_GQ(remainingKeys, 'id'),
+          );
+          const accountBody = response.data;
+          if (accountBody?.id !== finalAccount) {
+            throw Error('invalid account!');
+          }
+          batch(() => {
+            for (const key of remainingKeys) {
+              dispatch(
+                slice.actions.setAccountAttribute({
+                  key,
+                  value: accountBody[KEY_MAPPING[key]]?.items ?? [],
+                }),
+              );
+            }
+          });
+        }
+      } catch (e) {
+        console.error(`error: could not get altaners: ${e}`);
       }
-    });
+    } else {
+      // Original flow for non-altaners attributes
+      const response = await optimai.post(
+        `/account/${finalAccount}/gq`,
+        FILTER_ACCOUNT_GQ(keys, 'id'),
+      );
+      const accountBody = response.data;
+      if (accountBody?.id !== finalAccount) {
+        throw Error('invalid account!');
+      }
+      batch(() => {
+        for (const key of keys) {
+          dispatch(
+            slice.actions.setAccountAttribute({
+              key,
+              value: accountBody[KEY_MAPPING[key]]?.items ?? [],
+            }),
+          );
+        }
+      });
+    }
   } catch (e) {
     console.error(`error: could not get account: ${e}`);
     for (const key of keys) {

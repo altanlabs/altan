@@ -194,15 +194,7 @@ const AltanersWidget = ({ initialSearchQuery = '' }) => {
                       lg={4}
                       key={altaner.id}
                     >
-                      <AltanerCard
-                        id={altaner.id}
-                        name={altaner.name}
-                        iconUrl={altaner?.icon_url}
-                        description={altaner?.description}
-                        components={altaner.components?.items || []}
-                        last_modified={altaner?.last_modified}
-                        isPinned={altaner?.is_pinned}
-                      />
+                      <AltanerCard altaner={altaner} />
                     </Grid>
                   ))}
                 </Grid>

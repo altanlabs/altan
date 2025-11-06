@@ -1,6 +1,6 @@
 /* eslint-disable react/display-name */
 import { Box, Menu, MenuItem, alpha } from '@mui/material';
-import React, { memo, useCallback, useState, useEffect } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
@@ -10,11 +10,10 @@ import FormDialog from './FormDialog';
 import Iconify from './iconify/Iconify';
 import IconRenderer from './icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../redux/slices/altaners';
-import { optimai_pods } from '../utils/axios';
 import { fToNow } from '../utils/formatTime';
 
 const AltanerCard = memo(
-  ({ id, name, iconUrl, description, components = [], last_modified, isPinned }) => {
+  ({ altaner }) => {
     const history = useHistory();
     const dispatch = useDispatch();
     const [contextMenu, setContextMenu] = useState(null);
@@ -23,27 +22,22 @@ const AltanerCard = memo(
     const [isDeleting, setIsDeleting] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
-    const [coverUrl, setCoverUrl] = useState(null);
 
-    // Find interface component if it exists
-    const interfaceComponent = components.find((comp) => comp.type === 'interface');
+    // Log the altaner object to see all available data
+    console.log('AltanerCard - Full altaner data:', altaner);
 
-    // Fetch cover URL when interface component exists
-    useEffect(() => {
-      const fetchCoverUrl = async () => {
-        if (interfaceComponent?.params?.id) {
-          try {
-            const response = await optimai_pods.get(`/interfaces/${interfaceComponent.params.id}/preview`);
-            setCoverUrl(response.data.url);
-          } catch (error) {
-            console.error('Failed to fetch interface cover URL:', error);
-            setCoverUrl(null);
-          }
-        }
-      };
-
-      fetchCoverUrl();
-    }, [interfaceComponent?.params?.id]);
+    // Destructure properties from altaner
+    const {
+      id,
+      name,
+      icon_url: iconUrl,
+      description,
+      preview_url,
+      interface_id,
+      components = [],
+      last_modified,
+      is_pinned: isPinned,
+    } = altaner;
 
     const handleClick = useCallback(() => {
           history.push(`/project/${id}`);
@@ -154,7 +148,7 @@ const AltanerCard = memo(
         >
           {/* Cover Image */}
           <div className="relative aspect-[16/10] overflow-hidden rounded-xl">
-            {coverUrl ? (
+            {preview_url ? (
               imageError ? (
                 <Box
                   sx={{
@@ -174,7 +168,7 @@ const AltanerCard = memo(
                 </Box>
               ) : (
                 <img
-                  src={coverUrl}
+                  src={preview_url}
                   alt={name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   onError={() => setImageError(true)}
@@ -300,7 +294,7 @@ const AltanerCard = memo(
           altanerToClone={{
             id,
             name,
-            account_id: components[0]?.params?.account_id, // Assuming the first component has the account_id
+            account_id: altaner.account_id,
           }}
         />
 
