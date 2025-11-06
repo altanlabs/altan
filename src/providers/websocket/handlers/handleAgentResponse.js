@@ -14,10 +14,10 @@ import {
 
 /**
  * Handle AGENT_RESPONSE events from WhisperStream WebSocket
- * @param {Object} data - The WebSocket event data
+ * @param {Object} event - The WebSocket event
  */
-export const handleAgentResponseEvent = (data) => {
-  const extracted = extractEventData(data);
+export const handleAgentResponseEvent = (event) => {
+  const extracted = extractEventData(event);
   if (!extracted) return;
 
   const { eventData, eventType, timestamp } = extracted;

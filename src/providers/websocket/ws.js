@@ -77,19 +77,11 @@ import {
 import { addNotification } from '../../redux/slices/notifications';
 import { refreshIframe } from '../../redux/slices/previewControl';
 import {
-  addMessage,
-  removeMessage,
-  addMessageAttachment,
   addMessageReaction,
   addMember,
   roomMemberUpdate,
   roomUpdate,
-  addThread,
-  threadUpdate,
   changeThreadReadState,
-  addMessageExecution,
-  updateMessageExecution,
-  removeThread,
   updateAuthorizationRequest,
   addAuthorizationRequest,
   // Message parts actions
@@ -628,20 +620,6 @@ export const handleWebSocketEvent = async (data, user_id) => {
         });
       }
       break;
-    case 'ThreadNew':
-      dispatch(addThread(data.data.attributes));
-      break;
-    case 'ThreadOpened':
-      const thread = data.data.attributes;
-      dispatch(addThread(thread));
-      break;
-    case 'ThreadUpdate':
-      // Pass data directly - reducer handles both old and new formats
-      dispatch(threadUpdate(data.data));
-      break;
-    case 'ThreadDelete':
-      dispatch(removeThread(data.data));
-      break;
     case 'ThreadRead':
       dispatch(changeThreadReadState(data.data));
       break;
@@ -805,32 +783,11 @@ export const handleWebSocketEvent = async (data, user_id) => {
         // console.log('Unknown TASK_EVENT type:', taskEventType, taskEvent);
       }
       break;
-    case 'MESSAGE':
-      // console.log('MESSAGE', data);
-      dispatch(addMessage(data.data.attributes));
-      break;
-    case 'MessageNew':
-      dispatch(addMessage(data.data.attributes));
-      break;
-    case 'MessageDelete':
-      dispatch(removeMessage(data.data));
-      break;
     case 'MessageReactionNew':
       dispatch(addMessageReaction(data.data.attributes));
       break;
     case 'MessageReactionDelete':
       // dispatch((data.data.attributes));
-      break;
-    case 'MessageMediaAdded':
-      dispatch(addMessageAttachment(data.data.attributes));
-      break;
-    case 'TaskStarted':
-      // console.log('TaskStarted:', data);
-      dispatch(addMessageExecution(data.data.attributes));
-      break;
-    case 'TaskUpdate':
-      // console.log('TaskUpdate:', data);
-      dispatch(updateMessageExecution(data.data));
       break;
     default:
       // console.log('Received unknown event type', data);

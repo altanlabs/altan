@@ -18,7 +18,7 @@ import {
   addResponseLifecycle,
   completeResponseLifecycle,
   markMessagePartDone,
-  deleteMessagePart,
+//   deleteMessagePart,
 } from '../../../redux/slices/room';
 import { dispatch } from '../../../redux/store';
 import { messagePartBatcher } from '../../../utils/eventBatcher';
@@ -26,8 +26,8 @@ import { messagePartBatcher } from '../../../utils/eventBatcher';
 /**
  * Extract and validate event data from WebSocket message
  */
-export const extractEventData = (data) => {
-  const eventData = data.data?.agent_event || data.data;
+export const extractEventData = (event) => {
+  const eventData = event.data;
 
   if (!eventData) {
     // eslint-disable-next-line no-console
@@ -35,15 +35,9 @@ export const extractEventData = (data) => {
     return null;
   }
 
-  const eventType = eventData?.event_name || eventData?.event_type;
+  const eventType = event.type;
 
-  if (!eventType || typeof eventType !== 'string') {
-    // eslint-disable-next-line no-console
-    console.warn('Hermes WS: AGENT_RESPONSE missing or invalid event_type');
-    return null;
-  }
-
-  const timestamp = data.timestamp || new Date().toISOString();
+  const timestamp = event.timestamp || new Date().toISOString();
 
   return { eventData, eventType, timestamp };
 };
@@ -293,10 +287,10 @@ export const handleMessagePartCompleted = (eventData) => {
   dispatch(markMessagePartDone(eventData));
 };
 
-export const handleMessagePartDeleted = (eventData) => {
-  messagePartBatcher.flush();
-  dispatch(deleteMessagePart(eventData));
-};
+// export const handleMessagePartDeleted = (eventData) => {
+//   messagePartBatcher.flush();
+//   dispatch(deleteMessagePart(eventData));
+// };
 
 /**
  * Event handler registry - maps event types to handlers
@@ -312,5 +306,5 @@ export const EVENT_HANDLERS = {
   'message_part.added': handleMessagePartAdded,
   'message_part.updated': handleMessagePartUpdated,
   'message_part.completed': handleMessagePartCompleted,
-  MessagePartDeleted: handleMessagePartDeleted,
+//   MessagePartDeleted: handleMessagePartDeleted,
 };

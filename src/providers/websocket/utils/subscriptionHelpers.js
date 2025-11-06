@@ -64,4 +64,3 @@ export const shouldThrottle = (timestampMap, key, throttleMs = 100) => {
 export const updateTimestamp = (timestampMap, key) => {
   timestampMap.set(key, Date.now());
 };
-

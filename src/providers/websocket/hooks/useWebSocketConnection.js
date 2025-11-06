@@ -7,6 +7,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { authorizeUser } from '../../../utils/axios';
 import { handleAgentResponseEvent } from '../handlers/handleAgentResponse';
+import { handleMessageEvent } from '../handlers/handleMessage';
+import { handleThreadEvent } from '../handlers/handleThread';
 import { handleWebSocketEvent } from '../ws';
 
 /**
@@ -43,32 +45,70 @@ const parseWebSocketData = async (rawData) => {
 };
 
 /**
- * Create WebSocket message handler
+ * Create WebSocket message handler with O(1) lookup performance
  * @param {WebSocket} ws - WebSocket instance
  * @param {string} user_id - User ID
  * @param {Function} onAck - Callback for ACK messages
  * @returns {Function} - Message handler function
  */
 const createMessageHandler = (ws, user_id, onAck) => {
+  // Handler map for exact type matches - O(1) lookup
+  const exactHandlers = {
+    ack: () => {
+      console.log('🔐 WS: Received ACK, connection secured');
+      onAck();
+    },
+  };
+
+  // Handler map for type prefixes - O(1) lookup via prefix extraction
+  const prefixHandlers = {
+    response: handleAgentResponseEvent,
+    activation: handleAgentResponseEvent,
+    message_part: handleAgentResponseEvent,
+    message: handleMessageEvent,
+    thread: handleThreadEvent,
+  };
+
   return async (event) => {
     if (!ws) return;
 
     const data = await parseWebSocketData(event.data);
     if (!data) return;
 
-    // Handle different message types
+    // Fast path: Check special entities first
     if (data.entity === 'ServiceMetrics') {
       console.log('📊 WS ServiceMetrics Event:', data);
-    } else if (data.repo_name) {
-      console.log('🔧 WS Preview Interface Event:', data);
-    } else if (data.type === 'ack') {
-      console.log('🔐 WS: Received ACK, connection secured');
-      onAck();
-    } else if (data.type === 'AGENT_RESPONSE') {
-      handleAgentResponseEvent(data);
-    } else {
-      handleWebSocketEvent(data, user_id);
+      return;
     }
+
+    if (data.repo_name) {
+      console.log('🔧 WS Preview Interface Event:', data);
+      return;
+    }
+
+    // Fast path: O(1) type routing
+    if (data.type) {
+      // Exact match - O(1)
+      const exactHandler = exactHandlers[data.type];
+      if (exactHandler) {
+        exactHandler(data);
+        return;
+      }
+
+      // Prefix match - O(1) via direct lookup
+      const dotIndex = data.type.indexOf('.');
+      if (dotIndex !== -1) {
+        const prefix = data.type.slice(0, dotIndex);
+        const prefixHandler = prefixHandlers[prefix];
+        if (prefixHandler) {
+          prefixHandler(data);
+          return;
+        }
+      }
+    }
+
+    // Default handler
+    handleWebSocketEvent(data, user_id);
   };
 };
 
