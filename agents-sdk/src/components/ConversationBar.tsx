@@ -76,9 +76,13 @@ export const ConversationBar: React.FC<ConversationBarProps> = ({
   const [textInput, setTextInput] = useState<string>('');
 
   const toggleMute = useCallback(() => {
+    console.log('[ConversationBar] Mute button clicked - client:', !!client, 'toggleMute exists:', !!client?.toggleMute);
     if (client?.toggleMute) {
       const newMutedState = client.toggleMute();
+      console.log('[ConversationBar] New muted state:', newMutedState);
       setIsMuted(newMutedState);
+    } else {
+      console.warn('[ConversationBar] toggleMute not available on client');
     }
   }, [client]);
 

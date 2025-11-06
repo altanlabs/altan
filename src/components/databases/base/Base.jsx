@@ -259,13 +259,6 @@ function Base({
 
   const shouldShowPlaceholder = base && base?.tables?.items?.length === 0;
 
-  // Subscribe to base updates
-  useEffect(() => {
-    if (!!baseId && ws?.isOpen) {
-      ws.subscribe(`base:${baseId}`);
-    }
-  }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
-
   // Cleanup subscriptions and state
   useEffect(() => {
     return () => {
@@ -288,7 +281,7 @@ function Base({
   // If loading is done but no tables, render anyway (could be 503/stopped instance or empty base)
   const isLoadingSchema = baseId && (!base || isBaseLoading);
 
-  if (isBaseLoading || isLoadingSchema) {
+  if (isBaseLoading) {
     return <LoadingFallback />;
   }
 

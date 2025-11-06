@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
@@ -322,6 +323,52 @@ const CompactProjectCard = ({ altaner }) => {
         isSubmitting={isDeleting}
         message={`Are you sure you want to delete "${name}"? This action can't be undone.`}
       />
+
+      {/* Context Menu - Rendered via Portal */}
+      {menuOpen && contextMenu && ReactDOM.createPortal(
+        <>
+          {/* Backdrop to close menu when clicking outside */}
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={handleCloseMenu}
+          />
+          {/* Custom Context Menu */}
+          <div
+            className="fixed z-[9999] min-w-[12rem] rounded-lg border bg-white dark:bg-gray-800 p-1 shadow-xl"
+            style={{
+              top: `${contextMenu.mouseY}px`,
+              left: `${contextMenu.mouseX}px`,
+            }}
+          >
+            <button
+              onClick={handleTogglePin}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Iconify
+                icon={is_pinned ? "mdi:pin-off" : "mdi:pin"}
+                width={16}
+                className="mr-2"
+              />
+              {is_pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button
+              onClick={handleEdit}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Iconify icon="mdi:pencil" width={16} className="mr-2" />
+              Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm text-red-600 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <Iconify icon="mdi:delete" width={16} className="mr-2" />
+              Delete
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
     </>
   );
 };

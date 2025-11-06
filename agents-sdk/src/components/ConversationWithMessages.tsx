@@ -20,9 +20,29 @@ export const ConversationWithMessages: React.FC<ConversationWithMessagesProps> =
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleMessage = useCallback((event: OpenAIRealtimeEvent) => {
+  const handleMessage = useCallback((event: OpenAIRealtimeEvent | any) => {
     console.log('[ConversationWithMessages] Event:', event.type, event);
     
+    // ========================================
+    // ELEVENLABS EVENTS (Simple format)
+    // ========================================
+    
+    // ElevenLabs sends events like: { source: 'ai' | 'user', message: '...' }
+    if (event.source && event.message && !event.type) {
+      const role = event.source === 'ai' ? 'assistant' : 'user';
+      console.log(`[ConversationWithMessages] ✅ ElevenLabs ${role} message:`, event.message);
+      
+      setMessages((prev) => {
+        // Avoid duplicates
+        const alreadyExists = prev.some(m => m.role === role && m.content === event.message);
+        if (alreadyExists) return prev;
+        return [...prev, { role, content: event.message }];
+      });
+      return;
+    }
+    
+    // ========================================
+    // OPENAI REALTIME EVENTS (Complex format)
     // ========================================
     // USER MESSAGES
     // ========================================

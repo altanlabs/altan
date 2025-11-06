@@ -35,7 +35,8 @@ const ItemSwitcher = memo(
   ({ activeComponentType, currentI, componentId, activeComponent, onItemSelect }) => {
     const theme = useTheme();
     const dispatch = useDispatch();
-    const flows = useSelector((state) => state.flows.flows || []);
+    // Flows are stored in general.account.workflows, not in flows.flows
+    const flows = useSelector((state) => state.general.account?.workflows || []);
     const agents = useSelector(selectAllAgents);
 
     const [searchQuery, setSearchQuery] = useState('');

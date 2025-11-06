@@ -31,7 +31,8 @@ const COMPONENTS = {
   setup_flow: lazy(() => import('../../../../sections/@dashboard/flows/Workflow.jsx')),
   agents: lazy(() => import('../../../../components/agents/v2/Agent.jsx')),
   agent: lazy(() => import('../../../../components/agents/v2/Agent.jsx')),
-  base: lazy(() => import('../../../../components/databases/base/Base.jsx')),
+  base: lazy(() => import('../../../../components/databases/base/Base.jsx')), // Legacy support
+  cloud: lazy(() => import('../../../../components/cloud/Cloud.jsx')), // New cloud component
   altaner_settings: lazy(() => import('./TemplateSettings.jsx')),
   room: lazy(() => import('../../../../components/Room.jsx')),
   interface: lazy(() => import('../../interfaces/Interface.jsx')),
@@ -80,11 +81,11 @@ const AltanerComponent = ({
   }
 
   // Apply a unique key on the loadable component instance, not inside the componentProps object
-  // Special containment wrapper for base components to prevent width overflow
-  if (altanerComponentType === 'base') {
+  // Special containment wrapper for base/cloud components to prevent width overflow
+  if (altanerComponentType === 'base' || altanerComponentType === 'cloud') {
     return (
       <div
-        data-tour="component-preview-base"
+        data-tour={`component-preview-${altanerComponentType}`}
         style={{
           width: '100%',
           height: '100%',

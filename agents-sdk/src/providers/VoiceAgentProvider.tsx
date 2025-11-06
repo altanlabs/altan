@@ -47,6 +47,7 @@ export const VoiceAgentProvider: React.FC<VoiceAgentProviderProps> = ({
     clientTools: clientTools as ClientTools,
     onConnect: () => {
       console.log('[SDK] ElevenLabs connected');
+      console.log('[SDK] ElevenLabs conversation object:', Object.keys(elevenlabsConversation));
       setConnectionStatus('connected');
       if (onConnect) onConnect();
     },
@@ -60,6 +61,15 @@ export const VoiceAgentProvider: React.FC<VoiceAgentProviderProps> = ({
       setError(err.message || 'Connection error');
       setConnectionStatus('error');
       if (onError) onError(err);
+    },
+    onMessage: (event: any) => {
+      console.log('[SDK] ElevenLabs message event:', {
+        type: event.type,
+        event: event,
+      });
+      if (onMessage) {
+        onMessage(event);
+      }
     },
   });
 

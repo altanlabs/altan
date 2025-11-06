@@ -1,6 +1,8 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
+import { useHistory } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { GitHubDialog } from './github-dialog';
 // @ts-expect-error - analytics is a JS file
@@ -11,6 +13,10 @@ import useLocales from '../../locales/useLocales';
 import { useVoiceConversation } from '../../providers/voice/VoiceConversationProvider';
 // @ts-expect-error - AgentOrbAvatar is a JSX file
 import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
+// @ts-expect-error - redux slices are JS files
+import { selectAccountCreditBalance } from '../../redux/slices/general';
+// @ts-expect-error - auth context is a JSX file
+import { useAuthContext } from '../../auth/useAuthContext';
 
 // --- Utility Function & Radix Primitives ---
 type ClassValue = string | number | boolean | null | undefined;
@@ -114,6 +120,41 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // --- SVG Icon Components ---
+const AlertTriangle = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" x2="12" y1="9" y2="13" />
+    <line x1="12" x2="12.01" y1="17" y2="17" />
+  </svg>
+);
+
+const TrendingUp = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
+  </svg>
+);
+
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="24"
@@ -488,10 +529,11 @@ export const PromptBox = React.forwardRef<
     externalValue?: string;
     isAccountFree?: boolean;
     externalTemplate?: TemplateData | null;
+    disabled?: boolean;
   }
 >(
   (
-    { className, onSend, externalValue, isAccountFree = false, externalTemplate, ...props },
+    { className, onSend, externalValue, isAccountFree = false, externalTemplate, disabled = false, ...props },
     ref,
   ) => {
     const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -519,6 +561,26 @@ export const PromptBox = React.forwardRef<
     // Demo agent ID for onboarding calls
     const DEMO_AGENT_ELEVENLABS_ID = 'agent_01jy1hqg8jehq8v9zd7j9qxa2a';
 
+    // Credit balance state
+    const { isAuthenticated } = useAuthContext();
+    const creditBalance = useSelector(selectAccountCreditBalance) as number | null | undefined;
+    const history = useHistory();
+
+    // Format credits for display
+    const formatCredits = (credits: number) => {
+      if (credits >= 100000) {
+        return `€${(credits / 100000).toFixed(1)}K`;
+      }
+      return `€${(credits / 100).toFixed(2)}`;
+    };
+
+    // Determine if we should show the credit warning
+    const showCreditWarning = isAuthenticated && creditBalance !== null && creditBalance !== undefined && creditBalance <= 500;
+    const isOutOfCredits = creditBalance !== null && creditBalance !== undefined && creditBalance <= 0;
+    
+    // Disable everything when out of credits
+    const isDisabledDueToCredits = isAuthenticated && isOutOfCredits;
+
     // Update internal value when externalValue changes
     React.useEffect(() => {
       if (externalValue !== undefined) {
@@ -544,10 +606,12 @@ export const PromptBox = React.forwardRef<
     }, [value]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (isDisabledDueToCredits) return;
       setValue(e.target.value);
       if (props.onChange) props.onChange(e);
     };
     const handlePlusClick = () => {
+      if (isDisabledDueToCredits) return;
       fileInputRef.current?.click();
     };
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -608,6 +672,11 @@ export const PromptBox = React.forwardRef<
     };
 
     const handleStartCall = React.useCallback(async () => {
+      if (isDisabledDueToCredits) {
+        setVoiceError('Insufficient credits. Please add credits to start a call.');
+        return;
+      }
+      
       try {
         setVoiceError(null);
 
@@ -649,7 +718,7 @@ export const PromptBox = React.forwardRef<
         console.error('Failed to start conversation:', err);
         setVoiceError('Failed to start voice call');
       }
-    }, [startConversation, DEMO_AGENT_ELEVENLABS_ID, currentLang]);
+    }, [startConversation, DEMO_AGENT_ELEVENLABS_ID, currentLang, isDisabledDueToCredits]);
 
     const handleStopCall = React.useCallback(() => {
       // Calculate call duration if we have a start time
@@ -671,7 +740,7 @@ export const PromptBox = React.forwardRef<
 
     const handleSendClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if (!hasValue) return;
+      if (!hasValue || isDisabledDueToCredits) return;
 
       if (onSend) {
         let finalPrompt = value.trim();
@@ -764,6 +833,52 @@ export const PromptBox = React.forwardRef<
           multiple
         />
 
+        {/* Credit Warning Bar - Integrated like CreditWallet */}
+        {showCreditWarning && (
+          <div
+            className={cn(
+              'flex items-center justify-between px-4 py-2 backdrop-blur-sm',
+              isOutOfCredits
+                ? 'border-red-200/40 dark:border-red-900/40'
+                : 'border-yellow-200/40 dark:border-yellow-900/40',
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle
+                className={cn(
+                  'w-4 h-4',
+                  isOutOfCredits
+                    ? 'text-red-600 dark:text-red-500'
+                    : 'text-yellow-600 dark:text-yellow-500',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-sm font-semibold',
+                  isOutOfCredits
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-yellow-600 dark:text-yellow-400',
+                )}
+                >
+                  {isOutOfCredits ? '0 credits left' : creditBalance !== null && creditBalance !== undefined ? `${formatCredits(creditBalance)} left` : ''}
+                </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => history.push('/pricing')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105',
+                isOutOfCredits
+                  ? 'bg-red-600/10 dark:bg-red-600/20 text-red-700 dark:text-red-400 hover:bg-red-600/20 dark:hover:bg-red-600/30'
+                  : 'bg-yellow-600/10 dark:bg-yellow-600/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-600/20 dark:hover:bg-yellow-600/30',
+              )}
+            >
+              <TrendingUp className="w-3 h-3" />
+              Upgrade
+            </button>
+          </div>
+        )}
+
         {/* File Previews */}
         {files.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2 px-2">
@@ -855,8 +970,12 @@ export const PromptBox = React.forwardRef<
           rows={1}
           value={value}
           onChange={handleInputChange}
-          placeholder={getPlaceholder()}
-          className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-300 focus:ring-0 focus-visible:outline-none min-h-12"
+          placeholder={isDisabledDueToCredits ? 'Add credits to continue...' : getPlaceholder()}
+          disabled={isDisabledDueToCredits || disabled}
+          className={cn(
+            'custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-300 focus:ring-0 focus-visible:outline-none min-h-12',
+            isDisabledDueToCredits && 'opacity-50 cursor-not-allowed',
+          )}
           {...props}
         />
 
@@ -869,7 +988,11 @@ export const PromptBox = React.forwardRef<
                   <button
                     type="button"
                     onClick={handlePlusClick}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none"
+                    disabled={isDisabledDueToCredits}
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
+                      isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent',
+                    )}
                   >
                     <PlusIcon className="h-6 w-6" />
                     <span className="sr-only">Attach files</span>
@@ -889,11 +1012,13 @@ export const PromptBox = React.forwardRef<
                   <button
                     type="button"
                     onClick={handleGithubConnect}
+                    disabled={isDisabledDueToCredits}
                     className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
                       githubUrl
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-foreground dark:text-white',
+                      isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent',
                     )}
                   >
                     <GithubIcon className="h-5 w-5" />
@@ -1012,7 +1137,11 @@ export const PromptBox = React.forwardRef<
                       <button
                         type={onSend ? 'button' : 'submit'}
                         onClick={onSend ? handleSendClick : undefined}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
+                        disabled={isDisabledDueToCredits}
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80',
+                          isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-black dark:hover:bg-white',
+                        )}
                       >
                         <SendIcon className="h-6 w-6 text-bold" />
                         <span className="sr-only">Send message</span>
@@ -1031,7 +1160,7 @@ export const PromptBox = React.forwardRef<
                       <button
                         type="button"
                         onClick={isConnected ? handleStopCall : handleStartCall}
-                        disabled={isConnecting}
+                        disabled={isConnecting || isDisabledDueToCredits}
                         className={cn(
                           'flex h-8 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed',
                           isConnected

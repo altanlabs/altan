@@ -9,6 +9,7 @@ import {
   useThemeTransition,
 } from '../../../components/ui/shadcn-io/theme-toggle-button';
 import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
+import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
 import AuthDialog from '../../../sections/auth/AuthDialog';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator';
@@ -23,6 +24,9 @@ const NewLayout = ({ children, onRequestAuth }) => {
   const { isAuthenticated, user, logout } = useAuthContext();
   const { startTransition } = useThemeTransition();
   const [showAccessDialog, setShowAccessDialog] = useState(false);
+
+  // Poll credit balance every 30 seconds
+  useCreditBalancePolling(isAuthenticated);
 
   // Expose auth dialog opener through callback
   React.useEffect(() => {
