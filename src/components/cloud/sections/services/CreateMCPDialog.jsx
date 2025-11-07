@@ -113,14 +113,14 @@ export const CreateMCPDialog = ({ open, onClose, cloudUrl, accountId, baseId, on
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden max-h-[90vh]">
+      <DialogContent className="max-w-3xl p-0 overflow-auto max-h-[90vh]">
         <div className="border-b px-6 py-4">
           <DialogTitle>Create MCP App</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
             Turn your services into an MCP connector for AI agents
           </p>
         </div>
-        <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-6 space-y-4">
           <div>
             <Label className="text-sm">Name *</Label>
             <Input
@@ -210,8 +210,10 @@ export const CreateMCPDialog = ({ open, onClose, cloudUrl, accountId, baseId, on
               </p>
             </div>
           )}
+          {/* Spacer to avoid being hidden behind sticky footer */}
+          <div className="h-4" />
         </div>
-        <div className="border-t px-6 py-4 flex justify-end gap-2">
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t px-6 py-4 flex justify-end gap-2">
           <Button variant="outline" onClick={handleClose} disabled={creating}>
             Cancel
           </Button>
