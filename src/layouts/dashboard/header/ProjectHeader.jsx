@@ -386,18 +386,16 @@ function ProjectHeader() {
                   )}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          data-tour="publish-button"
-                          variant={canPublish ? "default" : "ghost"}
-                          size="icon"
-                          onClick={() => setOpenPublishDialog(true)}
-                          disabled={!canPublish}
-                          className="h-8 w-8"
-                        >
-                          <Rocket className="h-4 w-4" />
-                        </Button>
-                      </span>
+                      <Button
+                        data-tour="publish-button"
+                        variant={canPublish ? "default" : "ghost"}
+                        size="icon"
+                        onClick={() => setOpenPublishDialog(true)}
+                        disabled={!canPublish}
+                        className="h-8 w-8"
+                      >
+                        <Rocket className="h-4 w-4" />
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
@@ -448,19 +446,17 @@ function ProjectHeader() {
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          data-tour="publish-button"
-                          variant={canPublish ? "default" : "secondary"}
-                          size="sm"
-                          onClick={() => setOpenPublishDialog(true)}
-                          disabled={!canPublish}
-                          className="h-8"
-                        >
-                          <Rocket className="h-4 w-4 mr-2" />
-                          Publish
-                        </Button>
-                      </span>
+                      <Button
+                        data-tour="publish-button"
+                        variant={canPublish ? "default" : "secondary"}
+                        size="sm"
+                        onClick={() => setOpenPublishDialog(true)}
+                        disabled={!canPublish}
+                        className="h-8"
+                      >
+                        <Rocket className="h-4 w-4 mr-2" />
+                        Publish
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
