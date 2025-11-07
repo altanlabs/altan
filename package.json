@@ -156,6 +156,7 @@
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^1.54.2",
     "@supabase/supabase-js": "^2.57.4",
+    "@tanstack/react-table": "^8.21.3",
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",

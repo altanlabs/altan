@@ -1,12 +1,10 @@
-import { Plus, Download, MoreVertical, Edit2, Trash2 } from 'lucide-react';
-import React, { useState, memo, useCallback, useMemo } from 'react';
+import { Plus, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, memo, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { cn } from '../../lib/utils';
 import { selectTablesByCloudId } from '../../redux/slices/cloud';
 import { useSelector } from '../../redux/store';
-import { optimai_cloud } from '../../utils/axios.js';
-import CreateRecordDrawer from '../databases/records/CreateRecordDrawer.jsx';
 import CreateTableDialog from '../databases/table/CreateTableDialog.jsx';
 import EditTableDrawer from '../databases/table/EditTableDrawer.jsx';
 import {
@@ -37,7 +35,6 @@ function CloudTableTabs({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createTableDialogOpen, setCreateTableDialogOpen] = useState(false);
-  const [openCreateRecord, setOpenCreateRecord] = useState(false);
 
   const tables = useSelector((state) => selectTablesByCloudId(state, cloudId));
 
@@ -47,35 +44,6 @@ function CloudTableTabs({
   }, [tables]);
 
   const numericActiveId = typeof activeTableId === 'string' ? parseInt(activeTableId, 10) : activeTableId;
-
-  const handleExportCSV = useCallback(async () => {
-    if (!cloudId || !activeTableId) return;
-
-    const currentTable = validTables.find((t) => t.id === Number(activeTableId));
-    if (!currentTable) return;
-
-    try {
-      const tableName = currentTable.db_name || currentTable.name;
-      const response = await optimai_cloud.post(
-        `/v1/instances/${cloudId}/export-csv`,
-        { table_name: tableName },
-        { responseType: 'blob' },
-      );
-
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch {
-      // Error handled silently
-    }
-  }, [cloudId, activeTableId, validTables]);
 
   if (validTables.length === 0) {
     return (
@@ -159,27 +127,6 @@ function CloudTableTabs({
         })}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-1 px-2 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={handleExportCSV}
-          disabled={!activeTableId}
-        >
-          <Download className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setOpenCreateRecord(true)}
-          disabled={!activeTableId}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -224,16 +171,6 @@ function CloudTableTabs({
         open={createTableDialogOpen}
         onClose={() => setCreateTableDialogOpen(false)}
       />
-
-      {/* Create Record Drawer */}
-      {activeTableId && (
-        <CreateRecordDrawer
-          baseId={cloudId}
-          tableId={activeTableId}
-          open={openCreateRecord}
-          onClose={() => setOpenCreateRecord(false)}
-        />
-      )}
     </div>
   );
 }

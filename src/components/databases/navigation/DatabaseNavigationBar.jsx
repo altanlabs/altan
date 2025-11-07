@@ -1,76 +1,73 @@
 import { Box, TextField, IconButton, Tooltip, Chip, useMediaQuery } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
+import { Plus, Download } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { debounce } from 'lodash-es';
 
 import {
-  selectDatabaseQuickFilter,
-  setDatabaseQuickFilter,
-  selectDatabaseRefreshing,
-  selectTableTotalRecords,
+  selectQuickFilter,
+  setQuickFilter,
+  selectSearching,
+  selectSearchResults,
   searchTableRecords,
-  selectDatabaseSearching,
-  selectDatabaseSearchResults,
-  selectBaseById,
-  setDatabaseRefreshing,
-  loadTableRecords,
-} from '../../../redux/slices/bases';
+  selectTableState,
+  fetchRecords,
+  selectTablesByCloudId,
+} from '../../../redux/slices/cloud';
 import { dispatch } from '../../../redux/store';
+import { optimai_cloud } from '../../../utils/axios.js';
+import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
 import Iconify from '../../iconify';
-import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
 
 function DatabaseNavigationBar({ disabled = false }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const inputRef = useRef(null);
-  const { baseId: routeBaseId, tableId, componentId } = useParams();
+  const { cloudId, tableId } = useParams();
+  const [openCreateRecord, setOpenCreateRecord] = useState(false);
 
-  // Dialog states
-  const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
-
-  // Get baseId from route params
-  const baseId = routeBaseId;
-
-  // Get database from Redux using the baseId
-  const database = useSelector((state) => (baseId ? selectBaseById(state, baseId) : null));
-
-  // Get values from Redux - only when this component is actually rendered for database
-  const quickFilter = useSelector(selectDatabaseQuickFilter);
-  const databaseRefreshing = useSelector(selectDatabaseRefreshing);
-  const databaseSearching = useSelector(selectDatabaseSearching);
+  // Get values from Redux - using cloud.js selectors
+  const quickFilter = useSelector(selectQuickFilter);
+  const isSearching = useSelector(selectSearching);
   const searchResults = useSelector((state) =>
-    tableId ? selectDatabaseSearchResults(state, tableId) : null,
+    tableId ? selectSearchResults(state, tableId) : null,
   );
-  const currentTableRecordCount = useSelector((state) =>
-    tableId ? selectTableTotalRecords(state, tableId) : 0,
+  const tableState = useSelector((state) =>
+    tableId ? selectTableState(state, tableId) : null,
   );
+  const tables = useSelector((state) => selectTablesByCloudId(state, cloudId));
+
+  const validTables = useMemo(() => {
+    if (!Array.isArray(tables)) return [];
+    return tables.filter((table) => table && table.id);
+  }, [tables]);
 
   // Use internal state for better performance
-  const actualRecordCount = currentTableRecordCount;
-  const actualIsLoading = databaseRefreshing || databaseSearching;
+  const actualRecordCount = tableState?.total || 0;
+  const actualIsLoading = tableState?.loading || isSearching;
 
   // Create debounced search function to avoid excessive API calls
   const debouncedSearch = useCallback(
     debounce((searchQuery) => {
       // eslint-disable-next-line no-console
-      console.log('🎯 DatabaseNavigationBar debouncedSearch triggered:', { tableId, searchQuery });
+      console.log('🎯 DatabaseNavigationBar debouncedSearch triggered:', { cloudId, tableId, searchQuery });
 
-      if (tableId && searchQuery.trim()) {
+      if (cloudId && tableId && searchQuery.trim()) {
         // eslint-disable-next-line no-console
         console.log('🔍 Dispatching searchTableRecords...');
         // Trigger database search across all records
-        dispatch(searchTableRecords(tableId, searchQuery.trim()));
-      } else if (tableId && !searchQuery.trim()) {
+        dispatch(searchTableRecords(cloudId, tableId, searchQuery.trim()));
+      } else if (cloudId && tableId && !searchQuery.trim()) {
         // eslint-disable-next-line no-console
         console.log('🧹 Clearing search...');
         // Clear search when query is empty
-        dispatch(searchTableRecords(tableId, ''));
+        dispatch(searchTableRecords(cloudId, tableId, ''));
       }
     }, 300), // 300ms delay for better UX
-    [tableId],
+    [cloudId, tableId],
   );
 
   const handleFilterChange = (e) => {
@@ -79,7 +76,7 @@ function DatabaseNavigationBar({ disabled = false }) {
     console.log('📝 DatabaseNavigationBar handleFilterChange:', { value, tableId });
 
     // Update Redux state directly for immediate UI feedback
-    dispatch(setDatabaseQuickFilter(value));
+    dispatch(setQuickFilter(value));
 
     // Trigger debounced database search
     // eslint-disable-next-line no-console
@@ -87,30 +84,34 @@ function DatabaseNavigationBar({ disabled = false }) {
     debouncedSearch(value);
   };
 
-  // Database operation handlers
-  const handleDatabaseRefresh = useCallback(() => {
-    const currentTableId = tableId;
-    if (baseId && currentTableId) {
-      dispatch(setDatabaseRefreshing(true));
-      // Refresh the current table
-      dispatch(loadTableRecords(currentTableId, { forceReload: true })).finally(() =>
-        dispatch(setDatabaseRefreshing(false)),
-      );
-    } else if (baseId && database?.tables?.items?.length > 0) {
-      dispatch(setDatabaseRefreshing(true));
-      // Fallback: refresh the first table
-      const fallbackTableId = database.tables.items[0]?.id;
-      if (fallbackTableId) {
-        dispatch(loadTableRecords(fallbackTableId, { forceReload: true })).finally(() =>
-          dispatch(setDatabaseRefreshing(false)),
-        );
-      }
-    }
-  }, [baseId, tableId, database]);
+  const handleExportCSV = useCallback(async () => {
+    if (!cloudId || !tableId) return;
 
-  const handleDatabaseInfo = useCallback(() => {
-    setOpenDatabaseInfo(true);
-  }, []);
+    const currentTable = validTables.find((t) => t.id === Number(tableId));
+    if (!currentTable) return;
+
+    try {
+      const tableName = currentTable.db_name || currentTable.name;
+      const response = await optimai_cloud.post(
+        `/v1/instances/${cloudId}/export-csv`,
+        { table_name: tableName },
+        { responseType: 'blob' },
+      );
+
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Error handled silently
+    }
+  }, [cloudId, tableId, validTables]);
 
   useEffect(() => {
     return () => {
@@ -128,37 +129,6 @@ function DatabaseNavigationBar({ disabled = false }) {
         gap: 1.5,
       }}
     >
-      {/* Settings Button */}
-      <Tooltip title="Database settings">
-        <IconButton
-          size="small"
-          onClick={handleDatabaseInfo}
-          disabled={disabled || !database}
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            color: theme.palette.text.secondary,
-            backgroundColor: alpha(theme.palette.background.paper, 0.6),
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            transition: theme.transitions.create(['all'], {
-              duration: theme.transitions.duration.shorter,
-            }),
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.info.main, 0.12),
-              color: theme.palette.info.main,
-              border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          <Iconify
-            icon="mdi:cog-outline"
-            sx={{ width: 18, height: 18 }}
-          />
-        </IconButton>
-      </Tooltip>
       
       {/* Search Bar - Glassmorphic Container */}
       <Box
@@ -273,16 +243,54 @@ function DatabaseNavigationBar({ disabled = false }) {
         )}
       </Box>
 
-      {/* Database Dialogs */}
-      {baseId && (
-        <>
-          <DatabaseInfoDialog
-            open={openDatabaseInfo}
-            onClose={() => setOpenDatabaseInfo(false)}
-            database={database}
-            baseId={baseId}
-          />
-        </>
+      {/* Action Buttons */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Tooltip title="Export CSV">
+          <IconButton
+            size="small"
+            onClick={handleExportCSV}
+            disabled={disabled || !tableId}
+            sx={{
+              width: 32,
+              height: 32,
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.primary.main,
+              },
+            }}
+          >
+            <Download size={16} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Add Record">
+          <IconButton
+            size="small"
+            onClick={() => setOpenCreateRecord(true)}
+            disabled={disabled || !tableId}
+            sx={{
+              width: 32,
+              height: 32,
+              color: theme.palette.primary.main,
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.16),
+              },
+            }}
+          >
+            <Plus size={16} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Create Record Drawer */}
+      {tableId && (
+        <CreateRecordDrawer
+          baseId={cloudId}
+          tableId={tableId}
+          open={openCreateRecord}
+          onClose={() => setOpenCreateRecord(false)}
+        />
       )}
     </Box>
   );

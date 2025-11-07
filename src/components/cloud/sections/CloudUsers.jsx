@@ -1,4 +1,4 @@
-import { MoreVertical, Trash2, RefreshCw, Copy, Mail, Chrome, Settings } from 'lucide-react';
+import { MoreVertical, Trash2, RefreshCw, Copy, Mail, Chrome, Settings, CheckCircle2, XCircle } from 'lucide-react';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../ui/table';
+import UserDetailsDrawer from './overview/components/UserDetailsDrawer';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -58,9 +59,11 @@ function formatDate(value) {
 const CloudUsers = () => {
   const { cloudId } = useParams();
   const users = useSelector((state) => selectUsersForCloud(state, cloudId));
+  console.log(users);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [range, setRange] = useState('7d'); // '7d' | '30d' | '90d'
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState('main'); // main | email | google
@@ -212,6 +215,15 @@ const CloudUsers = () => {
     }
   }, []);
 
+  const handleSaveUser = useCallback(async (userId, formData) => {
+    // TODO: Implement user update API call
+    console.log('Saving user:', userId, formData);
+    // Example:
+    // ensureAxiosAuth();
+    // await optimai_cloud.put(`/v1/instances/${cloudId}/users/${userId}`, formData);
+    // await dispatch(fetchUsers(cloudId));
+  }, [cloudId]);
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
@@ -316,6 +328,7 @@ const CloudUsers = () => {
                 <TableRow>
                   <TableHead className="w-[36px]">#</TableHead>
                   <TableHead>User</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Last sign-in</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -324,8 +337,14 @@ const CloudUsers = () => {
               <TableBody>
                 {filtered.map((u, idx) => {
                   const email = u.email || u.raw_user_meta_data?.email || '-';
+                  const isEmailVerified = !!u.email_confirmed_at;
+                  const isPhoneVerified = !!u.phone_confirmed_at;
                   return (
-                    <TableRow key={u.id || idx}>
+                    <TableRow 
+                      key={u.id || idx}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedUser(u)}
+                    >
                       <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -340,7 +359,10 @@ const CloudUsers = () => {
                               </Badge>
                               <button
                                 className="hover:underline"
-                                onClick={() => copyToClipboard(u.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyToClipboard(u.id);
+                                }}
                                 title="Copy user ID"
                               >
                                 <span className="truncate max-w-[280px] align-middle">{u.id}</span>
@@ -348,6 +370,21 @@ const CloudUsers = () => {
                               <Copy className="h-3 w-3 opacity-60" />
                             </div>
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {isEmailVerified ? (
+                            <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 text-xs">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 text-xs">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Unverified
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
@@ -363,6 +400,7 @@ const CloudUsers = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -370,7 +408,10 @@ const CloudUsers = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => setUserToDelete(u)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserToDelete(u);
+                              }}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -410,6 +451,14 @@ const CloudUsers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* User Details Drawer */}
+      <UserDetailsDrawer
+        user={selectedUser}
+        open={!!selectedUser}
+        onOpenChange={(open) => !open && setSelectedUser(null)}
+        onSave={handleSaveUser}
+      />
 
       {/* Auth configuration dialog */}
       <Dialog

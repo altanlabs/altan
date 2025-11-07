@@ -60,6 +60,11 @@ const initialState = {
   clouds: {}, // { [cloudId]: { id, name, tables, ... } }
   tables: {}, // { [tableId]: { records, loading, pagination, ... } }
   userCache: {}, // { [cloudId]: { [userId]: user } }
+  databaseNavigation: {
+    quickFilter: '',
+    isSearching: false,
+    searchResults: {}, // { [tableId]: { results, query, totalSearchResults, newRecordsFound } }
+  },
 };
 
 // ============================================================================
@@ -195,6 +200,32 @@ const slice = createSlice({
         }
       });
     },
+
+    // Database navigation
+    setQuickFilter(state, action) {
+      state.databaseNavigation.quickFilter = action.payload;
+    },
+    setSearching(state, action) {
+      state.databaseNavigation.isSearching = action.payload;
+    },
+    setSearchResults(state, action) {
+      const { tableId, results, query, totalSearchResults, newRecordsFound } = action.payload;
+      state.databaseNavigation.searchResults[tableId] = {
+        results,
+        query,
+        totalSearchResults,
+        newRecordsFound,
+        timestamp: Date.now(),
+      };
+    },
+    clearSearchResults(state, action) {
+      const { tableId } = action.payload || {};
+      if (tableId) {
+        delete state.databaseNavigation.searchResults[tableId];
+      } else {
+        state.databaseNavigation.searchResults = {};
+      }
+    },
   },
 });
 
@@ -213,6 +244,10 @@ export const {
   updateRecord,
   removeRecord,
   setUsers,
+  setQuickFilter,
+  setSearching,
+  setSearchResults,
+  clearSearchResults,
 } = slice.actions;
 
 // ============================================================================
@@ -305,6 +340,12 @@ export const fetchRecords =
       const whereClause = buildWhereClause(filters);
       const orderClause = buildOrderClause(order || 'created_at.desc');
 
+      // Get total count
+      const countQuery = `SELECT COUNT(*) as count FROM ${table.name} ${whereClause}`;
+      const countResult = await executeSQL(cloudId, countQuery);
+      const totalCount = parseInt(countResult[0]?.count || 0, 10);
+
+      // Get records
       const query = `
       SELECT * FROM ${table.name}
       ${whereClause}
@@ -321,7 +362,7 @@ export const fetchRecords =
         setTableRecords({
           tableId,
           records,
-          total: records.length,
+          total: totalCount,
           isPagination: offset > 0,
         }),
       );
@@ -332,7 +373,7 @@ export const fetchRecords =
         payload: {
           tableId,
           records,
-          total: records.length,
+          total: totalCount,
           isPagination: offset > 0,
         },
       });
@@ -477,6 +518,112 @@ export const deleteUser = (cloudId, userId) => async (dispatch) => {
 };
 
 // ============================================================================
+// THUNKS - Search Operations
+// ============================================================================
+
+export const searchTableRecords = (cloudId, tableId, query) => async (dispatch, getState) => {
+  if (!query || !query.trim()) {
+    // Clear search results
+    dispatch(clearSearchResults({ tableId }));
+    dispatch(setSearching(false));
+
+    // Reload current page
+    const state = getState();
+    const tableState = state.cloud.tables[tableId];
+    if (tableState) {
+      await dispatch(fetchRecords(cloudId, tableId, { limit: 50 }));
+    }
+
+    return;
+  }
+
+  dispatch(setSearching(true));
+
+  try {
+    const state = getState();
+    const cloud = state.cloud.clouds[cloudId];
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const table = cloud?.tables?.items?.find((t) => t.id === numericTableId);
+
+    if (!table) {
+      throw new Error(`Table ${tableId} not found in cloud ${cloudId}`);
+    }
+
+    const searchQuery = query.trim();
+
+    // Filter text-based PostgreSQL types for search
+    const textFields =
+      table.fields?.items?.filter((field) => {
+        const dataType = field.data_type?.toLowerCase() || '';
+        return (
+          dataType === 'text' ||
+          dataType === 'character varying' ||
+          dataType === 'varchar' ||
+          dataType === 'char' ||
+          dataType === 'character'
+        );
+      }) || [];
+
+    if (textFields.length === 0) {
+      dispatch(setSearching(false));
+      return;
+    }
+
+    // Build SQL WHERE clause with ILIKE for search
+    const searchConditions = textFields
+      .map((field) => `${field.name} ILIKE '%${escapeSql(searchQuery)}%'`)
+      .join(' OR ');
+
+    // Get total count of search results
+    const countQuery = `SELECT COUNT(*) as count FROM ${table.name} WHERE ${searchConditions};`;
+    const countResult = await executeSQL(cloudId, countQuery);
+    const searchTotalCount = parseInt(countResult[0]?.count || 0, 10);
+
+    // Build SQL query
+    const sqlQuery = `SELECT * FROM ${table.name} WHERE ${searchConditions} ORDER BY created_at DESC LIMIT 500;`;
+
+    const searchRecords = await executeSQL(cloudId, sqlQuery);
+
+    // Get current records
+    const currentRecords = state.cloud.tables[tableId]?.records || [];
+    const existingIds = new Set(currentRecords.map((record) => record.id));
+    const newSearchRecords = searchRecords.filter((record) => !existingIds.has(record.id));
+
+    // Merge results
+    const mergedRecords = [...currentRecords, ...newSearchRecords];
+
+    // Update table records (keep original total, not search total)
+    const originalTotal = state.cloud.tables[tableId]?.total || 0;
+    dispatch(
+      setTableRecords({
+        tableId,
+        records: mergedRecords,
+        total: originalTotal, // Keep the original total count
+        isPagination: false,
+      }),
+    );
+
+    // Update search results
+    dispatch(
+      setSearchResults({
+        tableId,
+        results: newSearchRecords,
+        query: searchQuery,
+        totalSearchResults: searchTotalCount,
+        newRecordsFound: newSearchRecords.length,
+      }),
+    );
+
+    return { items: searchRecords, isSearch: true };
+  } catch (error) {
+    dispatch(setError(error.message));
+    throw error;
+  } finally {
+    dispatch(setSearching(false));
+  }
+};
+
+// ============================================================================
 // SELECTORS
 // ============================================================================
 
@@ -524,4 +671,19 @@ export const selectUsersForCloud = createSelector(
 export const selectUserById = createSelector(
   [(state) => state.cloud.userCache, (_, cloudId, userId) => ({ cloudId, userId })],
   (userCache, { cloudId, userId }) => userCache[cloudId]?.[userId],
+);
+
+export const selectQuickFilter = createSelector(
+  [selectCloudState],
+  (state) => state.databaseNavigation.quickFilter,
+);
+
+export const selectSearching = createSelector(
+  [selectCloudState],
+  (state) => state.databaseNavigation.isSearching,
+);
+
+export const selectSearchResults = createSelector(
+  [selectCloudState, (_, tableId) => tableId],
+  (state, tableId) => state.databaseNavigation.searchResults[tableId] || null,
 );

@@ -336,7 +336,7 @@ function ProjectHeader() {
             />
           )}
 
-          {altaner?.id && isDatabaseComponent && !isMobile && <DatabaseNavigationBar />}
+          {altaner?.id && isDatabaseComponent && tableId && !isMobile && <DatabaseNavigationBar />}
 
           {/* Right section - Action buttons */}
           <div className="flex items-center h-full">

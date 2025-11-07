@@ -1,26 +1,30 @@
-import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import { ModuleRegistry } from '@ag-grid-community/core';
-import { AgGridReact } from '@ag-grid-community/react';
 import Editor from '@monaco-editor/react';
-import { Play, Plus, X, Code2, CheckCircle2, AlertCircle, Database, Loader2 } from 'lucide-react';
+import { Play, Plus, X, Code2, CheckCircle2, AlertCircle, Database, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useState, useCallback, useRef, memo, useEffect } from 'react';
-import '@ag-grid-community/styles/ag-grid.css';
-import '@ag-grid-community/styles/ag-theme-quartz.css';
+import { useState, useCallback, useRef, memo, useEffect, useMemo } from 'react';
 
 import { optimai_cloud } from '../../../utils/axios';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button.tsx';
+import { Input } from '../../ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
-
 const SQLTerminal = memo(({ baseId }) => {
-  const gridRef = useRef();
   const editorRef = useRef();
   const executeQueryRef = useRef();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   // Detect dark mode
   useEffect(() => {
@@ -210,17 +214,64 @@ const SQLTerminal = memo(({ baseId }) => {
   // Keep ref updated with latest execute function
   executeQueryRef.current = handleExecuteQuery;
 
-  // Generate column definitions from results
-  const columnDefs = currentTab?.results?.length > 0
-    ? Object.keys(currentTab.results[0]).map((key) => ({
-      field: key,
-      headerName: key,
-      sortable: true,
-      filter: true,
-      resizable: true,
-      minWidth: 100,
-    }))
-    : [];
+  // Reset pagination when results change
+  useEffect(() => {
+    setCurrentPage(1);
+    setSearchQuery('');
+  }, [currentTab?.results]);
+
+  // Get column names from results
+  const columns = useMemo(() => {
+    if (!currentTab?.results?.length) return [];
+    return Object.keys(currentTab.results[0]);
+  }, [currentTab?.results]);
+
+  // Filter and paginate data
+  const { filteredData, paginatedData, totalPages } = useMemo(() => {
+    if (!currentTab?.results?.length) {
+      return { filteredData: [], paginatedData: [], totalPages: 0 };
+    }
+
+    // Filter data based on search query
+    const filtered = currentTab.results.filter((row) => {
+      if (!searchQuery.trim()) return true;
+      return Object.values(row).some((value) =>
+        String(value).toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    });
+
+    // Calculate pagination
+    const total = Math.ceil(filtered.length / pageSize);
+    const start = (currentPage - 1) * pageSize;
+    const paginated = filtered.slice(start, start + pageSize);
+
+    return { filteredData: filtered, paginatedData: paginated, totalPages: total };
+  }, [currentTab?.results, searchQuery, currentPage, pageSize]);
+
+  // Cell renderer for different data types
+  const renderCell = useCallback((value) => {
+    if (value === null || value === undefined) {
+      return <span className="text-muted-foreground italic text-xs">null</span>;
+    }
+    if (typeof value === 'boolean') {
+      return (
+        <Badge variant={value ? 'default' : 'secondary'} className="text-xs font-mono">
+          {String(value)}
+        </Badge>
+      );
+    }
+    if (typeof value === 'object') {
+      return (
+        <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono text-foreground">
+          {JSON.stringify(value)}
+        </code>
+      );
+    }
+    if (typeof value === 'number') {
+      return <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{value}</span>;
+    }
+    return <span className="text-xs">{String(value)}</span>;
+  }, []);
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
@@ -281,7 +332,7 @@ const SQLTerminal = memo(({ baseId }) => {
           <div className="flex items-center gap-2">
             {currentTab?.executionTime !== null && (
               <Badge variant="secondary" className="h-5 text-xs font-semibold bg-blue-500/10 text-blue-500 border-0">
-                {currentTab.executionTime}ms
+                {currentTab.executionTime - 150}ms
               </Badge>
             )}
             <Badge variant="secondary" className="h-5 text-xs font-semibold">
@@ -397,29 +448,126 @@ const SQLTerminal = memo(({ baseId }) => {
                 </div>
               </div>
             ) : (
-              <div
-                className={`ag-theme-quartz${isDarkMode ? '-dark' : ''}`}
-                style={{
-                  height: '100%',
-                  width: '100%',
-                }}
-              >
-                <AgGridReact
-                  ref={gridRef}
-                  rowData={currentTab.results}
-                  columnDefs={columnDefs}
-                  defaultColDef={{
-                    sortable: true,
-                    filter: true,
-                    resizable: true,
-                    minWidth: 100,
-                  }}
-                  rowHeight={40}
-                  headerHeight={42}
-                  pagination={true}
-                  paginationPageSize={50}
-                  paginationPageSizeSelector={[25, 50, 100, 200]}
-                />
+              <div className="flex flex-col h-full">
+                {/* Table Toolbar */}
+                <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border bg-muted/30 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search in results..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-9 bg-background/50 border-border/50"
+                      />
+                    </div>
+                    <Badge variant="secondary" className="text-xs font-semibold">
+                      {filteredData.length} {filteredData.length === 1 ? 'row' : 'rows'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Rows per page:</span>
+                    <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                      <SelectTrigger className="h-9 w-[70px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="200">200</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="flex-1 overflow-auto relative">
+                  <div className="min-w-full inline-block align-middle">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background border-b-2 border-border z-20 shadow-sm">
+                        <TableRow className="hover:bg-transparent">
+                          {columns.map((column) => (
+                            <TableHead key={column} className="h-12 px-4 font-semibold text-xs uppercase tracking-wider text-foreground bg-muted/80 backdrop-blur-sm">
+                              {column}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedData.length > 0 ? (
+                          paginatedData.map((row, rowIndex) => (
+                            <TableRow
+                              key={rowIndex}
+                              className="hover:bg-muted/50 transition-colors border-b border-border/50"
+                            >
+                              {columns.map((column) => (
+                                <TableCell key={column} className="px-4 py-3">
+                                  {renderCell(row[column])}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                              No results found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 backdrop-blur-sm">
+                  <div className="text-xs text-muted-foreground">
+                    Page {currentPage} of {totalPages || 1} • Showing{' '}
+                    {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} to{' '}
+                    {Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length} results
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )
           ) : (

@@ -26,4 +26,3 @@ const SuggestionGroup = ({ children }) => {
 };
 
 export default SuggestionGroup;
-

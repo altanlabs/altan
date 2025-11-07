@@ -45,9 +45,10 @@ export const ComputeConfiguration = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className={`rounded-2xl border border-border/60 bg-gradient-to-br from-muted/40 to-background/20 backdrop-blur-sm p-4 sm:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 ${
+      onClick={() => base && !upgrading && handleToggleExpanded()}
+      className={`rounded-2xl border border-border/60 bg-gradient-to-br from-muted/40 to-background/20 backdrop-blur-sm p-4 sm:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 transition-colors ${
         !base && 'opacity-60'
-      }`}
+      } ${base && !upgrading ? 'cursor-pointer hover:bg-gradient-to-br hover:from-muted/50 hover:to-background/30' : ''}`}
     >
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -87,10 +88,13 @@ export const ComputeConfiguration = ({
           </div>
           <Button
             disabled={!base || upgrading}
-            onClick={handleToggleExpanded}
-            variant="secondary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleExpanded();
+            }}
+            variant="outline"
             size="sm"
-            className="flex-shrink-0 rounded-md border border-border/60 bg-background/50 hover:bg-accent/40 shadow-sm"
+            className="flex-shrink-0 rounded-md shadow-sm"
           >
             <Crown className="h-4 w-4 mr-2" />
             {expanded ? 'Hide' : 'View'} Plans
