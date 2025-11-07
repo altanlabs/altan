@@ -52,6 +52,24 @@ The workflow is:
 * Validate with Pydantic models.
 * Initialize shared resources once at module level; use async I/O for network/DB/files.
 * Raise `HTTPException` with precise messages; add `print` logs.
+* **ALWAYS wrap endpoint logic in try/except blocks** to return errors immediately instead of forcing users to wait for logs:
+
+```python
+@router.post("/endpoint")
+async def endpoint(body: RequestModel):
+    try:
+        # Your logic here
+        result = do_something()
+        return {"success": True, "data": result}
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        # Return 500 with error details for immediate debugging
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in endpoint: {str(e)}"
+        )
+```
 
 **Clean env access (secrets guaranteed to exist)**
 
@@ -381,27 +399,25 @@ async def create_checkout_session(body: CheckoutSessionRequest):
             _upsert_subscription(sub, user_id=body.user_id)
 
         return {"id": session.id, "url": session.url}
+    except HTTPException:
+        raise
     except stripe.error.StripeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error creating checkout session: {str(e)}")
 
 @router.post("/stripe/webhook")
 async def stripe_webhook(request: Request, stripe_signature: str = Header(None, alias="Stripe-Signature")):
     if not stripe_signature:
         raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+    
     try:
         payload = await request.body()
         event = stripe.Webhook.construct_event(payload=payload, sig_header=stripe_signature, secret=STRIPE_WEBHOOK_SECRET)
-    except stripe.error.SignatureVerificationError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid signature: {e}")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid payload")
+        
+        et = event["type"]
+        obj = event["data"]["object"]
 
-    et = event["type"]
-    obj = event["data"]["object"]
-
-    try:
         if et == "checkout.session.completed":
             subscription_id = obj.get("subscription")
             md = obj.get("metadata") or {}
@@ -421,6 +437,12 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None, 
             ).execute()
 
         return {"received": True}
+    except HTTPException:
+        raise
+    except stripe.error.SignatureVerificationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid signature: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error processing webhook: {str(e)}")
 ```
