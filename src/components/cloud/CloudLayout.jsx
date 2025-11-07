@@ -1,16 +1,18 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 
 import CloudSidebar from './CloudSidebar.jsx';
 import CloudTable from './CloudTable.jsx';
-import CloudAuth from './sections/CloudAuth.jsx';
-import CloudFunctions from './sections/CloudFunctions.jsx';
+import CloudServices from './sections/CloudServices.jsx';
 import CloudLogs from './sections/CloudLogs.jsx';
 import CloudOverview from './sections/CloudOverview.jsx';
 import CloudPlaceholder from './sections/CloudPlaceholder.jsx';
 import CloudStorage from './sections/CloudStorage.jsx';
 import CloudUsers from './sections/CloudUsers.jsx';
+import CloudTableTabs from './CloudTableTabs.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
+import { selectCloudById, deleteTable } from '../../redux/slices/cloud';
+import { useSelector, dispatch } from '../../redux/store';
 import SQLTerminal from '../databases/sql/SQLTerminal.jsx';
 
 function CloudLayout({
@@ -20,13 +22,32 @@ function CloudLayout({
   const { cloudId, altanerId, componentId } = useParams();
   const history = useHistory();
   const isMobile = useResponsive('down', 'md');
+  const cloud = useSelector((state) => selectCloudById(state, cloudId));
+
+  // Auto-navigate to first table if on tables section without tableId
+  useEffect(() => {
+    if (activeSection === 'tables' && !tableId && cloud?.tables?.items) {
+      const publicTables = cloud.tables.items.filter(t => t.schema === 'public');
+      if (publicTables.length > 0) {
+        history.replace(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}/tables/${publicTables[0].id}`);
+      }
+    }
+  }, [activeSection, tableId, cloud?.tables?.items, history, altanerId, componentId, cloudId]);
 
   // Handle section navigation
   const handleSectionChange = (section) => {
     if (section === 'overview') {
       history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}`);
     } else if (section === 'tables') {
-      // Keep current tableId if navigating to tables section
+      // Auto-navigate to first public table if no tableId
+      if (!tableId && cloud?.tables?.items) {
+        const publicTables = cloud.tables.items.filter(t => t.schema === 'public');
+        if (publicTables.length > 0) {
+          history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}/tables/${publicTables[0].id}`);
+          return;
+        }
+      }
+      // Keep current tableId if we have one
       if (tableId) {
         history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}/tables/${tableId}`);
       } else {
@@ -37,30 +58,63 @@ function CloudLayout({
     }
   };
 
+  // Handle table navigation
+  const handleTableChange = (newTableId) => {
+    history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}/tables/${newTableId}`);
+  };
+
+  const handleDeleteTable = async (tableIdToDelete) => {
+    await dispatch(deleteTable(cloudId, tableIdToDelete));
+    // If deleting current table, navigate to first remaining table
+    if (tableIdToDelete === tableId && cloud?.tables?.items) {
+      const remainingTables = cloud.tables.items.filter(t => t.id !== tableIdToDelete && t.schema === 'public');
+      if (remainingTables.length > 0) {
+        history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}/tables/${remainingTables[0].id}`);
+      } else {
+        history.push(`/project/${altanerId}/c/${componentId}/cloud/${cloudId}`);
+      }
+    }
+  };
+
   // Render content based on active section
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <CloudOverview onNavigate={handleSectionChange} />;
+        return (
+          <div className="flex-1 overflow-auto min-w-0 max-w-full w-full">
+            <CloudOverview onNavigate={handleSectionChange} />
+          </div>
+        );
       case 'tables':
-        return tableId ? (
-          <CloudTable tableId={tableId} />
-        ) : (
-          <CloudPlaceholder
-            title="No Table Selected"
-            description="Select a table from the sidebar to view its data."
-          />
+        return (
+          <>
+            <div className="shrink-0 min-w-0 w-full box-border overflow-hidden">
+              <CloudTableTabs
+                activeTableId={tableId}
+                onTableChange={handleTableChange}
+                onDeleteTable={handleDeleteTable}
+              />
+            </div>
+            <div className="flex-1 relative overflow-hidden min-w-0 w-full">
+              {tableId ? (
+                <CloudTable tableId={tableId} />
+              ) : (
+                <CloudPlaceholder
+                  title="No Table Selected"
+                  description="Select a table from above to view its data."
+                />
+              )}
+            </div>
+          </>
         );
       case 'sql-editor':
         return <SQLTerminal baseId={cloudId} />;
       case 'users':
         return <CloudUsers onNavigate={handleSectionChange} />;
-      case 'auth':
-        return <CloudAuth onNavigate={handleSectionChange} />;
       case 'storage':
         return <CloudStorage onNavigate={handleSectionChange} />;
       case 'services':
-        return <CloudFunctions />;
+        return <CloudServices />;
       case 'realtime':
         return <CloudPlaceholder title="Realtime" description="Subscribe to database changes in real-time with WebSocket connections." />;
       case 'logs':
@@ -78,7 +132,7 @@ function CloudLayout({
           onSectionChange={handleSectionChange}
           open={!isMobile}
         />
-        <div className="flex-1 flex flex-col overflow-auto min-w-0">
+        <div className="flex-1 flex flex-col overflow-auto min-w-0 w-0">
           {renderContent()}
         </div>
       </div>

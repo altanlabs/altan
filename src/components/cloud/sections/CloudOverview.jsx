@@ -1,11 +1,6 @@
-import { Snackbar, Alert } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { selectCloudById } from '../../../redux/slices/cloud';
-import { selectAccountId } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
-import { optimai_cloud } from '../../../utils/axios';
 import {
   AlertBanners,
   OverviewHeader,
@@ -17,7 +12,12 @@ import {
   CloudUpgradeDialog,
   DataApiConfiguration,
   MetricsHistoryCharts,
-} from '../../databases/base/sections/overview/components';
+} from './overview/components';
+import { useToast } from '../../../hooks/use-toast';
+import { selectCloudById } from '../../../redux/slices/cloud';
+import { selectAccountId } from '../../../redux/slices/general';
+import { useSelector } from '../../../redux/store';
+import { optimai_cloud } from '../../../utils/axios';
 import { PRODUCTS } from '../../databases/base/sections/overview/constants';
 import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from '../hooks';
 
@@ -28,6 +28,7 @@ const CloudOverview = ({ onNavigate }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [upgradeDialog, setUpgradeDialog] = useState({ open: false, targetTier: null });
   const [activating, setActivating] = useState(false);
+  const { toast } = useToast();
 
   // Custom hooks
   const {
@@ -111,9 +112,15 @@ const CloudOverview = ({ onNavigate }) => {
     setAnchorEl(null);
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
+  useEffect(() => {
+    if (snackbar?.open) {
+      toast({
+        title: snackbar.severity === 'error' ? 'Error' : 'Info',
+        description: snackbar.message || '',
+      });
+      setSnackbar({ ...snackbar, open: false });
+    }
+  }, [snackbar, toast, setSnackbar]);
 
   const handleTierClick = (tier) => {
     if (tier.id === currentTier || upgrading) {
@@ -213,26 +220,6 @@ const CloudOverview = ({ onNavigate }) => {
         onConfirm={handleConfirmToggle}
         onCancel={handleCancelToggle}
       />
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{
-            width: '100%',
-            borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
 
       {/* Cloud Upgrade Dialog */}
       <CloudUpgradeDialog

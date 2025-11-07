@@ -220,13 +220,11 @@ export const {
 // ============================================================================
 
 export const fetchCloud = (cloudId) => async (dispatch) => {
-  console.log('fetchCloud', cloudId);
   dispatch(setLoading(true));
   try {
     // Fetch cloud metadata
     const response = await optimai_cloud.get(`/v1/instances/${cloudId}`);
     dispatch(setCloud(response.data));
-    console.log('response', response.data);
 
     // Fetch tables
     const tablesResponse = await optimai_cloud.get(`/v1/pg-meta/${cloudId}/tables/`, {
@@ -238,7 +236,7 @@ export const fetchCloud = (cloudId) => async (dispatch) => {
     });
 
     dispatch(setTables({ cloudId, tables: tablesResponse.data || [] }));
-    console.log('tablesResponse', tablesResponse.data);
+
     return response.data;
   } catch (error) {
     dispatch(setError(error.message));
@@ -298,8 +296,8 @@ export const fetchRecords =
     try {
       const state = getState();
       const cloud = state.cloud.clouds[cloudId];
-      const table = cloud?.tables?.items?.find((t) => t.id === tableId);
-
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+      const table = cloud?.tables?.items?.find((t) => t.id === numericTableId);
       if (!table) {
         throw new Error(`Table ${tableId} not found in cloud ${cloudId}`);
       }
@@ -352,7 +350,8 @@ export const createRecord = (cloudId, tableId, data) => async (dispatch, getStat
   try {
     const state = getState();
     const cloud = state.cloud.clouds[cloudId];
-    const table = cloud?.tables?.items?.find((t) => t.id === tableId);
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const table = cloud?.tables?.items?.find((t) => t.id === numericTableId);
 
     if (!table) {
       throw new Error(`Table ${tableId} not found`);
@@ -390,7 +389,8 @@ export const updateRecordById =
     try {
       const state = getState();
       const cloud = state.cloud.clouds[cloudId];
-      const table = cloud?.tables?.items?.find((t) => t.id === tableId);
+      const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+      const table = cloud?.tables?.items?.find((t) => t.id === numericTableId);
 
       if (!table) {
         throw new Error(`Table ${tableId} not found`);
@@ -427,7 +427,8 @@ export const deleteRecord = (cloudId, tableId, recordId) => async (dispatch, get
   try {
     const state = getState();
     const cloud = state.cloud.clouds[cloudId];
-    const table = cloud?.tables?.items?.find((t) => t.id === tableId);
+    const numericTableId = typeof tableId === 'string' ? parseInt(tableId, 10) : tableId;
+    const table = cloud?.tables?.items?.find((t) => t.id === numericTableId);
 
     if (!table) {
       throw new Error(`Table ${tableId} not found`);
@@ -486,10 +487,11 @@ export const selectCloudById = createSelector(
   (clouds, cloudId) => clouds[cloudId],
 );
 
-export const selectTablesByCloudId = createSelector(
-  [selectCloudById],
-  (cloud) => cloud?.tables?.items || [],
-);
+export const selectTablesByCloudId = createSelector([selectCloudById], (cloud) => {
+  const tables = cloud?.tables?.items || [];
+  // Only return tables in public schema
+  return tables.filter((table) => table.schema === 'public');
+});
 
 export const selectTableById = createSelector(
   [selectTablesByCloudId, (_, __, tableId) => tableId],

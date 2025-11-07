@@ -2,23 +2,36 @@ import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-mod
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { AgGridReact } from '@ag-grid-community/react';
 import Editor from '@monaco-editor/react';
-import { Box, Tabs, Tab, IconButton, Tooltip, CircularProgress, Chip, Stack, Typography } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
+import { Play, Plus, X, Code2, CheckCircle2, AlertCircle, Database, Loader2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useState, useCallback, useRef, memo, useEffect } from 'react';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 
 import { optimai_cloud } from '../../../utils/axios';
-import Iconify from '../../iconify';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button.tsx';
+import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const SQLTerminal = memo(({ baseId }) => {
-  const theme = useTheme();
   const gridRef = useRef();
   const editorRef = useRef();
   const executeQueryRef = useRef();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Load tabs from localStorage on mount
   const getStorageKey = useCallback(() => `sql-terminal-tabs-${baseId}`, [baseId]);
@@ -76,10 +89,6 @@ const SQLTerminal = memo(({ baseId }) => {
       console.error('Error saving tabs to localStorage:', error);
     }
   }, [tabs, activeTab, getStorageKey, getActiveTabKey]);
-
-  const handleTabChange = useCallback((_, newValue) => {
-    setActiveTab(newValue);
-  }, []);
 
   const handleAddTab = useCallback(() => {
     const newTab = {
@@ -214,272 +223,100 @@ const SQLTerminal = memo(({ baseId }) => {
     : [];
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        backgroundColor: theme.palette.background.default,
-      }}
-    >
+    <div className="flex flex-col h-full w-full bg-background">
       {/* Tabs Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          backgroundColor: 'transparent',
-          px: 1,
-          gap: 1,
-          minHeight: 36,
-        }}
-      >
-        <Tooltip title="New Query">
-          <IconButton
-            size="small"
-            onClick={handleAddTab}
-            sx={{
-              width: 28,
-              height: 28,
-              borderRadius: 1.5,
-              padding: '6px',
-              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
-              backgroundColor: 'transparent',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                transform: 'scale(1.05)',
-              },
-              '&:active': {
-                transform: 'scale(0.95)',
-              },
-            }}
-          >
-            <Iconify icon="mdi:plus" sx={{ width: 18, height: 18 }} />
-          </IconButton>
-        </Tooltip>
+      <div className="flex items-center border-b border-border bg-transparent px-2 gap-2 min-h-9">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleAddTab}
+                className="h-7 w-7 rounded-md"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>New Query</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            flex: 1,
-            minHeight: 30,
-            position: 'relative',
-            backgroundColor: 'transparent',
-            minWidth: 0,
-            maxWidth: '100%',
-            '& .MuiTabs-indicator': {
-              display: 'none',
-            },
-            '& .MuiTabs-flexContainer': {
-              gap: '0px',
-              minWidth: 0,
-            },
-            '& .MuiTabs-scroller': {
-              overflow: 'auto !important',
-              flexGrow: 1,
-              minWidth: 0,
-              maxWidth: '100%',
-            },
-            '& .MuiTab-root': {
-              height: 30,
-              minHeight: 30,
-              padding: '0 16px',
-              textTransform: 'none',
-              fontSize: '13px',
-              fontWeight: 500,
-              letterSpacing: '0.01em',
-              color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
-              borderRadius: '6px 6px 0 0',
-              margin: '0',
-              minWidth: 'auto',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              backgroundColor: 'transparent',
-              position: 'relative',
-              '&:not(:last-child)::after': {
-                content: '""',
-                position: 'absolute',
-                right: 0,
-                top: '25%',
-                height: '50%',
-                width: '1px',
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.08)',
-              },
-              '&.Mui-selected::after': {
-                display: 'none',
-              },
-              '&.Mui-selected + .MuiTab-root::after': {
-                display: 'none',
-              },
-              '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.05)'
-                  : 'rgba(0, 0, 0, 0.03)',
-                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
-              },
-              '&.Mui-selected': {
-                color: theme.palette.mode === 'dark' ? '#fff' : '#000',
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(255, 255, 255, 0.9)',
-                fontWeight: 600,
-                backdropFilter: 'blur(10px)',
-                borderBottom: theme.palette.mode === 'dark'
-                  ? '2px solid rgba(255, 255, 255, 0.2)'
-                  : '2px solid rgba(0, 0, 0, 0.1)',
-                '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.12)'
-                    : 'rgba(255, 255, 255, 1)',
-                },
-              },
-            },
-          }}
-        >
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.id}
-              value={tab.id}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: '13px' }}>
-                  <span>{tab.name}</span>
-                  {tabs.length > 1 && (
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleCloseTab(tab.id, e)}
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        padding: 0,
-                        ml: 0.25,
-                        color: 'inherit',
-                        opacity: 0.5,
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          opacity: 1,
-                          backgroundColor: alpha(theme.palette.error.main, 0.15),
-                          color: theme.palette.error.main,
-                        },
-                      }}
-                    >
-                      <Iconify icon="mdi:close" sx={{ width: 12, height: 12 }} />
-                    </IconButton>
-                  )}
-                </Box>
-              }
-            />
-          ))}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+          <TabsList className="h-8 bg-transparent p-0 gap-0">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="h-8 px-4 text-[13px] font-medium rounded-t-md rounded-b-none data-[state=active]:bg-muted data-[state=active]:font-semibold border-b-2 border-b-transparent data-[state=active]:border-b-primary relative"
+              >
+                <span>{tab.name}</span>
+                {tabs.length > 1 && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => handleCloseTab(tab.id, e)}
+                    className="h-4 w-4 ml-2 p-0 hover:bg-destructive/20 hover:text-destructive rounded-sm"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </Tabs>
-      </Box>
+      </div>
 
       {/* SQL Editor Section */}
-      <Box
-        sx={{
-          height: '40%',
-          minHeight: 200,
-          display: 'flex',
-          flexDirection: 'column',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          position: 'relative',
-        }}
-      >
+      <div className="h-[40%] min-h-[200px] flex flex-col border-b border-border relative">
         {/* Editor Toolbar */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 2,
-            py: 0.75,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: 'blur(10px)',
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          }}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Iconify
-              icon="mdi:code-braces"
-              sx={{ width: 18, height: 18, color: theme.palette.text.secondary }}
-            />
-            <Typography variant="body2" fontWeight={600} color="text.secondary" fontSize="0.8rem">
-              SQL Editor
-            </Typography>
-          </Stack>
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/20 backdrop-blur-sm border-b border-border/50">
+          <div className="flex items-center gap-2">
+            <Code2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-muted-foreground">SQL Editor</span>
+          </div>
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          <div className="flex items-center gap-2">
             {currentTab?.executionTime !== null && (
-              <Chip
-                label={`${currentTab.executionTime}ms`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.info.main, 0.1),
-                  color: theme.palette.info.main,
-                }}
-              />
+              <Badge variant="secondary" className="h-5 text-xs font-semibold bg-blue-500/10 text-blue-500 border-0">
+                {currentTab.executionTime}ms
+              </Badge>
             )}
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mr: 1 }}>
-              <Chip
-                icon={<Iconify icon="mdi:apple-keyboard-command" sx={{ fontSize: '0.75rem' }} />}
-                label="⏎"
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.text.secondary, 0.08),
-                  color: theme.palette.text.secondary,
-                  '& .MuiChip-icon': {
-                    marginLeft: '6px',
-                    marginRight: '-4px',
-                  },
-                }}
-              />
-            </Stack>
-            <Tooltip title="Execute Query">
-              <IconButton
-                size="small"
-                onClick={handleExecuteQuery}
-                disabled={!currentTab?.sql?.trim() || currentTab?.loading}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
-                  color: '#fff',
-                  backgroundColor: theme.palette.success.main,
-                  '&:hover': {
-                    backgroundColor: theme.palette.success.dark,
-                  },
-                  '&:disabled': {
-                    backgroundColor: alpha(theme.palette.success.main, 0.3),
-                  },
-                }}
-              >
-                {currentTab?.loading ? (
-                  <CircularProgress size={16} sx={{ color: '#fff' }} />
-                ) : (
-                  <Iconify icon="mdi:play" sx={{ width: 18, height: 18 }} />
-                )}
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        </Box>
+            <Badge variant="secondary" className="h-5 text-xs font-semibold">
+              ⌘ + ⏎
+            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={handleExecuteQuery}
+                    disabled={!currentTab?.sql?.trim() || currentTab?.loading}
+                    className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {currentTab?.loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Execute Query</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
 
         {/* Monaco Editor */}
-        <Box sx={{ flex: 1 }}>
+        <div className="flex-1">
           <Editor
             height="100%"
             language="sql"
-            theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'light'}
+            theme={isDarkMode ? 'vs-dark' : 'light'}
             value={currentTab?.sql || ''}
             onChange={handleEditorChange}
             onMount={(editor, monaco) => {
@@ -529,109 +366,42 @@ const SQLTerminal = memo(({ baseId }) => {
               padding: { top: 12, bottom: 12 },
             }}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Results Section */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Results Display */}
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        <div className="flex-1 overflow-hidden">
           {currentTab?.error ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                p: 3,
-              }}
-            >
-              <Stack spacing={2} alignItems="center">
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    backgroundColor: alpha(theme.palette.error.main, 0.1),
-                  }}
-                >
-                  <Iconify
-                    icon="mdi:alert-circle"
-                    sx={{ width: 48, height: 48, color: theme.palette.error.main }}
-                  />
-                </Box>
-                <Typography variant="h6" color="error">
-                  Query Error
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    maxWidth: 600,
-                    textAlign: 'center',
-                    fontFamily: 'monospace',
-                    backgroundColor: alpha(theme.palette.error.main, 0.05),
-                    p: 2,
-                    borderRadius: 2,
-                  }}
-                >
+            <div className="flex items-center justify-center h-full p-6">
+              <div className="flex flex-col items-center gap-4 max-w-2xl">
+                <div className="p-4 rounded-xl bg-destructive/10">
+                  <AlertCircle className="h-12 w-12 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-destructive">Query Error</h3>
+                <div className="text-sm text-muted-foreground text-center font-mono bg-destructive/5 p-4 rounded-lg max-w-full break-words">
                   {currentTab.error}
-                </Typography>
-              </Stack>
-            </Box>
+                </div>
+              </div>
+            </div>
           ) : currentTab?.results ? (
             currentTab.results.length === 0 ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  p: 3,
-                }}
-              >
-                <Stack spacing={2} alignItems="center">
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 3,
-                      backgroundColor: alpha(theme.palette.success.main, 0.1),
-                    }}
-                  >
-                    <Iconify
-                      icon="mdi:check-circle"
-                      sx={{ width: 48, height: 48, color: theme.palette.success.main }}
-                    />
-                  </Box>
-                  <Typography variant="h6" color="success.main">
-                    Query Executed Successfully
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    No rows returned
-                  </Typography>
-                </Stack>
-              </Box>
+              <div className="flex items-center justify-center h-full p-6">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 rounded-xl bg-green-500/10">
+                    <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-500">Query Executed Successfully</h3>
+                  <p className="text-sm text-muted-foreground">No rows returned</p>
+                </div>
+              </div>
             ) : (
               <div
-                className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''}`}
+                className={`ag-theme-quartz${isDarkMode ? '-dark' : ''}`}
                 style={{
                   height: '100%',
                   width: '100%',
-                  '--ag-foreground-color': theme.palette.text.primary,
-                  '--ag-background-color':
-                    theme.palette.mode === 'dark'
-                      ? theme.palette.grey[900]
-                      : theme.palette.background.paper,
-                  '--ag-header-background-color':
-                    theme.palette.mode === 'dark'
-                      ? theme.palette.grey[800]
-                      : theme.palette.background.paper,
-                  '--ag-border-color': theme.palette.divider,
-                  '--ag-header-foreground-color': theme.palette.text.primary,
-                  '--ag-font-family': theme.typography.fontFamily,
-                  '--ag-font-size': theme.typography.body2.fontSize,
-                  '--ag-border-radius': '0px',
-                  '--ag-wrapper-border-radius': '0px',
                 }}
               >
                 <AgGridReact
@@ -653,40 +423,19 @@ const SQLTerminal = memo(({ baseId }) => {
               </div>
             )
           ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                p: 3,
-              }}
-            >
-              <Stack spacing={2} alignItems="center">
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  }}
-                >
-                  <Iconify
-                    icon="mdi:database-search"
-                    sx={{ width: 48, height: 48, color: theme.palette.primary.main }}
-                  />
-                </Box>
-                <Typography variant="h6" color="text.primary">
-                  Ready to Execute
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Write your SQL query above and click Run
-                </Typography>
-              </Stack>
-            </Box>
+            <div className="flex items-center justify-center h-full p-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 rounded-xl bg-primary/10">
+                  <Database className="h-12 w-12 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold">Ready to Execute</h3>
+                <p className="text-sm text-muted-foreground">Write your SQL query above and click Run</p>
+              </div>
+            </div>
           )}
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 });
 
