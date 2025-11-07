@@ -20,6 +20,14 @@ const ru = {
     switchToText: 'Переключиться на текстовый режим',
     switchToVoice: 'Переключиться на голосовой режим',
     startCall: 'Начать Голос',
+    startACall: 'Начать звонок',
+    endCall: 'Завершить звонок',
+    talkToInterrupt: 'Говорите, чтобы прервать',
+  },
+  prompt: {
+    describeProject: 'Опишите ваш следующий проект',
+    describeAgent: 'Опишите вашего следующего агента',
+    whatsOnYourMind: 'О чем вы думаете?',
   },
   room: {
     howCanIHelp: 'Как я могу помочь?',

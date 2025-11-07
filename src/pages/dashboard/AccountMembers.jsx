@@ -75,7 +75,7 @@ function AccountMembers() {
   const dataFiltered = useMemo(() => {
     if (!uniqueUsers) return [];
     return uniqueUsers.filter((member) => {
-      const fullName = `${member.user?.person?.first_name} ${member.user?.person?.last_name}`;
+      const fullName = `${member.user?.first_name} ${member.user?.last_name}`;
       return fullName.toLowerCase().includes(searchMembers.toLowerCase());
     });
   }, [uniqueUsers, searchMembers]);

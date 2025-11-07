@@ -192,6 +192,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
             <p className="text-center text-foreground/70">
               {translate('hero.subtitle')}
             </p>
+
             <div className="w-full">
               <PromptBox
                 ref={promptBoxRef}

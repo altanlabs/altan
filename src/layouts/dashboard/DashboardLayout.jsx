@@ -7,6 +7,7 @@ import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
 import useBrowserNotifications from '../../hooks/useBrowserNotifications';
+import { useCreditBalancePolling } from '../../hooks/useCreditBalancePolling';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
@@ -43,6 +44,9 @@ const DashboardLayout = ({ children }) => {
 
   // Enable browser notifications for this user
   useBrowserNotifications();
+
+  // Poll credit balance every 30 seconds
+  useCreditBalancePolling(true);
 
   const handleToggleNav = useCallback(() => {
     // Toggle navigation handler - kept for compatibility

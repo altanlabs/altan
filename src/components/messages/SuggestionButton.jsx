@@ -1,10 +1,10 @@
-import { useTheme, alpha } from '@mui/material/styles';
+import { ArrowRight } from 'lucide-react';
 import { sendMessage } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
+import { Button } from '../ui/button.tsx';
 
 // Suggestion Button Component
 const SuggestionButton = ({ children, threadId }) => {
-  const theme = useTheme();
   const handleClick = () => {
     // Extract text content from children (could be array or string)
     let textContent = '';
@@ -47,29 +47,14 @@ const SuggestionButton = ({ children, threadId }) => {
   };
 
   return (
-    <button
+    <Button
       onClick={handleClick}
-      className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left hover:scale-[1.01] active:scale-[0.99]"
-      style={{
-        backgroundColor: alpha(theme.palette.grey[500], 0.05),
-        color: theme.palette.text.primary,
-        border: `1px solid ${alpha(theme.palette.grey[500], 0.12)}`,
-        cursor: 'pointer',
-        backdropFilter: 'blur(8px)',
-      }}
-      onMouseEnter={(e) => {
-        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.12);
-        e.target.style.borderColor = alpha(theme.palette.grey[500], 0.24);
-        e.target.style.transform = 'translateX(4px)';
-      }}
-      onMouseLeave={(e) => {
-        e.target.style.backgroundColor = alpha(theme.palette.grey[500], 0.05);
-        e.target.style.borderColor = alpha(theme.palette.grey[500], 0.12);
-        e.target.style.transform = 'translateX(0)';
-      }}
+      variant="outline"
+      className="w-full justify-between text-left h-auto py-2.5 px-4 hover:bg-accent hover:translate-x-1 transition-all group"
     >
-      {children}
-    </button>
+      <span className="text-sm font-medium flex-1 whitespace-normal break-words">{children}</span>
+      <ArrowRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+    </Button>
   );
 };
 

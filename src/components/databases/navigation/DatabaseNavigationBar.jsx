@@ -1,76 +1,69 @@
-import { Box, TextField, IconButton, Tooltip, Chip, useMediaQuery } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
+import { debounce } from 'lodash-es';
+import { Plus, Download, Search } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { debounce } from 'lodash-es';
 
+import { cn } from '../../../lib/utils';
 import {
-  selectDatabaseQuickFilter,
-  setDatabaseQuickFilter,
-  selectDatabaseRefreshing,
-  selectTableTotalRecords,
+  selectQuickFilter,
+  setQuickFilter,
+  selectSearchResults,
   searchTableRecords,
-  selectDatabaseSearching,
-  selectDatabaseSearchResults,
-  selectBaseById,
-  setDatabaseRefreshing,
-  loadTableRecords,
-} from '../../../redux/slices/bases';
+  selectTableState,
+  selectTablesByCloudId,
+} from '../../../redux/slices/cloud';
 import { dispatch } from '../../../redux/store';
-import Iconify from '../../iconify';
-import DatabaseInfoDialog from '../dialogs/DatabaseInfoDialog.jsx';
+import { optimai_cloud } from '../../../utils/axios.js';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button.tsx';
+import { Input } from '../../ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../ui/tooltip';
+import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
 
 function DatabaseNavigationBar({ disabled = false }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const inputRef = useRef(null);
-  const { baseId: routeBaseId, tableId, componentId } = useParams();
+  const { cloudId, tableId } = useParams();
+  const [openCreateRecord, setOpenCreateRecord] = useState(false);
 
-  // Dialog states
-  const [openDatabaseInfo, setOpenDatabaseInfo] = useState(false);
-
-  // Get baseId from route params
-  const baseId = routeBaseId;
-
-  // Get database from Redux using the baseId
-  const database = useSelector((state) => (baseId ? selectBaseById(state, baseId) : null));
-
-  // Get values from Redux - only when this component is actually rendered for database
-  const quickFilter = useSelector(selectDatabaseQuickFilter);
-  const databaseRefreshing = useSelector(selectDatabaseRefreshing);
-  const databaseSearching = useSelector(selectDatabaseSearching);
+  // Get values from Redux - using cloud.js selectors
+  const quickFilter = useSelector(selectQuickFilter);
   const searchResults = useSelector((state) =>
-    tableId ? selectDatabaseSearchResults(state, tableId) : null,
+    tableId ? selectSearchResults(state, tableId) : null,
   );
-  const currentTableRecordCount = useSelector((state) =>
-    tableId ? selectTableTotalRecords(state, tableId) : 0,
+  const tableState = useSelector((state) =>
+    tableId ? selectTableState(state, tableId) : null,
   );
+  const tables = useSelector((state) => selectTablesByCloudId(state, cloudId));
+
+  const validTables = useMemo(() => {
+    if (!Array.isArray(tables)) return [];
+    return tables.filter((table) => table && table.id);
+  }, [tables]);
 
   // Use internal state for better performance
-  const actualRecordCount = currentTableRecordCount;
-  const actualIsLoading = databaseRefreshing || databaseSearching;
+  const actualRecordCount = tableState?.total || 0;
 
   // Create debounced search function to avoid excessive API calls
   const debouncedSearch = useCallback(
     debounce((searchQuery) => {
       // eslint-disable-next-line no-console
-      console.log('🎯 DatabaseNavigationBar debouncedSearch triggered:', { tableId, searchQuery });
+      console.log('🎯 DatabaseNavigationBar debouncedSearch triggered:', { cloudId, tableId, searchQuery });
 
-      if (tableId && searchQuery.trim()) {
+      if (cloudId && tableId && searchQuery.trim()) {
         // eslint-disable-next-line no-console
         console.log('🔍 Dispatching searchTableRecords...');
         // Trigger database search across all records
-        dispatch(searchTableRecords(tableId, searchQuery.trim()));
-      } else if (tableId && !searchQuery.trim()) {
+        dispatch(searchTableRecords(cloudId, tableId, searchQuery.trim()));
+      } else if (cloudId && tableId && !searchQuery.trim()) {
         // eslint-disable-next-line no-console
         console.log('🧹 Clearing search...');
         // Clear search when query is empty
-        dispatch(searchTableRecords(tableId, ''));
+        dispatch(searchTableRecords(cloudId, tableId, ''));
       }
     }, 300), // 300ms delay for better UX
-    [tableId],
+    [cloudId, tableId],
   );
 
   const handleFilterChange = (e) => {
@@ -79,7 +72,7 @@ function DatabaseNavigationBar({ disabled = false }) {
     console.log('📝 DatabaseNavigationBar handleFilterChange:', { value, tableId });
 
     // Update Redux state directly for immediate UI feedback
-    dispatch(setDatabaseQuickFilter(value));
+    dispatch(setQuickFilter(value));
 
     // Trigger debounced database search
     // eslint-disable-next-line no-console
@@ -87,30 +80,34 @@ function DatabaseNavigationBar({ disabled = false }) {
     debouncedSearch(value);
   };
 
-  // Database operation handlers
-  const handleDatabaseRefresh = useCallback(() => {
-    const currentTableId = tableId;
-    if (baseId && currentTableId) {
-      dispatch(setDatabaseRefreshing(true));
-      // Refresh the current table
-      dispatch(loadTableRecords(currentTableId, { forceReload: true })).finally(() =>
-        dispatch(setDatabaseRefreshing(false)),
-      );
-    } else if (baseId && database?.tables?.items?.length > 0) {
-      dispatch(setDatabaseRefreshing(true));
-      // Fallback: refresh the first table
-      const fallbackTableId = database.tables.items[0]?.id;
-      if (fallbackTableId) {
-        dispatch(loadTableRecords(fallbackTableId, { forceReload: true })).finally(() =>
-          dispatch(setDatabaseRefreshing(false)),
-        );
-      }
-    }
-  }, [baseId, tableId, database]);
+  const handleExportCSV = useCallback(async () => {
+    if (!cloudId || !tableId) return;
 
-  const handleDatabaseInfo = useCallback(() => {
-    setOpenDatabaseInfo(true);
-  }, []);
+    const currentTable = validTables.find((t) => t.id === Number(tableId));
+    if (!currentTable) return;
+
+    try {
+      const tableName = currentTable.db_name || currentTable.name;
+      const response = await optimai_cloud.post(
+        `/v1/instances/${cloudId}/export-csv`,
+        { table_name: tableName },
+        { responseType: 'blob' },
+      );
+
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Error handled silently
+    }
+  }, [cloudId, tableId, validTables]);
 
   useEffect(() => {
     return () => {
@@ -119,172 +116,94 @@ function DatabaseNavigationBar({ disabled = false }) {
   }, [debouncedSearch]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        height: 42,
-        px: 2,
-        gap: 1.5,
-      }}
-    >
-      {/* Settings Button */}
-      <Tooltip title="Database settings">
-        <IconButton
-          size="small"
-          onClick={handleDatabaseInfo}
-          disabled={disabled || !database}
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            color: theme.palette.text.secondary,
-            backgroundColor: alpha(theme.palette.background.paper, 0.6),
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            transition: theme.transitions.create(['all'], {
-              duration: theme.transitions.duration.shorter,
-            }),
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.info.main, 0.12),
-              color: theme.palette.info.main,
-              border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-              transform: 'translateY(-1px)',
-            },
-          }}
-        >
-          <Iconify
-            icon="mdi:cog-outline"
-            sx={{ width: 18, height: 18 }}
+    <TooltipProvider>
+      <div className="flex items-center h-[42px] px-4 gap-3">
+        {/* Search Bar - Glassmorphic Container */}
+        <div className="flex items-center flex-1 h-[38px] rounded-xl bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-md border border-border/10 overflow-hidden px-3 gap-3 transition-all duration-200">
+          {/* Search Icon */}
+          <Search className="w-[18px] h-[18px] text-muted-foreground/60 shrink-0" />
+
+          {/* Search Input */}
+          <Input
+            ref={inputRef}
+            value={quickFilter}
+            onChange={handleFilterChange}
+            placeholder="Search records..."
+            disabled={disabled}
+            className={cn(
+              'flex-1 min-w-[100px] sm:min-w-[180px] h-8 text-sm border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+              quickFilter && 'text-primary font-medium',
+            )}
           />
-        </IconButton>
-      </Tooltip>
-      
-      {/* Search Bar - Glassmorphic Container */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: 1,
-          height: 38,
-          borderRadius: 3,
-          background: `linear-gradient(135deg, 
-            ${alpha(theme.palette.background.paper, 0.8)} 0%, 
-            ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-          backdropFilter: 'blur(10px)',
-          border:
-            theme.palette.mode === 'light'
-              ? `1px solid ${alpha(theme.palette.divider, 0.12)}`
-              : 'none',
-          overflow: 'hidden',
-          px: 1.5,
-          gap: 1.5,
-          transition: theme.transitions.create(['background-color', 'border-color'], {
-            duration: theme.transitions.duration.shorter,
-          }),
-        }}
-      >
-        {/* Search Icon */}
-        <Iconify
-          icon="mdi:magnify"
-          sx={{
-            width: 18,
-            height: 18,
-            color: alpha(theme.palette.text.secondary, 0.6),
-            flexShrink: 0,
-          }}
-        />
 
-        {/* Search Input */}
-        <TextField
-          ref={inputRef}
-          value={quickFilter}
-          onChange={handleFilterChange}
-          placeholder="Search records..."
-          size="small"
-          disabled={disabled}
-          sx={{
-            flex: 1,
-            minWidth: isMobile ? 100 : 180,
-            '& .MuiOutlinedInput-root': {
-              height: 32,
-              backgroundColor: 'transparent',
-              '& fieldset': {
-                border: 'none',
-              },
-            },
-            '& .MuiInputBase-input': {
-              fontSize: '0.875rem',
-              py: 0,
-              px: 0,
-              color: quickFilter ? theme.palette.primary.main : 'inherit',
-              fontWeight: quickFilter ? 500 : 400,
-              '&::placeholder': {
-                color: alpha(theme.palette.text.secondary, 0.5),
-                opacity: 1,
-              },
-            },
-          }}
-        />
-
-        {/* Record Count - Inside search bar */}
-        {!isMobile && (
-          <>
+          {/* Record Count - Inside search bar */}
+          <div className="hidden sm:block">
             {searchResults && quickFilter ? (
-              <Chip
-                label={
-                  searchResults.newRecordsFound > 0
-                    ? `+${searchResults.newRecordsFound} new`
-                    : searchResults.totalSearchResults > 0
-                      ? `${searchResults.totalSearchResults} found`
-                      : 'No matches'
-                }
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
-                  color: theme.palette.primary.main,
-                  border: 'none',
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
-                }}
-              />
+              <Badge
+                variant="secondary"
+                className="h-[22px] text-[0.7rem] font-semibold bg-primary/15 text-primary border-0 px-2"
+              >
+                {searchResults.newRecordsFound > 0
+                  ? `+${searchResults.newRecordsFound} new`
+                  : searchResults.totalSearchResults > 0
+                    ? `${searchResults.totalSearchResults} found`
+                    : 'No matches'}
+              </Badge>
             ) : actualRecordCount > 0 ? (
-              <Chip
-                label={`${actualRecordCount.toLocaleString()}`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.text.secondary, 0.1),
-                  color: theme.palette.text.secondary,
-                  border: 'none',
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
-                }}
-              />
+              <Badge
+                variant="secondary"
+                className="h-[22px] text-[0.7rem] font-semibold bg-muted/50 text-muted-foreground border-0 px-2"
+              >
+                {actualRecordCount.toLocaleString()}
+              </Badge>
             ) : null}
-          </>
-        )}
-      </Box>
+          </div>
+        </div>
 
-      {/* Database Dialogs */}
-      {baseId && (
-        <>
-          <DatabaseInfoDialog
-            open={openDatabaseInfo}
-            onClose={() => setOpenDatabaseInfo(false)}
-            database={database}
-            baseId={baseId}
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleExportCSV}
+                disabled={disabled || !tableId}
+                className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export CSV</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpenCreateRecord(true)}
+                disabled={disabled || !tableId}
+                className="w-8 h-8 text-primary bg-primary/10 hover:bg-primary/20"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Add Record</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Create Record Drawer */}
+        {tableId && (
+          <CreateRecordDrawer
+            baseId={cloudId}
+            tableId={tableId}
+            open={openCreateRecord}
+            onClose={() => setOpenCreateRecord(false)}
           />
-        </>
-      )}
-    </Box>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
 

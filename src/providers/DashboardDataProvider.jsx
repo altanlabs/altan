@@ -77,7 +77,7 @@ const DashboardDataProvider = ({ children }) => {
   useEffect(() => {
     if (!!accountId && !accountInitialized && !accountLoading) {
       dispatch(getAccount()).then(() => {
-        [['subscriptions', 'altaners', 'agents', 'interfaces']].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
+        [['subscriptions', 'agents']].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(fetchNotifications());
         dispatch(getConnections(accountId));
         dispatch(getAccountMembers(accountId));

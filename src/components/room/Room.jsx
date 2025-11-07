@@ -5,7 +5,6 @@ import DesktopRoom from './DesktopRoom.jsx';
 import RoomAuthGuard from '../../auth/room/RoomAuthGuard.jsx';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
-import WhisperStreamWebSocketProvider from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
 import {
   fetchRoom,
   clearRoomState,
@@ -135,33 +134,31 @@ const Room = ({
 
   return (
     <RoomAuthGuard>
-      <WhisperStreamWebSocketProvider>
-        <VoiceConversationProvider voiceEnabled={voice_enabled}>
-          <DesktopRoom
-            header={header}
-            previewComponent={previewComponent}
-            isMobile={isMobile}
-            mobileActiveView={mobileActiveView}
-            tabs={tabs}
-            conversation_history={conversation_history}
-            members={members}
-            settings={settings}
-            show_close_button={show_close_button}
-            show_fullscreen_button={show_fullscreen_button}
-            show_sidebar_button={show_sidebar_button}
-            onFullscreen={onFullscreen}
-            onSidebar={onSidebar}
-            onClose={onClose}
-            title={title}
-            description={description}
-            suggestions={suggestions}
-            renderCredits={renderCredits}
-            renderFeedback={renderFeedback}
-            initialMessage={initialMessage}
-            show_mode_selector={show_mode_selector}
-          />
-        </VoiceConversationProvider>
-      </WhisperStreamWebSocketProvider>
+      <VoiceConversationProvider voiceEnabled={voice_enabled}>
+        <DesktopRoom
+          header={header}
+          previewComponent={previewComponent}
+          isMobile={isMobile}
+          mobileActiveView={mobileActiveView}
+          tabs={tabs}
+          conversation_history={conversation_history}
+          members={members}
+          settings={settings}
+          show_close_button={show_close_button}
+          show_fullscreen_button={show_fullscreen_button}
+          show_sidebar_button={show_sidebar_button}
+          onFullscreen={onFullscreen}
+          onSidebar={onSidebar}
+          onClose={onClose}
+          title={title}
+          description={description}
+          suggestions={suggestions}
+          renderCredits={renderCredits}
+          renderFeedback={renderFeedback}
+          initialMessage={initialMessage}
+          show_mode_selector={show_mode_selector}
+        />
+      </VoiceConversationProvider>
     </RoomAuthGuard>
   );
 };

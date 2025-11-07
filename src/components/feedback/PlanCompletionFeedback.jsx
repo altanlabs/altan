@@ -14,6 +14,11 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Don't render if there's no plan ID
+  if (!planId || planId === null) {
+    return null;
+  }
+
   // Check if feedback already given for this plan
   const feedbackKey = `plan_completion_${planId}`;
   if (hasFeedbackBeenGiven(feedbackKey)) {

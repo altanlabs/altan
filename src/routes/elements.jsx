@@ -53,6 +53,7 @@ export const NewAltanerPage = Loadable(
 export const FlowsPage = Loadable(lazy(() => import('../pages/dashboard/flows/FlowsPage.jsx')));
 
 export const BasePage = Loadable(lazy(() => import('../pages/dashboard/databases/BasePage.jsx')));
+export const CloudPage = Loadable(lazy(() => import('../pages/dashboard/CloudPage.jsx')));
 export const BasesPage = Loadable(lazy(() => import('../pages/dashboard/databases/BasesPage.jsx')));
 
 export const InterfacePage = Loadable(
@@ -150,6 +151,9 @@ export const ContactPage = Loadable(lazy(() => import('../pages/ContactPage.jsx'
 
 export const SDKTestPage = Loadable(
   lazy(() => import('../pages/SDKTestPage.jsx')),
+);
+export const SDKCookbookPage = Loadable(
+  lazy(() => import('../pages/SDKCookbookPage.jsx')),
 );
 export const SupportPage = Loadable(lazy(() => import('../pages/SupportPage.jsx')));
 

@@ -102,6 +102,10 @@ export const UserDropdown = () => {
     history.push('/integration');
   };
 
+  const handleUsage = () => {
+    history.push('/usage');
+  };
+
   const handleUpdateSubscriptionStatus = async (subscriptionId: string, newStatus: string) => {
     try {
       await dispatch(updateEntry('Subscription', subscriptionId, { status: newStatus }));
@@ -154,7 +158,10 @@ export const UserDropdown = () => {
       <DropdownMenuTrigger asChild>
         <button className="relative outline-none focus:outline-none">
           <Avatar className="cursor-pointer size-8 border border-white dark:border-gray-700 transition-transform hover:scale-110">
-            <AvatarImage src={personProfile.avatar.url} alt={personProfile.avatar.alt} />
+            <AvatarImage
+              src={personProfile.avatar.url}
+              alt={personProfile.avatar.alt}
+            />
             <AvatarFallback>{personProfile.initials}</AvatarFallback>
           </Avatar>
           {!!(user?.xsup && ws?.activeSubscriptions?.length) && (
@@ -166,7 +173,7 @@ export const UserDropdown = () => {
       <DropdownMenuContent
         className={cn(
           'no-scrollbar rounded-2xl bg-gray-50 dark:bg-black/90 p-0',
-          superAdminExpanded && user?.xsup ? 'w-[660px]' : 'w-[310px]'
+          superAdminExpanded && user?.xsup ? 'w-[660px]' : 'w-[310px]',
         )}
         align="end"
       >
@@ -175,7 +182,10 @@ export const UserDropdown = () => {
           {user?.xsup && superAdminExpanded && (
             <div className="w-[350px] border-r border-gray-200 dark:border-gray-700/20 p-3 max-h-[600px] overflow-y-auto">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
-                <Icon icon="solar:lock-keyhole-bold-duotone" className="size-4 text-blue-600" />
+                <Icon
+                  icon="solar:lock-keyhole-bold-duotone"
+                  className="size-4 text-blue-600"
+                />
                 SuperAdmin Details
               </h3>
 
@@ -184,19 +194,25 @@ export const UserDropdown = () => {
                 <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400">Account</h4>
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Account ID</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Account ID
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 font-mono text-right break-all flex-1">
                       {account?.id || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Account Name</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Account Name
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 text-right break-all flex-1">
                       {account?.name || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Stripe ID</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Stripe ID
+                    </span>
                     {account?.stripe_id ? (
                       <a
                         href={`https://dashboard.stripe.com/customers/${account.stripe_id}`}
@@ -207,27 +223,41 @@ export const UserDropdown = () => {
                         {account.stripe_id} ↗
                       </a>
                     ) : (
-                      <span className="text-gray-900 dark:text-gray-100 font-mono text-right flex-1">N/A</span>
+                      <span className="text-gray-900 dark:text-gray-100 font-mono text-right flex-1">
+                        N/A
+                      </span>
                     )}
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Credit Balance</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Credit Balance
+                    </span>
                     {editingAccountCredit ? (
                       <div className="flex items-center gap-1 flex-1 justify-end">
                         <Input
                           type="number"
                           step="0.01"
-                          value={tempValues.accountCredit ?? ((accountCreditBalance ?? 0) / 100).toFixed(2)}
-                          onChange={(e) => setTempValues({ ...tempValues, accountCredit: e.target.value })}
+                          value={
+                            tempValues.accountCredit ??
+                            ((accountCreditBalance ?? 0) / 100).toFixed(2)
+                          }
+                          onChange={(e) =>
+                            setTempValues({ ...tempValues, accountCredit: e.target.value })
+                          }
                           className="w-20 h-6 text-xs"
                         />
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleUpdateAccountCredit(account?.id, tempValues.accountCredit)}
+                          onClick={() =>
+                            handleUpdateAccountCredit(account?.id, tempValues.accountCredit)
+                          }
                           className="h-6 w-6 p-0"
                         >
-                          <Icon icon="mdi:check" className="size-4 text-green-600" />
+                          <Icon
+                            icon="mdi:check"
+                            className="size-4 text-green-600"
+                          />
                         </Button>
                         <Button
                           size="sm"
@@ -238,7 +268,10 @@ export const UserDropdown = () => {
                           }}
                           className="h-6 w-6 p-0"
                         >
-                          <Icon icon="mdi:close" className="size-4 text-red-600" />
+                          <Icon
+                            icon="mdi:close"
+                            className="size-4 text-red-600"
+                          />
                         </Button>
                       </div>
                     ) : (
@@ -252,19 +285,26 @@ export const UserDropdown = () => {
                           onClick={() => setEditingAccountCredit(true)}
                           className="h-6 w-6 p-0"
                         >
-                          <Icon icon="mdi:pencil" className="size-3.5" />
+                          <Icon
+                            icon="mdi:pencil"
+                            className="size-3.5"
+                          />
                         </Button>
                       </div>
                     )}
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Organisation ID</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Organisation ID
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 font-mono text-right break-all flex-1">
                       {account?.organisation_id || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Organisation</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Organisation
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 text-right break-all flex-1">
                       {account?.organisation?.name || 'N/A'}
                     </span>
@@ -274,22 +314,30 @@ export const UserDropdown = () => {
 
               {/* User Information */}
               <div className="space-y-2 mb-4">
-                <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400">User (Account Owner)</h4>
+                <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                  User (Account Owner)
+                </h4>
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">User ID</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      User ID
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 font-mono text-right break-all flex-1">
                       {account?.owner?.id || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Email</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Email
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 text-right break-all flex-1">
                       {account?.owner?.email || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Name</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                      Name
+                    </span>
                     <span className="text-gray-900 dark:text-gray-100 text-right break-all flex-1">
                       {account?.owner?.first_name} {account?.owner?.last_name}
                     </span>
@@ -305,25 +353,35 @@ export const UserDropdown = () => {
                 {activeSubscriptions && activeSubscriptions.length > 0 ? (
                   <div className="space-y-2">
                     {[...activeSubscriptions]
-                      .sort((a, b) => new Date(b.date_creation || 0).getTime() - new Date(a.date_creation || 0).getTime())
+                      .sort(
+                        (a, b) =>
+                          new Date(b.date_creation || 0).getTime() -
+                          new Date(a.date_creation || 0).getTime(),
+                      )
                       .map((sub: any, idx: number) => (
                         <div
                           key={sub.id || idx}
                           className="border border-gray-200 dark:border-gray-700 rounded-lg p-2 bg-gray-50 dark:bg-gray-800/50 space-y-1.5"
                         >
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Sub ID</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Sub ID
+                            </span>
                             <span className="text-gray-900 dark:text-gray-100 font-mono text-right break-all flex-1 text-[10px]">
                               {sub.id}
                             </span>
                           </div>
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Status</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Status
+                            </span>
                             {editingSubscription === sub.id ? (
                               <div className="flex items-center gap-1">
                                 <Select
                                   value={tempValues[`${sub.id}_status`] ?? sub.status}
-                                  onValueChange={(value) => setTempValues({ ...tempValues, [`${sub.id}_status`]: value })}
+                                  onValueChange={(value) =>
+                                    setTempValues({ ...tempValues, [`${sub.id}_status`]: value })
+                                  }
                                 >
                                   <SelectTrigger className="h-6 w-24 text-[10px]">
                                     <SelectValue />
@@ -339,21 +397,35 @@ export const UserDropdown = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleUpdateSubscriptionStatus(sub.id, tempValues[`${sub.id}_status`] ?? sub.status)}
+                                  onClick={() =>
+                                    handleUpdateSubscriptionStatus(
+                                      sub.id,
+                                      tempValues[`${sub.id}_status`] ?? sub.status,
+                                    )
+                                  }
                                   className="h-6 w-6 p-0"
                                 >
-                                  <Icon icon="mdi:check" className="size-3.5 text-green-600" />
+                                  <Icon
+                                    icon="mdi:check"
+                                    className="size-3.5 text-green-600"
+                                  />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
                                     setEditingSubscription(null);
-                                    setTempValues({ ...tempValues, [`${sub.id}_status`]: undefined });
+                                    setTempValues({
+                                      ...tempValues,
+                                      [`${sub.id}_status`]: undefined,
+                                    });
                                   }}
                                   className="h-6 w-6 p-0"
                                 >
-                                  <Icon icon="mdi:close" className="size-3.5 text-red-600" />
+                                  <Icon
+                                    icon="mdi:close"
+                                    className="size-3.5 text-red-600"
+                                  />
                                 </Button>
                               </div>
                             ) : (
@@ -370,37 +442,60 @@ export const UserDropdown = () => {
                                   onClick={() => setEditingSubscription(sub.id)}
                                   className="h-6 w-6 p-0"
                                 >
-                                  <Icon icon="mdi:pencil" className="size-3" />
+                                  <Icon
+                                    icon="mdi:pencil"
+                                    className="size-3"
+                                  />
                                 </Button>
                               </div>
                             )}
                           </div>
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Plan</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Plan
+                            </span>
                             <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
                               {sub.meta_data?.custom_subscription
-                                ? (sub.meta_data?.plan_name || 'Custom')
-                                : (sub.billing_option?.plan?.name || 'Unknown')}
+                                ? sub.meta_data?.plan_name || 'Custom'
+                                : sub.billing_option?.plan?.name || 'Unknown'}
                             </span>
                           </div>
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Credits (Rem)</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Credits (Rem)
+                            </span>
                             {editingSubscription === sub.id ? (
                               <div className="flex items-center gap-1 flex-1 justify-end">
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  value={tempValues[`${sub.id}_credits`] ?? Number(sub.credit_balance / 100 || 0).toFixed(2)}
-                                  onChange={(e) => setTempValues({ ...tempValues, [`${sub.id}_credits`]: e.target.value })}
+                                  value={
+                                    tempValues[`${sub.id}_credits`] ??
+                                    Number(sub.credit_balance / 100 || 0).toFixed(2)
+                                  }
+                                  onChange={(e) =>
+                                    setTempValues({
+                                      ...tempValues,
+                                      [`${sub.id}_credits`]: e.target.value,
+                                    })
+                                  }
                                   className="w-16 h-6 text-[10px]"
                                 />
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleUpdateSubscriptionCredits(sub.id, tempValues[`${sub.id}_credits`])}
+                                  onClick={() =>
+                                    handleUpdateSubscriptionCredits(
+                                      sub.id,
+                                      tempValues[`${sub.id}_credits`],
+                                    )
+                                  }
                                   className="h-6 w-6 p-0"
                                 >
-                                  <Icon icon="mdi:check" className="size-3.5 text-green-600" />
+                                  <Icon
+                                    icon="mdi:check"
+                                    className="size-3.5 text-green-600"
+                                  />
                                 </Button>
                               </div>
                             ) : (
@@ -413,7 +508,9 @@ export const UserDropdown = () => {
                             )}
                           </div>
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Price</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Price
+                            </span>
                             <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
                               {sub.billing_option?.currency || '€'}
                               {Number(sub.billing_option?.price / 100 || 0).toFixed(2)} /{' '}
@@ -421,14 +518,20 @@ export const UserDropdown = () => {
                             </span>
                           </div>
                           <div className="flex justify-between items-start gap-2 text-xs">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Created</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                              Created
+                            </span>
                             <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
-                              {sub.date_creation ? new Date(sub.date_creation).toLocaleDateString() : 'N/A'}
+                              {sub.date_creation
+                                ? new Date(sub.date_creation).toLocaleDateString()
+                                : 'N/A'}
                             </span>
                           </div>
                           {sub.current_period_end && (
                             <div className="flex justify-between items-start gap-2 text-xs">
-                              <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Period End</span>
+                              <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                                Period End
+                              </span>
                               <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
                                 {new Date(sub.current_period_end).toLocaleDateString()}
                               </span>
@@ -436,7 +539,9 @@ export const UserDropdown = () => {
                           )}
                           {sub.trial_end && (
                             <div className="flex justify-between items-start gap-2 text-xs">
-                              <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">Trial End</span>
+                              <span className="text-gray-500 dark:text-gray-400 font-medium min-w-[110px]">
+                                Trial End
+                              </span>
                               <span className="text-gray-900 dark:text-gray-100 text-right flex-1">
                                 {new Date(sub.trial_end).toLocaleDateString()}
                               </span>
@@ -446,7 +551,9 @@ export const UserDropdown = () => {
                       ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">No active subscriptions</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    No active subscriptions
+                  </p>
                 )}
               </div>
             </div>
@@ -458,7 +565,10 @@ export const UserDropdown = () => {
               <div className="flex items-center p-2">
                 <div className="flex-1 flex items-center gap-2">
                   <Avatar className="cursor-pointer size-10 border border-white dark:border-gray-700">
-                    <AvatarImage src={personProfile.avatar.url} alt={personProfile.avatar.alt} />
+                    <AvatarImage
+                      src={personProfile.avatar.url}
+                      alt={personProfile.avatar.alt}
+                    />
                     <AvatarFallback>{personProfile.initials}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -486,22 +596,53 @@ export const UserDropdown = () => {
 
               {/* Profile Actions */}
               <DropdownMenuGroup className="p-1">
-                <DropdownMenuItem className="p-2 rounded-lg cursor-pointer" onClick={handleProfile}>
+                <DropdownMenuItem
+                  className="p-2 rounded-lg cursor-pointer"
+                  onClick={handleProfile}
+                >
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Icon icon="solar:user-circle-line-duotone" className="size-5 text-gray-500 dark:text-gray-400" />
+                    <Icon
+                      icon="solar:user-circle-line-duotone"
+                      className="size-5 text-gray-500 dark:text-gray-400"
+                    />
                     Your profile
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="p-2 rounded-lg cursor-pointer" onClick={handleSettings}>
+
+                <DropdownMenuItem
+                  className="p-2 rounded-lg cursor-pointer"
+                  onClick={handleIntegration}
+                >
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Icon icon="solar:settings-line-duotone" className="size-5 text-gray-500 dark:text-gray-400" />
-                    Settings
+                    <Icon
+                      icon="fluent:window-dev-tools-16-filled"
+                      className="size-5 text-gray-500 dark:text-gray-400"
+                    />
+                    Integration
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="p-2 rounded-lg cursor-pointer" onClick={handleIntegration}>
+                <DropdownMenuItem
+                  className="p-2 rounded-lg cursor-pointer"
+                  onClick={handleUsage}
+                >
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Icon icon="fluent:window-dev-tools-16-filled" className="size-5 text-gray-500 dark:text-gray-400" />
-                    Integration
+                    <Icon
+                      icon="solar:chart-2-line-duotone"
+                      className="size-5 text-gray-500 dark:text-gray-400"
+                    />
+                    Usage
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="p-2 rounded-lg cursor-pointer"
+                  onClick={handleSettings}
+                >
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Icon
+                      icon="solar:settings-line-duotone"
+                      className="size-5 text-gray-500 dark:text-gray-400"
+                    />
+                    Settings
                   </span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
@@ -512,18 +653,30 @@ export const UserDropdown = () => {
               <div className="p-3">
                 <div>
                   <Label className="text-xs mb-1 block">Language</Label>
-                  <Select value={currentLang.value} onValueChange={onChangeLang}>
+                  <Select
+                    value={currentLang.value}
+                    onValueChange={onChangeLang}
+                  >
                     <SelectTrigger className="h-10">
                       <div className="flex items-center gap-1.5">
-                        <Icon icon={currentLang.icon} className="size-6" />
+                        <Icon
+                          icon={currentLang.icon}
+                          className="size-6"
+                        />
                         <span className="text-xs">{currentLang.label}</span>
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       {allLangs.map((option: any) => (
-                        <SelectItem key={option.value} value={option.value}>
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                        >
                           <div className="flex items-center gap-2">
-                            <Icon icon={option.icon} className="size-6" />
+                            <Icon
+                              icon={option.icon}
+                              className="size-6"
+                            />
                             <span>{option.label}</span>
                           </div>
                         </SelectItem>
@@ -542,7 +695,10 @@ export const UserDropdown = () => {
                   onClick={handleLogout}
                 >
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Icon icon="solar:logout-2-bold-duotone" className="size-5" />
+                    <Icon
+                      icon="solar:logout-2-bold-duotone"
+                      className="size-5"
+                    />
                     Log out
                   </span>
                 </DropdownMenuItem>

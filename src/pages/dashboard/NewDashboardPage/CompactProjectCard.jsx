@@ -1,77 +1,156 @@
-import { Box, Menu, MenuItem, alpha } from '@mui/material';
-import React, { memo, useState, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { memo, useState, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
+import { NewAvatarGroup } from '../../../components/avatar-group';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog';
 import FormDialog from '../../../components/FormDialog';
 import Iconify from '../../../components/iconify/Iconify';
 import IconRenderer from '../../../components/icons/IconRenderer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../../components/ui/dropdown-menu';
 import { deleteAltanerById, updateAltanerById } from '../../../redux/slices/altaners';
-import { optimai_pods } from '../../../utils/axios';
-import { fToNow } from '../../../utils/formatTime';
+import { selectSortedAgents, selectAccount } from '../../../redux/slices/general';
 
-const CompactProjectCard = ({ id, name, icon_url, is_pinned, components = [], last_modified, description }) => {
+// Selector for agents
+const selectAgents = (state) => selectSortedAgents(state) || [];
+
+// Selector for members
+const selectMembers = (state) => selectAccount(state)?.members || [];
+
+const CompactProjectCard = ({ altaner }) => {
   const history = useHistory();
   const dispatch = useDispatch();
-  const [coverUrl, setCoverUrl] = useState(null);
+  const agents = useSelector(selectAgents);
+  const members = useSelector(selectMembers);
   const [imageError, setImageError] = useState(false);
-  const [contextMenu, setContextMenu] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Find interface component for preview
-  const interfaceComponent = components.find((comp) => comp.type === 'interface');
+  // Early return if altaner is invalid
+  if (!altaner || typeof altaner !== 'object') {
+    return null;
+  }
 
-  useEffect(() => {
-    const fetchCoverUrl = async () => {
-      if (interfaceComponent?.params?.id) {
-        try {
-          const response = await optimai_pods.get(`/interfaces/${interfaceComponent.params.id}/preview`);
-          setCoverUrl(response.data.url);
-        } catch (error) {
-          setCoverUrl(null);
-        }
-      }
-    };
+  // Destructure properties from altaner with safe defaults
+  const {
+    id,
+    name = 'Untitled Project',
+    icon_url,
+    description = '',
+    preview_url,
+    interface_id,
+    is_pinned = false,
+    last_modified,
+    components,
+    user_ids,
+  } = altaner || {};
 
-    fetchCoverUrl();
-  }, [interfaceComponent?.params?.id]);
+  // Ensure components is always an array
+  const safeComponents = Array.isArray(components) ? components : [];
+  const safeUserIds = Array.isArray(user_ids) ? user_ids : [];
+
+  // Extract cloud component (base component with cloud_id)
+  const cloudComponent = safeComponents.find(
+    (comp) => comp && comp.type === 'base' && comp.cloud_id
+  );
+
+  // Extract agents component with ids
+  const agentsComponent = safeComponents.find(
+    (comp) => comp && comp.type === 'agents' && comp.params?.ids?.length > 0
+  );
+
+  // Get actual agent objects from Redux based on IDs in the component
+  const projectAgents = useMemo(() => {
+    if (!agentsComponent?.params?.ids?.length || !agents?.length) return [];
+    if (!Array.isArray(agentsComponent.params.ids)) return [];
+    return agentsComponent.params.ids
+      .map((agentId) => agents.find((agent) => agent?.id === agentId))
+      .filter(Boolean); // Remove undefined entries
+  }, [agentsComponent, agents]);
+
+  // Get actual user objects from Redux based on user_ids in the altaner
+  const projectUsers = useMemo(() => {
+    if (!safeUserIds?.length || !members?.length) return [];
+    return safeUserIds
+      .map((userId) => members.find((member) => member?.user?.id === userId))
+      .filter(Boolean) // Remove undefined entries
+      .map((member) => ({ ...member.user, _type: 'user' })); // Extract user object and mark as user
+  }, [safeUserIds, members]);
+
+  // Merge users and agents into a single array for the avatar group
+  const projectMembers = useMemo(() => {
+    const safeProjectAgents = Array.isArray(projectAgents) ? projectAgents : [];
+    const safeProjectUsers = Array.isArray(projectUsers) ? projectUsers : [];
+    // Mark agents with a type identifier
+    const markedAgents = safeProjectAgents.map((agent) => ({ ...agent, _type: 'agent' }));
+    // Users first, then agents
+    return [...safeProjectUsers, ...markedAgents];
+  }, [projectUsers, projectAgents]);
 
   const handleClick = useCallback(() => {
+    if (!id) return;
     history.push(`/project/${id}`);
   }, [id, history]);
 
-  const handleContextMenu = useCallback(
-    (event) => {
-      event.preventDefault();
-      setContextMenu(
-        contextMenu === null
-          ? {
-              mouseX: event.clientX + 2,
-              mouseY: event.clientY - 6,
-            }
-          : null,
-      );
+  const handleCloudClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      if (cloudComponent && cloudComponent.id && id) {
+        history.push(`/project/${id}/c/${cloudComponent.id}`);
+      }
     },
-    [contextMenu],
+    [cloudComponent, history, id]
   );
 
-  const handleClose = () => {
+  const handleMemberClick = useCallback(
+    (item, e) => {
+      e.stopPropagation();
+      // Only navigate if it's an agent (not a user)
+      if (item?._type === 'agent' && agentsComponent?.id && id && item?.id) {
+        history.push(`/project/${id}/c/${agentsComponent.id}/i/${item.id}`);
+      }
+      // For users, we could add navigation or other functionality later
+    },
+    [agentsComponent, history, id]
+  );
+
+  const handleContextMenu = useCallback((event) => {
+    event.preventDefault();
+    setContextMenu({
+      mouseX: event.clientX,
+      mouseY: event.clientY,
+    });
+    setMenuOpen(true);
+  }, []);
+
+  const handleCloseMenu = useCallback(() => {
+    setMenuOpen(false);
     setContextMenu(null);
-  };
+  }, []);
 
   const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true);
-    handleClose();
-  }, []);
+    handleCloseMenu();
+  }, [handleCloseMenu]);
 
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
+    if (!id) {
+      console.error('Cannot delete altaner: missing id');
+      return;
+    }
     setIsDeleting(true);
     try {
       dispatch(deleteAltanerById(id));
@@ -81,7 +160,7 @@ const CompactProjectCard = ({ id, name, icon_url, is_pinned, components = [], la
     } finally {
       setIsDeleting(false);
     }
-  }, [dispatch, id]);
+  }, [dispatch, id, handleCloseDeleteDialog]);
 
   const editSchema = {
     properties: {
@@ -107,8 +186,8 @@ const CompactProjectCard = ({ id, name, icon_url, is_pinned, components = [], la
 
   const handleEdit = useCallback(() => {
     setEditDialogOpen(true);
-    handleClose();
-  }, []);
+    handleCloseMenu();
+  }, [handleCloseMenu]);
 
   const handleCloseEditDialog = useCallback(() => {
     setEditDialogOpen(false);
@@ -116,6 +195,10 @@ const CompactProjectCard = ({ id, name, icon_url, is_pinned, components = [], la
 
   const handleConfirmEdit = useCallback(
     async (data) => {
+      if (!id) {
+        console.error('Cannot update altaner: missing id');
+        return;
+      }
       try {
         dispatch(updateAltanerById(id, data));
         handleCloseEditDialog();
@@ -127,168 +210,166 @@ const CompactProjectCard = ({ id, name, icon_url, is_pinned, components = [], la
   );
 
   const handleTogglePin = useCallback(() => {
+    if (!id) {
+      console.error('Cannot toggle pin: missing id');
+      return;
+    }
     try {
       dispatch(updateAltanerById(id, { is_pinned: !is_pinned }));
-      handleClose();
+      handleCloseMenu();
     } catch (error) {
       console.error('Failed to toggle pin status:', error);
     }
-  }, [dispatch, id, is_pinned]);
+  }, [dispatch, id, is_pinned, handleCloseMenu]);
 
   return (
     <>
       <div
         className="cursor-pointer group w-[280px] sm:w-[320px] flex-shrink-0"
-        onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
-      {/* Cover Image */}
-      <div className="relative aspect-[16/10] overflow-hidden rounded-xl">
-        {coverUrl ? (
-          imageError ? (
-            <Box
-              sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-              }}
-            >
-              <IconRenderer
-                icon="mdi:image-off"
-                size={48}
-                sx={{ opacity: 0.5 }}
-              />
-            </Box>
-          ) : (
-            <img
-              src={coverUrl}
-              alt={name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-              onError={() => setImageError(true)}
-            />
-          )
-        ) : (
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-            }}
-          >
-            <IconRenderer
-              icon={icon_url || 'mdi:apps'}
-              size={64}
-            />
-          </Box>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-3">
-        <div className="flex items-center justify-between text-xs w-full min-w-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {/* Pin indicator */}
-            {is_pinned && (
-              <div className="flex items-center">
-                <Iconify
-                  icon="mdi:pin"
-                  width={14}
-                  sx={{ color: 'inherit' }}
+        {/* Cover Image */}
+        <div
+          className="relative aspect-[16/10] overflow-hidden rounded-xl"
+          onClick={handleClick}
+        >
+          {preview_url ? (
+            imageError ? (
+              <div className="w-full h-full flex items-center justify-center bg-primary/8">
+                <IconRenderer
+                  icon="mdi:image-off"
+                  size={48}
+                  className="opacity-50"
                 />
               </div>
-            )}
-            {/* Name */}
-            <span className="truncate max-w-[140px] font-semibold text-sm">{name}</span>
-          </div>
-
-          {/* Last modified */}
-          {last_modified && (
-            <div className="text-gray-400 dark:text-gray-500 text-xs">
-              {fToNow(last_modified)}
-            </div>
+            ) : (
+              <img
+                src={preview_url}
+                alt={name || 'Project preview'}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                onError={() => setImageError(true)}
+              />
+            )
+          ) : (
+            <img
+              src="https://www.shutterstock.com/blog/wp-content/uploads/sites/5/2020/02/Usign-Gradients-Featured-Image.jpg"
+              alt={name || 'Project preview'}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
           )}
         </div>
+
+        {/* Content */}
+        <div className="p-3">
+          <div className="flex items-center justify-between text-xs w-full min-w-0">
+            <div
+              className="flex items-center gap-2 min-w-0 flex-1"
+              onClick={handleClick}
+            >
+              {/* Pin indicator */}
+              {cloudComponent && (
+                <button
+                  onClick={handleCloudClick}
+                  className="p-1 hover:bg-primary/10 rounded transition-colors"
+                  title="Open Cloud"
+                >
+                  <Iconify
+                    icon="material-symbols:cloud"
+                    width={16}
+                    className="text-primary"
+                  />
+                </button>
+              )}
+              {is_pinned && (
+                <div className="flex items-center">
+                  <Iconify
+                    icon="mdi:pin"
+                    width={14}
+                    className="text-current"
+                  />
+                </div>
+              )}
+              {/* Name */}
+              <span className="truncate max-w-[140px] font-semibold text-sm">{name}</span>
+            </div>
+
+            {/* Component indicators */}
+            <div className="flex items-center gap-2">
+              {/* Merged avatars group (users and agents) */}
+              <NewAvatarGroup
+                items={projectMembers}
+                size={26}
+                limit={6}
+                onItemClick={handleMemberClick}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <Menu
-      open={contextMenu !== null}
-      onClose={handleClose}
-      anchorReference="anchorPosition"
-      anchorPosition={
-        contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
-      }
-      PaperProps={{
-        elevation: 0,
-        sx: {
-          overflow: 'visible',
-          filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
-          mt: 1.5,
-        },
-      }}
-    >
-      <MenuItem
-        onClick={handleTogglePin}
-        sx={{ gap: 1 }}
-      >
-        <Iconify
-          icon={is_pinned ? 'mdi:pin-off' : 'mdi:pin'}
-          width={20}
-        />
-        {is_pinned ? 'Unpin' : 'Pin'}
-      </MenuItem>
-      <MenuItem
-        onClick={handleEdit}
-        sx={{ gap: 1 }}
-      >
-        <Iconify
-          icon="eva:edit-fill"
-          width={20}
-        />
-        Quick Edit
-      </MenuItem>
+      <FormDialog
+        open={editDialogOpen}
+        onClose={handleCloseEditDialog}
+        schema={editSchema}
+        title="Edit Project"
+        description="Update the project details"
+        onConfirm={handleConfirmEdit}
+      />
 
-      <MenuItem
-        onClick={handleDelete}
-        sx={{
-          color: 'error.main',
-          gap: 1,
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.error.main, 0.08),
-          },
-        }}
-      >
-        <Iconify
-          icon="eva:trash-2-outline"
-          width={20}
-        />
-        Delete
-      </MenuItem>
-    </Menu>
+      <DeleteDialog
+        openDeleteDialog={deleteDialogOpen}
+        handleCloseDeleteDialog={handleCloseDeleteDialog}
+        confirmDelete={handleConfirmDelete}
+        isSubmitting={isDeleting}
+        message={`Are you sure you want to delete "${name}"? This action can't be undone.`}
+      />
 
-    <FormDialog
-      open={editDialogOpen}
-      onClose={handleCloseEditDialog}
-      schema={editSchema}
-      title="Edit Project"
-      description="Update the project details"
-      onConfirm={handleConfirmEdit}
-    />
-
-    <DeleteDialog
-      openDeleteDialog={deleteDialogOpen}
-      handleCloseDeleteDialog={handleCloseDeleteDialog}
-      confirmDelete={handleConfirmDelete}
-      isSubmitting={isDeleting}
-      message={`Are you sure you want to delete "${name}"? This action can't be undone.`}
-    />
-  </>
+      {/* Context Menu - Rendered via Portal */}
+      {menuOpen && contextMenu && ReactDOM.createPortal(
+        <>
+          {/* Backdrop to close menu when clicking outside */}
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={handleCloseMenu}
+          />
+          {/* Custom Context Menu */}
+          <div
+            className="fixed z-[9999] min-w-[12rem] rounded-lg border bg-white dark:bg-gray-800 p-1 shadow-xl"
+            style={{
+              top: `${contextMenu.mouseY}px`,
+              left: `${contextMenu.mouseX}px`,
+            }}
+          >
+            <button
+              onClick={handleTogglePin}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Iconify
+                icon={is_pinned ? "mdi:pin-off" : "mdi:pin"}
+                width={16}
+                className="mr-2"
+              />
+              {is_pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button
+              onClick={handleEdit}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Iconify icon="mdi:pencil" width={16} className="mr-2" />
+              Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm text-red-600 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <Iconify icon="mdi:delete" width={16} className="mr-2" />
+              Delete
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
+    </>
   );
 };
 

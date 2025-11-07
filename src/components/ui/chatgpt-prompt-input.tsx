@@ -1,8 +1,22 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
+import { useHistory } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { GitHubDialog } from './github-dialog';
+// @ts-expect-error - analytics is a JS file
+import { analytics } from '../../lib/analytics';
+// @ts-expect-error - useLocales is a JS file
+import useLocales from '../../locales/useLocales';
+// @ts-expect-error - VoiceConversationProvider is a JSX file
+import { useVoiceConversation } from '../../providers/voice/VoiceConversationProvider';
+// @ts-expect-error - AgentOrbAvatar is a JSX file
+import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
+// @ts-expect-error - redux slices are JS files
+import { selectAccountCreditBalance, selectAccountAssetsInitialized, selectAccountAssetsLoading } from '../../redux/slices/general';
+// @ts-expect-error - auth context is a JSX file
+import { useAuthContext } from '../../auth/useAuthContext';
 
 // --- Utility Function & Radix Primitives ---
 type ClassValue = string | number | boolean | null | undefined;
@@ -106,6 +120,41 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // --- SVG Icon Components ---
+const AlertTriangle = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" x2="12" y1="9" y2="13" />
+    <line x1="12" x2="12.01" y1="17" y2="17" />
+  </svg>
+);
+
+const TrendingUp = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
+  </svg>
+);
+
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="24"
@@ -426,6 +475,21 @@ const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M5 18H3" />
   </svg>
 );
+const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+);
 
 const toolsList = [
   { id: 'createProject', name: 'Create a project', shortName: 'Project', icon: SquaresIcon },
@@ -465,331 +529,546 @@ export const PromptBox = React.forwardRef<
     externalValue?: string;
     isAccountFree?: boolean;
     externalTemplate?: TemplateData | null;
+    disabled?: boolean;
   }
->(({ className, onSend, externalValue, isAccountFree = false, externalTemplate, ...props }, ref) => {
-  const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [value, setValue] = React.useState('');
-  const [files, setFiles] = React.useState<FileAttachment[]>([]);
-  const selectedTool = 'createProject'; // Fixed to createProject for now
-  const [isFileDialogOpen, setIsFileDialogOpen] = React.useState(false);
-  const [selectedFileIndex, setSelectedFileIndex] = React.useState<number | null>(null);
-  const [isGithubDialogOpen, setIsGithubDialogOpen] = React.useState(false);
-  const [githubUrl, setGithubUrl] = React.useState('');
-  const [githubBranch, setGithubBranch] = React.useState('main');
-  const [githubToken, setGithubToken] = React.useState('');
-  const [template, setTemplate] = React.useState<TemplateData | null>(null);
+>(
+  (
+    { className, onSend, externalValue, isAccountFree = false, externalTemplate, disabled = false, ...props },
+    ref,
+  ) => {
+    const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [value, setValue] = React.useState('');
+    const [files, setFiles] = React.useState<FileAttachment[]>([]);
+    const selectedTool = 'createProject'; // Fixed to createProject for now
+    const [isFileDialogOpen, setIsFileDialogOpen] = React.useState(false);
+    const [selectedFileIndex, setSelectedFileIndex] = React.useState<number | null>(null);
+    const [isGithubDialogOpen, setIsGithubDialogOpen] = React.useState(false);
+    const [githubUrl, setGithubUrl] = React.useState('');
+    const [githubBranch, setGithubBranch] = React.useState('main');
+    const [githubToken, setGithubToken] = React.useState('');
+    const [template, setTemplate] = React.useState<TemplateData | null>(null);
 
-  // Update internal value when externalValue changes
-  React.useEffect(() => {
-    if (externalValue !== undefined) {
-      setValue(externalValue);
-    }
-  }, [externalValue]);
+    // Voice conversation state and hooks
+    const { isConnected, isConnecting, startConversation, stopConversation } =
+      useVoiceConversation();
+    const [voiceError, setVoiceError] = React.useState<string | null>(null);
+    const [callStartTime, setCallStartTime] = React.useState<number | null>(null);
 
-  // Update template when externalTemplate changes
-  React.useEffect(() => {
-    if (externalTemplate !== undefined) {
-      setTemplate(externalTemplate);
-    }
-  }, [externalTemplate]);
+    // Get current language for voice conversation and translations
+    const { currentLang, translate } = useLocales();
 
-  React.useImperativeHandle(ref, () => internalTextareaRef.current!, []);
-  React.useLayoutEffect(() => {
-    const textarea = internalTextareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 200);
-      textarea.style.height = `${newHeight}px`;
-    }
-  }, [value]);
+    // Demo agent ID for onboarding calls
+    const DEMO_AGENT_ELEVENLABS_ID = 'agent_01jy1hqg8jehq8v9zd7j9qxa2a';
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
-    if (props.onChange) props.onChange(e);
-  };
-  const handlePlusClick = () => {
-    fileInputRef.current?.click();
-  };
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = event.target.files;
-    if (selectedFiles) {
-      const filePromises = Array.from(selectedFiles).map((file) => {
-        return new Promise<FileAttachment>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve({
-              name: file.name,
-              url: reader.result as string,
-              file: file,
-              type: file.type,
-            });
-          };
-          reader.readAsDataURL(file);
-        });
-      });
+    // Credit balance state
+    const { isAuthenticated } = useAuthContext();
+    const creditBalance = useSelector(selectAccountCreditBalance) as number | null | undefined;
+    const subscriptionsInitialized = useSelector(selectAccountAssetsInitialized('subscriptions')) as boolean;
+    const subscriptionsLoading = useSelector(selectAccountAssetsLoading('subscriptions')) as boolean;
+    const history = useHistory();
 
-      void Promise.all(filePromises).then((newFiles) => {
-        setFiles((prev) => [...prev, ...newFiles]);
-      });
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleViewFile = (index: number) => {
-    setSelectedFileIndex(index);
-    setIsFileDialogOpen(true);
-  };
-
-  const handleGithubConnect = () => {
-    setIsGithubDialogOpen(true);
-  };
-
-  const handleGithubSave = () => {
-    setIsGithubDialogOpen(false);
-  };
-
-  const handleGithubRemove = () => {
-    setGithubUrl('');
-    setGithubBranch('main');
-    setGithubToken('');
-  };
-
-  const hasValue = value.trim().length > 0 || files.length > 0;
-
-  const getPlaceholder = () => {
-    if (selectedTool === 'createProject') return 'Describe your next project';
-    if (selectedTool === 'createAgent') return 'Describe your next agent';
-    return "What's on your mind?";
-  };
-
-  const handleSendClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (!hasValue) return;
-
-    if (onSend) {
-      let finalPrompt = value.trim();
-
-      // Append free account prompt when user is on free plan
-      if (isAccountFree) {
-        finalPrompt +=
-          "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, api services, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - after the user can view his first interface you can create a sophisticated plan for the next version of his app .</hide>";
+    // Format credits for display
+    const formatCredits = (credits: number) => {
+      if (credits >= 100000) {
+        return `€${(credits / 100000).toFixed(1)}K`;
       }
-      const githubData = githubUrl
-        ? {
-            url: githubUrl,
-            branch: githubBranch,
-            ...(githubToken && { token: githubToken }),
-          }
-        : null;
-      
-      onSend(finalPrompt, files, selectedTool, githubData, template);
-      // Clear the form after sending
-      setValue('');
-      setFiles([]);
+      return `€${(credits / 100).toFixed(2)}`;
+    };
+
+    // Determine if we should show the credit warning
+    // Don't show warning while subscriptions are loading or not initialized
+    const showCreditWarning = isAuthenticated && subscriptionsInitialized && !subscriptionsLoading && creditBalance !== null && creditBalance !== undefined && creditBalance <= 500;
+    const isOutOfCredits = creditBalance !== null && creditBalance !== undefined && creditBalance <= 0;
+    
+    // Disable everything when out of credits (only if subscriptions are initialized and not loading)
+    const isDisabledDueToCredits = isAuthenticated && subscriptionsInitialized && !subscriptionsLoading && isOutOfCredits;
+
+    // Update internal value when externalValue changes
+    React.useEffect(() => {
+      if (externalValue !== undefined) {
+        setValue(externalValue);
+      }
+    }, [externalValue]);
+
+    // Update template when externalTemplate changes
+    React.useEffect(() => {
+      if (externalTemplate !== undefined) {
+        setTemplate(externalTemplate);
+      }
+    }, [externalTemplate]);
+
+    React.useImperativeHandle(ref, () => internalTextareaRef.current!, []);
+    React.useLayoutEffect(() => {
+      const textarea = internalTextareaRef.current;
+      if (textarea) {
+        textarea.style.height = 'auto';
+        const newHeight = Math.min(textarea.scrollHeight, 200);
+        textarea.style.height = `${newHeight}px`;
+      }
+    }, [value]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (isDisabledDueToCredits) return;
+      setValue(e.target.value);
+      if (props.onChange) props.onChange(e);
+    };
+    const handlePlusClick = () => {
+      if (isDisabledDueToCredits) return;
+      fileInputRef.current?.click();
+    };
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = event.target.files;
+      if (selectedFiles) {
+        const filePromises = Array.from(selectedFiles).map((file) => {
+          return new Promise<FileAttachment>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                name: file.name,
+                url: reader.result as string,
+                file: file,
+                type: file.type,
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+
+        void Promise.all(filePromises).then((newFiles) => {
+          setFiles((prev) => [...prev, ...newFiles]);
+        });
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    const handleRemoveFile = (index: number) => {
+      setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleViewFile = (index: number) => {
+      setSelectedFileIndex(index);
+      setIsFileDialogOpen(true);
+    };
+
+    const handleGithubConnect = () => {
+      setIsGithubDialogOpen(true);
+    };
+
+    const handleGithubSave = () => {
+      setIsGithubDialogOpen(false);
+    };
+
+    const handleGithubRemove = () => {
       setGithubUrl('');
       setGithubBranch('main');
       setGithubToken('');
-      setTemplate(null);
-    }
-  };
+    };
 
-  return (
-    <div
-      className={cn(
-        'flex flex-col rounded-[28px] p-2 shadow-sm transition-colors bg-white border dark:bg-[#303030] dark:border-transparent cursor-text',
-        className,
-      )}
-    >
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept="*/*"
-        multiple
-      />
+    const hasValue = value.trim().length > 0 || files.length > 0;
 
-      {/* File Previews */}
-      {files.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 px-2">
-          {files.map((file, index) => {
-            const isImage = file.type.startsWith('image/');
-            return (
-              <div
-                key={index}
-                className="relative group"
-              >
-                <button
-                  type="button"
-                  className="transition-transform hover:scale-105"
-                  onClick={() => isImage && handleViewFile(index)}
-                >
-                  {isImage ? (
-                    <img
-                      src={file.url}
-                      alt={file.name}
-                      className="h-16 w-16 rounded-lg object-cover border border-border dark:border-gray-600"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 rounded-lg border border-border dark:border-gray-600 bg-accent dark:bg-[#404040] flex flex-col items-center justify-center p-2">
-                      <FileIcon className="h-6 w-6 text-muted-foreground dark:text-gray-400" />
-                      <span className="text-[8px] text-muted-foreground dark:text-gray-400 mt-1 truncate w-full text-center">
-                        {file.name.split('.').pop()?.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleRemoveFile(index)}
-                  className="absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black transition-colors hover:bg-black/80 dark:hover:bg-white/80"
-                  aria-label="Remove file"
-                >
-                  <XIcon className="h-3 w-3" />
-                </button>
-              </div>
-            );
-          })}
+    const getPlaceholder = () => {
+      if (selectedTool === 'createProject') return translate('prompt.describeProject');
+      if (selectedTool === 'createAgent') return translate('prompt.describeAgent');
+      return translate('prompt.whatsOnYourMind');
+    };
+
+    const handleStartCall = React.useCallback(async () => {
+      if (isDisabledDueToCredits) {
+        setVoiceError('Insufficient credits. Please add credits to start a call.');
+        return;
+      }
+      
+      try {
+        setVoiceError(null);
+
+        // Get the language code (e.g., 'es', 'en', 'fr')
+        const languageCode = currentLang?.value || 'en';
+
+        const success = await startConversation({
+          agentId: DEMO_AGENT_ELEVENLABS_ID,
+          overrides: {
+            agent: {
+              language: languageCode,
+            },
+          },
+          onConnect: () => {
+            console.log('✅ Voice onboarding call connected in language:', languageCode);
+            const startTime = Date.now();
+            setCallStartTime(startTime);
+
+            // Track analytics: voice call started
+            void analytics.voiceConversationStart(DEMO_AGENT_ELEVENLABS_ID, {
+              source: 'onboarding_prompt',
+              language: languageCode,
+              entry_point: 'hero_input',
+            });
+          },
+          onDisconnect: () => {
+            console.log('🛑 Voice onboarding call disconnected');
+          },
+          onError: (err: unknown) => {
+            console.error('❌ Voice call error:', err);
+            setVoiceError('Failed to start voice call. Please check your microphone permissions.');
+          },
+        });
+
+        if (!success) {
+          setVoiceError('Could not start call. Please try again.');
+        }
+      } catch (err) {
+        console.error('Failed to start conversation:', err);
+        setVoiceError('Failed to start voice call');
+      }
+    }, [startConversation, DEMO_AGENT_ELEVENLABS_ID, currentLang, isDisabledDueToCredits]);
+
+    const handleStopCall = React.useCallback(() => {
+      // Calculate call duration if we have a start time
+      if (callStartTime) {
+        const duration = Math.floor((Date.now() - callStartTime) / 1000); // Duration in seconds
+
+        // Track analytics: voice call ended
+        void analytics.voiceConversationEnd(DEMO_AGENT_ELEVENLABS_ID, duration, {
+          source: 'onboarding_prompt',
+          language: currentLang?.value || 'en',
+          entry_point: 'hero_input',
+        });
+
+        setCallStartTime(null);
+      }
+
+      stopConversation();
+    }, [stopConversation, callStartTime, currentLang, DEMO_AGENT_ELEVENLABS_ID]);
+
+    const handleSendClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!hasValue || isDisabledDueToCredits) return;
+
+      if (onSend) {
+        let finalPrompt = value.trim();
+
+        // Append free account prompt when user is on free plan
+        if (isAccountFree) {
+          finalPrompt +=
+            "<hide> The user is on the free plan and exploring Altan's capabilities. Your primary goal is to create an exceptional prototype interface with outstanding UI/UX that demonstrates Altan's potential. Focus on: 1. Building a polished, functional prototype quickly 2. Showcasing clean, modern design patterns 3. Implementing smooth interactions and responsive layouts Once the interface is complete, naturally highlight how Altan's advanced features (databases, api services, AI agents) could elevate their project to production-ready status. When appropriate, mention that upgrading unlocks significantly more credits and capabilities - after the user can view his first interface you can create a sophisticated plan for the next version of his app .</hide>";
+        }
+        const githubData = githubUrl
+          ? {
+              url: githubUrl,
+              branch: githubBranch,
+              ...(githubToken && { token: githubToken }),
+            }
+          : null;
+
+        onSend(finalPrompt, files, selectedTool, githubData, template);
+        // Clear the form after sending
+        setValue('');
+        setFiles([]);
+        setGithubUrl('');
+        setGithubBranch('main');
+        setGithubToken('');
+        setTemplate(null);
+      }
+    };
+
+    // Voice call UI when connected or connecting
+    if (isConnected || isConnecting) {
+      return (
+        <div
+          className={cn(
+            'flex flex-col items-center justify-center rounded-[28px] p-8 shadow-sm transition-all duration-500 bg-white border dark:bg-[#303030] dark:border-transparent min-h-[200px]',
+            className,
+          )}
+        >
+          {/* Agent Orb Avatar */}
+          <div className="mb-6">
+            <AgentOrbAvatar
+              size={180}
+              agentId="onboarding-agent"
+              colors={['#00fbff', '#68dffd']}
+              agentState={isConnected ? 'speaking' : 'thinking'}
+              isStatic={false}
+            />
+          </div>
+
+          {/* Status Text */}
+          <p className="text-base text-foreground/70 dark:text-gray-300 mb-6">
+            {isConnecting ? translate('voice.connecting') : translate('voice.talkToInterrupt')}
+          </p>
+
+          {/* End Call Button */}
+          {isConnected && (
+            <button
+              type="button"
+              onClick={handleStopCall}
+              className="flex h-10 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              <PhoneIcon className="h-4 w-4" />
+              <span>{translate('voice.endCall')}</span>
+            </button>
+          )}
+
+          {/* Error Message */}
+          {voiceError && (
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-xs text-red-500">{voiceError}</p>
+            </div>
+          )}
         </div>
-      )}
+      );
+    }
 
-      {/* File Preview Dialog */}
-      <Dialog
-        open={isFileDialogOpen}
-        onOpenChange={setIsFileDialogOpen}
+    // Normal input UI
+    return (
+      <div
+        className={cn(
+          'flex flex-col rounded-[28px] p-2 shadow-sm transition-colors bg-white border dark:bg-[#303030] dark:border-transparent cursor-text',
+          className,
+        )}
       >
-        <DialogContent>
-          {selectedFileIndex !== null && files[selectedFileIndex] && (
-            <>
-              {files[selectedFileIndex].type.startsWith('image/') ? (
-                <img
-                  src={files[selectedFileIndex].url}
-                  alt={files[selectedFileIndex].name}
-                  className="w-full max-h-[95vh] object-contain rounded-[24px]"
-                />
-              ) : (
-                <div className="p-8 text-center">
-                  <FileIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground dark:text-gray-400" />
-                  <p className="text-foreground dark:text-white">{files[selectedFileIndex].name}</p>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400 mt-2">
-                    {(files[selectedFileIndex].file.size / 1024).toFixed(2)} KB
-                  </p>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="*/*"
+          multiple
+        />
+
+        {/* Credit Warning Bar - Integrated like CreditWallet */}
+        {showCreditWarning && (
+          <div
+            className={cn(
+              'flex items-center justify-between px-4 py-2 backdrop-blur-sm',
+              isOutOfCredits
+                ? 'border-red-200/40 dark:border-red-900/40'
+                : 'border-yellow-200/40 dark:border-yellow-900/40',
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle
+                className={cn(
+                  'w-4 h-4',
+                  isOutOfCredits
+                    ? 'text-red-600 dark:text-red-500'
+                    : 'text-yellow-600 dark:text-yellow-500',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-sm font-semibold',
+                  isOutOfCredits
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-yellow-600 dark:text-yellow-400',
+                )}
+                >
+                  {isOutOfCredits ? '0 credits left' : creditBalance !== null && creditBalance !== undefined ? `${formatCredits(creditBalance)} left` : ''}
+                </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => history.push('/pricing')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105',
+                isOutOfCredits
+                  ? 'bg-red-600/10 dark:bg-red-600/20 text-red-700 dark:text-red-400 hover:bg-red-600/20 dark:hover:bg-red-600/30'
+                  : 'bg-yellow-600/10 dark:bg-yellow-600/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-600/20 dark:hover:bg-yellow-600/30',
+              )}
+            >
+              <TrendingUp className="w-3 h-3" />
+              Upgrade
+            </button>
+          </div>
+        )}
+
+        {/* File Previews */}
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2 px-2">
+            {files.map((file, index) => {
+              const isImage = file.type.startsWith('image/');
+              return (
+                <div
+                  key={index}
+                  className="relative group"
+                >
+                  <button
+                    type="button"
+                    className="transition-transform hover:scale-105"
+                    onClick={() => isImage && handleViewFile(index)}
+                  >
+                    {isImage ? (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="h-16 w-16 rounded-lg object-cover border border-border dark:border-gray-600"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg border border-border dark:border-gray-600 bg-accent dark:bg-[#404040] flex flex-col items-center justify-center p-2">
+                        <FileIcon className="h-6 w-6 text-muted-foreground dark:text-gray-400" />
+                        <span className="text-[8px] text-muted-foreground dark:text-gray-400 mt-1 truncate w-full text-center">
+                          {file.name.split('.').pop()?.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleRemoveFile(index)}
+                    className="absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black transition-colors hover:bg-black/80 dark:hover:bg-white/80"
+                    aria-label="Remove file"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* File Preview Dialog */}
+        <Dialog
+          open={isFileDialogOpen}
+          onOpenChange={setIsFileDialogOpen}
+        >
+          <DialogContent>
+            {selectedFileIndex !== null && files[selectedFileIndex] && (
+              <>
+                {files[selectedFileIndex].type.startsWith('image/') ? (
+                  <img
+                    src={files[selectedFileIndex].url}
+                    alt={files[selectedFileIndex].name}
+                    className="w-full max-h-[95vh] object-contain rounded-[24px]"
+                  />
+                ) : (
+                  <div className="p-8 text-center">
+                    <FileIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground dark:text-gray-400" />
+                    <p className="text-foreground dark:text-white">
+                      {files[selectedFileIndex].name}
+                    </p>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 mt-2">
+                      {(files[selectedFileIndex].file.size / 1024).toFixed(2)} KB
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* GitHub Connection Dialog */}
+        <GitHubDialog
+          open={isGithubDialogOpen}
+          onOpenChange={setIsGithubDialogOpen}
+          githubUrl={githubUrl}
+          githubBranch={githubBranch}
+          githubToken={githubToken}
+          onGithubUrlChange={setGithubUrl}
+          onGithubBranchChange={setGithubBranch}
+          onGithubTokenChange={setGithubToken}
+          onSave={handleGithubSave}
+        />
+
+        <textarea
+          ref={internalTextareaRef}
+          rows={1}
+          value={value}
+          onChange={handleInputChange}
+          placeholder={isDisabledDueToCredits ? 'Add credits to continue...' : getPlaceholder()}
+          disabled={isDisabledDueToCredits || disabled}
+          className={cn(
+            'custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-300 focus:ring-0 focus-visible:outline-none min-h-12',
+            isDisabledDueToCredits && 'opacity-50 cursor-not-allowed',
+          )}
+          {...props}
+        />
+
+        <div className="mt-0.5 p-1 pt-0">
+          <TooltipProvider delayDuration={100}>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                {' '}
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handlePlusClick}
+                    disabled={isDisabledDueToCredits}
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
+                      isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent',
+                    )}
+                  >
+                    <PlusIcon className="h-6 w-6" />
+                    <span className="sr-only">Attach files</span>
+                  </button>
+                </TooltipTrigger>{' '}
+                <TooltipContent
+                  side="top"
+                  showArrow={true}
+                >
+                  <p>Attach files</p>
+                </TooltipContent>{' '}
+              </Tooltip>
+
+              <Tooltip>
+                {' '}
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handleGithubConnect}
+                    disabled={isDisabledDueToCredits}
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
+                      githubUrl
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-foreground dark:text-white',
+                      isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent',
+                    )}
+                  >
+                    <GithubIcon className="h-5 w-5" />
+                    <span className="sr-only">Connect GitHub</span>
+                  </button>
+                </TooltipTrigger>{' '}
+                <TooltipContent
+                  side="top"
+                  showArrow={true}
+                >
+                  <p>{githubUrl ? 'GitHub connected' : 'Connect GitHub'}</p>
+                </TooltipContent>{' '}
+              </Tooltip>
+
+              {githubUrl && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30">
+                  <span className="text-xs text-green-700 dark:text-green-300 truncate max-w-[120px]">
+                    {githubUrl.split('/').pop()}
+                  </span>
+                  <button
+                    onClick={handleGithubRemove}
+                    className="flex items-center justify-center"
+                    aria-label="Remove GitHub connection"
+                  >
+                    <XIcon className="h-3 w-3 text-green-700 dark:text-green-300" />
+                  </button>
                 </div>
               )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* GitHub Connection Dialog */}
-      <GitHubDialog
-        open={isGithubDialogOpen}
-        onOpenChange={setIsGithubDialogOpen}
-        githubUrl={githubUrl}
-        githubBranch={githubBranch}
-        githubToken={githubToken}
-        onGithubUrlChange={setGithubUrl}
-        onGithubBranchChange={setGithubBranch}
-        onGithubTokenChange={setGithubToken}
-        onSave={handleGithubSave}
-      />
+              {template && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <SquaresIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
+                  <span className="text-xs text-blue-700 dark:text-blue-300 truncate max-w-[120px]">
+                    {template.name}
+                  </span>
+                  <button
+                    onClick={() => setTemplate(null)}
+                    className="flex items-center justify-center"
+                    aria-label="Remove template"
+                  >
+                    <XIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
+                  </button>
+                </div>
+              )}
 
-      <textarea
-        ref={internalTextareaRef}
-        rows={1}
-        value={value}
-        onChange={handleInputChange}
-        placeholder={getPlaceholder()}
-        className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-300 focus:ring-0 focus-visible:outline-none min-h-12"
-        {...props}
-      />
-
-      <div className="mt-0.5 p-1 pt-0">
-        <TooltipProvider delayDuration={100}>
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              {' '}
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handlePlusClick}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none"
-                >
-                  <PlusIcon className="h-6 w-6" />
-                  <span className="sr-only">Attach files</span>
-                </button>
-              </TooltipTrigger>{' '}
-              <TooltipContent
-                side="top"
-                showArrow={true}
-              >
-                <p>Attach files</p>
-              </TooltipContent>{' '}
-            </Tooltip>
-
-            <Tooltip>
-              {' '}
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleGithubConnect}
-                  className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none',
-                    githubUrl
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-foreground dark:text-white',
-                  )}
-                >
-                  <GithubIcon className="h-5 w-5" />
-                  <span className="sr-only">Connect GitHub</span>
-                </button>
-              </TooltipTrigger>{' '}
-              <TooltipContent
-                side="top"
-                showArrow={true}
-              >
-                <p>{githubUrl ? 'GitHub connected' : 'Connect GitHub'}</p>
-              </TooltipContent>{' '}
-            </Tooltip>
-
-            {githubUrl && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30">
-                <span className="text-xs text-green-700 dark:text-green-300 truncate max-w-[120px]">
-                  {githubUrl.split('/').pop()}
-                </span>
-                <button
-                  onClick={handleGithubRemove}
-                  className="flex items-center justify-center"
-                  aria-label="Remove GitHub connection"
-                >
-                  <XIcon className="h-3 w-3 text-green-700 dark:text-green-300" />
-                </button>
-              </div>
-            )}
-
-            {template && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <SquaresIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
-                <span className="text-xs text-blue-700 dark:text-blue-300 truncate max-w-[120px]">
-                  {template.name}
-                </span>
-                <button
-                  onClick={() => setTemplate(null)}
-                  className="flex items-center justify-center"
-                  aria-label="Remove template"
-                >
-                  <XIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
-                </button>
-              </div>
-            )}
-
-            {/* TOOLS POPOVER - COMMENTED OUT FOR NOW */}
-            {/* 
+              {/* TOOLS POPOVER - COMMENTED OUT FOR NOW */}
+              {/* 
             <Popover
               open={isPopoverOpen}
               onOpenChange={setIsPopoverOpen}
@@ -840,7 +1119,7 @@ export const PromptBox = React.forwardRef<
               </PopoverContent>
             </Popover> */}
 
-            {/* {activeTool && (
+              {/* {activeTool && (
               <>
                 <div className="h-4 w-px bg-border dark:bg-gray-600" />
                 <button
@@ -854,49 +1133,70 @@ export const PromptBox = React.forwardRef<
               </>
             )} */}
 
-            <div className="ml-auto flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-foreground dark:text-white transition-colors hover:bg-accent dark:hover:bg-[#515151] focus-visible:outline-none"
-                  >
-                    <MicIcon className="h-5 w-5" />
-                    <span className="sr-only">Record voice</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  showArrow={true}
-                >
-                  <p>Record voice</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type={onSend ? 'button' : 'submit'}
-                    onClick={onSend ? handleSendClick : undefined}
-                    disabled={!hasValue}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80 disabled:bg-black/40 dark:disabled:bg-[#515151]"
-                  >
-                    <SendIcon className="h-6 w-6 text-bold" />
-                    <span className="sr-only">Send message</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  showArrow={true}
-                >
-                  <p>Send</p>
-                </TooltipContent>
-              </Tooltip>
+              <div className="ml-auto flex items-center gap-2">
+                {hasValue ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type={onSend ? 'button' : 'submit'}
+                        onClick={onSend ? handleSendClick : undefined}
+                        disabled={isDisabledDueToCredits}
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80',
+                          isDisabledDueToCredits && 'opacity-50 cursor-not-allowed hover:bg-black dark:hover:bg-white',
+                        )}
+                      >
+                        <SendIcon className="h-6 w-6 text-bold" />
+                        <span className="sr-only">Send message</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      showArrow={true}
+                    >
+                      <p>Send</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={isConnected ? handleStopCall : handleStartCall}
+                        disabled={isConnecting || isDisabledDueToCredits}
+                        className={cn(
+                          'flex h-8 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed',
+                          isConnected
+                            ? 'bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700'
+                            : 'bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80',
+                        )}
+                      >
+                        <PhoneIcon className="h-4 w-4" />
+                        <span>
+                          {isConnecting
+                            ? translate('voice.connecting')
+                            : isConnected
+                              ? translate('voice.endCall')
+                              : translate('voice.startACall')}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      showArrow={true}
+                    >
+                      <p>
+                        {isConnected ? translate('voice.endCall') : translate('voice.startACall')}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
-          </div>
-        </TooltipProvider>
+          </TooltipProvider>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 PromptBox.displayName = 'PromptBox';

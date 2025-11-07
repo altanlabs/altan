@@ -1,4 +1,3 @@
-import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
 import React, { useMemo, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -118,14 +117,7 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
   if (sortedComponents.length === 0) return null;
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        height: 42,
-        gap: 0.5,
-      }}
-    >
+    <div className="flex items-center gap-2">
       <UnifiedNavigation
         altaner={altaner}
         components={sortedComponents}
@@ -144,7 +136,7 @@ const ProjectNav = ({ components, altanerId, onEditAltaner }) => {
           onItemSelect={handleItemSelected}
         />
       )}
-    </Box>
+    </div>
   );
 };
 

@@ -9,7 +9,6 @@ import Threads from './Threads.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
 import GeneralToolbar from '../../layouts/room/GeneralToolbar.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
-import { useWhisperStreamWebSocket } from '../../providers/websocket/WhisperStreamWebSocketProvider.jsx';
 import { checkObjectsEqual } from '../../redux/helpers/memoize';
 import {
   selectRoomId,
@@ -69,15 +68,13 @@ const DesktopRoom = ({
   show_mode_selector = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
-  const { isOpen: isOpenWhisperStream, subscribe: subscribeWhisperStream, unsubscribe: unsubscribeWhisperStream } = useWhisperStreamWebSocket();
-  // const { isOpen, subscribe, unsubscribe } = useWebSocket();
 
   const isSmallScreen = useResponsive('down', 'sm');
   const roomId = useSelector(selectRoomId);
   const { initialized, isLoading, drawerOpen } = useSelector(roomSelector);
   // const drawer = useSelector(selectThreadDrawerDetails);
-  const threadsById = useSelector(selectThreadsById);
-  const threadMain = useSelector(selectRoomThreadMain);
+  // const threadsById = useSelector(selectThreadsById);
+  // const threadMain = useSelector(selectRoomThreadMain);
   const mainThreadId = useSelector(selectMainThread);
   const location = useLocation();
   const history = useHistory();
@@ -90,6 +87,9 @@ const DesktopRoom = ({
 
   // Track if initialMessage has been sent to avoid duplicates
   const initialMessageSentRef = useRef(false);
+
+  // Track if this is initial page load to clear thread_id from URL
+  const isInitialLoadRef = useRef(true);
 
   // Get room context from Redux store
   const roomContext = useSelector(selectRoomContext);
@@ -115,18 +115,6 @@ const DesktopRoom = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roomId]);
-
-  useEffect(() => {
-    if (isOpenWhisperStream && roomId) {
-      const lastRoomId = roomId;
-      subscribeWhisperStream(`room:${roomId}`);
-      return () => {
-        // Unsubscribe from old room BEFORE state is cleared
-        unsubscribeWhisperStream(`room:${lastRoomId}`);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpenWhisperStream, roomId]);
 
   // Extract and store context from URL on room initialization
   useEffect(() => {
@@ -216,101 +204,134 @@ const DesktopRoom = ({
     initialMessageSentRef.current = false;
   }, [roomId]);
 
-  // Handle thread_id query parameter - open thread from URL (once per URL change)
+  // Clear thread_id from URL on initial page load to ensure users always start at main thread
   useEffect(() => {
     if (!initialized.room || !roomId) return;
 
-    const searchParams = new URLSearchParams(location.search);
-    const threadId = searchParams.get('thread_id');
-
-    // Only process if there's a new thread_id we haven't processed yet
-    if (!threadId || threadId === processedThreadIdRef.current) return;
-
-    // Mark as processed immediately to prevent loops
-    processedThreadIdRef.current = threadId;
-
-    // If already on this thread, no action needed
-    if (threadId === threadMain?.current) return;
-
-    const removeThreadFromUrl = () => {
-      const newParams = new URLSearchParams(location.search);
-      newParams.delete('thread_id');
-      const newSearch = newParams.toString();
-      history.replace({
-        pathname: location.pathname,
-        search: newSearch ? `?${newSearch}` : '',
-      });
-      processedThreadIdRef.current = null;
-
-      // Switch to the main thread of the room
-      if (mainThreadId && threadsById[mainThreadId]) {
-        const mainThreadData = threadsById[mainThreadId];
-        dispatch(
-          switchToThread({
-            threadId: mainThreadId,
-            threadName: mainThreadData?.name || 'Main Thread',
-          }),
-        );
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      
+      const searchParams = new URLSearchParams(location.search);
+      const hasThreadId = searchParams.has('thread_id');
+      
+      if (hasThreadId) {
+        // Remove thread_id from URL on page reload to prevent sending messages to wrong thread
+        searchParams.delete('thread_id');
+        const newSearch = searchParams.toString();
+        history.replace({
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : '',
+        });
+        processedThreadIdRef.current = null;
       }
-    };
+    }
+  }, [initialized.room, roomId, location.pathname, location.search, history]);
 
-    const handleThreadSwitch = async () => {
-      try {
-        let threadData = threadsById[threadId];
-
-        // Fetch thread if not already loaded
-        if (!threadData) {
-          const response = await dispatch(fetchThread({ threadId }));
-          if (!response || !response.payload) {
-            // Thread not found or doesn't belong to this room
-            // eslint-disable-next-line no-console
-            console.warn('Thread not found or does not belong to this room:', threadId);
-            removeThreadFromUrl();
-            return;
-          }
-          threadData = response.payload;
-        }
-
-        // Switch to the thread
-        dispatch(
-          switchToThread({
-            threadId,
-            threadName: threadData?.name || 'Thread',
-          }),
-        );
-      } catch (error) {
-        // Error loading thread (likely doesn't belong to this room or doesn't exist)
-        // eslint-disable-next-line no-console
-        console.error('Error loading thread from URL:', error);
-        removeThreadFromUrl();
-      }
-    };
-
-    handleThreadSwitch();
-    // Note: threadMain and threadsById intentionally excluded to prevent loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized.room, roomId, location.search]);
+  // DISABLED: Handle thread_id query parameter - open thread from URL
+  // Thread navigation is now tab-based only, not URL-based
+  // This prevents confusion and ensures users always start with main thread on reload
+  // useEffect(() => {
+  //   if (!initialized.room || !roomId) return;
+  //
+  //   // Skip if this is initial load (thread_id already cleared above)
+  //   if (isInitialLoadRef.current) return;
+  //
+  //   const searchParams = new URLSearchParams(location.search);
+  //   const threadId = searchParams.get('thread_id');
+  //
+  //   // Only process if there's a new thread_id we haven't processed yet
+  //   if (!threadId || threadId === processedThreadIdRef.current) return;
+  //
+  //   // Mark as processed immediately to prevent loops
+  //   processedThreadIdRef.current = threadId;
+  //
+  //   // If already on this thread, no action needed
+  //   if (threadId === threadMain?.current) return;
+  //
+  //   const removeThreadFromUrl = () => {
+  //     const newParams = new URLSearchParams(location.search);
+  //     newParams.delete('thread_id');
+  //     const newSearch = newParams.toString();
+  //     history.replace({
+  //       pathname: location.pathname,
+  //       search: newSearch ? `?${newSearch}` : '',
+  //     });
+  //     processedThreadIdRef.current = null;
+  //
+  //     // Switch to the main thread of the room
+  //     if (mainThreadId && threadsById[mainThreadId]) {
+  //       const mainThreadData = threadsById[mainThreadId];
+  //       dispatch(
+  //         switchToThread({
+  //           threadId: mainThreadId,
+  //           threadName: mainThreadData?.name || 'Main Thread',
+  //         }),
+  //       );
+  //     }
+  //   };
+  //
+  //   const handleThreadSwitch = async () => {
+  //     try {
+  //       let threadData = threadsById[threadId];
+  //
+  //       // Fetch thread if not already loaded
+  //       if (!threadData) {
+  //         const response = await dispatch(fetchThread({ threadId }));
+  //         if (!response || !response.payload) {
+  //           // Thread not found or doesn't belong to this room
+  //           // eslint-disable-next-line no-console
+  //           console.warn('Thread not found or does not belong to this room:', threadId);
+  //           removeThreadFromUrl();
+  //           return;
+  //         }
+  //         threadData = response.payload;
+  //       }
+  //
+  //       // Switch to the thread
+  //       dispatch(
+  //         switchToThread({
+  //           threadId,
+  //           threadName: threadData?.name || 'Thread',
+  //         }),
+  //       );
+  //     } catch (error) {
+  //       // Error loading thread (likely doesn't belong to this room or doesn't exist)
+  //       // eslint-disable-next-line no-console
+  //       console.error('Error loading thread from URL:', error);
+  //       removeThreadFromUrl();
+  //     }
+  //   };
+  //
+  //   handleThreadSwitch();
+  //   // Note: threadMain and threadsById intentionally excluded to prevent loops
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [initialized.room, roomId, location.search]);
 
   // Sync URL with active thread - update URL when thread changes internally
-  useEffect(() => {
-    if (!initialized.room || !roomId || !threadMain?.current) return;
-
-    const searchParams = new URLSearchParams(location.search);
-    const urlThreadId = searchParams.get('thread_id');
-    const currentThreadId = threadMain.current;
-
-    // Only update URL if it's different and we're not in the middle of processing
-    if (urlThreadId !== currentThreadId && processedThreadIdRef.current !== currentThreadId) {
-      processedThreadIdRef.current = currentThreadId;
-      searchParams.set('thread_id', currentThreadId);
-      history.replace({
-        pathname: location.pathname,
-        search: `?${searchParams.toString()}`,
-      });
-    }
-    // Note: history and location.search intentionally excluded - only react to thread changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized.room, roomId, threadMain?.current, location.pathname]);
+  // DISABLED: Don't sync thread_id to URL to prevent confusion on page reload
+  // Users always start with main thread on reload, no need to persist thread_id in URL
+  // useEffect(() => {
+  //   if (!initialized.room || !roomId || !threadMain?.current) return;
+  //
+  //   // Skip on initial load - we just cleared the thread_id
+  //   if (isInitialLoadRef.current) return;
+  //
+  //   const searchParams = new URLSearchParams(location.search);
+  //   const urlThreadId = searchParams.get('thread_id');
+  //   const currentThreadId = threadMain.current;
+  //
+  //   // Only update URL if it's different and we're not in the middle of processing
+  //   if (urlThreadId !== currentThreadId && processedThreadIdRef.current !== currentThreadId) {
+  //     processedThreadIdRef.current = currentThreadId;
+  //     searchParams.set('thread_id', currentThreadId);
+  //     history.replace({
+  //       pathname: location.pathname,
+  //       search: `?${searchParams.toString()}`,
+  //     });
+  //   }
+  //   // Note: history and location.search intentionally excluded - only react to thread changes
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [initialized.room, roomId, threadMain?.current, location.pathname]);
 
   const renderRoomContent = <RoomContent className="w-full" />;
 

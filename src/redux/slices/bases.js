@@ -8,6 +8,10 @@ import {
 } from './general';
 import { optimai_tables, optimai_cloud, optimai_tables_v4 } from '../../utils/axios';
 
+// NOTE: This slice is named "bases" for historical reasons, but it manages "Cloud" instances.
+// A "base" in the codebase refers to a complete cloud instance with database, auth, storage, etc.
+// The UI now refers to these as "Cloud" to better reflect their full capabilities.
+
 // ============================================================================
 // SQL QUERY HELPERS
 // ============================================================================
@@ -1549,7 +1553,7 @@ export const getBaseById = (baseId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
     // Get base metadata from legacy API (base info only)
-    const response = await optimai_tables_v4.get(`/databases/${baseId}`);
+    const response = await optimai_cloud.get(`/v1/instances/${baseId}`);
     const base = response.data;
 
     // Add base to state

@@ -8,6 +8,7 @@ import accountTemplatesReducer from './slices/accountTemplates';
 import agentsReducer from './slices/agents';
 import altanersReducer from './slices/altaners';
 import basesReducer from './slices/bases';
+import cloudReducer from './slices/cloud';
 import codeEditorReducer from './slices/codeEditor';
 import commitsReducer from './slices/commits';
 import connectionsReducer from './slices/connections';
@@ -63,6 +64,7 @@ const rootReducer = combineReducers({
   marketplace: marketplaceReducer,
   mcp: mcpReducer,
   bases: basesReducer,
+  cloud: cloudReducer,
   codeEditor: codeEditorReducer,
   commits: commitsReducer,
   room: roomsReducer,

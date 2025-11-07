@@ -3,9 +3,7 @@ import { useParams, useHistory } from 'react-router';
 
 import BaseLayout from './BaseLayout.jsx';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
-import HermesWebSocketProvider, {
-  useHermesWebSocket,
-} from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
   deleteTableById,
   getBaseById,
@@ -261,13 +259,6 @@ function Base({
 
   const shouldShowPlaceholder = base && base?.tables?.items?.length === 0;
 
-  // Subscribe to base updates
-  useEffect(() => {
-    if (!!baseId && ws?.isOpen) {
-      ws.subscribe(`base:${baseId}`);
-    }
-  }, [ws?.isOpen, baseId]); // Only depend on ws.isOpen, not the entire ws object
-
   // Cleanup subscriptions and state
   useEffect(() => {
     return () => {
@@ -290,7 +281,7 @@ function Base({
   // If loading is done but no tables, render anyway (could be 503/stopped instance or empty base)
   const isLoadingSchema = baseId && (!base || isBaseLoading);
 
-  if (isBaseLoading || isLoadingSchema) {
+  if (isBaseLoading) {
     return <LoadingFallback />;
   }
 
@@ -319,18 +310,8 @@ function Base({
   );
 }
 
-// Create a wrapper component that provides the HermesWebSocket
-const BaseWithHermesWebSocket = memo(
-  function BaseWithHermesWebSocket(props) {
-    return (
-      <HermesWebSocketProvider>
-        <Base {...props} />
-      </HermesWebSocketProvider>
-    );
-  },
-  (prevProps, nextProps) => {
-    return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
-  },
-);
-
-export default BaseWithHermesWebSocket;
+// Export Base directly - HermesWebSocketProvider is provided by AuthGuard at a higher level
+// No need to wrap again here to avoid double nesting
+export default memo(Base, (prevProps, nextProps) => {
+  return prevProps.ids === nextProps.ids && prevProps.onNavigate === nextProps.onNavigate;
+});

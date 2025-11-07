@@ -20,6 +20,14 @@ const fr = {
     switchToText: 'Passer en mode texte',
     switchToVoice: 'Passer en mode vocal',
     startCall: 'Démarrer la Voix',
+    startACall: 'Démarrer un appel',
+    endCall: 'Terminer l\'appel',
+    talkToInterrupt: 'Parlez pour interrompre',
+  },
+  prompt: {
+    describeProject: 'Décrivez votre prochain projet',
+    describeAgent: 'Décrivez votre prochain agent',
+    whatsOnYourMind: 'À quoi pensez-vous ?',
   },
   room: {
     howCanIHelp: 'Comment puis-je vous aider ?',

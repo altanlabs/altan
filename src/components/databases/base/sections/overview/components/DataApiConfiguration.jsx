@@ -4,6 +4,7 @@ import { Key, Globe, Copy, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
 export const DataApiConfiguration = ({ metrics }) => {
+  console.log('metrics', metrics);
   const [showAnonKey, setShowAnonKey] = useState(false);
   const [showServiceKey, setShowServiceKey] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
@@ -99,7 +100,7 @@ export const DataApiConfiguration = ({ metrics }) => {
         {/* API Fields */}
         <div className="space-y-4">
           <ApiField
-            label="Project URL"
+            label="Cloud URL"
             value={cloudUrl}
             icon={Globe}
             fieldKey="url"

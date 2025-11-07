@@ -2,6 +2,7 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 import { batch } from 'react-redux';
 
 import { switchAccount } from './general';
+import { analytics } from '../../lib/analytics';
 import { optimai } from '../../utils/axios';
 import {
   getDisplayModeForProject,
@@ -14,6 +15,7 @@ const initialState = {
   error: null,
   initialized: false,
   altaners: {},
+  altanersList: [], // List of altaners from account
   current: null,
   viewType: 'preview', // 'preview' or 'code'
   displayMode: 'both', // 'chat', 'preview', 'both'
@@ -36,6 +38,10 @@ const slice = createSlice({
     },
     clearState(state) {
       Object.assign(state, initialState);
+    },
+    setAltanersList(state, action) {
+      state.altanersList = action.payload;
+      state.initialized = true;
     },
     addAltaner(state, action) {
       const altaner = action.payload;
@@ -243,6 +249,7 @@ export const {
   patchAltanerComponent,
   clearCurrentAltaner,
   clearState: clearAltanerState,
+  setAltanersList,
   setViewType,
   setDisplayMode,
   setDisplayModeForProject,
@@ -291,7 +298,10 @@ export const getAltanerById = (altanerId) => async (dispatch, getState) => {
 export const createAltaner =
   (data = {}, idea) =>
   async (dispatch, getState) => {
-    const accountId = getState().general.account?.id;
+    const state = getState();
+    const accountId = state.general.account?.id;
+    const user = state.general.user;
+
     if (!accountId) throw new Error('undefined account');
 
     dispatch(slice.actions.startLoading());
@@ -301,7 +311,58 @@ export const createAltaner =
         url += `?idea=${encodeURIComponent(idea)}`;
       }
       const response = await optimai.post(url, data);
-      return response.data;
+      const { altaner } = response.data;
+
+      if (!altaner || !altaner.id) {
+        throw new Error('Invalid altaner response');
+      }
+
+      // Track project creation in analytics
+      // Read idea metadata from localStorage if available
+      let ideaMetadata = null;
+      try {
+        const storedMetadata = localStorage.getItem('altan_idea_metadata');
+        if (storedMetadata) {
+          ideaMetadata = JSON.parse(storedMetadata);
+          // Only use metadata if it's recent (within last 5 minutes) and matches the idea ID
+          const isRecent = Date.now() - (ideaMetadata.timestamp || 0) < 5 * 60 * 1000;
+          const matchesIdea = !idea || ideaMetadata.idea_id === idea;
+          if (!isRecent || !matchesIdea) {
+            ideaMetadata = null;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse idea metadata:', err);
+      }
+
+      // Track analytics with all available details
+      const projectName = ideaMetadata?.project_name || data.name || altaner.name || 'New Project';
+      const projectType = ideaMetadata?.project_type || 'direct';
+
+      await analytics.createProject(projectName, projectType, {
+        user_id: user?.id,
+        user_email: user?.email,
+        account_id: accountId,
+        project_id: altaner.id,
+        ...(ideaMetadata?.idea_id && { idea_id: ideaMetadata.idea_id }),
+        ...(ideaMetadata?.has_attachments !== undefined && {
+          has_attachments: ideaMetadata.has_attachments,
+        }),
+        ...(ideaMetadata?.attachment_count !== undefined && {
+          attachment_count: ideaMetadata.attachment_count,
+        }),
+        ...(ideaMetadata?.template_id && { template_id: ideaMetadata.template_id }),
+        ...(ideaMetadata?.template_name && { template_name: ideaMetadata.template_name }),
+        ...(ideaMetadata?.github_url && { github_url: ideaMetadata.github_url }),
+        ...(ideaMetadata?.github_branch && { github_branch: ideaMetadata.github_branch }),
+      });
+
+      // Clear idea metadata from localStorage after tracking
+      if (ideaMetadata) {
+        localStorage.removeItem('altan_idea_metadata');
+      }
+
+      return altaner;
     } catch (e) {
       console.error(`error: could not create altaner: ${e.message}`);
       dispatch(slice.actions.hasError(e.message));
@@ -429,11 +490,45 @@ export const duplicateAltaner = (altanerId, duplicateData) => async (dispatch) =
   }
 };
 
+// Custom fetcher for altaners using the new paginated endpoint
+export const fetchAltanersList = async (accountId, limit = 100, offset = 0) => {
+  const response = await optimai.get('/altaner/list', {
+    params: {
+      account_id: accountId,
+      limit,
+      offset,
+    },
+  });
+  return response.data;
+};
+
+// Load altaners list for account
+export const loadAltanersList = (accountId) => async (dispatch) => {
+  dispatch(slice.actions.startLoading());
+  try {
+    const data = await fetchAltanersList(accountId, 100, 0);
+    dispatch(setAltanersList(data.altaners || []));
+    return Promise.resolve(data.altaners);
+  } catch (e) {
+    console.error('error: could not load altaners list:', e);
+    dispatch(slice.actions.hasError(e.message));
+    return Promise.reject(e);
+  } finally {
+    dispatch(slice.actions.stopLoading());
+  }
+};
+
 const selectAltanerState = (state) => state.altaners;
 
 const selectCurrentAltanerId = (state) => selectAltanerState(state).current;
 
 const selectAltaners = (state) => selectAltanerState(state).altaners;
+
+export const selectAltanersList = (state) => selectAltanerState(state).altanersList;
+
+export const selectAltanersLoading = (state) => selectAltanerState(state).isLoading;
+
+export const selectAltanersInitialized = (state) => selectAltanerState(state).initialized;
 
 export const selectCurrentAltaner = (state) =>
   selectAltaners(state)?.[selectCurrentAltanerId(state)];

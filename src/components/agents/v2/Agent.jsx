@@ -17,25 +17,11 @@ import {
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { memo, useCallback, useEffect, useState, useRef } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useDispatch, useSelector } from 'react-redux';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation, useHistory, useParams } from 'react-router-dom';
 
 // hooks
-import { useAuthContext } from '../../../auth/useAuthContext';
-import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-// redux
-import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
-import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
-// sections
-// components
-import DeleteDialog from '../../dialogs/DeleteDialog';
-import Iconify from '../../iconify';
-import AltanLogo from '../../loaders/AltanLogo';
-import ShareAgentDialog from '../../members/ShareAgentDialog';
-import TemplateDialog from '../../templates/TemplateDialog';
-import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
-// local components
 import AgentInfoDialog from './components/AgentInfoDialog';
 import AgentTab from './tabs/AgentTab';
 import ConversationsTab from './tabs/ConversationsTab';
@@ -43,7 +29,22 @@ import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
+import { useAuthContext } from '../../../auth/useAuthContext';
+import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
+// redux
 import CreateAgentDashboard from '../../../pages/dashboard/components/CreateAgentDashboard';
+import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
+import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
+// sections
+// components
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
+import DeleteDialog from '../../dialogs/DeleteDialog';
+import Iconify from '../../iconify';
+import AltanLogo from '../../loaders/AltanLogo';
+import ShareAgentDialog from '../../members/ShareAgentDialog';
+import TemplateDialog from '../../templates/TemplateDialog';
+import HybridTabs from '../../ui/hybrid-tabs';
+// local components
 
 const versionsSelector = (template) => template?.versions;
 
@@ -293,7 +294,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           />
         );
       }
-      
+
       if (!isLoading && !currentAgentCreatorRoomId) {
         return (
           <Box
@@ -328,7 +329,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           </Box>
         );
       }
-      
+
       return (
         <Box
           sx={{
@@ -387,62 +388,21 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   };
 
   const renderTabNavigation = () => (
-    <Box
-      sx={{
-        flexShrink: 0,
-        borderBottom: 1,
-        borderColor: theme.palette.divider,
-        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-        overflow: 'auto',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        px: 4,
-        py: 0.2,
-      }}
-    >
-      {TABS.map((tab) => (
-        <Button
-          key={tab.id}
-          onClick={() => handleTabChange(tab.id)}
-          startIcon={
+    <Box sx={{ width: '100%' }}>
+      <HybridTabs
+        items={TABS.map((tab) => ({
+          value: tab.id,
+          icon: (
             <Iconify
               icon={tab.icon}
-              color={activeTab === tab.id ? 'text.primary' : 'text.disabled'}
-              sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              sx={{ fontSize: '0.95rem' }}
             />
-          }
-          sx={{
-            minWidth: 0,
-            py: { xs: 0.5, sm: 0.75 },
-            px: { xs: 0.75, sm: 1 },
-            fontSize: { xs: '0.7rem', sm: '0.8rem' },
-            fontWeight: 'medium',
-            color: activeTab === tab.id ? 'text.primary' : 'text.secondary',
-            bgcolor:
-              activeTab === tab.id
-                ? theme.palette.mode === 'dark'
-                  ? 'grey.800'
-                  : 'grey.100'
-                : 'transparent',
-            borderRadius: 1,
-            mx: 0.125,
-            '&:hover': {
-              bgcolor:
-                activeTab === tab.id
-                  ? theme.palette.mode === 'dark'
-                    ? 'grey.700'
-                    : 'grey.200'
-                  : theme.palette.mode === 'dark'
-                    ? 'grey.800'
-                    : 'grey.100',
-              color: 'text.primary',
-            },
-          }}
-        >
-          {tab.label}
-        </Button>
-      ))}
+          ),
+          label: tab.label,
+        }))}
+        value={activeTab}
+        onValueChange={handleTabChange}
+      />
     </Box>
   );
 
@@ -561,245 +521,210 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           minSize={35}
           style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
-          {/* Header */}
+          {/* Unified Header with Tabs */}
           <Box
             sx={{
               flexShrink: 0,
-              borderBottom: 1,
-              borderColor: theme.palette.divider,
-              px: { xs: 1, sm: 2, md: 3 },
-              py: 0.2,
+              px: { xs: 2, sm: 2.5, md: 3 },
+              py: { xs: 1.5, sm: 1.25, md: 1 },
+              backdropFilter: 'blur(10px)',
+              bgcolor: alpha(theme.palette.background.paper, 0.8),
+              borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              display: isMobile ? 'flex' : 'grid',
+              gridTemplateColumns: isMobile ? 'auto' : '1fr auto 1fr',
+              flexDirection: isMobile ? 'column' : undefined,
+              alignItems: 'center',
+              gap: isMobile ? 1.5 : 2,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-                {!altanerId && (
-                  <Tooltip title="Go Back">
-                    <IconButton
-                      onClick={handleGoBack}
-                      sx={{
-                        color: 'text.secondary',
-                        '&:hover': {
-                          bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
-                        },
-                      }}
-                    >
-                      <Iconify icon="eva:arrow-ios-back-fill" />
-                    </IconButton>
-                  </Tooltip>
-                )}
+            {/* Left: Avatar & Name */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1 }, minWidth: 0 }}>
+              {!altanerId && !isMobile && (
+                <Tooltip title="Go Back">
+                  <IconButton
+                    size="small"
+                    onClick={handleGoBack}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
+                      },
+                    }}
+                  >
+                    <Iconify icon="eva:arrow-ios-back-fill" sx={{ fontSize: '1.25rem' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-                  <DynamicAgentAvatar
-                    agent={agentData}
-                    size={isMobile ? 48 : 64}
-                    agentId={agentData?.id}
-                    agentState={null}
-                    isStatic={false}
-                  />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <TextField
-                      variant="standard"
-                      value={agentData.name || ''}
-                      onChange={(e) => handleFieldChange('name', e.target.value)}
-                      placeholder="Agent Name"
-                      fullWidth
-                      InputProps={{
-                        disableUnderline: true,
-                        sx: {
-                          fontSize: isMobile ? '1rem' : '1.25rem',
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1 }, minWidth: 0 }}>
+                <DynamicAgentAvatar
+                  agent={agentData}
+                  size={isMobile ? 34 : 38}
+                  agentId={agentData?.id}
+                  agentState={null}
+                  isStatic={false}
+                />
+                <Box sx={{ flex: 1, minWidth: 0, maxWidth: isMobile ? '120px' : '180px' }}>
+                  <TextField
+                    variant="standard"
+                    value={agentData.name || ''}
+                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                    placeholder="Agent Name"
+                    fullWidth
+                    InputProps={{
+                      disableUnderline: true,
+                      sx: {
+                        fontSize: isMobile ? '0.8125rem' : '0.9375rem',
+                        fontWeight: 'bold',
+                        color: theme.palette.text.primary,
+                        '&:before, &:after': {
+                          display: 'none',
+                        },
+                        '& input': {
+                          padding: '1px 0px',
+                          fontSize: isMobile ? '0.8125rem' : '0.9375rem',
                           fontWeight: 'bold',
                           color: theme.palette.text.primary,
-                          '&:before, &:after': {
-                            display: 'none',
+                          borderBottom: '2px solid transparent',
+                          '&:focus': {
+                            borderBottomColor: theme.palette.primary.main,
                           },
-                          '& input': {
-                            padding: isMobile ? '8px 4px' : '4px 0px',
-                            fontSize: isMobile ? '1rem' : '1.25rem',
-                            fontWeight: 'bold',
-                            color: theme.palette.text.primary,
-                            borderBottom: '2px solid transparent',
-                            '&:focus': {
-                              borderBottomColor: theme.palette.primary.main,
-                            },
-                            '&::placeholder': {
-                              color: theme.palette.text.disabled,
-                              opacity: 0.8,
-                            },
+                          '&::placeholder': {
+                            color: theme.palette.text.disabled,
+                            opacity: 0.8,
                           },
                         },
-                      }}
-                    />
-                  </Box>
+                      },
+                    }}
+                  />
                 </Box>
               </Box>
+            </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {/* Desktop: Show all action buttons */}
-                {!isMobile && (
-                  <>
-                    <Tooltip title="Delete Agent">
-                      <IconButton
-                        onClick={() => setDeleteDialog(true)}
-                        sx={{
-                          color: 'error.main',
-                          '&:hover': {
-                            bgcolor: theme.palette.mode === 'dark' ? 'error.dark' : 'error.lighter',
-                          },
-                        }}
-                      >
-                        <Iconify icon="eva:trash-2-outline" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Share">
-                      <IconButton
-                        onClick={() => setShareDialogOpen(true)}
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        <Iconify icon="eva:share-outline" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Agent Information">
-                      <IconButton
-                        onClick={() => setInfoDialogOpen(true)}
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        <Iconify icon="eva:info-outline" />
-                      </IconButton>
-                    </Tooltip>
-                    {!currentAgent?.cloned_template_id && (
-                      <Tooltip title="Version History">
-                        <IconButton
-                          onClick={handleVersionHistory}
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          <Iconify icon="mdi:history" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-
-                {/* Mobile: Show popup menu for other actions */}
-                {isMobile && (
-                  <>
-                    <Tooltip title="More actions">
-                      <IconButton
-                        onClick={handleMenuOpen}
-                        sx={{ color: 'text.secondary' }}
-                        size="small"
-                      >
-                        <Iconify icon="eva:more-vertical-fill" />
-                      </IconButton>
-                    </Tooltip>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={Boolean(anchorEl)}
-                      onClose={handleMenuClose}
-                      anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'right',
-                      }}
-                      transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
-                      }}
-                    >
-                      <MenuItem
-                        onClick={() => {
-                          setShareDialogOpen(true);
-                          handleMenuClose();
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Iconify
-                            icon="eva:share-outline"
-                            sx={{ color: 'text.secondary' }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText>Share</ListItemText>
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          setInfoDialogOpen(true);
-                          handleMenuClose();
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Iconify
-                            icon="eva:info-outline"
-                            sx={{ color: 'text.secondary' }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText>Agent Information</ListItemText>
-                      </MenuItem>
-                      {!currentAgent?.cloned_template_id && (
-                        <MenuItem
-                          onClick={() => {
-                            handleVersionHistory();
-                            handleMenuClose();
-                          }}
-                        >
-                          <ListItemIcon>
-                            <Iconify
-                              icon="mdi:history"
-                              sx={{ color: 'text.secondary' }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText>Version History</ListItemText>
-                        </MenuItem>
-                      )}
-                      <MenuItem
-                        onClick={() => {
-                          setDeleteDialog(true);
-                          handleMenuClose();
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Iconify
-                            icon="eva:trash-2-outline"
-                            sx={{ color: 'error.main' }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText sx={{ color: 'error.main' }}>Delete Agent</ListItemText>
-                      </MenuItem>
-                    </Menu>
-                  </>
-                )}
-
-                {/* Test Agent Button - Only show when drawer is closed */}
-                {!showTestDrawer && (
-                  <>
-                    <Tooltip title="Test in new tab">
-                      <IconButton
-                        onClick={handleTestAgentNewTab}
-                        size="small"
-                        sx={{ color: 'text.secondary', mr: 0.5 }}
-                      >
-                        <Iconify icon="eva:external-link-outline" />
-                      </IconButton>
-                    </Tooltip>
-                    <Button
-                      onClick={handleTestAgent}
-                      variant="soft"
-                      color="inherit"
-                      size={isMobile ? 'small' : 'medium'}
-                      startIcon={<Iconify icon="eva:play-circle-outline" />}
-                      sx={{
-                        minWidth: 'auto',
-                        px: isMobile ? 1 : 2,
-                      }}
-                    >
-                      {isMobile ? 'Test' : 'Test Agent'}
-                    </Button>
-                  </>
-                )}
+            {/* Center: Tabs */}
+            {!isMobile && (
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <HybridTabs
+                  items={TABS.map((tab) => ({
+                    value: tab.id,
+                    icon: (
+                      <Iconify
+                        icon={tab.icon}
+                        sx={{ fontSize: '1rem' }}
+                      />
+                    ),
+                    label: tab.label,
+                  }))}
+                  value={activeTab}
+                  onValueChange={handleTabChange}
+                />
               </Box>
+            )}
+
+            {/* Mobile: Tabs full width */}
+            {isMobile && renderTabNavigation()}
+
+            {/* Right: Action Buttons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+              {/* Test Agent Button - Only show when drawer is closed */}
+              {!showTestDrawer && (
+                <Button
+                  onClick={handleTestAgent}
+                  variant="soft"
+                  color="inherit"
+                  size="small"
+                  startIcon={<Iconify icon="eva:play-circle-outline" sx={{ fontSize: '0.95rem' }} />}
+                  sx={{
+                    minWidth: 'auto',
+                    px: isMobile ? 1 : 1.5,
+                    py: 0.5,
+                    fontSize: '0.8125rem',
+                  }}
+                >
+                  {isMobile ? 'Test' : 'Test'}
+                </Button>
+              )}
+
+              {/* More Options Menu */}
+              <Tooltip title="More options">
+                <IconButton
+                  onClick={handleMenuOpen}
+                  size="small"
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <Iconify icon="eva:more-horizontal-fill" sx={{ fontSize: '1.2rem' }} />
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                {showTestDrawer && (
+                  <MenuItem onClick={handleTestAgentNewTab}>
+                    <ListItemIcon>
+                      <Iconify icon="eva:external-link-outline" sx={{ color: 'text.secondary' }} />
+                    </ListItemIcon>
+                    <ListItemText>Open in New Tab</ListItemText>
+                  </MenuItem>
+                )}
+                <MenuItem
+                  onClick={() => {
+                    setShareDialogOpen(true);
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Iconify icon="eva:share-outline" sx={{ color: 'text.secondary' }} />
+                  </ListItemIcon>
+                  <ListItemText>Share</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setInfoDialogOpen(true);
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Iconify icon="eva:info-outline" sx={{ color: 'text.secondary' }} />
+                  </ListItemIcon>
+                  <ListItemText>Agent Info</ListItemText>
+                </MenuItem>
+                {!currentAgent?.cloned_template_id && (
+                  <MenuItem
+                    onClick={() => {
+                      handleVersionHistory();
+                      handleMenuClose();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Iconify icon="mdi:history" sx={{ color: 'text.secondary' }} />
+                    </ListItemIcon>
+                    <ListItemText>Version History</ListItemText>
+                  </MenuItem>
+                )}
+                <MenuItem
+                  onClick={() => {
+                    setDeleteDialog(true);
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Iconify icon="eva:trash-2-outline" sx={{ color: 'error.main' }} />
+                  </ListItemIcon>
+                  <ListItemText sx={{ color: 'error.main' }}>Delete Agent</ListItemText>
+                </MenuItem>
+              </Menu>
             </Box>
           </Box>
-
-          {/* Tab Navigation */}
-          {renderTabNavigation()}
 
           {/* Main Content Area - Responsive */}
           <Box

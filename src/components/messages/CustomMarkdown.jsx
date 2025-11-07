@@ -369,6 +369,287 @@ const CustomMarkdown = ({
     return content + `<span class="streaming-text-suffix">${animatedSuffix}</span>`;
   }, [content, animatedSuffix]);
 
+  // Memoize components object to prevent widget remounting on content changes
+  const components = useMemo(() => ({
+    // Minimal headings - much smaller
+    h1: ({ children }) => (
+      <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1.5 mt-2.5">
+        {children}
+      </h1>
+    ),
+    h2: ({ children }) => (
+      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-1 mt-2">
+        {children}
+      </h2>
+    ),
+    h3: ({ children }) => (
+      <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1 mt-2">
+        {children}
+      </h3>
+    ),
+    h4: ({ children }) => (
+      <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-0.5 mt-1.5">
+        {children}
+      </h4>
+    ),
+    h5: ({ children }) => (
+      <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-0.5 mt-1.5">
+        {children}
+      </h5>
+    ),
+    h6: ({ children }) => (
+      <h6 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5 mt-1.5 uppercase tracking-wide">
+        {children}
+      </h6>
+    ),
+    // Minimal blockquotes
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-2 border-slate-300 dark:border-slate-600 pl-3 py-0.5 my-2 text-slate-600 dark:text-slate-400">
+        {children}
+      </blockquote>
+    ),
+    // Minimal horizontal rules
+    hr: () => (
+      <hr className="my-2 border-0 h-px bg-slate-200 dark:bg-slate-700" />
+    ),
+    // Minimal tables
+    table: ({ children }) => (
+      <div className="my-2 overflow-x-auto">
+        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200/50 dark:border-slate-700/50 rounded-md text-sm">
+          {children}
+        </table>
+      </div>
+    ),
+    thead: ({ children }) => (
+      <thead className="bg-slate-50/50 dark:bg-slate-800/50">{children}</thead>
+    ),
+    tbody: ({ children }) => (
+      <tbody className="divide-y divide-slate-200/50 dark:divide-slate-700/50">
+        {children}
+      </tbody>
+    ),
+    tr: ({ children }) => (
+      <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+        {children}
+      </tr>
+    ),
+    th: ({ children }) => (
+      <th className="px-2 py-1.5 text-left text-xs font-medium text-slate-600 dark:text-slate-400">
+        {children}
+      </th>
+    ),
+    td: ({ children }) => (
+      <td className="px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300">{children}</td>
+    ),
+    // Code blocks
+    ...(!!codeActive && {
+      code({ node, inline, className, children, ...props }) {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const codeValue = String(children || '').replace(/\n$/, '');
+
+        // Handle mermaid diagrams
+        if (!inline && language === 'mermaid') {
+          return (
+            <div className="my-2 rounded-md overflow-hidden">
+              <MermaidDiagram
+                chart={codeValue}
+              />
+            </div>
+          );
+        }
+        return !inline && match ? (
+          <div className="my-2">
+            <CodeBlock
+              language={language}
+              value={codeValue}
+              className={className}
+              {...props}
+            />
+          </div>
+        ) : (
+          <code className="bg-slate-100 dark:bg-slate-800 rounded text-slate-800 dark:text-slate-200 text-[0.875em] font-mono px-1.5 py-0.5">
+            {(() => {
+              try {
+                if (typeof children === 'string') {
+                  return children.trim();
+                } else if (typeof children === 'number') {
+                  return String(children).trim();
+                } else if (Array.isArray(children)) {
+                  return children.join('').trim();
+                } else {
+                  return String(children || '').trim();
+                }
+              } catch {
+                // Error processing inline code children
+                return String(children || '');
+              }
+            })()}
+          </code>
+        );
+      },
+    }),
+    // Minimal paragraph styling
+    p: ({ children }) => (
+      <p
+        className={cn(
+          'mb-1.5 leading-relaxed text-slate-700 dark:text-slate-300',
+          noWrap
+            ? 'overflow-hidden text-ellipsis whitespace-nowrap'
+            : 'whitespace-pre-line',
+        )}
+      >
+        {children}
+      </p>
+    ),
+    // Minimal emphasis and strong text
+    em: ({ children }) => (
+      <em className="italic">{children}</em>
+    ),
+    strong: ({ children }) => (
+      <strong className="font-medium text-slate-800 dark:text-slate-200">
+        {children}
+      </strong>
+    ),
+    // Minimal list styling
+    li: ({ children }) => (
+      <li className="mb-0.5 leading-relaxed text-slate-700 dark:text-slate-300">{children}</li>
+    ),
+    // Minimal ordered list
+    ol: ({ children, ordered, ...props }) => (
+      <ol
+        className="list-decimal ml-5 mb-2 space-y-0.5"
+        {...props}
+      >
+        {children}
+      </ol>
+    ),
+    // Minimal unordered list
+    ul: ({ children, ordered, ...props }) => (
+      <ul
+        className="list-disc ml-5 mb-2 space-y-0.5"
+        {...props}
+      >
+        {children}
+      </ul>
+    ),
+    // Enhanced links
+    a: (props) => {
+      const href = props.href;
+
+      // Check for citation links (from TextPartRenderer)
+      if (props.className?.includes('citation-link')) {
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="citation-link inline-flex items-center gap-0.5 text-[11px] text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors no-underline"
+          >
+            {props.children}
+          </a>
+        );
+      }
+
+      if (isYouTubeUrl(href)) {
+        const videoId = extractYouTubeVideoId(href);
+        if (videoId) {
+          return (
+            <YouTubeEmbed
+              videoId={videoId}
+              title={props.title || 'YouTube Video'}
+            />
+          );
+        }
+      }
+      return (
+        <CustomLink
+          {...props}
+          threadId={threadId}
+        />
+      );
+    },
+    // Custom suggestion component
+    suggestion: ({ children }) => {
+      return <SuggestionButton threadId={threadId}>{children}</SuggestionButton>;
+    },
+    // Custom suggestion group component
+    'suggestion-group': ({ children }) => <SuggestionGroup>{children}</SuggestionGroup>,
+    // Multi-select clarifying questions component
+    'clarifying-questions': ({ children }) => (
+      <ClarifyingQuestions threadId={threadId}>{children}</ClarifyingQuestions>
+    ),
+    // Question group component - wrapper that preserves props
+    'question-group': ({ children, title }) => {
+      // Return a span with data attributes so parent can identify it
+      return <span data-qg-title={title} style={{ display: 'contents' }}>{children}</span>;
+    },
+    // Multi-select option component - wrapper that preserves props
+    'multi-option': ({ children, value, recommended }) => {
+      // Return a span with data attributes so parent can identify it
+      return <span data-mo-value={value} data-mo-recommended={recommended} style={{ display: 'contents' }}>{children}</span>;
+    },
+    // Custom stripe component
+    stripe: () => {
+      return <StripeConnect />;
+    },
+    // Custom citation component
+    citation: ({ 'data-index': dataIndex, 'data-url': url, 'data-title': title, 'data-excerpt': excerpt }) => {
+      const index = parseInt(dataIndex);
+      const citation = citationAnnotations?.[index];
+
+      if (!citation) return null;
+
+      return (
+        <CitationChip
+          citation={{ ...citation, url, title }}
+          citationNumber={index + 1}
+          excerpt={excerpt}
+        />
+      );
+    },
+    // Custom iframe component
+    iframe: ({ src, title, style, ...props }) => {
+      // Remove any height-related styles to prevent conflicts
+      const { height, ...cleanStyle } = style || {};
+      const { height: propsHeight, ...cleanProps } = props;
+
+      return (
+        <CustomIframe
+          src={src}
+          title={title}
+          style={cleanStyle}
+          {...cleanProps}
+        />
+      );
+    },
+    // Hide component - doesn't render children
+    hide: () => {
+      return null;
+    },
+    // Enhanced superscript
+    sup: ({ children }) => (
+      <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>
+    ),
+    // Minimal collapsible sections
+    details: ({ children, ...props }) => (
+      <details
+        className="bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-md my-2 border border-slate-200/50 dark:border-slate-700/50"
+        {...props}
+      >
+        {children}
+      </details>
+    ),
+    summary: ({ children, ...props }) => (
+      <summary
+        className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 transition-colors select-none"
+        {...props}
+      >
+        {children}
+      </summary>
+    ),
+  }), [threadId, codeActive, noWrap, citationAnnotations]); // Only recreate when these dependencies change, NOT on content change
+
   if (!content?.length && !messageId && !animatedSuffix) {
     return null;
   }
@@ -423,285 +704,7 @@ const CustomMarkdown = ({
             rehypeRaw, // Process raw HTML first (for suggestion components)
             [rehypeExternalLinks, { target: '_blank', rel: ['nofollow'] }],
           ]}
-          components={{
-            // Minimal headings - much smaller
-            h1: ({ children }) => (
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1.5 mt-2.5">
-                {children}
-              </h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-1 mt-2">
-                {children}
-              </h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1 mt-2">
-                {children}
-              </h3>
-            ),
-            h4: ({ children }) => (
-              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-0.5 mt-1.5">
-                {children}
-              </h4>
-            ),
-            h5: ({ children }) => (
-              <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-0.5 mt-1.5">
-                {children}
-              </h5>
-            ),
-            h6: ({ children }) => (
-              <h6 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5 mt-1.5 uppercase tracking-wide">
-                {children}
-              </h6>
-            ),
-            // Minimal blockquotes
-            blockquote: ({ children }) => (
-              <blockquote className="border-l-2 border-slate-300 dark:border-slate-600 pl-3 py-0.5 my-2 text-slate-600 dark:text-slate-400">
-                {children}
-              </blockquote>
-            ),
-            // Minimal horizontal rules
-            hr: () => (
-              <hr className="my-2 border-0 h-px bg-slate-200 dark:bg-slate-700" />
-            ),
-            // Minimal tables
-            table: ({ children }) => (
-              <div className="my-2 overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200/50 dark:border-slate-700/50 rounded-md text-sm">
-                  {children}
-                </table>
-              </div>
-            ),
-            thead: ({ children }) => (
-              <thead className="bg-slate-50/50 dark:bg-slate-800/50">{children}</thead>
-            ),
-            tbody: ({ children }) => (
-              <tbody className="divide-y divide-slate-200/50 dark:divide-slate-700/50">
-                {children}
-              </tbody>
-            ),
-            tr: ({ children }) => (
-              <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                {children}
-              </tr>
-            ),
-            th: ({ children }) => (
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-slate-600 dark:text-slate-400">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300">{children}</td>
-            ),
-            // Code blocks
-            ...(!!codeActive && {
-              code({ node, inline, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
-                const codeValue = String(children || '').replace(/\n$/, '');
-
-                // Handle mermaid diagrams
-                if (!inline && language === 'mermaid') {
-                  return (
-                    <div className="my-2 rounded-md overflow-hidden">
-                      <MermaidDiagram
-                        chart={codeValue}
-                      />
-                    </div>
-                  );
-                }
-                return !inline && match ? (
-                  <div className="my-2">
-                    <CodeBlock
-                      language={language}
-                      value={codeValue}
-                      className={className}
-                      {...props}
-                    />
-                  </div>
-                ) : (
-                  <code className="bg-slate-100 dark:bg-slate-800 rounded text-slate-800 dark:text-slate-200 text-[0.875em] font-mono px-1.5 py-0.5">
-                    {(() => {
-                      try {
-                        if (typeof children === 'string') {
-                          return children.trim();
-                        } else if (typeof children === 'number') {
-                          return String(children).trim();
-                        } else if (Array.isArray(children)) {
-                          return children.join('').trim();
-                        } else {
-                          return String(children || '').trim();
-                        }
-                      } catch {
-                        // Error processing inline code children
-                        return String(children || '');
-                      }
-                    })()}
-                  </code>
-                );
-              },
-            }),
-            // Minimal paragraph styling
-            p: ({ children }) => (
-              <p
-                className={cn(
-                  'mb-1.5 leading-relaxed text-slate-700 dark:text-slate-300',
-                  noWrap
-                    ? 'overflow-hidden text-ellipsis whitespace-nowrap'
-                    : 'whitespace-pre-line',
-                )}
-              >
-                {children}
-              </p>
-            ),
-            // Minimal emphasis and strong text
-            em: ({ children }) => (
-              <em className="italic">{children}</em>
-            ),
-            strong: ({ children }) => (
-              <strong className="font-medium text-slate-800 dark:text-slate-200">
-                {children}
-              </strong>
-            ),
-            // Minimal list styling
-            li: ({ children }) => (
-              <li className="mb-0.5 leading-relaxed text-slate-700 dark:text-slate-300">{children}</li>
-            ),
-            // Minimal ordered list
-            ol: ({ children, ordered, ...props }) => (
-              <ol
-                className="list-decimal ml-5 mb-2 space-y-0.5"
-                {...props}
-              >
-                {children}
-              </ol>
-            ),
-            // Minimal unordered list
-            ul: ({ children, ordered, ...props }) => (
-              <ul
-                className="list-disc ml-5 mb-2 space-y-0.5"
-                {...props}
-              >
-                {children}
-              </ul>
-            ),
-            // Enhanced links
-            a: (props) => {
-              const href = props.href;
-
-              // Check for citation links (from TextPartRenderer)
-              if (props.className?.includes('citation-link')) {
-                return (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="citation-link inline-flex items-center gap-0.5 text-[11px] text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors no-underline"
-                  >
-                    {props.children}
-                  </a>
-                );
-              }
-
-              if (isYouTubeUrl(href)) {
-                const videoId = extractYouTubeVideoId(href);
-                if (videoId) {
-                  return (
-                    <YouTubeEmbed
-                      videoId={videoId}
-                      title={props.title || 'YouTube Video'}
-                    />
-                  );
-                }
-              }
-              return (
-                <CustomLink
-                  {...props}
-                  threadId={threadId}
-                />
-              );
-            },
-            // Custom suggestion component
-            suggestion: ({ children }) => {
-              return <SuggestionButton threadId={threadId}>{children}</SuggestionButton>;
-            },
-            // Custom suggestion group component
-            'suggestion-group': ({ children }) => <SuggestionGroup>{children}</SuggestionGroup>,
-            // Multi-select clarifying questions component
-            'clarifying-questions': ({ children }) => (
-              <ClarifyingQuestions threadId={threadId}>{children}</ClarifyingQuestions>
-            ),
-            // Question group component - wrapper that preserves props
-            'question-group': ({ children, title }) => {
-              // Return a span with data attributes so parent can identify it
-              return <span data-qg-title={title} style={{ display: 'contents' }}>{children}</span>;
-            },
-            // Multi-select option component - wrapper that preserves props
-            'multi-option': ({ children, value, recommended }) => {
-              // Return a span with data attributes so parent can identify it
-              return <span data-mo-value={value} data-mo-recommended={recommended} style={{ display: 'contents' }}>{children}</span>;
-            },
-            // Custom stripe component
-            stripe: () => {
-              return <StripeConnect />;
-            },
-            // Custom citation component
-            citation: ({ 'data-index': dataIndex, 'data-url': url, 'data-title': title, 'data-excerpt': excerpt }) => {
-              const index = parseInt(dataIndex);
-              const citation = citationAnnotations?.[index];
-
-              if (!citation) return null;
-
-              return (
-                <CitationChip
-                  citation={{ ...citation, url, title }}
-                  citationNumber={index + 1}
-                  excerpt={excerpt}
-                />
-              );
-            },
-            // Custom iframe component
-            iframe: ({ src, title, style, ...props }) => {
-              // Remove any height-related styles to prevent conflicts
-              const { height, ...cleanStyle } = style || {};
-              const { height: propsHeight, ...cleanProps } = props;
-
-              return (
-                <CustomIframe
-                  src={src}
-                  title={title}
-                  style={cleanStyle}
-                  {...cleanProps}
-                />
-              );
-            },
-            // Hide component - doesn't render children
-            hide: () => {
-              return null;
-            },
-            // Enhanced superscript
-            sup: ({ children }) => (
-              <sup className="text-xs text-slate-600 dark:text-slate-400">{children}</sup>
-            ),
-            // Minimal collapsible sections
-            details: ({ children, ...props }) => (
-              <details
-                className="bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-md my-2 border border-slate-200/50 dark:border-slate-700/50"
-                {...props}
-              >
-                {children}
-              </details>
-            ),
-            summary: ({ children, ...props }) => (
-              <summary
-                className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 transition-colors select-none"
-                {...props}
-              >
-                {children}
-              </summary>
-            ),
-          }}
+          components={components}
         >
           {contentWithSuffix}
         </ReactMarkdown>

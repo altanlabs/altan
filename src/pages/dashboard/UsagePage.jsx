@@ -29,7 +29,7 @@ import {
 } from 'recharts';
 
 import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Progress } from '../../components/ui/progress';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -42,7 +42,10 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
-import { selectAccountId, selectAccountSubscriptions } from '../../redux/slices/general';
+import { CustomAvatar } from '../../components/custom-avatar';
+import StaticGradientAvatar from '../../components/agents/StaticGradientAvatar';
+import Iconify from '../../components/iconify/Iconify';
+import { selectAccountId, selectAccountSubscriptions, selectSortedAgents } from '../../redux/slices/general';
 import { useSelector as useReduxSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios';
 
@@ -116,6 +119,7 @@ const UsagePage = () => {
   const history = useHistory();
   const theme = useTheme();
   const activeSubscriptions = useReduxSelector(selectAccountSubscriptions);
+  const agents = useReduxSelector(selectSortedAgents) || [];
   const isDarkMode = theme.palette.mode === 'dark';
 
   // State
@@ -136,6 +140,12 @@ const UsagePage = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Entity usage state
+  const [entityUsage, setEntityUsage] = useState([]);
+  const [entityUsageLoading, setEntityUsageLoading] = useState(false);
+  const [entityFilter, setEntityFilter] = useState(null); // null, 'ai', or 'cloud'
+  const [projectsMap, setProjectsMap] = useState({}); // Map of cloud_id -> {altaner, component}
 
   // Get subscription data
   const subscriptionData = useMemo(() => {
@@ -212,6 +222,121 @@ const UsagePage = () => {
   useEffect(() => {
     fetchTransactions(currentPage);
   }, [fetchTransactions, currentPage]);
+
+  // Fetch entity usage data
+  const fetchEntityUsage = useCallback(async () => {
+    if (!accountId) return;
+    
+    setEntityUsageLoading(true);
+    try {
+      const params = entityFilter ? `?credit_type=${entityFilter}` : '';
+      const response = await optimai.get(`/account/${accountId}/usage-by-entity${params}`);
+      const usageData = response.data.usage_by_entity || [];
+      setEntityUsage(usageData);
+      setEntityUsageLoading(false); // Stop loading, show table immediately
+
+      // Fetch project data for cloud entities in the background
+      const cloudEntityIds = usageData
+        .filter(entity => entity.by_type?.cloud && entity.entity_id !== 'unassigned')
+        .map(entity => entity.entity_id);
+
+      if (cloudEntityIds.length > 0) {
+        // Fetch projects one by one and update state as they come in
+        cloudEntityIds.forEach(async (cloudId) => {
+          try {
+            const projectResponse = await optimai.get(`/altaner/find?cloud_id=${cloudId}`);
+            setProjectsMap(prev => ({
+              ...prev,
+              [cloudId]: {
+                altaner: projectResponse.data.altaner,
+                component: projectResponse.data.component,
+              }
+            }));
+          } catch (error) {
+            console.error(`Failed to fetch project for cloud ${cloudId}:`, error);
+            // Mark as failed so we don't show loading indefinitely
+            setProjectsMap(prev => ({
+              ...prev,
+              [cloudId]: null
+            }));
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch entity usage:', error);
+      setEntityUsage([]);
+      setEntityUsageLoading(false);
+    }
+  }, [accountId, entityFilter]);
+
+  // Fetch entity usage when filters change
+  useEffect(() => {
+    // Clear projects map when fetching new data
+    setProjectsMap({});
+    fetchEntityUsage();
+  }, [fetchEntityUsage]);
+
+  // Helper: Get agent by ID
+  const getAgentById = useCallback((entityId) => {
+    return agents.find(agent => agent.id === entityId);
+  }, [agents]);
+
+  // Helper: Get project by cloud ID
+  const getProjectByCloudId = useCallback((cloudId) => {
+    return projectsMap[cloudId];
+  }, [projectsMap]);
+
+  // Helper: Check if project is loading
+  const isProjectLoading = useCallback((entity) => {
+    // If it's not a cloud entity, it's not loading
+    if (!entity.by_type?.cloud) return false;
+    // If we have an agent for this ID, it's not a project loading
+    if (getAgentById(entity.entity_id)) return false;
+    // If entity is unassigned, it's not loading
+    if (entity.entity_id === 'unassigned') return false;
+    // If we don't have project data yet (undefined), it's loading
+    // If it's null, it failed to load
+    return projectsMap[entity.entity_id] === undefined;
+  }, [projectsMap, getAgentById]);
+
+  // Helper: Navigate to entity (agent or project)
+  const handleEntityClick = useCallback((entity) => {
+    const agent = getAgentById(entity.entity_id);
+    const project = getProjectByCloudId(entity.entity_id);
+    
+    if (agent) {
+      history.push(`/agent/${agent.id}`);
+    } else if (project) {
+      history.push(`/project/${project.altaner.id}/c/${project.component.id}`);
+    }
+  }, [getAgentById, getProjectByCloudId, history]);
+
+  // Helper: Render agent avatar
+  const renderAgentAvatar = useCallback((agent, size = 32) => {
+    const hasAvatarUrl = agent.avatar_url && agent.avatar_url.trim() !== '';
+
+    if (hasAvatarUrl) {
+      return (
+        <CustomAvatar
+          src={agent.avatar_url}
+          alt={agent.name}
+          sx={{
+            width: size,
+            height: size,
+            borderRadius: '50%',
+          }}
+          name={agent.name}
+        />
+      );
+    }
+
+    return (
+      <StaticGradientAvatar
+        size={size}
+        colors={agent?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1']}
+      />
+    );
+  }, []);
 
   // Filter data by period
   const filteredData = useMemo(() => {
@@ -675,6 +800,248 @@ const UsagePage = () => {
                 )}
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Entity Usage Breakdown */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>Usage by Entity</CardTitle>
+                <CardDescription>See which agents and services are consuming credits</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={entityFilter === null ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEntityFilter(null)}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={entityFilter === 'ai' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEntityFilter('ai')}
+                >
+                  AI Credits
+                </Button>
+                <Button
+                  variant={entityFilter === 'cloud' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEntityFilter('cloud')}
+                >
+                  Cloud Credits
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {entityUsageLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : entityUsage.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No entity usage data available
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Top Consumers Summary */}
+                {entityUsage.length > 0 && (
+                  <div className="rounded-lg border p-4 space-y-3">
+                    <h4 className="text-sm font-semibold">Top Consumers</h4>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {entityUsage.slice(0, 3).map((entity, idx) => {
+                        const agent = entity.entity_id !== 'unassigned' ? getAgentById(entity.entity_id) : null;
+                        const project = entity.entity_id !== 'unassigned' ? getProjectByCloudId(entity.entity_id) : null;
+                        const loading = isProjectLoading(entity);
+                        const isClickable = agent || project;
+
+                        return (
+                          <div 
+                            key={entity.entity_id || idx}
+                            className={`flex flex-col gap-2 p-3 rounded-md bg-muted/50 ${isClickable ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''}`}
+                            onClick={isClickable ? () => handleEntityClick(entity) : undefined}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {(entity.proportion * 100).toFixed(1)}%
+                              </Badge>
+                            </div>
+                            {agent ? (
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex-shrink-0">
+                                  {renderAgentAvatar(agent, 28)}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="font-semibold text-sm truncate">
+                                    {agent.name}
+                                  </div>
+                                  <div className="font-mono text-xs text-muted-foreground truncate">
+                                    {entity.entity_id}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : loading ? (
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted animate-pulse" />
+                                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                  <div className="h-3.5 bg-muted rounded w-3/4 animate-pulse" />
+                                  <div className="h-2.5 bg-muted rounded w-full animate-pulse" />
+                                </div>
+                              </div>
+                            ) : project ? (
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                  <Iconify icon="mdi:cloud" width={16} className="text-blue-500" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="font-semibold text-sm truncate">
+                                    {project.altaner.name}
+                                  </div>
+                                  <div className="font-mono text-xs text-muted-foreground truncate">
+                                    {entity.entity_id}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="font-mono text-xs truncate">
+                                {entity.entity_id === 'unassigned' ? 'Unassigned' : entity.entity_id}
+                              </div>
+                            )}
+                            <div className="text-sm font-semibold">
+                              {entity.total_credits.toLocaleString()} credits
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Entity ID</TableHead>
+                      <TableHead className="text-right">Total Credits</TableHead>
+                      <TableHead className="text-right">Proportion</TableHead>
+                      <TableHead className="text-right">AI Credits</TableHead>
+                      <TableHead className="text-right">Cloud Credits</TableHead>
+                      <TableHead className="text-right">Transactions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {entityUsage.map((entity, index) => {
+                      const aiData = entity.by_type?.ai || {};
+                      const cloudData = entity.by_type?.cloud || {};
+                      const totalTransactions = (aiData.transaction_count || 0) + (cloudData.transaction_count || 0);
+                      const agent = entity.entity_id !== 'unassigned' ? getAgentById(entity.entity_id) : null;
+                      const project = entity.entity_id !== 'unassigned' ? getProjectByCloudId(entity.entity_id) : null;
+                      const loading = isProjectLoading(entity);
+                      const isClickable = agent || project;
+                      
+                      return (
+                        <TableRow 
+                          key={entity.entity_id || index}
+                          className={isClickable ? 'cursor-pointer hover:bg-accent/30' : ''}
+                          onClick={isClickable ? () => handleEntityClick(entity) : undefined}
+                        >
+                          <TableCell className="font-medium text-sm">
+                            {entity.entity_id === 'unassigned' ? (
+                              <span className="text-muted-foreground italic">Unassigned</span>
+                            ) : agent ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0">
+                                  {renderAgentAvatar(agent, 32)}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-semibold text-foreground truncate">
+                                    {agent.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground font-mono truncate">
+                                    {entity.entity_id}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : loading ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted animate-pulse" />
+                                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                  <div className="h-4 bg-muted rounded w-32 animate-pulse" />
+                                  <div className="h-3 bg-muted rounded w-48 animate-pulse" />
+                                </div>
+                              </div>
+                            ) : project ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                  <Iconify icon="mdi:cloud" width={20} className="text-blue-500" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-semibold text-foreground truncate">
+                                    {project.altaner.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground font-mono truncate">
+                                    {entity.entity_id}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="font-mono">{entity.entity_id}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-semibold">
+                            {entity.total_credits.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Progress 
+                                value={entity.proportion * 100} 
+                                className="h-2 w-20"
+                              />
+                              <span className="text-sm font-medium min-w-[4ch]">
+                                {(entity.proportion * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {aiData.credits ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-mono font-medium">
+                                  {aiData.credits.toLocaleString()}
+                                </span>
+                                {aiData.input_tokens && aiData.output_tokens ? (
+                                  <span className="text-xs text-muted-foreground">
+                                    {(aiData.input_tokens + aiData.output_tokens).toLocaleString()} tokens
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {cloudData.credits ? (
+                              <span className="font-medium">
+                                {cloudData.credits.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {totalTransactions.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 

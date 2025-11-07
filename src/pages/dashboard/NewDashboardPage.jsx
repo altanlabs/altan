@@ -144,6 +144,21 @@ const NewDashboardPage = () => {
         throw new Error('No idea ID returned');
       }
 
+      // Store idea metadata in localStorage for analytics tracking
+      const ideaMetadata = {
+        idea_id: data.id,
+        project_name: message.trim(),
+        project_type: templateData?.id ? 'template' : githubData?.url ? 'github' : 'idea',
+        has_attachments: attachments.length > 0,
+        attachment_count: attachments.length,
+        ...(templateData?.id && { template_id: templateData.id }),
+        ...(templateData?.name && { template_name: templateData.name }),
+        ...(githubData?.url && { github_url: githubData.url }),
+        ...(githubData?.branch && { github_branch: githubData.branch }),
+        timestamp: Date.now(),
+      };
+      localStorage.setItem('altan_idea_metadata', JSON.stringify(ideaMetadata));
+
       // Redirect with idea parameter - the useEffect will pick it up and create the project
       history.push(`/?idea=${data.id}`);
     } catch (err) {
@@ -190,11 +205,13 @@ const NewDashboardPage = () => {
       )}
 
       {/* Hero Section - Always first */}
-      <NewHeroSection
-        onSubmit={handleSubmit}
-        isCreating={isCreating}
-        onRequestAuth={() => openAuthDialogRef.current?.()}
-      />
+      <VoiceConversationProvider>
+        <NewHeroSection
+          onSubmit={handleSubmit}
+          isCreating={isCreating}
+          onRequestAuth={() => openAuthDialogRef.current?.()}
+        />
+      </VoiceConversationProvider>
 
       {/* Features Section - Only for unauthenticated users, appears after scroll */}
       {!isAuthenticated && (

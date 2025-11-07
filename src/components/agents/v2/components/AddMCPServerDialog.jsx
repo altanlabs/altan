@@ -1,31 +1,7 @@
-import {
-  Box,
-  Typography,
-  Button,
-  Drawer,
-  Stack,
-  useTheme,
-  IconButton,
-  CircularProgress,
-  TextField,
-  InputAdornment,
-  Divider,
-  Chip,
-  Skeleton,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Loader2, Search, X, ArrowRight, PlusCircle, ExternalLink, Server } from 'lucide-react';
 
 import {
   selectAccountConnectionsByType,
@@ -37,8 +13,31 @@ import Iconify from '../../../iconify';
 import IconRenderer from '../../../icons/IconRenderer';
 import ConnectionCreator from '../../../tools/ConnectionCreator';
 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '../../../ui/sheet';
+import { Button } from '../../../ui/button';
+import { Input } from '../../../ui/input';
+import { Badge } from '../../../ui/badge';
+import { Skeleton } from '../../../ui/skeleton';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../../ui/dialog';
+import { RadioGroup, RadioGroupItem } from '../../../ui/radio-group';
+import { Label } from '../../../ui/label';
+import { Separator } from '../../../ui/separator';
+import { cn } from '../../../../lib/utils';
+
 function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreateNew, agentId }) {
-  const theme = useTheme();
   const dispatch = useDispatch();
   const account = useSelector(selectAccount);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +45,7 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
   const [mcpAccountConnections, setMcpAccountConnections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingAccountConnections, setLoadingAccountConnections] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState('available');
   const [selectedConnectionType, setSelectedConnectionType] = useState(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState(null);
   const [creatingMCPServer, setCreatingMCPServer] = useState(false);
@@ -189,579 +188,275 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
   }, [accountServers, searchTerm]);
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: 420 },
-          bgcolor: 'background.default',
-        },
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          p: 2.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, mb: 0.25 }}
-          >
-            Add MCP Server
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: 'text.secondary' }}
-          >
-            Connect to MCP-compatible services
-          </Typography>
-        </Box>
-        <IconButton
-          onClick={onClose}
-          size="small"
-        >
-          <Iconify icon="eva:close-outline" />
-        </IconButton>
-      </Box>
+    <>
+      <Sheet open={open} onOpenChange={onClose}>
+        <SheetContent className="w-full sm:max-w-[420px] p-0 flex flex-col">
+          {/* Header */}
+          <SheetHeader className="p-6 pb-4 border-b">
+            <SheetTitle className="text-xl font-semibold">Add MCP Server</SheetTitle>
+            <SheetDescription className="text-sm text-muted-foreground">
+              Connect to MCP-compatible services
+            </SheetDescription>
+          </SheetHeader>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
-          sx={{ px: 2 }}
-        >
-          <Tab
-            label="Available Services"
-            sx={{ textTransform: 'none', fontWeight: 600 }}
-          />
-          <Tab
-            label={`Your Servers ${filteredAccountServers.length > 0 ? `(${filteredAccountServers.length})` : ''}`}
-            sx={{ textTransform: 'none', fontWeight: 600 }}
-          />
-        </Tabs>
-      </Box>
-
-      {/* Search */}
-      <Box sx={{ p: 2 }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder={activeTab === 0 ? 'Search available services...' : 'Search your servers...'}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Iconify
-                  icon="eva:search-fill"
-                  sx={{ color: 'text.disabled', width: 20, height: 20 }}
-                />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-
-      {/* Content */}
-      <Box
-        className="no-scrollbar"
-        sx={{ flex: 1, overflowY: 'auto', px: 2, pb: 2 }}
-      >
-        {/* Tab 0: Available MCP Connection Types */}
-        {activeTab === 0 && (
-          <Box>
-            <Stack spacing={2}>
-              {/* New Custom MCP Server Button - Always at top */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  p: 1.5,
-                  border: `1px dashed ${theme.palette.divider}`,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(theme.palette.grey[500], 0.02),
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    borderColor: theme.palette.primary.main,
-                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                  },
-                }}
-                onClick={onCreateNew}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 1.5,
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  }}
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <div className="border-b px-6">
+              <TabsList className="w-full justify-start h-auto p-0 bg-transparent">
+                <TabsTrigger 
+                  value="available" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-semibold"
                 >
-                  <Iconify
-                    icon="eva:plus-circle-outline"
-                    sx={{ fontSize: '1.25rem', color: 'primary.main' }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, mb: 0.25 }}
-                  >
-                    New Custom MCP Server
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: 'text.secondary', fontSize: '0.7rem' }}
-                  >
-                    Connect to your own MCP server
-                  </Typography>
-                </Box>
-                <Iconify
-                  icon="eva:arrow-ios-forward-fill"
-                  sx={{ color: 'text.disabled', fontSize: '1rem' }}
+                  Available Services
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="yours" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-semibold"
+                >
+                  Your Servers {filteredAccountServers.length > 0 && `(${filteredAccountServers.length})`}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Search */}
+            <div className="p-6 pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={activeTab === 'available' ? 'Search available services...' : 'Search your servers...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
                 />
-              </Box>
+              </div>
+            </div>
+
+            {/* Content */}
+            <TabsContent value="available" className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 no-scrollbar mt-0">
+              {/* New Custom MCP Server Button - Always at top */}
+              <div
+                onClick={onCreateNew}
+                className="flex items-center gap-3 p-4 border-2 border-dashed rounded-xl bg-muted/20 cursor-pointer transition-all hover:border-primary hover:bg-primary/5"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                  <PlusCircle className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm mb-0.5">
+                    New Custom MCP Server
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Connect to your own MCP server
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
 
               {/* Section Header */}
               {!loading && (filteredConnectionTypes.length > 0 || searchTerm) && (
                 <>
-                  <Divider sx={{ my: 1 }} />
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      px: 0.5,
-                    }}
-                  >
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        color: 'text.secondary',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        letterSpacing: 1,
-                      }}
-                    >
+                  <Separator className="my-2" />
+                  <div className="flex items-center justify-between px-1">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Altan Hosted MCPs
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Iconify
-                        icon="eva:external-link-outline"
-                        sx={{ fontSize: '0.75rem', color: 'text.secondary' }}
-                      />
-                      <Typography
-                        component="a"
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      <a
                         href="https://github.com/modelcontextprotocol/servers"
                         target="_blank"
                         rel="noopener noreferrer"
-                        variant="caption"
-                        sx={{
-                          color: 'text.secondary',
-                          textDecoration: 'none',
-                          fontSize: '0.7rem',
-                          '&:hover': {
-                            color: 'primary.main',
-                            textDecoration: 'underline',
-                          },
-                        }}
+                        className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
                       >
                         Find more
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </a>
+                    </div>
+                  </div>
                 </>
               )}
 
               {loading ? (
-                <Stack spacing={1}>
+                <div className="space-y-2">
                   {[...Array(5)].map((_, i) => (
                     <Skeleton
                       key={i}
-                      variant="rectangular"
-                      height={72}
-                      sx={{ borderRadius: 1.5 }}
+                      className="h-[72px] w-full rounded-xl"
                     />
                   ))}
-                </Stack>
+                </div>
               ) : filteredConnectionTypes.length > 0 ? (
                 filteredConnectionTypes.map((connType) => (
-                  <Box
+                  <div
                     key={connType.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      p: 1.5,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 1.5,
-                      bgcolor: theme.palette.background.paper,
-                      transition: 'all 0.2s ease-in-out',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        borderColor: theme.palette.primary.main,
-                      },
-                    }}
                     onClick={() => handleConnectionTypeClick(connType)}
+                    className="flex items-center gap-3 p-4 border rounded-xl bg-card transition-all cursor-pointer hover:bg-primary/5 hover:border-primary"
                   >
                     {/* Connection Type Icon */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 40,
-                        height: 40,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(
-                          connType.meta_data?.color || theme.palette.primary.main,
-                          0.08,
-                        ),
-                        flexShrink: 0,
-                      }}
-                    >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 flex-shrink-0">
                       <IconRenderer
                         icon={connType.icon || 'mdi:server'}
                         size={40}
                         color={connType.meta_data?.color}
                       />
-                    </Box>
+                    </div>
 
                     {/* Connection Type Details */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 0.25,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600 }}
-                        >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className="font-semibold text-sm">
                           {connType.name}
-                        </Typography>
+                        </div>
                         {connType.is_official && (
-                          <Chip
-                            label="Official"
-                            size="small"
-                            sx={{
-                              height: 16,
-                              fontSize: '0.625rem',
-                              '& .MuiChip-label': { px: 0.75, py: 0 },
-                            }}
-                          />
+                          <Badge variant="default" className="h-4 text-[10px] px-2 py-0">
+                            Official
+                          </Badge>
                         )}
-                      </Box>
+                      </div>
                       {connType.description && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: 'text.secondary',
-                            fontSize: '0.7rem',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
+                        <div className="text-xs text-muted-foreground line-clamp-2">
                           {connType.description}
-                        </Typography>
+                        </div>
                       )}
-                    </Box>
+                    </div>
 
-                    <Iconify
-                      icon="eva:arrow-ios-forward-fill"
-                      sx={{ color: 'text.disabled', fontSize: '1rem' }}
-                    />
-                  </Box>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  </div>
                 ))
               ) : searchTerm ? (
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    py: 6,
-                    color: 'text.secondary',
-                  }}
-                >
-                  <Iconify
-                    icon="eva:search-outline"
-                    sx={{ fontSize: '3rem', mb: 1, opacity: 0.3 }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{ color: 'text.secondary', mb: 0.5 }}
-                  >
+                <div className="text-center py-12">
+                  <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <div className="text-sm text-muted-foreground mb-1">
                     No MCP services found
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: 'text.disabled' }}
-                  >
+                  </div>
+                  <div className="text-xs text-muted-foreground/70">
                     Try a different search term
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : null}
-            </Stack>
-          </Box>
-        )}
+            </TabsContent>
 
-        {/* Tab 1: Your MCP Servers */}
-        {activeTab === 1 && (
-          <Stack spacing={2}>
-            {filteredAccountServers.length > 0 ? (
-              filteredAccountServers.map((server) => {
-                const connType = server.connection_type
-                  ? connectionTypeMap[server.connection_type]
-                  : null;
-                return (
-                  <Box
-                    key={server.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      p: 1.5,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 1.5,
-                      bgcolor: theme.palette.background.paper,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        borderColor: theme.palette.primary.main,
-                      },
-                    }}
-                  >
-                    {/* Server Icon */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 40,
-                        height: 40,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(connType?.meta_data?.color || theme.palette.grey[500], 0.08),
-                        flexShrink: 0,
-                      }}
+            {/* Tab 1: Your MCP Servers */}
+            <TabsContent value="yours" className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 no-scrollbar mt-0">
+              {filteredAccountServers.length > 0 ? (
+                filteredAccountServers.map((server) => {
+                  const connType = server.connection_type
+                    ? connectionTypeMap[server.connection_type]
+                    : null;
+                  return (
+                    <div
+                      key={server.id}
+                      className="flex items-center gap-3 p-4 border rounded-xl bg-card transition-all hover:bg-primary/5 hover:border-primary"
                     >
-                      <IconRenderer
-                        icon={server.meta_data?.icon || connType?.icon || 'mdi:server'}
-                        size={20}
-                        color={connType?.meta_data?.color}
-                      />
-                    </Box>
+                      {/* Server Icon */}
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-muted/50 flex-shrink-0">
+                        <IconRenderer
+                          icon={server.meta_data?.icon || connType?.icon || 'mdi:server'}
+                          size={20}
+                          color={connType?.meta_data?.color}
+                        />
+                      </div>
 
-                    {/* Server Details */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 600, mb: 0.25 }}
-                      >
-                        {server.name}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: 'text.secondary',
-                          fontSize: '0.7rem',
-                          display: 'block',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {server.url}
-                      </Typography>
-                    </Box>
+                      {/* Server Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm mb-0.5">
+                          {server.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {server.url}
+                        </div>
+                      </div>
 
-                    {/* Link Button */}
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleLinkExistingServer(server.id)}
-                      disabled={linkingServerId === server.id}
-                      startIcon={
-                        linkingServerId === server.id ? (
-                          <CircularProgress
-                            size={14}
-                            color="inherit"
-                          />
+                      {/* Link Button */}
+                      <Button
+                        size="sm"
+                        onClick={() => handleLinkExistingServer(server.id)}
+                        disabled={linkingServerId === server.id}
+                        className="min-w-[80px]"
+                      >
+                        {linkingServerId === server.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Iconify icon="eva:link-outline" />
-                        )
-                      }
-                      sx={{
-                        minWidth: 80,
-                        textTransform: 'none',
-                        fontSize: '0.8125rem',
-                      }}
-                    >
-                      {linkingServerId === server.id ? '' : 'Link'}
-                    </Button>
-                  </Box>
-                );
-              })
-            ) : (
-              <Box
-                sx={{
-                  textAlign: 'center',
-                  py: 6,
-                  color: 'text.secondary',
-                }}
-              >
-                <Iconify
-                  icon="eva:server-outline"
-                  sx={{ fontSize: '3rem', mb: 1, opacity: 0.3 }}
-                />
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'text.secondary', mb: 0.5 }}
-                >
-                  No MCP servers found
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'text.disabled' }}
-                >
-                  {searchTerm ? 'Try a different search' : 'Create one to get started'}
-                </Typography>
-              </Box>
-            )}
-          </Stack>
-        )}
-      </Box>
+                          'Link'
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-12">
+                  <Server className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <div className="text-sm text-muted-foreground mb-1">
+                    No MCP servers found
+                  </div>
+                  <div className="text-xs text-muted-foreground/70">
+                    {searchTerm ? 'Try a different search' : 'Create one to get started'}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
 
       {/* Connection Selection Dialog */}
-      <Dialog
-        open={!!selectedConnectionType}
-        onClose={handleCloseConnectionDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                borderRadius: 1.5,
-                bgcolor: alpha(
-                  selectedConnectionType?.meta_data?.color || theme.palette.primary.main,
-                  0.08,
-                ),
-              }}
-            >
-              <IconRenderer
-                icon={selectedConnectionType?.icon || 'mdi:server'}
-                size={40}
-                color={selectedConnectionType?.meta_data?.color}
-              />
-            </Box>
-            <Box>
-              <Typography variant="h6">Connect {selectedConnectionType?.name}</Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: 'text.secondary' }}
-              >
-                Select or create a connection
-              </Typography>
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2}>
+      <Dialog open={!!selectedConnectionType} onOpenChange={(open) => !open && handleCloseConnectionDialog()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                <IconRenderer
+                  icon={selectedConnectionType?.icon || 'mdi:server'}
+                  size={40}
+                  color={selectedConnectionType?.meta_data?.color}
+                />
+              </div>
+              <div>
+                <DialogTitle className="text-lg">Connect {selectedConnectionType?.name}</DialogTitle>
+                <div className="text-xs text-muted-foreground">
+                  Select or create a connection
+                </div>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4">
             {/* Existing Connections */}
             {existingConnections && existingConnections.length > 0 && (
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ mb: 1.5, fontWeight: 600 }}
-                >
-                  Your Connections
-                </Typography>
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Your Connections</h4>
                 <RadioGroup
                   value={selectedConnectionId || ''}
-                  onChange={(e) => setSelectedConnectionId(e.target.value)}
+                  onValueChange={(value) => setSelectedConnectionId(value)}
+                  className="space-y-2"
                 >
                   {existingConnections.map((conn) => (
-                    <Box
+                    <div
                       key={conn.id}
-                      sx={{
-                        p: 1.5,
-                        border: `1px solid ${theme.palette.divider}`,
-                        borderRadius: 1.5,
-                        mb: 1,
-                        bgcolor:
-                          selectedConnectionId === conn.id
-                            ? alpha(theme.palette.primary.main, 0.04)
-                            : 'transparent',
-                        transition: 'all 0.2s',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        },
-                      }}
                       onClick={() => setSelectedConnectionId(conn.id)}
+                      className={cn(
+                        "flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all hover:bg-primary/5",
+                        selectedConnectionId === conn.id && "bg-primary/5 border-primary"
+                      )}
                     >
-                      <FormControlLabel
-                        value={conn.id}
-                        control={<Radio />}
-                        label={
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {conn.name}
-                            </Typography>
-                            {conn.details?.url && (
-                              <Typography
-                                variant="caption"
-                                sx={{ color: 'text.secondary' }}
-                              >
-                                {conn.details.url}
-                              </Typography>
-                            )}
-                          </Box>
-                        }
-                        sx={{ width: '100%', m: 0 }}
-                      />
-                    </Box>
+                      <RadioGroupItem value={conn.id} id={conn.id} className="mt-0.5" />
+                      <Label htmlFor={conn.id} className="flex-1 cursor-pointer">
+                        <div className="font-semibold text-sm">{conn.name}</div>
+                        {conn.details?.url && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {conn.details.url}
+                          </div>
+                        )}
+                      </Label>
+                    </div>
                   ))}
                 </RadioGroup>
-              </Box>
+              </div>
             )}
 
             {/* Create New Connection - Always visible */}
             {selectedConnectionType && (
-              <Box>
+              <div>
                 {existingConnections && existingConnections.length > 0 && (
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1.5, fontWeight: 600 }}
-                  >
-                    Create New Connection
-                  </Typography>
+                  <h4 className="text-sm font-semibold mb-3">Create New Connection</h4>
                 )}
                 <ConnectionCreator
                   connectionType={selectedConnectionType}
@@ -800,35 +495,34 @@ function AddMCPServerDrawer({ open, onClose, accountServers, onConnect, onCreate
                   disableClose={false}
                   popup={false}
                 />
-              </Box>
+              </div>
             )}
-          </Stack>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCloseConnectionDialog}
+              disabled={creatingMCPServer}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmConnection}
+              disabled={!selectedConnectionId || creatingMCPServer}
+            >
+              {creatingMCPServer ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Connect to Agent'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseConnectionDialog}
-            disabled={creatingMCPServer}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmConnection}
-            variant="contained"
-            disabled={!selectedConnectionId || creatingMCPServer}
-            startIcon={
-              creatingMCPServer ? (
-                <CircularProgress
-                  size={16}
-                  color="inherit"
-                />
-              ) : null
-            }
-          >
-            {creatingMCPServer ? 'Creating...' : 'Connect to Agent'}
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Drawer>
+    </>
   );
 }
 

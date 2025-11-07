@@ -68,7 +68,7 @@ export default function Main({ children, sx, ...other }) {
       component="main"
       sx={{
         flexGrow: 1,
-        overflowY: 'auto',
+        overflowY: 'hidden',
         py: `calc(${getHeaderHeight(HEADER.H_MOBILE)} + ${SPACING}px)`,
         ...(isDesktop && {
           px: 2,

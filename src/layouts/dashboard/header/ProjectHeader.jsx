@@ -1,36 +1,28 @@
 import { Capacitor } from '@capacitor/core';
-// @mui
-import {
-  Stack,
-  AppBar,
-  Toolbar,
-  Typography,
-  Tooltip,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Drawer,
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-// react
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
+import { 
+  MoreVertical, 
+  Rocket, 
+  Crown, 
+  History, 
+  Settings as SettingsIcon,
+  Radio 
+} from 'lucide-react';
 
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
-import ProjectNav from './ProjectNav.jsx';
 import MobileNavigation from './components/MobileNavigation.jsx';
+import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
-import HeaderIconButton from '../../../components/HeaderIconButton.jsx';
 import Iconify from '../../../components/iconify';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
 // config
 import { HEADER } from '../../../config-global';
@@ -53,9 +45,23 @@ import {
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general.js';
 import { useSelector } from '../../../redux/store';
-// utils
-import { bgBlur } from '../../../utils/cssStyles';
-import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
+
+// shadcn components
+import { Button } from '../../../components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../../components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../../components/ui/tooltip';
+import { Sheet, SheetContent } from '../../../components/ui/sheet';
+import { cn } from '../../../lib/utils';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -70,97 +76,43 @@ const isIOSCapacitor = () => {
 
 // Mobile Actions Menu Component
 const MobileActionsMenu = ({ onDistribution, onHistory, onSettings, onUpgrade }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleMenuItemClick = (action) => {
-    handleClose();
-    action();
-  };
-
   return (
-    <>
-      <Tooltip title="More actions">
-        <HeaderIconButton
-          onClick={handleClick}
-          sx={{
-            width: 32,
-            height: 32,
-            borderRadius: 1.5,
-          }}
-        >
-          <Iconify
-            icon="mdi:dots-vertical"
-            sx={{ width: 16, height: 16 }}
-          />
-        </HeaderIconButton>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>More actions</TooltipContent>
       </Tooltip>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-      >
-        <MenuItem onClick={() => handleMenuItemClick(onDistribution)}>
-          <ListItemIcon>
-            <Iconify
-              icon="mdi:broadcast"
-              className="w-5 h-5"
-            />
-          </ListItemIcon>
-          <ListItemText>Distribution</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => handleMenuItemClick(onHistory)}>
-          <ListItemIcon>
-            <Iconify
-              icon="mdi:history"
-              className="w-5 h-5"
-            />
-          </ListItemIcon>
-          <ListItemText>History</ListItemText>
-        </MenuItem>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onDistribution}>
+          <Radio className="h-4 w-4 mr-2" />
+          Distribution
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onHistory}>
+          <History className="h-4 w-4 mr-2" />
+          History
+        </DropdownMenuItem>
         {onSettings && (
-          <MenuItem onClick={() => handleMenuItemClick(onSettings)}>
-            <ListItemIcon>
-              <Iconify
-                icon="mdi:cog"
-                className="w-5 h-5"
-              />
-            </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
-          </MenuItem>
+          <DropdownMenuItem onClick={onSettings}>
+            <SettingsIcon className="h-4 w-4 mr-2" />
+            Settings
+          </DropdownMenuItem>
         )}
-        <MenuItem onClick={() => handleMenuItemClick(onUpgrade)}>
-          <ListItemIcon>
-            <Iconify
-              icon="material-symbols:crown"
-              className="w-5 h-5"
-            />
-          </ListItemIcon>
-          <ListItemText>Upgrade</ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+        <DropdownMenuItem onClick={onUpgrade}>
+          <Crown className="h-4 w-4 mr-2" />
+          Upgrade
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
 function ProjectHeader() {
-  const theme = useTheme();
   const history = useHistory();
   const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
@@ -181,8 +133,8 @@ function ProjectHeader() {
   const ui = useSelector((state) =>
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
-  const interfaceCommits = useSelector((state) => 
-    interfaceId ? selectSortedCommits(state, interfaceId) : []
+  const interfaceCommits = useSelector((state) =>
+    interfaceId ? selectSortedCommits(state, interfaceId) : [],
   );
 
   // Check if interface has commits
@@ -247,7 +199,6 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
-
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat' && altanerId) {
@@ -319,50 +270,25 @@ function ProjectHeader() {
       });
   }, [dispatch, selectedComponentId]);
 
-  // Calculate safe area aware styles for iOS
-  const getHeaderStyles = () => {
-    const baseStyles = {
-      boxShadow: 'none',
-      height: HEADER.H_MOBILE,
-      zIndex: 3,
-      ...bgBlur({
-        color: theme.palette.background.default,
-      }),
-      transition: theme.transitions.create(['height'], {
-        duration: theme.transitions.duration.shorter,
-      }),
-    };
-
-    if (isIOS) {
-      return {
-        ...baseStyles,
-        paddingTop: 'env(safe-area-inset-top)',
-        height: `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))`,
-      };
-    }
-
-    return baseStyles;
-  };
-
   return (
-    <>
-      <AppBar sx={getHeaderStyles()}>
-        <Toolbar
-          variant="dense"
-          disableGutters
-          sx={{
-            zIndex: 5,
-            height: HEADER.H_MOBILE,
-            px: isMobile ? '0.25rem' : '0.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
+    <TooltipProvider>
+      <header
+        className={cn(
+          "fixed top-0 left-0 right-0 z-30",
+          "transition-all duration-200",
+          isIOS && "pt-[env(safe-area-inset-top)]"
+        )}
+        style={{
+          height: isIOS ? `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))` : `${HEADER.H_MOBILE}px`
+        }}
+      >
+        <div
+          className={cn(
+            "flex items-center justify-between h-full py-1",
+            isMobile ? "px-1" : "px-2"
+          )}
         >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-          >
+          <div className="flex items-center gap-2">
             {altaner?.id ? (
               <>
                 {sortedComponents && (
@@ -396,16 +322,12 @@ function ProjectHeader() {
                   className="text-white dark:text-black"
                   icon="eva:arrow-back-outline"
                 />
-                <Typography
-                  noWrap
-                  variant="body"
-                  className="flex-no-wrap hidden group-hover:md:flex text-white dark:text-black"
-                >
+                <span className="hidden group-hover:md:flex text-white dark:text-black whitespace-nowrap">
                   Back to dashboard
-                </Typography>
+                </span>
               </HoverBorderGradient>
             )}
-          </Stack>
+          </div>
 
           {altaner?.id && isInterfaceComponent && !isMobile && hasInterfaceCommits && (
             <URLNavigationBar
@@ -414,23 +336,13 @@ function ProjectHeader() {
             />
           )}
 
-          {altaner?.id && isDatabaseComponent && !isMobile && <DatabaseNavigationBar />}
+          {altaner?.id && isDatabaseComponent && tableId && !isMobile && <DatabaseNavigationBar />}
 
-          {/* Middle section - URL Navigation Bar */}
-
-          <Stack
-            direction="row"
-            alignContent="center"
-            alignItems="center"
-            sx={{ height: HEADER.H_MOBILE }}
-          >
+          {/* Right section - Action buttons */}
+          <div className="flex items-center h-full">
             {altaner?.id &&
               (isMobile ? (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                >
+                <div className="flex items-center gap-2">
                   {shouldShowMoreActions && (
                     <MobileActionsMenu
                       onDistribution={() => setOpenSettings(true)}
@@ -442,75 +354,56 @@ function ProjectHeader() {
                     />
                   )}
                   {isInterfaceComponent && hasInterfaceCommits && (
-                    <Tooltip title="Deployment History">
-                      <HeaderIconButton
-                        onClick={() => setIsDeploymentHistoryOpen(true)}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                        }}
-                      >
-                        <Iconify
-                          icon="mdi:history"
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </HeaderIconButton>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsDeploymentHistoryOpen(true)}
+                          className="h-8 w-8"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Deployment History</TooltipContent>
                     </Tooltip>
                   )}
                   <InvitationMenuPopover isDashboard={true} />
                   {isAccountFree && (
-                    <Tooltip title="Upgrade to unlock more features">
-                      <HeaderIconButton
-                        onClick={() => history.push('/pricing')}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                        }}
-                      >
-                        <Iconify
-                          icon="material-symbols:crown"
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </HeaderIconButton>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => history.push('/pricing')}
+                          className="h-8 w-8"
+                        >
+                          <Crown className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Upgrade to unlock more features</TooltipContent>
                     </Tooltip>
                   )}
-                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
-                    <span>
-                      <HeaderIconButton
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
                         data-tour="publish-button"
+                        variant={canPublish ? "default" : "ghost"}
+                        size="icon"
                         onClick={() => setOpenPublishDialog(true)}
                         disabled={!canPublish}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                          bgcolor: canPublish ? 'primary.main' : 'action.disabledBackground',
-                          color: canPublish ? 'primary.contrastText' : 'action.disabled',
-                          '&:hover': {
-                            bgcolor: canPublish ? 'primary.dark' : 'action.disabledBackground',
-                          },
-                          '&.Mui-disabled': {
-                            bgcolor: 'action.disabledBackground',
-                            color: 'action.disabled',
-                          },
-                        }}
+                        className="h-8 w-8"
                       >
-                        <Iconify
-                          icon="mdi:rocket-launch-outline"
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </HeaderIconButton>
-                    </span>
+                        <Rocket className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
+                    </TooltipContent>
                   </Tooltip>
-                </Stack>
+                </div>
               ) : (
-                <Stack
-                  direction="row"
-                  spacing={.5}
-                  alignItems="center"
-                >
+                <div className="flex items-center gap-2">
                   {shouldShowMoreActions && (
                     <MobileActionsMenu
                       onDistribution={() => setOpenSettings(true)}
@@ -523,69 +416,57 @@ function ProjectHeader() {
                   )}
 
                   {isInterfaceComponent && hasInterfaceCommits && (
-                    <Tooltip title="Deployment History">
-                      <HeaderIconButton
-                        onClick={() => setIsDeploymentHistoryOpen(true)}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                        }}
-                      >
-                        <Iconify
-                          icon="mdi:history"
-                          sx={{ width: 16, height: 16 }}
-                        />
-                      </HeaderIconButton>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsDeploymentHistoryOpen(true)}
+                          className="h-8 w-8"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Deployment History</TooltipContent>
                     </Tooltip>
                   )}
                   <InvitationMenuPopover isDashboard={true} />
 
                   {isAccountFree && (
                     <Button
-                      size="small"
-                      color="secondary"
-                      variant="soft"
-                      startIcon={<Iconify icon="material-symbols:crown" />}
+                      variant="secondary"
+                      size="sm"
                       onClick={() => history.push('/pricing')}
-                      sx={{
-                        height: 32,
-                      }}
+                      className="h-8"
                     >
+                      <Crown className="h-4 w-4 mr-2" />
                       Upgrade
                     </Button>
                   )}
 
-                  <Tooltip title={!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}>
-                    <span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
-                        size="small"
-                        variant="contained"
                         data-tour="publish-button"
-                        disabled={!canPublish}
-                        startIcon={
-                          <Iconify
-                            icon="mdi:rocket-launch-outline"
-                            sx={{ width: 16, height: 16 }}
-                          />
-                        }
+                        variant={canPublish ? "default" : "secondary"}
+                        size="sm"
                         onClick={() => setOpenPublishDialog(true)}
-                        sx={{
-                          height: 32,
-                          borderRadius: 1.5,
-                          px: 2,
-                          minWidth: 'auto',
-                        }}
+                        disabled={!canPublish}
+                        className="h-8"
                       >
+                        <Rocket className="h-4 w-4 mr-2" />
                         Publish
                       </Button>
-                    </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
+                    </TooltipContent>
                   </Tooltip>
-                </Stack>
+                </div>
               ))}
-          </Stack>
-        </Toolbar>
-      </AppBar>
+          </div>
+        </div>
+      </header>
 
       <VersionHistoryDrawer
         open={openVersionHistory}
@@ -655,29 +536,20 @@ function ProjectHeader() {
       />
 
       {/* Deployment History Drawer */}
-      <Drawer
-        anchor="right"
-        open={isDeploymentHistoryOpen}
-        onClose={() => setIsDeploymentHistoryOpen(false)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: 400,
-            maxWidth: '90vw',
-            padding: 2,
-          },
-        }}
-      >
-        <DeploymentHistory
-          ui={ui}
-          handleReload={async () => {
-            // Reload interface data to get latest commits and deployments
-            if (interfaceId) {
-              await dispatch(getInterfaceById(interfaceId));
-            }
-          }}
-        />
-      </Drawer>
-    </>
+      <Sheet open={isDeploymentHistoryOpen} onOpenChange={setIsDeploymentHistoryOpen}>
+        <SheetContent className="w-[400px] max-w-[90vw]">
+          <DeploymentHistory
+            ui={ui}
+            handleReload={async () => {
+              // Reload interface data to get latest commits and deployments
+              if (interfaceId) {
+                await dispatch(getInterfaceById(interfaceId));
+              }
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+    </TooltipProvider>
   );
 }
 

@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { cn } from '@lib/utils';
 
 // Question Option Component - individual option within a question group
 const QuestionOption = ({ children, value, isSelected, isRecommended, onSelect, groupId }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const selectionTimeoutRef = React.useRef(null);
+  const animationTimeoutRef = React.useRef(null);
 
   const handleClick = () => {
     if (!isSelected) {
       setIsAnimating(true);
+      // Clear any pending selection timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
       // Delay the actual selection to show animation
-      setTimeout(() => {
+      selectionTimeoutRef.current = setTimeout(() => {
         onSelect(groupId, value || (typeof children === 'string' ? children : ''));
+        selectionTimeoutRef.current = null;
       }, 150);
     }
   };
@@ -19,10 +26,33 @@ const QuestionOption = ({ children, value, isSelected, isRecommended, onSelect, 
   // Reset animation state when selection changes
   useEffect(() => {
     if (isSelected) {
-      const timer = setTimeout(() => setIsAnimating(false), 300);
-      return () => clearTimeout(timer);
+      // Clear any pending animation timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+      animationTimeoutRef.current = setTimeout(() => {
+        setIsAnimating(false);
+        animationTimeoutRef.current = null;
+      }, 300);
     }
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
   }, [isSelected]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <button
@@ -88,4 +118,5 @@ const QuestionOption = ({ children, value, isSelected, isRecommended, onSelect, 
   );
 };
 
-export default QuestionOption;
+// Memoize to prevent unnecessary re-renders during streaming
+export default React.memo(QuestionOption);

@@ -4,6 +4,22 @@ import QuestionGroup from './QuestionGroup';
 import { sendMessage } from '../../../redux/slices/room';
 import { dispatch } from '../../../redux/store';
 
+// Helper to create a stable key from children structure
+const createChildrenKey = (children) => {
+  const parts = [];
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+    const questionTitle = child.props?.title || child.props?.['data-qg-title'];
+    if (questionTitle !== undefined) {
+      parts.push(questionTitle);
+      // Include count of child options for more stable tracking
+      const childCount = React.Children.count(child.props.children);
+      parts.push(childCount);
+    }
+  });
+  return parts.join('|');
+};
+
 // Clarifying Questions Component - main container with multiple question groups
 const ClarifyingQuestions = ({ children, threadId }) => {
   // State: { groupId: selectedValue }
@@ -11,7 +27,22 @@ const ClarifyingQuestions = ({ children, threadId }) => {
   // Track which group is currently expanded
   const [expandedGroupId, setExpandedGroupId] = React.useState(null);
 
-  // Process children to create question groups
+  // Track pending timeout to cancel on re-render
+  const timeoutRef = React.useRef(null);
+
+  // Clean up timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Create stable key from children structure to prevent unnecessary recalculations
+  const childrenKey = React.useMemo(() => createChildrenKey(children), [children]);
+
+  // Process children to create question groups - use stable key instead of children reference
   const questionGroups = React.useMemo(() => {
     const groups = [];
     let currentGroup = null;
@@ -42,14 +73,16 @@ const ClarifyingQuestions = ({ children, threadId }) => {
     }
 
     return groups;
-  }, [children]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [childrenKey]); // Use stable key instead of children to prevent recalc on every stream update
 
-  // Initialize first group as expanded
+  // Initialize first group as expanded - only run once when groups are first available
   React.useEffect(() => {
     if (expandedGroupId === null && questionGroups.length > 0) {
       setExpandedGroupId(questionGroups[0].id);
     }
-  }, [expandedGroupId, questionGroups]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedGroupId, questionGroups.length]); // Use length instead of entire array to prevent unnecessary reruns
 
   const handleSelect = React.useCallback(
     (groupId, value) => {
@@ -58,13 +91,19 @@ const ClarifyingQuestions = ({ children, threadId }) => {
         [groupId]: value,
       }));
 
+      // Clear any pending timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
       // Find current group index
       const currentIndex = questionGroups.findIndex((g) => g.id === groupId);
 
       // If there's a next group, expand it after animation completes
       if (currentIndex !== -1 && currentIndex < questionGroups.length - 1) {
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           setExpandedGroupId(questionGroups[currentIndex + 1].id);
+          timeoutRef.current = null;
         }, 500);
       }
     },
