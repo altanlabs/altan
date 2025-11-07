@@ -80,7 +80,10 @@ export const ComputeConfiguration = ({
             <Button
               size="icon"
               variant="ghost"
-              onClick={onToggleShow}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleShow();
+              }}
               title={showValue ? 'Hide' : 'Show'}
               className="h-8 w-8"
             >
@@ -90,7 +93,10 @@ export const ComputeConfiguration = ({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => handleCopy(value, fieldKey)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy(value, fieldKey);
+            }}
             title={copiedField === fieldKey ? 'Copied!' : 'Copy'}
             className="h-8 w-8"
           >
