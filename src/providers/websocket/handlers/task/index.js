@@ -1,13 +1,11 @@
 /**
- * Main handler for task and plan events
- * Orchestrates event processing following Single Responsibility Principle
+ * Task Event Handler
+ * Routes task and plan events to appropriate operations
  */
 
 import { batch } from 'react-redux';
 
-import {
-  TASK_EVENT_HANDLERS,
-} from './taskHandlers';
+import { TASK_OPERATIONS } from './operations';
 
 /**
  * Handle task.* and plan.* events from WebSocket
@@ -24,7 +22,7 @@ export const handleTaskEvent = (event) => {
 
   // Handle specific task event types using registry
   batch(() => {
-    const handler = TASK_EVENT_HANDLERS[eventType];
+    const handler = TASK_OPERATIONS[eventType];
     if (handler) {
       handler(eventData);
     } else {
@@ -32,3 +30,4 @@ export const handleTaskEvent = (event) => {
     }
   });
 };
+

@@ -1,12 +1,12 @@
 /**
- * Main handler for MESSAGE events
- * Orchestrates message event processing following Single Responsibility Principle
+ * Message Event Handler
+ * Routes message events to appropriate operations
  */
 
-import { extractMessageEventData, MESSAGE_EVENT_HANDLERS } from './messageHandlers';
+import { extractMessageEventData, MESSAGE_OPERATIONS } from './operations';
 
 /**
- * Handle MESSAGE events from Hermes WebSocket
+ * Handle message events from Hermes WebSocket
  * @param {Object} data - The WebSocket event data
  */
 export const handleMessageEvent = (data) => {
@@ -16,10 +16,11 @@ export const handleMessageEvent = (data) => {
   const { eventData, eventType } = extracted;
 
   // Handle specific event types using registry
-  const handler = MESSAGE_EVENT_HANDLERS[eventType];
+  const handler = MESSAGE_OPERATIONS[eventType];
   if (handler) {
     handler(eventData);
   } else {
     console.warn(`Unhandled message event type: ${eventType}`);
   }
 };
+

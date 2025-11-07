@@ -1,6 +1,6 @@
 /**
- * Thread Event Handlers
- * Separated by concern following Single Responsibility Principle
+ * Thread Operations
+ * Contains all thread event handlers
  */
 
 import {
@@ -8,8 +8,8 @@ import {
   threadUpdate,
   removeThread,
   changeThreadReadState,
-} from '../../../redux/slices/room';
-import { dispatch } from '../../../redux/store';
+} from '../../../../redux/slices/room';
+import { dispatch } from '../../../../redux/store';
 
 /**
  * Extract and validate thread event data
@@ -70,9 +70,9 @@ export const handleThreadOpened = (eventData) => {
 };
 
 /**
- * Event handler registry for thread events
+ * Operation registry for thread events
  */
-export const THREAD_EVENT_HANDLERS = {
+export const THREAD_OPERATIONS = {
   'thread.created': handleThreadCreated,
   'thread.updated': handleThreadUpdated,
   'thread.deleted': handleThreadDeleted,

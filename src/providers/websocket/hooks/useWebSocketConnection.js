@@ -6,10 +6,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { authorizeUser } from '../../../utils/axios';
-import { handleAgentResponseEvent } from '../handlers/handleAgentResponse';
-import { handleMessageEvent } from '../handlers/handleMessage';
-import { handleTaskEvent } from '../handlers/handleTask';
-import { handleThreadEvent } from '../handlers/handleThread';
+import { handleAgentResponseEvent } from '../handlers/agentResponse';
+import { handleAltanerEvent } from '../handlers/altaner';
+import { handleAltanerComponentEvent } from '../handlers/altanerComponent';
+import { handleAuthorizationRequestEvent } from '../handlers/authorization';
+import { handleCommitEvent } from '../handlers/commit';
+import { handleConnectionEvent } from '../handlers/connection';
+import { handleDeploymentEvent } from '../handlers/deployment';
+import { handleInterfaceEvent } from '../handlers/interface';
+import { handleMessageEvent } from '../handlers/message';
+import { handleRoomEvent } from '../handlers/room';
+import { handleRoomMemberEvent } from '../handlers/roomMember';
+import { handleTaskEvent } from '../handlers/task';
+import { handleThreadEvent } from '../handlers/thread';
 import { handleWebSocketEvent } from '../ws';
 
 /**
@@ -71,6 +80,15 @@ const createMessageHandler = (ws, user_id, onAck) => {
     thread: handleThreadEvent,
     task: handleTaskEvent,
     plan: handleTaskEvent,
+    room_member: (data) => handleRoomMemberEvent(data, user_id),
+    room: handleRoomEvent,
+    connection: handleConnectionEvent,
+    authorization_request: handleAuthorizationRequestEvent,
+    commit: handleCommitEvent,
+    deployment: handleDeploymentEvent,
+    altaner_component: handleAltanerComponentEvent,
+    altaner: handleAltanerEvent,
+    interface: handleInterfaceEvent,
   };
 
   return async (event) => {

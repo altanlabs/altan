@@ -4,19 +4,12 @@ import { useWebSocketConnection } from './hooks/useWebSocketConnection';
 import { useWebSocketSubscriptions } from './hooks/useWebSocketSubscriptions';
 import { useAuthContext } from '../../auth/useAuthContext';
 import { selectAccountId } from '../../redux/slices/general';
-import { selectRoomAccountId, updateMessagePart } from '../../redux/slices/room';
-import { useSelector, dispatch } from '../../redux/store';
-import { messagePartBatcher } from '../../utils/eventBatcher';
+import { selectRoomAccountId } from '../../redux/slices/room';
+import { useSelector } from '../../redux/store';
 
 const HermesWebSocketContext = createContext(null);
 
 export const useHermesWebSocket = () => useContext(HermesWebSocketContext);
-
-// Register the message part batcher handler once
-// This handler processes all batched message_part.updated events
-messagePartBatcher.registerHandler('updated', (eventData) => {
-  dispatch(updateMessagePart(eventData));
-});
 
 const HermesWebSocketProvider = ({ children }) => {
   const generalAccountId = useSelector(selectAccountId);

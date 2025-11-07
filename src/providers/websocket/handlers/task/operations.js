@@ -1,10 +1,10 @@
 /**
- * Task Event Handlers
- * Separated by concern following Single Responsibility Principle
+ * Task Operations
+ * Contains all task and plan event handlers
  */
 
-import { addTask, updateTask, removeTask, setPlanCompleted } from '../../../redux/slices/tasks';
-import { dispatch } from '../../../redux/store';
+import { addTask, updateTask, removeTask, setPlanCompleted } from '../../../../redux/slices/tasks';
+import { dispatch } from '../../../../redux/store';
 
 const SOUND_IN = new Audio(
   'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
@@ -107,7 +107,6 @@ export const handleTaskCompleted = (eventData) => {
 
   // Check if all tasks are completed
   if (eventData.all_tasks_completed) {
-    // eslint-disable-next-line no-console
     console.log('🎉 All tasks completed! Plan finished:', {
       plan_id: eventData.plan_id,
       mainthread_id: eventData.mainthread_id,
@@ -118,7 +117,6 @@ export const handleTaskCompleted = (eventData) => {
     try {
       SOUND_IN.play();
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to play completion sound:', error);
     }
 
@@ -133,10 +131,9 @@ export const handleTaskCompleted = (eventData) => {
 };
 
 /**
- * Event handler registry - maps event types to handlers
- * Following Open/Closed Principle - easy to extend without modification
+ * Operation registry - maps event types to handlers
  */
-export const TASK_EVENT_HANDLERS = {
+export const TASK_OPERATIONS = {
   'task.created': handleTaskCreated,
   'task.updated': handleTaskUpdated,
   'task.deleted': handleTaskDeleted,

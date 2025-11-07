@@ -1,14 +1,15 @@
 /**
- * Agent Response Event Handlers
- * Separated by concern following Single Responsibility Principle
+ * Agent Response Operations
+ * Contains all agent response event handlers
  */
 
 import { batch } from 'react-redux';
 
-import analytics from '../../../lib/analytics';
+import analytics from '../../../../lib/analytics';
 import {
   addMessage,
   addMessagePart,
+  updateMessagePart,
   updateMessageStreamingState,
   addRunningResponse,
   deleteRunningResponse,
@@ -18,10 +19,15 @@ import {
   addResponseLifecycle,
   completeResponseLifecycle,
   markMessagePartDone,
-//   deleteMessagePart,
-} from '../../../redux/slices/room';
-import { dispatch } from '../../../redux/store';
-import { messagePartBatcher } from '../../../utils/eventBatcher';
+} from '../../../../redux/slices/room';
+import { dispatch } from '../../../../redux/store';
+import { messagePartBatcher } from '../../../../utils/eventBatcher';
+
+// Register handler for high-frequency streaming updates
+// Only 'updated' events are batched - lifecycle events are processed immediately
+messagePartBatcher.registerHandler('updated', (eventData) => {
+  dispatch(updateMessagePart(eventData));
+});
 
 /**
  * Extract and validate event data from WebSocket message
@@ -30,13 +36,11 @@ export const extractEventData = (event) => {
   const eventData = event.data;
 
   if (!eventData) {
-    // eslint-disable-next-line no-console
     console.warn('Hermes WS: AGENT_RESPONSE missing event data, skipping');
     return null;
   }
 
   const eventType = event.type;
-
   const timestamp = event.timestamp || new Date().toISOString();
 
   return { eventData, eventType, timestamp };
@@ -94,7 +98,6 @@ export const handleResponseLifecycle = (eventData, eventType, timestamp) => {
       }),
     );
   } else {
-    // eslint-disable-next-line no-console
     console.warn('⚠️ WhisperStream WS: Received response event without response_id');
   }
 
@@ -272,31 +275,31 @@ export const handleActivationFailed = (eventData) => {
 };
 
 /**
- * Handle message part events
+ * Handle message part added event
  */
 export const handleMessagePartAdded = (eventData) => {
   dispatch(addMessagePart(eventData));
 };
 
+/**
+ * Handle message part updated event
+ */
 export const handleMessagePartUpdated = (eventData) => {
   messagePartBatcher.enqueue('updated', eventData);
 };
 
+/**
+ * Handle message part completed event
+ */
 export const handleMessagePartCompleted = (eventData) => {
   messagePartBatcher.flush();
   dispatch(markMessagePartDone(eventData));
 };
 
-// export const handleMessagePartDeleted = (eventData) => {
-//   messagePartBatcher.flush();
-//   dispatch(deleteMessagePart(eventData));
-// };
-
 /**
- * Event handler registry - maps event types to handlers
- * Following Open/Closed Principle - easy to extend without modification
+ * Operation registry - maps event types to handlers
  */
-export const EVENT_HANDLERS = {
+export const AGENT_RESPONSE_OPERATIONS = {
   'response.scheduled': handleResponseStarted,
   'response.started': handleResponseStarted,
   'response.completed': handleResponseCompleted,
@@ -306,5 +309,5 @@ export const EVENT_HANDLERS = {
   'message_part.added': handleMessagePartAdded,
   'message_part.updated': handleMessagePartUpdated,
   'message_part.completed': handleMessagePartCompleted,
-//   MessagePartDeleted: handleMessagePartDeleted,
 };
+
