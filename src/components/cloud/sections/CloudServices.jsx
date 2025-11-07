@@ -2,6 +2,11 @@ import { Code, Edit2, Loader2, Lock, MoreVertical, Plus, RefreshCw, Trash2 } fro
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import ApiDocsViewer from './services/ApiDocsViewer';
+import { CreateMCPDialog } from './services/CreateMCPDialog';
+import { CreateSecretDialog } from './services/CreateSecretDialog';
+import { CreateServiceDialog } from './services/CreateServiceDialog';
+import { ViewServiceDialog } from './services/ViewServiceDialog';
 import { useToast } from '../../../hooks/use-toast';
 import { selectAccountId } from '../../../redux/slices/general';
 import {
@@ -32,11 +37,6 @@ import { Input } from '../../ui/input';
 import { Skeleton } from '../../ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
-import ApiDocsViewer from './services/ApiDocsViewer';
-import { CreateMCPDialog } from './services/CreateMCPDialog';
-import { CreateSecretDialog } from './services/CreateSecretDialog';
-import { CreateServiceDialog } from './services/CreateServiceDialog';
-import { ViewServiceDialog } from './services/ViewServiceDialog';
 
 function formatRelativeDate(value) {
   if (!value) return 'N/A';
@@ -436,7 +436,7 @@ const CloudServices = () => {
                           <TableRow
                             key={svc.name}
                             className="cursor-pointer"
-                            onClick={() => openViewService(svc)}
+                            onClick={() => openEditService(svc)}
                           >
                             <TableCell className="font-medium font-mono text-sm">
                               {svc.name}
