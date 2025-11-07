@@ -1,15 +1,25 @@
+import {
+  Database,
+  LayoutGrid,
+  Terminal,
+  Users,
+  Code,
+  FolderOpen,
+  Radio,
+  FileText,
+} from 'lucide-react';
 import React, { memo } from 'react';
-import { Database, LayoutGrid, Terminal, Users, Code, FolderOpen, Radio, FileText } from 'lucide-react';
+
 import { cn } from '../../lib/utils';
 
 const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'tables', label: 'Database', icon: Database },
   { id: 'sql-editor', label: 'SQL Terminal', icon: Terminal },
-  { id: 'users', label: 'Users', icon: Users },
   { id: 'services', label: 'Services', icon: Code },
+  { id: 'users', label: 'Users', icon: Users },
   { id: 'storage', label: 'Storage', icon: FolderOpen },
-  { id: 'realtime', label: 'Realtime', icon: Radio },
+  // { id: 'realtime', label: 'Realtime', icon: Radio },
   { id: 'logs', label: 'Logs', icon: FileText },
 ];
 
@@ -33,7 +43,7 @@ function CloudSidebar({ activeSection, onSectionChange, open }) {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 isActive
                   ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -47,4 +57,3 @@ function CloudSidebar({ activeSection, onSectionChange, open }) {
 }
 
 export default memo(CloudSidebar);
-

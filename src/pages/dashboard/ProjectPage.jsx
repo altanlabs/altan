@@ -377,8 +377,8 @@ export default function ProjectPage() {
         typeSpecificProps.cloud_id = currentComponent.cloud_id;
         typeSpecificProps.altanerComponentType = type;
       } else if (currentComponent.params?.ids) {
-        typeSpecificProps.ids = currentComponent.params.ids;
-        typeSpecificProps.altanerComponentType = type;
+      typeSpecificProps.ids = currentComponent.params.ids;
+      typeSpecificProps.altanerComponentType = type;
         typeSpecificProps.filterIds = currentComponent.params.ids;
       }
     }
