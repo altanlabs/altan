@@ -43,30 +43,6 @@ function reactVirtualized() {
   };
 }
 
-function swaggerUIFix() {
-  return {
-    name: 'swagger-ui-fix',
-    // Handle swagger-ui-dist imports
-    resolveId(id) {
-      if (id.includes('swagger-ui-dist/swagger-ui-es-bundle')) {
-        // Mark as external to avoid Rollup parsing
-        return { id, external: false, moduleSideEffects: true };
-      }
-      return null;
-    },
-    // Transform the module to work better with Vite
-    transform(code, id) {
-      if (id.includes('swagger-ui-dist/swagger-ui-es-bundle')) {
-        // Return the code as-is, but mark it as transformed so Rollup doesn't try to parse it again
-        return {
-          code,
-          map: null,
-        };
-      }
-      return null;
-    },
-  };
-}
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
@@ -96,20 +72,11 @@ export default defineConfig(({ mode }) => {
           format: isMobile ? 'es' : 'es',
         },
         maxParallelFileOps: 1, // Reduce parallel operations in CI
-        // Skip problematic packages during commonjs resolution
-        onwarn(warning, warn) {
-          // Ignore warnings from swagger-ui-dist
-          if (warning.message?.includes('swagger-ui-dist')) {
-            return;
-          }
-          warn(warning);
-        },
       },
     },
     plugins: [
       react(),
       reactVirtualized(),
-      swaggerUIFix(),
       wasm(),
       ...(isDev ? [mkcert()] : []),
     ],
@@ -143,8 +110,6 @@ export default defineConfig(({ mode }) => {
         // Lexical editor
         'lexical',
         '@lexical/react',
-        // Swagger UI - causes Rollup parsing errors in CI
-        'swagger-ui-dist',
       ],
       include: [
         // Force include commonly needed packages

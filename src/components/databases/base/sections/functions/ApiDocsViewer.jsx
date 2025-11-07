@@ -1,15 +1,45 @@
 import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { AlertCircle } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import SwaggerUI from 'swagger-ui-dist/swagger-ui-es-bundle';
-import 'swagger-ui-dist/swagger-ui.css';
 
 function ApiDocsViewer({ cloudUrl }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [spec, setSpec] = useState(null);
+  const [swaggerLoaded, setSwaggerLoaded] = useState(false);
   const containerRef = useRef(null);
   const swaggerUIRef = useRef(null);
+
+  // Load Swagger UI from CDN
+  useEffect(() => {
+    // Check if already loaded
+    if (window.SwaggerUIBundle) {
+      setSwaggerLoaded(true);
+      return;
+    }
+
+    // Load CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css';
+    document.head.appendChild(link);
+
+    // Load JS
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js';
+    script.onload = () => setSwaggerLoaded(true);
+    script.onerror = () => {
+      setError('Failed to load Swagger UI library');
+      setLoading(false);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup on unmount
+      if (link.parentNode) link.parentNode.removeChild(link);
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
 
   // Fetch the OpenAPI spec
   useEffect(() => {
@@ -42,7 +72,7 @@ function ApiDocsViewer({ cloudUrl }) {
 
   // Initialize Swagger UI once we have both the spec and the DOM element
   useEffect(() => {
-    if (!spec || !containerRef.current || swaggerUIRef.current || !cloudUrl) {
+    if (!spec || !containerRef.current || swaggerUIRef.current || !cloudUrl || !swaggerLoaded || !window.SwaggerUIBundle) {
       return;
     }
 
@@ -59,16 +89,16 @@ function ApiDocsViewer({ cloudUrl }) {
       ],
     };
     
-    swaggerUIRef.current = SwaggerUI({
+    swaggerUIRef.current = window.SwaggerUIBundle({
       spec: specWithServer,
       domNode: containerRef.current,
       deepLinking: true,
       presets: [
-        SwaggerUI.presets.apis,
+        window.SwaggerUIBundle.presets.apis,
       ],
       layout: 'BaseLayout',
     });
-  }, [spec, cloudUrl]);
+  }, [spec, cloudUrl, swaggerLoaded]);
 
   if (loading) {
     return (
