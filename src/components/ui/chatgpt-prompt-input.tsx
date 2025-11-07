@@ -571,9 +571,9 @@ export const PromptBox = React.forwardRef<
     // Format credits for display
     const formatCredits = (credits: number) => {
       if (credits >= 100000) {
-        return `€${(credits / 100000).toFixed(1)}K`;
+        return `${(credits / 100000).toFixed(1)}K`;
       }
-      return `€${(credits / 100).toFixed(2)}`;
+      return `${credits.toFixed(2)}`;
     };
 
     // Determine if we should show the credit warning
