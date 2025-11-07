@@ -1,9 +1,7 @@
 import react from '@vitejs/plugin-react';
-import autoprefixer from 'autoprefixer';
 import fs from 'fs/promises';
 import { createRequire } from 'module';
 import path from 'path';
-import tailwindcss from 'tailwindcss';
 import url from 'url';
 import { defineConfig } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
@@ -80,17 +78,6 @@ export default defineConfig(({ mode }) => {
       reactVirtualized(),
       wasm(),
       ...(isDev ? [mkcert()] : []),
-      {
-        name: 'vite:tailwind',
-        enforce: 'post',
-        config: () => ({
-          css: {
-            postcss: {
-              plugins: [tailwindcss(), autoprefixer()],
-            },
-          },
-        }),
-      },
     ],
     optimizeDeps: {
       exclude: [
