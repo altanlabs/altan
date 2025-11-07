@@ -26,10 +26,27 @@ export const extractMessageEventData = (data) => {
 };
 
 /**
+ * Normalize message data structure
+ * Converts WebSocket format to match the format expected by Redux state
+ */
+const normalizeMessageData = (eventData) => {
+  const normalizedData = { ...eventData };
+
+  // Normalize media: WebSocket sends an array, but Redux expects { items: [] }
+  if (Array.isArray(normalizedData.media)) {
+    normalizedData.media = { items: normalizedData.media };
+  }
+
+  return normalizedData;
+};
+
+/**
  * Handle message.created event
  */
 export const handleMessageCreated = (eventData) => {
-  dispatch(addMessage(eventData));
+  console.log('Hermes WS: handleMessageCreated', eventData);
+  const normalizedData = normalizeMessageData(eventData);
+  dispatch(addMessage(normalizedData));
 };
 
 /**
@@ -37,7 +54,8 @@ export const handleMessageCreated = (eventData) => {
  */
 export const handleMessageUpdated = (eventData) => {
   // addMessage will merge with existing message if it exists
-  dispatch(addMessage(eventData));
+  const normalizedData = normalizeMessageData(eventData);
+  dispatch(addMessage(normalizedData));
 };
 
 /**

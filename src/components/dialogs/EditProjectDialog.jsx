@@ -1,31 +1,46 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  IconButton,
-  Typography,
-  Stack,
-} from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import { Trash2, Pin, PinOff, Loader2 } from 'lucide-react';
 
-import Iconify from '../iconify/Iconify';
-import IconRenderer from '../icons/IconRenderer';
-import IconAutocomplete from '../IconAutocomplete';
-import { updateAltanerById } from '../../redux/slices/altaners';
+import { updateAltanerById, deleteAltanerById } from '../../redux/slices/altaners';
+import { deleteAccountAltaner } from '../../redux/slices/general';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Switch } from '../ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 
 const EditProjectDialog = ({ open, onClose, project }) => {
   const dispatch = useDispatch();
+  const history = useHistory();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    icon_url: '',
+    is_pinned: false,
   });
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [errors, setErrors] = useState({});
 
   // Initialize form data when project changes
@@ -34,22 +49,21 @@ const EditProjectDialog = ({ open, onClose, project }) => {
       setFormData({
         name: project.name || '',
         description: project.description || '',
-        icon_url: project.icon_url || '',
+        is_pinned: project.is_pinned || false,
       });
       setErrors({});
     }
   }, [project]);
 
-  const handleInputChange = (field) => (event) => {
-    const value = event.target.value;
-    setFormData(prev => ({
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -58,11 +72,11 @@ const EditProjectDialog = ({ open, onClose, project }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Project name is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -89,8 +103,30 @@ const EditProjectDialog = ({ open, onClose, project }) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!project?.id) {
+      console.error('No project ID available');
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await dispatch(deleteAltanerById(project.id));
+      dispatch(deleteAccountAltaner(project.id));
+      setShowDeleteConfirm(false);
+      onClose();
+      // Navigate to dashboard after deletion
+      history.push('/');
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      setErrors({ submit: 'Failed to delete project. Please try again.' });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleClose = () => {
-    if (!loading) {
+    if (!loading && !deleting) {
       setErrors({});
       onClose();
     }
@@ -103,162 +139,165 @@ const EditProjectDialog = ({ open, onClose, project }) => {
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 100%)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.2)',
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pb: 1,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {formData.icon_url && (
-            <IconRenderer
-              icon={formData.icon_url}
-              size={24}
-            />
-          )}
-          <Typography variant="h6" component="div">
-            Edit Project
-          </Typography>
-        </Box>
-        <IconButton
-          onClick={handleClose}
-          disabled={loading}
-          size="small"
-        >
-          <Iconify icon="mdi:close" />
-        </IconButton>
-      </DialogTitle>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-white/95 to-white/90 dark:from-zinc-950/95 dark:to-zinc-900/90 backdrop-blur-xl border border-white/20 dark:border-white/10">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Update your project details, toggle pinning, or delete the project.
+            </DialogDescription>
+          </DialogHeader>
 
-      <DialogContent sx={{ pt: 1 }}>
-        <Stack spacing={3}>
-          <TextField
-            label="Project Name"
-            value={formData.name}
-            onChange={handleInputChange('name')}
-            onKeyPress={handleKeyPress}
-            error={!!errors.name}
-            helperText={errors.name}
-            fullWidth
-            required
-            disabled={loading}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1.5,
-              },
-            }}
-          />
-
-          <TextField
-            label="Description"
-            value={formData.description}
-            onChange={handleInputChange('description')}
-            onKeyPress={handleKeyPress}
-            error={!!errors.description}
-            helperText={errors.description}
-            fullWidth
-            multiline
-            rows={3}
-            disabled={loading}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1.5,
-              },
-            }}
-          />
-
-          <Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 1 }}
-            >
-              Icon
-            </Typography>
-            <IconAutocomplete
-              value={formData.icon_url}
-              onChange={(value) => setFormData(prev => ({ ...prev, icon_url: value }))}
-            />
-            {errors.icon_url && (
-              <Typography
-                variant="caption"
-                color="error"
-                sx={{ mt: 0.5, display: 'block' }}
-              >
-                {errors.icon_url}
-              </Typography>
-            )}
-          </Box>
-
-          {errors.submit && (
-            <Typography
-              variant="body2"
-              color="error"
-              sx={{ mt: 1 }}
-            >
-              {errors.submit}
-            </Typography>
-          )}
-        </Stack>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-        <Button
-          onClick={handleClose}
-          disabled={loading}
-          sx={{
-            borderRadius: 1.5,
-            px: 3,
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={loading || !formData.name.trim()}
-          sx={{
-            borderRadius: 1.5,
-            px: 3,
-            minWidth: 100,
-          }}
-        >
-          {loading ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Iconify
-                icon="mdi:loading"
-                sx={{
-                  animation: 'spin 1s linear infinite',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' },
-                  },
-                }}
-                width={16}
+          <div className="space-y-4 py-4">
+            {/* Project Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Project Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={loading}
+                placeholder="Enter project name"
+                className={errors.name ? 'border-red-500' : ''}
               />
-              Saving...
-            </Box>
-          ) : (
-            'Save'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                disabled={loading}
+                placeholder="Enter project description"
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Pin Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-white/50 dark:bg-zinc-900/50">
+              <div className="flex items-center gap-3">
+                {formData.is_pinned ? (
+                  <Pin className="h-5 w-5 text-primary" />
+                ) : (
+                  <PinOff className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div className="space-y-0.5">
+                  <Label htmlFor="pinned" className="text-base cursor-pointer">
+                    Pin Project
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Pinned projects appear first in your dashboard
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="pinned"
+                checked={formData.is_pinned}
+                onCheckedChange={(checked) => handleInputChange('is_pinned', checked)}
+                disabled={loading}
+              />
+            </div>
+
+            {/* Error Message */}
+            {errors.submit && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 p-3">
+                <p className="text-sm text-red-600 dark:text-red-400">{errors.submit}</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={loading || deleting}
+              className="sm:mr-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Project
+            </Button>
+            
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading || deleting}
+                className="flex-1 sm:flex-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={loading || !formData.name.trim() || deleting}
+                className="flex-1 sm:flex-none min-w-[100px]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="bg-gradient-to-br from-white/95 to-white/90 dark:from-zinc-950/95 dark:to-zinc-900/90 backdrop-blur-xl border border-white/20 dark:border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <Trash2 className="h-5 w-5" />
+              Delete Project
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete <strong>"{project?.name}"</strong>?
+              </p>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                This action cannot be undone. All project data will be permanently deleted.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Project
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

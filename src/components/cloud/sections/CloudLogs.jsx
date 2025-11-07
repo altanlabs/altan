@@ -1,5 +1,5 @@
-import { Download, Loader2, RefreshCw } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Download, RefreshCw } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useToast } from '../../../hooks/use-toast';
@@ -52,19 +52,14 @@ const CloudLogs = () => {
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
-  const [hasMore, setHasMore] = useState(true);
-  const observerTarget = useRef(null);
 
   const fetchLogs = useCallback(
-    async (append = false) => {
-      if (append) {
-        setLoadingMore(true);
-      } else {
+    async (showLoading = true) => {
+      if (showLoading) {
         setLoading(true);
       }
       setError(null);
@@ -77,75 +72,48 @@ const CloudLogs = () => {
           } catch {}
         }
 
-        const linesToFetch = append ? logs.length + 500 : 1000;
         let url = `/v1/instances/logs/cloud/${cloudId}`;
         if (serviceFilter !== 'all') {
           url += `/service/${serviceFilter}`;
         }
-        url += `?tail=${linesToFetch}`;
+        url += '?tail=1000';
 
         const response = await optimai_cloud.get(url);
         const fetchedLogs = response.data?.lines || [];
-        const sortedLogs = fetchedLogs.sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
-        );
 
-        if (append) {
-          if (sortedLogs.length > logs.length) {
-            setLogs(sortedLogs);
-            setHasMore(true);
-          } else {
-            setHasMore(false);
-          }
-        } else {
-          setLogs(sortedLogs);
-          setHasMore(sortedLogs.length >= 1000);
+        // Debug: log first few entries to see structure
+        if (fetchedLogs.length > 0) {
+          // eslint-disable-next-line no-console
+          console.log('First 3 logs from API:', fetchedLogs.slice(0, 3));
+          // eslint-disable-next-line no-console
+          console.log('Total logs fetched:', fetchedLogs.length);
         }
+
+        // Don't sort - keep the order from the API (which should be chronological from tail)
+        setLogs(fetchedLogs);
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to load logs');
       } finally {
         setLoading(false);
-        setLoadingMore(false);
       }
     },
-    [cloudId, logs.length, serviceFilter],
+    [cloudId, serviceFilter],
   );
 
   useEffect(() => {
-    fetchLogs(false);
+    fetchLogs(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cloudId, serviceFilter]);
 
   // Auto-refresh every 10s
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!loading && !loadingMore) {
-        fetchLogs(true);
+      if (!loading) {
+        fetchLogs(false); // Refresh without showing loading spinner
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [fetchLogs, loading, loadingMore]);
-
-  // Infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore && !loading) {
-          fetchLogs(true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [fetchLogs, loadingMore, hasMore, loading]);
+  }, [fetchLogs, loading]);
 
   const handleDownloadLogs = () => {
     const logsText = logs.map((log) => `[${log.timestamp}] ${log.message}`).join('\n');
@@ -261,7 +229,7 @@ const CloudLogs = () => {
             size="icon"
             variant="outline"
             className="h-8 w-8"
-            onClick={() => fetchLogs(false)}
+            onClick={() => fetchLogs(true)}
             disabled={loading}
             aria-label="Refresh"
           >
@@ -278,9 +246,9 @@ const CloudLogs = () => {
       )}
 
       {/* Logs content */}
-      <div className="flex-1 min-h-0 p-3">
+      <div className="flex-1 min-h-0">
         {loading ? (
-          <div className="h-full bg-muted/30 border border-border rounded-lg p-3 space-y-1">
+          <div className="h-full p-3 space-y-1">
             {Array.from({ length: 15 }).map((_, i) => (
               <div
                 key={i}
@@ -292,7 +260,7 @@ const CloudLogs = () => {
             ))}
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="h-full flex items-center justify-center bg-muted/30 border border-border rounded-lg">
+          <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-2">
               <div className="text-sm font-medium text-muted-foreground">No logs found</div>
               <div className="text-xs text-muted-foreground">
@@ -303,7 +271,7 @@ const CloudLogs = () => {
             </div>
           </div>
         ) : (
-          <div className="h-full bg-background/95 border border-border rounded-lg p-3 overflow-auto font-mono text-xs">
+          <div className="h-full overflow-auto font-mono text-xs">
             {filteredLogs.map((log, index) => {
               const level = getLogLevel(log.message);
               const levelColor =
@@ -329,22 +297,6 @@ const CloudLogs = () => {
                 </div>
               );
             })}
-
-            {/* Infinite scroll target */}
-            <div
-              ref={observerTarget}
-              className="h-4 flex items-center justify-center pt-2"
-            >
-              {loadingMore && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading more...
-                </div>
-              )}
-              {!hasMore && logs.length > 0 && (
-                <div className="text-xs text-muted-foreground/50">No more logs available</div>
-              )}
-            </div>
           </div>
         )}
       </div>
