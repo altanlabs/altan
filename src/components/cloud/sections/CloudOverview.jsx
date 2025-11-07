@@ -5,12 +5,9 @@ import {
   AlertBanners,
   OverviewHeader,
   StatusBadge,
-  ProductShortcuts,
   ComputeConfiguration,
-  InfrastructureActivity,
   ConfirmationPopover,
   CloudUpgradeDialog,
-  DataApiConfiguration,
   MetricsHistoryCharts,
 } from './overview/components';
 import { useToast } from '../../../hooks/use-toast';
@@ -18,10 +15,9 @@ import { selectCloudById } from '../../../redux/slices/cloud';
 import { selectAccountId } from '../../../redux/slices/general';
 import { useSelector } from '../../../redux/store';
 import { optimai_cloud } from '../../../utils/axios';
-import { PRODUCTS } from '../../databases/base/sections/overview/constants';
-import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from '../hooks';
+import { useMetrics, useInstanceOperations, useInstanceTypes } from '../hooks';
 
-const CloudOverview = ({ onNavigate }) => {
+const CloudOverview = () => {
   const { cloudId } = useParams();
   const cloud = useSelector((state) => selectCloudById(state, cloudId));
   const accountId = useSelector(selectAccountId);
@@ -48,8 +44,6 @@ const CloudOverview = ({ onNavigate }) => {
 
   const { operating, upgrading, snackbar, setSnackbar, handleToggleStatus, handleUpgrade } =
     useInstanceOperations(cloudId, isPaused);
-
-  const { getProductStats } = useProductStats(cloudId, cloud, isPaused);
 
   const currentTierData = instanceTypes.find((t) => t.id === currentTier);
 
@@ -174,15 +168,8 @@ const CloudOverview = ({ onNavigate }) => {
       </div>
 
       <div className="space-y-6">
-        {/* Product Shortcuts */}
-        <ProductShortcuts
-          products={PRODUCTS}
-          base={cloud}
-          getProductStats={getProductStats}
-          onNavigate={onNavigate}
-        />
 
-        {/* Compute Configuration */}
+        {/* Instance Configuration (Pricing + Data API) */}
         <ComputeConfiguration
           base={cloud}
           metrics={metrics}
@@ -193,22 +180,14 @@ const CloudOverview = ({ onNavigate }) => {
           onTierClick={handleTierClick}
         />
 
-        {/* Infrastructure Activity */}
-        {cloud && (
-          <InfrastructureActivity
-            cpuUsage={cpuUsage}
-            memoryUsage={memoryUsage}
-            storageUsage={storageUsage}
-            metrics={metrics}
-            currentTierData={currentTierData}
-          />
-        )}
-
-        {/* Data API Configuration */}
-        <DataApiConfiguration metrics={metrics} />
-
-        {/* Metrics History Charts */}
-        {cloud && <MetricsHistoryCharts baseId={cloudId} metrics={metrics} />}
+        {/* Infrastructure Monitoring - Merged with Metrics History */}
+        <MetricsHistoryCharts
+          baseId={cloudId}
+          metrics={metrics}
+          cpuUsage={cpuUsage}
+          memoryUsage={memoryUsage}
+          storageUsage={storageUsage}
+        />
       </div>
 
       {/* Confirmation Popover */}

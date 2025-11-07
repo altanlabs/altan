@@ -20,9 +20,18 @@ const buildWhereClause = (filters) => {
   Object.entries(filters).forEach(([field, value]) => {
     if (sqlControlParams.includes(field)) return;
 
-    if (typeof value === 'string' && value.startsWith('eq.')) {
-      const val = value.substring(3);
-      conditions.push(`${field} = '${escapeSql(val)}'`);
+    if (typeof value === 'string') {
+      if (value.startsWith('eq.')) {
+        const val = value.substring(3);
+        conditions.push(`${field} = '${escapeSql(val)}'`);
+      } else if (value.startsWith('in.(') && value.endsWith(')')) {
+        // Handle IN operator: in.(val1,val2,val3)
+        const vals = value.substring(4, value.length - 1).split(',');
+        const quotedVals = vals.map(v => `'${escapeSql(v.trim())}'`).join(',');
+        conditions.push(`${field} IN (${quotedVals})`);
+      } else {
+        conditions.push(`${field} = '${escapeSql(String(value))}'`);
+      }
     } else {
       conditions.push(`${field} = '${escapeSql(String(value))}'`);
     }
@@ -133,15 +142,15 @@ const slice = createSlice({
 
     // Record operations
     setTableRecords(state, action) {
-      const { tableId, records, total, isPagination } = action.payload;
+      const { tableId, records, total, isPagination, currentPage, pageSize } = action.payload;
 
       if (!state.tables[tableId] || !isPagination) {
         state.tables[tableId] = {
           records: records || [],
           total: total || 0,
           loading: false,
-          currentPage: 0,
-          pageSize: 50,
+          currentPage: currentPage || 0,
+          pageSize: pageSize || 50,
         };
       } else {
         // Append for pagination
@@ -149,6 +158,8 @@ const slice = createSlice({
         const newRecords = records.filter((r) => !existingIds.has(r.id));
         state.tables[tableId].records.push(...newRecords);
         state.tables[tableId].total = total || state.tables[tableId].total;
+        if (currentPage !== undefined) state.tables[tableId].currentPage = currentPage;
+        if (pageSize !== undefined) state.tables[tableId].pageSize = pageSize;
       }
     },
     setTableLoading(state, action) {
@@ -358,25 +369,19 @@ export const fetchRecords =
 
       const records = await executeSQL(cloudId, query);
 
+      // Calculate current page
+      const currentPage = Math.floor(offset / limit);
+
       dispatch(
         setTableRecords({
           tableId,
           records,
           total: totalCount,
           isPagination: offset > 0,
+          currentPage,
+          pageSize: limit,
         }),
       );
-
-      // Also update bases.js for GridView compatibility
-      dispatch({
-        type: 'bases/setTableRecords',
-        payload: {
-          tableId,
-          records,
-          total: totalCount,
-          isPagination: offset > 0,
-        },
-      });
 
       return records;
     } catch (error) {

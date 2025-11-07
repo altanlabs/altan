@@ -1,43 +1,41 @@
-import { LoadingButton } from '@mui/lab';
-import {
-  Stack,
-  Drawer,
-  IconButton,
-  Typography,
-  Box,
-  Divider,
-  Tooltip,
-  TextField,
-} from '@mui/material';
+import { X, Share2 } from 'lucide-react';
 import { useState, useCallback, memo, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-import { updateTableRecordThunk } from '../../../redux/slices/bases';
+import { updateRecordById, selectTableState, selectTableById } from '../../../redux/slices/cloud';
 import { dispatch } from '../../../redux/store';
-import { CardTitle } from '../../aceternity/cards/card-hover-effect';
-import Iconify from '../../iconify';
-import CreateFieldDrawer from '../fields/CreateFieldDrawer';
+import { Button } from '../../ui/button.tsx';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { ScrollArea } from '../../ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../ui/sheet';
+import { Switch } from '../../ui/switch';
+import { Textarea } from '../../ui/textarea';
 
 const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
   const [formData, setFormData] = useState({});
   const [isDirty, setIsDirty] = useState(false);
-  const [isCreateFieldOpen, setIsCreateFieldOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const table = useSelector(
     useMemo(
-      () => (state) =>
-        state.bases?.bases?.[baseId]?.tables?.items?.find((t) => t?.id === tableId) ?? null,
+      () => (state) => selectTableById(state, baseId, tableId),
       [baseId, tableId],
     ),
   );
 
   const fields = useMemo(() => table?.fields?.items ?? [], [table]);
-  const record = useSelector(
+
+  const tableState = useSelector(
     useMemo(
-      () => (state) =>
-        state.bases?.records?.[tableId]?.items?.find((r) => r?.id === recordId) ?? null,
-      [tableId, recordId],
+      () => (state) => selectTableState(state, tableId),
+      [tableId],
     ),
+  );
+
+  const record = useMemo(
+    () => tableState?.records?.find((r) => r?.id === recordId) ?? null,
+    [tableState, recordId],
   );
 
   // Initialize form data from record
@@ -57,8 +55,9 @@ const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!tableId || !recordId || !isDirty) return;
+    if (!baseId || !tableId || !recordId || !isDirty) return;
 
+    setIsSubmitting(true);
     try {
       // Only send changed fields
       const changes = {};
@@ -69,13 +68,13 @@ const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
       });
 
       if (Object.keys(changes).length > 0) {
-        await dispatch(updateTableRecordThunk(tableId, recordId, changes));
+        await dispatch(updateRecordById(baseId, tableId, recordId, changes));
         setIsDirty(false);
       }
-    } catch (error) {
-      console.error('Error updating record:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [tableId, recordId, formData, record, isDirty]);
+  }, [baseId, tableId, recordId, formData, record, isDirty]);
 
   const handleShare = useCallback(() => {
     const currentUrl = window.location.href;
@@ -84,6 +83,7 @@ const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
 
   const handleClose = useCallback(() => {
     if (isDirty) {
+      // eslint-disable-next-line no-alert
       const confirmClose = window.confirm('You have unsaved changes. Are you sure you want to close?');
       if (!confirmClose) return;
     }
@@ -93,50 +93,33 @@ const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
   }, [isDirty, onClose]);
 
   const renderFieldInput = useCallback((field) => {
-    const value = formData[field.db_field_name] ?? '';
+    const value = formData[field.name] ?? formData[field.db_field_name] ?? '';
+    const fieldName = field.db_field_name || field.name;
     const dataType = field.data_type?.toLowerCase() || 'text';
 
     // Determine input type based on PostgreSQL data type
     let inputType = 'text';
-    let multiline = false;
-    let rows = 1;
+    let isTextarea = false;
 
     if (dataType === 'boolean') {
       return (
-        <Box key={field.id} sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+        <div key={field.id} className="space-y-2">
+          <Label htmlFor={fieldName}>
             {field.name}
-            {!field.is_nullable && <span style={{ color: 'error.main' }}> *</span>}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton
-              size="small"
-              onClick={() => handleFieldChange(field.db_field_name, true)}
-              sx={{
-                backgroundColor: value === true ? 'primary.main' : 'transparent',
-                color: value === true ? 'white' : 'text.secondary',
-                '&:hover': {
-                  backgroundColor: value === true ? 'primary.dark' : 'action.hover',
-                },
-              }}
-            >
-              <Iconify icon="mdi:check" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => handleFieldChange(field.db_field_name, false)}
-              sx={{
-                backgroundColor: value === false ? 'error.main' : 'transparent',
-                color: value === false ? 'white' : 'text.secondary',
-                '&:hover': {
-                  backgroundColor: value === false ? 'error.dark' : 'action.hover',
-                },
-              }}
-            >
-              <Iconify icon="mdi:close" />
-            </IconButton>
-          </Box>
-        </Box>
+            {!field.is_nullable && <span className="text-destructive"> *</span>}
+          </Label>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id={fieldName}
+              checked={value === true}
+              onCheckedChange={(checked) => handleFieldChange(fieldName, checked)}
+            />
+            <Label htmlFor={fieldName} className="text-sm text-muted-foreground">
+              {value ? 'True' : 'False'}
+            </Label>
+          </div>
+          {field.comment && <p className="text-xs text-muted-foreground">{field.comment}</p>}
+        </div>
       );
     }
 
@@ -149,136 +132,78 @@ const EditRecordDrawer = ({ baseId, tableId, recordId, open, onClose }) => {
     } else if (dataType.includes('timestamp')) {
       inputType = 'datetime-local';
     } else if (dataType === 'text' || dataType.includes('json')) {
-      multiline = true;
-      rows = 3;
+      isTextarea = true;
     }
 
     return (
-      <TextField
-        key={field.id}
-        label={field.name}
-        value={value}
-        onChange={(e) => handleFieldChange(field.db_field_name, e.target.value)}
-        fullWidth
-        multiline={multiline}
-        rows={rows}
-        type={inputType}
-        required={!field.is_nullable}
-        helperText={field.comment || `Type: ${field.data_type}`}
-        sx={{
-          mb: 2,
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '12px',
-          },
-        }}
-      />
+      <div key={field.id} className="space-y-2">
+        <Label htmlFor={fieldName}>
+          {field.name}
+          {!field.is_nullable && <span className="text-destructive"> *</span>}
+        </Label>
+        {isTextarea ? (
+          <Textarea
+            id={fieldName}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldName, e.target.value)}
+            rows={3}
+            required={!field.is_nullable}
+          />
+        ) : (
+          <Input
+            id={fieldName}
+            type={inputType}
+            value={value}
+            onChange={(e) => handleFieldChange(fieldName, e.target.value)}
+            required={!field.is_nullable}
+          />
+        )}
+        {field.comment && <p className="text-xs text-muted-foreground">{field.comment}</p>}
+        {!field.comment && <p className="text-xs text-muted-foreground">Type: {field.data_type}</p>}
+      </div>
     );
   }, [formData, handleFieldChange]);
 
-  if (!tableId || !recordId || !baseId || recordId == null) {
+  if (!tableId || !recordId || !baseId || recordId === null) {
     return null;
   }
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={handleClose}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: '90%', md: 600 },
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-        },
-      }}
-    >
-      <Stack sx={{ height: '100%' }}>
-        {/* Header */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{
-            p: 3,
-            borderBottom: (theme) =>
-              `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-          }}
-        >
-          <CardTitle>{record?.name || table?.name || 'Edit Record'}</CardTitle>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Copy record URL">
-              <IconButton onClick={handleShare} size="small">
-                <Iconify icon="mdi:share" width={20} height={20} />
-              </IconButton>
-            </Tooltip>
-            <IconButton onClick={handleClose} size="small">
-              <Iconify icon="mdi:close" width={20} height={20} />
-            </IconButton>
-          </Box>
-        </Stack>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:w-[600px] sm:max-w-[600px] flex flex-col p-0">
+        <SheetHeader className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <SheetTitle>{record?.name || table?.name || 'Edit Record'}</SheetTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </SheetHeader>
 
-        {/* Content */}
-        <Stack sx={{ flex: 1, p: 3, gap: 2, overflow: 'auto' }}>
-          {fields
-            .filter((field) => !['id', 'created_at', 'updated_at', 'created_by', 'updated_by'].includes(field.db_field_name))
-            .map((field) => renderFieldInput(field))}
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-4">
+            {fields
+              .filter((field) => !['id', 'created_at', 'updated_at', 'created_by', 'updated_by'].includes(field.db_field_name || field.name))
+              .map((field) => renderFieldInput(field))}
+          </div>
+        </ScrollArea>
 
-          <Divider sx={{ my: 2 }} />
-
-          <Box
-            onClick={() => setIsCreateFieldOpen(true)}
-            sx={{
-              p: 2,
-              borderRadius: '12px',
-              border: (theme) => `1px dashed ${theme.palette.divider}`,
-              cursor: 'pointer',
-              textAlign: 'center',
-              transition: 'all 0.2s',
-              '&:hover': {
-                borderColor: 'primary.main',
-                backgroundColor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
-              },
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              + Add new field to this table
-            </Typography>
-          </Box>
-        </Stack>
-
-        {/* Footer Actions */}
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{
-            p: 3,
-            borderTop: (theme) =>
-              `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-          }}
-        >
-          <LoadingButton
-            variant="contained"
-            startIcon={<Iconify icon="mdi:check" />}
+        <div className="p-6 border-t bg-background/50">
+          <Button
             onClick={handleSubmit}
-            disabled={!isDirty}
-            fullWidth
+            disabled={!isDirty || isSubmitting}
+            className="w-full"
           >
-            Save Changes
-          </LoadingButton>
-        </Stack>
-      </Stack>
-
-      {table && (
-        <CreateFieldDrawer table={table} open={isCreateFieldOpen} onClose={() => setIsCreateFieldOpen(false)} />
-      )}
-    </Drawer>
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 

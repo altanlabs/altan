@@ -59,7 +59,6 @@ function formatDate(value) {
 const CloudUsers = () => {
   const { cloudId } = useParams();
   const users = useSelector((state) => selectUsersForCloud(state, cloudId));
-  console.log(users);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);

@@ -34,13 +34,11 @@ import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { headerHeight, defaultColDef } from './utils/settings.js';
 import {
-  queryTableRecords,
-  selectDatabaseQuickFilter,
-  selectDatabaseSearching,
-  loadTableRecords,
-  importCSVToTable,
-  selectTablePaginationInfo,
-} from '../../../../redux/slices/bases';
+  selectQuickFilter,
+  selectSearching,
+  fetchRecords,
+  selectTableState,
+} from '../../../../redux/slices/cloud';
 import { selectAccount } from '../../../../redux/slices/general';
 import { dispatch, useSelector } from '../../../../redux/store';
 import Iconify from '../../../iconify';
@@ -96,9 +94,26 @@ export const GridView = memo(
     const location = useLocation();
     const { recordId: urlRecordId } = useParams();
     const members = useSelector((state) => selectAccount(state)?.members || []);
-    const quickFilterText = useSelector(selectDatabaseQuickFilter);
-    const isSearching = useSelector(selectDatabaseSearching);
-    const paginationInfo = useSelector((state) => selectTablePaginationInfo(state, table?.id));
+    const quickFilterText = useSelector(selectQuickFilter);
+    const isSearching = useSelector(selectSearching);
+    const tableState = useSelector((state) => selectTableState(state, table?.id));
+
+    // Calculate pagination info from tableState
+    const paginationInfo = useMemo(() => {
+      const pageSize = tableState?.pageSize || 50;
+      const totalRecords = tableState?.total || 0;
+      const currentPage = tableState?.currentPage || 0;
+      const totalPages = Math.ceil(totalRecords / pageSize);
+
+      return {
+        currentPage,
+        pageSize,
+        totalRecords,
+        totalPages,
+        hasNextPage: currentPage < totalPages - 1,
+        hasPreviousPage: currentPage > 0,
+      };
+    }, [tableState]);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [localRowData, setLocalRowData] = useState([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -617,16 +632,18 @@ export const GridView = memo(
 
         // Dispatch one batched query per foreignTableId
         toDispatch.forEach((idSet, foreignTableId) => {
-          if (idSet.size) {
+          if (idSet.size && baseId) {
+            // Fetch the referenced records using cloud.js
             dispatch(
-              queryTableRecords(foreignTableId, {
-                filter: { id: { in: Array.from(idSet) } },
+              fetchRecords(baseId, foreignTableId, {
+                filters: { id: `in.(${Array.from(idSet).join(',')})` },
+                limit: 1000,
               }),
             );
           }
         });
       },
-      [referenceFields],
+      [referenceFields, baseId],
     );
 
     // Create a stable debounced function just once
@@ -691,25 +708,17 @@ export const GridView = memo(
 
     // Handler for actual import process
     const handleCSVImport = useCallback(
-      async (file, previewData) => {
+      async () => {
         try {
-          // Call the new upload-csv endpoint with FormData
-          // Use db_name (actual database table name) if available, fallback to name
-          const tableName = table.db_name || table.name;
-          const schema = table.schema || 'public';
-          // Use baseId from props, not from table object
-          const response = await dispatch(importCSVToTable(baseId, tableName, file, schema));
-
-          // Refresh the table records after successful import
-          await dispatch(loadTableRecords(table.id, { forceReload: true }));
-
-          return response;
+          // TODO: Implement CSV import for cloud.js
+          // For now, just refresh the records
+          await dispatch(fetchRecords(baseId, table.id, { limit: paginationInfo?.pageSize || 50 }));
+          throw new Error('CSV import not yet implemented for cloud databases');
         } catch (error) {
-          // console.error('CSV import error:', error);
           throw error;
         }
       },
-      [table?.id, table?.name, table?.db_name, table?.schema, baseId],
+      [table?.id, baseId, paginationInfo?.pageSize],
     );
 
     // Watch for import trigger from context menu
@@ -729,26 +738,27 @@ export const GridView = memo(
     // Pagination handlers
     const handlePageChange = useCallback(
       (newPage) => {
-        if (table?.id) {
+        if (baseId && table?.id) {
+          const pageSize = paginationInfo?.pageSize || 50;
+          const offset = newPage * pageSize;
           dispatch(
-            loadTableRecords(table.id, {
-              page: newPage,
-              limit: paginationInfo?.pageSize || 50,
-              forceReload: true,
+            fetchRecords(baseId, table.id, {
+              limit: pageSize,
+              offset,
             }),
           );
         }
       },
-      [table?.id, paginationInfo?.pageSize],
+      [baseId, table?.id, paginationInfo?.pageSize],
     );
 
     const handlePageSizeChange = useCallback(
       (newPageSize) => {
-        if (table?.id) {
-          dispatch(loadTableRecords(table.id, { page: 0, limit: newPageSize, forceReload: true }));
+        if (baseId && table?.id) {
+          dispatch(fetchRecords(baseId, table.id, { limit: newPageSize, offset: 0 }));
         }
       },
-      [table?.id],
+      [baseId, table?.id],
     );
 
     return (

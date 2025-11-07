@@ -1,20 +1,12 @@
 import { m } from 'framer-motion';
-import { Activity, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { Activity, TrendingUp, AlertCircle, Server, Cpu, HardDrive, Database } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Legend,
-  ReferenceLine,
-  Area,
-  ComposedChart,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
+import { UsageMetric } from './UsageMetric';
 import { useMetricsHistory } from '../../../../databases/base/sections/overview/hooks';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../../../elevenlabs/ui/chart';
+import { Card, CardContent } from '../../../../ui/card';
 import { Tabs, TabsList, TabsTrigger } from '../../../../ui/tabs';
 
 const PERIODS = [
@@ -22,7 +14,6 @@ const PERIODS = [
   { value: '6h', label: '6H' },
   { value: '12h', label: '12H' },
   { value: '24h', label: '24H' },
-  { value: '1d', label: '1D' },
   { value: '2d', label: '2D' },
   { value: '7d', label: '7D' },
   { value: '30d', label: '30D' },
@@ -38,42 +29,6 @@ const formatTimestamp = (timestamp, period) => {
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
-};
-
-const formatTooltipTimestamp = (timestamp) => {
-  const date = new Date(timestamp);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
-};
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const fullTimestamp = payload[0]?.payload?.fullTimestamp;
-    return (
-      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-2xl">
-        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-          {fullTimestamp ? formatTooltipTimestamp(fullTimestamp) : label}
-        </p>
-        <div className="space-y-1">
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-sm text-gray-600 dark:text-gray-300">{entry.name}</span>
-              </div>
-              <span className="text-sm font-semibold" style={{ color: entry.color }}>
-                {entry.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return null;
 };
 
 const StatsCard = ({ label, value, icon: Icon, color }) => {
@@ -92,8 +47,77 @@ const StatsCard = ({ label, value, icon: Icon, color }) => {
   );
 };
 
-export const MetricsHistoryCharts = ({ baseId, metrics }) => {
-  const [period, setPeriod] = useState('1h');
+// Skeleton Loading Component
+const MetricsSkeleton = () => {
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      className="rounded-2xl border border-border/60 bg-gradient-to-br from-muted/40 to-background/20 backdrop-blur-sm p-4 sm:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
+    >
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-muted/50 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-5 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-64 bg-muted/60 animate-pulse rounded" />
+            </div>
+          </div>
+          <div className="h-10 w-64 bg-muted animate-pulse rounded-lg" />
+        </div>
+
+        {/* Current Status Skeleton */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-muted animate-pulse" />
+            <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-border/60 bg-background/60 backdrop-blur-sm p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                    <div className="h-6 w-16 bg-muted animate-pulse rounded" />
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
+                </div>
+                <div className="h-2 w-full bg-muted/40 animate-pulse rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Charts Skeleton */}
+        {[1, 2].map((i) => (
+          <div key={i} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-muted animate-pulse" />
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </div>
+              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-16 bg-muted/40 animate-pulse rounded-lg" />
+              <div className="h-16 bg-muted/40 animate-pulse rounded-lg" />
+            </div>
+            <div className="h-72 bg-muted/20 animate-pulse rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </m.div>
+  );
+};
+
+export const MetricsHistoryCharts = ({ baseId, metrics, cpuUsage, memoryUsage, storageUsage }) => {
+  const [period, setPeriod] = useState('24h');
   const { history, loading } = useMetricsHistory(baseId, period);
 
   const handlePeriodChange = (value) => {
@@ -184,40 +208,28 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
       : '0';
   const memoryMax = memoryChartData.length > 0 ? Math.max(...memoryChartData.map((item) => item.memory)) : 0;
 
-  const cpuDomain = cpuLimit ? [0, Math.max(cpuMax * 1.1, cpuLimit * 1.1)] : [0, cpuMax * 1.1 || 100];
-  const memoryDomain = memoryLimit ? [0, Math.max(memoryMax * 1.1, memoryLimit * 1.1)] : [0, memoryMax * 1.1 || 100];
-
-  if (loading && !history) {
-    return (
-      <m.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="rounded-2xl border border-border/60 bg-gradient-to-br from-muted/40 to-background/20 backdrop-blur-sm p-4 sm:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
-      >
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      </m.div>
-    );
+  // Show skeleton if no metrics available
+  if (!metrics || (loading && !history)) {
+    return <MetricsSkeleton />;
   }
 
   return (
     <m.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.6 }}
+      transition={{ delay: 0.5 }}
       className="rounded-2xl border border-border/60 bg-gradient-to-br from-muted/40 to-background/20 backdrop-blur-sm p-4 sm:p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
     >
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/20">
-              <Activity size={24} className="text-white" />
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-1 ring-primary/20 dark:ring-primary/30">
+              <Activity size={22} className="text-primary" strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Metrics History</h2>
-              <p className="text-sm text-muted-foreground">Real-time monitoring and performance insights</p>
+              <h2 className="text-xl font-bold text-foreground">Infrastructure Monitoring</h2>
+              <p className="text-sm text-muted-foreground">Real-time health & performance insights</p>
             </div>
           </div>
 
@@ -232,89 +244,153 @@ export const MetricsHistoryCharts = ({ baseId, metrics }) => {
           </Tabs>
         </div>
 
+        {/* Current Infrastructure Health Status */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-              CPU Usage
-            </h3>
-            {cpuLimit && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <AlertCircle size={14} />
-                <span>
-                  Limit: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{cpuLimit}m</span>
-                </span>
-              </div>
-            )}
+          <div className="flex items-center gap-2.5">
+            <Server size={16} className="text-muted-foreground" strokeWidth={2} />
+            <h3 className="text-sm font-semibold text-foreground">Current Status</h3>
           </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <StatsCard label="Average CPU" value={`${cpuAvg}m`} icon={TrendingUp} color="text-emerald-600 dark:text-emerald-400" />
-            <StatsCard label="Peak CPU" value={`${cpuMax.toFixed(0)}m`} icon={AlertCircle} color="text-teal-600 dark:text-teal-400" />
-          </div>
-
-          <div className="h-72 bg-background/40 rounded-lg p-3 border border-border/60">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cpuChartData}>
-                <defs>
-                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis dataKey="timestamp" stroke="#9CA3AF" style={{ fontSize: '11px', fontWeight: '500' }} tickLine={false} axisLine={{ stroke: '#E5E7EB', opacity: 0.5 }} />
-                <YAxis stroke="#9CA3AF" style={{ fontSize: '11px', fontWeight: '500' }} tickLine={false} axisLine={{ stroke: '#E5E7EB', opacity: 0.5 }} label={{ value: 'millicores', angle: -90, position: 'insideLeft', style: { fontSize: '11px', fill: '#9CA3AF' } }} domain={cpuDomain} tickFormatter={(value) => Math.round(value)} />
-                <RechartsTooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: '600' }} iconType="line" />
-                {cpuLimit && <ReferenceLine y={cpuLimit} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} label={{ value: `Limit (${cpuLimit}m)`, position: 'right', fill: '#ef4444', fontSize: 11, fontWeight: 600 }} />}
-                <Area type="monotone" dataKey="cpu" fill="url(#colorCpu)" stroke="none" />
-                <Line type="monotone" dataKey="cpu" name="CPU (m)" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <UsageMetric
+              icon={Cpu}
+              title="CPU Usage"
+              value={cpuUsage}
+              delay={0.6}
+              gradientColors="bg-gradient-to-r from-emerald-500 to-teal-500"
+              iconColors={{
+                bg: 'bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30',
+                text: 'text-emerald-600 dark:text-emerald-400',
+                hover: 'bg-gradient-to-br from-emerald-500/5 to-teal-500/5',
+              }}
+            />
+            <UsageMetric
+              icon={HardDrive}
+              title="Memory Usage"
+              value={memoryUsage}
+              delay={0.7}
+              gradientColors="bg-gradient-to-r from-blue-500 to-indigo-500"
+              iconColors={{
+                bg: 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30',
+                text: 'text-blue-600 dark:text-blue-400',
+                hover: 'bg-gradient-to-br from-blue-500/5 to-indigo-500/5',
+              }}
+            />
+            <UsageMetric
+              icon={Database}
+              title="Storage Usage"
+              value={storageUsage}
+              delay={0.8}
+              gradientColors="bg-gradient-to-r from-purple-500 to-pink-500"
+              iconColors={{
+                bg: 'bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30',
+                text: 'text-purple-600 dark:text-purple-400',
+                hover: 'bg-gradient-to-br from-purple-500/5 to-pink-500/5',
+              }}
+            />
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
-              Memory Usage
-            </h3>
-            {memoryLimit && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <AlertCircle size={14} />
-                <span>
-                  Limit: <span className="font-semibold text-blue-600 dark:text-blue-400">{memoryLimit} MB</span>
-                </span>
+        {/* CPU Chart */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                  CPU Usage
+                </h3>
+                {cpuLimit && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <AlertCircle size={14} />
+                    <span>
+                      Limit: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{cpuLimit}m</span>
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <StatsCard label="Average Memory" value={`${memoryAvg} MB`} icon={TrendingUp} color="text-blue-600 dark:text-blue-400" />
-            <StatsCard label="Peak Memory" value={`${memoryMax.toFixed(0)} MB`} icon={AlertCircle} color="text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="h-72 bg-background/40 rounded-lg p-3 border border-border/60">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={memoryChartData}>
-                <defs>
-                  <linearGradient id="colorMemory" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis dataKey="timestamp" stroke="#9CA3AF" style={{ fontSize: '11px', fontWeight: '500' }} tickLine={false} axisLine={{ stroke: '#E5E7EB', opacity: 0.5 }} />
-                <YAxis stroke="#9CA3AF" style={{ fontSize: '11px', fontWeight: '500' }} tickLine={false} axisLine={{ stroke: '#E5E7EB', opacity: 0.5 }} label={{ value: 'MB', angle: -90, position: 'insideLeft', style: { fontSize: '11px', fill: '#9CA3AF' } }} domain={memoryDomain} />
-                <RechartsTooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: '600' }} iconType="line" />
-                {memoryLimit && <ReferenceLine y={memoryLimit} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} label={{ value: `Limit (${memoryLimit} MB)`, position: 'right', fill: '#ef4444', fontSize: 11, fontWeight: 600 }} />}
-                <Area type="monotone" dataKey="memory" fill="url(#colorMemory)" stroke="none" />
-                <Line type="monotone" dataKey="memory" name="Memory (MB)" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <StatsCard label="Average CPU" value={`${cpuAvg}m`} icon={TrendingUp} color="text-emerald-600 dark:text-emerald-400" />
+                <StatsCard label="Peak CPU" value={`${cpuMax.toFixed(0)}m`} icon={AlertCircle} color="text-teal-600 dark:text-teal-400" />
+              </div>
+
+              <ChartContainer
+                config={{
+                  cpu: {
+                    label: 'CPU (m)',
+                    color: 'hsl(142.1 76.2% 36.3%)',
+                  },
+                }}
+                className="h-64 w-full"
+              >
+                <AreaChart data={cpuChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="timestamp" tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="cpu"
+                    stroke="var(--color-cpu)"
+                    fill="var(--color-cpu)"
+                    fillOpacity={0.18}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Memory Chart */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                  Memory Usage
+                </h3>
+                {memoryLimit && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <AlertCircle size={14} />
+                    <span>
+                      Limit: <span className="font-semibold text-blue-600 dark:text-blue-400">{memoryLimit} MB</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <StatsCard label="Average Memory" value={`${memoryAvg} MB`} icon={TrendingUp} color="text-blue-600 dark:text-blue-400" />
+                <StatsCard label="Peak Memory" value={`${memoryMax.toFixed(0)} MB`} icon={AlertCircle} color="text-indigo-600 dark:text-indigo-400" />
+              </div>
+
+              <ChartContainer
+                config={{
+                  memory: {
+                    label: 'Memory (MB)',
+                    color: 'hsl(217.2 91.2% 59.8%)',
+                  },
+                }}
+                className="h-64 w-full"
+              >
+                <AreaChart data={memoryChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="timestamp" tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="memory"
+                    stroke="var(--color-memory)"
+                    fill="var(--color-memory)"
+                    fillOpacity={0.18}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </m.div>
   );

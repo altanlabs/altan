@@ -1,37 +1,34 @@
-import { Box, TextField, IconButton, Tooltip, Chip, useMediaQuery } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
-import { Plus, Download } from 'lucide-react';
+import { debounce } from 'lodash-es';
+import { Plus, Download, Search } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { debounce } from 'lodash-es';
 
+import { cn } from '../../../lib/utils';
 import {
   selectQuickFilter,
   setQuickFilter,
-  selectSearching,
   selectSearchResults,
   searchTableRecords,
   selectTableState,
-  fetchRecords,
   selectTablesByCloudId,
 } from '../../../redux/slices/cloud';
 import { dispatch } from '../../../redux/store';
 import { optimai_cloud } from '../../../utils/axios.js';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button.tsx';
+import { Input } from '../../ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../ui/tooltip';
 import CreateRecordDrawer from '../records/CreateRecordDrawer.jsx';
-import Iconify from '../../iconify';
 
 function DatabaseNavigationBar({ disabled = false }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const inputRef = useRef(null);
   const { cloudId, tableId } = useParams();
   const [openCreateRecord, setOpenCreateRecord] = useState(false);
 
   // Get values from Redux - using cloud.js selectors
   const quickFilter = useSelector(selectQuickFilter);
-  const isSearching = useSelector(selectSearching);
   const searchResults = useSelector((state) =>
     tableId ? selectSearchResults(state, tableId) : null,
   );
@@ -47,7 +44,6 @@ function DatabaseNavigationBar({ disabled = false }) {
 
   // Use internal state for better performance
   const actualRecordCount = tableState?.total || 0;
-  const actualIsLoading = tableState?.loading || isSearching;
 
   // Create debounced search function to avoid excessive API calls
   const debouncedSearch = useCallback(
@@ -120,179 +116,94 @@ function DatabaseNavigationBar({ disabled = false }) {
   }, [debouncedSearch]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        height: 42,
-        px: 2,
-        gap: 1.5,
-      }}
-    >
-      
-      {/* Search Bar - Glassmorphic Container */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: 1,
-          height: 38,
-          borderRadius: 3,
-          background: `linear-gradient(135deg, 
-            ${alpha(theme.palette.background.paper, 0.8)} 0%, 
-            ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-          backdropFilter: 'blur(10px)',
-          border:
-            theme.palette.mode === 'light'
-              ? `1px solid ${alpha(theme.palette.divider, 0.12)}`
-              : 'none',
-          overflow: 'hidden',
-          px: 1.5,
-          gap: 1.5,
-          transition: theme.transitions.create(['background-color', 'border-color'], {
-            duration: theme.transitions.duration.shorter,
-          }),
-        }}
-      >
-        {/* Search Icon */}
-        <Iconify
-          icon="mdi:magnify"
-          sx={{
-            width: 18,
-            height: 18,
-            color: alpha(theme.palette.text.secondary, 0.6),
-            flexShrink: 0,
-          }}
-        />
+    <TooltipProvider>
+      <div className="flex items-center h-[42px] px-4 gap-3">
+        {/* Search Bar - Glassmorphic Container */}
+        <div className="flex items-center flex-1 h-[38px] rounded-xl bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-md border border-border/10 overflow-hidden px-3 gap-3 transition-all duration-200">
+          {/* Search Icon */}
+          <Search className="w-[18px] h-[18px] text-muted-foreground/60 shrink-0" />
 
-        {/* Search Input */}
-        <TextField
-          ref={inputRef}
-          value={quickFilter}
-          onChange={handleFilterChange}
-          placeholder="Search records..."
-          size="small"
-          disabled={disabled}
-          sx={{
-            flex: 1,
-            minWidth: isMobile ? 100 : 180,
-            '& .MuiOutlinedInput-root': {
-              height: 32,
-              backgroundColor: 'transparent',
-              '& fieldset': {
-                border: 'none',
-              },
-            },
-            '& .MuiInputBase-input': {
-              fontSize: '0.875rem',
-              py: 0,
-              px: 0,
-              color: quickFilter ? theme.palette.primary.main : 'inherit',
-              fontWeight: quickFilter ? 500 : 400,
-              '&::placeholder': {
-                color: alpha(theme.palette.text.secondary, 0.5),
-                opacity: 1,
-              },
-            },
-          }}
-        />
+          {/* Search Input */}
+          <Input
+            ref={inputRef}
+            value={quickFilter}
+            onChange={handleFilterChange}
+            placeholder="Search records..."
+            disabled={disabled}
+            className={cn(
+              'flex-1 min-w-[100px] sm:min-w-[180px] h-8 text-sm border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+              quickFilter && 'text-primary font-medium',
+            )}
+          />
 
-        {/* Record Count - Inside search bar */}
-        {!isMobile && (
-          <>
+          {/* Record Count - Inside search bar */}
+          <div className="hidden sm:block">
             {searchResults && quickFilter ? (
-              <Chip
-                label={
-                  searchResults.newRecordsFound > 0
-                    ? `+${searchResults.newRecordsFound} new`
-                    : searchResults.totalSearchResults > 0
-                      ? `${searchResults.totalSearchResults} found`
-                      : 'No matches'
-                }
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
-                  color: theme.palette.primary.main,
-                  border: 'none',
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
-                }}
-              />
+              <Badge
+                variant="secondary"
+                className="h-[22px] text-[0.7rem] font-semibold bg-primary/15 text-primary border-0 px-2"
+              >
+                {searchResults.newRecordsFound > 0
+                  ? `+${searchResults.newRecordsFound} new`
+                  : searchResults.totalSearchResults > 0
+                    ? `${searchResults.totalSearchResults} found`
+                    : 'No matches'}
+              </Badge>
             ) : actualRecordCount > 0 ? (
-              <Chip
-                label={`${actualRecordCount.toLocaleString()}`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  backgroundColor: alpha(theme.palette.text.secondary, 0.1),
-                  color: theme.palette.text.secondary,
-                  border: 'none',
-                  '& .MuiChip-label': {
-                    px: 1,
-                  },
-                }}
-              />
+              <Badge
+                variant="secondary"
+                className="h-[22px] text-[0.7rem] font-semibold bg-muted/50 text-muted-foreground border-0 px-2"
+              >
+                {actualRecordCount.toLocaleString()}
+              </Badge>
             ) : null}
-          </>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleExportCSV}
+                disabled={disabled || !tableId}
+                className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export CSV</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpenCreateRecord(true)}
+                disabled={disabled || !tableId}
+                className="w-8 h-8 text-primary bg-primary/10 hover:bg-primary/20"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Add Record</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Create Record Drawer */}
+        {tableId && (
+          <CreateRecordDrawer
+            baseId={cloudId}
+            tableId={tableId}
+            open={openCreateRecord}
+            onClose={() => setOpenCreateRecord(false)}
+          />
         )}
-      </Box>
-
-      {/* Action Buttons */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <Tooltip title="Export CSV">
-          <IconButton
-            size="small"
-            onClick={handleExportCSV}
-            disabled={disabled || !tableId}
-            sx={{
-              width: 32,
-              height: 32,
-              color: theme.palette.text.secondary,
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                color: theme.palette.primary.main,
-              },
-            }}
-          >
-            <Download size={16} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Add Record">
-          <IconButton
-            size="small"
-            onClick={() => setOpenCreateRecord(true)}
-            disabled={disabled || !tableId}
-            sx={{
-              width: 32,
-              height: 32,
-              color: theme.palette.primary.main,
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.16),
-              },
-            }}
-          >
-            <Plus size={16} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {/* Create Record Drawer */}
-      {tableId && (
-        <CreateRecordDrawer
-          baseId={cloudId}
-          tableId={tableId}
-          open={openCreateRecord}
-          onClose={() => setOpenCreateRecord(false)}
-        />
-      )}
-    </Box>
+      </div>
+    </TooltipProvider>
   );
 }
 
