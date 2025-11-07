@@ -311,7 +311,7 @@ export const createAltaner =
         url += `?idea=${encodeURIComponent(idea)}`;
       }
       const response = await optimai.post(url, data);
-      const { altaner } = response.data;
+      const altaner = response.data;
 
       if (!altaner || !altaner.id) {
         throw new Error('Invalid altaner response');
