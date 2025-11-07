@@ -1,14 +1,14 @@
 /**
- * Message Event Handlers
- * Separated by concern following Single Responsibility Principle
+ * Message Operations
+ * Contains all message event handlers
  */
 
 import {
   addMessage,
   removeMessage,
   addMessageReaction,
-} from '../../../redux/slices/room';
-import { dispatch } from '../../../redux/store';
+} from '../../../../redux/slices/room';
+import { dispatch } from '../../../../redux/store';
 
 /**
  * Extract and validate message event data
@@ -58,9 +58,9 @@ export const handleMessageReactionAdded = (eventData) => {
 };
 
 /**
- * Event handler registry for message events
+ * Operation registry for message events
  */
-export const MESSAGE_EVENT_HANDLERS = {
+export const MESSAGE_OPERATIONS = {
   'message.created': handleMessageCreated,
   'message.updated': handleMessageUpdated,
   'message.deleted': handleMessageDeleted,

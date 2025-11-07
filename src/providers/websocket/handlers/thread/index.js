@@ -1,12 +1,12 @@
 /**
- * Main handler for THREAD events
- * Orchestrates thread event processing following Single Responsibility Principle
+ * Thread Event Handler
+ * Routes thread events to appropriate operations
  */
 
-import { extractThreadEventData, THREAD_EVENT_HANDLERS } from './threadHandlers';
+import { extractThreadEventData, THREAD_OPERATIONS } from './operations';
 
 /**
- * Handle THREAD events from Hermes WebSocket
+ * Handle thread events from Hermes WebSocket
  * @param {Object} data - The WebSocket event data
  */
 export const handleThreadEvent = (data) => {
@@ -16,10 +16,11 @@ export const handleThreadEvent = (data) => {
   const { eventData, eventType } = extracted;
 
   // Handle specific event types using registry
-  const handler = THREAD_EVENT_HANDLERS[eventType];
+  const handler = THREAD_OPERATIONS[eventType];
   if (handler) {
     handler(eventData);
   } else {
     console.warn(`Unhandled thread event type: ${eventType}`);
   }
 };
+

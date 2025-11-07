@@ -1,6 +1,6 @@
 /**
- * Main handler for AGENT_RESPONSE events
- * Orchestrates event processing following Single Responsibility Principle
+ * Agent Response Event Handler
+ * Routes agent response events to appropriate operations
  */
 
 import { batch } from 'react-redux';
@@ -9,11 +9,11 @@ import {
   extractEventData,
   handleActivationLifecycle,
   handleResponseLifecycle,
-  EVENT_HANDLERS,
-} from './agentResponseHandlers';
+  AGENT_RESPONSE_OPERATIONS,
+} from './operations';
 
 /**
- * Handle AGENT_RESPONSE events from WhisperStream WebSocket
+ * Handle agent response events from Hermes WebSocket
  * @param {Object} event - The WebSocket event
  */
 export const handleAgentResponseEvent = (event) => {
@@ -34,8 +34,9 @@ export const handleAgentResponseEvent = (event) => {
   });
 
   // Handle specific event types using registry
-  const handler = EVENT_HANDLERS[eventType];
+  const handler = AGENT_RESPONSE_OPERATIONS[eventType];
   if (handler) {
     handler(eventData, timestamp);
   }
 };
+

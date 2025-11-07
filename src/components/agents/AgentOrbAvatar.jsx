@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import { Suspense, Component } from 'react';
+import { Suspense, Component, forwardRef } from 'react';
 
 import { Orb } from '../elevenlabs/ui/orb';
 
@@ -36,15 +36,14 @@ class OrbErrorBoundary extends Component {
  * @param {string} agentState - Agent state: null, 'listening', 'talking', 'thinking'
  * @param {array} colors - Array of two colors for the orb (default: ['#CADCFC', '#A0B9D1'])
  */
-export const AgentOrbAvatar = ({
+export const AgentOrbAvatar = forwardRef(({
   size = 32,
   agentId,
-  ref,
   onClick,
   agentState = null,
   colors = ['#CADCFC', '#A0B9D1'],
   isStatic = true,
-}) => {
+}, ref) => {
   const fallback = (
     <Box
       sx={{
@@ -97,6 +96,8 @@ export const AgentOrbAvatar = ({
       </Box>
     </Box>
   );
-};
+});
+
+AgentOrbAvatar.displayName = 'AgentOrbAvatar';
 
 export default AgentOrbAvatar;
