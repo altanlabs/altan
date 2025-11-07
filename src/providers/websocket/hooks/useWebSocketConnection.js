@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { authorizeUser } from '../../../utils/axios';
 import { handleAgentResponseEvent } from '../handlers/handleAgentResponse';
 import { handleMessageEvent } from '../handlers/handleMessage';
+import { handleTaskEvent } from '../handlers/handleTask';
 import { handleThreadEvent } from '../handlers/handleThread';
 import { handleWebSocketEvent } from '../ws';
 
@@ -58,6 +59,7 @@ const createMessageHandler = (ws, user_id, onAck) => {
       console.log('🔐 WS: Received ACK, connection secured');
       onAck();
     },
+    TASK_EVENT: handleTaskEvent, // Backward compatibility for old format
   };
 
   // Handler map for type prefixes - O(1) lookup via prefix extraction
@@ -67,6 +69,8 @@ const createMessageHandler = (ws, user_id, onAck) => {
     message_part: handleAgentResponseEvent,
     message: handleMessageEvent,
     thread: handleThreadEvent,
+    task: handleTaskEvent,
+    plan: handleTaskEvent,
   };
 
   return async (event) => {

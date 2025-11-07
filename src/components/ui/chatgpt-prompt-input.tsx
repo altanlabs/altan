@@ -14,7 +14,7 @@ import { useVoiceConversation } from '../../providers/voice/VoiceConversationPro
 // @ts-expect-error - AgentOrbAvatar is a JSX file
 import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 // @ts-expect-error - redux slices are JS files
-import { selectAccountCreditBalance } from '../../redux/slices/general';
+import { selectAccountCreditBalance, selectAccountAssetsInitialized, selectAccountAssetsLoading } from '../../redux/slices/general';
 // @ts-expect-error - auth context is a JSX file
 import { useAuthContext } from '../../auth/useAuthContext';
 
@@ -564,6 +564,8 @@ export const PromptBox = React.forwardRef<
     // Credit balance state
     const { isAuthenticated } = useAuthContext();
     const creditBalance = useSelector(selectAccountCreditBalance) as number | null | undefined;
+    const subscriptionsInitialized = useSelector(selectAccountAssetsInitialized('subscriptions')) as boolean;
+    const subscriptionsLoading = useSelector(selectAccountAssetsLoading('subscriptions')) as boolean;
     const history = useHistory();
 
     // Format credits for display
@@ -575,11 +577,12 @@ export const PromptBox = React.forwardRef<
     };
 
     // Determine if we should show the credit warning
-    const showCreditWarning = isAuthenticated && creditBalance !== null && creditBalance !== undefined && creditBalance <= 500;
+    // Don't show warning while subscriptions are loading or not initialized
+    const showCreditWarning = isAuthenticated && subscriptionsInitialized && !subscriptionsLoading && creditBalance !== null && creditBalance !== undefined && creditBalance <= 500;
     const isOutOfCredits = creditBalance !== null && creditBalance !== undefined && creditBalance <= 0;
     
-    // Disable everything when out of credits
-    const isDisabledDueToCredits = isAuthenticated && isOutOfCredits;
+    // Disable everything when out of credits (only if subscriptions are initialized and not loading)
+    const isDisabledDueToCredits = isAuthenticated && subscriptionsInitialized && !subscriptionsLoading && isOutOfCredits;
 
     // Update internal value when externalValue changes
     React.useEffect(() => {
