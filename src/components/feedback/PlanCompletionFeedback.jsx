@@ -91,7 +91,7 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
   if (step === 'initial') {
     return (
       <FeedbackPopup
-        title="Plan completed!"
+        title="All tasks completed!"
         onClose={handleSkip}
       >
         <Stack spacing={1.5}>

@@ -136,7 +136,7 @@ const ThinkingPartCard = ({ partId }) => {
 
   return (
     <div className="w-full my-0.5">
-      <div className={`group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-md hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-150 ${isExpanded ? 'w-full' : 'inline-flex max-w-full'}`}>
+      <div className={`group border border-transparent transition-all duration-150 ${isExpanded ? 'w-full' : 'inline-flex max-w-full'}`}>
         {/* Header */}
         <button
           onClick={onToggle}
@@ -215,7 +215,7 @@ const ThinkingPartCard = ({ partId }) => {
             <div
               ref={contentRef}
               onScroll={handleScroll}
-              className="px-3 py-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full bg-gray-50/50 dark:bg-gray-900/50"
+              className="px-3 py-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full"
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent',

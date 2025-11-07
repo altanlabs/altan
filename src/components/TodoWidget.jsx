@@ -105,7 +105,7 @@ const TaskItem = memo(({ task, onOpenSubthread }) => {
             <div className="flex-shrink-0">
               <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
                 <AgentOrbAvatar
-                  size={16}
+                  size={18}
                   agentId={task.assigned_agent_name}
                   colors={agentColors[task.assigned_agent_name]}
                   isStatic={!isRunning}
@@ -464,7 +464,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
               <Tooltip title={`Assigned to: ${runningTask.assigned_agent_name}`}>
                 <div className="flex-shrink-0">
                   <AgentOrbAvatar
-                    size={14}
+                    size={18}
                     agentId={runningTask.assigned_agent_name}
                     colors={agentColors[runningTask.assigned_agent_name]}
                     isStatic={false}
