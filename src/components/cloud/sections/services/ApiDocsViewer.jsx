@@ -1,44 +1,158 @@
-import { AlertCircle, Loader2 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { AlertCircle, ChevronDown, ChevronRight, Copy, Loader2, Play } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+const MethodBadge = ({ method }) => {
+  const colors = {
+    GET: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    POST: 'bg-green-500/10 text-green-500 border-green-500/20',
+    PUT: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    DELETE: 'bg-red-500/10 text-red-500 border-red-500/20',
+    PATCH: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  };
+
+  return (
+    <span className={`px-2 py-1 text-xs font-semibold rounded border ${colors[method.toUpperCase()] || 'bg-gray-500/10 text-gray-500'}`}>
+      {method.toUpperCase()}
+    </span>
+  );
+};
+
+const EndpointItem = ({ path, method, summary, description, cloudUrl, parameters, requestBody }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [response, setResponse] = useState(null);
+  const [requestData, setRequestData] = useState('{}');
+
+  const hasBody = ['post', 'put', 'patch'].includes(method.toLowerCase());
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      const options = {
+        method: method.toUpperCase(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      if (hasBody && requestData) {
+        try {
+          options.body = JSON.stringify(JSON.parse(requestData));
+        } catch (e) {
+          setResponse({ error: 'Invalid JSON in request body' });
+          setTesting(false);
+          return;
+        }
+      }
+
+      const res = await fetch(`${cloudUrl}/services${path}`, options);
+      const data = await res.json();
+      setResponse({ status: res.status, data });
+    } catch (err) {
+      setResponse({ error: err.message });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  return (
+    <div className="border border-border rounded-lg mb-3 overflow-hidden bg-card">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors text-left"
+      >
+        {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        <MethodBadge method={method} />
+        <span className="font-mono text-sm flex-1">{path}</span>
+        {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
+      </button>
+
+      {expanded && (
+        <div className="border-t border-border p-4 space-y-4 bg-muted/20">
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-foreground">Endpoint:</span>
+              <code className="text-xs bg-background px-2 py-1 rounded border border-border flex-1">
+                {cloudUrl}/services{path}
+              </code>
+              <button
+                onClick={() => copyToClipboard(`${cloudUrl}/services${path}`)}
+                className="p-1 hover:bg-background rounded"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+
+            {hasBody && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground">Request Body (JSON):</span>
+                  <button
+                    onClick={() => setRequestData('{}')}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <textarea
+                  value={requestData}
+                  onChange={(e) => setRequestData(e.target.value)}
+                  className="w-full h-32 text-xs bg-background p-3 rounded border border-border font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder='{"key": "value"}'
+                  spellCheck={false}
+                />
+                {requestBody?.schema && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      Show schema
+                    </summary>
+                    <pre className="mt-2 text-xs bg-background p-2 rounded border border-border overflow-auto">
+                      {JSON.stringify(requestBody.schema, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={handleTest}
+              disabled={testing}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {testing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              {testing ? 'Testing...' : 'Test Endpoint'}
+            </button>
+
+            {response && (
+              <div className="mt-4">
+                <div className="text-xs font-semibold mb-2 text-foreground">Response:</div>
+                <pre className="text-xs bg-background p-3 rounded border border-border overflow-auto max-h-64">
+                  {JSON.stringify(response, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function ApiDocsViewer({ cloudUrl }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [spec, setSpec] = useState(null);
-  const [swaggerLoaded, setSwaggerLoaded] = useState(false);
-  const containerRef = useRef(null);
-  const swaggerUIRef = useRef(null);
-
-  // Load Swagger UI from CDN
-  useEffect(() => {
-    // Check if already loaded
-    if (window.SwaggerUIBundle) {
-      setSwaggerLoaded(true);
-      return;
-    }
-
-    // Load CSS
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css';
-    document.head.appendChild(link);
-
-    // Load JS
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js';
-    script.onload = () => setSwaggerLoaded(true);
-    script.onerror = () => {
-      setError('Failed to load Swagger UI library');
-      setLoading(false);
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      // Cleanup on unmount
-      if (link.parentNode) link.parentNode.removeChild(link);
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, []);
+  const [endpoints, setEndpoints] = useState([]);
 
   // Fetch the OpenAPI spec
   useEffect(() => {
@@ -59,6 +173,26 @@ function ApiDocsViewer({ cloudUrl }) {
       })
       .then((data) => {
         setSpec(data);
+        
+        // Parse endpoints
+        const parsedEndpoints = [];
+        Object.entries(data.paths || {}).forEach(([path, methods]) => {
+          Object.entries(methods).forEach(([method, details]) => {
+            if (['get', 'post', 'put', 'delete', 'patch'].includes(method.toLowerCase())) {
+              const requestBody = details.requestBody?.content?.['application/json'];
+              parsedEndpoints.push({
+                path,
+                method,
+                summary: details.summary || '',
+                description: details.description || '',
+                parameters: details.parameters || [],
+                requestBody: requestBody || null,
+              });
+            }
+          });
+        });
+        
+        setEndpoints(parsedEndpoints);
         setLoading(false);
       })
       .catch((err) => {
@@ -66,32 +200,6 @@ function ApiDocsViewer({ cloudUrl }) {
         setLoading(false);
       });
   }, [cloudUrl]);
-
-  // Initialize Swagger UI once we have both the spec and the DOM element
-  useEffect(() => {
-    if (!spec || !containerRef.current || swaggerUIRef.current || !cloudUrl || !swaggerLoaded || !window.SwaggerUIBundle) {
-      return;
-    }
-
-    // Override the spec to include the correct server URL
-    const specWithServer = {
-      ...spec,
-      servers: [
-        {
-          url: `${cloudUrl}/services`,
-          description: 'Production server',
-        },
-      ],
-    };
-
-    swaggerUIRef.current = window.SwaggerUIBundle({
-      spec: specWithServer,
-      domNode: containerRef.current,
-      deepLinking: true,
-      presets: [window.SwaggerUIBundle.presets.apis],
-      layout: 'BaseLayout',
-    });
-  }, [spec, cloudUrl, swaggerLoaded]);
 
   if (loading) {
     return (
@@ -117,248 +225,22 @@ function ApiDocsViewer({ cloudUrl }) {
   }
 
   return (
-    <div
-      className="w-full overflow-auto"
-      style={{
-        height: 'calc(100vh - 220px)',
-        minHeight: '500px',
-      }}
-    >
-      <style>
-        {`
-          /* Hide Swagger UI header elements */
-          .swagger-ui .topbar { display: none; }
-          .swagger-ui .information-container { display: none; }
-          .swagger-ui .info { display: none; }
-          .swagger-ui .servers { display: none; }
-          .swagger-ui .scheme-container { display: none; }
-          
-          /* Base dark theme */
-          .swagger-ui {
-            background: transparent;
-            color: hsl(var(--foreground));
-          }
-          
-          /* Wrapper */
-          .swagger-ui .wrapper {
-            padding: 0;
-          }
-          
-          /* Section headings */
-          .swagger-ui .opblock-tag {
-            background: hsl(var(--muted));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-          }
-          
-          /* Operation blocks */
-          .swagger-ui .opblock {
-            background: hsl(var(--card));
-            border: 1px solid hsl(var(--border));
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-          }
-          
-          .swagger-ui .opblock .opblock-summary {
-            border-color: hsl(var(--border));
-          }
-          
-          /* HTTP method colors */
-          .swagger-ui .opblock.opblock-get {
-            background: hsl(var(--card));
-            border-color: rgb(97, 175, 254);
-          }
-          .swagger-ui .opblock.opblock-get .opblock-summary {
-            background: rgba(97, 175, 254, 0.1);
-            border-color: rgba(97, 175, 254, 0.3);
-          }
-          .swagger-ui .opblock.opblock-get .opblock-summary-method {
-            background: rgb(97, 175, 254);
-          }
-          
-          .swagger-ui .opblock.opblock-post {
-            background: hsl(var(--card));
-            border-color: rgb(73, 204, 144);
-          }
-          .swagger-ui .opblock.opblock-post .opblock-summary {
-            background: rgba(73, 204, 144, 0.1);
-            border-color: rgba(73, 204, 144, 0.3);
-          }
-          .swagger-ui .opblock.opblock-post .opblock-summary-method {
-            background: rgb(73, 204, 144);
-          }
-          
-          .swagger-ui .opblock.opblock-put {
-            background: hsl(var(--card));
-            border-color: rgb(252, 161, 48);
-          }
-          .swagger-ui .opblock.opblock-put .opblock-summary {
-            background: rgba(252, 161, 48, 0.1);
-            border-color: rgba(252, 161, 48, 0.3);
-          }
-          .swagger-ui .opblock.opblock-put .opblock-summary-method {
-            background: rgb(252, 161, 48);
-          }
-          
-          .swagger-ui .opblock.opblock-delete {
-            background: hsl(var(--card));
-            border-color: rgb(249, 62, 62);
-          }
-          .swagger-ui .opblock.opblock-delete .opblock-summary {
-            background: rgba(249, 62, 62, 0.1);
-            border-color: rgba(249, 62, 62, 0.3);
-          }
-          .swagger-ui .opblock.opblock-delete .opblock-summary-method {
-            background: rgb(249, 62, 62);
-          }
-          
-          /* Text colors */
-          .swagger-ui .opblock-summary-path {
-            color: hsl(var(--foreground)) !important;
-            font-weight: 600;
-          }
-          .swagger-ui .opblock-summary-path a {
-            color: hsl(var(--foreground)) !important;
-          }
-          .swagger-ui .opblock-summary-description {
-            color: hsl(var(--muted-foreground));
-          }
-          
-          /* Code blocks */
-          .swagger-ui .opblock-body pre,
-          .swagger-ui .microlight {
-            background: hsl(var(--muted)) !important;
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-          }
-          
-          /* Tables */
-          .swagger-ui table {
-            background: transparent;
-          }
-          .swagger-ui table thead tr td,
-          .swagger-ui table thead tr th {
-            background: hsl(var(--muted));
-            border-color: hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-weight: 600;
-          }
-          .swagger-ui table tbody tr td {
-            border-color: hsl(var(--border));
-            color: hsl(var(--muted-foreground));
-          }
-          
-          /* Buttons */
-          .swagger-ui .btn {
-            background: hsl(var(--primary));
-            border: none;
-            color: hsl(var(--primary-foreground));
-            border-radius: 0.375rem;
-            font-weight: 500;
-          }
-          .swagger-ui .btn:hover {
-            background: hsl(var(--primary) / 0.9);
-          }
-          .swagger-ui .btn.cancel {
-            background: hsl(var(--secondary));
-            color: hsl(var(--secondary-foreground));
-          }
-          
-          /* Inputs */
-          .swagger-ui input[type=text],
-          .swagger-ui input[type=email],
-          .swagger-ui input[type=password],
-          .swagger-ui textarea,
-          .swagger-ui select {
-            background: hsl(var(--background));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            border-radius: 0.375rem;
-          }
-          
-          /* Models/Schemas */
-          .swagger-ui .model-box,
-          .swagger-ui .model {
-            background: hsl(var(--muted));
-            border-color: hsl(var(--border));
-            color: hsl(var(--foreground));
-          }
-          .swagger-ui .model-title {
-            color: hsl(var(--foreground));
-          }
-          .swagger-ui section.models {
-            background: transparent;
-            border-color: hsl(var(--border));
-          }
-          .swagger-ui section.models h4 {
-            color: hsl(var(--foreground));
-          }
-          
-          /* Parameters */
-          .swagger-ui .parameters-col_description {
-            color: hsl(var(--muted-foreground));
-          }
-          .swagger-ui .parameter__name {
-            color: hsl(var(--foreground));
-          }
-          .swagger-ui .parameter__type {
-            color: hsl(var(--muted-foreground));
-          }
-          .swagger-ui .opblock-section-header {
-            background: hsl(var(--muted)) !important;
-            border-color: hsl(var(--border)) !important;
-          }
-          .swagger-ui .opblock-section-header h4 {
-            color: hsl(var(--foreground));
-          }
-          
-          /* Responses */
-          .swagger-ui .response-col_status {
-            color: hsl(var(--foreground));
-          }
-          .swagger-ui .response-col_description {
-            color: hsl(var(--muted-foreground));
-          }
-          .swagger-ui .responses-inner {
-            background: hsl(var(--card)) !important;
-          }
-          
-          /* Tab buttons */
-          .swagger-ui .tab li {
-            color: hsl(var(--muted-foreground));
-          }
-          .swagger-ui .tab li.active {
-            color: hsl(var(--foreground));
-          }
-          
-          /* Links */
-          .swagger-ui a {
-            color: hsl(var(--primary));
-          }
-          .swagger-ui a:hover {
-            color: hsl(var(--primary) / 0.8);
-          }
-          
-          /* Markdown */
-          .swagger-ui .markdown p,
-          .swagger-ui .markdown code {
-            color: hsl(var(--muted-foreground));
-          }
-          
-          /* Try it out section */
-          .swagger-ui .opblock-body {
-            background: hsl(var(--card));
-          }
-          
-          /* Response wrapper */
-          .swagger-ui .responses-wrapper {
-            background: transparent;
-          }
-        `}
-      </style>
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="w-full h-full overflow-auto p-6 space-y-4" style={{ height: 'calc(100vh - 220px)' }}>
+      {endpoints.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No endpoints found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {endpoints.map((endpoint, index) => (
+            <EndpointItem
+              key={`${endpoint.method}-${endpoint.path}-${index}`}
+              {...endpoint}
+              cloudUrl={cloudUrl}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
