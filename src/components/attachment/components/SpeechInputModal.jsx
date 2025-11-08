@@ -36,7 +36,7 @@ const SpeechInputModal = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[999999] bg-gray-900/95 backdrop-blur-sm flex items-center justify-center"
+      className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-md flex items-center justify-center"
       onClick={(e) => {
         // Close when clicking the backdrop
         if (e.target === e.currentTarget) {
@@ -45,7 +45,7 @@ const SpeechInputModal = ({
       }}
     >
       <div
-        className="relative w-full max-w-md rounded-xl p-6 bg-gray-900/90 backdrop-blur-md"
+        className="relative w-full max-w-md rounded-2xl p-6 bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <AIVoiceInput
@@ -64,7 +64,7 @@ const SpeechInputModal = ({
               e.stopPropagation();
               onClose();
             }}
-            className="px-6 py-3 rounded-full bg-gray-700 hover:bg-gray-600 text-white font-medium flex items-center gap-2 transition-colors"
+            className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium flex items-center gap-2 transition-all shadow-sm"
           >
             <Iconify
               icon="mdi:close"
@@ -75,7 +75,7 @@ const SpeechInputModal = ({
 
           <button
             onClick={handleSendAndClose}
-            className="px-8 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 transition-colors"
+            className="px-8 py-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white font-medium flex items-center gap-2 transition-all shadow-sm"
           >
             <span>Send</span>
             <AltanAnimatedSvg

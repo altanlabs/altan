@@ -10,6 +10,7 @@ import {
   stopAccountAttributeLoading,
 } from '../../redux/slices/general';
 import { useSelector, dispatch } from '../../redux/store';
+import AuthDialog from '../../sections/auth/AuthDialog';
 import FeaturesSection from '../../sections/new/FeaturesSection';
 import NewHeroSection from '../../sections/new/NewHeroSection';
 
@@ -26,6 +27,9 @@ const NewDashboardPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [creationError, setCreationError] = useState(null);
   const apiCallStartedRef = useRef(false);
+
+  // Auth dialog state for idea-based signup
+  const [showAuthDialogForIdea, setShowAuthDialogForIdea] = useState(false);
 
   // Auth dialog opener ref
   const openAuthDialogRef = useRef(null);
@@ -56,7 +60,14 @@ const NewDashboardPage = () => {
     const params = new URLSearchParams(location.search);
     const ideaId = params.get('idea');
 
-    if (ideaId && !apiCallStartedRef.current && isAuthenticated) {
+    if (ideaId && !apiCallStartedRef.current) {
+      // If user is not authenticated, show auth dialog with signup by default
+      if (!isAuthenticated) {
+        setShowAuthDialogForIdea(true);
+        return;
+      }
+
+      // User is authenticated, proceed with project creation
       apiCallStartedRef.current = true;
       setIsCreating(true);
 
@@ -203,6 +214,13 @@ const NewDashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* Auth Dialog for Idea-based Signup - Show signup by default */}
+      <AuthDialog
+        open={showAuthDialogForIdea}
+        onOpenChange={setShowAuthDialogForIdea}
+        defaultToSignup={true}
+      />
 
       {/* Hero Section - Always first */}
       <VoiceConversationProvider>

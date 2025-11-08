@@ -20,12 +20,20 @@ AuthDialog.propTypes = {
   onOpenChange: PropTypes.func.isRequired,
   invitation: PropTypes.object,
   idea: PropTypes.any,
+  defaultToSignup: PropTypes.bool,
 };
 
-export default function AuthDialog({ open, onOpenChange, invitation = null, idea = null }) {
+export default function AuthDialog({ open, onOpenChange, invitation = null, idea = null, defaultToSignup = false }) {
   const { loginWithGoogle } = useAuthContext();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(!defaultToSignup);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Reset form state when dialog opens with new defaultToSignup value
+  React.useEffect(() => {
+    if (open) {
+      setIsLogin(!defaultToSignup);
+    }
+  }, [open, defaultToSignup]);
 
   const handleGoogleLogin = async () => {
     try {

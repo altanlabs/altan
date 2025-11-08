@@ -24,14 +24,19 @@ const NewLayout = ({ children, onRequestAuth }) => {
   const { isAuthenticated, user, logout } = useAuthContext();
   const { startTransition } = useThemeTransition();
   const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [authDialogDefaultToSignup, setAuthDialogDefaultToSignup] = useState(false);
 
   // Poll credit balance every 30 seconds
   useCreditBalancePolling(isAuthenticated);
 
   // Expose auth dialog opener through callback
+  // Accept parameter to control signup vs login default
   React.useEffect(() => {
     if (onRequestAuth) {
-      onRequestAuth(() => setShowAccessDialog(true));
+      onRequestAuth((defaultToSignup = true) => {
+        setAuthDialogDefaultToSignup(defaultToSignup);
+        setShowAccessDialog(true);
+      });
     }
   }, [onRequestAuth]);
 
@@ -119,7 +124,10 @@ const NewLayout = ({ children, onRequestAuth }) => {
                   Enter demo
                 </button>
                 <button
-                  onClick={() => setShowAccessDialog(true)}
+                  onClick={() => {
+                    setAuthDialogDefaultToSignup(false);
+                    setShowAccessDialog(true);
+                  }}
                   className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Access
@@ -154,10 +162,11 @@ const NewLayout = ({ children, onRequestAuth }) => {
         {/* Footer - Show V2CompactFooter when authenticated, regular Footer on homepage when not */}
         {isAuthenticated ? <V2CompactFooter /> : location.pathname === '/' && <Footer />}
 
-        {/* Access Dialog */}
+        {/* Auth Dialog - Default to signup or login based on trigger source */}
         <AuthDialog
           open={showAccessDialog}
           onOpenChange={setShowAccessDialog}
+          defaultToSignup={authDialogDefaultToSignup}
         />
       </div>
 

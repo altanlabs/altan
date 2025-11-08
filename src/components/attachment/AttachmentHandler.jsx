@@ -1,4 +1,10 @@
-import { useMediaQuery, useTheme, DialogContent, CircularProgress, IconButton } from '@mui/material';
+import {
+  useMediaQuery,
+  useTheme,
+  DialogContent,
+  CircularProgress,
+  IconButton,
+} from '@mui/material';
 import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -18,9 +24,7 @@ import ConnectionManager from '../tools/ConnectionManager';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
-import FlowSelectionDialog from './components/FlowSelectionDialog.jsx';
 import ModeSelectionChip from './components/ModeSelectionChip.jsx';
-import SpeechInputModal from './components/SpeechInputModal.jsx';
 import VoiceCallButton from './components/VoiceCallButton.jsx';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
@@ -217,17 +221,20 @@ Workflow Selected: ${flow.name} (ID: ${flow.id})
   );
 
   // Handle connection selection from ConnectionManager
-  const handleConnectionSelected = useCallback((connection) => {
-    console.log('Connection selected:', connection);
-    // You can add logic here to handle the selected connection
-    // For example, insert connection info into the editor
-    if (editorRef?.current?.insertText && connection) {
-      const connectionText = `
+  const handleConnectionSelected = useCallback(
+    (connection) => {
+      console.log('Connection selected:', connection);
+      // You can add logic here to handle the selected connection
+      // For example, insert connection info into the editor
+      if (editorRef?.current?.insertText && connection) {
+        const connectionText = `
 Tool Connected: ${connection.name} (${connection.connection_type?.name})
 `;
-      editorRef.current.insertText(connectionText);
-    }
-  }, [editorRef]);
+        editorRef.current.insertText(connectionText);
+      }
+    },
+    [editorRef],
+  );
 
   // Handle tool dialog close
   const handleToolDialogClose = useCallback(() => {
@@ -247,13 +254,16 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
   }, [setSelectedAgent]);
 
   // Mode selection handler
-  const handleModeSelect = useCallback((mode) => {
-    setSelectedMode(mode);
-    // Clear agent selection when switching to auto or plan mode
-    if ((mode === 'auto' || mode === 'plan') && selectedAgent) {
-      setSelectedAgent(null);
-    }
-  }, [selectedAgent, setSelectedAgent]);
+  const handleModeSelect = useCallback(
+    (mode) => {
+      setSelectedMode(mode);
+      // Clear agent selection when switching to auto or plan mode
+      if ((mode === 'auto' || mode === 'plan') && selectedAgent) {
+        setSelectedAgent(null);
+      }
+    },
+    [selectedAgent, setSelectedAgent],
+  );
 
   // Helper function to get file extension from MIME type
   const getFileExtension = (mimeType) => {
@@ -270,38 +280,45 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
   };
 
   // Transcribe audio - defined before startRecording to avoid hoisting issues
-  const transcribeAudio = useCallback(async (blob) => {
-    if (!blob) return;
+  const transcribeAudio = useCallback(
+    async (blob) => {
+      if (!blob) return;
 
-    setIsTranscribing(true);
-    setTranscriptionError(null);
+      setIsTranscribing(true);
+      setTranscriptionError(null);
 
-    try {
-      const formData = new FormData();
-      const mimeType = blob.type;
-      const extension = getFileExtension(mimeType);
-      formData.append('file', blob, `recording.${extension}`);
+      try {
+        const formData = new FormData();
+        const mimeType = blob.type;
+        const extension = getFileExtension(mimeType);
+        formData.append('file', blob, `recording.${extension}`);
 
-      const baseUrl = 'https://d9e17293-cf6.db-pool-europe-west1.altan.ai';
-      const response = await fetch(`${baseUrl}/services/api/transcription_service/transcribe`, {
-        method: 'POST',
-        body: formData,
-      });
+        const baseUrl = 'https://d9e17293-cf6.db-pool-europe-west1.altan.ai';
+        const response = await fetch(`${baseUrl}/services/api/transcription_service/transcribe`, {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
 
-      const result = await response.json();
+        const result = await response.json();
 
       if (result.status === 'success' && result.text) {
         // Send the transcribed text directly using Redux action
         if (threadId) {
-          console.log('Sending transcribed message via Redux:', result.text);
+          // Prepend agent mention if in instant mode and an agent is selected
+          let messageContent = result.text;
+          if (selectedMode === 'instant' && selectedAgent) {
+            messageContent = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**\n\n${result.text}`;
+          }
+
+          console.log('Sending transcribed message via Redux:', messageContent);
           await dispatch(
             sendMessage({
-              content: result.text,
+              content: messageContent,
               attachments: [],
               threadId,
             }),
@@ -318,22 +335,24 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         // Reset audio blob after successful transcription
         setAudioBlob(null);
       } else if (result.error) {
-        setTranscriptionError(result.error);
-        enqueueSnackbar(`Transcription error: ${result.error}`, { variant: 'error' });
-      } else {
-        const errorMsg = result.message || 'Transcription failed';
+          setTranscriptionError(result.error);
+          enqueueSnackbar(`Transcription error: ${result.error}`, { variant: 'error' });
+        } else {
+          const errorMsg = result.message || 'Transcription failed';
+          setTranscriptionError(errorMsg);
+          enqueueSnackbar(errorMsg, { variant: 'error' });
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to transcribe audio';
         setTranscriptionError(errorMsg);
         enqueueSnackbar(errorMsg, { variant: 'error' });
+        console.error('Transcription error:', err);
+      } finally {
+        setIsTranscribing(false);
       }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to transcribe audio';
-      setTranscriptionError(errorMsg);
-      enqueueSnackbar(errorMsg, { variant: 'error' });
-      console.error('Transcription error:', err);
-    } finally {
-      setIsTranscribing(false);
-    }
-  }, [threadId, enqueueSnackbar]);
+    },
+    [threadId, enqueueSnackbar, selectedMode, selectedAgent],
+  );
 
   // Start recording audio
   const startRecording = useCallback(async () => {
@@ -368,7 +387,7 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         }
 
         // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
@@ -399,7 +418,7 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
       // Stop all tracks to release microphone
       if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
       }
 
       // Clear the audio blob to prevent transcription
@@ -437,49 +456,53 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
     <>
       {/* Full-screen Recording Overlay */}
       {(isRecording || isTranscribing) && (
-        <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex items-center justify-center px-4">
-          <div className="w-full max-w-2xl flex items-center gap-4 bg-gray-100 dark:bg-gray-800 rounded-full px-6 py-4">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md flex items-center justify-center px-4">
+          <div className="w-full max-w-xl flex items-center gap-3 bg-white/10 dark:bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-3 py-2.5 shadow-2xl">
             {/* Cancel Button */}
-            <IconButton
-              size="medium"
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleCancelRecording();
               }}
               disabled={isTranscribing}
-              className="hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition-all disabled:opacity-50"
             >
-              <Iconify icon="mdi:close" className="text-2xl text-gray-700 dark:text-gray-300" />
-            </IconButton>
+              <Iconify
+                icon="mdi:close"
+                className="text-lg text-white/90"
+              />
+            </button>
 
             {/* Live Waveform */}
-            <div className="flex-1 min-w-0 text-gray-700 dark:text-white">
+            <div className="flex-1 min-w-0 text-white">
               <LiveWaveform
                 active={isRecording}
                 processing={isTranscribing}
                 mode="static"
-                height={60}
-                barWidth={4}
+                height={40}
+                barWidth={3}
                 barGap={2}
               />
             </div>
 
             {/* Accept Button */}
-            <IconButton
-              size="medium"
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleAcceptRecording();
               }}
               disabled={isTranscribing}
-              className="hover:bg-green-100 dark:hover:bg-green-900/50"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition-all disabled:opacity-50"
             >
               {isTranscribing ? (
-                <CircularProgress size={24} className="text-gray-700 dark:text-white" />
+                <div className="w-5 h-5 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Iconify icon="mdi:check" className="text-2xl text-green-600 dark:text-green-400" />
+                <Iconify
+                  icon="mdi:check"
+                  className="text-lg text-white/90"
+                />
               )}
-            </IconButton>
+            </button>
           </div>
         </div>
       )}
@@ -546,15 +569,18 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
             {/* Audio Transcription Button */}
             <button
               onClick={(e) => {
-              e.stopPropagation();
-              startRecording();
-            }}
+                e.stopPropagation();
+                startRecording();
+              }}
               className="flex items-center justify-center p-2 rounded-full
                      bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800
                      text-gray-600 dark:text-gray-300 transition-all duration-200"
               title="Record and transcribe"
             >
-              <Iconify icon="mdi:microphone" className="text-xl" />
+              <Iconify
+                icon="mdi:microphone"
+                className="text-xl"
+              />
             </button>
 
             {/* Main Send/Voice Button */}
@@ -568,22 +594,6 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
             />
           </div>
         </div>
-
-        {/* Speech Input Modal */}
-        <SpeechInputModal
-          open={showSpeechInput}
-          onClose={() => setShowSpeechInput(false)}
-          onTranscript={handleTranscript}
-          threadId={threadId}
-        />
-
-        {/* Flow Selection Dialog */}
-        <FlowSelectionDialog
-          open={isFlowDialogOpen}
-          onClose={() => setIsFlowDialogOpen(false)}
-          flows={flows}
-          onSelectFlow={handleSelectFlow}
-        />
 
         {/* Tool Creation Dialog */}
         <CustomDialog

@@ -29,7 +29,7 @@ import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
-import { useAuthContext } from '../../../auth/useAuthContext';
+// import { useAuthContext } from '../../../auth/useAuthContext'; // Unused for now
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import CreateAgentDashboard from '../../../pages/dashboard/components/CreateAgentDashboard';
@@ -78,7 +78,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   const { currentAgent, isLoading, currentAgentDmRoomId, currentAgentCreatorRoomId } = useSelector(
     (state) => state.agents,
   );
-  const { user } = useAuthContext();
+  // const { user } = useAuthContext(); // Unused for now
   const templateSelector = useCallback(() => currentAgent?.template, [currentAgent]);
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -170,7 +170,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
     }
-  }, [location.search, activeTab, initialMessage]);
+  }, [location.search, location.pathname, activeTab, initialMessage]);
 
   const timeoutRef = useRef();
   const debouncedUpdateAgent = useCallback(
@@ -323,8 +323,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
               color="text.disabled"
               sx={{ textAlign: 'center', maxWidth: '400px' }}
             >
-              This agent doesn't have a creator room configured. You can still edit the agent
-              using the other tabs.
+              This agent doesn&apos;t have a creator room configured. You can still edit the agent using
+              the other tabs.
             </Typography>
           </Box>
         );
@@ -538,7 +538,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
             }}
           >
             {/* Left: Avatar & Name */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1 }, minWidth: 0 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1 }, minWidth: 0 }}
+            >
               {!altanerId && !isMobile && (
                 <Tooltip title="Go Back">
                   <IconButton
@@ -551,12 +553,17 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                       },
                     }}
                   >
-                    <Iconify icon="eva:arrow-ios-back-fill" sx={{ fontSize: '1.25rem' }} />
+                    <Iconify
+                      icon="eva:arrow-ios-back-fill"
+                      sx={{ fontSize: '1.25rem' }}
+                    />
                   </IconButton>
                 </Tooltip>
               )}
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1 }, minWidth: 0 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1 }, minWidth: 0 }}
+              >
                 <DynamicAgentAvatar
                   agent={agentData}
                   size={isMobile ? 34 : 38}
@@ -625,7 +632,9 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
             {isMobile && renderTabNavigation()}
 
             {/* Right: Action Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}
+            >
               {/* Test Agent Button - Only show when drawer is closed */}
               {!showTestDrawer && (
                 <Button
@@ -633,7 +642,12 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   variant="soft"
                   color="inherit"
                   size="small"
-                  startIcon={<Iconify icon="eva:play-circle-outline" sx={{ fontSize: '0.95rem' }} />}
+                  startIcon={
+                    <Iconify
+                      icon="eva:play-circle-outline"
+                      sx={{ fontSize: '0.95rem' }}
+                    />
+                  }
                   sx={{
                     minWidth: 'auto',
                     px: isMobile ? 1 : 1.5,
@@ -645,6 +659,28 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 </Button>
               )}
 
+              {/* Share Button */}
+              <Button
+                onClick={() => setShareDialogOpen(true)}
+                variant="soft"
+                color="inherit"
+                size="small"
+                startIcon={
+                  <Iconify
+                    icon="eva:share-outline"
+                    sx={{ fontSize: '0.95rem' }}
+                  />
+                }
+                sx={{
+                  minWidth: 'auto',
+                  px: isMobile ? 1 : 1.5,
+                  py: 0.5,
+                  fontSize: '0.8125rem',
+                }}
+              >
+                Share
+              </Button>
+
               {/* More Options Menu */}
               <Tooltip title="More options">
                 <IconButton
@@ -652,7 +688,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   size="small"
                   sx={{ color: 'text.secondary' }}
                 >
-                  <Iconify icon="eva:more-horizontal-fill" sx={{ fontSize: '1.2rem' }} />
+                  <Iconify
+                    icon="eva:more-horizontal-fill"
+                    sx={{ fontSize: '1.2rem' }}
+                  />
                 </IconButton>
               </Tooltip>
               <Menu
@@ -671,22 +710,14 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                 {showTestDrawer && (
                   <MenuItem onClick={handleTestAgentNewTab}>
                     <ListItemIcon>
-                      <Iconify icon="eva:external-link-outline" sx={{ color: 'text.secondary' }} />
+                      <Iconify
+                        icon="eva:external-link-outline"
+                        sx={{ color: 'text.secondary' }}
+                      />
                     </ListItemIcon>
                     <ListItemText>Open in New Tab</ListItemText>
                   </MenuItem>
                 )}
-                <MenuItem
-                  onClick={() => {
-                    setShareDialogOpen(true);
-                    handleMenuClose();
-                  }}
-                >
-                  <ListItemIcon>
-                    <Iconify icon="eva:share-outline" sx={{ color: 'text.secondary' }} />
-                  </ListItemIcon>
-                  <ListItemText>Share</ListItemText>
-                </MenuItem>
                 <MenuItem
                   onClick={() => {
                     setInfoDialogOpen(true);
@@ -694,7 +725,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   }}
                 >
                   <ListItemIcon>
-                    <Iconify icon="eva:info-outline" sx={{ color: 'text.secondary' }} />
+                    <Iconify
+                      icon="eva:info-outline"
+                      sx={{ color: 'text.secondary' }}
+                    />
                   </ListItemIcon>
                   <ListItemText>Agent Info</ListItemText>
                 </MenuItem>
@@ -706,7 +740,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                     }}
                   >
                     <ListItemIcon>
-                      <Iconify icon="mdi:history" sx={{ color: 'text.secondary' }} />
+                      <Iconify
+                        icon="mdi:history"
+                        sx={{ color: 'text.secondary' }}
+                      />
                     </ListItemIcon>
                     <ListItemText>Version History</ListItemText>
                   </MenuItem>
@@ -718,7 +755,10 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
                   }}
                 >
                   <ListItemIcon>
-                    <Iconify icon="eva:trash-2-outline" sx={{ color: 'error.main' }} />
+                    <Iconify
+                      icon="eva:trash-2-outline"
+                      sx={{ color: 'error.main' }}
+                    />
                   </ListItemIcon>
                   <ListItemText sx={{ color: 'error.main' }}>Delete Agent</ListItemText>
                 </MenuItem>

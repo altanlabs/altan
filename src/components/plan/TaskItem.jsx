@@ -140,7 +140,7 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-6 pb-2 pl-20 bg-gray-50/30 dark:bg-gray-800/20">
+        <div className="px-6 pb-2 pl-20">
           {/* Task Description - Only show for non-completed and non-running tasks */}
           {!isCompleted && !isRunning && task.task_description && (
             <div className="mb-2 text-sm">
@@ -173,7 +173,7 @@ const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread })
 
           {/* Agent's Work - Second Message */}
           {isExpanded && secondMessage && (
-            <div className="mt-4">
+            <div>
               <MessageContent
                 message={secondMessage}
                 threadId={task.subthread_id}

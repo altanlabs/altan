@@ -34,6 +34,7 @@ export const handleTaskCreated = (eventData) => {
         started_at: eventData.started_at,
         finished_at: eventData.finished_at,
         updated_at: eventData.updated_at,
+        plan_id: eventData?.plan_id || null,
       },
     }),
   );

@@ -237,25 +237,25 @@ export const AIVoiceInput = forwardRef<AIVoiceInputHandle, AIVoiceInputProps>(
         <div className="relative w-full mx-auto flex items-center flex-col gap-5">
           {/* Recording button */}
           <button
-            className="w-16 h-16 rounded-md flex items-center justify-center bg-gray-800/80 shadow-md"
+            className="w-16 h-16 rounded-xl flex items-center justify-center bg-white/10 hover:bg-white/15 backdrop-blur-sm border border-white/20 shadow-lg transition-all"
             type="button"
             onClick={handleButtonClick}
             disabled={transcribing}
           >
             {recording ? (
               <div
-                className="w-8 h-8 rounded-sm animate-spin bg-white/90 cursor-pointer"
+                className="w-8 h-8 rounded-lg animate-spin bg-white/90 cursor-pointer"
                 style={{ animationDuration: '2s' }}
               />
             ) : transcribing ? (
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
             ) : (
               <Mic className="w-8 h-8 text-white/80" />
             )}
           </button>
 
           {/* Timer */}
-          <span className="font-mono text-xl font-medium text-white">{formatTime(time)}</span>
+          <span className="font-mono text-xl font-medium text-white/90">{formatTime(time)}</span>
 
           {/* Visualizer bars */}
           <div className="h-8 w-3/4 flex items-center justify-center gap-1">
@@ -263,8 +263,8 @@ export const AIVoiceInput = forwardRef<AIVoiceInputHandle, AIVoiceInputProps>(
               <div
                 key={i}
                 className={cn(
-                  'rounded-none transition-all duration-200 w-1',
-                  recording ? 'bg-blue-500' : 'bg-white/10 h-1',
+                  'rounded-sm transition-all duration-200 w-1',
+                  recording ? 'bg-white/70' : 'bg-white/10 h-1',
                 )}
                 style={
                   recording && isClient
@@ -277,7 +277,7 @@ export const AIVoiceInput = forwardRef<AIVoiceInputHandle, AIVoiceInputProps>(
             ))}
           </div>
 
-          {transcribing && <div className="text-sm text-blue-300 mt-1">Transcribing...</div>}
+          {transcribing && <div className="text-sm text-white/60 mt-1">Transcribing...</div>}
         </div>
       </div>
     );

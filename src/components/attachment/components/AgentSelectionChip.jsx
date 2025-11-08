@@ -1,22 +1,14 @@
-import {
-  Chip,
-  Popover,
-  Box,
-  Typography,
-  MenuItem,
-  useMediaQuery,
-  useTheme,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
 import { useState, useEffect, useCallback } from 'react';
 
-import { AgentDetailDialog } from './agent-detail';
+import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
+import Iconify from '../../iconify/Iconify.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { cn } from '../../../lib/utils';
 import { selectMembers, selectRoomId } from '../../../redux/slices/room';
 import { useSelector } from '../../../redux/store';
-import Iconify from '../../iconify/Iconify.jsx';
-import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
+
+import { AgentDetailDialog } from './agent-detail';
 
 const AgentSelectionChip = ({
   agents = [],
@@ -25,13 +17,19 @@ const AgentSelectionChip = ({
   onAgentClear,
   isVoiceActive = false,
 }) => {
-  const [agentMenuAnchor, setAgentMenuAnchor] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [detailDialogAgent, setDetailDialogAgent] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const members = useSelector(selectMembers);
   const roomId = useSelector(selectRoomId);
   const { user } = useAuthContext();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Handle mobile detection
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // LocalStorage key for this room's selected agent
   const getStorageKey = useCallback(() => `selectedAgent_${roomId}`, [roomId]);
@@ -56,15 +54,6 @@ const AgentSelectionChip = ({
     }
   }, [roomId, agents, selectedAgent, onAgentSelect, getStorageKey]);
 
-  const handleAgentMenuOpen = (event) => {
-    event.preventDefault();
-    setAgentMenuAnchor(event.currentTarget);
-  };
-
-  const handleAgentMenuClose = () => {
-    setAgentMenuAnchor(null);
-  };
-
   const handleAgentSelect = (agent) => {
     // Save selection to localStorage for this room
     try {
@@ -73,7 +62,7 @@ const AgentSelectionChip = ({
       // Error saving agent selection
     }
     onAgentSelect(agent);
-    setAgentMenuAnchor(null);
+    setIsOpen(false);
   };
 
   const handleAgentClear = () => {
@@ -102,141 +91,107 @@ const AgentSelectionChip = ({
     return null;
   }
 
-  // Get label based on mobile state
-  const getLabel = () => {
-    if (selectedAgent) {
-      return selectedAgent.name;
-    }
-    // On mobile, return empty string to hide the count
-    return isMobile ? '' : `${agents.length} agents`;
-  };
-
   return (
     <>
-      <Chip
-        avatar={
-          selectedAgent ? (
-            <DynamicAgentAvatar
-              agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
-              size={24}
-              isStatic
-            />
-          ) : undefined
-        }
-        icon={!selectedAgent ? <Iconify icon="mdi:at" /> : undefined}
-        label={getLabel()}
-        size="small"
-        variant="soft"
-        color="default"
-        onClick={handleAgentMenuOpen}
-        onDelete={selectedAgent ? handleAgentClear : undefined}
-        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-        sx={{
-          borderRadius: '12px',
-          fontSize: '0.75rem',
-          height: '28px',
-          minWidth: isMobile && !selectedAgent ? '28px' : 'auto',
-          '& .MuiChip-icon': {
-            fontSize: '14px',
-            marginLeft: '4px',
-          },
-          '& .MuiChip-label': {
-            paddingLeft: isMobile && !selectedAgent ? 0 : undefined,
-            paddingRight: isMobile && !selectedAgent ? 0 : undefined,
-          },
-        }}
-      />
-
-      {/* Agent Menu */}
-      <Popover
-        open={Boolean(agentMenuAnchor)}
-        anchorEl={agentMenuAnchor}
-        onClose={handleAgentMenuClose}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            maxWidth: '250px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          },
-        }}
-      >
-        <Box p={1}>
-          <Typography
-            variant="caption"
-            sx={{ px: 1, py: 0.5, color: 'text.secondary' }}
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={cn(
+              'inline-flex items-center justify-center gap-1 rounded-full h-[26px] transition-all',
+              'text-[11px] font-medium',
+              'bg-white/40 hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10',
+              'backdrop-blur-sm',
+              'text-gray-700 dark:text-gray-300',
+              'border border-white/20 dark:border-white/10',
+              'shadow-sm hover:shadow',
+              'focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600',
+              isMobile && !selectedAgent ? 'min-w-[24px] px-1' : 'px-2',
+            )}
           >
-            Select an agent to mention
-          </Typography>
-          {agents.map((agent) => {
-            const originalMember = members.byId[agent.id];
-            const hasVoice = !!originalMember?.member?.agent?.elevenlabs_id;
+            {selectedAgent ? (
+              <>
+                <DynamicAgentAvatar
+                  agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
+                  size={12}
+                  isStatic
+                />
+                {!isMobile && <span className="opacity-90 max-w-[80px] truncate">{selectedAgent.name}</span>}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAgentClear();
+                  }}
+                  className="-mr-0.5 hover:bg-black/10 dark:hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                >
+                  <Iconify icon="mdi:close" className="w-2.5 h-2.5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <Iconify icon="mdi:at" className="w-3 h-3" />
+                {!isMobile && <span className="opacity-90">{agents.length} agents</span>}
+              </>
+            )}
+          </button>
+        </PopoverTrigger>
 
-            return (
-              <MenuItem
-                key={agent.id}
-                onClick={() => handleAgentSelect(agent)}
-                sx={{
-                  borderRadius: '8px',
-                  margin: '2px 0',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                <Box sx={{ marginRight: 1 }}>
+        <PopoverContent
+          className="w-56 p-1.5 backdrop-blur-xl bg-white/50 dark:bg-white/10 border-white/20 dark:border-white/10 shadow-lg"
+          align="start"
+          side="top"
+          sideOffset={8}
+        >
+          <div className="text-[10px] text-gray-600 dark:text-gray-400 px-2 py-1 mb-0.5 uppercase tracking-wide font-medium opacity-70">
+            Mention agent
+          </div>
+          <div className="space-y-0.5">
+            {agents.map((agent) => {
+              const originalMember = members.byId[agent.id];
+              const hasVoice = !!originalMember?.member?.agent?.elevenlabs_id;
+
+              return (
+                <button
+                  key={agent.id}
+                  onClick={() => handleAgentSelect(agent)}
+                  className={cn(
+                    'w-full rounded-md px-2 py-1.5 text-left transition-all',
+                    'hover:bg-white/50 dark:hover:bg-white/10',
+                    'flex items-center gap-1.5',
+                  )}
+                >
                   <DynamicAgentAvatar
                     agent={originalMember?.member?.agent || agent}
-                    size={24}
+                    size={20}
                     isStatic
                   />
-                </Box>
-                <Typography
-                  variant="body2"
-                  noWrap
-                  sx={{ flex: 1, fontWeight: 500 }}
-                >
-                  {agent.name}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
-                  {hasVoice && (
-                    <Iconify
-                      icon="mdi:microphone"
-                      width={15}
-                      sx={{ color: 'success.main' }}
-                    />
-                  )}
-                  {user?.xsup && (
-                    <Tooltip title="Agent details">
-                      <IconButton
-                        size="small"
+                  <span className="text-xs font-medium flex-1 truncate text-gray-700 dark:text-gray-300">
+                    {agent.name}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    {hasVoice && (
+                      <Iconify
+                        icon="mdi:microphone"
+                        className="w-3 h-3 text-green-600 dark:text-green-400 opacity-70"
+                      />
+                    )}
+                    {user?.xsup && (
+                      <button
                         onClick={(e) => handleAgentInfo(e, agent)}
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          color: 'text.secondary',
-                          '&:hover': {
-                            color: 'primary.main',
-                            bgcolor: 'action.hover',
-                          },
-                        }}
+                        className={cn(
+                          'p-0.5 rounded hover:bg-white/50 dark:hover:bg-white/20',
+                          'text-gray-600 dark:text-gray-400 hover:text-primary transition-colors',
+                        )}
+                        title="Agent details"
                       >
-                        <Iconify icon="eva:settings-2-outline" width={14} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Box>
-              </MenuItem>
-            );
-          })}
-        </Box>
+                        <Iconify icon="eva:settings-2-outline" className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
       </Popover>
 
       {/* Agent Detail Dialog for Super Users */}

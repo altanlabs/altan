@@ -209,6 +209,7 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const [statusFilter, setStatusFilter] = useState('running'); // all, running, todo, completed
 
   const tasks = useSelector(selectTasksByThread(threadId));
+  console.log('tasks', tasks);
   const plan = useSelector(selectPlanByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
