@@ -1,4 +1,4 @@
-import { Tooltip, Typography } from '@mui/material';
+import { Tooltip, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -20,13 +20,18 @@ import {
   selectTasksError,
   selectTasksExpanded,
   setTasksExpanded,
+  updateTask,
+  removeTask,
 } from '../redux/slices/tasks';
 import { useSelector, useDispatch } from '../redux/store';
 
 // Helper component to render each task with its messages
-const TaskItem = memo(({ task, onOpenSubthread }) => {
+const TaskItem = memo(({ task, onOpenSubthread, onUpdateTask, onDeleteTask }) => {
   const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
   const messagesById = useSelector(selectMessagesById);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(task.status || 'to-do');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Get messages from the task's subthread
   const messageIds = useSelector((state) =>
@@ -41,6 +46,26 @@ const TaskItem = memo(({ task, onOpenSubthread }) => {
 
   // Task is running if status is running
   const isRunning = task.status?.toLowerCase() === 'running';
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(task.id);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const handleStatusChange = () => {
+    if (onUpdateTask && selectedStatus !== task.status) {
+      onUpdateTask(task.id, { status: selectedStatus });
+    }
+    setDialogOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (onDeleteTask) {
+      onDeleteTask(task.id);
+    }
+    setDialogOpen(false);
+  };
 
   const getTaskIcon = (status) => {
     switch (status?.toLowerCase()) {
@@ -163,10 +188,26 @@ const TaskItem = memo(({ task, onOpenSubthread }) => {
             )}
           </div>
 
-          {/* Subthread Actions - show if task has subthread_id */}
-          {task.subthread_id && (
-            <div className="flex-shrink-0">
-              {/* Open in New Tab Button */}
+          {/* Task Actions */}
+          <div className="flex-shrink-0 flex items-center gap-0.5">
+            {/* Three-dot menu button */}
+            <Tooltip title="Task options">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDialogOpen(true);
+                }}
+                className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+              >
+                <Iconify
+                  icon="mdi:dots-horizontal"
+                  className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors"
+                />
+              </button>
+            </Tooltip>
+
+            {/* Open in New Tab Button - show if task has subthread_id */}
+            {task.subthread_id && (
               <Tooltip title={`Open task thread: ${task.task_name}`}>
                 <button
                   onClick={(e) => {
@@ -181,8 +222,8 @@ const TaskItem = memo(({ task, onOpenSubthread }) => {
                   />
                 </button>
               </Tooltip>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -196,6 +237,175 @@ const TaskItem = memo(({ task, onOpenSubthread }) => {
           />
         </div>
       )}
+
+      {/* Task Details Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          className: 'bg-white dark:bg-[#1c1c1c] text-gray-900 dark:text-gray-100',
+        }}
+      >
+        <DialogTitle className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+          <span className="text-base font-semibold">Task Details</span>
+          <IconButton
+            onClick={() => setDialogOpen(false)}
+            size="small"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <Iconify icon="mdi:close" className="w-5 h-5" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent className="space-y-4 pt-4">
+          {/* Task Name */}
+          <div>
+            <Typography variant="caption" className="text-gray-500 dark:text-gray-400 font-medium">
+              Task Name
+            </Typography>
+            <Typography variant="body2" className="mt-1 text-gray-900 dark:text-gray-100">
+              {task.task_name || 'Untitled Task'}
+            </Typography>
+          </div>
+
+          {/* Task ID */}
+          <div>
+            <Typography variant="caption" className="text-gray-500 dark:text-gray-400 font-medium">
+              Task ID
+            </Typography>
+            <div className="flex items-center gap-2 mt-1">
+              <Typography
+                variant="body2"
+                className="font-mono text-xs text-gray-700 dark:text-gray-300 flex-1 truncate"
+              >
+                {task.id}
+              </Typography>
+              <Tooltip title={copySuccess ? 'Copied!' : 'Copy ID'}>
+                <IconButton
+                  onClick={handleCopyId}
+                  size="small"
+                  className={`transition-colors ${
+                    copySuccess
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
+                >
+                  <Iconify icon={copySuccess ? 'mdi:check' : 'mdi:content-copy'} className="w-4 h-4" />
+                </IconButton>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Current Status */}
+          <div>
+            <Typography variant="caption" className="text-gray-500 dark:text-gray-400 font-medium">
+              Current Status
+            </Typography>
+            <div className="flex items-center gap-2 mt-1">
+              <Iconify
+                icon={getTaskIcon(task.status)}
+                className={`w-4 h-4 ${getTaskIconColor(task.status)}`}
+              />
+              <Typography variant="body2" className="text-gray-900 dark:text-gray-100 capitalize">
+                {task.status || 'to-do'}
+              </Typography>
+            </div>
+          </div>
+
+          {/* Assigned Agent */}
+          {task.assigned_agent_name && (
+            <div>
+              <Typography variant="caption" className="text-gray-500 dark:text-gray-400 font-medium">
+                Assigned Agent
+              </Typography>
+              <div className="flex items-center gap-2 mt-1">
+                {agentColors[task.assigned_agent_name] && (
+                  <AgentOrbAvatar
+                    size={20}
+                    agentId={task.assigned_agent_name}
+                    colors={agentColors[task.assigned_agent_name]}
+                    isStatic
+                  />
+                )}
+                <Typography variant="body2" className="text-gray-900 dark:text-gray-100">
+                  {task.assigned_agent_name}
+                </Typography>
+              </div>
+            </div>
+          )}
+
+          {/* Subthread ID */}
+          {task.subthread_id && (
+            <div>
+              <Typography variant="caption" className="text-gray-500 dark:text-gray-400 font-medium">
+                Subthread ID
+              </Typography>
+              <Typography
+                variant="body2"
+                className="mt-1 font-mono text-xs text-gray-700 dark:text-gray-300 truncate"
+              >
+                {task.subthread_id}
+              </Typography>
+            </div>
+          )}
+
+          {/* Change Status */}
+          <div>
+            <FormControl fullWidth size="small" className="mt-2">
+              <InputLabel className="text-gray-700 dark:text-gray-300">Change Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                label="Change Status"
+                className="bg-white dark:bg-[#2c2c2c] text-gray-900 dark:text-gray-100"
+              >
+                <MenuItem value="to-do">To Do</MenuItem>
+                <MenuItem value="ready">Ready</MenuItem>
+                <MenuItem value="running">Running</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
+        </DialogContent>
+
+        <DialogActions className="border-t border-gray-200 dark:border-gray-700 px-6 py-3 gap-2">
+          {/* Delete Button */}
+          <Button
+            onClick={handleDelete}
+            variant="outlined"
+            color="error"
+            size="small"
+            startIcon={<Iconify icon="mdi:delete" />}
+            className="mr-auto"
+          >
+            Delete Task
+          </Button>
+
+          {/* Cancel Button */}
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+          >
+            Cancel
+          </Button>
+
+          {/* Save Button */}
+          <Button
+            onClick={handleStatusChange}
+            variant="contained"
+            size="small"
+            disabled={selectedStatus === task.status}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Update Status
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 });
@@ -206,10 +416,10 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams();
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('running'); // all, running, todo, completed
+  const [statusFilter, setStatusFilter] = useState('all'); // all, running, todo, completed
+  const [hasSetInitialFilter, setHasSetInitialFilter] = useState(false);
 
   const tasks = useSelector(selectTasksByThread(threadId));
-  console.log('tasks', tasks);
   const plan = useSelector(selectPlanByThread(threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
@@ -275,6 +485,42 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
     [dispatch],
   );
 
+  // Handle updating task
+  const handleUpdateTask = useCallback(
+    async (taskId, updates) => {
+      try {
+        // Update task in Redux store
+        dispatch(updateTask({ threadId, taskId, updates }));
+
+        // TODO: Add API call to persist the update to the backend
+        // await axios.patch(`https://cagi.altan.ai/tasks/${taskId}`, updates);
+      } catch (error) {
+        // Error handling would go here
+        // eslint-disable-next-line no-console
+        console.error('Failed to update task:', error);
+      }
+    },
+    [dispatch, threadId],
+  );
+
+  // Handle deleting task
+  const handleDeleteTask = useCallback(
+    async (taskId) => {
+      try {
+        // Remove task from Redux store
+        dispatch(removeTask({ threadId, taskId }));
+
+        // TODO: Add API call to persist the deletion to the backend
+        // await axios.delete(`https://cagi.altan.ai/tasks/${taskId}`);
+      } catch (error) {
+        // Error handling would go here
+        // eslint-disable-next-line no-console
+        console.error('Failed to delete task:', error);
+      }
+    },
+    [dispatch, threadId],
+  );
+
   // Get the first running task to show in collapsed state (from all tasks, not filtered)
   const runningTask = useMemo(() => {
     if (!tasks || tasks.length === 0) return null;
@@ -289,6 +535,24 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
       dispatch(fetchTasks(threadId));
     }
   }, [altanerId, threadId, dispatch]);
+
+  // Set initial filter based on whether there are running tasks
+  useEffect(() => {
+    if (!hasSetInitialFilter && tasks && tasks.length > 0 && !isLoading) {
+      const allTasksWithoutPlan = tasks.filter((task) => !task.plan_id);
+      const hasRunningTasks = allTasksWithoutPlan.some(
+        (task) => task.status?.toLowerCase() === 'running',
+      );
+
+      if (hasRunningTasks) {
+        setStatusFilter('running');
+      } else {
+        setStatusFilter('all');
+      }
+
+      setHasSetInitialFilter(true);
+    }
+  }, [tasks, isLoading, hasSetInitialFilter]);
 
   // Auto-expand on first load if there are active (non-completed) tasks
   useEffect(() => {
@@ -548,6 +812,8 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
                 key={task.id || index}
                 task={task}
                 onOpenSubthread={handleOpenSubthread}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
               />
             ))}
           </div>
