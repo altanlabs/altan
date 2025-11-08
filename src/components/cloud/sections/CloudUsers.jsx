@@ -1,6 +1,7 @@
-import { MoreVertical, Trash2, RefreshCw, Copy, Mail, Chrome, Settings, CheckCircle2, XCircle } from 'lucide-react';
+import { MoreVertical, Trash2, RefreshCw, Copy, Mail, Chrome, Settings, CheckCircle2, XCircle, UserPlus } from 'lucide-react';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 
 import { fetchUsers, deleteUser, selectUsersForCloud } from '../../../redux/slices/cloud';
 import { dispatch, useSelector } from '../../../redux/store';
@@ -76,6 +77,27 @@ const CloudUsers = () => {
     facebook: { enabled: false, client_id: '', secret: '' },
     general: { disable_signup: false, site_url: '', jwt_expiry: '3600', auto_confirm: false },
   });
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState(null);
+  const [registerForm, setRegisterForm] = useState({
+    email: '',
+    password: '',
+    confirm_password: '',
+    auto_confirm: false,
+  });
+  const [cloudUrl, setCloudUrl] = useState('');
+
+  const ensureAxiosAuth = useCallback(() => {
+    try {
+      const authData = localStorage.getItem('oaiauth');
+      if (!authData) return;
+      const { access_token: accessToken } = JSON.parse(authData);
+      if (accessToken) setSession(accessToken, optimai_cloud);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Initial fetch
   useEffect(() => {
@@ -92,16 +114,22 @@ const CloudUsers = () => {
     };
   }, [cloudId]);
 
-  const ensureAxiosAuth = useCallback(() => {
-    try {
-      const authData = localStorage.getItem('oaiauth');
-      if (!authData) return;
-      const { access_token: accessToken } = JSON.parse(authData);
-      if (accessToken) setSession(accessToken, optimai_cloud);
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Fetch cloud URL
+  useEffect(() => {
+    const fetchCloudUrl = async () => {
+      if (!cloudId) return;
+      try {
+        ensureAxiosAuth();
+        const res = await optimai_cloud.get(`/v1/instances/metrics/cloud/${cloudId}`);
+        if (res.data?.cloud_url) {
+          setCloudUrl(res.data.cloud_url);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchCloudUrl();
+  }, [cloudId, ensureAxiosAuth]);
 
   const openAuth = useCallback(async () => {
     if (!cloudId) return;
@@ -223,6 +251,59 @@ const CloudUsers = () => {
     // await dispatch(fetchUsers(cloudId));
   }, [cloudId]);
 
+  const handleRegisterUser = useCallback(async () => {
+    if (!cloudId || !cloudUrl) {
+      setRegisterError('Cloud URL not available');
+      return;
+    }
+    
+    // Validation
+    if (!registerForm.email || !registerForm.password) {
+      setRegisterError('Email and password are required');
+      return;
+    }
+    
+    if (registerForm.password !== registerForm.confirm_password) {
+      setRegisterError('Passwords do not match');
+      return;
+    }
+    
+    if (registerForm.password.length < 6) {
+      setRegisterError('Password must be at least 6 characters');
+      return;
+    }
+    
+    setRegisterLoading(true);
+    setRegisterError(null);
+    
+    try {
+      // Use axios.post with the GoTrue signup endpoint
+      const signupUrl = `${cloudUrl}/auth/v1/signup`;
+      
+      await axios.post(signupUrl, {
+        email: registerForm.email,
+        password: registerForm.password,
+        email_confirm: registerForm.auto_confirm,
+      });
+      
+      // Reset form and close dialog
+      setRegisterForm({
+        email: '',
+        password: '',
+        confirm_password: '',
+        auto_confirm: false,
+      });
+      setRegisterOpen(false);
+      
+      // Refresh users list
+      await dispatch(fetchUsers(cloudId));
+    } catch (err) {
+      setRegisterError(err?.response?.data?.message || err?.message || 'Failed to register user');
+    } finally {
+      setRegisterLoading(false);
+    }
+  }, [cloudId, cloudUrl, registerForm]);
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
@@ -244,6 +325,19 @@ const CloudUsers = () => {
             aria-label="Refresh"
           >
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            className="h-8"
+            onClick={() => {
+              setRegisterOpen(true);
+              setRegisterError(null);
+            }}
+            disabled={!cloudUrl}
+            title={!cloudUrl ? 'Loading cloud configuration...' : 'Register new user'}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Register user
           </Button>
           <Button
             size="sm"
@@ -458,6 +552,84 @@ const CloudUsers = () => {
         onOpenChange={(open) => !open && setSelectedUser(null)}
         onSave={handleSaveUser}
       />
+
+      {/* Register user dialog */}
+      <Dialog
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+      >
+        <DialogContent className="max-w-md">
+          <div className="space-y-4">
+            <DialogTitle>Register new user</DialogTitle>
+            {registerError && (
+              <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                {registerError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm">Email</Label>
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={registerForm.email}
+                  onChange={(e) => setRegisterForm((p) => ({ ...p, email: e.target.value }))}
+                  disabled={registerLoading}
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Password</Label>
+                <Input
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={registerForm.password}
+                  onChange={(e) => setRegisterForm((p) => ({ ...p, password: e.target.value }))}
+                  disabled={registerLoading}
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Confirm password</Label>
+                <Input
+                  type="password"
+                  placeholder="Re-enter password"
+                  value={registerForm.confirm_password}
+                  onChange={(e) => setRegisterForm((p) => ({ ...p, confirm_password: e.target.value }))}
+                  disabled={registerLoading}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm">Auto-confirm email</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Skip email verification
+                  </p>
+                </div>
+                <Switch
+                  checked={registerForm.auto_confirm}
+                  onCheckedChange={(v) => setRegisterForm((p) => ({ ...p, auto_confirm: v }))}
+                  disabled={registerLoading}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setRegisterOpen(false)}
+                disabled={registerLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRegisterUser}
+                disabled={registerLoading}
+              >
+                {registerLoading ? 'Registering…' : 'Register user'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Auth configuration dialog */}
       <Dialog

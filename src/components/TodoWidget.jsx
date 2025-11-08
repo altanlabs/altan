@@ -1,4 +1,5 @@
 import { Tooltip, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import axios from 'axios';
 import { memo, useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -489,15 +490,15 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const handleUpdateTask = useCallback(
     async (taskId, updates) => {
       try {
-        // Update task in Redux store
-        dispatch(updateTask({ threadId, taskId, updates }));
+        // First update the backend
+        await axios.patch(`https://cagi.altan.ai/tasks/${taskId}`, updates);
 
-        // TODO: Add API call to persist the update to the backend
-        // await axios.patch(`https://cagi.altan.ai/tasks/${taskId}`, updates);
+        // Then update Redux store to reflect the changes immediately
+        dispatch(updateTask({ threadId, taskId, updates }));
       } catch (error) {
-        // Error handling would go here
         // eslint-disable-next-line no-console
         console.error('Failed to update task:', error);
+        // TODO: Show error notification to user
       }
     },
     [dispatch, threadId],
@@ -507,15 +508,15 @@ const TodoWidget = ({ threadId, mode = 'standard' }) => {
   const handleDeleteTask = useCallback(
     async (taskId) => {
       try {
-        // Remove task from Redux store
-        dispatch(removeTask({ threadId, taskId }));
+        // First delete from backend
+        await axios.delete(`https://cagi.altan.ai/tasks/${taskId}`);
 
-        // TODO: Add API call to persist the deletion to the backend
-        // await axios.delete(`https://cagi.altan.ai/tasks/${taskId}`);
+        // Then remove from Redux store
+        dispatch(removeTask({ threadId, taskId }));
       } catch (error) {
-        // Error handling would go here
         // eslint-disable-next-line no-console
         console.error('Failed to delete task:', error);
+        // TODO: Show error notification to user
       }
     },
     [dispatch, threadId],
