@@ -76,7 +76,7 @@ const NoCredits = () => {
     if (isProPlan || isGrowthPlan) {
       const fetchGrowthPlans = async () => {
         try {
-          const response = await optimai.get(`/templates/pricing?only_main=${true}`);
+          const response = await optimai_shop.get(`/pricing`);
           const data = response.data.pricing;
           if (data && data.length > 0) {
             const plans = data[0].plans.items;

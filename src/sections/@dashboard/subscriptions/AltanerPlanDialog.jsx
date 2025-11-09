@@ -98,7 +98,7 @@ const AltanerPlanDialog = ({ open, onClose, groupId, currentPlan = null }) => {
     if (open) {
       const fetchPricing = async () => {
         try {
-          const response = await optimai.get('/templates/pricing');
+          const response = await optimai_shop.get('/pricing');
           const filteredPricing = response.data.pricing.map((group) => ({
             ...group,
             plans: {

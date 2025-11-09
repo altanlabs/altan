@@ -1,21 +1,21 @@
+import { Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Check } from 'lucide-react';
 
 import CreditPurchaseSection from '../../components/pricing/CreditPurchaseSection';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Badge } from '../../components/ui/badge';
-import { Separator } from '../../components/ui/separator';
 import { Progress } from '../../components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Separator } from '../../components/ui/separator';
 import {
   selectAccountId,
   selectAccountSubscriptions,
   selectAccountCreditBalance,
 } from '../../redux/slices/general';
 import { openUrl } from '../../utils/auth';
-import { optimai, optimai_shop } from '../../utils/axios';
+import { optimai_shop } from '../../utils/axios';
 
 // Feature lists for different plans
 const GROWTH_FEATURES = [
@@ -73,7 +73,7 @@ export default function SubscribedPricing() {
   useEffect(() => {
     const fetchPricing = async () => {
       try {
-        const response = await optimai.get(`/templates/pricing?only_main=${true}`);
+        const response = await optimai_shop.get('/pricing');
         const data = response.data.pricing;
 
         if (data && data.length > 0) {

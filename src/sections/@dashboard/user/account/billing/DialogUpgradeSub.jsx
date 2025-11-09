@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 
 import useFeedbackDispatch from '../../../../../hooks/useFeedbackDispatch';
 import { updateSubscription } from '../../../../../redux/slices/money';
-import { optimai } from '../../../../../utils/axios';
+import { optimai_shop } from '../../../../../utils/axios';
 
 export default function DialogUpgradeSub({ open, onClose, subscription }) {
   const t = useTheme();
@@ -20,7 +20,7 @@ export default function DialogUpgradeSub({ open, onClose, subscription }) {
 
   useEffect(() => {
     const fetchPricing = async () => {
-      const response = await optimai.get('/templates/pricing');
+      const response = await optimai_shop.get('/pricing');
       const groupPricing = response.data.pricing.find(
         (g) => g.id === subscription?.billing_option?.plan?.group_id,
       );

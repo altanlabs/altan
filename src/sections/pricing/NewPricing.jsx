@@ -13,7 +13,7 @@ import { analytics } from '../../lib/analytics';
 import { selectAccountId } from '../../redux/slices/general';
 import { useSelector } from '../../redux/store';
 import { openUrl } from '../../utils/auth';
-import { optimai, optimai_shop } from '../../utils/axios';
+import { optimai_shop } from '../../utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -239,7 +239,7 @@ export default function NewPricing() {
   useEffect(() => {
     const fetchPricing = async () => {
       try {
-        const response = await optimai.get(`/templates/pricing?only_main=${true}`);
+        const response = await optimai_shop.get(`/pricing`);
         const data = response.data.pricing;
 
         if (data && data.length > 0) {
