@@ -15,19 +15,19 @@ const DEMO_PROJECTS = [
   {
     id: 'demo-1',
     name: 'CRM System',
-    iconUrl: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    iconUrl: 'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
     isDemo: true,
   },
   {
     id: 'demo-2',
     name: 'Task Manager',
-    iconUrl: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    iconUrl: 'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
     isDemo: true,
   },
   {
     id: 'demo-3',
     name: 'Analytics Dashboard',
-    iconUrl: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    iconUrl: 'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
     isDemo: true,
   },
 ];

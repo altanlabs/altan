@@ -175,7 +175,7 @@ const VoiceConversation = ({
 
       try {
         const response = await axios.get(
-          `https://api.altan.ai/platform/agent/${altanAgentId}/public`,
+          `https://platform-api.altan.ai/agent/${altanAgentId}/public`,
         );
         setFetchedAgent(response.data.agent);
       } catch (error) {

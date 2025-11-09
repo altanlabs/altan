@@ -127,7 +127,7 @@ const InterfaceAgentRenderer = ({ description }) => {
           >
             {/* UI Screenshot - Full Space */}
             <img
-              src="https://api.altan.ai/platform/media/544e8ee2-19fc-4f29-aab9-f4d6952dbaf6"
+              src="https://platform-api.altan.ai/media/544e8ee2-19fc-4f29-aab9-f4d6952dbaf6"
               alt="Interface Preview"
               className="w-full h-auto"
             />

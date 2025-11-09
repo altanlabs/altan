@@ -33,7 +33,7 @@ import FormParameter from '../tools/form/FormParameter';
 export const fetchTemplateVersion = async (accountId, templateVersionId) => {
   try {
     const response = await optimai.get(
-      `https://api.altan.ai/platform/account/${accountId}/template-versions/${templateVersionId}`,
+      `https://platform-api.altan.ai/account/${accountId}/template-versions/${templateVersionId}`,
     );
     const { cloned_template } = response.data;
     return cloned_template;

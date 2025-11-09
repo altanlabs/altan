@@ -31,7 +31,7 @@ export default function AgentCardPage() {
       try {
         setLoading(true);
         console.log('Fetching agent:', agentId);
-        const response = await axios.get(`https://api.altan.ai/platform/agent/${agentId}/public`);
+        const response = await axios.get(`https://platform-api.altan.ai/agent/${agentId}/public`);
         console.log('Agent response:', response.data);
         setAgent(response.data.agent);
         setError(null);

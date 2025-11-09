@@ -29,8 +29,8 @@
 
   // Widget configuration
   const WIDGET_CONFIG = {
-    API_BASE_URL: 'https://api.altan.ai/platform/guest',
-    AGENT_API_BASE_URL: 'https://api.altan.ai/platform/agent',
+    API_BASE_URL: 'https://platform-api.altan.ai/guest',
+    AGENT_API_BASE_URL: 'https://platform-api.altan.ai/agent',
     AUTH_BASE_URL: 'https://auth.altan.ai/login/guest',
     ROOM_BASE_URL: 'https://altan.ai/r'
   };

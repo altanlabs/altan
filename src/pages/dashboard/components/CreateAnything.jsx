@@ -52,7 +52,7 @@ function CreateAnything({ handleVoice }) {
   const [loading, setLoading] = useState(false);
   const [selectedType, setSelectedType] = useState('App');
   const [selectedIcon, setSelectedIcon] = useState(
-    'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
   );
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [currentUseCaseIndex, setCurrentUseCaseIndex] = useState(0);

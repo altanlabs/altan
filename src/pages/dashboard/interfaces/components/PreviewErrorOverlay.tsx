@@ -161,7 +161,7 @@ const PreviewErrorOverlay: React.FC<PreviewErrorOverlayProps> = ({ error, sendEr
             onClick={fixWithTarget}
           >
             <img
-              src="https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7"
+              src="https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7"
               className="w-6 h-6 mr-2 rounded-lg"
               alt="AI Icon"
             />

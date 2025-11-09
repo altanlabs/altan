@@ -4,7 +4,7 @@
 
 import type { AgentConfig, VoiceProvider, VoiceSettings } from '../types';
 
-const ALTAN_API_BASE = 'https://api.altan.ai/platform';
+const ALTAN_API_BASE = 'https://platform-api.altan.ai';
 
 /**
  * Fetch public agent configuration

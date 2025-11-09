@@ -14,7 +14,7 @@ import Logo from '../../components/logo';
 // ----------------------------------------------------------------------
 
 const EPIC_INTRO = new Audio(
-  'https://api.altan.ai/platform/media/502fee25-9334-46ac-b7cb-55b4614adde6',
+  'https://platform-api.altan.ai/media/502fee25-9334-46ac-b7cb-55b4614adde6',
 );
 
 const AnimatedVideoLayout = ({ children, disableVolume = false, style = {} }) => {

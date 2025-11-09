@@ -22,13 +22,13 @@ const IconAutocomplete = ({ onChange, value = '' }) => {
   const [openCustomUrlDialog, setOpenCustomUrlDialog] = useState(false);
   const [customUrl, setCustomUrl] = useState('');
   const predefinedIcons = [
-    'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/a2e96123-60d6-412d-a978-24b5f719137d?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/9e7241f3-b86b-414a-9689-03d1b10f417b?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/0a9f6003-f359-4d8d-87ac-ce20db8ff951?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/8b49dc24-4435-42b6-8886-a209ee21f5f0?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/7465afc7-6889-4c84-a621-8edb4159d6e0?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
-    'https://api.altan.ai/platform/media/1c17eca6-bc1e-40ed-97c3-ef2506c61c3a?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/a2e96123-60d6-412d-a978-24b5f719137d?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/9e7241f3-b86b-414a-9689-03d1b10f417b?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/0a9f6003-f359-4d8d-87ac-ce20db8ff951?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/8b49dc24-4435-42b6-8886-a209ee21f5f0?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/7465afc7-6889-4c84-a621-8edb4159d6e0?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+    'https://platform-api.altan.ai/media/1c17eca6-bc1e-40ed-97c3-ef2506c61c3a?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
 
     'https://cdn.jim-nielsen.com/ios/512/metronome-2024-08-13.png',
     'https://cdn.jim-nielsen.com/ios/512/scanner-doc-scan-pdf-document-2024-09-09.png',

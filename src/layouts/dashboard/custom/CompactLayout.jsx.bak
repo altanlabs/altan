@@ -203,8 +203,8 @@ const CompactLayout = ({
             className="fixed left-1/2 aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto pointer-events-none"
             style={{
               backgroundImage: isMobile
-                ? 'url("https://api.altan.ai/platform/media/28c8847e-c46a-4b0e-b602-d374e0fd4e08?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")'
-                : 'url("https://api.altan.ai/platform/media/a9182a1d-fa44-4da0-88d1-7ebd51e78427?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")',
+                ? 'url("https://platform-api.altan.ai/media/28c8847e-c46a-4b0e-b602-d374e0fd4e08?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")'
+                : 'url("https://platform-api.altan.ai/media/a9182a1d-fa44-4da0-88d1-7ebd51e78427?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285")',
               backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center top',

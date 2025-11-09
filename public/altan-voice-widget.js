@@ -4,7 +4,7 @@
 
   // Widget configuration
   const WIDGET_CONFIG = {
-    API_BASE_URL: 'https://api.altan.ai/platform/agent',
+    API_BASE_URL: 'https://platform-api.altan.ai/agent',
     ELEVENLABS_CLIENT_URL: 'https://cdn.skypack.dev/@elevenlabs/client'
   };
 

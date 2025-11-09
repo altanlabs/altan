@@ -6,7 +6,7 @@ import { makeSelectMessageMedia, selectAccount } from '../../../redux/slices/roo
 import { useSelector } from '../../../redux/store.js';
 import Iconify from '../../iconify/Iconify.jsx';
 
-const MEDIA_URL = 'https://api.altan.ai/platform/media/';
+const MEDIA_URL = 'https://platform-api.altan.ai/media/';
 
 const selectAccountId = (state) => selectAccount(state)?.id;
 

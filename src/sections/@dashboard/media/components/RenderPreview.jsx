@@ -253,7 +253,7 @@ const RenderPreview = ({
 
   const handleCopyUrl = useCallback(() => {
     // console.log('media', media);
-    const url = `https://api.altan.ai/platform/media/${media.id}?account_id=${accountId}`;
+    const url = `https://platform-api.altan.ai/media/${media.id}?account_id=${accountId}`;
     navigator.clipboard
       .writeText(url)
       .then(() => {

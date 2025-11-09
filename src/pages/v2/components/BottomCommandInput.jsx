@@ -118,7 +118,7 @@ const BottomCommandInput = () => {
           body: JSON.stringify({
             name: 'New Project',
             idea: inputValue,
-            icon: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+            icon: 'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
             attachments,
             is_public: true,
           }),
@@ -173,7 +173,7 @@ const BottomCommandInput = () => {
         body: JSON.stringify({
           name: 'New Project',
           idea: inputValue,
-          icon: 'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
+          icon: 'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7',
           attachments,
           is_public: true,
         }),

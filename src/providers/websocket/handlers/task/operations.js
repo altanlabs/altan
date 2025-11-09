@@ -7,7 +7,7 @@ import { addTask, updateTask, removeTask, setPlanCompleted } from '../../../../r
 import { dispatch } from '../../../../redux/store';
 
 const SOUND_IN = new Audio(
-  'https://api.altan.ai/platform/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
+  'https://platform-api.altan.ai/media/ba09b912-2681-489d-bfcf-91cc2f67aef2',
 );
 
 /**

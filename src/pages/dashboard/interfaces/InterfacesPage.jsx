@@ -111,7 +111,7 @@ function InterfacesPage() {
                   <img
                     src={
                       ui.cover_url ||
-                      'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7'
+                      'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7'
                     }
                     alt={ui.label}
                     className="w-full h-full object-cover"
@@ -119,7 +119,7 @@ function InterfacesPage() {
                       const target = e.target;
                       target.onerror = null;
                       target.src =
-                        'https://api.altan.ai/platform/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7';
+                        'https://platform-api.altan.ai/media/2262e664-dc6a-4a78-bad5-266d6b836136?account_id=8cd115a4-5f19-42ef-bc62-172f6bff28e7';
                     }}
                   />
                 </div>

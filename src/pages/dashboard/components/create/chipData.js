@@ -13,7 +13,7 @@ export const chipCategories = [
 - Non-scrollable: overflow-hidden on body and html elements
 
 📽️ Background Video Layer
-- Video source (mp4): https://api.altan.ai/platform/media/f0304f08-d06f-4663-982c-df10cf1a456a?account_id=8943b7c8-ca6d-469d-b3d3-3d7c527ae6a5
+- Video source (mp4): https://platform-api.altan.ai/media/f0304f08-d06f-4663-982c-df10cf1a456a?account_id=8943b7c8-ca6d-469d-b3d3-3d7c527ae6a5
 - Classes: absolute inset-0 w-full h-full object-cover
 - Autoplay, muted, loop, playsinline, no controls
 - Place inside a relative container div

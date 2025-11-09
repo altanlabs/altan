@@ -182,7 +182,7 @@ export class OpenAIRealtimeClient implements VoiceClient {
     formData.append('sdp', sdp);
     
     const response = await fetch(
-      `https://api.altan.ai/platform/agent/${this.agentId}/openai-realtime-webrtc`,
+      `https://platform-api.altan.ai/agent/${this.agentId}/openai-realtime-webrtc`,
       {
         method: 'POST',
         body: formData,

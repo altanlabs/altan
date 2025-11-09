@@ -3,7 +3,11 @@ import { useHistory } from 'react-router-dom';
 
 import CompactProjectCard from './CompactProjectCard';
 import Iconify from '../../../components/iconify/Iconify';
-import { selectAltanersList, selectAltanersLoading } from '../../../redux/slices/altaners';
+import {
+  selectAltanersList,
+  selectAltanersLoading,
+  selectAltanersInitialized,
+} from '../../../redux/slices/altaners';
 import { useSelector } from '../../../redux/store';
 
 const QuickAccessSection = () => {
@@ -15,6 +19,7 @@ const QuickAccessSection = () => {
   // Get data from Redux
   const altaners = useSelector(selectAltanersList);
   const altanersLoading = useSelector(selectAltanersLoading);
+  const altanersInitialized = useSelector(selectAltanersInitialized);
 
   // Filter and sort projects
   const sortedProjects = useMemo(() => {
@@ -151,7 +156,7 @@ const QuickAccessSection = () => {
           </div>
         </div>
 
-        {altanersLoading ? (
+        {altanersLoading || !altanersInitialized ? (
           <ProjectSkeleton />
         ) : filteredProjects.length > 0 ? (
           <>

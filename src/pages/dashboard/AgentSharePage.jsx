@@ -27,7 +27,7 @@ export default function AgentSharePage() {
     const fetchAgent = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://api.altan.ai/platform/agent/${agentId}/public`);
+        const response = await axios.get(`https://platform-api.altan.ai/agent/${agentId}/public`);
         setAgent(response.data.agent);
 
         setError(null);

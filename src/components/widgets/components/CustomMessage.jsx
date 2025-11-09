@@ -18,7 +18,7 @@ const CustomMessage = ({ widget }) => {
     <RenderPreview
       file={{
         name: widget.media[0].media.name,
-        url: `https://api.altan.ai/platform/media/${widget.media[0].media.id}`,
+        url: `https://platform-api.altan.ai/media/${widget.media[0].media.id}`,
         type: widget.media[0].media.type.split('/').pop(),
       }}
     // onDelete={handleDeleteMedia}

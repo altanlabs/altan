@@ -71,7 +71,7 @@ const NavVertical = ({ openNav, onCloseNav }) => {
         for (const altaner of altaners) {
           const icon =
             altaner?.icon_url ||
-            'https://api.altan.ai/platform/media/07302874-5d8b-46e5-ad18-6570f8ba8258?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285';
+            'https://platform-api.altan.ai/media/07302874-5d8b-46e5-ad18-6570f8ba8258?account_id=9d8b4e5a-0db9-497a-90d0-660c0a893285';
           items.push({
             title: altaner.name,
             path: `/altaners/${altaner.id}`,
