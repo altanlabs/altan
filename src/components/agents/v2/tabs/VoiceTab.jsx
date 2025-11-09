@@ -17,35 +17,67 @@ const normalizeProvider = (provider) => {
   return 'elevenlabs'; // default fallback
 };
 
+// Helper function to build elevenlabs_config from settings
+const buildElevenlabsConfig = (settings) => {
+  const elevenlabsFields = [
+    'model_id',
+    'voice_id',
+    'name',
+    'preview_url',
+    'agent_output_audio_format',
+    'optimize_streaming_latency',
+    'stability',
+    'speed',
+    'similarity_boost',
+    'pronunciation_dictionary_locators',
+  ];
+
+  const config = {};
+  elevenlabsFields.forEach((field) => {
+    if (settings[field] !== undefined) {
+      config[field] = settings[field];
+    }
+  });
+  return config;
+};
+
 function VoiceTab({ agentData, onFieldChange }) {
   const [voiceProvider, setVoiceProvider] = useState(
     normalizeProvider(agentData?.voice?.provider),
   );
   const [voiceSettings, setVoiceSettings] = useState(() => {
-    const settings = agentData?.voice || {
-      provider: 'elevenlabs',
+    // New nested structure: elevenlabs_config and openai_config inside voice object
+    const voiceData = agentData?.voice || {};
+    const elevenlabsConfig = voiceData?.elevenlabs_config || {
       model_id: 'eleven_flash_v2_5',
       voice_id: 'cjVigY5qzO86Huf0OWal',
-      openai_config: {
-        voice_id: 'alloy',
-        preview_url: 'https://cdn.openai.com/API/voice-previews/alloy.flac',
-      },
-      supported_voices: [],
+      name: '',
+      preview_url: null,
       agent_output_audio_format: 'pcm_24000',
       optimize_streaming_latency: 3,
       stability: 0.5,
       speed: 1.0,
       similarity_boost: 0.8,
       pronunciation_dictionary_locators: [],
-      meta_data: {
+    };
+
+    const openaiConfig = voiceData?.openai_config || {
+      voice_id: 'alloy',
+      preview_url: 'https://cdn.openai.com/API/voice-previews/alloy.flac',
+      model: 'gpt-realtime',
+    };
+
+    const provider = normalizeProvider(voiceData.provider);
+
+    // Combine into a unified settings object for component compatibility
+    return {
+      provider,
+      ...elevenlabsConfig,
+      openai_config: openaiConfig,
+      meta_data: voiceData.meta_data || {
         language: 'en',
         language_presets: {},
       },
-    };
-    // Normalize the provider
-    return {
-      ...settings,
-      provider: normalizeProvider(settings.provider),
     };
   });
 
@@ -61,32 +93,39 @@ function VoiceTab({ agentData, onFieldChange }) {
       };
       setVoiceSettings(updatedSettings);
       setVoiceProvider(normalizedProvider);
-      onFieldChange('voice', updatedSettings);
+
+      // Update voice with nested elevenlabs_config
+      onFieldChange({
+        voice: {
+          provider: normalizedProvider,
+          meta_data: updatedSettings.meta_data,
+          elevenlabs_config: buildElevenlabsConfig(updatedSettings),
+        },
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentData?.voice?.provider]);
 
-  // Migrate legacy `openai` string to `openai_config`
-  useEffect(() => {
-    if (voiceSettings?.openai && !voiceSettings?.openai_config) {
-      const id = voiceSettings.openai;
-      const migrated = {
-        ...voiceSettings,
-        openai_config: {
-          voice_id: id,
-          preview_url: `https://cdn.openai.com/API/voice-previews/${id}.flac`,
-        },
-      };
-      delete migrated.openai;
-      setVoiceSettings(migrated);
-      onFieldChange('voice', migrated);
-    }
-  }, [voiceSettings, onFieldChange]);
-
   const handleSettingChange = (field, value) => {
     const newSettings = { ...voiceSettings, [field]: value };
     setVoiceSettings(newSettings);
-    onFieldChange('voice', newSettings);
+
+    // Build the voice object with nested configs
+    const voiceUpdate = {
+      provider: newSettings.provider,
+      meta_data: newSettings.meta_data,
+      elevenlabs_config: buildElevenlabsConfig(newSettings),
+    };
+
+    // Add openai_config if changed
+    if (field === 'openai_config') {
+      voiceUpdate.openai_config = value;
+    } else if (newSettings.openai_config) {
+      voiceUpdate.openai_config = newSettings.openai_config;
+    }
+
+    // Send voice update with nested configs
+    onFieldChange({ voice: voiceUpdate });
   };
 
   const handleProviderChange = (event, newProvider) => {
@@ -95,7 +134,16 @@ function VoiceTab({ agentData, onFieldChange }) {
       setVoiceProvider(normalizedProvider);
       const newSettings = { ...voiceSettings, provider: normalizedProvider };
       setVoiceSettings(newSettings);
-      onFieldChange('voice', newSettings);
+
+      // Send voice update with nested configs
+      onFieldChange({
+        voice: {
+          provider: normalizedProvider,
+          meta_data: newSettings.meta_data,
+          elevenlabs_config: buildElevenlabsConfig(newSettings),
+          openai_config: newSettings.openai_config,
+        },
+      });
     }
   };
 
@@ -169,7 +217,6 @@ function VoiceTab({ agentData, onFieldChange }) {
 
             {voiceProvider === 'openai' && (
               <OpenAIVoiceConfig
-                agentData={agentData}
                 settings={voiceSettings}
                 onSettingChange={handleSettingChange}
               />
@@ -181,7 +228,14 @@ function VoiceTab({ agentData, onFieldChange }) {
                 settings={voiceSettings}
                 onUpdate={(newSettings) => {
                   setVoiceSettings(newSettings);
-                  onFieldChange('voice', newSettings);
+                  onFieldChange({
+                    voice: {
+                      provider: newSettings.provider,
+                      meta_data: newSettings.meta_data,
+                      elevenlabs_config: buildElevenlabsConfig(newSettings),
+                      openai_config: newSettings.openai_config,
+                    },
+                  });
                 }}
               />
             )}

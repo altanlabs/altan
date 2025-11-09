@@ -64,7 +64,7 @@ export function detectVoiceProvider(agentConfig: AgentConfig): VoiceProvider {
   }
 
   // Check for OpenAI config
-  if (voiceConfig.openai_config || voiceConfig.openai) {
+  if (voiceConfig.openai_config) {
     return 'openai';
   }
 
@@ -93,15 +93,17 @@ export function getVoiceSettings(agentConfig: AgentConfig, provider: VoiceProvid
   const voiceConfig = agentConfig?.voice || {};
 
   if (provider === 'openai') {
+    const openaiConfig = voiceConfig.openai_config || {};
     return {
-      voice: voiceConfig.openai || 'alloy',
-      model: 'gpt-4o-realtime-preview',
+      voice: openaiConfig.voice_id || 'alloy',
+      model: openaiConfig.model || 'gpt-realtime',
     };
   }
 
   // ElevenLabs settings
+  const elevenlabsConfig = voiceConfig.elevenlabs_config || {};
   return {
-    voice_id: voiceConfig.voice_id,
-    model_id: voiceConfig.model_id || 'eleven_flash_v2_5',
+    voice_id: elevenlabsConfig.voice_id,
+    model_id: elevenlabsConfig.model_id || 'eleven_flash_v2_5',
   };
 }

@@ -8,12 +8,6 @@ import DeleteDialog from '../../../components/dialogs/DeleteDialog';
 import FormDialog from '../../../components/FormDialog';
 import Iconify from '../../../components/iconify/Iconify';
 import IconRenderer from '../../../components/icons/IconRenderer';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
 import { deleteAltanerById, updateAltanerById } from '../../../redux/slices/altaners';
 import { selectSortedAgents, selectAccount } from '../../../redux/slices/general';
 
@@ -60,12 +54,12 @@ const CompactProjectCard = ({ altaner }) => {
 
   // Extract cloud component (base component with cloud_id)
   const cloudComponent = safeComponents.find(
-    (comp) => comp && comp.type === 'base' && comp.cloud_id
+    (comp) => comp && comp.type === 'base' && comp.cloud_id,
   );
 
   // Extract agents component with ids
   const agentsComponent = safeComponents.find(
-    (comp) => comp && comp.type === 'agents' && comp.params?.ids?.length > 0
+    (comp) => comp && comp.type === 'agents' && comp.params?.ids?.length > 0,
   );
 
   // Get actual agent objects from Redux based on IDs in the component
@@ -108,7 +102,7 @@ const CompactProjectCard = ({ altaner }) => {
         history.push(`/project/${id}/c/${cloudComponent.id}`);
       }
     },
-    [cloudComponent, history, id]
+    [cloudComponent, history, id],
   );
 
   const handleMemberClick = useCallback(
@@ -120,7 +114,7 @@ const CompactProjectCard = ({ altaner }) => {
       }
       // For users, we could add navigation or other functionality later
     },
-    [agentsComponent, history, id]
+    [agentsComponent, history, id],
   );
 
   const handleContextMenu = useCallback((event) => {
@@ -325,53 +319,62 @@ const CompactProjectCard = ({ altaner }) => {
       />
 
       {/* Context Menu - Rendered via Portal */}
-      {menuOpen && contextMenu && ReactDOM.createPortal(
-        <>
-          {/* Backdrop to close menu when clicking outside */}
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={handleCloseMenu}
-          />
-          {/* Custom Context Menu */}
-          <div
-            className="fixed z-[9999] min-w-[12rem] rounded-lg border bg-white dark:bg-gray-800 p-1 shadow-xl"
-            style={{
-              top: `${contextMenu.mouseY}px`,
-              left: `${contextMenu.mouseX}px`,
-            }}
-          >
-            <button
-              onClick={handleTogglePin}
-              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+      {menuOpen &&
+        contextMenu &&
+        ReactDOM.createPortal(
+          <>
+            {/* Backdrop to close menu when clicking outside */}
+            <div
+              className="fixed inset-0 z-[9998]"
+              onClick={handleCloseMenu}
+            />
+            {/* Custom Context Menu */}
+            <div
+              className="fixed z-[9999] min-w-[12rem] rounded-lg border bg-white dark:bg-gray-800 p-1 shadow-xl"
+              style={{
+                top: `${contextMenu.mouseY}px`,
+                left: `${contextMenu.mouseX}px`,
+              }}
             >
-              <Iconify
-                icon={is_pinned ? "mdi:pin-off" : "mdi:pin"}
-                width={16}
-                className="mr-2"
-              />
-              {is_pinned ? 'Unpin' : 'Pin'}
-            </button>
-            <button
-              onClick={handleEdit}
-              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <Iconify icon="mdi:pencil" width={16} className="mr-2" />
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm text-red-600 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <Iconify icon="mdi:delete" width={16} className="mr-2" />
-              Delete
-            </button>
-          </div>
-        </>,
-        document.body
-      )}
+              <button
+                onClick={handleTogglePin}
+                className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Iconify
+                  icon={is_pinned ? 'mdi:pin-off' : 'mdi:pin'}
+                  width={16}
+                  className="mr-2"
+                />
+                {is_pinned ? 'Unpin' : 'Pin'}
+              </button>
+              <button
+                onClick={handleEdit}
+                className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Iconify
+                  icon="mdi:pencil"
+                  width={16}
+                  className="mr-2"
+                />
+                Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm text-red-600 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <Iconify
+                  icon="mdi:delete"
+                  width={16}
+                  className="mr-2"
+                />
+                Delete
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </>
   );
 };
 
 export default memo(CompactProjectCard);
-

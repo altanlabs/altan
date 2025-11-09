@@ -408,14 +408,22 @@ const CreateMode = memo(({ handleVoice, onGoBack }) => {
         description: description,
         voice: formData.voice
           ? {
-              name: formData.voice.name,
-              voice_id: formData.voice.voice_id,
-              model_id: 'eleven_flash_v2_5',
-              agent_output_audio_format: 'pcm_16000',
-              optimize_streaming_latency: 4,
-              stability: 0.5,
-              speed: 1,
-              similarity_boost: 0.8,
+              provider: 'elevenlabs',
+              meta_data: {
+                language: 'en',
+                language_presets: {},
+              },
+              elevenlabs_config: {
+                name: formData.voice.name,
+                voice_id: formData.voice.voice_id,
+                model_id: 'eleven_flash_v2_5',
+                agent_output_audio_format: 'pcm_16000',
+                optimize_streaming_latency: 4,
+                stability: 0.5,
+                speed: 1,
+                similarity_boost: 0.8,
+                pronunciation_dictionary_locators: [],
+              },
             }
           : null,
         meta_data: {

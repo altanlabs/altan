@@ -6,15 +6,33 @@
 // Agent Configuration Types
 // ============================================================================
 
+export interface ElevenLabsConfig {
+  model_id?: string;
+  voice_id?: string;
+  name?: string;
+  preview_url?: string;
+  agent_output_audio_format?: string;
+  optimize_streaming_latency?: number;
+  stability?: number;
+  speed?: number;
+  similarity_boost?: number;
+  pronunciation_dictionary_locators?: string[];
+}
+
+export interface OpenAIConfig {
+  voice_id?: string;
+  preview_url?: string;
+  model?: string;
+}
+
 export interface VoiceConfig {
   provider?: string;
-  voice_id?: string;
-  model_id?: string;
-  openai?: string;
-  openai_config?: Record<string, unknown>;
+  elevenlabs_config?: ElevenLabsConfig;
+  openai_config?: OpenAIConfig;
   elevenlabs_agent_id?: string;
   meta_data?: {
     language?: string;
+    language_presets?: Record<string, unknown>;
     [key: string]: unknown;
   };
 }

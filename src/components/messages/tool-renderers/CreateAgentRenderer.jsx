@@ -198,10 +198,10 @@ const CreateAgentRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: to
               )}
               {/* Voice & LLM info */}
               <div className="flex items-center gap-2 mt-1">
-                {agentData.voice?.name && (
+                {agentData.voice?.elevenlabs_config?.name && (
                   <span className="inline-flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-500">
                     <Iconify icon="mdi:microphone" className="w-3 h-3" />
-                    {agentData.voice.name}
+                    {agentData.voice.elevenlabs_config.name}
                   </span>
                 )}
                 {agentData.llm_config && (

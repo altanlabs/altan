@@ -13,6 +13,11 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
@@ -102,12 +107,23 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   // Default test drawer to closed when inside an altaner/project context
   const [showTestDrawer, setShowTestDrawer] = useState(!altanerComponentId);
   const [initialMessage, setInitialMessage] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showNavigationWarning, setShowNavigationWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
   const chatPanelRef = useRef(null);
   const messageProcessedRef = useRef(false);
+  const originalDataRef = useRef(null);
 
   // Handle tab change with URL update
   const handleTabChange = useCallback(
     (tabId) => {
+      if (hasUnsavedChanges) {
+        setPendingNavigation({ type: 'tab', data: tabId });
+        setShowNavigationWarning(true);
+        return;
+      }
+
       setActiveTab(tabId);
 
       // Update URL with tab parameter
@@ -122,7 +138,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
       history.push(newPath, { replace: true });
     },
-    [location.pathname, location.search, history],
+    [location.pathname, location.search, history, hasUnsavedChanges],
   );
 
   useEffect(() => {
@@ -134,6 +150,8 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   useEffect(() => {
     if (currentAgent) {
       setAgentData(currentAgent);
+      originalDataRef.current = currentAgent;
+      setHasUnsavedChanges(false);
 
       // Check for message query param (only process once)
       if (!messageProcessedRef.current && currentAgentCreatorRoomId) {
@@ -170,29 +188,113 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
     }
-  }, [location.search, location.pathname, activeTab, initialMessage]);
-
-  const timeoutRef = useRef();
-  const debouncedUpdateAgent = useCallback(
-    (id, data) => {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        dispatch(updateAgent(id, data));
-      }, 500);
-    },
-    [dispatch],
-  );
+  }, [location.search, activeTab, initialMessage]);
 
   const handleFieldChange = useCallback(
     (field, value) => {
       if (agentData) {
-        const updatedData = { ...agentData, [field]: value };
-        setAgentData(updatedData);
-        debouncedUpdateAgent(agentData.id, { [field]: value });
+        // Support batch updates: if field is an object, treat it as multiple fields
+        if (typeof field === 'object' && field !== null && value === undefined) {
+          const updates = field;
+          const updatedData = { ...agentData, ...updates };
+          setAgentData(updatedData);
+          setHasUnsavedChanges(true);
+        } else {
+          // Single field update
+          const updatedData = { ...agentData, [field]: value };
+          setAgentData(updatedData);
+          setHasUnsavedChanges(true);
+        }
       }
     },
-    [agentData, debouncedUpdateAgent],
+    [agentData],
   );
+
+  const handleSave = useCallback(async () => {
+    if (!agentData || !hasUnsavedChanges) return;
+
+    try {
+      setIsSaving(true);
+      await dispatch(updateAgent(agentData.id, agentData));
+      originalDataRef.current = agentData;
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save agent:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [agentData, hasUnsavedChanges, dispatch]);
+
+  const handleDiscardChanges = useCallback(() => {
+    if (originalDataRef.current) {
+      setAgentData(originalDataRef.current);
+      setHasUnsavedChanges(false);
+    }
+  }, []);
+
+  // Keyboard shortcut for save (Cmd+S / Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !isSaving) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges, isSaving, handleSave]);
+
+  // Prevent browser tab close/refresh with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleConfirmNavigation = useCallback(() => {
+    setShowNavigationWarning(false);
+
+    if (pendingNavigation) {
+      if (pendingNavigation.type === 'tab') {
+        // Proceed with tab change
+        const tabId = pendingNavigation.data;
+        setActiveTab(tabId);
+
+        const newSearchParams = new URLSearchParams(location.search);
+        if (tabId === 'agent') {
+          newSearchParams.delete('tab');
+        } else {
+          newSearchParams.set('tab', tabId);
+        }
+
+        const newSearch = newSearchParams.toString();
+        const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+        history.push(newPath, { replace: true });
+      } else if (pendingNavigation.type === 'back') {
+        // Proceed with going back
+        onGoBack();
+      }
+
+      setPendingNavigation(null);
+      setHasUnsavedChanges(false);
+    }
+  }, [pendingNavigation, location.pathname, location.search, history, onGoBack]);
+
+  const handleCancelNavigation = useCallback(() => {
+    setShowNavigationWarning(false);
+    setPendingNavigation(null);
+  }, []);
 
   const handleDelete = () => {
     dispatchWithFeedback(deleteAccountAgent(currentAgent.id), {
@@ -205,8 +307,13 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
   };
 
   const handleGoBack = useCallback(async () => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation({ type: 'back' });
+      setShowNavigationWarning(true);
+      return;
+    }
     onGoBack();
-  }, [onGoBack]);
+  }, [onGoBack, hasUnsavedChanges]);
 
   const handleCopyToClipboard = async (text, label) => {
     try {
@@ -214,6 +321,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
       setCopySuccess(`${label} copied to clipboard!`);
       setTimeout(() => setCopySuccess(''), 3000);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Failed to copy text: ', err);
     }
   };
@@ -236,6 +344,7 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         // Refresh the page to update the agent data with the new template
         window.location.reload();
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Failed to create template:', error);
       }
     } else {
@@ -881,6 +990,61 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
         isSubmitting={isSubmitting}
         message="Are you sure you want to delete this agent? This action can't be undone."
       />
+
+      {/* Navigation Warning Dialog */}
+      <Dialog
+        open={showNavigationWarning}
+        onClose={handleCancelNavigation}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Iconify
+              icon="eva:alert-triangle-outline"
+              sx={{ color: 'warning.main', fontSize: '1.5rem' }}
+            />
+            Unsaved Changes
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You have unsaved changes. Do you want to save them before leaving?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleCancelNavigation}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmNavigation}
+            color="error"
+            variant="outlined"
+          >
+            Leave Without Saving
+          </Button>
+          <Button
+            onClick={async () => {
+              await handleSave();
+              handleConfirmNavigation();
+            }}
+            color="primary"
+            variant="contained"
+            startIcon={
+              <Iconify
+                icon="eva:save-outline"
+                sx={{ fontSize: '1rem' }}
+              />
+            }
+          >
+            Save and Leave
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {currentAgent && (
         <ShareAgentDialog
           open={shareDialogOpen}
@@ -921,6 +1085,87 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
           {copySuccess}
         </Alert>
       </Snackbar>
+
+      {/* Floating Save Card */}
+      {hasUnsavedChanges && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1300,
+            animation: 'slideUp 0.3s ease-out',
+            '@keyframes slideUp': {
+              from: {
+                opacity: 0,
+                transform: 'translateX(-50%) translateY(20px)',
+              },
+              to: {
+                opacity: 1,
+                transform: 'translateX(-50%) translateY(0)',
+              },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              px: 3,
+              py: 1.5,
+              bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+              border: 1,
+              borderColor: theme.palette.mode === 'dark' ? 'grey.700' : 'grey.300',
+              borderRadius: 3,
+              boxShadow: theme.shadows[8],
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify
+                icon="eva:alert-circle-fill"
+                sx={{ color: 'warning.main', fontSize: '1.25rem' }}
+              />
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 500 }}
+              >
+                Unsaved changes
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                variant="text"
+                onClick={handleDiscardChanges}
+                disabled={isSaving}
+                sx={{ minWidth: 'auto', px: 2 }}
+              >
+                Discard
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleSave}
+                disabled={isSaving}
+                startIcon={
+                  isSaving ? null : (
+                    <Iconify
+                      icon="eva:save-outline"
+                      sx={{ fontSize: '1rem' }}
+                    />
+                  )
+                }
+                sx={{ minWidth: 'auto', px: 2 }}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 
