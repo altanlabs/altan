@@ -3,7 +3,6 @@ import React, { memo, useEffect } from 'react';
 import ThreadsHistory from './ThreadsHistory.jsx';
 import {
   fetchRoomAllThreads,
-  fetchRoomParent,
   selectRoomStateLoading,
   selectRoomStateInitialized,
 } from '../../redux/slices/room';
@@ -28,11 +27,7 @@ const Threads = ({
   const parentThreadLoading = useSelector(selectParentThreadLoading);
   const allThreadsLoading = useSelector(selectAllThreadsLoading);
 
-  useEffect(() => {
-    if (!parentThreadInitialized && !parentThreadLoading) {
-      dispatch(fetchRoomParent());
-    }
-  }, [parentThreadInitialized, parentThreadLoading]);
+  // Main thread is now fetched within fetchRoom, no need for separate effect
 
   useEffect(() => {
     if (!allThreadsInitialized && !allThreadsLoading) {

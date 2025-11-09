@@ -3,8 +3,6 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 import { truncate } from 'lodash';
 import { createCachedSelector } from 're-reselect';
 
-import { ROOM_ALL_THREADS_GQ, ROOM_GENERAL_GQ, ROOM_PARENT_THREAD_GQ } from './gqspecs/room';
-import { THREAD_GENERAL_GQ, THREAD_MESSAGES_GQ } from './gqspecs/thread';
 import { setPreviewMode } from './previewControl';
 import { analytics } from '../../lib/analytics';
 import {
@@ -14,6 +12,12 @@ import {
   getNestedProperty,
 } from '../helpers/memoize';
 import { paginateCollection } from './utils/collections';
+import {
+  paginateV2Collection,
+  transformRoom,
+  transformThread,
+  transformRoomMember,
+} from './utils/v2Transformers';
 import { optimai, optimai_room, optimai_agent, optimai_integration } from '../../utils/axios';
 
 const SOUND_OUT = new Audio('https://storage.googleapis.com/logos-chatbot-optimai/out.mp3');
@@ -389,7 +393,10 @@ const extractMessagesFromThread = (state, thread) => {
     messagesContentById[messageId] = message.text;
 
     // Process executions
-    const executions = message.executions?.items ?? null;
+    // v2 API returns executions as array directly, GQ returns executions.items
+    const executions = Array.isArray(message.executions)
+      ? message.executions
+      : (message.executions?.items ?? null);
     if (executions) {
       messagesExecutions[messageId] = [];
       for (const execution of executions) {
@@ -399,7 +406,8 @@ const extractMessagesFromThread = (state, thread) => {
     }
 
     // Process message parts
-    const parts = message.parts?.items ?? null;
+    // v2 API returns parts as array directly, GQ returns parts.items
+    const parts = Array.isArray(message.parts) ? message.parts : (message.parts?.items ?? null);
     if (parts) {
       for (const rawPart of parts) {
         // Set message_id if not present
@@ -426,6 +434,14 @@ const extractMessagesFromThread = (state, thread) => {
       resortMessageParts(state, messageId);
     }
 
+    // Normalize v2 API format: ensure reactions and media are in { items: [] } format
+    if (Array.isArray(message.reactions)) {
+      message.reactions = { items: message.reactions };
+    }
+    if (Array.isArray(message.media)) {
+      message.media = { items: message.media };
+    }
+
     delete message.text;
     delete message.executions;
     delete message.parts; // Also clean up parts from the message object
@@ -448,10 +464,18 @@ const extractMessagesFromThread = (state, thread) => {
     }
   }
   state.messages.byId = { ...state.messages.byId, ...messagesById };
-  state.messages.allIds = [...state.messages.allIds, ...Object.keys(messagesById)];
+  // Only add message IDs that don't already exist to prevent duplicates
+  const newMessageIds = Object.keys(messagesById).filter(
+    (id) => !state.messages.allIds.includes(id),
+  );
+  state.messages.allIds = [...state.messages.allIds, ...newMessageIds];
   state.messagesExecutions = { ...state.messagesExecutions, ...messagesExecutions };
   state.executions.byId = { ...state.executions.byId, ...executionsById };
-  state.executions.allIds = [...state.executions.allIds, ...Object.keys(executionsById)];
+  // Only add execution IDs that don't already exist to prevent duplicates
+  const newExecutionIds = Object.keys(executionsById).filter(
+    (id) => !state.executions.allIds.includes(id),
+  );
+  state.executions.allIds = [...state.executions.allIds, ...newExecutionIds];
   state.messagesContent = { ...state.messagesContent, ...messagesContentById };
 };
 
@@ -669,6 +693,10 @@ const slice = createSlice({
         delete thread.messages.allIds;
         if (!state.threads.byId[tId]) {
           state.threads.byId[tId] = thread;
+          // Add to allIds if not already present
+          if (!state.threads.allIds.includes(tId)) {
+            state.threads.allIds.push(tId);
+          }
         } else {
           mergeThreads(state.threads.byId[tId], thread);
         }
@@ -680,7 +708,9 @@ const slice = createSlice({
     },
     setParentThread: (state, action) => {
       const thread = action.payload;
-      const tempThread = handleThread(thread);
+      // Check if thread is already in v2 format (has messages.byId instead of messages.items)
+      const isV2Format = thread.messages?.byId !== undefined;
+      const tempThread = isV2Format ? thread : handleThread(thread);
       extractMessagesFromThread(state, tempThread);
       if (!state.threads.byId[thread.id]) {
         state.threads.byId[thread.id] = tempThread;
@@ -741,7 +771,9 @@ const slice = createSlice({
         if (!state.threads.allIds.includes(thread.id)) {
           state.threads.allIds.push(thread.id);
         }
-        const tempThread = handleThread(thread);
+        // Check if thread is already in v2 format (has messages.byId instead of messages.items)
+        const isV2Format = thread.messages?.byId !== undefined;
+        const tempThread = isV2Format ? thread : handleThread(thread);
         extractMessagesFromThread(state, tempThread);
         delete tempThread.messages.byId;
         delete tempThread.messages.allIds;
@@ -769,8 +801,32 @@ const slice = createSlice({
       }
       const thread = state.threads.byId[id];
       if (thread) {
+        console.log('[addMessages] Before paginateCollection:', {
+          threadId: id,
+          messageCount: messages.items.length,
+          has_next_page: messages.has_next_page,
+          next_cursor: messages.next_cursor,
+        });
+
         const { byId, allIds, paginationInfo } = paginateCollection(messages);
-        Object.assign(thread.messages.paginationInfo, paginationInfo);
+
+        console.log('[addMessages] After paginateCollection:', {
+          threadId: id,
+          paginationInfo,
+          existingPagination: thread.messages.paginationInfo,
+        });
+
+        // Ensure paginationInfo exists before assigning
+        if (!thread.messages.paginationInfo) {
+          thread.messages.paginationInfo = {};
+        }
+        if (paginationInfo) {
+          Object.assign(thread.messages.paginationInfo, paginationInfo);
+          console.log(
+            '[addMessages] Final pagination after assign:',
+            thread.messages.paginationInfo,
+          );
+        }
         extractMessagesFromThread(state, { messages: { byId, allIds } });
       } else {
         console.warn(`Thread with id '${id}' not found.`);
@@ -1414,7 +1470,7 @@ const slice = createSlice({
         }
       }
     },
-    switchToThread: (state, action) => {
+    switchToThreadReducer: (state, action) => {
       const { threadId, threadName } = action.payload;
 
       if (!threadId) {
@@ -2279,7 +2335,6 @@ export const {
   updateTab,
   clearTabs,
   loadTabs,
-  switchToThread,
   // Voice conversation actions
   startVoiceConversation,
   setVoiceConversationConnecting,
@@ -3211,34 +3266,64 @@ export const fetchAuthorizationRequests =
     }
   };
 
-export const fetchRoomParent = () => async (dispatch, getState) => {
-  try {
-    const roomId = selectRoomId(getState());
-    dispatch(slice.actions.setLoading('mainThread'));
-    const response = await optimai_room.post(`/${roomId}`, ROOM_PARENT_THREAD_GQ);
-    const room = response.data;
-    dispatch(slice.actions.setParentThread(room.threads.items[0]));
-    return Promise.resolve('success');
-  } catch (e) {
-    console.error('error fetching room', e);
-    return Promise.reject(e);
-  }
-};
-
 export const fetchRoom =
   ({ roomId, user, guest }) =>
   async (dispatch) => {
     try {
       dispatch(slice.actions.setLoading('room'));
-      const response = await optimai_room.post(`/${roomId}`, ROOM_GENERAL_GQ);
-      const room = response.data;
-      dispatch(slice.actions.setRoom({ room, guest, user }));
+      dispatch(slice.actions.setLoading('mainThread'));
 
-      // Immediately fetch main thread to avoid race condition
-      dispatch(fetchRoomParent());
+      // OPTIMIZATION: Parallelize room and members fetch (both only need roomId)
+      const [roomResponse, membersResponse] = await Promise.all([
+        optimai_room.get(`/v2/rooms/${roomId}`),
+        optimai_room.get(`/v2/rooms/${roomId}/members?limit=100`),
+      ]);
 
-      // Fetch authorization requests for this room
-      dispatch(fetchAuthorizationRequests(roomId));
+      const room = transformRoom(roomResponse.data);
+      const members = membersResponse.data.members.map(transformRoomMember);
+      const mainThreadId = roomResponse.data.main_thread_id;
+
+      // Format members in the old GQ format (with items array) for setRoom reducer
+      const membersFormatted = {
+        items: members,
+      };
+
+      // Set room state (without threads - lazy loaded)
+      dispatch(
+        slice.actions.setRoom({
+          room: {
+            ...room,
+            members: membersFormatted,
+            events: { items: [] },
+            threads: { items: [] },
+          },
+          guest,
+          user,
+        }),
+      );
+
+      // OPTIMIZATION: Parallelize main thread fetch and auth requests
+      // (now that we have main_thread_id from room response)
+      const [threadResponse, messagesResponse] = await Promise.all([
+        optimai_room.get(`/v2/threads/${mainThreadId}`),
+        optimai_room.get(`/v2/threads/${mainThreadId}/messages?limit=25`),
+        // Fire and forget auth requests (no await needed)
+        dispatch(fetchAuthorizationRequests(roomId)),
+      ]);
+
+      const thread = transformThread(threadResponse.data);
+      const messagesData = paginateV2Collection(
+        messagesResponse.data.messages,
+        messagesResponse.data.pagination,
+      );
+
+      const threadWithMessages = {
+        ...thread,
+        messages: messagesData,
+      };
+
+      dispatch(slice.actions.setParentThread(threadWithMessages));
+
       return room;
     } catch (e) {
       console.error('error fetching room', e);
@@ -3260,41 +3345,48 @@ export const connectAgentDM =
     }
   };
 
-const THREADS_STATUSES = ['running', 'blocked', 'dead', 'fenix'];
-
-const fetchAllThreadsCursor = async (roomId, dispatch, cursor = null, statusIndex = 0) => {
-  const threadStatus = THREADS_STATUSES[statusIndex];
-  let i = statusIndex;
-  const response = await optimai_room.post(`/${roomId}`, ROOM_ALL_THREADS_GQ(cursor, threadStatus));
-  const { threads } = response.data;
-  if (threads?.items) {
-    threads.items = threads.items.map(handleThread);
-  }
-  const newCursor = threads.next_cursor;
-  delete threads.next_cursor;
-  dispatch(
-    slice.actions.setMergeThreadBatch({
-      cursor: newCursor,
-      threads: paginateCollection(threads),
-    }),
-  );
-  // dispatch(slice.actions.setThreads({ threads: room.threads }));
-  if (!newCursor) {
-    i += 1;
-  }
-  if (!!newCursor || i < 3) {
-    fetchAllThreadsCursor(roomId, dispatch, newCursor, i);
-  }
-};
-
 export const fetchRoomAllThreads = () => async (dispatch, getState) => {
   const roomId = selectRoomId(getState());
   try {
     dispatch(slice.actions.setLoading('allThreads'));
-    fetchAllThreadsCursor(roomId, dispatch);
+
+    // Fetch threads with pagination (v2 returns all statuses)
+    let cursor = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const url = `/v2/rooms/${roomId}/threads?limit=100${cursor ? `&cursor=${cursor}` : ''}`;
+      const response = await optimai_room.get(url);
+
+      // Transform each thread to add required structure
+      const transformedThreads = response.data.threads.map(transformThread);
+
+      const threads = paginateV2Collection(transformedThreads, response.data.pagination);
+
+      dispatch(
+        slice.actions.setMergeThreadBatch({
+          threads,
+          cursor: response.data.pagination.next_cursor,
+        }),
+      );
+
+      hasNextPage = response.data.pagination.has_next_page;
+      cursor = response.data.pagination.next_cursor;
+    }
+
+    // Ensure initialized flag is set when pagination is complete
+    if (!hasNextPage) {
+      dispatch(
+        slice.actions.setMergeThreadBatch({
+          threads: { byId: {}, allIds: [] },
+          cursor: null,
+        }),
+      );
+    }
+
     return Promise.resolve('success');
   } catch (e) {
-    console.error('error fetching room', e);
+    console.error('error fetching threads', e);
     return Promise.reject(e.message);
   }
 };
@@ -3307,9 +3399,20 @@ export const fetchThread =
       if (!force && !!threads?.byId[threadId]) {
         return Promise.resolve('Thread already loaded.');
       }
-      const response = await optimai_room.post(`/thread/${threadId}/gq`, THREAD_GENERAL_GQ());
-      const thread = response.data;
-      dispatch(slice.actions.addThread(thread));
+
+      // 1. Fetch thread details
+      const threadResponse = await optimai_room.get(`/v2/threads/${threadId}`);
+      const thread = transformThread(threadResponse.data);
+
+      // 2. Fetch thread messages
+      const messagesResponse = await optimai_room.get(`/v2/threads/${threadId}/messages?limit=25`);
+      const messages = paginateV2Collection(
+        messagesResponse.data.messages,
+        messagesResponse.data.pagination,
+      );
+
+      // 3. Combine and dispatch
+      dispatch(slice.actions.addThread({ ...thread, messages }));
       return Promise.resolve('success');
     } catch (e) {
       // console.error('error fetching thread', e);
@@ -3321,65 +3424,56 @@ export const fetchThreadResource =
   ({ resource, threadId }) =>
   async (dispatch, getState) => {
     try {
+      console.log('[fetchThreadResource] Called with:', { resource, threadId });
+
       const thread = !threadId ? null : selectThreadsById(getState())[threadId];
       if (!thread || !thread[resource]) {
-        console.error(`Thread or resource '${resource}' not found`);
+        console.error('[fetchThreadResource] Thread or resource not found:', {
+          thread: !!thread,
+          resource,
+        });
         return Promise.reject(`Thread or resource '${resource}' not found`);
       }
 
       const paginationInfo = thread[resource].paginationInfo;
+      console.log('[fetchThreadResource] Pagination info:', paginationInfo);
+
       if (!paginationInfo.hasNextPage || !paginationInfo.cursor) {
-        console.warn(`Thread ${resource} have no page to query.`);
+        console.warn('[fetchThreadResource] No more pages:', {
+          hasNextPage: paginationInfo.hasNextPage,
+          cursor: paginationInfo.cursor,
+        });
         return;
       }
 
-      const resourceToGQSpec = {
-        messages: THREAD_MESSAGES_GQ,
-        // events: THREAD_EVENTS_GQ,
-        // media: THREAD_MEDIA_GQ
-      };
+      // Only messages are supported in v2 for now
+      if (resource === 'messages') {
+        console.log('[fetchThreadResource] Fetching messages with cursor:', paginationInfo.cursor);
 
-      const gqSpec = resourceToGQSpec[resource];
-      if (!gqSpec) {
-        console.warn(`Thread ${resource} have no GQ specification available.`);
-        return;
+        const response = await optimai_room.get(
+          `/v2/threads/${threadId}/messages?limit=25&cursor=${paginationInfo.cursor}`,
+        );
+
+        console.log('[fetchThreadResource] Received messages:', {
+          count: response.data.messages.length,
+          hasNextPage: response.data.pagination.has_next_page,
+          nextCursor: response.data.pagination.next_cursor,
+        });
+
+        // Convert v2 format to old GQ format that addMessages expects
+        const messagesFormatted = {
+          items: response.data.messages,
+          has_next_page: response.data.pagination.has_next_page,
+          next_cursor: response.data.pagination.next_cursor,
+        };
+
+        dispatch(slice.actions.addMessages({ id: threadId, messages: messagesFormatted }));
+        return Promise.resolve('success');
       }
 
-      const response = await optimai_room.post(
-        `/thread/${threadId}/gq`,
-        gqSpec(paginationInfo.cursor),
-      );
-      const updatedThreadData = response.data;
-
-      if (!updatedThreadData[resource]) {
-        console.error(`Resource '${resource}' not found in the response`);
-        return Promise.reject(`Resource '${resource}' not found in the response`);
-      }
-
-      // Map resource to the corresponding action
-      const resourceToActionMap = {
-        messages: 'addMessages',
-        events: 'addEvents',
-        media: 'addMedia',
-      };
-
-      const actionType = resourceToActionMap[resource];
-      if (!actionType) {
-        // console.error(`Invalid resource type: ${resource}`);
-        return Promise.reject(`Invalid resource type: ${resource}`);
-      }
-
-      // Dispatch the corresponding action
-      dispatch(
-        slice.actions[actionType]({
-          id: threadId,
-          [resource]: updatedThreadData[resource],
-        }),
-      );
-
-      return Promise.resolve('success');
+      return Promise.reject(`Resource type '${resource}' not supported`);
     } catch (e) {
-      // console.error('Error fetching thread resource', e);
+      console.error('[fetchThreadResource] Error:', e);
       return Promise.reject(e.message);
     }
   };
@@ -3455,7 +3549,7 @@ export const patchThread =
       if (description !== undefined) payload.description = description;
       if (status !== undefined) payload.status = status;
 
-      await optimai_room.patch(`/thread/${threadId}`, payload);
+      await optimai_room.patch(`/v2/threads/${threadId}`, payload);
       return Promise.resolve('success');
     } catch (e) {
       console.error(`error patching thread: ${e.message}`);
@@ -3505,8 +3599,8 @@ export const sendMessage =
       }
 
       const response = await optimai_room.post(
-        `/thread/${threadId}/message`,
-        { content, attachments, replied_id: respond[threadId] },
+        `/v2/threads/${threadId}/messages`,
+        { text: content, attachments, replied_id: respond[threadId] },
         config,
       );
 
@@ -3566,8 +3660,8 @@ export const sendAgentMessage =
       }
 
       const response = await optimai_room.post(
-        `/thread/${threadId}/agents/message?agent_id=${agentId}`,
-        { content, attachments, replied_id: respond[threadId] },
+        `/v2/threads/${threadId}/messages?agent_id=${agentId}`,
+        { text: content, attachments, replied_id: respond[threadId] },
         config,
       );
 
@@ -3599,10 +3693,12 @@ export const createThread =
         throw new Error('Invalid drawer creation mode.');
       }
       const response = await optimai_room.post(
-        !drawer.messageId ? `/${room.id}/thread` : `/message/${drawer.messageId}/thread`,
+        !drawer.messageId
+          ? `/v2/rooms/${room.id}/threads`
+          : `/v2/messages/${drawer.messageId}/threads`,
         { name: drawer?.threadName || content },
       );
-      const { thread } = response.data;
+      const thread = response.data;
 
       // Check if tabs are enabled
       // const state = getState();
@@ -3646,7 +3742,7 @@ export const reactToMessage =
   ({ messageId, reactionType: reaction_type, emoji = null }) =>
   async () => {
     try {
-      await optimai_room.post(`/message/${messageId}/react`, {
+      await optimai_room.post(`/v2/messages/${messageId}/reactions`, {
         reaction_type,
         emoji,
       });
@@ -3668,7 +3764,7 @@ export const deleteMessage =
   ({ messageId }) =>
   async () => {
     try {
-      await optimai_room.delete(`/message/${messageId}`);
+      await optimai_room.delete(`/v2/messages/${messageId}`);
       return Promise.resolve('success');
     } catch (e) {
       return Promise.reject(e);
@@ -3715,7 +3811,7 @@ export const createRoomCode = (dispatch, getState) => async () => {
 export const updateRoom = (data) => async (dispatch, getState) => {
   try {
     const { room } = getState().room;
-    await optimai_room.patch(`/${room.id}`, data);
+    await optimai_room.patch(`/v2/rooms/${room.id}`, data);
     return Promise.resolve('success');
   } catch (e) {
     return Promise.reject(e);
@@ -3767,7 +3863,7 @@ export const deleteThread = (threadId) => async (dispatch, getState) => {
         current: threads.byId[threadId]?.parent?.thread_id || mainThread,
       }),
     );
-    const response = await optimai_room.delete(`/thread/${threadId}`);
+    const response = await optimai_room.delete(`/v2/threads/${threadId}`);
     return Promise.resolve(response);
   } catch (e) {
     return Promise.reject(e);
@@ -4077,8 +4173,8 @@ export const updateMessage =
   ({ messageId, content }) =>
   async (dispatch) => {
     try {
-      await optimai_room.patch(`/messages/${messageId}`, {
-        content,
+      await optimai_room.patch(`/v2/messages/${messageId}`, {
+        text: content,
       });
       dispatch(updateMessageContent({ messageId, content }));
     } catch (error) {
@@ -4088,6 +4184,70 @@ export const updateMessage =
   };
 
 export const selectDrawerExpanded = (state) => state.drawerExpanded;
+
+// Thunk action to switch to a thread and ensure its messages are loaded
+export const switchToThread =
+  ({ threadId, threadName }) =>
+  async (dispatch, getState) => {
+    // First, switch to the thread (creates tab if needed)
+    dispatch(slice.actions.switchToThreadReducer({ threadId, threadName }));
+
+    // Then, ensure messages are loaded
+    const state = getState();
+    const thread = selectThreadsById(state)[threadId];
+
+    if (!thread) {
+      // Thread doesn't exist, fetch it (will fetch both thread and messages)
+      await dispatch(fetchThread({ threadId }));
+      return;
+    }
+
+    // Check if messages are loaded for this thread by looking at global message state
+    // (thread.messages.allIds gets deleted after extraction, so we check the thread's pagination state)
+    const hasMessagesInThread = thread.messages?.paginationInfo?.hasNextPage !== undefined;
+
+    // If thread has never fetched messages (no pagination info), fetch them
+    // (threads from fetchRoomAllThreads come with empty message collections)
+    if (!hasMessagesInThread) {
+      try {
+        console.log('[switchToThread] Fetching messages for thread:', threadId);
+
+        // Fetch only messages, not the whole thread
+        const messagesResponse = await optimai_room.get(
+          `/v2/threads/${threadId}/messages?limit=25`,
+        );
+
+        console.log('[switchToThread] Received messages:', {
+          count: messagesResponse.data.messages.length,
+          hasNextPage: messagesResponse.data.pagination.has_next_page,
+          nextCursor: messagesResponse.data.pagination.next_cursor,
+        });
+
+        // Convert v2 format to old GQ format that addMessages expects
+        const messagesFormatted = {
+          items: messagesResponse.data.messages,
+          has_next_page: messagesResponse.data.pagination.has_next_page,
+          next_cursor: messagesResponse.data.pagination.next_cursor,
+        };
+
+        // Update the existing thread with messages
+        dispatch(slice.actions.addMessages({ id: threadId, messages: messagesFormatted }));
+
+        console.log('[switchToThread] Messages added, checking final state...');
+        const updatedThread = selectThreadsById(getState())[threadId];
+        console.log(
+          '[switchToThread] Final thread pagination:',
+          updatedThread?.messages?.paginationInfo,
+        );
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to fetch thread messages:', error);
+      }
+    } else {
+      console.log('[switchToThread] Thread already has messages, skipping fetch');
+      console.log('[switchToThread] Current pagination:', thread.messages?.paginationInfo);
+    }
+  };
 
 // Helper action creator for tab-aware thread switching
 export const switchToThreadInTab = (threadId, threadName) => (dispatch, getState) => {
@@ -4109,8 +4269,10 @@ export const createNewThread = () => async (dispatch, getState) => {
 
     // Create a new thread without a predefined name
     // The thread will get its name from the first message content
-    const response = await optimai_room.post(`/${room.id}/thread`, { name: 'New Thread' });
-    const { thread } = response.data;
+    const response = await optimai_room.post(`/v2/rooms/${room.id}/threads`, {
+      name: 'New Thread',
+    });
+    const thread = response.data;
 
     // Add the thread to the state
     dispatch(addThread(thread));
@@ -4142,14 +4304,14 @@ export const ensureThreadMessagesLoaded = (threadId) => async (dispatch, getStat
     return;
   }
 
-  // Check if thread has minimal messages (likely just preview)
+  // Check if thread has messages loaded
   const messageCount = thread.messages?.allIds?.length || 0;
-  const hasMoreMessages = thread.messages?.paginationInfo?.hasNextPage;
 
-  // If thread has 1 or 0 messages and there are more to fetch, fetch them
-  if (messageCount <= 1 && hasMoreMessages) {
+  // If thread has no messages, fetch them
+  // (threads from fetchRoomAllThreads come with empty message collections)
+  if (messageCount === 0) {
     try {
-      await dispatch(fetchThreadResource({ threadId, resource: 'messages' }));
+      await dispatch(fetchThread({ threadId, force: true }));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.warn('Failed to fetch thread messages:', error);

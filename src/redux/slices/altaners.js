@@ -491,7 +491,7 @@ export const duplicateAltaner = (altanerId, duplicateData) => async (dispatch) =
 };
 
 // Custom fetcher for altaners using the new paginated endpoint
-export const fetchAltanersList = async (accountId, limit = 100, offset = 0) => {
+export const fetchAltanersList = async (accountId, limit = 10, offset = 0) => {
   const response = await optimai.get('/altaner/list', {
     params: {
       account_id: accountId,
@@ -506,7 +506,7 @@ export const fetchAltanersList = async (accountId, limit = 100, offset = 0) => {
 export const loadAltanersList = (accountId) => async (dispatch) => {
   dispatch(slice.actions.startLoading());
   try {
-    const data = await fetchAltanersList(accountId, 100, 0);
+    const data = await fetchAltanersList(accountId, 10, 0);
     dispatch(setAltanersList(data.altaners || []));
     return Promise.resolve(data.altaners);
   } catch (e) {

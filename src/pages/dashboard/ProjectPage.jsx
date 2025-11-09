@@ -18,7 +18,6 @@ import {
   selectCurrentAltaner,
   selectSortedAltanerComponents,
   selectDisplayMode,
-  getAltanerById,
   clearCurrentAltaner,
   loadDisplayModeForProject,
   selectViewType,
@@ -131,14 +130,12 @@ export default function ProjectPage() {
   const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
   // Get active component from URL path param
   const activeComponentId = componentId || null;
-  // Load display mode preference FIRST, then fetch the altaner
-  // This ensures the correct displayMode is set before panel effects run
+  // Load display mode preference when project loads
+  // Note: The parent layout already fetches the altaner data, so we don't need to fetch it here
   useEffect(() => {
     if (altanerId) {
-      // Load display mode synchronously first
+      // Load display mode synchronously
       dispatch(loadDisplayModeForProject(altanerId));
-      // Then fetch the altaner data
-      dispatch(getAltanerById(altanerId));
     }
     return () => {
       dispatch(clearCurrentAltaner());

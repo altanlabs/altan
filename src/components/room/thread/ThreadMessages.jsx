@@ -149,6 +149,17 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const messagesById = useSelector(selectMessagesById);
   const me = useSelector(selectMe);
   
+  // DEBUG: Log pagination state
+  useEffect(() => {
+    if (threadId) {
+      console.log('[ThreadMessages] Pagination check:', {
+        threadId,
+        moreMessages,
+        messageCount: realMessageIds.length,
+      });
+    }
+  }, [threadId, moreMessages, realMessageIds.length]);
+  
   // Create stable memoized selector for active responses
   const activeResponsesSelector = useMemo(
     () => (threadId ? selectActiveResponsesByThread(threadId) : () => []),
@@ -246,9 +257,20 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   // 4b) Fetch more messages (top scroll)
   // ----------------------------------------------
   const fetchMessages = useCallback(() => {
+    console.log('[ThreadMessages.fetchMessages] Called with:', {
+      threadId,
+      isFetching,
+      moreMessages,
+    });
+    
     if (isFetching || !moreMessages) {
+      console.log('[ThreadMessages.fetchMessages] Rejected:', {
+        reason: isFetching ? 'already fetching' : 'no more messages',
+      });
       return Promise.reject('no more messages');
     }
+    
+    console.log('[ThreadMessages.fetchMessages] Starting fetch...');
     setIsFetching(true);
     return dispatch(fetchThreadResource({ threadId, resource: 'messages' }));
   }, [threadId, moreMessages, isFetching]);
