@@ -36,7 +36,7 @@ const optimai_root = axios.create({
 
 const optimai = axios.create({
   name: 'optimai',
-  baseURL: `${OPTIMAI_BASE_URL}/platform`,
+  baseURL: OPTIMAI_BASE_URL,
   withCredentials: true,
 });
 
