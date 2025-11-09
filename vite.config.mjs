@@ -124,6 +124,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@agents-sdk': path.resolve(__dirname, './agents-sdk/src'),
         ...Object.fromEntries(
           [
             'components',

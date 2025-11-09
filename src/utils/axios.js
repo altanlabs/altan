@@ -4,7 +4,7 @@ import { refreshToken, setSession } from './auth';
 import { setupAxiosErrorTracking } from './errorTracking';
 import { addResponseInterceptor } from './interceptors';
 
-const OPTIMAI_BASE_URL = 'https://api.altan.ai';
+const OPTIMAI_BASE_URL = 'https://platform-api.altan.ai';
 const AUTH_BASE_URL = 'https://auth.altan.ai';
 
 const optimai_tables = axios.create({
@@ -52,12 +52,12 @@ const optimai_agent = axios.create({
 
 const optimai_shop = axios.create({
   name: 'optimai_shop',
-  baseURL: `${OPTIMAI_BASE_URL}/shop`,
+  baseURL: 'https://pay.altan.ai',
 });
 
 const optimai_room = axios.create({
   name: 'optimai_room',
-  baseURL: `${OPTIMAI_BASE_URL}/room`,
+  baseURL: 'https://room-api.altan.ai',
   withCredentials: true,
 });
 

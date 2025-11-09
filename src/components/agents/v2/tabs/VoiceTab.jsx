@@ -2,6 +2,8 @@ import { Box, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material'
 import PropTypes from 'prop-types';
 import { memo, useState, useEffect } from 'react';
 
+import { VoiceAgentProvider, VoiceCallButton } from '@agents-sdk';
+
 import ElevenlabsVoiceConfig from './ElevenlabsVoiceConfig';
 import OpenAIVoiceConfig from './OpenAIVoiceConfig';
 import Iconify from '../../../iconify';
@@ -97,75 +99,96 @@ function VoiceTab({ agentData, onFieldChange }) {
     }
   };
 
+  // Get agent ID for VoiceAgentProvider
+  const agentIdForProvider = agentData?.id || agentData?._id;
+
+  if (!agentIdForProvider) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Typography color="error">No agent ID found</Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left Panel: Configuration */}
-      <Box sx={{ overflow: 'auto', width: '100%' }}>
-        <Box sx={{ p: 2, pb: { xs: 10, md: 2 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Provider Toggle and Test Button */}
-          <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2 }}>
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ color: 'text.primary' }}
+    <VoiceAgentProvider agentId={agentIdForProvider}>
+      <Box sx={{ display: 'flex', height: '100%' }}>
+        {/* Left Panel: Configuration */}
+        <Box sx={{ overflow: 'auto', width: '100%' }}>
+          <Box sx={{ p: 2, pb: { xs: 10, md: 2 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Provider Toggle and Test Button */}
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
               >
-                Voice Provider
-              </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ color: 'text.primary' }}
+                >
+                  Voice Provider
+                </Typography>
+                {/* Voice Call Button */}
+                <Box>
+                  <VoiceCallButton
+                    startLabel="Test Call"
+                    stopLabel="End Call"
+                    connectingLabel="Connecting..."
+                  />
+                </Box>
+              </Box>
+
+              <ToggleButtonGroup
+                value={voiceProvider}
+                exclusive
+                onChange={handleProviderChange}
+                fullWidth
+                sx={{ mb: 2 }}
+              >
+                <ToggleButton value="elevenlabs">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Iconify
+                      icon="simple-icons:elevenlabs"
+                      width={20}
+                    />
+                    <span>ElevenLabs</span>
+                  </Box>
+                </ToggleButton>
+                <ToggleButton value="openai">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Iconify
+                      icon="simple-icons:openai"
+                      width={20}
+                    />
+                    <span>OpenAI Realtime</span>
+                  </Box>
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              {/* Status is handled in OpenAIVoiceConfig */}
             </Box>
 
-            <ToggleButtonGroup
-              value={voiceProvider}
-              exclusive
-              onChange={handleProviderChange}
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              <ToggleButton value="elevenlabs">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify
-                    icon="simple-icons:elevenlabs"
-                    width={20}
-                  />
-                  <span>ElevenLabs</span>
-                </Box>
-              </ToggleButton>
-              <ToggleButton value="openai">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Iconify
-                    icon="simple-icons:openai"
-                    width={20}
-                  />
-                  <span>OpenAI Realtime</span>
-                </Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
+            {voiceProvider === 'openai' && (
+              <OpenAIVoiceConfig
+                agentData={agentData}
+                settings={voiceSettings}
+                onSettingChange={handleSettingChange}
+              />
+            )}
 
-            {/* Status is handled in OpenAIVoiceConfig */}
+            {voiceProvider === 'elevenlabs' && (
+              <ElevenlabsVoiceConfig
+                agentData={agentData}
+                settings={voiceSettings}
+                onUpdate={(newSettings) => {
+                  setVoiceSettings(newSettings);
+                  onFieldChange('voice', newSettings);
+                }}
+              />
+            )}
           </Box>
-
-          {voiceProvider === 'openai' && (
-            <OpenAIVoiceConfig
-              agentData={agentData}
-              settings={voiceSettings}
-              onSettingChange={handleSettingChange}
-            />
-          )}
-
-          {voiceProvider === 'elevenlabs' && (
-            <ElevenlabsVoiceConfig
-              agentData={agentData}
-              settings={voiceSettings}
-              onUpdate={(newSettings) => {
-                setVoiceSettings(newSettings);
-                onFieldChange('voice', newSettings);
-              }}
-            />
-          )}
         </Box>
       </Box>
-    </Box>
+    </VoiceAgentProvider>
   );
 }
 

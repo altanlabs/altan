@@ -205,6 +205,7 @@ export default [
       'import/resolver': {
         'eslint-import-resolver-custom-alias': {
           alias: {
+            '@agents-sdk': 'agents-sdk/src/index.ts',
             '@components': 'src/components',
             '@assets': 'src/assets/',
             '@pages': 'src/pages/',

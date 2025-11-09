@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import { Activity, TrendingUp, AlertCircle, Server, Cpu, HardDrive, Database } from 'lucide-react';
+import { Activity, TrendingUp, AlertCircle, Server, Cpu, HardDrive, Database, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
@@ -45,6 +45,58 @@ const StatsCard = ({ label, value, icon: Icon, color }) => {
       </div>
     </div>
   );
+};
+
+const getHealthStatus = (cpuUsage, memoryUsage, storageUsage) => {
+  const parseUsage = (usage) => {
+    if (typeof usage === 'string') {
+      return parseFloat(usage.replace('%', ''));
+    }
+    return usage || 0;
+  };
+
+  const cpu = parseUsage(cpuUsage);
+  const memory = parseUsage(memoryUsage);
+  const storage = parseUsage(storageUsage);
+
+  const maxUsage = Math.max(cpu, memory, storage);
+
+  if (maxUsage >= 75) {
+    return {
+      status: 'Critical',
+      label: 'Critical / Increase instance',
+      subtitle: 'Your infrastructure is under heavy load. Immediate scaling recommended.',
+      icon: XCircle,
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-500/10 dark:bg-red-500/20',
+      borderColor: 'border-red-500/30',
+      ringColor: 'ring-red-500/30',
+    };
+  }
+
+  if (maxUsage >= 50) {
+    return {
+      status: 'Stressed',
+      label: 'Stressed / Consider upgrading',
+      subtitle: 'Performance may degrade soon. Consider upgrading your instance.',
+      icon: AlertTriangle,
+      color: 'text-amber-600 dark:text-amber-400',
+      bgColor: 'bg-amber-500/10 dark:bg-amber-500/20',
+      borderColor: 'border-amber-500/30',
+      ringColor: 'ring-amber-500/30',
+    };
+  }
+
+  return {
+    status: 'Healthy',
+    label: 'Healthy',
+    subtitle: 'All systems operating normally. Performance is optimal.',
+    icon: CheckCircle2,
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bgColor: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+    borderColor: 'border-emerald-500/30',
+    ringColor: 'ring-emerald-500/30',
+  };
 };
 
 // Skeleton Loading Component
@@ -119,6 +171,9 @@ const MetricsSkeleton = () => {
 export const MetricsHistoryCharts = ({ baseId, metrics, cpuUsage, memoryUsage, storageUsage }) => {
   const [period, setPeriod] = useState('24h');
   const { history, loading } = useMetricsHistory(baseId, period);
+
+  const healthStatus = getHealthStatus(cpuUsage, memoryUsage, storageUsage);
+  const StatusIcon = healthStatus.icon;
 
   const handlePeriodChange = (value) => {
     setPeriod(value);
@@ -228,8 +283,16 @@ export const MetricsHistoryCharts = ({ baseId, metrics, cpuUsage, memoryUsage, s
               <Activity size={22} className="text-primary" strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Infrastructure Monitoring</h2>
-              <p className="text-sm text-muted-foreground">Real-time health & performance insights</p>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-foreground">Infrastructure Monitoring</h2>
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${healthStatus.bgColor} ${healthStatus.borderColor} ring-1 ${healthStatus.ringColor}`}>
+                  <StatusIcon size={14} className={healthStatus.color} strokeWidth={2.5} />
+                  <span className={`text-xs font-semibold ${healthStatus.color}`}>
+                    {healthStatus.label}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{healthStatus.subtitle}</p>
             </div>
           </div>
 

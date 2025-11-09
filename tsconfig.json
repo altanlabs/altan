@@ -16,6 +16,8 @@
     "baseUrl": "./",                                     /* Set the base directory for resolving paths. */
     "paths": {
       "@/*": ["src/*"],
+      "@agents-sdk": ["agents-sdk/src/index.ts"],
+      "@agents-sdk/*": ["agents-sdk/src/*"],
       "@components/*": ["src/components/*"],
       "@assets/*": ["src/assets/*"],
       "@pages/*": ["src/pages/*"],
