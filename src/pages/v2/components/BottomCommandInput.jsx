@@ -110,7 +110,7 @@ const BottomCommandInput = () => {
           }),
         );
 
-        const response = await fetch('https://api.altan.ai/platform/idea', {
+        const response = await fetch('https://platform-api.altan.ai/idea', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ const BottomCommandInput = () => {
         }),
       );
 
-      const response = await fetch('https://api.altan.ai/platform/idea', {
+      const response = await fetch('https://platform-api.altan.ai/idea', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
