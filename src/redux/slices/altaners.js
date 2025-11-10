@@ -45,10 +45,18 @@ const slice = createSlice({
     },
     addAltaner(state, action) {
       const altaner = action.payload;
+      // Normalize components structure: backend now returns array directly, but internally we store as {items: [...]}
+      if (altaner.components && Array.isArray(altaner.components)) {
+        altaner.components = { items: altaner.components };
+      } else if (!altaner.components) {
+        altaner.components = { items: [] };
+      }
       state.altaners[altaner.id] = altaner;
     },
     setAltaner(state, action) {
-      state.current = action.payload;
+      const altanerId = action.payload;
+      // Get the altaner from state.altaners, which is already normalized
+      state.current = altanerId;
     },
     clearCurrentAltaner(state) {
       state.current = null;

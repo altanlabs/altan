@@ -10,9 +10,11 @@ interface Altaner {
   name: string;
   description?: string;
   icon_url?: string;
-  components?: {
-    items: any[];
-  };
+  components?:
+    | {
+        items: any[];
+      }
+    | any[];
 }
 
 interface GetAltanersResponse {

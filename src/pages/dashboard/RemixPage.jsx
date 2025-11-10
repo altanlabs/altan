@@ -42,6 +42,12 @@ const RemixPage = () => {
         const appResponse = await optimai.get(`/altaner/${altanerId}`);
         const appData = appResponse.data.altaner;
         const accountData = appResponse.data.account;
+        
+        // Normalize components structure: backend now returns array directly, but internally we use {items: [...]}
+        if (appData.components && Array.isArray(appData.components)) {
+          appData.components = { items: appData.components };
+        }
+        
         setApp({ ...appData, account: accountData });
 
         const interfaceId = appData?.components?.items?.find((item) => item.type === 'interface')

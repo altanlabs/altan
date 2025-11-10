@@ -116,7 +116,9 @@ function ProjectHeader() {
   const history = useHistory();
   const { altanerId, componentId, baseId: routeBaseId, tableId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
+  console.log('altaner', altaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
+  console.log('sortedComponents', sortedComponents);
   const viewType = useSelector(selectViewType);
   const displayMode = useSelector(selectDisplayMode);
   const isMobile = useResponsive('down', 'sm');

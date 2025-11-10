@@ -12,16 +12,25 @@ interface PublicAppCardProps {
   name: string;
   icon_url?: string;
   last_modified?: string;
-  components?: {
-    items: Array<{
-      name: string;
-      type: string;
-      icon?: string;
-      params?: {
-        id?: string;
-      };
-    }>;
-  };
+  components?:
+    | {
+        items: Array<{
+          name: string;
+          type: string;
+          icon?: string;
+          params?: {
+            id?: string;
+          };
+        }>;
+      }
+    | Array<{
+        name: string;
+        type: string;
+        icon?: string;
+        params?: {
+          id?: string;
+        };
+      }>;
 }
 
 interface PreviewResponse {
@@ -41,7 +50,9 @@ function PublicAppCard({
   // eslint-disable-next-line no-undef
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  const interfaceComponent = components?.items.find((item) => item.type === 'interface');
+  // Support both old (components.items) and new (components as array) backend structure
+  const componentsArray = Array.isArray(components) ? components : components?.items || [];
+  const interfaceComponent = componentsArray.find((item) => item.type === 'interface');
 
   useEffect(() => {
     const fetchPreview = async (): Promise<void> => {

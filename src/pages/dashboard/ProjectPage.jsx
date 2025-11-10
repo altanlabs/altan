@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 
-import Base from '../../components/databases/base/Base.jsx';
 import Cloud from '../../components/cloud/Cloud.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
