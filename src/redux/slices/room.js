@@ -712,10 +712,24 @@ const slice = createSlice({
       const isV2Format = thread.messages?.byId !== undefined;
       const tempThread = isV2Format ? thread : handleThread(thread);
       extractMessagesFromThread(state, tempThread);
+      
       if (!state.threads.byId[thread.id]) {
         state.threads.byId[thread.id] = tempThread;
       } else {
-        state.threads.byId[thread.id] = { ...state.threads.byId[thread.id], ...tempThread };
+        // Deep merge the messages paginationInfo to preserve it
+        const existingThread = state.threads.byId[thread.id];
+        state.threads.byId[thread.id] = {
+          ...existingThread,
+          ...tempThread,
+          messages: {
+            ...existingThread.messages,
+            ...tempThread.messages,
+            paginationInfo: {
+              ...existingThread.messages?.paginationInfo,
+              ...tempThread.messages?.paginationInfo,
+            },
+          },
+        };
       }
 
       // Set the main thread reference
@@ -796,25 +810,11 @@ const slice = createSlice({
       const { id, messages } = action.payload;
 
       if (!id || !messages || !Array.isArray(messages.items)) {
-        console.error('Invalid input for addMessages.');
         return;
       }
       const thread = state.threads.byId[id];
       if (thread) {
-        console.log('[addMessages] Before paginateCollection:', {
-          threadId: id,
-          messageCount: messages.items.length,
-          has_next_page: messages.has_next_page,
-          next_cursor: messages.next_cursor,
-        });
-
         const { byId, allIds, paginationInfo } = paginateCollection(messages);
-
-        console.log('[addMessages] After paginateCollection:', {
-          threadId: id,
-          paginationInfo,
-          existingPagination: thread.messages.paginationInfo,
-        });
 
         // Ensure paginationInfo exists before assigning
         if (!thread.messages.paginationInfo) {
@@ -822,10 +822,6 @@ const slice = createSlice({
         }
         if (paginationInfo) {
           Object.assign(thread.messages.paginationInfo, paginationInfo);
-          console.log(
-            '[addMessages] Final pagination after assign:',
-            thread.messages.paginationInfo,
-          );
         }
         extractMessagesFromThread(state, { messages: { byId, allIds } });
       } else {

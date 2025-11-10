@@ -45,29 +45,36 @@ const increaseViewportBy = {
   top: 2000,
 };
 
-const Footer = memo(({ threadId, messageIds, renderFeedback = false, isStreaming = false, paddingBottom = 32 }) => {
-  const messagesById = useSelector(selectMessagesById);
-  const members = useSelector(selectMembers);
+const Footer = memo(
+  ({ threadId, messageIds, renderFeedback = false, isStreaming = false, paddingBottom = 32 }) => {
+    const messagesById = useSelector(selectMessagesById);
+    const members = useSelector(selectMembers);
 
-  // Get the last message and check if it's from an agent
-  const lastMessageId = messageIds && messageIds.length > 0 ? messageIds[messageIds.length - 1] : null;
-  const lastMessage = lastMessageId ? messagesById[lastMessageId] : null;
-  const lastMessageSender = lastMessage ? members.byId[lastMessage.member_id] : null;
-  const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
+    // Get the last message and check if it's from an agent
+    const lastMessageId =
+      messageIds && messageIds.length > 0 ? messageIds[messageIds.length - 1] : null;
+    const lastMessage = lastMessageId ? messagesById[lastMessageId] : null;
+    const lastMessageSender = lastMessage ? members.byId[lastMessage.member_id] : null;
+    const isLastMessageFromAgent = lastMessageSender?.member?.member_type === 'agent';
 
-  return (
-    <div style={{ paddingBottom: `${paddingBottom}px` }}>
-      {/* Show ThreadActionBar if there are messages and not streaming */}
-      {messageIds && messageIds.length > 0 && isLastMessageFromAgent && renderFeedback && !isStreaming && (
-        <ThreadActionBar
-          threadId={threadId}
-          lastMessageId={lastMessageId}
-          isAgentMessage={isLastMessageFromAgent}
-        />
-      )}
-    </div>
-  );
-});
+    return (
+      <div style={{ paddingBottom: `${paddingBottom}px` }}>
+        {/* Show ThreadActionBar if there are messages and not streaming */}
+        {messageIds &&
+          messageIds.length > 0 &&
+          isLastMessageFromAgent &&
+          renderFeedback &&
+          !isStreaming && (
+            <ThreadActionBar
+              threadId={threadId}
+              lastMessageId={lastMessageId}
+              isAgentMessage={isLastMessageFromAgent}
+            />
+          )}
+      </div>
+    );
+  },
+);
 Footer.displayName = 'Footer';
 
 const ThreadHeader = memo(({ isCreation, moreMessages, hasLoaded, isFetching }) => (
@@ -136,7 +143,14 @@ const useIsCreation = (mode) => {
 // -----------------------------------------------------
 // 4) The Main Component
 // -----------------------------------------------------
-const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, renderFeedback = false, footerPaddingBottom = 32 }) => {
+const ThreadMessages = ({
+  mode = 'main',
+  hasLoaded,
+  setHasLoaded,
+  tId = null,
+  renderFeedback = false,
+  footerPaddingBottom = 32,
+}) => {
   const isCreation = useIsCreation(mode);
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
@@ -148,59 +162,48 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   const placeholderMessages = useSelector((state) => placeholderMessagesSelector(state, threadId));
   const messagesById = useSelector(selectMessagesById);
   const me = useSelector(selectMe);
-  
-  // DEBUG: Log pagination state
-  useEffect(() => {
-    if (threadId) {
-      console.log('[ThreadMessages] Pagination check:', {
-        threadId,
-        moreMessages,
-        messageCount: realMessageIds.length,
-      });
-    }
-  }, [threadId, moreMessages, realMessageIds.length]);
-  
+
   // Create stable memoized selector for active responses
   const activeResponsesSelector = useMemo(
     () => (threadId ? selectActiveResponsesByThread(threadId) : () => []),
     [threadId],
   );
   const activeResponses = useSelector(activeResponsesSelector);
-  
+
   // Merge real messages with placeholder messages
   const { messageIds, allMessagesById } = useMemo(() => {
     // Get all response_ids from real messages
     const realResponseIds = new Set(
       Object.values(messagesById)
-        .filter(msg => msg.response_id)
-        .map(msg => msg.response_id)
+        .filter((msg) => msg.response_id)
+        .map((msg) => msg.response_id),
     );
-    
+
     // Filter out placeholders that have a corresponding real message
     const validPlaceholders = placeholderMessages.filter(
-      placeholder => !realResponseIds.has(placeholder.response_id)
+      (placeholder) => !realResponseIds.has(placeholder.response_id),
     );
-    
+
     // Create a map for valid placeholder messages
     const placeholderMap = {};
-    validPlaceholders.forEach(msg => {
+    validPlaceholders.forEach((msg) => {
       placeholderMap[msg.id] = msg;
     });
-    
+
     // Get valid placeholder IDs
-    const placeholderIds = validPlaceholders.map(p => p.id);
+    const placeholderIds = validPlaceholders.map((p) => p.id);
     // Combine real and placeholder IDs
     const combinedIds = [...realMessageIds, ...placeholderIds];
-    
+
     // Merge messagesById with placeholder messages
     const combined = { ...messagesById, ...placeholderMap };
-    
-    return { 
+
+    return {
       messageIds: combinedIds,
-      allMessagesById: combined
+      allMessagesById: combined,
     };
   }, [realMessageIds, placeholderMessages, messagesById]);
-  
+
   // console.log('ThreadMessages render', mode, threadId, messageIds); // Keep for debugging, or remove
 
   // We only track "am I fetching?" in local state
@@ -262,14 +265,14 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
       isFetching,
       moreMessages,
     });
-    
+
     if (isFetching || !moreMessages) {
       console.log('[ThreadMessages.fetchMessages] Rejected:', {
         reason: isFetching ? 'already fetching' : 'no more messages',
       });
       return Promise.reject('no more messages');
     }
-    
+
     console.log('[ThreadMessages.fetchMessages] Starting fetch...');
     setIsFetching(true);
     return dispatch(fetchThreadResource({ threadId, resource: 'messages' }));
@@ -308,41 +311,48 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   useEffect(() => {
     if (messageIds.length > 0 && !hasLoaded) {
       setHasLoaded(true);
+      // CRITICAL: Update ref immediately, don't wait for next render
+      hasLoadedRef.current = true;
     }
   }, [messageIds.length, hasLoaded, setHasLoaded]);
+
+  // CRITICAL: Keep hasLoadedRef in sync with hasLoaded state
+  useEffect(() => {
+    hasLoadedRef.current = hasLoaded;
+  }, [hasLoaded]);
 
   useEffect(() => {
     isCreationRef.current = isCreation;
   }, [isCreation]);
-  
+
   // Track message count and initialization to detect new messages only
   const prevMessageCountRef = useRef(messageIds.length);
   const isInitializedRef = useRef(false);
-  
+
   // Detect when a NEW user message is sent and scroll to bottom
   useEffect(() => {
     if (messageIds.length > 0 && hasLoaded && mode === 'main') {
       const lastMessageId = messageIds[messageIds.length - 1];
       const lastMessage = allMessagesById[lastMessageId];
       const isUserMessage = lastMessage && lastMessage.member_id === me?.id;
-      
+
       // Mark as initialized after first load
       if (!isInitializedRef.current && messageIds.length > 0) {
         isInitializedRef.current = true;
         prevMessageCountRef.current = messageIds.length;
         return; // Skip scroll logic on initial load
       }
-      
+
       // Only scroll if message count increased and last message is from user
       const messageCountIncreased = messageIds.length > prevMessageCountRef.current;
-      
+
       if (messageCountIncreased && isUserMessage && isInitializedRef.current) {
         // New user message was just sent - scroll to bottom
         setTimeout(() => {
           scrollToBottom('smooth');
         }, 50);
       }
-      
+
       prevMessageCountRef.current = messageIds.length;
     }
   }, [messageIds, allMessagesById, me, hasLoaded, mode, scrollToBottom]);
@@ -360,15 +370,15 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
 
         // Update our internal ref
         scrollStateRef.current = { top: isTop, bottom: isBottom, semiBottom: isSemiBottom };
-
         // If near top, fetch more messages
-        if (isTop && !isFetching && hasLoadedRef.current) {
+        // REMOVED hasLoadedRef check - moreMessages is enough
+        if (isTop && !isFetching && moreMessages) {
           fetchMessages()
             .then(() => {
-              // If fetch is successful, scroll to the desired index
               scrollToIndex(25, 'instant');
             })
-            .catch(() => {
+            .catch((err) => {
+              console.log('[ThreadMessages.handleScroll] Fetch rejected:', err);
               // Handle rejection here
             })
             .finally(() => {
@@ -380,7 +390,7 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
         // If not near bottom, show it
         setShowScrollDown(!isBottom);
       }, 1000),
-    [fetchMessages, isFetching, scrollToIndex],
+    [fetchMessages, isFetching, scrollToIndex, moreMessages],
   );
 
   // ----------------------------------------------
@@ -434,7 +444,6 @@ const ThreadMessages = ({ mode = 'main', hasLoaded, setHasLoaded, tId = null, re
   return (
     <>
       {/* Loading placeholder if not loaded and not creation */}
-
 
       {/* {!hasLoaded && !isCreation && (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 px-10">
