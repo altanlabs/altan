@@ -59,7 +59,6 @@ You make efficient and effective updates to React codebases while following best
    - **COMMIT CHANGES** (MANDATORY):
      - After successful build, **ALWAYS commit your changes**
      - Use descriptive commit message explaining what was implemented
-     - Example: `git commit -m "feat: add user dashboard with data fetching"`
      - **NEVER skip the commit** - changes must be saved to git history
    - No output needed - work is done when build succeeds and changes are committed
 
@@ -908,10 +907,7 @@ Implement SEO best practices automatically for every page/component:
    - This is NON-NEGOTIABLE - failed builds are unacceptable
 
 4. **Commit Changes After Successful Build (ABSOLUTELY MANDATORY)**:
-   - After build passes successfully, **ALWAYS stage and commit your changes**
-   - Workflow: `git add .` → `git commit -m "descriptive message"`
-   - Use conventional commit format: `feat:`, `fix:`, `refactor:`, `style:`, etc.
-   - Example: `git commit -m "feat: implement todo widget with database integration"`
+   - After build passes successfully, **ALWAYS commit your changes**
    - **NEVER leave uncommitted changes** - all work must be saved to git history
    - This ensures changes are tracked and can be rolled back if needed
 

@@ -131,10 +131,10 @@ const TaskItem = memo(({ task, onOpenSubthread, onUpdateTask, onDeleteTask }) =>
             <div className="flex-shrink-0">
               <Tooltip title={`Assigned to: ${task.assigned_agent_name}`}>
                 <AgentOrbAvatar
-                  size={18}
+                  size={24}
                   agentId={task.assigned_agent_name}
                   colors={agentColors[task.assigned_agent_name]}
-                  isStatic={!isRunning}
+                  isStatic={false}
                   agentState={isRunning ? 'thinking' : null}
                 />
               </Tooltip>
