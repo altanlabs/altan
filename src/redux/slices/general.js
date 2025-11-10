@@ -1420,9 +1420,8 @@ export const getAccount = (selectedAccountId) => async (dispatch, getState) => {
   try {
     const accountId = state.general.account?.id;
     const finalAccount = selectedAccountId || accountId;
-    const response = await optimai.post(
-      `/account/${finalAccount}/gq`,
-      FILTER_ACCOUNT_GQ(['organisation', 'owner', 'company']),
+    const response = await optimai.get(
+      `/account/v2/${finalAccount}`,
     );
     const accountBody = response.data;
     if (accountBody?.id !== finalAccount) {
@@ -2200,7 +2199,7 @@ export const getInterfaceById = (interfaceId) => async (dispatch, getState) => {
   }
 
   try {
-    const response = await optimai.get(`/interfaces/${interfaceId}`);
+    const response = await optimai.get(`/interfaces/v2/${interfaceId}`);
     const interfaceData = response.data.interface;
 
     // Add interface to Redux store

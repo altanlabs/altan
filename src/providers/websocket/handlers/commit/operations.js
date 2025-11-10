@@ -30,6 +30,7 @@ export const extractCommitEventData = (data) => {
  * Handle commit.created event (from CommitNew)
  */
 export const handleCommitCreated = (eventData) => {
+  console.log('handleCommitCreated', eventData);
   const commitPayload = {
     id: eventData.id,
     interface_id: eventData.interface_id,

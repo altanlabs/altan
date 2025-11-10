@@ -148,6 +148,7 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
   const uiDomains = ui?.meta_data?.domains ? Object.keys(ui.meta_data.domains) : [];
   const allCustomDomains = [...new Set([...altanerDomains, ...uiDomains])];
   const defaultDomain = ui?.deployment_url;
+  const hasAnyDeployment = defaultDomain || allCustomDomains.length > 0;
 
   return (
     <>
@@ -340,15 +341,24 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                     );
                   })}
 
-                  {/* Add Domain Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsDomainDialogOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-sm font-medium text-muted-foreground hover:text-primary group"
-                  >
-                    <Plus className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    Add Custom Domain
-                  </button>
+                  {/* Add Domain Button or Warning */}
+                  {!hasAnyDeployment ? (
+                    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <Rocket className="h-4 w-4 text-primary flex-shrink-0" />
+                      <p className="text-xs font-medium">
+                        A public domain will be created automatically
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsDomainDialogOpen(true)}
+                      className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-all text-sm font-medium text-muted-foreground hover:text-primary group"
+                    >
+                      <Plus className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                      Add Custom Domain
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -421,8 +431,9 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasAnyDeployment}
                   className="h-9 px-6"
+                  title={!hasAnyDeployment ? 'Create a deployment first' : ''}
                 >
                   {isSubmitting ? (
                     <>

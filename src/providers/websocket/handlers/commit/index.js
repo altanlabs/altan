@@ -23,4 +23,3 @@ export const handleCommitEvent = (data) => {
     console.warn(`Unhandled commit event type: ${eventType}`);
   }
 };
-

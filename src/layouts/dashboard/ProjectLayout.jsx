@@ -114,7 +114,7 @@ const ProjectLayout = ({ children }) => {
           ['agents'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));
-        dispatch(fetchNotifications());
+        // dispatch(fetchNotifications());
       });
     }
   }, [accountId, accountInitialized, accountLoading]);

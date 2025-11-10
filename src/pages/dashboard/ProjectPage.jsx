@@ -220,6 +220,7 @@ export default function ProjectPage() {
   const interfaceCommits = useSelector((state) => 
     interfaceId ? selectSortedCommits(state, interfaceId) : []
   );
+  console.log('interfaceCommits', interfaceCommits);
 
   // Check if current component is an interface with no commits
   // Only return true if we have confirmed the interface exists but has no commits
@@ -231,8 +232,8 @@ export default function ProjectPage() {
     // If interface is loading, collapse preview to show chat at full width
     // This prevents showing an empty preview while data loads
     if (!interfaceData) return true;
-    // Once loaded, only show full-screen chat if interface has no commits
-    return !interfaceCommits || interfaceCommits.length === 0;
+    // Once loaded, only show full-screen chat if interface has no commits with successful build
+    return !interfaceCommits || interfaceCommits.length === 0 || !interfaceCommits.some(commit => commit.build_status === 'success');
   }, [interfaceId, interfaceData, interfaceCommits, altaner]);
 
   // Fetch interface data if we're viewing an interface component
