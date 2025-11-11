@@ -110,7 +110,7 @@ const PlansList = ({ roomId }) => {
                 />
                 <div>
                   <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">
-                    Failed to load plans
+                    Plan rejected
                   </p>
                   <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>

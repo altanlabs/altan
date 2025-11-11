@@ -429,9 +429,17 @@ const CustomMarkdown = ({
   // Append animated suffix to content so it appears inline with the text
   const contentWithSuffix = useMemo(() => {
     if (!content) return content;
-    if (!animatedSuffix) return content;
+    let processedContent = content;
+
+    // Ensure custom HTML tags have proper spacing to avoid parsing issues
+    processedContent = processedContent.replace(/(<suggestion-group>)/g, '\n\n$1\n');
+    processedContent = processedContent.replace(/(<\/suggestion-group>)/g, '\n$1\n\n');
+    processedContent = processedContent.replace(/(<suggestion>)/g, '\n$1');
+    processedContent = processedContent.replace(/(<\/suggestion>)/g, '$1\n');
+
+    if (!animatedSuffix) return processedContent;
     // Use rehypeRaw to inject the suffix with animation class inline
-    return content + `<span class="streaming-text-suffix">${animatedSuffix}</span>`;
+    return processedContent + `<span class="streaming-text-suffix">${animatedSuffix}</span>`;
   }, [content, animatedSuffix]);
 
   // Memoize components object to prevent widget remounting on content changes

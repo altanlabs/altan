@@ -25,10 +25,18 @@ function InterfaceLayout({
   productionUrl,
   handleIframeLoad,
   iframeRef,
+  operateMode = false,
+  altanerPreviewUrl = null,
+  altanerLiveUrl = null,
 }) {
   const [fatalError, setFatalError] = useState(null);
   const viewType = useSelector(selectViewType);
   const isMobile = useResponsive('down', 'md');
+  
+  // In operate mode, prefer URLs in this order: altanerLiveUrl > productionUrl > altanerPreviewUrl > iframeUrl
+  const displayUrl = operateMode 
+    ? (altanerLiveUrl || productionUrl || altanerPreviewUrl || iframeUrl)
+    : iframeUrl;
 
   // Main content: Toolbar and then either Preview or Codebase.
   const mainContent = (
@@ -44,16 +52,18 @@ function InterfaceLayout({
       >
         {viewType === 'preview' ? (
           <>
-            <IframeControls
-              interfaceId={id}
-              previewIframeRef={iframeRef}
-              chatIframeRef={chatIframeRef}
-              fatalError={fatalError}
-              setFatalError={setFatalError}
-            />
+            {!operateMode && (
+              <IframeControls
+                interfaceId={id}
+                previewIframeRef={iframeRef}
+                chatIframeRef={chatIframeRef}
+                fatalError={fatalError}
+                setFatalError={setFatalError}
+              />
+            )}
             <Preview
               interfaceId={id}
-              iframeUrl={iframeUrl}
+              iframeUrl={displayUrl}
               productionUrl={productionUrl}
               handleIframeLoad={handleIframeLoad}
               iframeRef={iframeRef}

@@ -10,6 +10,7 @@ import FloatingTextArea from '../../components/FloatingTextArea.jsx';
 import Room from '../../components/room/Room.jsx';
 import Plan from './Plan.jsx';
 import PlansList from './PlansList.jsx';
+import OperateView from './OperateView.jsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import analytics from '../../lib/analytics';
@@ -20,6 +21,8 @@ import {
   clearCurrentAltaner,
   loadDisplayModeForProject,
   selectViewType,
+  selectOperateMode,
+  setOperateMode,
 } from '../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, getAccountAttribute } from '../../redux/slices/general';
 import { selectMainThread, clearRoomState, sendMessage } from '../../redux/slices/room';
@@ -63,6 +66,7 @@ export default function ProjectPage() {
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
   const viewType = useSelector(selectViewType);
+  const operateMode = useSelector(selectOperateMode);
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
@@ -74,6 +78,24 @@ export default function ProjectPage() {
 
   // Detect if we're on a plans route
   const isPlansRoute = location.pathname.includes('/plans');
+  
+  // Detect if we're on the operate route
+  const isOperateRoute = location.pathname.endsWith('/operate');
+
+  // Check for operate mode in URL (both route and query param for backwards compatibility)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const modeParam = params.get('mode');
+    const shouldBeOperateMode = isOperateRoute || modeParam === 'operate';
+    
+    // Only update if different from current state to avoid unnecessary re-renders
+    if (shouldBeOperateMode !== operateMode) {
+      dispatch(setOperateMode(shouldBeOperateMode));
+    }
+  }, [location.search, location.pathname, operateMode, isOperateRoute]);
+
+  // In operate mode, we don't need to redirect since /operate route doesn't have componentId
+  // The render logic will show the interface component directly
 
   // Clear thread_id query param when on plans route to avoid conflicts
   useEffect(() => {
@@ -156,12 +178,15 @@ export default function ProjectPage() {
   }, [accountId, sortedComponents, workflowsInitialized, workflowsLoading]);
 
   // Get the current component based on the active ID
+  // In operate mode, we don't need currentComponent since we use OperateView
   const currentComponent = useMemo(() => {
+    if (operateMode) return null; // Skip component logic in operate mode
+    
     if (!activeComponentId || !sortedComponents) return null;
     const component = sortedComponents[activeComponentId];
     // Current component type for rendering logic
     return component || null;
-  }, [activeComponentId, sortedComponents]);
+  }, [activeComponentId, sortedComponents, operateMode]);
 
   // Track feature usage when component is viewed
   useEffect(() => {
@@ -188,8 +213,8 @@ export default function ProjectPage() {
 
   // Redirect to first component if the requested component doesn't exist
   useEffect(() => {
-    // Don't redirect if we're on a plans route
-    if (isPlansRoute) return;
+    // Don't redirect if we're on a plans route or operate route
+    if (isPlansRoute || isOperateRoute) return;
 
     if (activeComponentId && sortedComponents && Object.keys(sortedComponents).length > 0) {
       // Check if the active component ID exists in sorted components
@@ -199,17 +224,18 @@ export default function ProjectPage() {
         history.replace(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
       }
     }
-  }, [activeComponentId, sortedComponents, altanerId, history, isPlansRoute]);
+  }, [activeComponentId, sortedComponents, altanerId, history, isPlansRoute, isOperateRoute]);
 
   // Create memoized selectors for interface
   const selectInterfaceById = useMemo(makeSelectInterfaceById, []);
   const selectSortedCommits = useMemo(makeSelectSortedCommits, []);
 
-  // Get the interface ID if current component is an interface
+  // Get the interface ID if current component is an interface (skip in operate mode)
   const interfaceId = useMemo(() => {
+    if (operateMode) return null; // Skip in operate mode
     if (!currentComponent || currentComponent.type !== 'interface') return null;
     return currentComponent.params?.id || currentComponent.params?.ids?.[0];
-  }, [currentComponent]);
+  }, [currentComponent, operateMode]);
 
   // Get interface data and commits if viewing an interface
   const interfaceData = useSelector((state) => 
@@ -219,8 +245,8 @@ export default function ProjectPage() {
   const interfaceCommits = useSelector((state) => 
     interfaceId ? selectSortedCommits(state, interfaceId) : []
   );
-  console.log('interfaceCommits', interfaceCommits);
 
+  console.log('interfaceCommits', interfaceCommits);
   // Check if current component is an interface with no commits
   // Only return true if we have confirmed the interface exists but has no commits
   const isInterfaceWithNoCommits = useMemo(() => {
@@ -232,7 +258,7 @@ export default function ProjectPage() {
     // This prevents showing an empty preview while data loads
     if (!interfaceData) return true;
     // Once loaded, only show full-screen chat if interface has no commits with successful build
-    return !interfaceCommits || interfaceCommits.length === 0 || !interfaceCommits.some(commit => commit.build_status === 'success');
+    return !interfaceCommits || interfaceCommits.length === 0 || !interfaceCommits.some(commit => commit.build_status === 'successful');
   }, [interfaceId, interfaceData, interfaceCommits, altaner]);
 
   // Fetch interface data if we're viewing an interface component
@@ -243,7 +269,8 @@ export default function ProjectPage() {
   }, [interfaceId]);
 
   // Determine if preview panel should be collapsed (0 width)
-  const shouldCollapsePreview = isInterfaceWithNoCommits && !isPlansRoute;
+  // Never collapse in operate mode - we always want to show the interface
+  const shouldCollapsePreview = isInterfaceWithNoCommits && !isPlansRoute && !operateMode;
 
   // Programmatically collapse/expand preview panel and set correct sizes
   useEffect(() => {
@@ -275,8 +302,8 @@ export default function ProjectPage() {
 
   // Set the first component as active when components are loaded
   useEffect(() => {
-    // Don't redirect if we're on a plans route
-    if (isPlansRoute) return;
+    // Don't redirect if we're on a plans route or operate route
+    if (isPlansRoute || isOperateRoute) return;
 
     if (sortedComponents && Object.keys(sortedComponents).length > 0 && !activeComponentId) {
       // Set first component as default if no component is selected
@@ -286,21 +313,13 @@ export default function ProjectPage() {
       const currentSearch = window.location.search;
       history.push(`/project/${altanerId}/c/${firstComponentId}${currentSearch}`);
     }
-  }, [sortedComponents, activeComponentId, altanerId, history, isPlansRoute]);
+  }, [sortedComponents, activeComponentId, altanerId, history, isPlansRoute, isOperateRoute]);
 
   // Fetch idea and send initial message when project loads with idea parameter
   useEffect(() => {
     const fetchAndSendIdea = async () => {
       const params = new URLSearchParams(location.search);
       const ideaId = params.get('idea');
-      
-      console.log('💡 Idea fetch check:', {
-        ideaId,
-        alreadySent: initialMessageSentRef.current,
-        hasRoomId: !!altaner?.room_id,
-        hasMainThread: !!mainThreadId,
-      });
-      
       if (!ideaId || initialMessageSentRef.current || !altaner?.room_id || !mainThreadId) {
         return;
       }
@@ -312,23 +331,17 @@ export default function ProjectPage() {
       try {
         const response = await optimai.get(`/idea/${ideaId}`);
         const ideaData = response.data;
-        
-        console.log('📦 Idea data received:', ideaData);
-        
+                
         const prompt = ideaData.idea || '';
         const attachments = ideaData.attachments || [];
         
-        if (prompt) {
-          console.log('📤 Sending message to thread:', mainThreadId);
-          
+        if (prompt) {          
           await dispatch(sendMessage({
             content: prompt,
             attachments,
             threadId: mainThreadId,
           }));
-          
-          console.log('✅ Message sent successfully');
-          
+                    
           const newParams = new URLSearchParams(location.search);
           newParams.delete('idea');
           const newSearch = newParams.toString();
@@ -350,7 +363,6 @@ export default function ProjectPage() {
   const { acType, acProps } = useMemo(() => {
     if (!altaner || !currentComponent) return {};
 
-    console.log('currentComponent', currentComponent);
 
     // Map component types to the expected types in AltanerComponent
     const componentTypeMap = {
@@ -379,15 +391,22 @@ export default function ProjectPage() {
       }
     }
 
+    // For interface component, pass altaner preview/live URLs
+    if (type === 'interface' && altaner) {
+      typeSpecificProps.altanerPreviewUrl = altaner.frontend_preview_url || null;
+      typeSpecificProps.altanerLiveUrl = altaner.frontend_live_url || null;
+    }
+
     return {
       acType: type,
       acProps: {
         ...transformProps(type, currentComponent.params || {}),
         ...typeSpecificProps,
         altanerComponentId: currentComponent.id,
+        operateMode,
       },
     };
-  }, [altaner, currentComponent]);
+  }, [altaner, currentComponent, operateMode]);
 
   const renderComponent = () => {
     if (!acType) return null;
@@ -495,9 +514,9 @@ export default function ProjectPage() {
             mobileActiveView={mobileActiveView}
             renderCredits={true}
             renderFeedback={true}
-            settings={false}
-            tabs={true}
-            show_mode_selector={true}
+            settings={!isOperateRoute}
+            tabs={!isOperateRoute}
+            show_mode_selector={!isOperateRoute}
           />
           <div
             className="absolute bottom-0 left-0 right-0"
@@ -522,7 +541,7 @@ export default function ProjectPage() {
               isFullscreen={isFullscreenMobile}
               currentItemId={itemId}
               onItemSelect={handleItemSelect}
-              show_mode_selector={true}
+              show_mode_selector={!isOperateRoute}
               />
           </div>
         </div>
@@ -546,6 +565,7 @@ export default function ProjectPage() {
       title={altaner?.name || 'Project'}
       noPadding
       drawerVisible={false}
+      hideHeader={operateMode}
     >
       {/* Onboarding Tour - Temporarily disabled */}
       {/* <ProjectOnboardingTour
@@ -590,18 +610,18 @@ export default function ProjectPage() {
                   header={false}
                   renderCredits={true}
                   renderFeedback={true}
-                  settings={false}
-                  tabs={true}
-                  show_mode_selector={true}
+                  settings={!isOperateRoute}
+                  tabs={!isOperateRoute}
+                  show_mode_selector={!isOperateRoute}
                 />
               </Box>
             </Panel>
 
-            {/* Resize Handle - always render to avoid PanelGroup errors, but hide when not needed */}
+            {/* Resize Handle - always render to avoid PanelGroup errors, but hide when not needed or in operate mode */}
             <PanelResizeHandle 
-              className={`relative w-0.5 group ${displayMode === 'both' && !shouldCollapsePreview ? 'cursor-ew-resize' : 'pointer-events-none opacity-0'}`}
+              className={`relative w-0.5 group ${displayMode === 'both' && !shouldCollapsePreview && !operateMode ? 'cursor-ew-resize' : 'pointer-events-none opacity-0'}`}
             >
-              {displayMode === 'both' && !shouldCollapsePreview && (
+              {displayMode === 'both' && !shouldCollapsePreview && !operateMode && (
                 <>
                   <div className="absolute inset-y-0 left-0 right-0 bg-transparent group-hover:bg-gradient-to-b group-hover:from-transparent group-hover:via-purple-500 group-hover:to-transparent transition-all duration-300 group-active:via-purple-600" />
                   <div className="absolute inset-y-[20%] left-0 right-0 bg-transparent group-hover:shadow-[0_0_6px_rgba(168,85,247,0.3)] transition-shadow duration-300" />
@@ -630,8 +650,10 @@ export default function ProjectPage() {
                   ) : (
                     <PlansList roomId={altaner?.room_id} />
                   )
+                ) : operateMode ? (
+                  <OperateView altaner={altaner} />
                 ) : (
-                  !shouldCollapsePreview && activeComponentId && currentComponent && renderComponent()
+                  !shouldCollapsePreview && currentComponent && renderComponent()
                 )}
               </Box>
             </Panel>

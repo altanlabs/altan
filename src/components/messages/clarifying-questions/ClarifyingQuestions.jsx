@@ -273,8 +273,8 @@ const ClarifyingQuestions = ({ children, threadId }) => {
   }
 
   return (
-    <Card className="my-3">
-      <CardHeader className="pb-3">
+    <Card className="my-2">
+      <CardHeader className="pb-2">
         <div className="flex items-center gap-2.5">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
             <MessageCircleQuestion className="w-4 h-4 text-primary" />
@@ -290,7 +290,7 @@ const ClarifyingQuestions = ({ children, threadId }) => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 pt-0">
+      <CardContent className="space-y-2 pt-0">
         {/* Question Groups */}
         <div className="space-y-2">
           {questionGroups.map((group) => {

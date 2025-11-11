@@ -19,6 +19,7 @@ const initialState = {
   current: null,
   viewType: 'preview', // 'preview' or 'code'
   displayMode: 'both', // 'chat', 'preview', 'both'
+  operateMode: false, // true = consumer mode, false = builder mode
 };
 
 const slice = createSlice({
@@ -82,6 +83,12 @@ const slice = createSlice({
         // Default to 'both' if no preference is saved
         state.displayMode = 'both';
       }
+    },
+    setOperateMode(state, action) {
+      state.operateMode = action.payload;
+    },
+    toggleOperateMode(state) {
+      state.operateMode = !state.operateMode;
     },
     updateAltaner(state, action) {
       const { id, ...changes } = action.payload;
@@ -262,6 +269,8 @@ export const {
   setDisplayMode,
   setDisplayModeForProject,
   loadDisplayModeForProject,
+  setOperateMode,
+  toggleOperateMode,
   // TEMPLATES
   addTemplate: addAltanerTemplate,
   updateTemplate: updateAltanerTemplate,
@@ -279,6 +288,15 @@ export const getAltanerById = (altanerId) => async (dispatch, getState) => {
     if (!altaner?.id) {
       throw new Error(`altaner ${altanerId} is invalid`);
     }
+
+    // Extract frontend URLs from the root of the response
+    if (response.data.frontend_preview_url) {
+      altaner.frontend_preview_url = response.data.frontend_preview_url;
+    }
+    if (response.data.frontend_live_url) {
+      altaner.frontend_live_url = response.data.frontend_live_url;
+    }
+
     const accountId = getState().general.account.id;
     if (altaner.account_id !== accountId) {
       let error = false;
@@ -514,6 +532,8 @@ export const selectCurrentAltaner = (state) =>
 export const selectViewType = (state) => selectAltanerState(state).viewType;
 
 export const selectDisplayMode = (state) => selectAltanerState(state).displayMode;
+
+export const selectOperateMode = (state) => selectAltanerState(state).operateMode;
 
 export const selectAltanerTemplate = (state) => selectCurrentAltaner(state)?.template;
 

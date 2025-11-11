@@ -14,6 +14,9 @@ const VoiceCallButton = ({
   onSendMessage,
   hasActiveGeneration = false,
   onStopGeneration = null,
+  isRecording = false,
+  isTranscribing = false,
+  onStartRecording = null,
 }) => {
   // Get room and check if voice is enabled
   const room = useSelector(selectRoom);
@@ -37,12 +40,32 @@ const VoiceCallButton = ({
       };
     }
 
-    // If voice is not enabled, don't show voice-specific states
-    if (!isVoiceEnabled) {
-      return null; // Use regular SendButton
+    // If transcribing, show loading spinner
+    if (isTranscribing) {
+      return {
+        icon: (
+          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ),
+        text: 'Transcribing...',
+        className: 'bg-blue-500 hover:bg-blue-600 text-white',
+        disabled: true,
+      };
     }
 
-    if (isVoiceConnecting) {
+    // If recording, show recording indicator
+    if (isRecording) {
+      return {
+        icon: (
+          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+        ),
+        text: 'Recording...',
+        className: 'bg-red-500 hover:bg-red-600 text-white',
+        disabled: true,
+      };
+    }
+
+    // Legacy: If voice is enabled and connecting/active
+    if (isVoiceEnabled && isVoiceConnecting) {
       return {
         icon: <div className="animate-spin">⟳</div>,
         text: 'Connecting...',
@@ -51,7 +74,7 @@ const VoiceCallButton = ({
       };
     }
 
-    if (isVoiceActive) {
+    if (isVoiceEnabled && isVoiceActive) {
       return {
         icon: (
           <Iconify
@@ -65,17 +88,24 @@ const VoiceCallButton = ({
       };
     }
 
+    // When disabled (no text), show microphone for transcription
     if (!isSendEnabled) {
       return {
-        icon: <MicrophoneSvg />,
-        text: 'Start Voice',
-        className: 'hover:bg-blue-600 text-white',
+        icon: (
+          <Iconify
+            icon="mdi:microphone"
+            className="text-xl"
+          />
+        ),
+        text: 'Record & Transcribe',
+        className: 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300',
         disabled: false,
+        onClick: onStartRecording,
       };
     }
 
     return null; // Use regular SendButton
-  }, [isVoiceConnecting, isVoiceActive, isSendEnabled, isVoiceEnabled, hasActiveGeneration, onStopGeneration]);
+  }, [isVoiceConnecting, isVoiceActive, isSendEnabled, isVoiceEnabled, hasActiveGeneration, onStopGeneration, isRecording, isTranscribing, onStartRecording]);
 
   if (buttonContent) {
     return (

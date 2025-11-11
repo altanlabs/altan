@@ -249,6 +249,18 @@ const Router = () => {
         </Route>
 
         {/* Project Routes */}
+        {/* Operate mode route - must come before generic project routes */}
+        <Route
+          path="/project/:altanerId/operate"
+          exact
+        >
+          <AuthGuard requireAuth={true}>
+            <ProjectLayout>
+              <ProjectPage />
+            </ProjectLayout>
+          </AuthGuard>
+        </Route>
+
         {/* Plans routes - must come before generic project routes */}
         <Route
           path="/project/:altanerId/plans/:planId"

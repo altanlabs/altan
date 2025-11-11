@@ -1,7 +1,7 @@
 import { IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 
 import AttachmentHandler from './attachment/AttachmentHandler.jsx';
 import AuthorizationRequests from './AuthorizationRequests.jsx';
@@ -83,6 +83,10 @@ const FloatingTextArea = ({
   show_mode_selector = false,
 }) => {
   const { altanerId } = useParams();
+  const location = useLocation();
+  
+  // Detect operate mode directly from URL path
+  const operateMode = location.pathname.endsWith('/operate');
   const me = useSelector(selectMe);
   const replyToSelector = useMemo(makeSelectReplyTo, []);
   const replyTo = useSelector((state) => replyToSelector(state, threadId));
@@ -98,8 +102,8 @@ const FloatingTextArea = ({
   const [selectedAgent, setSelectedAgent] = useState(null);
   const floatingTextAreaRef = useRef(null);
 
-  // Check if we have tasks to show (only in altaner context)
-  const hasTasks = altanerId && tasks && tasks.length > 0;
+  // Check if we have tasks to show (only in altaner context and not in operate mode)
+  const hasTasks = altanerId && tasks && tasks.length > 0 && !operateMode;
 
   const { enqueueSnackbar } = useSnackbar();
   const { translate } = useLocales();
@@ -345,14 +349,18 @@ const FloatingTextArea = ({
         </div>
       ) : (
         <>
-          <ActivationLifecycleBar
-            threadId={threadId}
-            className="mb-2"
-          />
+          {!operateMode && (
+            <>
+              <ActivationLifecycleBar
+                threadId={threadId}
+                className="mb-2"
+              />
 
-          <AuthorizationRequests />
+              <AuthorizationRequests />
 
-          <TodoWidget threadId={threadId} mode={mode} />
+              <TodoWidget threadId={threadId} mode={mode} />
+            </>
+          )}
 
           <div
             ref={floatingTextAreaRef}

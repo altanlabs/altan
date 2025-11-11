@@ -23,7 +23,7 @@ export const PlanError = ({ error, onClose }) => (
           <div className="flex flex-col items-center gap-3 text-center">
             <Iconify icon="mdi:alert-circle" className="w-8 h-8 text-red-600 dark:text-red-400" />
             <div>
-              <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">Failed to load plan</p>
+              <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">Plan rejected</p>
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
             <button

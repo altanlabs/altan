@@ -1,10 +1,13 @@
 import {
   useMediaQuery,
   useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
+import { setOperateMode } from '../../redux/slices/altaners';
 import {
   selectActiveResponsesByThread,
   selectActiveActivationsByThread,
@@ -15,7 +18,6 @@ import { dispatch, useSelector } from '../../redux/store';
 import { LiveWaveform } from '../elevenlabs/ui/live-waveform.tsx';
 import Iconify from '../iconify';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
-import { useSnackbar } from '../snackbar';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
@@ -26,6 +28,7 @@ import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
 import { BASE_MENU_ITEMS, TOOL_MENU_ITEM } from './utils/constants';
 import analytics from '../../lib/analytics';
+import { useSnackbar } from '../snackbar';
 
 // Stable empty array reference to avoid creating new references
 const EMPTY_ARRAY = [];
@@ -55,6 +58,11 @@ const AttachmentHandler = ({
   // Mobile detection
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const history = useHistory();
+  const location = useLocation();
+
+  // Detect operate mode directly from URL path
+  const operateMode = location.pathname.endsWith('/operate');
 
   // Voice conversation hooks
   const { enqueueSnackbar } = useSnackbar();
@@ -110,13 +118,210 @@ const AttachmentHandler = ({
     return setupDragEvents(containerRef);
   }, [setupDragEvents, containerRef]);
 
+  // Helper function to get file extension from MIME type
+  const getFileExtension = useCallback((mimeType) => {
+    // Remove codec information from MIME type
+    const baseMimeType = mimeType.split(';')[0];
+    const mimeToExt = {
+      'audio/webm': 'webm',
+      'audio/mp4': 'm4a',
+      'audio/mpeg': 'mp3',
+      'audio/ogg': 'ogg',
+      'audio/wav': 'wav',
+    };
+    return mimeToExt[baseMimeType] || 'webm';
+  }, []);
+
+  // Transcribe audio - defined before startRecording to avoid hoisting issues
+  const transcribeAudio = useCallback(
+    async (blob) => {
+      console.log('🎯 transcribeAudio called with blob:', blob);
+      if (!blob) {
+        console.log('❌ No blob provided to transcribeAudio');
+        return;
+      }
+
+      setIsTranscribing(true);
+      setTranscriptionError(null);
+
+      try {
+        const formData = new FormData();
+        const mimeType = blob.type;
+        const extension = getFileExtension(mimeType);
+        formData.append('file', blob, `recording.${extension}`);
+        console.log('📤 Sending to backend, file type:', mimeType, 'extension:', extension);
+
+        const baseUrl = 'https://d9e17293-cf6.db-pool-europe-west1.altan.ai';
+        const response = await fetch(`${baseUrl}/services/api/transcription_service/transcribe`, {
+          method: 'POST',
+          body: formData,
+        });
+        console.log('📥 Backend response:', response.status);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === 'success' && result.text) {
+          // Send the transcribed text directly using Redux action
+          if (threadId) {
+            // Prepend agent mention if in instant mode and an agent is selected
+            let messageContent = result.text;
+            if (selectedMode === 'instant' && selectedAgent) {
+              messageContent = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**\n\n${result.text}`;
+            }
+
+            console.log('Sending transcribed message via Redux:', messageContent);
+            await dispatch(
+              sendMessage({
+                content: messageContent,
+                attachments: [],
+                threadId,
+              }),
+            );
+
+            // Track speech-to-text usage
+            analytics.featureUsed('speech_to_text', {
+              thread_id: threadId,
+              text_length: result.text.length,
+            });
+          } else {
+            console.error('No threadId available to send message');
+          }
+          // Reset audio blob after successful transcription
+          setAudioBlob(null);
+        } else if (result.error) {
+          setTranscriptionError(result.error);
+          enqueueSnackbar(`Transcription error: ${result.error}`, { variant: 'error' });
+        } else {
+          const errorMsg = result.message || 'Transcription failed';
+          setTranscriptionError(errorMsg);
+          enqueueSnackbar(errorMsg, { variant: 'error' });
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to transcribe audio';
+        setTranscriptionError(errorMsg);
+        enqueueSnackbar(errorMsg, { variant: 'error' });
+        console.error('Transcription error:', err);
+      } finally {
+        setIsTranscribing(false);
+      }
+    },
+    [threadId, enqueueSnackbar, selectedMode, selectedAgent, getFileExtension],
+  );
+
+  // Start recording audio
+  const startRecording = useCallback(async () => {
+    console.log('🎤 startRecording called');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('✅ Got microphone access');
+
+      // Try to use MP4/M4A format first, fall back to WebM
+      let options = { mimeType: 'audio/mp4' };
+      if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/webm' };
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        console.log('⏹️ Recording stopped, chunks:', audioChunksRef.current.length);
+        // Use the base MIME type without codecs
+        const baseMimeType = mediaRecorder.mimeType.split(';')[0];
+        const blob = new Blob(audioChunksRef.current, { type: baseMimeType });
+
+        // Only set blob if we have chunks (not cancelled)
+        // Don't auto-transcribe - wait for user to click accept button
+        if (audioChunksRef.current.length > 0) {
+          console.log('✅ Audio blob created, size:', blob.size);
+          setAudioBlob(blob);
+        }
+
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setTranscriptionError(null);
+      console.log('▶️ Recording started');
+    } catch (err) {
+      console.error('❌ Failed to start recording:', err);
+      enqueueSnackbar('Failed to access microphone', { variant: 'error' });
+    }
+  }, [enqueueSnackbar]);
+
+  // Stop recording audio
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, [isRecording]);
+
+  // Cancel recording without transcribing
+  const handleCancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      shouldTranscribeRef.current = false;
+
+      // Stop the recorder
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
+      // Stop all tracks to release microphone
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      }
+
+      // Clear the audio blob to prevent transcription
+      audioChunksRef.current = [];
+      setAudioBlob(null);
+    }
+  }, [isRecording]);
+
+  // Accept recording and transcribe
+  const handleAcceptRecording = useCallback(() => {
+    if (isRecording) {
+      // Mark that we should transcribe when recording stops
+      shouldTranscribeRef.current = true;
+      console.log('📝 Will transcribe after stop');
+      // Stop recording first
+      stopRecording();
+    }
+  }, [isRecording, stopRecording]);
+
+  // Auto-transcribe when recording stops and user has clicked accept
+  useEffect(() => {
+    if (!isRecording && audioBlob && !isTranscribing && shouldTranscribeRef.current) {
+      shouldTranscribeRef.current = false;
+      console.log('🚀 Starting transcription...');
+      // Wait a bit for the stop to complete
+      const timer = setTimeout(() => {
+        transcribeAudio(audioBlob);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isRecording, audioBlob, isTranscribing, transcribeAudio]);
+
   // Enhanced send message handler
   const handleSendMessage = useCallback(() => {
-    if (!isSendEnabled && !isVoiceActive) {
-      // Start voice conversation
-      startVoiceCall(agents, selectedAgent);
+    if (!isSendEnabled && !isVoiceActive && !isRecording && !isTranscribing) {
+      // Start audio recording for transcription
+      startRecording();
     } else if (isVoiceActive && !isSendEnabled) {
-      // Stop voice conversation
+      // Stop voice conversation (cleanup for deprecated feature)
       stopVoiceCall();
     } else if (isSendEnabled) {
       // Send regular message (text-to-voice handled in FloatingTextArea)
@@ -125,11 +330,11 @@ const AttachmentHandler = ({
   }, [
     isSendEnabled,
     isVoiceActive,
-    startVoiceCall,
+    isRecording,
+    isTranscribing,
+    startRecording,
     stopVoiceCall,
     onSendMessage,
-    agents,
-    selectedAgent,
   ]);
 
   // Handle stopping agent generation
@@ -189,189 +394,20 @@ const AttachmentHandler = ({
     [selectedAgent, setSelectedAgent, setSelectedMode],
   );
 
-  // Helper function to get file extension from MIME type
-  const getFileExtension = (mimeType) => {
-    // Remove codec information from MIME type
-    const baseMimeType = mimeType.split(';')[0];
-    const mimeToExt = {
-      'audio/webm': 'webm',
-      'audio/mp4': 'm4a',
-      'audio/mpeg': 'mp3',
-      'audio/ogg': 'ogg',
-      'audio/wav': 'wav',
-    };
-    return mimeToExt[baseMimeType] || 'webm';
-  };
+  // Toggle between build and operate mode
+  const handleToggleMode = useCallback(() => {
+    if (!altanerId) return;
 
-  // Transcribe audio - defined before startRecording to avoid hoisting issues
-  const transcribeAudio = useCallback(
-    async (blob) => {
-      if (!blob) return;
-
-      setIsTranscribing(true);
-      setTranscriptionError(null);
-
-      try {
-        const formData = new FormData();
-        const mimeType = blob.type;
-        const extension = getFileExtension(mimeType);
-        formData.append('file', blob, `recording.${extension}`);
-
-        const baseUrl = 'https://d9e17293-cf6.db-pool-europe-west1.altan.ai';
-        const response = await fetch(`${baseUrl}/services/api/transcription_service/transcribe`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.status === 'success' && result.text) {
-          // Send the transcribed text directly using Redux action
-          if (threadId) {
-            // Prepend agent mention if in instant mode and an agent is selected
-            let messageContent = result.text;
-            if (selectedMode === 'instant' && selectedAgent) {
-              messageContent = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**\n\n${result.text}`;
-            }
-
-            console.log('Sending transcribed message via Redux:', messageContent);
-            await dispatch(
-              sendMessage({
-                content: messageContent,
-                attachments: [],
-                threadId,
-              }),
-            );
-
-            // Track speech-to-text usage
-            analytics.featureUsed('speech_to_text', {
-              thread_id: threadId,
-              text_length: result.text.length,
-            });
-          } else {
-            console.error('No threadId available to send message');
-          }
-          // Reset audio blob after successful transcription
-          setAudioBlob(null);
-        } else if (result.error) {
-          setTranscriptionError(result.error);
-          enqueueSnackbar(`Transcription error: ${result.error}`, { variant: 'error' });
-        } else {
-          const errorMsg = result.message || 'Transcription failed';
-          setTranscriptionError(errorMsg);
-          enqueueSnackbar(errorMsg, { variant: 'error' });
-        }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Failed to transcribe audio';
-        setTranscriptionError(errorMsg);
-        enqueueSnackbar(errorMsg, { variant: 'error' });
-        console.error('Transcription error:', err);
-      } finally {
-        setIsTranscribing(false);
-      }
-    },
-    [threadId, enqueueSnackbar, selectedMode, selectedAgent],
-  );
-
-  // Start recording audio
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Try to use MP4/M4A format first, fall back to WebM
-      let options = { mimeType: 'audio/mp4' };
-      if (!MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/webm' };
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, options);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        // Use the base MIME type without codecs
-        const baseMimeType = mediaRecorder.mimeType.split(';')[0];
-        const blob = new Blob(audioChunksRef.current, { type: baseMimeType });
-
-        // Only set blob if we have chunks (not cancelled)
-        // Don't auto-transcribe - wait for user to click accept button
-        if (audioChunksRef.current.length > 0) {
-          setAudioBlob(blob);
-        }
-
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setTranscriptionError(null);
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      enqueueSnackbar('Failed to access microphone', { variant: 'error' });
+    if (operateMode) {
+      // Currently in operate mode -> switch to build mode (go back to project root)
+      history.replace(`/project/${altanerId}`);
+    } else {
+      // Currently in build mode -> switch to operate mode
+      history.replace(`/project/${altanerId}/operate`);
     }
-  }, [enqueueSnackbar]);
 
-  // Stop recording audio
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  }, [isRecording]);
-
-  // Cancel recording without transcribing
-  const handleCancelRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      shouldTranscribeRef.current = false;
-
-      // Stop the recorder
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-
-      // Stop all tracks to release microphone
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      }
-
-      // Clear the audio blob to prevent transcription
-      audioChunksRef.current = [];
-      setAudioBlob(null);
-    }
-  }, [isRecording]);
-
-  // Accept recording and transcribe
-  const handleAcceptRecording = useCallback(() => {
-    if (isRecording) {
-      // Mark that we should transcribe when recording stops
-      shouldTranscribeRef.current = true;
-      // Stop recording first
-      stopRecording();
-    }
-  }, [isRecording, stopRecording]);
-
-  // Auto-transcribe when recording stops and user has clicked accept
-  useEffect(() => {
-    if (!isRecording && audioBlob && !isTranscribing && shouldTranscribeRef.current) {
-      shouldTranscribeRef.current = false;
-      // Wait a bit for the stop to complete
-      const timer = setTimeout(() => {
-        transcribeAudio(audioBlob);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isRecording, audioBlob, isTranscribing, transcribeAudio]);
+    dispatch(setOperateMode(!operateMode));
+  }, [history, operateMode, altanerId]);
 
   // The container into which we'll portal the overlay
   const overlayContainer = containerRef?.current;
@@ -447,12 +483,31 @@ const AttachmentHandler = ({
         <div className="flex items-center justify-between w-full">
           {/* LEFT: Attach button with menu */}
           <div className="flex items-center gap-2">
+            <Tooltip title={operateMode ? 'Switch to Build Mode' : 'Switch to Operate Mode'} placement="top" arrow>
+              <IconButton
+                size="small"
+                onClick={handleToggleMode}
+                sx={{
+                  backgroundColor: operateMode ? 'rgba(168, 85, 247, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                  '&:hover': {
+                    backgroundColor: operateMode ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  },
+                }}
+              >
+                <Iconify
+                  icon={operateMode ? 'mdi:hammer-wrench' : 'mdi:play-circle-outline'}
+                  width={20}
+                  height={20}
+                />
+              </IconButton>
+            </Tooltip>
+
             <AttachmentMenu
               menuItems={displayMenuItems}
               onFileInputClick={handleFileInputClick}
             />
 
-            {!isMobile && (
+            {!isMobile && !operateMode && (
               <>
                 {show_mode_selector && (
                   <ModeSelectionChip
@@ -490,23 +545,6 @@ const AttachmentHandler = ({
 
           {/* RIGHT: Voice/Send button and Speech Recognition */}
           <div className="flex items-center gap-2">
-            {/* Audio Transcription Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startRecording();
-              }}
-              className="flex items-center justify-center p-2 rounded-full
-                     bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800
-                     text-gray-600 dark:text-gray-300 transition-all duration-200"
-              title="Record and transcribe"
-            >
-              <Iconify
-                icon="mdi:microphone"
-                className="text-xl"
-              />
-            </button>
-
             {/* Main Send/Voice Button */}
             <VoiceCallButton
               isVoiceActive={isVoiceActive}
@@ -515,6 +553,9 @@ const AttachmentHandler = ({
               onSendMessage={handleSendMessage}
               hasActiveGeneration={hasActiveGeneration}
               onStopGeneration={handleStopGeneration}
+              isRecording={isRecording}
+              isTranscribing={isTranscribing}
+              onStartRecording={startRecording}
             />
           </div>
         </div>

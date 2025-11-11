@@ -49,6 +49,7 @@ export const handleCommitCreated = (eventData) => {
  * Handle commit.updated event (from CommitUpdate)
  */
 export const handleCommitUpdated = (eventData) => {
+  console.log('handleCommitUpdated', eventData);
   const updatePayload = {
     id: eventData.id || (eventData.ids && eventData.ids[0]),
     interface_id: eventData.interface_id || eventData.changes?.interface_id,
