@@ -378,6 +378,8 @@ const initialState = {
   isRealtimeCall: false,
   contextMenu: null,
   roomContext: null, // Context to append to all messages in this room
+  // Temporary thread for ephemeral mode
+  temporaryThread: null, // { id, roomId, isTemporary: true, created_at }
 };
 
 const extractMessagesFromThread = (state, thread) => {
@@ -1214,6 +1216,57 @@ const slice = createSlice({
           state[key] = initialState[key];
         }
       });
+    },
+    // Temporary thread management for ephemeral mode
+    createTemporaryThread: (state, action) => {
+      const { roomId } = action.payload;
+      // Generate a unique temporary thread ID
+      const tempThreadId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      state.temporaryThread = {
+        id: tempThreadId,
+        roomId,
+        isTemporary: true,
+        created_at: new Date().toISOString(),
+      };
+      
+      // Set it as the current thread
+      state.thread.main.current = tempThreadId;
+    },
+    promoteTemporaryThread: (state, action) => {
+      const { tempId, realThreadId, threadData } = action.payload;
+      
+      // Only proceed if the current temporary thread matches
+      if (state.temporaryThread?.id === tempId && state.temporaryThread.isTemporary) {
+        // Ensure threadData has required collections (newly created threads won't have messages yet)
+        const normalizedThreadData = {
+          ...threadData,
+          messages: threadData.messages || { items: [] },
+          events: threadData.events || { items: [] },
+          media: threadData.media || { items: [] },
+          read_status: threadData.read_status || null,
+        };
+        
+        // Add the real thread to the threads collection
+        const thread = handleThread(normalizedThreadData);
+        extractMessagesFromThread(state, thread);
+        delete thread.messages?.byId;
+        delete thread.messages?.allIds;
+        
+        state.threads.byId[realThreadId] = thread;
+        if (!state.threads.allIds.includes(realThreadId)) {
+          state.threads.allIds.push(realThreadId);
+        }
+        
+        // Update current thread reference to the real thread ID
+        state.thread.main.current = realThreadId;
+        
+        // Clear the temporary thread
+        state.temporaryThread = null;
+      }
+    },
+    clearTemporaryThread: (state) => {
+      state.temporaryThread = null;
     },
     updateMessageContent: (state, action) => {
       const { messageId, content } = action.payload;
@@ -2311,6 +2364,10 @@ export const {
   addRunningResponse,
   deleteRunningResponse,
   clearState: clearRoomState,
+  // Temporary thread actions for ephemeral mode
+  createTemporaryThread,
+  promoteTemporaryThread,
+  clearTemporaryThread,
   updateMessageContent,
   updateMessageStreamingState,
   addAuthorizationRequest,
@@ -2382,6 +2439,8 @@ export const selectRealtime = (state) => selectRoomState(state)?.isRealtimeCall;
 export const selectContextMenu = (state) => selectRoomState(state).contextMenu;
 
 export const selectRoomContext = (state) => selectRoomState(state).roomContext;
+
+export const selectTemporaryThread = (state) => selectRoomState(state).temporaryThread;
 
 export const selectMembers = (state) => selectRoomState(state).members;
 
@@ -3573,7 +3632,38 @@ export const sendMessage =
       const state = getState();
       const {
         thread: { respond },
+        room,
+        temporaryThread,
       } = state.room;
+
+      // Check if this is a temporary thread - create it in DB first
+      let actualThreadId = threadId;
+      if (temporaryThread && temporaryThread.id === threadId && temporaryThread.isTemporary) {
+        console.log('🔧 Creating temporary thread in database before sending message...');
+        
+        // Create the thread in DB with the message content as the name
+        const threadName = content.substring(0, 50).trim() || 'New Chat';
+        // Use roomId from temporaryThread since room object might be null in ephemeral mode
+        const roomIdToUse = temporaryThread.roomId || room?.id;
+        const createResponse = await optimai_room.post(`/v2/rooms/${roomIdToUse}/threads`, {
+          name: threadName,
+        });
+        const createdThread = createResponse.data;
+        
+        console.log('✅ Temporary thread created in DB:', createdThread.id);
+        
+        // Promote the temporary thread to permanent
+        dispatch(
+          promoteTemporaryThread({
+            tempId: threadId,
+            realThreadId: createdThread.id,
+            threadData: createdThread,
+          }),
+        );
+        
+        // Update threadId to the real one for sending the message
+        actualThreadId = createdThread.id;
+      }
 
       // Check if we're in an interface project and switch to dev mode if needed
       const currentUrl = window.location.pathname;
@@ -3586,28 +3676,28 @@ export const sendMessage =
       const config = {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          dispatch(slice.actions.updateMediaProgress({ threadId, percentCompleted }));
+          dispatch(slice.actions.updateMediaProgress({ threadId: actualThreadId, percentCompleted }));
         },
       };
 
       if (attachments?.length > 0) {
-        dispatch(slice.actions.setIsUploading({ threadId, messageId: null }));
+        dispatch(slice.actions.setIsUploading({ threadId: actualThreadId, messageId: null }));
       }
 
       const response = await optimai_room.post(
-        `/v2/threads/${threadId}/messages`,
-        { text: content, attachments, replied_id: respond[threadId] },
+        `/v2/threads/${actualThreadId}/messages`,
+        { text: content, attachments, replied_id: respond[actualThreadId] },
         config,
       );
 
       // Don't play sound if voice is active for this thread
       const isVoiceActiveForThread =
-        !!state.room.voiceConversations?.byThreadId?.[threadId]?.isActive;
+        !!state.room.voiceConversations?.byThreadId?.[actualThreadId]?.isActive;
       if (!isVoiceActiveForThread) {
         SOUND_OUT.play();
       }
-      if (respond && respond[threadId]) {
-        dispatch(slice.actions.setThreadRespond({ threadId, messageId: null }));
+      if (respond && respond[actualThreadId]) {
+        dispatch(slice.actions.setThreadRespond({ threadId: actualThreadId, messageId: null }));
       }
 
       // Track message sent event
@@ -3616,7 +3706,7 @@ export const sendMessage =
           has_attachments: !!(attachments?.length > 0),
           attachment_count: attachments?.length || 0,
           content_length: content?.length || 0,
-          is_reply: !!(respond && respond[threadId]),
+          is_reply: !!(respond && respond[actualThreadId]),
         };
 
         // Extract project ID from URL (/project/{project-id}/c/{conversation-id})
@@ -3626,7 +3716,7 @@ export const sendMessage =
           trackingProperties.project_id = urlParts[projectIndex + 1];
         }
 
-        analytics.messageSent(threadId, trackingProperties);
+        analytics.messageSent(actualThreadId, trackingProperties);
       } catch (trackingError) {
         console.warn('Failed to track message sent event:', trackingError);
       }

@@ -40,7 +40,7 @@ const AgentSelectionChip = ({
       try {
         const savedAgentId = localStorage.getItem(getStorageKey());
         if (savedAgentId) {
-          const savedAgent = agents.find(agent => agent.id === savedAgentId);
+          const savedAgent = agents.find((agent) => agent.id === savedAgentId);
           if (savedAgent) {
             onAgentSelect(savedAgent);
           } else {
@@ -93,7 +93,10 @@ const AgentSelectionChip = ({
 
   return (
     <>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
         <PopoverTrigger asChild>
           <button
             className={cn(
@@ -112,23 +115,31 @@ const AgentSelectionChip = ({
               <>
                 <DynamicAgentAvatar
                   agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
-                  size={12}
+                  size={14}
                   isStatic
                 />
-                {!isMobile && <span className="opacity-90 max-w-[80px] truncate">{selectedAgent.name}</span>}
+                {!isMobile && (
+                  <span className="opacity-90 max-w-[80px] truncate">{selectedAgent.name}</span>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleAgentClear();
                   }}
-                  className="-mr-0.5 hover:bg-black/10 dark:hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                  className="-mr-0.5 hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors"
                 >
-                  <Iconify icon="mdi:close" className="w-2.5 h-2.5" />
+                  <Iconify
+                    icon="mdi:close"
+                    size={10}
+                  />
                 </button>
               </>
             ) : (
               <>
-                <Iconify icon="mdi:at" className="w-3 h-3" />
+                <Iconify
+                  icon="mdi:at"
+                  className="w-2 h-2"
+                />
                 {!isMobile && <span className="opacity-90">{agents.length} agents</span>}
               </>
             )}
@@ -183,7 +194,10 @@ const AgentSelectionChip = ({
                         )}
                         title="Agent details"
                       >
-                        <Iconify icon="eva:settings-2-outline" className="w-3 h-3" />
+                        <Iconify
+                          icon="eva:settings-2-outline"
+                          className="w-3 h-3"
+                        />
                       </button>
                     )}
                   </div>

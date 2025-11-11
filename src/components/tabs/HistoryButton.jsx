@@ -1,91 +1,155 @@
-import { IconButton, Tooltip, Popover } from '@mui/material';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 
-import { switchToThreadInTab } from '../../redux/slices/room';
+import { cn } from '../../lib/utils.ts';
+import {
+  fetchRoomAllThreads,
+  selectRoomStateInitialized,
+  selectRoomStateLoading,
+  selectThreadsById,
+  selectRoomThreadsIds,
+  switchToThreadInTab,
+} from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
-import ConversationsList from '../conversations/ConversationsList.jsx';
 import Iconify from '../iconify/Iconify.jsx';
+import ThreadMinified from '../room/thread/ThreadMinified.jsx';
+import { Button } from '../ui/button.tsx';
+import { Input } from '../ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
 
 const HistoryButton = ({ disabled = false, size = 'small' }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const isOpen = Boolean(anchorEl);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleClick = useCallback(
-    (event) => {
-      if (disabled) return;
-      setAnchorEl(event.currentTarget);
-    },
-    [disabled],
-  );
+  const allThreadsInitialized = useSelector(selectRoomStateInitialized('allThreads'));
+  const allThreadsLoading = useSelector(selectRoomStateLoading('allThreads'));
+  const threadsById = useSelector(selectThreadsById);
+  const threadIds = useSelector(selectRoomThreadsIds);
+
+  useEffect(() => {
+    if (!allThreadsInitialized && !allThreadsLoading && isOpen) {
+      dispatch(fetchRoomAllThreads());
+    }
+  }, [allThreadsInitialized, allThreadsLoading, isOpen]);
+
+  // Filter threads based on search query
+  const filteredThreads = useMemo(() => {
+    const conversationThreads = threadIds.filter((threadId) => {
+      const thread = threadsById[threadId];
+      return thread && !thread.is_main && thread.status !== 'dead';
+    });
+
+    if (!searchQuery.trim()) {
+      return conversationThreads.slice(0, 15);
+    }
+
+    const query = searchQuery.toLowerCase();
+    return conversationThreads
+      .filter((threadId) => {
+        const thread = threadsById[threadId];
+        const threadName = thread?.name || '';
+        return threadName.toLowerCase().includes(query);
+      })
+      .slice(0, 15);
+  }, [threadIds, threadsById, searchQuery]);
+
+  const handleClick = useCallback(() => {
+    if (disabled) return;
+    setIsOpen(true);
+  }, [disabled]);
 
   const handleClose = useCallback(() => {
-    setAnchorEl(null);
+    setIsOpen(false);
+    setSearchQuery('');
   }, []);
 
   const handleThreadSelect = useCallback(
     (threadId) => {
-      // Switch to the selected thread in a tab
       dispatch(switchToThreadInTab(threadId));
-      // Close the popover
       handleClose();
     },
     [handleClose],
   );
 
   return (
-    <>
-      <Tooltip
-        title="Recent conversations"
-        placement="top"
-      >
-        <IconButton
-          size={size}
-          onClick={handleClick}
-          disabled={disabled}
-        >
-          <Iconify
-            icon="fluent:chat-history-24-regular"
-            width={20}
-          />
-        </IconButton>
-      </Tooltip>
+    <TooltipProvider>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size={size === 'small' ? 'icon' : 'default'}
+                onClick={handleClick}
+                disabled={disabled}
+                className={cn(
+                  'transition-colors',
+                  size === 'small' && 'h-8 w-8',
+                )}
+              >
+                <Iconify icon="fluent:chat-history-24-regular" width={20} />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>Recent conversations</p>
+          </TooltipContent>
+        </Tooltip>
 
-      <Popover
-        open={isOpen}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        slotProps={{
-          paper: {
-            sx: {
-              width: 400,
-              maxHeight: 400,
-              mt: 1,
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-              border: '1px solid',
-              borderColor: 'divider',
-            },
-          },
-        }}
-      >
-        <ConversationsList
-          maxHeight={300}
-          limit={15}
-          showTitle={true}
-          compact={true}
-          onThreadSelect={handleThreadSelect}
-          emptyMessage="No recent conversations yet."
-          loadingMessage="Loading..."
-        />
+        <PopoverContent
+          side="bottom"
+          align="start"
+          className="w-[400px] p-0 shadow-lg border"
+        >
+          {/* Header with search */}
+          <div className="p-3 border-b">
+            <div className="relative">
+              <Iconify
+                icon="solar:magnifer-linear"
+                width={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              />
+              <Input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+          </div>
+
+          {/* Conversations list */}
+          <div className="max-h-[400px] overflow-y-auto">
+            {!allThreadsInitialized && allThreadsLoading ? (
+              <div className="p-8 text-center">
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+            ) : filteredThreads.length > 0 ? (
+              <div className="py-1">
+                {filteredThreads.map((threadId) => (
+                  <ThreadMinified
+                    key={threadId}
+                    threadId={threadId}
+                    disableConnector
+                    onSelect={handleThreadSelect}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? 'No conversations match your search.'
+                    : 'No recent conversations yet.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
       </Popover>
-    </>
+    </TooltipProvider>
   );
 };
 

@@ -15,10 +15,6 @@ import {
   selectRoomState,
   setDrawerOpen,
   sendMessage,
-  selectThreadsById,
-  fetchThread,
-  switchToThread,
-  selectRoomThreadMain,
   selectMainThread,
   clearRoomState,
   setRoomContext,
@@ -66,6 +62,7 @@ const DesktopRoom = ({
   renderFeedback = false,
   initialMessage = null,
   show_mode_selector = false,
+  ephemeral_mode = false,
 }) => {
   const { isOpen, subscribe, unsubscribe } = useHermesWebSocket();
 
@@ -368,6 +365,7 @@ const DesktopRoom = ({
               renderFeedback={renderFeedback}
               renderCredits={renderCredits}
               show_mode_selector={show_mode_selector}
+              ephemeral_mode={ephemeral_mode}
             />
           ) : (
             <div
@@ -449,6 +447,7 @@ const DesktopRoom = ({
             renderCredits={renderCredits}
             renderFeedback={renderFeedback}
             show_mode_selector={show_mode_selector}
+            ephemeral_mode={ephemeral_mode}
           />
         </div>
       </Panel>

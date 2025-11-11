@@ -9,6 +9,8 @@ import {
   fetchRoom,
   clearRoomState,
   selectRoomStateInitialized,
+  createTemporaryThread,
+  selectTemporaryThread,
   // selectRoomStateLoading, // Not needed - let DesktopRoom handle loading
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
@@ -42,10 +44,12 @@ const Room = ({
   renderFeedback = false,
   initialMessage = null, // Initial message to send when room loads
   show_mode_selector = false, // Boolean to show/hide the mode selector (auto/instant/plan)
+  ephemeral_mode = false, // ChatGPT-style: always start with fresh temporary thread
 }) => {
   const history = useHistory();
   const { guest, user } = useAuthContext();
   const initialized = useSelector(selectInitializedRoom);
+  const temporaryThread = useSelector(selectTemporaryThread);
   // const loading = useSelector(selectLoadingRoom); // Not needed - let DesktopRoom handle loading
 
   // Clean up when roomId changes or on unmount
@@ -95,7 +99,8 @@ const Room = ({
   useEffect(() => {
     if (!!roomId && !initialized) {
       if (!!(user || guest)) {
-        console.log('🏠 ✅ Fetching room data...', { roomId, hasUser: !!user, hasGuest: !!guest });
+        // Always fetch room data for policies, members, etc.
+        console.log('🏠 ✅ Fetching room data...', { roomId, hasUser: !!user, hasGuest: !!guest, ephemeral_mode });
         handleFetchRoom();
       } else {
         console.log('🏠 ⏳ Waiting for user authentication...');
@@ -105,7 +110,15 @@ const Room = ({
     } else if (initialized) {
       console.log('🏠 ✅ Room already initialized');
     }
-  }, [roomId, initialized, handleFetchRoom, guest, user]);
+  }, [roomId, initialized, handleFetchRoom, guest, user, ephemeral_mode]);
+
+  // Handle ephemeral mode - always create a fresh temporary thread after room is initialized
+  useEffect(() => {
+    if (ephemeral_mode && initialized && roomId && (user || guest) && !temporaryThread) {
+      console.log('🔧 Creating temporary thread for ephemeral mode...');
+      dispatch(createTemporaryThread({ roomId }));
+    }
+  }, [ephemeral_mode, initialized, roomId, user, guest, temporaryThread]);
 
   // Only return null if there's no roomId at all
   if (!roomId) {
@@ -113,8 +126,10 @@ const Room = ({
   }
 
   // Show loading state while room is initializing
-  // This prevents blank screens while waiting for fetch to complete
-  if (!initialized) {
+  // In ephemeral mode, we need both room data AND temporary thread
+  const canRender = ephemeral_mode ? (initialized && !!temporaryThread) : initialized;
+
+  if (!canRender) {
     return (
       <div
         style={{
@@ -139,7 +154,7 @@ const Room = ({
           previewComponent={previewComponent}
           isMobile={isMobile}
           mobileActiveView={mobileActiveView}
-          tabs={tabs}
+          tabs={ephemeral_mode ? false : tabs} // Force tabs off in ephemeral mode
           conversation_history={conversation_history}
           members={members}
           settings={settings}
@@ -156,6 +171,7 @@ const Room = ({
           renderFeedback={renderFeedback}
           initialMessage={initialMessage}
           show_mode_selector={show_mode_selector}
+          ephemeral_mode={ephemeral_mode}
         />
       </VoiceConversationProvider>
     </RoomAuthGuard>

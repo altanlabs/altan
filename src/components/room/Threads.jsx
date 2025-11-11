@@ -21,6 +21,7 @@ const Threads = ({
   renderCredits = false,
   renderFeedback = false,
   show_mode_selector = false,
+  ephemeral_mode = false,
 }) => {
   const parentThreadInitialized = useSelector(selectMainThreadInitialized);
   const allThreadsInitialized = useSelector(selectAllThreadsInitialized);
@@ -30,10 +31,11 @@ const Threads = ({
   // Main thread is now fetched within fetchRoom, no need for separate effect
 
   useEffect(() => {
-    if (!allThreadsInitialized && !allThreadsLoading) {
+    // Skip fetching threads in ephemeral mode
+    if (!ephemeral_mode && !allThreadsInitialized && !allThreadsLoading) {
       dispatch(fetchRoomAllThreads());
     }
-  }, [allThreadsInitialized, allThreadsLoading]);
+  }, [ephemeral_mode, allThreadsInitialized, allThreadsLoading]);
 
   return (
     <ThreadsHistory
@@ -44,6 +46,7 @@ const Threads = ({
       renderCredits={renderCredits}
       renderFeedback={renderFeedback}
       show_mode_selector={show_mode_selector}
+      ephemeral_mode={ephemeral_mode}
     />
   );
 };

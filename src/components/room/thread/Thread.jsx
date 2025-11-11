@@ -20,6 +20,7 @@ import {
   selectIsVoiceActive,
   selectIsVoiceConnecting,
   ensureThreadMessagesLoaded,
+  selectTemporaryThread,
 } from '../../../redux/slices/room';
 import { dispatch, useSelector } from '../../../redux/store.js';
 import { useVoiceConversationHandler } from '../../attachment/hooks/useVoiceConversation.js';
@@ -58,6 +59,7 @@ const Thread = ({
   renderCredits = false,
   renderFeedback = false,
   show_mode_selector = false,
+  ephemeral_mode = false,
 }) => {
   useParams();
   const history = useHistory();
@@ -69,6 +71,7 @@ const Thread = ({
 
   const room = useSelector(selectRoom);
   const drawer = useSelector(selectThreadDrawerDetails);
+  const temporaryThread = useSelector(selectTemporaryThread);
   const isMobile = useResponsive('down', 'md');
   const { translate, currentLang, allLangs, onChangeLang } = useLocales();
 
@@ -87,7 +90,10 @@ const Thread = ({
   const thread = useSelector((state) =>
     threadSelector(state, mode === 'drawer' ? drawer.current : tId),
   );
-  const threadId = thread?.id;
+  
+  // In ephemeral mode with temporary thread, use temp thread ID even if thread doesn't exist in DB
+  const isTemporaryThread = ephemeral_mode && temporaryThread && tId === temporaryThread.id;
+  const threadId = isTemporaryThread ? temporaryThread.id : thread?.id;
 
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
@@ -135,17 +141,23 @@ const Thread = ({
       setLastThreadId(threadId);
       setHasLoaded(false); // Reset loading state
 
-      dispatch(fetchThread({ threadId }))
-        .then((response) => {
-          if (!response) {
+      // Skip fetching for temporary threads - they don't exist in DB yet
+      if (isTemporaryThread) {
+        console.log('🔧 Temporary thread detected, skipping fetch');
+        setHasLoaded(true);
+      } else {
+        dispatch(fetchThread({ threadId }))
+          .then((response) => {
+            if (!response) {
+              history.replace('/404');
+            }
+            // Let ThreadMessages handle setting hasLoaded when messages are ready
+          })
+          .catch((error) => {
+            console.error('🧵 Error fetching thread:', error);
             history.replace('/404');
-          }
-          // Let ThreadMessages handle setting hasLoaded when messages are ready
-        })
-        .catch((error) => {
-          console.error('🧵 Error fetching thread:', error);
-          history.replace('/404');
-        });
+          });
+      }
     } else if (!threadId || isCreation) {
       console.log('🧵 No threadId or in creation mode, setting hasLoaded to true immediately');
       // If no threadId or in creation mode, mark as loaded immediately
@@ -153,14 +165,15 @@ const Thread = ({
       setHasLoaded(true);
     } else {
     }
-  }, [threadId, isCreation, isWsOpen]);
+  }, [threadId, lastThreadId, isCreation, isWsOpen, isTemporaryThread, history]);
 
   // Ensure messages are loaded when switching to an already-loaded thread
   useEffect(() => {
-    if (threadId && !isCreation && isWsOpen) {
+    // Skip for temporary threads - they don't have messages in DB yet
+    if (threadId && !isCreation && isWsOpen && !isTemporaryThread) {
       dispatch(ensureThreadMessagesLoaded(threadId));
     }
-  }, [threadId, isCreation, isWsOpen]);
+  }, [threadId, isCreation, isWsOpen, isTemporaryThread]);
 
   const helmetName = thread?.is_main
     ? room?.name || 'Room'
