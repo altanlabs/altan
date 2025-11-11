@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useCallback } from 'react';
+import React, { memo, useEffect, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import DesktopRoom from './DesktopRoom.jsx';
@@ -52,11 +52,15 @@ const Room = ({
   const temporaryThread = useSelector(selectTemporaryThread);
   // const loading = useSelector(selectLoadingRoom); // Not needed - let DesktopRoom handle loading
 
+  // Track if we've created a temporary thread for this session to prevent duplicates
+  const tempThreadCreatedRef = useRef(false);
+
   // Clean up when roomId changes or on unmount
   useEffect(() => {
     // Clear state when roomId changes
     return () => {
       dispatch(clearRoomState());
+      tempThreadCreatedRef.current = false; // Reset ref on unmount
     };
   }, [roomId]);
 
@@ -100,7 +104,12 @@ const Room = ({
     if (!!roomId && !initialized) {
       if (!!(user || guest)) {
         // Always fetch room data for policies, members, etc.
-        console.log('🏠 ✅ Fetching room data...', { roomId, hasUser: !!user, hasGuest: !!guest, ephemeral_mode });
+        console.log('🏠 ✅ Fetching room data...', {
+          roomId,
+          hasUser: !!user,
+          hasGuest: !!guest,
+          ephemeral_mode,
+        });
         handleFetchRoom();
       } else {
         console.log('🏠 ⏳ Waiting for user authentication...');
@@ -112,13 +121,21 @@ const Room = ({
     }
   }, [roomId, initialized, handleFetchRoom, guest, user, ephemeral_mode]);
 
-  // Handle ephemeral mode - always create a fresh temporary thread after room is initialized
+  // Handle ephemeral mode - create ONE temporary thread after room is initialized
+  // Once created (ref = true), never create another one even after promotion
   useEffect(() => {
-    if (ephemeral_mode && initialized && roomId && (user || guest) && !temporaryThread) {
+    if (
+      ephemeral_mode &&
+      initialized &&
+      roomId &&
+      (user || guest) &&
+      !tempThreadCreatedRef.current
+    ) {
       console.log('🔧 Creating temporary thread for ephemeral mode...');
       dispatch(createTemporaryThread({ roomId }));
+      tempThreadCreatedRef.current = true; // Prevent creating more temp threads
     }
-  }, [ephemeral_mode, initialized, roomId, user, guest, temporaryThread]);
+  }, [ephemeral_mode, initialized, roomId, user, guest]);
 
   // Only return null if there's no roomId at all
   if (!roomId) {
@@ -127,7 +144,7 @@ const Room = ({
 
   // Show loading state while room is initializing
   // In ephemeral mode, we need both room data AND temporary thread
-  const canRender = ephemeral_mode ? (initialized && !!temporaryThread) : initialized;
+  const canRender = ephemeral_mode ? initialized && !!temporaryThread : initialized;
 
   if (!canRender) {
     return (

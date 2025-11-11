@@ -19,6 +19,7 @@ import {
   closeTab,
   createNewThread,
   archiveMainThread,
+  setThreadMain,
 } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store.js';
 import SettingsDialog from '../dialogs/SettingsDialog.jsx';
@@ -136,10 +137,24 @@ const TabBar = ({
   }, []);
 
   const handleNewConversation = useCallback(() => {
-    if (mainThread) {
-      dispatch(archiveMainThread({ threadId: mainThread }));
+    // In ephemeral mode (tabs=false), just update URL to thread_id=new
+    if (!showTabs) {
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('thread_id', 'new');
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}?${searchParams.toString()}`
+      );
+      // Also clear Redux thread
+      dispatch(setThreadMain({ current: null }));
+    } else {
+      // In tabs mode, archive the current thread
+      if (mainThread) {
+        dispatch(archiveMainThread({ threadId: mainThread }));
+      }
     }
-  }, [mainThread]);
+  }, [mainThread, showTabs]);
 
   // Handle close button click
   const handleCloseClick = useCallback(() => {

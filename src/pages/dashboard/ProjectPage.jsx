@@ -7,7 +7,7 @@ import { useParams, useHistory, useLocation } from 'react-router-dom';
 import Cloud from '../../components/cloud/Cloud.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
 import FloatingTextArea from '../../components/FloatingTextArea.jsx';
-import Room from '../../components/room/Room.jsx';
+import { RoomContainer } from '../../components/new-room';
 import Plan from './Plan.jsx';
 import PlansList from './PlansList.jsx';
 import OperateView from './OperateView.jsx';
@@ -506,45 +506,17 @@ export default function ProjectPage() {
             overflow: 'hidden',
           }}
         >
-          <Room
+          <RoomContainer
             key={`mobile-room-${altaner?.room_id}`}
             roomId={altaner?.room_id}
-            header={false}
-            previewComponent={previewComponent}
-            isMobile={true}
-            mobileActiveView={mobileActiveView}
+            mode={isOperateRoute ? "ephemeral" : "tabs"} // Tabs = toolbar with tabs, Ephemeral = no toolbar
+            showSettings={!isOperateRoute}
+            showConversationHistory={true}
+            showMembers={true}
             renderCredits={true}
             renderFeedback={true}
-            settings={!isOperateRoute}
-            tabs={!isOperateRoute}
-            show_mode_selector={!isOperateRoute}
           />
-          <div
-            className="absolute bottom-0 left-0 right-0"
-            style={{
-              zIndex: 1000,
-              transform: 'translate3d(0, 0, 0)',
-              WebkitTransform: 'translate3d(0, 0, 0)',
-              position: 'absolute',
-              width: '100%',
-            }}
-          >
-            <FloatingTextArea
-              threadId={mainThreadId}
-              roomId={altaner.room_id}
-              mode="mobile"
-              containerRef={mobileContainerRef}
-              mobileActiveView={mobileActiveView}
-              onMobileToggle={handleMobileToggle}
-              renderCredits={true}
-              activeComponent={currentComponent}
-              allComponents={sortedComponents}
-              isFullscreen={isFullscreenMobile}
-              currentItemId={itemId}
-              onItemSelect={handleItemSelect}
-              show_mode_selector={!isOperateRoute}
-            />
-          </div>
+          {/* RoomContainer is self-contained with input - no need for FloatingTextArea */}
         </div>
       </div>
     );
@@ -605,16 +577,15 @@ export default function ProjectPage() {
                   overflow: 'hidden',
                 }}
               >
-                <Room
+                <RoomContainer
                   key={`room-${altaner?.room_id}`}
                   roomId={altaner?.room_id}
-                  header={false}
+                  mode={isOperateRoute ? "ephemeral" : "tabs"}
+                  showSettings={!isOperateRoute}
+                  showConversationHistory={true}
+                  showMembers={true}
                   renderCredits={true}
                   renderFeedback={true}
-                  settings={!isOperateRoute}
-                  tabs={!isOperateRoute}
-                  show_mode_selector={!isOperateRoute}
-                  ephemeral_mode={isOperateRoute}
                 />
               </Box>
             </Panel>

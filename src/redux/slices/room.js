@@ -714,7 +714,7 @@ const slice = createSlice({
       const isV2Format = thread.messages?.byId !== undefined;
       const tempThread = isV2Format ? thread : handleThread(thread);
       extractMessagesFromThread(state, tempThread);
-      
+
       if (!state.threads.byId[thread.id]) {
         state.threads.byId[thread.id] = tempThread;
       } else {
@@ -1059,6 +1059,28 @@ const slice = createSlice({
       extractMessagesFromThread(state, {
         messages: { byId: { [message.id]: message }, allIds: [message.id] },
       });
+
+      // Add message to thread's message list so it displays in UI
+      const thread = state.threads.byId[message.thread_id];
+      if (thread) {
+        // Ensure thread has messages structure
+        if (!thread.messages) {
+          thread.messages = { byId: {}, allIds: [], paginationInfo: {} };
+        }
+        if (!thread.messages.allIds) {
+          thread.messages.allIds = [];
+        }
+
+        // Add message if not already in list
+        if (!thread.messages.allIds.includes(message.id)) {
+          thread.messages.allIds.push(message.id);
+        }
+      } else {
+        console.warn('⚠️ Could not add message to thread - thread not found:', {
+          messageId: message.id,
+          threadId: message.thread_id,
+        });
+      }
     },
     removeMessage: (state, action) => {
       const data = action.payload;
@@ -1222,20 +1244,20 @@ const slice = createSlice({
       const { roomId } = action.payload;
       // Generate a unique temporary thread ID
       const tempThreadId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       state.temporaryThread = {
         id: tempThreadId,
         roomId,
         isTemporary: true,
         created_at: new Date().toISOString(),
       };
-      
+
       // Set it as the current thread
       state.thread.main.current = tempThreadId;
     },
     promoteTemporaryThread: (state, action) => {
       const { tempId, realThreadId, threadData } = action.payload;
-      
+
       // Only proceed if the current temporary thread matches
       if (state.temporaryThread?.id === tempId && state.temporaryThread.isTemporary) {
         // Ensure threadData has required collections (newly created threads won't have messages yet)
@@ -1246,23 +1268,37 @@ const slice = createSlice({
           media: threadData.media || { items: [] },
           read_status: threadData.read_status || null,
         };
-        
+
         // Add the real thread to the threads collection
         const thread = handleThread(normalizedThreadData);
         extractMessagesFromThread(state, thread);
-        delete thread.messages?.byId;
-        delete thread.messages?.allIds;
-        
+
+        // Ensure thread has proper messages structure (empty, messages in global state)
+        thread.messages = {
+          byId: {},
+          allIds: [],
+          paginationInfo: thread.messages?.paginationInfo || {},
+        };
+
+        // Mark thread as freshly promoted to prevent unnecessary fetch
+        thread.justPromoted = true;
+
         state.threads.byId[realThreadId] = thread;
         if (!state.threads.allIds.includes(realThreadId)) {
           state.threads.allIds.push(realThreadId);
         }
-        
+
         // Update current thread reference to the real thread ID
         state.thread.main.current = realThreadId;
-        
+
         // Clear the temporary thread
         state.temporaryThread = null;
+
+        console.log('✅ Thread promoted successfully:', {
+          realThreadId,
+          threadName: thread.name,
+          hasMessages: thread.messages?.allIds?.length || 0,
+        });
       }
     },
     clearTemporaryThread: (state) => {
@@ -3640,7 +3676,7 @@ export const sendMessage =
       let actualThreadId = threadId;
       if (temporaryThread && temporaryThread.id === threadId && temporaryThread.isTemporary) {
         console.log('🔧 Creating temporary thread in database before sending message...');
-        
+
         // Create the thread in DB with the message content as the name
         const threadName = content.substring(0, 50).trim() || 'New Chat';
         // Use roomId from temporaryThread since room object might be null in ephemeral mode
@@ -3649,9 +3685,9 @@ export const sendMessage =
           name: threadName,
         });
         const createdThread = createResponse.data;
-        
+
         console.log('✅ Temporary thread created in DB:', createdThread.id);
-        
+
         // Promote the temporary thread to permanent
         dispatch(
           promoteTemporaryThread({
@@ -3660,7 +3696,7 @@ export const sendMessage =
             threadData: createdThread,
           }),
         );
-        
+
         // Update threadId to the real one for sending the message
         actualThreadId = createdThread.id;
       }
@@ -3676,7 +3712,9 @@ export const sendMessage =
       const config = {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          dispatch(slice.actions.updateMediaProgress({ threadId: actualThreadId, percentCompleted }));
+          dispatch(
+            slice.actions.updateMediaProgress({ threadId: actualThreadId, percentCompleted }),
+          );
         },
       };
 

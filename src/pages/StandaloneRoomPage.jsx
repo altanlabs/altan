@@ -6,6 +6,7 @@ import Room from '../components/room/Room.jsx';
 import { useSettingsContext } from '../components/settings';
 import { selectRoomAttribute } from '../redux/slices/room';
 import { useSelector } from '../redux/store';
+import { RoomContainer } from '../components/new-room/RoomContainer.js';
 
 const selectRoomName = selectRoomAttribute('name');
 const selectRoomDescription = selectRoomAttribute('description');
@@ -126,10 +127,25 @@ export default function StandaloneRoomPage() {
         />
       </Helmet>
 
-      <Room
+      <RoomContainer
         key={roomId}
         roomId={roomId}
-        {...config}
+        mode="ephemeral"
+        showHeader={true}
+        showConversationHistory={true}
+        showMembers={true}
+        showSettings={true}
+        title="How can I help you today?"
+        description="Start a conversation or choose a suggestion below"
+        suggestions={[
+          'Create a todo app',
+          'Explain React hooks',
+          'Help me debug this code',
+          'Write a function to sort an array',
+        ]}
+        showModeSelector={false}
+        renderCredits={false}
+        renderFeedback={false}
       />
     </>
   );

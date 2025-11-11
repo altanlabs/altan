@@ -44,6 +44,7 @@ const normalizeMessageData = (eventData) => {
  * Handle message.created event
  */
 export const handleMessageCreated = (eventData) => {
+  console.log('handleMessageCreated', eventData);
   const normalizedData = normalizeMessageData(eventData);
   dispatch(addMessage(normalizedData));
 };

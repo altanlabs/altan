@@ -6,7 +6,10 @@ export const PlanLoading = () => (
       <div className="flex items-center justify-center h-full p-8">
         <div className="bg-white/90 dark:bg-[#1c1c1c]/90 border border-gray-200/30 dark:border-gray-700/30 rounded-2xl backdrop-blur-lg p-8 max-w-md">
           <div className="flex items-center gap-3">
-            <Iconify icon="mdi:loading" className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+            <Iconify
+              icon="mdi:loading"
+              className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400"
+            />
             <span className="text-base text-gray-600 dark:text-gray-400">Loading plan...</span>
           </div>
         </div>
@@ -21,9 +24,14 @@ export const PlanError = ({ error, onClose }) => (
       <div className="flex items-center justify-center h-full p-8">
         <div className="bg-red-50/90 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-2xl backdrop-blur-lg p-8 max-w-md">
           <div className="flex flex-col items-center gap-3 text-center">
-            <Iconify icon="mdi:alert-circle" className="w-8 h-8 text-red-600 dark:text-red-400" />
+            <Iconify
+              icon="mdi:alert-circle"
+              className="w-8 h-8 text-red-600 dark:text-red-400"
+            />
             <div>
-              <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">Plan rejected</p>
+              <p className="text-base font-medium text-red-700 dark:text-red-300 mb-2">
+                Plan rejected
+              </p>
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
             <button
@@ -41,8 +49,10 @@ export const PlanError = ({ error, onClose }) => (
 
 export const EmptyPlanState = () => (
   <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-    <Iconify icon="mdi:road-variant" className="w-12 h-12 mx-auto mb-3 opacity-50" />
+    <Iconify
+      icon="mdi:road-variant"
+      className="w-12 h-12 mx-auto mb-3 opacity-50"
+    />
     <p>No items in this roadmap</p>
   </div>
 );
-

@@ -57,16 +57,27 @@ const ThreadsHistory = ({
   const temporaryThread = useSelector(selectTemporaryThread);
 
   // Get the current thread ID
-  // In ephemeral mode, use temporary thread if available, otherwise use main.current
-  const currentThreadId = ephemeral_mode && temporaryThread
-    ? temporaryThread.id
+  // In ephemeral mode: ONLY use temporary thread or promoted thread, NEVER mainThread
+  const currentThreadId = ephemeral_mode 
+    ? (temporaryThread?.id || main.current)
     : (main.current || mainThread);
 
-  // In ephemeral mode, show thread if we have temp thread OR a current thread
-  // Otherwise show thread if we have history
+  console.log('🔍 ThreadsHistory state:', {
+    ephemeral_mode,
+    temporaryThreadId: temporaryThread?.id,
+    mainCurrent: main.current,
+    mainThread,
+    currentThreadId,
+    hasThread: !!currentThreadId,
+  });
+
+  // In ephemeral mode, show thread ONLY if we have a valid thread ID
+  // Do NOT show main thread in ephemeral mode
   const shouldShowThread = ephemeral_mode
-    ? (!!temporaryThread || !!main.current)
+    ? !!currentThreadId
     : fullHistory?.length > 0;
+
+  console.log('🔍 Will show thread?', shouldShowThread, 'currentThreadId:', currentThreadId);
 
   return (
     <div className="relative h-full w-full">

@@ -164,7 +164,7 @@ const EditorPlugins = (props: PluginProps): JSX.Element => {
       <RichTextPlugin
         contentEditable={contentEditable}
         placeholder={
-          <span className="editor-placeholder pointer-events-none select-none opacity-80 text-gray-600 dark:text-gray-400 absolute top-1 z-0">
+          <span className="editor-placeholder pointer-events-none select-none opacity-50 text-gray-400 dark:text-gray-500 absolute top-3 left-3">
             {props.placeholder}
           </span>
         }

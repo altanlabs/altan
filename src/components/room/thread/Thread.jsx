@@ -39,6 +39,7 @@ const makeSelectThreadById = () =>
         is_main: thread.is_main,
         name: thread.name,
         id: thread.id,
+        justPromoted: thread.justPromoted, // Include flag for promoted threads
       };
     },
     {
@@ -95,6 +96,18 @@ const Thread = ({
   const isTemporaryThread = ephemeral_mode && temporaryThread && tId === temporaryThread.id;
   const threadId = isTemporaryThread ? temporaryThread.id : thread?.id;
 
+  // Debug logging
+  console.log('🔍 Thread component state:', {
+    tId,
+    threadId,
+    hasThread: !!thread,
+    isTemporaryThread,
+    ephemeral_mode,
+    temporaryThreadId: temporaryThread?.id,
+    threadName: thread?.name,
+    justPromoted: thread?.justPromoted,
+  });
+
   const isCreation = mode === 'drawer' && drawer.isCreation;
   const messageId = mode === 'drawer' && isCreation ? drawer.messageId : null;
 
@@ -145,6 +158,10 @@ const Thread = ({
       if (isTemporaryThread) {
         console.log('🔧 Temporary thread detected, skipping fetch');
         setHasLoaded(true);
+      } else if (thread?.justPromoted) {
+        // Skip fetching for just-promoted threads - they're already loaded
+        console.log('🔧 Just-promoted thread detected, skipping fetch');
+        setHasLoaded(true);
       } else {
         dispatch(fetchThread({ threadId }))
           .then((response) => {
@@ -181,7 +198,14 @@ const Thread = ({
 
   // Get message IDs to check if the thread has messages
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
-  const messageIds = useSelector((state) => messagesIdsSelector(state, threadId));
+  const messageIds = useSelector((state) => {
+    try {
+      return messagesIdsSelector(state, threadId) || [];
+    } catch (error) {
+      console.error('Error selecting message IDs:', error);
+      return [];
+    }
+  });
   const hasMessages = messageIds && messageIds.length > 0;
 
   // Handle suggestion click
