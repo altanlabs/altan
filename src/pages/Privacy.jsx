@@ -1,7 +1,7 @@
 import { Container } from '@mui/material';
 
 import { CompactLayout } from '../layouts/dashboard';
-import Footer from '../layouts/main/Footer';
+import Footer from '../layouts/dashboard/new/Footer';
 
 export default function Privacy() {
   return (

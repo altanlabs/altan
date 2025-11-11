@@ -13,7 +13,6 @@ import VoiceConversationWithAgentSelection from './components/VoiceConversationW
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
-// import Footer from '../../layouts/main/Footer.jsx';
 import useLocales from '../../locales/useLocales.js';
 import { getFlows } from '../../redux/slices/flows';
 import { getAccountAttribute } from '../../redux/slices/general';

@@ -1,7 +1,7 @@
 
 // sections
 import { CompactLayout } from '../layouts/dashboard';
-import Footer from '../layouts/main/Footer';
+import Footer from '../layouts/dashboard/new/Footer';
 import { ContactSupport } from '../sections/contact';
 
 // ----------------------------------------------------------------------

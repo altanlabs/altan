@@ -1,10 +1,10 @@
 import { useSelector } from 'react-redux';
 
-import Footer from '../layouts/main/Footer';
+import { Separator } from '../components/ui/separator';
+import Footer from '../layouts/dashboard/new/Footer';
 import { selectIsAccountFree } from '../redux/slices/general';
 import { NewPricing, PricingFAQ } from '../sections/pricing';
 import SubscribedPricing from '../sections/pricing/SubscribedPricing';
-import { Separator } from '../components/ui/separator';
 
 // ----------------------------------------------------------------------
 

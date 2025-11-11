@@ -25,7 +25,6 @@ import {
   NewDashboardPage,
   UsagePage,
   UsageDatabasePage,
-  TestNotificationsPage,
   IntegrationCreator,
   MediaPage,
   UserProfilePage,
@@ -902,20 +901,6 @@ const Router = () => {
             <DashboardDataProvider>
               <NewLayout>
                 <UsageDatabasePage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        {/* Test Notifications Route */}
-        <Route
-          path="/test-notifications"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <TestNotificationsPage />
               </NewLayout>
             </DashboardDataProvider>
           </AuthGuard>
