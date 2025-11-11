@@ -27,7 +27,7 @@ function CloudSidebar({ activeSection, onSectionChange, open }) {
   if (!open) return null;
 
   return (
-    <div className="w-56 border-r border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
+    <div className="w-50 border-r border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
       <nav className="flex flex-col h-full py-4 px-2 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon;

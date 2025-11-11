@@ -184,16 +184,6 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 </Label>
                 
                 <div className="space-y-2.5">
-                  {/* First-time users message */}
-                  {!defaultDomain && allCustomDomains.length === 0 && (
-                    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                      <Rocket className="h-4 w-4 text-primary flex-shrink-0" />
-                      <p className="text-xs font-medium">
-                        A public domain will be created automatically
-                      </p>
-                    </div>
-                  )}
-
                   {/* Default domain */}
                   {defaultDomain && (
                     <div className="group p-3.5 rounded-lg bg-muted/40 border border-border hover:border-primary/40 transition-all">
@@ -431,9 +421,8 @@ function PublishVersionDialog({ open, onClose, altaner, ui = null }) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !hasAnyDeployment}
+                  disabled={isSubmitting}
                   className="h-9 px-6"
-                  title={!hasAnyDeployment ? 'Create a deployment first' : ''}
                 >
                   {isSubmitting ? (
                     <>

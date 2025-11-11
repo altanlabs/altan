@@ -196,7 +196,7 @@ const PlanWidget = ({ planId }) => {
               icon="mdi:alert-circle"
               className="w-5 h-5 text-red-600 dark:text-red-400"
             />
-            <span className="text-sm text-red-700 dark:text-red-300">Failed to load plan</span>
+            <span className="text-sm text-red-700 dark:text-red-300">Plan rejected</span>
           </div>
         </div>
       </div>

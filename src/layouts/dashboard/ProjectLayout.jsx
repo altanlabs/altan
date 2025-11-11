@@ -17,6 +17,7 @@ import {
   selectSortedAltanerComponents,
   setDisplayModeForProject,
   selectDisplayMode,
+  selectOperateMode,
 } from '../../redux/slices/altaners';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
 import { getFlows } from '../../redux/slices/flows';
@@ -54,6 +55,10 @@ const ProjectLayout = ({ children }) => {
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
+  const operateMode = useSelector(selectOperateMode);
+  
+  // Check if we're on the operate route (instant, no Redux delay)
+  const isOperateRoute = location.pathname.endsWith('/operate');
 
   // Get current component and interface ID
   const currentComponent = sortedComponents?.[componentId];
@@ -144,7 +149,7 @@ const ProjectLayout = ({ children }) => {
 
   return (
     <VoiceConversationProvider>
-      <ProjectHeader />
+      {!isOperateRoute && <ProjectHeader />}
 
       <Box
         sx={{
@@ -155,8 +160,8 @@ const ProjectLayout = ({ children }) => {
         <Main>{children}</Main>
       </Box>
 
-      {/* Floating Sidebar Toggle - only show when in preview mode and altaner has room_id */}
-      {altaner?.room_id && displayMode === 'preview' && (
+      {/* Floating Sidebar Toggle - only show when in preview mode and altaner has room_id, but not in operate mode */}
+      {!isOperateRoute && altaner?.room_id && displayMode === 'preview' && (
         <Tooltip title="Open Sidebar" placement="right" arrow>
           <IconButton
             onClick={handleOpenSidebar}

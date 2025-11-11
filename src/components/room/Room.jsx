@@ -57,7 +57,6 @@ const Room = ({
   }, [roomId]);
 
   const handleFetchRoom = useCallback(() => {
-    console.log('🏠 🚀 Starting room fetch...', { roomId, hasUser: !!user, hasGuest: !!guest });
     dispatch(fetchRoom({ roomId, user, guest }))
       .then((response) => {
         if (!response) {

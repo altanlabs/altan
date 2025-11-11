@@ -15,7 +15,7 @@ import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } fr
 // import { optimai } from '../../../utils/axios';
 import { dispatch, useSelector } from '../../../redux/store.js';
 
-function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
+function Interface({ id, chatIframeRef: chatIframeRefProp = null, operateMode = false, altanerPreviewUrl = null, altanerLiveUrl = null }) {
   const theme = useTheme();
   const ws = useHermesWebSocket();
   const { enqueueSnackbar } = useSnackbar();
@@ -201,7 +201,7 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
 
   return (
     <>
-      {latestDeployment && <DeploymentCard deployment={latestDeployment} />}
+      {!operateMode && latestDeployment && <DeploymentCard deployment={latestDeployment} />}
       <InterfaceLayout
         id={id}
         chatIframeRef={chatIframeRef}
@@ -211,37 +211,44 @@ function Interface({ id, chatIframeRef: chatIframeRefProp = null }) {
         productionUrl={productionUrl}
         handleIframeLoad={handleIframeLoad}
         iframeRef={iframeRef}
+        operateMode={operateMode}
+        altanerPreviewUrl={altanerPreviewUrl}
+        altanerLiveUrl={altanerLiveUrl}
       />
-      {/* Drawer for viewing deployments */}
-      <Drawer
-        anchor="right"
-        open={isDrawerOpen}
-        onClose={toggleDrawer}
-      >
-        <Box
-          sx={{ width: 350, p: 2 }}
-          role="presentation"
+      {/* Drawer for viewing deployments - hide in operate mode */}
+      {!operateMode && (
+        <Drawer
+          anchor="right"
+          open={isDrawerOpen}
+          onClose={toggleDrawer}
         >
-          <DeploymentHistory
-            ui={ui}
-            handleReload={handleReload}
-          />
-        </Box>
-      </Drawer>
-      {isSettingsOpen && (
+          <Box
+            sx={{ width: 350, p: 2 }}
+            role="presentation"
+          >
+            <DeploymentHistory
+              ui={ui}
+              handleReload={handleReload}
+            />
+          </Box>
+        </Drawer>
+      )}
+      {!operateMode && isSettingsOpen && (
         <SettingsDrawer
           open={isSettingsOpen}
           onClose={handleSettingsClose}
           ui={ui}
         />
       )}
-      <PublishDialog
-        open={isPublishDialogOpen}
-        onClose={() => setIsPublishDialogOpen(false)}
-        interfaceId={ui?.id}
-        name={ui?.name}
-        deploymentUrl={ui?.deployment_url}
-      />
+      {!operateMode && (
+        <PublishDialog
+          open={isPublishDialogOpen}
+          onClose={() => setIsPublishDialogOpen(false)}
+          interfaceId={ui?.id}
+          name={ui?.name}
+          deploymentUrl={ui?.deployment_url}
+        />
+      )}
     </>
   );
 }
