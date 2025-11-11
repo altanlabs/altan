@@ -2,7 +2,6 @@ import { Box, Tooltip } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Paper from '@mui/material/Paper';
@@ -10,7 +9,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import React, { lazy, memo, Suspense, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { CustomAvatar } from './custom-avatar';
@@ -28,8 +27,6 @@ const SkeletonLoading = (
     style={{ borderRadius: 5 }}
   />
 );
-
-const EditAgent = lazy(() => import('./members/EditAgent.jsx'));
 
 // Helper to format dates, similar to MembersAutocomplete
 const formatDate = (dateString) => {
@@ -224,7 +221,7 @@ const isOptionEqualToValue = (option, value) => option.id === value?.id;
 const getOptionLabel = (option) => option.name;
 const getOptionKey = (option) => option.id;
 
-const AgentAutocomplete = ({ onChange, value, multiple = false, hideCreation = false, label = multiple ? 'Select AI Agents' : 'Select an AI Agent' }) => {
+const AgentAutocomplete = ({ onChange, value, multiple = false, label = multiple ? 'Select AI Agents' : 'Select an AI Agent' }) => {
   const allAgents = useSelector(selectAccountAgents);
   const [isSelecting, setIsSelecting] = useState(true);
   const [inputValue, setInputValue] = useState('');
@@ -420,12 +417,6 @@ const AgentAutocomplete = ({ onChange, value, multiple = false, hideCreation = f
         ) : (
           SkeletonLoading // Show skeleton if allAgents is not yet available
         )}
-        {!hideCreation && (
-          <>
-            <Divider>or</Divider>
-            <CreateAgent />
-          </>
-        )}
       </Stack>
     );
   }
@@ -440,12 +431,6 @@ const AgentAutocomplete = ({ onChange, value, multiple = false, hideCreation = f
       >
         Back to selection
       </Button>
-      <Suspense fallback={SkeletonLoading}>
-        <EditAgent
-          agent={selectedValue}
-          variant="embedded"
-        />
-      </Suspense>
     </Stack>
   );
 };

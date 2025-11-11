@@ -1,25 +1,18 @@
 //  USED TO CREATE AGENT TOOLS
-import {
-  Stack,
-  Typography,
-  TextField,
-  Tooltip,
-  Skeleton,
-  Autocomplete,
-  Box,
-  Button,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
-// import { truncate } from 'lodash';
 import React, { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { useSelector } from 'react-redux';
+import { m, AnimatePresence } from 'framer-motion';
 
 import { cn } from '@lib/utils';
+import { Button } from '@components/ui/Button';
+import { Input } from '@components/ui/input';
+import { Label } from '@components/ui/label';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@components/ui/accordion';
+import { Switch } from '@components/ui/switch';
+import { Skeleton } from '@components/ui/skeleton';
+import { Badge } from '@components/ui/badge';
+import { Separator } from '@components/ui/separator';
 
 import GlobalVarsMenu from '../../../../components/flows/menuvars/GlobalVarsMenu.jsx';
 import Iconify from '../../../../components/iconify/index.js';
@@ -48,30 +41,16 @@ import { optimai_integration, getAltanAxiosInstance } from '../../../../utils/ax
 
 const FormSkeleton = () => {
   return (
-    <>
-      <Stack spacing={2}>
-        <Skeleton
-          variant="text"
-          width="100%"
-          height={56}
-        />
-        <Skeleton
-          variant="text"
-          width="100%"
-          height={56}
-        />
-        <Skeleton
-          variant="text"
-          width="100%"
-          height={56}
-        />
-        <Skeleton
-          variant="rectangular"
-          width="100px"
-          height="40px"
-        />
-      </Stack>
-    </>
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-4 p-6"
+    >
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-10 w-24" />
+    </m.div>
   );
 };
 
@@ -511,271 +490,363 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
   const renderConnectionInput = () => {
     if (tool?.connection_id) return null;
     return isCreatingNewConnection ? (
-      <CreateConnection
-        id={actionDetails?.connection_type?.id}
-        setIsCreatingNewConnection={setIsCreatingNewConnection}
-      />
+      <m.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        <CreateConnection
+          id={actionDetails?.connection_type?.id}
+          setIsCreatingNewConnection={setIsCreatingNewConnection}
+        />
+      </m.div>
     ) : (
-      <Autocomplete
-        options={[...existingConnections, { name: '+ Create connection' }]}
-        getOptionLabel={(opt) => opt.name}
-        renderOption={({ key, ...props }, option) => (
-          <Stack
-            key={key}
-            {...props}
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            padding={1}
+      <m.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+        className="space-y-2"
+      >
+        <Label className="text-xs">Connection</Label>
+        <div className="grid gap-1.5">
+          {existingConnections.map((conn) => (
+            <m.div key={conn.id} whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.998 }}>
+              <button
+                onClick={() => setInternalConn(conn)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 p-2.5 rounded-md border transition-all text-left',
+                  internalConn?.id === conn.id
+                    ? 'border-foreground/20 bg-muted/50'
+                    : 'border-border hover:border-foreground/20 hover:bg-muted/30',
+                )}
+              >
+                <div className="w-8 h-8 rounded-md border bg-muted/50 flex items-center justify-center flex-shrink-0">
+                  <IconRenderer
+                    icon={conn.connection_type?.icon}
+                    className="w-4 h-4"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{conn.name}</p>
+                  {conn.connection_type?.name && (
+                    <p className="text-xs text-muted-foreground truncate">{conn.connection_type.name}</p>
+                  )}
+                </div>
+                {internalConn?.id === conn.id && (
+                  <m.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  >
+                    <Iconify icon="mdi:check-circle" width={16} />
+                  </m.div>
+                )}
+              </button>
+            </m.div>
+          ))}
+          <Button
+            variant="outline"
+            onClick={() => setIsCreatingNewConnection(true)}
+            className="w-full h-9 text-xs"
+            size="sm"
           >
-            <Tooltip
-              title={JSON.stringify(option.details || {}, null, 2)}
-              arrow
-              followCursor
-            >
-              <span>
-                <IconRenderer
-                  icon={option.connection_type?.icon}
-                  color={option.connection_type?.meta_data?.color || 'inherit'}
-                />
-              </span>
-            </Tooltip>
-            <Typography variant="caption">{option.name}</Typography>
-          </Stack>
-        )}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Select Connection"
-            variant="filled"
-          />
-        )}
-        value={internalConn}
-        onChange={handleConnectionChange}
-        size="small"
-      />
+            <Iconify icon="mdi:plus" width={14} />
+            Create New Connection
+          </Button>
+        </div>
+      </m.div>
     );
   };
 
   /* ─── Render ─────────────────────────────────────────────────────────── */
   return (
     <>
-      <div className="relative w-full">
-        {/* ── Sticky header ─────────────────────────────────────────────── */}
-        <div className="sticky top-0 z-10 flex w-full items-center justify-between gap-2 bg-white/40 py-2 px-4 shadow-md dark:bg-gray-800/40 backdrop-blur-md">
-          <div className="flex flex-col w-full">
-            <div className="flex items-center gap-2">
-              <IconRenderer
-                icon={
-                  actionDetails?.connection_type?.icon ||
-                  actionDetails?.connection_type?.external_app?.icon ||
-                  'ri:hammer-fill'
-                }
-              />
-              <h5 className="text-lg font-semibold dark:text-gray-200">
-                {action?.name || 'Unnamed Action'}
-              </h5>
+      <div className="relative w-full h-full flex flex-col">
+        {/* Header */}
+        <m.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-20 backdrop-blur-xl bg-background/95 border-b"
+        >
+          <div className="flex items-start justify-between gap-3 p-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <m.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="flex-shrink-0"
+              >
+                <div className="w-9 h-9 rounded-md border bg-muted/50 flex items-center justify-center">
+                  <IconRenderer
+                    icon={
+                      actionDetails?.connection_type?.icon ||
+                      actionDetails?.connection_type?.external_app?.icon ||
+                      'ri:hammer-fill'
+                    }
+                    className="w-4 h-4"
+                  />
+                </div>
+              </m.div>
+
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold truncate">
+                  {action?.name || 'Unnamed Action'}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                  {action?.description || 'No description available'}
+                </p>
+
+                {step === 1 && initialDynamicDetails && (
+                  <m.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-1.5 mt-2"
+                  >
+                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                      Step 1
+                    </Badge>
+                    <Iconify icon="mdi:chevron-right" width={12} className="text-muted-foreground" />
+                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 opacity-50">
+                      Step 2
+                    </Badge>
+                  </m.div>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              {action?.description?.length > 80 ? (
-                <span title={action.description}>{action.description.slice(0, 80)}...</span>
-              ) : (
-                action?.description || 'No description available'
+
+            <div className="flex items-center gap-1.5">
+              {step === 2 && initialDynamicDetails && (
+                <Button onClick={handleBack} variant="ghost" size="sm" className="h-8">
+                  <Iconify icon="mdi:arrow-left" width={14} />
+                  Back
+                </Button>
+              )}
+
+              {step === 2 && (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!methods.formState.isDirty}
+                  size="sm"
+                  className="h-8 gap-1.5"
+                >
+                  <Iconify icon="mdi:content-save" width={14} />
+                  Save
+                </Button>
               )}
             </div>
           </div>
+        </m.div>
 
-          {/* Save button only active in Step 2 */}
-          {step === 2 && (
-            <button
-              onClick={handleSubmit}
-              disabled={!methods.formState.isDirty}
-              className={cn(
-                'flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md',
-                methods.formState.isDirty
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400',
-              )}
-            >
-              <Iconify icon="dashicons:saved" />
-              Save
-            </button>
-          )}
-        </div>
-
-        {/* ── Body ──────────────────────────────────────────────────────── */}
-        <div className="p-4">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
           <FormProvider {...methods}>
             {!actionDetails ? (
               <FormSkeleton />
             ) : (
-              <>
-                <Stack spacing={1}>
+              <m.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="p-4 space-y-4"
+              >
+                {/* Connection Input */}
+                <AnimatePresence mode="wait">
                   {renderConnectionInput()}
+                </AnimatePresence>
 
-                  {/* name & description only in Step 2 */}
-                  {step === 2 &&
-                    ['name', 'description'].map((field) => (
-                      <FormParameter
-                        key={field}
-                        fieldKey={field}
-                        schema={{
-                          type: 'string',
-                          description: `The ${field} of the tool.`,
-                        }}
-                        required
-                        isInMappings={false}
-                        relationship={null}
-                        enableLexical={false}
-                        enableAIFill={false}
-                      />
-                    ))}
-                </Stack>
-
-                {/* Step-specific parameter forms */}
-                {step === 1 && actionDetails?.locations && (
-                  <>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mt: 2 }}
-                    >
-                      Runtime parameters
-                    </Typography>
-                    <FormParameters
-                      formSchema={actionDetails.locations}
-                      path="" /* store at root */
-                    />
-                    {!!firstStepRequiredCompleted && (
-                      <Box sx={{ mt: 2 }}>
-                        <Button
-                          variant="soft"
-                          color="inherit"
-                          onClick={handleLoadDynamicSchema}
-                        >
-                          Load schema
-                        </Button>
-                      </Box>
-                    )}
-                  </>
-                )}
-
-                {step === 2 && actionDetails?.locations && (
-                  <FormParameters
-                    formSchema={actionDetails.locations}
-                    enableLexical
-                    enableAIFill
-                    path="parameters."
-                  />
-                )}
-
+                {/* Name & Description - Step 2 only */}
                 {step === 2 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Accordion
-                      defaultExpanded={false}
-                      sx={{
-                        bgcolor: 'background.neutral',
-                        '&:before': { display: 'none' },
-                      }}
-                    >
-                      <AccordionSummary
-                        expandIcon={<Iconify icon="mdi:chevron-down" />}
-                        sx={{
-                          '& .MuiAccordionSummary-content': {
-                            alignItems: 'center',
-                            gap: 1,
-                          },
-                        }}
-                      >
-                        <Iconify icon="mdi:cog" />
-                        <Typography variant="subtitle2">Advanced Settings</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Stack spacing={2}>
-                          <Box>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  {...methods.register('intent_settings.intent')}
-                                  defaultChecked={values.intent_settings?.intent ?? false}
-                                />
-                              }
-                              label="Intent"
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
-                            >
-                              Add intent argument explaining why the agent used this tool
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  {...methods.register('intent_settings.ui_intent')}
-                                  defaultChecked={values.intent_settings?.ui_intent ?? false}
-                                />
-                              }
-                              label="UI Intent"
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
-                            >
-                              Allow agent to dynamically rename tool display with contextual parameters
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  {...methods.register('intent_settings.async')}
-                                  defaultChecked={values.intent_settings?.async ?? false}
-                                />
-                              }
-                              label="Async"
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', ml: 4, mt: -0.5 }}
-                            >
-                              This will stop the generation and will wait for the client to activate it again. 
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </AccordionDetails>
-                    </Accordion>
-                  </Box>
-                )}
-
-                {step === 2 && (
-                  <Box
-                    sx={{
-                      mt: 1,
-                      p: 2,
-                      bgcolor: `${responseType}.dark`,
-                      borderRadius: '12px',
-                    }}
+                  <m.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="space-y-3"
                   >
-                    <ExecutionResult actionExecution={response} />
-                  </Box>
+                    <Separator className="my-3" />
+                    <div className="space-y-3">
+                      {['name', 'description'].map((field, index) => (
+                        <m.div
+                          key={field}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.2 + index * 0.05 }}
+                        >
+                          <FormParameter
+                            fieldKey={field}
+                            schema={{
+                              type: 'string',
+                              description: `The ${field} of the tool.`,
+                            }}
+                            required
+                            isInMappings={false}
+                            relationship={null}
+                            enableLexical={false}
+                            enableAIFill={false}
+                          />
+                        </m.div>
+                      ))}
+                    </div>
+                  </m.div>
                 )}
 
-                {/* Back button only visible in Step 2 for dynamic actions */}
-                {step === 2 && initialDynamicDetails && (
-                  <Box sx={{ mt: 2 }}>
-                    <Button
-                      onClick={handleBack}
-                      startIcon={<Iconify icon="mdi:arrow-left" />}
-                    >
-                      Back
-                    </Button>
-                  </Box>
+                {/* Step 1: Runtime Parameters */}
+                {step === 1 && actionDetails?.locations && (
+                  <m.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="space-y-3"
+                  >
+                    <Separator className="my-3" />
+                    <div>
+                      <h3 className="text-xs font-semibold mb-0.5">Runtime Parameters</h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Configure dynamic parameters to fetch the schema
+                      </p>
+                      <FormParameters
+                        formSchema={actionDetails.locations}
+                        path="" /* store at root */
+                      />
+                    </div>
+                    {!!firstStepRequiredCompleted && (
+                      <m.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      >
+                        <Button
+                          onClick={handleLoadDynamicSchema}
+                          className="w-full"
+                          size="lg"
+                        >
+                          <Iconify icon="mdi:download" width={18} />
+                          Load Schema
+                        </Button>
+                      </m.div>
+                    )}
+                  </m.div>
                 )}
-              </>
+
+                {/* Step 2: Tool Parameters */}
+                {step === 2 && actionDetails?.locations && (
+                  <m.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="space-y-3"
+                  >
+                    <Separator className="my-3" />
+                    <div>
+                      <h3 className="text-xs font-semibold mb-0.5">Tool Parameters</h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Configure tool execution parameters
+                      </p>
+                      <FormParameters
+                        formSchema={actionDetails.locations}
+                        enableLexical
+                        enableAIFill
+                        path="parameters."
+                      />
+                    </div>
+                  </m.div>
+                )}
+
+                {/* Advanced Settings */}
+                {step === 2 && (
+                  <m.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                  >
+                    <Separator className="my-3" />
+                    <Accordion type="single" collapsible className="border rounded-md">
+                      <AccordionItem value="advanced" className="border-none">
+                        <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/50 rounded-t-md text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Iconify icon="mdi:cog" width={14} className="text-muted-foreground" />
+                            <span className="font-medium">Advanced Settings</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 pb-3">
+                          <m.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.05 }}
+                            className="space-y-3 pt-2"
+                          >
+                            {/* Intent Setting */}
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs font-medium">Intent</Label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Add intent argument explaining tool usage
+                                </p>
+                              </div>
+                              <Switch
+                                {...methods.register('intent_settings.intent')}
+                                defaultChecked={values.intent_settings?.intent ?? false}
+                              />
+                            </div>
+
+                            <Separator />
+
+                            {/* UI Intent Setting */}
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs font-medium">UI Intent</Label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Dynamic tool display with contextual parameters
+                                </p>
+                              </div>
+                              <Switch
+                                {...methods.register('intent_settings.ui_intent')}
+                                defaultChecked={values.intent_settings?.ui_intent ?? false}
+                              />
+                            </div>
+
+                            <Separator />
+
+                            {/* Async Setting */}
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs font-medium">Async Execution</Label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Wait for client activation before continuing
+                                </p>
+                              </div>
+                              <Switch
+                                {...methods.register('intent_settings.async')}
+                                defaultChecked={values.intent_settings?.async ?? false}
+                              />
+                            </div>
+                          </m.div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </m.div>
+                )}
+
+                {/* Execution Result */}
+                {step === 2 && response.result && (
+                  <m.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    className="mt-3"
+                  >
+                    <div
+                      className={cn(
+                        'p-3 rounded-md border text-sm',
+                        responseType === 'success' && 'bg-muted border-border',
+                        responseType === 'error' && 'bg-destructive/5 border-destructive/20',
+                      )}
+                    >
+                      <ExecutionResult actionExecution={response} />
+                    </div>
+                  </m.div>
+                )}
+              </m.div>
             )}
           </FormProvider>
         </div>

@@ -1,21 +1,16 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LoadingButton } from '@mui/lab';
-import { TextField, Grid, Stack, Typography, Chip, Tooltip } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { PATH_DASHBOARD } from '@routes/paths';
-import React, { useState } from 'react';
+import { m } from 'framer-motion';
+import React from 'react';
 
-import FileThumbnail from '@components/file-thumbnail/FileThumbnail';
 import Iconify from '@components/iconify';
-import Label from '@components/label';
+import { Badge } from '@components/ui/badge';
+import { Card } from '@components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@components/ui/tooltip';
 import { cn } from '@lib/utils';
 import {
-  deleteKnowledgeLink,
   setDialogActive,
   deleteToolLink,
-  deleteResourceLink,
 } from '@redux/slices/spaces';
 import { dispatch } from '@redux/store';
 
@@ -104,16 +99,15 @@ export function BaseCard({
               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-50 hover:opacity-100"
               onClick={() =>
                 !(isEditMode && mode === 'widget' && item.type !== 'custom_message') &&
-                onEdit(item.id)
-              }
+                onEdit(item.id)}
               disabled={content !== null && !content.length}
             >
               <Iconify
                 icon={
                   isEditMode
                     ? !content || content !== item.name
-                      ? 'mdi:tick'
-                      : 'mdi:close'
+                        ? 'mdi:tick'
+                        : 'mdi:close'
                     : 'material-symbols:edit'
                 }
                 className="text-green-500"
@@ -128,8 +122,7 @@ export function BaseCard({
                   ? onSettings()
                   : dispatch(
                       setDialogActive({ item: { id: item.id, type: mode }, dialog: 'settings' }),
-                    )
-              }
+                    )}
             >
               <Iconify
                 icon="solar:settings-bold-duotone"
@@ -154,288 +147,111 @@ export function BaseCard({
   );
 }
 
-function getStatusColor(status) {
-  if (status === 'uploaded') {
-    return 'secondary';
-  } else if (status === 'learning') {
-    return 'info';
-  } else if (status === 'learned') {
-    return 'success';
-  } else {
-    return 'error';
-  }
-}
-
-export const DataSourceCard = ({ item }) => {
-  // console.log(item)
-  return (
-    <>
-      <BaseCard
-        item={item}
-        mode="dataSource"
-        onDelete={() => dispatch(deleteResourceLink(item.id))}
-        draggable={false}
-        // viewFile={viewFile}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-        >
-          <Iconify icon="majesticons:data" />
-          <Chip label={item.resource_type.name} />
-
-          <Typography
-            noWrap
-            variant="inherit"
-          >
-            {item.name}
-          </Typography>
-        </Stack>
-      </BaseCard>
-    </>
-  );
+// Tool configuration helpers - Single Responsibility Principle
+const getToolIcon = (tool) => {
+  const isClientTool = tool?.tool_type === 'client';
+  return isClientTool
+    ? 'mdi:desktop-classic'
+    : tool?.action_type?.connection_type?.icon ||
+      tool?.action_type?.connection_type?.external_app?.icon ||
+      'ri:hammer-fill';
 };
 
-export const KnowledgeCard = ({ item }) => {
-  const knowledge = item.knowledge;
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const viewFile = () => {
-    if (knowledge.file.meta_data.file_type === 'sheets') {
-      const visitUrl = knowledge.file.meta_data.file_url.replace('&single=true&output=csv', '');
-      window.open(visitUrl, '_blank');
-    } else if (knowledge.file.meta_data.file_type === 'snippet') {
-      setSnippetDialog(true);
-    } else {
-    }
-  };
-
-  return (
-    <>
-      <BaseCard
-        item={item}
-        mode="knowledge"
-        onDelete={() => dispatch(deleteKnowledgeLink(item.id))}
-        draggable={false}
-        viewFile={viewFile}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-        >
-          <FileThumbnail file={knowledge.file.meta_data.file_type} />
-          {knowledge.file.meta_data.status && (
-            <Label
-              color={getStatusColor(knowledge.file.meta_data.status)}
-              startIcon={
-                knowledge.file.meta_data.status === 'learning' ||
-                knowledge.file.meta_data.status === 'processing' ? (
-                  <Iconify icon="line-md:loading-twotone-loop" />
-                ) : null
-              }
-            >
-              {knowledge.file.meta_data.status}
-            </Label>
-          )}
-          <Typography
-            noWrap
-            variant="inherit"
-            sx={{ maxWidth: isMobile ? '125px' : '400px' }}
-          >
-            {knowledge?.meta_data?.file_name || knowledge.file.meta_data?.file_name}
-          </Typography>
-        </Stack>
-      </BaseCard>
-    </>
-  );
+const getToolType = (tool) => {
+  const isClientTool = tool?.tool_type === 'client';
+  return isClientTool
+    ? 'Client'
+    : tool?.action_type?.connection_type?.name || 'Server';
 };
 
+// Animated Icon Component - DRY principle
+const ToolIcon = ({ icon }) => (
+  <div className="w-9 h-9 rounded-md border bg-muted/50 flex items-center justify-center flex-shrink-0">
+    <IconRenderer icon={icon} className="w-4 h-4" />
+  </div>
+);
+
+// Delete Button Component - Single Responsibility
+const DeleteButton = ({ onClick }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <m.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <Iconify icon="ph:trash" width={14} />
+      </m.button>
+    </TooltipTrigger>
+    <TooltipContent side="left">
+      <p className="text-xs">Remove tool</p>
+    </TooltipContent>
+  </Tooltip>
+);
+
+// Main Card Component - Open/Closed Principle
 export const SpaceToolCard = ({ item, onEdit, spaceId }) => {
-  const isClientTool = item.tool?.tool_type === 'client';
-  const onClickEdit = () => onEdit(item);
-  return (
-    <div
-      className="group relative flex items-center gap-3 p-3 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-      style={{
-        backgroundColor: 'transparent',
-        transition: 'all 200ms ease-in-out',
-      }}
-      onClick={onClickEdit}
-    >
-      <div className="flex items-center space-x-2 w-full">
-        <Chip
-          icon={
-            <IconRenderer
-              icon={
-                isClientTool
-                  ? 'mdi:desktop-classic'
-                  : item.tool?.action_type?.connection_type?.icon ||
-                    item?.tool?.action_type?.connection_type?.external_app?.icon ||
-                    'ri:hammer-fill'
-              }
-            />
-          }
-          label={
-            isClientTool
-              ? 'Client Tool'
-              : item?.tool?.action_type?.connection_type?.name || 'Server Tool'
-          }
-          color={isClientTool ? 'secondary' : 'primary'}
-          variant="soft"
-        />
-        <Typography
-          noWrap
-          variant="subtitle"
-          sx={{ maxWidth: 360, flex: 1 }}
-        >
-          {item.tool.name}
-        </Typography>
-      </div>
+  const tool = item.tool;
+  const toolIcon = getToolIcon(tool);
+  const toolType = getToolType(tool);
 
-      {/* Delete button */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            dispatch(deleteToolLink(item.id, item.tool.id, spaceId));
-          }}
-          className="p-1 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export const SpaceCard = ({
-  navigate,
-  item,
-  cardEditing,
-  onDelete,
-  onEdit,
-  mode = 'space',
-  isEditLayout = false,
-  isSubmitting = false,
-}) => {
-  const currentName = mode === 'link' ? item.reference.name : item.name;
-  const [textValue, setTextValue] = useState(currentName || '');
-  const handleKeyDown = (e, id) => {
-    if (e.key === 'Enter') onEdit(id, textValue, currentName);
+  const handleClick = () => onEdit(item);
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    dispatch(deleteToolLink(item.id, tool.id, spaceId));
   };
 
-  const handleNavigation = async () => {
-    try {
-      const id = mode === 'link' ? item.reference.id : item.id;
-      await navigate(PATH_DASHBOARD.spaces.view(id), { replace: true });
-    } catch {}
-  };
-  const isEmptySpace =
-    item?.children?.spaces?.length === 0 && item?.children?.knowledge?.length === 0;
-  const renderSpaceLink = mode === 'link' && (
-    <Tooltip title={`Link to space ${item.reference.name}`}>
-      <Iconify
-        icon="uil:link"
-        width={15}
-        sx={{ position: 'absolute', top: -5, left: -5 }}
-      />
-    </Tooltip>
-  );
   return (
-    <BaseCard
-      item={item}
-      mode={mode}
-      onDelete={onDelete}
-      onEdit={mode === 'space' && !!onEdit ? () => onEdit(item.id, textValue, currentName) : null}
-      isEditMode={cardEditing}
-      isEditLayout={isEditLayout}
-      content={textValue}
-    >
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={1}
+    <TooltipProvider delayDuration={300}>
+      <m.div
+        whileHover={{ scale: 1.005 }}
+        whileTap={{ scale: 0.998 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        className="group"
       >
-        {cardEditing ? (
-          <TextField
-            autoFocus
-            value={textValue}
-            onChange={(e) => setTextValue(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, item.id)}
-            InputProps={{
-              startAdornment: renderSpaceLink,
-            }}
-          />
-        ) : (
-          <>
-            <Tooltip title={isEmptySpace ? 'This is an end space without knowledge' : ''}>
-              <LoadingButton
-                sx={{ textTransform: 'none' }}
-                variant="soft"
-                color={isEmptySpace ? 'warning' : 'primary'}
-                loading={isSubmitting}
-                onClick={handleNavigation}
-                startIcon={<Iconify icon="solar:folder-bold-duotone" />}
-              >
-                {textValue || 'New Space'}
-                {renderSpaceLink}
-              </LoadingButton>
-            </Tooltip>
+        <Card
+          className="relative cursor-pointer border hover:border-foreground/20 hover:shadow-sm transition-all duration-150 bg-card"
+          onClick={handleClick}
+        >
+          <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3">
+            <ToolIcon icon={toolIcon} />
 
-            <Tooltip
-              arrow
-              title={
-                <Stack
-                  spacing={1}
-                  sx={{ p: 1, display: 'flex', flexWrap: 'wrap' }}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                <Badge
+                  variant="outline"
+                  className="text-[9px] sm:text-[10px] h-3.5 sm:h-4 px-1 sm:px-1.5 font-medium border-muted-foreground/20"
                 >
-                  <Typography variant="subtitle2">Spaces</Typography>
-                  <Grid
-                    container
-                    spacing={1}
-                  >
-                    {item?.children?.spaces?.map((space, index) => (
-                      <Grid
-                        item
-                        xs={4}
-                        key={index}
-                      >
-                        <Chip label={space?.child?.name} />
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Stack>
-              }
-              enterTouchDelay={500}
-              enterDelay={500}
-              enterNextDelay={500}
-              followCursor
-              slotProps={{
-                tooltip: {
-                  sx: {
-                    maxHeight: '80vh',
-                  },
-                },
-              }}
-            >
-              <Chip
-                variant="soft"
-                color="primary"
-                label={`${item?.children_count + item?.links_count || 0} Spaces`}
-              />
-            </Tooltip>
-          </>
-        )}
-      </Stack>
-    </BaseCard>
+                  {toolType}
+                </Badge>
+              </div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="text-xs sm:text-sm font-medium truncate leading-tight">
+                    {tool.name}
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium">{tool.name}</p>
+                  {tool.description && (
+                    <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+
+              {tool.description && (
+                <p className="text-[11px] sm:text-xs text-muted-foreground truncate mt-0.5">
+                  {tool.description}
+                </p>
+              )}
+            </div>
+
+            <DeleteButton onClick={handleDelete} />
+          </div>
+        </Card>
+      </m.div>
+    </TooltipProvider>
   );
 };

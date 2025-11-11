@@ -92,8 +92,6 @@ export const IntegrationPage = Loadable(
   lazy(() => import('../pages/dashboard/IntegrationPage.jsx')),
 );
 export const RemixPage = Loadable(lazy(() => import('../pages/dashboard/RemixPage.jsx')));
-// export const CatalogsPage = Loadable(lazy(() => import('../pages/dashboard/CatalogsPage')));
-export const MemberPage = Loadable(lazy(() => import('../pages/dashboard/MemberPage.jsx')));
 
 // TEST RENDER PAGE BY ROLE
 export const PermissionDeniedPage = Loadable(
