@@ -59,8 +59,6 @@ function AgentCard({ agent }) {
 
 const AssetCard = ({ type, asset }) => {
   switch (type) {
-    case 'forms':
-      return <FormCard form={asset} />;
     case 'agents':
       return <AgentCard agent={asset} />;
     case 'flows':

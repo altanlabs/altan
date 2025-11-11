@@ -51,7 +51,6 @@ export const PATH_DASHBOARD = {
   rooms: path(ROOTS_DASHBOARD, '/rooms'),
   shop: path(ROOTS_DASHBOARD, '/shop'),
   flows: path(ROOTS_DASHBOARD, '/flows'),
-  forms: path(ROOTS_DASHBOARD, '/forms'),
   crm: path(ROOTS_DASHBOARD, '/crm'),
   catalogs: path(ROOTS_ASSETS, '/catalogs'),
   products: path(ROOTS_ASSETS, '/products'),

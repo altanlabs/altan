@@ -2,7 +2,6 @@ import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import useBrowserNotifications from '../hooks/useBrowserNotifications';
 import { useHermesWebSocket } from './websocket/HermesWebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../redux/slices/connections';
 import {
@@ -11,7 +10,6 @@ import {
   getAccountMembers,
   getRoles,
 } from '../redux/slices/general';
-import { fetchNotifications } from '../redux/slices/notifications';
 import { dispatch, useSelector } from '../redux/store';
 import { optimai } from '../utils/axios.js';
 
@@ -33,9 +31,6 @@ const DashboardDataProvider = ({ children }) => {
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
-
-  // Enable browser notifications for this user
-  useBrowserNotifications();
 
   // WebSocket subscription for account
   useEffect(() => {
@@ -77,8 +72,7 @@ const DashboardDataProvider = ({ children }) => {
   useEffect(() => {
     if (!!accountId && !accountInitialized && !accountLoading) {
       dispatch(getAccount()).then(() => {
-        [['subscriptions', 'agents']].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
-        dispatch(fetchNotifications());
+        [['subscriptions'], ['agents']].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getConnections(accountId));
         dispatch(getAccountMembers(accountId));
       });

@@ -2,17 +2,15 @@ import { memo } from 'react';
 import { Link as RouterLink, useHistory } from 'react-router-dom';
 
 import AccountPopover from './AccountPopover.jsx';
-import NotificationsPopover from './NotificationsPopover.jsx';
 import HeaderIconButton from '../../../components/HeaderIconButton';
 import Iconify from '../../../components/iconify';
 import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
-import { useBoolean } from '../../../hooks/useBoolean';
 import { PATH_DASHBOARD } from '../../../routes/paths';
+
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const HeaderActions = ({ user, isDesktop }) => {
-  const drawerBoolean = useBoolean();
   const history = useHistory();
 
   if (!user) {
@@ -36,8 +34,6 @@ const HeaderActions = ({ user, isDesktop }) => {
 
   return (
     <>
-      <NotificationsPopover drawerBoolean={drawerBoolean} />
-
       <div className="flex-grow flex flex-row items-center justify-end gap-2">
         {isDesktop && (
           <>
@@ -51,7 +47,7 @@ const HeaderActions = ({ user, isDesktop }) => {
             )}
 
             <InvitationMenuPopover isDashboard={true} />
-            
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

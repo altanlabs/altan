@@ -6,7 +6,6 @@ import { clearAltanerState, setAltanersList, fetchAltanersList } from './altaner
 import { clearConnectionsState } from './connections';
 import { clearFlowState } from './flows';
 import { clearMediaState } from './media';
-import { clearNotificationsState } from './notifications';
 import { clearSpacesState, stopSpacesLoading } from './spaces';
 import { setNested } from '../../components/tools/dynamic/utils';
 import { analytics } from '../../lib/analytics';
@@ -2236,7 +2235,6 @@ export const clearAccountState = () => async (dispatch) =>
     dispatch(clearGeneralState());
     dispatch(clearConnectionsState());
     dispatch(clearMediaState());
-    dispatch(clearNotificationsState());
     dispatch(clearFlowState());
     dispatch(clearAltanerState());
     dispatch(clearAgentsUsage());

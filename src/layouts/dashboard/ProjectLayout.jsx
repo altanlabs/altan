@@ -26,7 +26,6 @@ import {
   getAccountMembers,
   getRoles,
 } from '../../redux/slices/general';
-import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 
 const selectAccountId = (state) => state.general.account?.id;
@@ -109,8 +108,6 @@ const ProjectLayout = ({ children }) => {
         dispatch(getAccountMembers(accountId));
         [
           ['subscriptions'],
-          // ['altaners'],
-          // ['interfaces'],
           ['agents'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
         dispatch(getFlows(accountId));

@@ -1,9 +1,6 @@
 import {
   useMediaQuery,
   useTheme,
-  DialogContent,
-  CircularProgress,
-  IconButton,
 } from '@mui/material';
 import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -15,12 +12,10 @@ import {
   sendMessage,
 } from '../../redux/slices/room';
 import { dispatch, useSelector } from '../../redux/store';
-import CustomDialog from '../dialogs/CustomDialog.jsx';
 import { LiveWaveform } from '../elevenlabs/ui/live-waveform.tsx';
 import Iconify from '../iconify';
 import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import { useSnackbar } from '../snackbar';
-import ConnectionManager from '../tools/ConnectionManager';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
@@ -30,7 +25,6 @@ import { useFileHandling } from './hooks/useFileHandling';
 import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
 import AltanAnimatedSvg from './ui/AltanAnimatedSvg.jsx';
 import { BASE_MENU_ITEMS, TOOL_MENU_ITEM } from './utils/constants';
-import { fetchAltanerData } from './utils/fetchAltanerData';
 import analytics from '../../lib/analytics';
 
 // Stable empty array reference to avoid creating new references
@@ -91,12 +85,6 @@ const AttachmentHandler = ({
   const { dragOver, fileInputRef, handleFileChange, handleDrop, handleUrlUpload, setupDragEvents } =
     useFileHandling(setAttachments, editorRef);
 
-  // State for flows and modals
-  const [flows, setFlows] = useState([]);
-  const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
-  const [showSpeechInput, setShowSpeechInput] = useState(false);
-  const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
-
   // Use prop mode if provided, otherwise use local state
   const [localSelectedMode, setLocalSelectedMode] = useState('auto');
   const selectedMode = propSelectedMode !== null ? propSelectedMode : localSelectedMode;
@@ -116,13 +104,6 @@ const AttachmentHandler = ({
 
   // Determine menu items based on altanerId presence
   const displayMenuItems = altanerId ? [...BASE_MENU_ITEMS, TOOL_MENU_ITEM] : BASE_MENU_ITEMS;
-
-  // Fetch altaner data on mount if altanerId exists
-  useEffect(() => {
-    if (altanerId) {
-      fetchAltanerData(altanerId, setFlows);
-    }
-  }, [altanerId]);
 
   // Setup drag events
   useEffect(() => {
@@ -179,67 +160,10 @@ const AttachmentHandler = ({
         tempInput.accept = '*/*';
         tempInput.onchange = (e) => handleUrlUpload(Array.from(e.target.files));
         tempInput.click();
-      } else if (type === 'flow') {
-        // Open the flow selection dialog if flows are available
-        if (flows && flows.length > 0) {
-          setIsFlowDialogOpen(true);
-        } else {
-          console.warn('Workflows not available or empty. Cannot open selection dialog.');
-          enqueueSnackbar('No workflows available', { variant: 'warning' });
-        }
-      } else if (type === 'tool') {
-        // Open the tool creation dialog
-        setIsToolDialogOpen(true);
       }
     },
-    [handleUrlUpload, flows, enqueueSnackbar, fileInputRef],
+    [handleUrlUpload, fileInputRef],
   );
-
-  // Handle flow selection
-  const handleSelectFlow = useCallback(
-    (flow) => {
-      if (editorRef?.current?.insertText && flow) {
-        const flowText = `
-Workflow Selected: ${flow.name} (ID: ${flow.id})
-`;
-        console.log('Inserting flow text:', flowText);
-        editorRef.current.insertText(flowText);
-      }
-      setIsFlowDialogOpen(false);
-    },
-    [editorRef],
-  );
-
-  // Handle transcript from speech input
-  const handleTranscript = useCallback(
-    (text) => {
-      if (editorRef?.current?.insertText) {
-        editorRef.current.insertText(text + ' ');
-      }
-    },
-    [editorRef],
-  );
-
-  // Handle connection selection from ConnectionManager
-  const handleConnectionSelected = useCallback(
-    (connection) => {
-      console.log('Connection selected:', connection);
-      // You can add logic here to handle the selected connection
-      // For example, insert connection info into the editor
-      if (editorRef?.current?.insertText && connection) {
-        const connectionText = `
-Tool Connected: ${connection.name} (${connection.connection_type?.name})
-`;
-        editorRef.current.insertText(connectionText);
-      }
-    },
-    [editorRef],
-  );
-
-  // Handle tool dialog close
-  const handleToolDialogClose = useCallback(() => {
-    setIsToolDialogOpen(false);
-  }, []);
 
   // Agent selection handlers
   const handleAgentSelect = useCallback(
@@ -262,7 +186,7 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
         setSelectedAgent(null);
       }
     },
-    [selectedAgent, setSelectedAgent],
+    [selectedAgent, setSelectedAgent, setSelectedMode],
   );
 
   // Helper function to get file extension from MIME type
@@ -306,35 +230,35 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
 
         const result = await response.json();
 
-      if (result.status === 'success' && result.text) {
-        // Send the transcribed text directly using Redux action
-        if (threadId) {
-          // Prepend agent mention if in instant mode and an agent is selected
-          let messageContent = result.text;
-          if (selectedMode === 'instant' && selectedAgent) {
-            messageContent = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**\n\n${result.text}`;
+        if (result.status === 'success' && result.text) {
+          // Send the transcribed text directly using Redux action
+          if (threadId) {
+            // Prepend agent mention if in instant mode and an agent is selected
+            let messageContent = result.text;
+            if (selectedMode === 'instant' && selectedAgent) {
+              messageContent = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**\n\n${result.text}`;
+            }
+
+            console.log('Sending transcribed message via Redux:', messageContent);
+            await dispatch(
+              sendMessage({
+                content: messageContent,
+                attachments: [],
+                threadId,
+              }),
+            );
+
+            // Track speech-to-text usage
+            analytics.featureUsed('speech_to_text', {
+              thread_id: threadId,
+              text_length: result.text.length,
+            });
+          } else {
+            console.error('No threadId available to send message');
           }
-
-          console.log('Sending transcribed message via Redux:', messageContent);
-          await dispatch(
-            sendMessage({
-              content: messageContent,
-              attachments: [],
-              threadId,
-            }),
-          );
-
-          // Track speech-to-text usage
-          analytics.featureUsed('speech_to_text', {
-            thread_id: threadId,
-            text_length: result.text.length,
-          });
-        } else {
-          console.error('No threadId available to send message');
-        }
-        // Reset audio blob after successful transcription
-        setAudioBlob(null);
-      } else if (result.error) {
+          // Reset audio blob after successful transcription
+          setAudioBlob(null);
+        } else if (result.error) {
           setTranscriptionError(result.error);
           enqueueSnackbar(`Transcription error: ${result.error}`, { variant: 'error' });
         } else {
@@ -397,7 +321,7 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
       console.error('Failed to start recording:', err);
       enqueueSnackbar('Failed to access microphone', { variant: 'error' });
     }
-  }, [enqueueSnackbar, transcribeAudio]);
+  }, [enqueueSnackbar]);
 
   // Stop recording audio
   const stopRecording = useCallback(() => {
@@ -594,20 +518,6 @@ Tool Connected: ${connection.name} (${connection.connection_type?.name})
             />
           </div>
         </div>
-
-        {/* Tool Creation Dialog */}
-        <CustomDialog
-          open={isToolDialogOpen}
-          onClose={handleToolDialogClose}
-        >
-          <DialogContent className="py-6">
-            <ConnectionManager
-              onConnectionSelected={handleConnectionSelected}
-              onClose={handleToolDialogClose}
-              title="Add Tool Connection"
-            />
-          </DialogContent>
-        </CustomDialog>
 
         {/* DRAG-AND-DROP OVERLAY */}
         <DragOverlay

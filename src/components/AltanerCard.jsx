@@ -5,7 +5,6 @@ import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import DeleteDialog from './dialogs/DeleteDialog';
-import DuplicateAltanerDialog from './dialogs/DuplicateAltanerDialog';
 import FormDialog from './FormDialog';
 import Iconify from './iconify/Iconify';
 import IconRenderer from './icons/IconRenderer';
@@ -18,7 +17,6 @@ const AltanerCard = memo(
     const dispatch = useDispatch();
     const [contextMenu, setContextMenu] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -81,11 +79,7 @@ const AltanerCard = memo(
       } finally {
         setIsDeleting(false);
       }
-    }, [dispatch, id]);
-
-    const handleCloseDuplicateDialog = useCallback(() => {
-      setDuplicateDialogOpen(false);
-    }, []);
+    }, [dispatch, handleCloseDeleteDialog, id]);
 
     const editSchema = {
       properties: {
@@ -286,16 +280,6 @@ const AltanerCard = memo(
           title="Edit Project"
           description="Update the project details"
           onConfirm={handleConfirmEdit}
-        />
-
-        <DuplicateAltanerDialog
-          open={duplicateDialogOpen}
-          onClose={handleCloseDuplicateDialog}
-          altanerToClone={{
-            id,
-            name,
-            account_id: altaner.account_id,
-          }}
         />
 
         <DeleteDialog

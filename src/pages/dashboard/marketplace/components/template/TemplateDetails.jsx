@@ -169,7 +169,6 @@ const TemplateDetails = ({ templateId = null }) => {
     return {
       flows: assets?.flows ? Object.keys(assets.flows).length : 0,
       agents: assets?.agents ? Object.keys(assets.agents).length : 0,
-      forms: assets?.forms ? Object.keys(assets.forms).length : 0,
       connections: assets?.connections ? Object.keys(assets.connections).length : 0,
     };
   };

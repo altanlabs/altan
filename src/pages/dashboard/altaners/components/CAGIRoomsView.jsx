@@ -99,7 +99,7 @@ const CAGIRoomsView = ({ altanerId, components }) => {
           } catch (error) {
             continue;
           }
-        } else if (['base', 'flows', 'forms'].includes(type) && params?.ids?.length > 0) {
+        } else if (['base', 'flows'].includes(type) && params?.ids?.length > 0) {
           allRooms[componentId] = {
             externalIds: params.ids,
             title:

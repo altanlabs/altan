@@ -1,11 +1,10 @@
 /* eslint-disable react/display-name */
 import { Box } from '@mui/material';
-import { useState, useEffect, memo, useCallback, Suspense, lazy } from 'react';
+import { useEffect, memo } from 'react';
 import { Outlet, useParams, useLocation, useHistory } from 'react-router-dom';
 
 import AltanerHeader from './header/AltanerHeader.jsx';
 import Main from './Main.jsx';
-import AltanLogo from '../../components/loaders/AltanLogo.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import {
@@ -14,28 +13,14 @@ import {
   selectCurrentAltaner,
 } from '../../redux/slices/altaners';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
-import { getFlows } from '../../redux/slices/flows';
+import { getFlows, selectIsLoadingFlow, selectInitializedFlow } from '../../redux/slices/flows';
 import {
   getAccount,
   getAccountAttribute,
   getAccountMembers,
   getRoles,
 } from '../../redux/slices/general';
-import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
-
-const AltanLogoFixed = (
-  <AltanLogo
-    wrapped
-    fixed
-  />
-);
-
-const Loadable = (Component) => (props) => (
-  <Suspense fallback={AltanLogoFixed}>
-    <Component {...props} />
-  </Suspense>
-);
 
 const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;
@@ -57,6 +42,9 @@ const AltanerLayout = () => {
   const ws = useHermesWebSocket();
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);
+  const flowsLoading = useSelector(selectIsLoadingFlow);
+  const flowsInitialized = useSelector(selectInitializedFlow);
+
   const accountId = useSelector(selectAccountId);
   const { altanerId } = useParams();
   const altaner = useSelector(selectCurrentAltaner);
@@ -66,6 +54,12 @@ const AltanerLayout = () => {
       dispatch(getAltanerById(altanerId));
     }
   }, [altaner?.id, altanerId]);
+
+  useEffect(() => {
+    if (!flowsLoading && flowsInitialized && altaner && altaner.components.items.length > 0 && altaner.components.items.some(component => component.type === 'flows')) {
+      dispatch(getFlows(accountId));
+    }
+  }, [altaner, accountId, flowsLoading, flowsInitialized]);
 
   useEffect(() => {
     return () => dispatch(clearCurrentAltaner());
@@ -95,10 +89,8 @@ const AltanerLayout = () => {
         [
           ['altaners', 'subscriptions'],
           ['bases', 'rooms', 'interfaces', 'workflows'],
-          ['forms', 'webhooks', 'apikeys', 'agents', 'developer_apps', 'apps'],
+          ['webhooks', 'apikeys', 'agents', 'developer_apps', 'apps'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
-        dispatch(getFlows(accountId));
-        dispatch(fetchNotifications());
       });
     }
   }, [accountId, accountInitialized, accountLoading]);

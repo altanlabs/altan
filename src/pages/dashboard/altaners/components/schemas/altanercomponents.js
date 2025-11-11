@@ -45,10 +45,6 @@ const TYPES_MAPPING = {
     name: 'AI Agents',
     icon: 'material-symbols-light:order-approve-sharp',
   },
-  forms: {
-    name: 'Forms',
-    icon: 'material-symbols-light:order-approve-sharp',
-  },
   external_link: {
     name: 'Link',
     icon: 'akar-icons:link-out',
@@ -255,28 +251,6 @@ const ALTANER_COMPONENTS_CREATOR = {
                 },
                 description: 'ID of the agent',
                 'x-component': 'AgentAutocompleteMultiple',
-              },
-            },
-            required: ['ids'],
-          },
-        },
-        required: ['type', 'name', 'position', 'params'],
-      },
-      {
-        title: 'Forms',
-        type: 'object',
-        properties: {
-          ...ALTANER_COMPONENT_CREATOR('forms'),
-          params: {
-            type: 'object',
-            properties: {
-              ids: {
-                type: 'array',
-                items: {
-                  type: 'string',
-                },
-                description: 'ID of the form',
-                'x-component': 'FormAutocompleteMultiple',
               },
             },
             required: ['ids'],

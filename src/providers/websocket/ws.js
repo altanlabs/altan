@@ -56,7 +56,6 @@ import {
   addWorkflowExecution,
   updateWorkflowExecution,
 } from '../../redux/slices/general';
-import { addNotification } from '../../redux/slices/notifications';
 import { addMessageReaction, changeThreadReadState } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store';
 
@@ -120,11 +119,6 @@ const TEMPLATE_ACTIONS = {
  */
 export const handleWebSocketEvent = async (data, user_id) => {
   switch (data.type) {
-    // === Notification Events (Legacy) ===
-    case 'NotificationNew':
-      dispatch(addNotification(data.data.attributes));
-      break;
-
     // === Webhook Subscription Events (Legacy) ===
     case 'WebhookSubscriptionNew':
       dispatch(addWebhookSubscription(data.data.attributes));

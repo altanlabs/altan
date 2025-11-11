@@ -84,24 +84,6 @@ const componentTypes = {
       required: ['ids'],
     },
   },
-  forms: {
-    value: 'forms',
-    label: 'Forms',
-    icon: 'mdi:form',
-    paramsSchema: {
-      type: 'object',
-      properties: {
-        ids: {
-          title: 'Forms',
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Forms to include in the Altaner',
-          'x-component': 'FormAutocompleteMultiple',
-        },
-      },
-      required: ['ids'],
-    },
-  },
   base: {
     value: 'base',
     label: 'Database',
@@ -293,7 +275,7 @@ const AltanerComponentDialog = ({ altanerId, open, onClose, altanerComponentId }
 
   const isSubmitDisabled = useMemo(() => {
     if (!isValid) return true;
-    if (['forms', 'flows', 'agents'].includes(selectedType)) {
+    if (['flows', 'agents'].includes(selectedType)) {
       return !params.ids || params.ids.length === 0;
     }
     return false;

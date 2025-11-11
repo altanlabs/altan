@@ -13,15 +13,14 @@ import codeEditorReducer from './slices/codeEditor';
 import commitsReducer from './slices/commits';
 import connectionsReducer from './slices/connections';
 import flowsReducer from './slices/flows';
-import servicesReducer from './slices/services';
 import generalReducer from './slices/general';
 import marketplaceReducer from './slices/marketplace';
 import mcpReducer from './slices/mcp';
 import mediaReducer from './slices/media';
 import moneyReducer from './slices/money';
-import notificationsReducer from './slices/notifications';
 import previewControlReducer from './slices/previewControl';
 import roomsReducer from './slices/room';
+import servicesReducer from './slices/services';
 import spaceReducer from './slices/spaces';
 import subscriptionsReducer from './slices/subscriptions';
 import superadminReducer from './slices/superadmin';
@@ -55,7 +54,6 @@ const rootReducer = combineReducers({
   superadmin: superadminReducer,
   user: userReducer,
   media: mediaReducer,
-  notifications: notificationsReducer,
   previewControl: previewControlReducer,
   connections: connectionsReducer,
   flows: flowsReducer,

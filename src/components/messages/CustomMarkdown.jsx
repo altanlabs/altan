@@ -125,7 +125,14 @@ const CustomLink = ({ href, children, threadId }) => {
   if (isPlanLink(href)) {
     const planId = extractPlanId(href);
     if (planId) {
-      return <PlanWidget planId={planId} />;
+      return (
+        <span
+          data-block-widget="true"
+          style={{ display: 'block' }}
+        >
+          <PlanWidget planId={planId} />
+        </span>
+      );
     }
   }
 
@@ -134,10 +141,15 @@ const CustomLink = ({ href, children, threadId }) => {
     const videoId = extractYouTubeVideoId(href);
     if (videoId) {
       return (
-        <YouTubeEmbed
-          videoId={videoId}
-          title="YouTube Video"
-        />
+        <span
+          data-block-widget="true"
+          style={{ display: 'block' }}
+        >
+          <YouTubeEmbed
+            videoId={videoId}
+            title="YouTube Video"
+          />
+        </span>
       );
     }
   }
@@ -162,42 +174,67 @@ const CustomLink = ({ href, children, threadId }) => {
       switch (resource.resourceName.toLowerCase()) {
         case 'media':
           return (
-            <MediaWidget
+            <span
               key={resource.id}
-              id={resource.id}
-            />
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <MediaWidget id={resource.id} />
+            </span>
           );
         case 'database-version':
           return (
-            <DatabaseVersionWidget
+            <span
               key={resource.id}
-              id={resource.id}
-            />
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <DatabaseVersionWidget id={resource.id} />
+            </span>
           );
         case 'authorize':
           return (
-            <AuthorizationWidget
+            <span
               key={resource.id}
-              connectionTypeId={resource.id}
-              threadId={threadId}
-            />
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <AuthorizationWidget
+                connectionTypeId={resource.id}
+                threadId={threadId}
+              />
+            </span>
           );
         case 'version':
           return (
-            <VersionWidget
+            <span
               key={resource.id}
-              id={resource.id}
-            />
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <VersionWidget id={resource.id} />
+            </span>
           );
         case 'commit':
           return (
-            <CommitWidget
+            <span
               key={resource.id}
-              hash={resource.id}
-            />
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <CommitWidget hash={resource.id} />
+            </span>
           );
         case 'no_credits':
-          return <NoCredits key={resource.id} />;
+          return (
+            <span
+              key={resource.id}
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <NoCredits />
+            </span>
+          );
         case 'project':
         case 'app':
           return (
@@ -223,42 +260,48 @@ const CustomLink = ({ href, children, threadId }) => {
           const baseUrl = `https://www.altan.ai/${resourceType}`;
 
           return (
-            <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
-              <iframe
-                src={`${baseUrl}/${resource.id}?hideChat=true&hideHeader=true`}
-                className="w-full h-full"
-                title={`${resourceType} Preview`}
-                allow="fullscreen"
-              />
-              <a
-                href={`${baseUrl}/${resource.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute top-3 right-3 bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200"
-                title="Open in new tab"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            <span
+              key={resource.id}
+              data-block-widget="true"
+              style={{ display: 'block' }}
+            >
+              <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+                <iframe
+                  src={`${baseUrl}/${resource.id}?hideChat=true&hideHeader=true`}
+                  className="w-full h-full"
+                  title={`${resourceType} Preview`}
+                  allow="fullscreen"
+                />
+                <a
+                  href={`${baseUrl}/${resource.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-3 right-3 bg-white dark:bg-gray-800 p-2 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200"
+                  title="Open in new tab"
                 >
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line
-                    x1="10"
-                    y1="14"
-                    x2="21"
-                    y2="3"
-                  />
-                </svg>
-              </a>
-            </div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line
+                      x1="10"
+                      y1="14"
+                      x2="21"
+                      y2="3"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </span>
           );
         default:
           return (
@@ -275,7 +318,14 @@ const CustomLink = ({ href, children, threadId }) => {
 
   if (isComponentTarget(href)) {
     const details = parseDetailsFromText(href);
-    return <ComponentTarget details={details} />;
+    return (
+      <span
+        data-block-widget="true"
+        style={{ display: 'block' }}
+      >
+        <ComponentTarget details={details} />
+      </span>
+    );
   }
 
   // If the text of the link is exactly the URL, render a native <a> tag with enhanced styling
@@ -500,16 +550,44 @@ const CustomMarkdown = ({
         },
       }),
       // Minimal paragraph styling
-      p: ({ children }) => (
-        <p
-          className={cn(
-            'mb-1.5 leading-relaxed text-slate-700 dark:text-slate-300',
-            noWrap ? 'overflow-hidden text-ellipsis whitespace-nowrap' : 'whitespace-pre-line',
-          )}
-        >
-          {children}
-        </p>
-      ),
+      p: ({ children, node }) => {
+        // Check if paragraph contains only a link (which might render as a block widget)
+        // This prevents invalid nesting like <p><div>...</div></p>
+
+        // Check the AST node to see if this paragraph only contains a single link
+        if (node?.children?.length === 1 && node.children[0]?.tagName === 'a') {
+          // Paragraph contains only a link - render without <p> wrapper
+          return <>{children}</>;
+        }
+
+        // Also handle case where there might be whitespace text nodes
+        const childArray = Array.isArray(children) ? children : [children];
+        const nonWhitespaceChildren = childArray.filter((child) => {
+          if (typeof child === 'string') {
+            return child.trim() !== '';
+          }
+          return true;
+        });
+
+        // If there's only one non-whitespace child, check if it's a link
+        if (nonWhitespaceChildren.length === 1) {
+          const child = nonWhitespaceChildren[0];
+          if (child?.props?.node?.tagName === 'a') {
+            return <>{children}</>;
+          }
+        }
+
+        return (
+          <p
+            className={cn(
+              'mb-1.5 leading-relaxed text-slate-700 dark:text-slate-300',
+              noWrap ? 'overflow-hidden text-ellipsis whitespace-nowrap' : 'whitespace-pre-line',
+            )}
+          >
+            {children}
+          </p>
+        );
+      },
       // Minimal emphasis and strong text
       em: ({ children }) => <em className="italic">{children}</em>,
       strong: ({ children }) => (

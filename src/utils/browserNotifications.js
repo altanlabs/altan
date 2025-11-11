@@ -85,7 +85,7 @@ export async function requestNotificationPermission() {
  */
 export function sendBrowserNotification(title, options = {}) {
   console.log('🔔 sendBrowserNotification called:', { title, options });
-  
+
   // Check if notifications are supported and enabled
   if (!isBrowserNotificationSupported()) {
     console.warn('❌ Browser notifications not supported');
@@ -122,7 +122,7 @@ export function sendBrowserNotification(title, options = {}) {
       vibrate: options.vibrate || [200, 100, 200],
       ...options,
     });
-    
+
     console.log('✅ Notification created successfully:', notification);
 
     // Auto close after duration if specified
@@ -167,7 +167,7 @@ export function sendBrowserNotification(title, options = {}) {
 export function formatNotificationForBrowser(notificationItem) {
   const { notification, status } = notificationItem;
   const metaData = notification.meta_data || {};
-  
+
   // Get title based on notification type
   let title = 'New Notification';
   let body = '';
@@ -175,43 +175,43 @@ export function formatNotificationForBrowser(notificationItem) {
 
   // Extract relevant data
   const category = metaData.data?.category || notification.type;
-  
+
   switch (category) {
     case 'Mentioned':
       title = '💬 New Mention';
       body = `${metaData.member?.user?.person?.name || 'Someone'} mentioned you in ${metaData.data?.thread?.name || 'a thread'}`;
       icon = metaData.avatar_url || metaData.member?.user?.person?.avatar_url || icon;
       break;
-    
+
     case 'Assigned':
       title = '📋 New Assignment';
       body = `You were assigned to ${metaData.data?.task?.name || 'a task'}`;
       icon = metaData.avatar_url || icon;
       break;
-    
+
     case 'Comment':
       title = '💬 New Comment';
       body = `${metaData.member?.user?.person?.name || 'Someone'} commented on your post`;
       icon = metaData.member?.user?.person?.avatar_url || icon;
       break;
-    
+
     case 'Invitation':
       title = '🎉 New Invitation';
       body = `You've been invited to ${metaData.data?.room?.name || 'a workspace'}`;
       icon = metaData.avatar_url || icon;
       break;
-    
+
     case 'task_completed':
       title = '✅ Task Completed';
       body = notification.body || `"${metaData.data?.task?.name || 'A task'}" has been completed!`;
       icon = metaData.avatar_url || icon;
       break;
-    
+
     case 'system':
       title = '🔔 System Notification';
       body = notification.body || notification.message || 'You have a new system notification';
       break;
-    
+
     default:
       title = notification.title || '🔔 New Notification';
       body = notification.body || notification.message || 'You have a new notification';
@@ -242,7 +242,7 @@ export function formatNotificationForBrowser(notificationItem) {
  */
 export function sendNotificationForItem(notificationItem, onClickHandler) {
   const { title, body, icon, tag, data } = formatNotificationForBrowser(notificationItem);
-  
+
   return sendBrowserNotification(title, {
     body,
     icon,
@@ -275,4 +275,3 @@ export default {
   areBrowserNotificationsEnabled,
   setBrowserNotificationsEnabled,
 };
-

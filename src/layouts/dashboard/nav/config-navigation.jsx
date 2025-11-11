@@ -137,12 +137,6 @@ const navConfig = [
         permission: 'view_agents',
       },
       {
-        title: 'Forms',
-        path: PATH_DASHBOARD.forms,
-        icon: <Iconify icon="mdi:form"></Iconify>,
-        permission: 'view_forms',
-      },
-      {
         title: 'Gates',
         path: '/conversations/gates',
         icon: <Iconify icon="icon-park-solid:data-user" />,

@@ -1,4 +1,5 @@
 import { m } from 'framer-motion';
+
 import { cn } from '@lib/utils';
 
 const AltanAnimatedSvg = ({ size = 145, ratio = 84 / 72, className, pathClassName }) => {
@@ -39,4 +40,4 @@ const AltanAnimatedSvg = ({ size = 145, ratio = 84 / 72, className, pathClassNam
   );
 };
 
-export default AltanAnimatedSvg; 
+export default AltanAnimatedSvg;

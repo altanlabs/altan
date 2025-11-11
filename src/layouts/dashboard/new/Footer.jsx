@@ -1,8 +1,8 @@
 import { Link as RouterLink } from 'react-router-dom';
 
-import Iconify from '../../components/iconify';
-import Logo from '../../components/logo';
-import { PATH_PAGE } from '../../routes/paths';
+import Iconify from '../../../components/iconify';
+import Logo from '../../../components/logo';
+import { PATH_PAGE } from '../../../routes/paths';
 
 // ----------------------------------------------------------------------
 

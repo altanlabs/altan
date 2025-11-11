@@ -484,20 +484,6 @@ export const deleteAltanerById = (altanerId) => async (dispatch) => {
   }
 };
 
-export const duplicateAltaner = (altanerId, duplicateData) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await optimai.post(`/altaner/${altanerId}/duplicate`, duplicateData);
-    dispatch(slice.actions.addAltaner(response.data));
-    return Promise.resolve(response.data);
-  } catch (e) {
-    dispatch(slice.actions.hasError(e.message));
-    throw e;
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
-};
-
 // Custom fetcher for altaners using the new paginated endpoint
 export const fetchAltanersList = async (accountId, limit = 10, offset = 0) => {
   const response = await optimai.get('/altaner/list', {
@@ -508,22 +494,6 @@ export const fetchAltanersList = async (accountId, limit = 10, offset = 0) => {
     },
   });
   return response.data;
-};
-
-// Load altaners list for account
-export const loadAltanersList = (accountId) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const data = await fetchAltanersList(accountId, 10, 0);
-    dispatch(setAltanersList(data.altaners || []));
-    return Promise.resolve(data.altaners);
-  } catch (e) {
-    console.error('error: could not load altaners list:', e);
-    dispatch(slice.actions.hasError(e.message));
-    return Promise.reject(e);
-  } finally {
-    dispatch(slice.actions.stopLoading());
-  }
 };
 
 const selectAltanerState = (state) => state.altaners;

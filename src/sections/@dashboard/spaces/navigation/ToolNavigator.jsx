@@ -1,16 +1,8 @@
 import {
-  Stack,
-  Typography,
   Drawer,
-  IconButton,
-  Tooltip,
-  ToggleButton,
-  ToggleButtonGroup,
 } from '@mui/material';
 import { memo, useState, useEffect } from 'react';
 
-import Iconify from '../../../../components/iconify/Iconify';
-import useResponsive from '../../../../hooks/useResponsive';
 import { getConnections } from '../../../../redux/slices/connections';
 import { selectAccount } from '../../../../redux/slices/general';
 import { dispatch, useSelector } from '../../../../redux/store';
@@ -29,63 +21,63 @@ const ToolNavigator = ({ toolDrawer, setToolDrawer }) => {
     }
   }, [account, isLoadingAccount]);
 
-  const isMobile = useResponsive('down', 'sm');
+  // const isMobile = useResponsive('down', 'sm');
 
-  const renderHead = (
-    <Stack
-      direction="row"
-      alignItems="center"
-      sx={{
-        minHeight: 68,
-        position: 'sticky',
-        top: 0,
-        zIndex: 101,
-      }}
-    >
-      <ToggleButtonGroup
-        exclusive
-        value={mode}
-        onChange={(e, v) => setMode(v)}
-        fullWidth
-      >
-        <Tooltip
-          arrow
-          title="Create tool"
-        >
-          <ToggleButton value="create">
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={0.5}
-            >
-              <Iconify icon="mdi:plus" />
-              <Typography>Create</Typography>
-            </Stack>
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip
-          arrow
-          title="Search existing"
-        >
-          <ToggleButton value="existing">
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={0.5}
-            >
-              <Iconify icon="icon-park-solid:search" />
-              <Typography>Search</Typography>
-            </Stack>
-          </ToggleButton>
-        </Tooltip>
-      </ToggleButtonGroup>
-      {!!isMobile && (
-        <IconButton onClick={() => setToolDrawer(false)}>
-          <Iconify icon="mingcute:close-line" />
-        </IconButton>
-      )}
-    </Stack>
-  );
+  // const renderHead = (
+  //   <Stack
+  //     direction="row"
+  //     alignItems="center"
+  //     sx={{
+  //       minHeight: 68,
+  //       position: 'sticky',
+  //       top: 0,
+  //       zIndex: 101,
+  //     }}
+  //   >
+  //     <ToggleButtonGroup
+  //       exclusive
+  //       value={mode}
+  //       onChange={(e, v) => setMode(v)}
+  //       fullWidth
+  //     >
+  //       <Tooltip
+  //         arrow
+  //         title="Create tool"
+  //       >
+  //         <ToggleButton value="create">
+  //           <Stack
+  //             direction="row"
+  //             alignItems="center"
+  //             spacing={0.5}
+  //           >
+  //             <Iconify icon="mdi:plus" />
+  //             <Typography>Create</Typography>
+  //           </Stack>
+  //         </ToggleButton>
+  //       </Tooltip>
+  //       <Tooltip
+  //         arrow
+  //         title="Search existing"
+  //       >
+  //         <ToggleButton value="existing">
+  //           <Stack
+  //             direction="row"
+  //             alignItems="center"
+  //             spacing={0.5}
+  //           >
+  //             <Iconify icon="icon-park-solid:search" />
+  //             <Typography>Search</Typography>
+  //           </Stack>
+  //         </ToggleButton>
+  //       </Tooltip>
+  //     </ToggleButtonGroup>
+  //     {!!isMobile && (
+  //       <IconButton onClick={() => setToolDrawer(false)}>
+  //         <Iconify icon="mingcute:close-line" />
+  //       </IconButton>
+  //     )}
+  //   </Stack>
+  // );
 
   return (
     <>
@@ -107,8 +99,7 @@ const ToolNavigator = ({ toolDrawer, setToolDrawer }) => {
           backdrop: { invisible: true },
         }}
       >
-        {renderHead}
-        {mode === 'existing' ? <SelectExistingTool onClose={() => setToolDrawer(false)} /> : <CreateTool onClose={() => setToolDrawer(false)} />}
+        <CreateTool onClose={() => setToolDrawer(false)} />
       </Drawer>
     </>
   );
