@@ -2153,8 +2153,7 @@ export const importCSVToTable = (baseId, tableName, file, schema = 'public') => 
       formData,
       {
         params: { 
-          table_name: tableName,
-          schema: schema
+          table_name: tableName
         },
         headers: {
           'Content-Type': 'multipart/form-data'

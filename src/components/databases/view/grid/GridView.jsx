@@ -40,6 +40,7 @@ import {
   selectTableState,
 } from '../../../../redux/slices/cloud';
 import { selectAccount } from '../../../../redux/slices/general';
+import { importCSVToTable, loadTableRecords } from '../../../../redux/slices/bases';
 import { dispatch, useSelector } from '../../../../redux/store';
 import Iconify from '../../../iconify';
 import CreateFieldDrawer from '../../fields/CreateFieldDrawer.jsx';
@@ -708,17 +709,37 @@ export const GridView = memo(
 
     // Handler for actual import process
     const handleCSVImport = useCallback(
-      async () => {
+      async (file) => {
         try {
-          // TODO: Implement CSV import for cloud.js
-          // For now, just refresh the records
-          await dispatch(fetchRecords(baseId, table.id, { limit: paginationInfo?.pageSize || 50 }));
-          throw new Error('CSV import not yet implemented for cloud databases');
+          // Call the import action with the file
+          const result = await dispatch(
+            importCSVToTable(
+              baseId,
+              table.db_name || table.name,
+              file,
+              table.schema || 'public'
+            )
+          );
+
+          // Refresh the table records after import
+          await dispatch(
+            loadTableRecords(
+              baseId,
+              table.id,
+              { 
+                limit: paginationInfo?.pageSize || 50,
+                offset: 0 
+              }
+            )
+          );
+
+          return result;
         } catch (error) {
+          console.error('Error importing CSV:', error);
           throw error;
         }
       },
-      [table?.id, baseId, paginationInfo?.pageSize],
+      [dispatch, baseId, table?.id, table?.name, table?.db_name, table?.schema, paginationInfo?.pageSize],
     );
 
     // Watch for import trigger from context menu
