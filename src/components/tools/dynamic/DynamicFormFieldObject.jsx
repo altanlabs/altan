@@ -1,10 +1,9 @@
-import Stack from '@mui/material/Stack';
 import { memo, useMemo } from 'react';
 
 import { checkHasProperties, checkNestedOfProperties, findPathAfterIndex } from './utils';
 import FormParameter from '../form/FormParameter';
 
-// Helper function to check for distinguishing properties
+// Helper function to check for distinguishing properties (oneOf, anyOf, allOf)
 const hasDistinguishingProperties = (schema) => {
   if (!schema) {
     return false;
@@ -12,22 +11,40 @@ const hasDistinguishingProperties = (schema) => {
   return schema.oneOf || schema.anyOf || schema.allOf;
 };
 
-// Helper function to find schema by title
-const findSchemaByTitle = (schemas, title) => {
-  if (!schemas.every((opt) => !!opt.title)) {
+// Helper function to find matching schema from options
+const findMatchingSchema = (schemas, option) => {
+  if (!schemas || !option) {
     return null;
   }
-  return schemas.find((opt) => opt.title === title);
+
+  // First priority: match by title
+  if (schemas.every((opt) => !!opt.title)) {
+    const match = schemas.find((opt) => opt.title === option.title);
+    if (match) return match;
+  }
+
+  // Second priority: match by distinguishing properties
+  if (hasDistinguishingProperties(option)) {
+    const match = schemas.find((opt) => hasDistinguishingProperties(opt));
+    if (match) return match;
+  }
+
+  // Third priority: match by properties type
+  if (option.properties) {
+    const match = schemas.find((opt) => !!opt.properties && opt.properties.type === option.properties.type);
+    if (match) return match;
+  }
+
+  // Fourth priority: match by type
+  const match = schemas.find((opt) => opt.type === option.type);
+  if (match) return match;
+
+  return null;
 };
 
-// Helper function to find schema by properties type
-const findSchemaByPropertiesType = (schemas, propertiesType) => {
-  return schemas.find((opt) => !!opt.properties && opt.properties.type === propertiesType);
-};
-
-// Helper function to find schema by type
-const findSchemaByType = (schemas, type) => {
-  return schemas.find((opt) => opt.type === type);
+// Helper function to check if property should be hidden
+const shouldHideProperty = (fieldKey, sortKey) => {
+  return !!sortKey?.length && findPathAfterIndex(fieldKey) === sortKey;
 };
 
 const DynamicFormFieldObject = ({
@@ -43,25 +60,7 @@ const DynamicFormFieldObject = ({
     if (!hasOfProperties || !ofValue?.length) {
       return schema;
     }
-    // console.log("ofOption", ofOption, hasDistinguishingProperties(ofOption));
-    let selectedSchema = findSchemaByTitle(ofValue, ofOption?.title ?? 'unknown option');
-
-    // Additional criteria: distinguish by oneOf, anyOf, allOf
-    if (!selectedSchema && hasDistinguishingProperties(ofOption)) {
-      selectedSchema = ofValue.find((opt) => hasDistinguishingProperties(opt));
-    }
-
-    if (!selectedSchema && ofOption?.properties) {
-      // Second priority: find by properties type
-      selectedSchema = findSchemaByPropertiesType(ofValue, ofOption.properties.type);
-    }
-
-    if (!selectedSchema) {
-      // Third priority: find by type
-      selectedSchema = findSchemaByType(ofValue, ofOption?.type);
-    }
-
-    return selectedSchema;
+    return findMatchingSchema(ofValue, ofOption) || schema;
   }, [hasOfProperties, ofOption, ofValue, schema]);
 
   const selectedHasOfProperties = useMemo(() => {
@@ -92,16 +91,14 @@ const DynamicFormFieldObject = ({
     }
 
     return false;
-  }, [selectedOneOfSchema]);
+  }, [selectedOneOfSchema, selectedHasOfProperties]);
 
   if (!selectedOneOfSchema) {
     return null;
   }
+
   return (
-    <Stack
-      width="100%"
-      className="p-2 rounded-xl border-0 transition-color"
-    >
+    <div className="flex flex-col w-full p-2.5 rounded-lg border border-border/40 gap-2 transition-colors hover:border-border/60">
       {!hasProperties ? (
         <FormParameter
           fieldKey={fieldKey}
@@ -110,24 +107,26 @@ const DynamicFormFieldObject = ({
           enableLexical={enableLexical}
         />
       ) : (
-        Object.entries(selectedOneOfSchema.properties || {}).map(([key, schema]) => {
+        Object.entries(selectedOneOfSchema.properties || {}).map(([key, propertySchema]) => {
           const required = selectedOneOfSchema.required?.includes(key) ?? false;
           const fkey = `${fieldKey}.${key}`;
-          if (!!sortKey?.length && findPathAfterIndex(fkey) === sortKey) {
+
+          if (shouldHideProperty(fkey, sortKey)) {
             return null;
           }
+
           return (
             <FormParameter
               key={fkey}
               fieldKey={fkey}
-              schema={schema}
+              schema={propertySchema}
               required={required}
               enableLexical={enableLexical}
             />
           );
         })
       )}
-    </Stack>
+    </div>
   );
 };
 

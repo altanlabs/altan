@@ -131,13 +131,11 @@ const Space = ({ navigate, spaceId, isPreview }) => {
 
   return (
     <>
-      {!!current?.id && current.id !== 'root' && (
-        <ToolNavigator
-          toolDrawer={toolDrawer}
-          setToolDrawer={setToolDrawer}
-          enqueueSnackbar={enqueueSnackbar}
-        />
-      )}
+      <ToolNavigator
+        toolDrawer={toolDrawer}
+        setToolDrawer={setToolDrawer}
+        enqueueSnackbar={enqueueSnackbar}
+      />
       <ClientToolDrawer
         open={clientToolDrawer}
         onClose={onCloseEditClientTool}

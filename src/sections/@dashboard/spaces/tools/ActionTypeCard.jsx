@@ -1,18 +1,17 @@
 //  USED TO CREATE AGENT TOOLS
+import { m, AnimatePresence } from 'framer-motion';
 import React, { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { useSelector } from 'react-redux';
-import { m, AnimatePresence } from 'framer-motion';
 
-import { cn } from '@lib/utils';
-import { Button } from '@components/ui/Button';
-import { Input } from '@components/ui/input';
-import { Label } from '@components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@components/ui/accordion';
-import { Switch } from '@components/ui/switch';
-import { Skeleton } from '@components/ui/skeleton';
 import { Badge } from '@components/ui/badge';
+import { Button } from '@components/ui/Button';
+import { Label } from '@components/ui/label';
 import { Separator } from '@components/ui/separator';
+import { Skeleton } from '@components/ui/skeleton';
+import { Switch } from '@components/ui/switch';
+import { cn } from '@lib/utils';
 
 import GlobalVarsMenu from '../../../../components/flows/menuvars/GlobalVarsMenu.jsx';
 import Iconify from '../../../../components/iconify/index.js';
@@ -41,15 +40,11 @@ import { optimai_integration, getAltanAxiosInstance } from '../../../../utils/ax
 
 const FormSkeleton = () => {
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-4 p-6"
-    >
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-12 w-full" />
-      <Skeleton className="h-10 w-24" />
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 p-2.5 sm:p-3">
+      <Skeleton className="h-10 w-full rounded-md" />
+      <Skeleton className="h-10 w-full rounded-md" />
+      <Skeleton className="h-10 w-full rounded-md" />
+      <Skeleton className="h-8 w-20 rounded-md" />
     </m.div>
   );
 };
@@ -241,7 +236,7 @@ const getIntentSettings = (tool) => ({
     intent: tool?.meta_data?.intent_settings?.intent ?? false,
     ui_intent: tool?.meta_data?.intent_settings?.ui_intent ?? false,
     async: tool?.meta_data?.intent_settings?.async ?? false,
-  }
+  },
 });
 
 /** Merge headers, path_params & query_params into a single JSON-schema object */
@@ -506,31 +501,37 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
-        className="space-y-2"
+        className="space-y-1.5"
       >
-        <Label className="text-xs">Connection</Label>
-        <div className="grid gap-1.5">
-          {existingConnections.map((conn) => (
-            <m.div key={conn.id} whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.998 }}>
+        <Label className="text-[10px] sm:text-xs">Connection</Label>
+        <div className="grid gap-1">
+          {existingConnections.map((conn, index) => (
+            <m.div
+              key={conn.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.03 }}
+              whileHover={{ scale: 1.005 }}
+              whileTap={{ scale: 0.998 }}
+            >
               <button
                 onClick={() => setInternalConn(conn)}
                 className={cn(
-                  'w-full flex items-center gap-2.5 p-2.5 rounded-md border transition-all text-left',
+                  'w-full flex items-center gap-2 p-2 sm:p-2.5 rounded-md border transition-all text-left',
                   internalConn?.id === conn.id
                     ? 'border-foreground/20 bg-muted/50'
                     : 'border-border hover:border-foreground/20 hover:bg-muted/30',
                 )}
               >
-                <div className="w-8 h-8 rounded-md border bg-muted/50 flex items-center justify-center flex-shrink-0">
-                  <IconRenderer
-                    icon={conn.connection_type?.icon}
-                    className="w-4 h-4"
-                  />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md border bg-muted/50 flex items-center justify-center flex-shrink-0">
+                  <IconRenderer icon={conn.connection_type?.icon} className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{conn.name}</p>
+                  <p className="text-xs sm:text-sm font-medium truncate">{conn.name}</p>
                   {conn.connection_type?.name && (
-                    <p className="text-xs text-muted-foreground truncate">{conn.connection_type.name}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                      {conn.connection_type.name}
+                    </p>
                   )}
                 </div>
                 {internalConn?.id === conn.id && (
@@ -539,21 +540,23 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   >
-                    <Iconify icon="mdi:check-circle" width={16} />
+                    <Iconify icon="mdi:check-circle" width={14} className="text-foreground" />
                   </m.div>
                 )}
               </button>
             </m.div>
           ))}
-          <Button
-            variant="outline"
-            onClick={() => setIsCreatingNewConnection(true)}
-            className="w-full h-9 text-xs"
-            size="sm"
-          >
-            <Iconify icon="mdi:plus" width={14} />
-            Create New Connection
-          </Button>
+          <m.div whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.998 }}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreatingNewConnection(true)}
+              className="w-full h-8 text-xs gap-1"
+              size="sm"
+            >
+              <Iconify icon="mdi:plus" width={12} />
+              Create New Connection
+            </Button>
+          </m.div>
         </div>
       </m.div>
     );
@@ -562,22 +565,22 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
   /* ─── Render ─────────────────────────────────────────────────────────── */
   return (
     <>
-      <div className="relative w-full h-full flex flex-col">
+      <div className="relative w-full h-full flex flex-col overflow-hidden">
         {/* Header */}
         <m.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="sticky top-0 z-20 backdrop-blur-xl bg-background/95 border-b"
+          className="sticky top-0 z-20 backdrop-blur-xl bg-background/95 border-b flex-shrink-0"
         >
-          <div className="flex items-start justify-between gap-3 p-4">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5">
+            <div className="flex items-start gap-2 flex-1 min-w-0 w-full sm:w-auto">
               <m.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 className="flex-shrink-0"
               >
-                <div className="w-9 h-9 rounded-md border bg-muted/50 flex items-center justify-center">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md border bg-muted/50 flex items-center justify-center">
                   <IconRenderer
                     icon={
                       actionDetails?.connection_type?.icon ||
@@ -590,10 +593,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
               </m.div>
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-semibold truncate">
+                <h2 className="text-sm sm:text-base font-semibold truncate">
                   {action?.name || 'Unnamed Action'}
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
                   {action?.description || 'No description available'}
                 </p>
 
@@ -601,13 +604,13 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                   <m.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-1.5 mt-2"
+                    className="flex items-center gap-1 sm:gap-1.5 mt-1.5"
                   >
-                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                    <Badge variant="secondary" className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1.5">
                       Step 1
                     </Badge>
-                    <Iconify icon="mdi:chevron-right" width={12} className="text-muted-foreground" />
-                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 opacity-50">
+                    <Iconify icon="mdi:chevron-right" width={10} className="text-muted-foreground" />
+                    <Badge variant="outline" className="text-[9px] sm:text-[10px] h-4 sm:h-5 px-1.5 opacity-50">
                       Step 2
                     </Badge>
                   </m.div>
@@ -615,24 +618,28 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
               {step === 2 && initialDynamicDetails && (
-                <Button onClick={handleBack} variant="ghost" size="sm" className="h-8">
-                  <Iconify icon="mdi:arrow-left" width={14} />
-                  Back
-                </Button>
+                <m.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button onClick={handleBack} variant="ghost" size="sm" className="h-7 sm:h-8 text-xs">
+                    <Iconify icon="mdi:arrow-left" width={14} />
+                    Back
+                  </Button>
+                </m.div>
               )}
 
               {step === 2 && (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!methods.formState.isDirty}
-                  size="sm"
-                  className="h-8 gap-1.5"
-                >
-                  <Iconify icon="mdi:content-save" width={14} />
-                  Save
-                </Button>
+                <m.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1 sm:flex-initial">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!methods.formState.isDirty}
+                    size="sm"
+                    className="h-7 sm:h-8 gap-1.5 text-xs w-full sm:w-auto"
+                  >
+                    <Iconify icon="mdi:content-save" width={14} />
+                    Save
+                  </Button>
+                </m.div>
               )}
             </div>
           </div>
@@ -648,7 +655,7 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="p-4 space-y-4"
+                className="p-2.5 sm:p-3 space-y-3"
               >
                 {/* Connection Input */}
                 <AnimatePresence mode="wait">
@@ -661,16 +668,16 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
-                    <Separator className="my-3" />
-                    <div className="space-y-3">
+                    <Separator className="my-2" />
+                    <div className="space-y-2">
                       {['name', 'description'].map((field, index) => (
                         <m.div
                           key={field}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 + index * 0.05 }}
+                          transition={{ delay: 0.15 + index * 0.03 }}
                         >
                           <FormParameter
                             fieldKey={field}
@@ -696,31 +703,26 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
-                    <Separator className="my-3" />
+                    <Separator className="my-2" />
                     <div>
-                      <h3 className="text-xs font-semibold mb-0.5">Runtime Parameters</h3>
-                      <p className="text-xs text-muted-foreground mb-3">
+                      <h3 className="text-[10px] sm:text-xs font-semibold mb-0.5">Runtime Parameters</h3>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
                         Configure dynamic parameters to fetch the schema
                       </p>
-                      <FormParameters
-                        formSchema={actionDetails.locations}
-                        path="" /* store at root */
-                      />
+                      <FormParameters formSchema={actionDetails.locations} path="" />
                     </div>
                     {!!firstStepRequiredCompleted && (
                       <m.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <Button
-                          onClick={handleLoadDynamicSchema}
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Iconify icon="mdi:download" width={18} />
+                        <Button onClick={handleLoadDynamicSchema} className="w-full h-9 gap-1.5" size="sm">
+                          <Iconify icon="mdi:download" width={16} />
                           Load Schema
                         </Button>
                       </m.div>
@@ -734,12 +736,12 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
-                    <Separator className="my-3" />
+                    <Separator className="my-2" />
                     <div>
-                      <h3 className="text-xs font-semibold mb-0.5">Tool Parameters</h3>
-                      <p className="text-xs text-muted-foreground mb-3">
+                      <h3 className="text-[10px] sm:text-xs font-semibold mb-0.5">Tool Parameters</h3>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
                         Configure tool execution parameters
                       </p>
                       <FormParameters
@@ -759,27 +761,27 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 }}
                   >
-                    <Separator className="my-3" />
+                    <Separator className="my-2" />
                     <Accordion type="single" collapsible className="border rounded-md">
                       <AccordionItem value="advanced" className="border-none">
-                        <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/50 rounded-t-md text-xs">
+                        <AccordionTrigger className="px-2.5 py-2 hover:no-underline hover:bg-muted/50 rounded-t-md text-[10px] sm:text-xs">
                           <div className="flex items-center gap-1.5">
-                            <Iconify icon="mdi:cog" width={14} className="text-muted-foreground" />
+                            <Iconify icon="mdi:cog" width={12} className="text-muted-foreground" />
                             <span className="font-medium">Advanced Settings</span>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-3 pb-3">
+                        <AccordionContent className="px-2.5 pb-2.5">
                           <m.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.05 }}
-                            className="space-y-3 pt-2"
+                            className="space-y-2 pt-1.5"
                           >
                             {/* Intent Setting */}
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <Label className="text-xs font-medium">Intent</Label>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <Label className="text-[10px] sm:text-xs font-medium">Intent</Label>
+                                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
                                   Add intent argument explaining tool usage
                                 </p>
                               </div>
@@ -792,10 +794,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                             <Separator />
 
                             {/* UI Intent Setting */}
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <Label className="text-xs font-medium">UI Intent</Label>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <Label className="text-[10px] sm:text-xs font-medium">UI Intent</Label>
+                                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
                                   Dynamic tool display with contextual parameters
                                 </p>
                               </div>
@@ -808,10 +810,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                             <Separator />
 
                             {/* Async Setting */}
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <Label className="text-xs font-medium">Async Execution</Label>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <Label className="text-[10px] sm:text-xs font-medium">Async Execution</Label>
+                                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
                                   Wait for client activation before continuing
                                 </p>
                               </div>
@@ -833,11 +835,10 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    className="mt-3"
                   >
                     <div
                       className={cn(
-                        'p-3 rounded-md border text-sm',
+                        'p-2.5 rounded-md border text-xs',
                         responseType === 'success' && 'bg-muted border-border',
                         responseType === 'error' && 'bg-destructive/5 border-destructive/20',
                       )}

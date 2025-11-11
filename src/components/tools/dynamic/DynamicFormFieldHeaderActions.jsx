@@ -1,17 +1,18 @@
+import { memo, useCallback, useMemo } from 'react';
+import { uniqueId } from 'lodash';
 import Autocomplete from '@mui/material/Autocomplete';
-import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import { uniqueId } from 'lodash';
-import { memo, useCallback, useMemo } from 'react';
+
+import { cn } from '@lib/utils';
+import { Button } from '@/components/ui/button';
 
 import { checkNestedOfProperties } from './utils';
 import { checkObjectsEqual } from '../../../redux/helpers/memoize';
 import Iconify from '../../iconify';
 
-const getLabel = (options, option) => {
+// Helper function to format option labels
+const formatOptionLabel = (options, option) => {
   if (!options) {
     return null;
   }
@@ -27,42 +28,29 @@ const getLabel = (options, option) => {
   return option.type ?? 'unknown option';
 };
 
-const getOptionKey = (o) =>
-  `of-option-${uniqueId()}-${o.title?.toLowerCase() ?? (o.oneOf || o.anyOf ? 'multiple-options' : o.type) ?? 'unknown option'}`;
+// Helper function to generate unique option keys
+const getOptionKey = (option) => {
+  const identifier = option.title?.toLowerCase() ?? 
+    (option.oneOf || option.anyOf ? 'multiple-options' : option.type) ?? 
+    'unknown option';
+  return `of-option-${uniqueId()}-${identifier}`;
+};
 
+// Option renderer for Autocomplete
 const renderOption = ({ key, ...props }, option) => (
-  <li
-    {...props}
-    key={key}
-  >
-    <Stack
-      spacing={0.25}
-      width="100%"
-    >
-      <Typography
-        variant="caption"
-        sx={{
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
-      >
+  <li {...props} key={key}>
+    <div className="flex flex-col gap-0.5 w-full">
+      <span className="text-sm font-semibold text-foreground">
         {option.__label}
-      </Typography>
-      {!!option.description && (
-        <Tooltip
-          arrow
-          followCursor
-          title={option.description}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontSize: '0.6rem' }}
-          >
+      </span>
+      {option.description && (
+        <Tooltip arrow followCursor title={option.description}>
+          <span className="text-[10px] text-muted-foreground">
             {option.description}
-          </Typography>
+          </span>
         </Tooltip>
       )}
-    </Stack>
+    </div>
   </li>
 );
 
@@ -82,48 +70,44 @@ const DynamicFormFieldHeaderActions = ({
   isFreeText,
   showFreeTextOption,
   setIsFreeText,
-  // expanded,
-  // setExpanded,
-  // hasAceWrapper,
-  // enableFullScreen = false
 }) => {
-  // console.log("ofValue (headers)", ofValue, ofOption);
-  const toggleFreeText = useCallback(() => setIsFreeText((prev) => !prev), [setIsFreeText]);
-  const onChange = useCallback(
-    (e, v) => {
-      const { __label, ...rest } = v ?? {};
+  const handleToggleFreeText = useCallback(
+    () => setIsFreeText((prev) => !prev), 
+    [setIsFreeText]
+  );
+
+  const handleOptionChange = useCallback(
+    (e, value) => {
+      const { __label, ...rest } = value ?? {};
       setOfOption(rest ?? null);
     },
     [setOfOption],
   );
+
   const memoizedOfValue = useMemo(
     () =>
       !hasOfProperties
         ? null
-        : ofValue.map((o) => ({
-          ...o,
-          __label: getLabel(ofValue, o),
+        : ofValue.map((option) => ({
+          ...option,
+          __label: formatOptionLabel(ofValue, option),
         })),
     [hasOfProperties, ofValue],
   );
+
   const memoizedOfOption = useMemo(
     () =>
       !hasOfProperties || !ofOption
         ? null
         : {
             ...ofOption,
-            __label: getLabel(ofValue, ofOption),
+            __label: formatOptionLabel(ofValue, ofOption),
           },
     [hasOfProperties, ofOption, ofValue],
   );
 
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={0.75}
-      width="100%"
-    >
+    <div className="flex items-center gap-2 w-full">
       {hasOfProperties && !isFreeText && (
         <Autocomplete
           options={memoizedOfValue}
@@ -131,7 +115,7 @@ const DynamicFormFieldHeaderActions = ({
           getOptionKey={getOptionKey}
           isOptionEqualToValue={isOptionEqualToValue}
           value={memoizedOfOption}
-          onChange={onChange}
+          onChange={handleOptionChange}
           fullWidth
           disableClearable
           className="min-w-[150px]"
@@ -165,35 +149,21 @@ const DynamicFormFieldHeaderActions = ({
           }
           arrow
         >
-          <IconButton
-            size="small"
-            onClick={toggleFreeText}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleFreeText}
+            className="h-8 w-8"
           >
             <Iconify
               icon={!isFreeText ? 'lucide:square-function' : 'ph:bounding-box-duotone'}
-              width={17}
-              className="transition transition-opacity opacity-60 hover:opacity-100"
+              width={16}
+              className="transition-opacity opacity-60 hover:opacity-100"
             />
-          </IconButton>
+          </Button>
         </Tooltip>
       )}
-      {/* {
-        (hasAceWrapper && enableFullScreen) ? (
-          <Tooltip
-            title="Open in full screen"
-            arrow
-          >
-            <IconButton
-              size="small"
-              onClick={() => setExpanded(prev => !prev)}
-            >
-              <Iconify icon={`mdi:fullscreen${expanded ? '-exit' : ''}`} />
-            </IconButton>
-          </Tooltip>
-        ) : null
-      }
-       */}
-    </Stack>
+    </div>
   );
 };
 

@@ -1,8 +1,14 @@
-import { Chip, Stack, Tooltip, Typography } from '@mui/material';
+import { m } from 'framer-motion';
 import { memo } from 'react';
+
+import { Badge } from '@components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@components/ui/tooltip';
+import { cn } from '@lib/utils';
 
 import Iconify from '../../../../components/iconify';
 import IconRenderer from '../../../../components/icons/IconRenderer.jsx';
+
+const stripBrackets = (name) => name.replace(/\[.*?\]\s*/, '');
 
 const PanelRow = ({
   icon,
@@ -12,100 +18,71 @@ const PanelRow = ({
   onClick = null,
   hideArrow = false,
   disabled = false,
+  isSemanticResult = false,
   sx = {},
-}) => (
-  <Stack
-    direction="row"
-    alignItems="center"
-    justifyContent="left"
-    height={50}
-    sx={{
-      ...(!disabled
-        ? {
-            cursor: 'pointer',
-            opacity: 1,
-            '&:hover': {
-              opacity: 0.8,
-              borderLeft: '5px solid #aaa',
-              '& .right-arrow-icon': {
-                opacity: 1,
-              },
-              '& .panel-icon': {
-                transform: 'scale(1.2)',
-              },
-            },
-          }
-        : {
-            cursor: 'not-allowed',
-            opacity: 0.7,
-          }),
-      position: 'relative',
-      transition: 'all 300ms ease',
-      ...sx,
-      '& .panel-icon': {
-        transition: 'transform 300ms ease',
-      },
-      '& .right-arrow-icon': {
-        transition: 'all 300ms ease',
-        opacity: 0,
-        position: 'absolute',
-        right: 5,
-        top: '50%',
-        transform: 'translateY(-50%)',
-      },
-      borderLeft: '5px solid transparent',
-      maxWidth: '100%',
-    }}
-    spacing={2.5}
-    paddingX={2}
-    paddingY={1}
-    width="100%"
-    onClick={onClick}
-  >
-    <IconRenderer
-      icon={icon}
-      size={32}
-      className="panel-icon"
-    />
-    <Tooltip
-      title={description}
-      arrow
-      placement="left"
-      enterDelay={800}
-      enterNextDelay={800}
-    >
-      <Stack
-        sx={{
-          maxWidth: '100%',
-        }}
+}) => {
+  const handleClick = disabled ? undefined : onClick;
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <m.div
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        whileHover={disabled ? {} : { x: 2 }}
+        whileTap={disabled ? {} : { scale: 0.998 }}
+        onClick={handleClick}
+        className={cn(
+          'relative flex items-center gap-2 px-2 py-2.5 w-full transition-all duration-200',
+          'border-l-2 border-transparent',
+          disabled
+            ? 'cursor-not-allowed opacity-50'
+            : 'cursor-pointer hover:border-foreground/20 hover:bg-muted/50',
+          sx.backgroundColor && 'bg-muted/30',
+        )}
+        style={sx}
       >
-        <Typography
-          variant="subtitle2"
-          sx={{ fontWeight: 'bold', fontSize: '0.9rem', transition: 'all 300ms ease' }}
-        >
-          {name.replace(/\[.*?\]\s*/, '')}
-        </Typography>
-      </Stack>
-    </Tooltip>
+        <div className="flex-shrink-0">
+          <IconRenderer icon={icon} size={28} className="transition-transform duration-200" />
+        </div>
 
-    {/* <Typography variant="caption" sx={{ fontWeight: 'light', fontSize: '0.7rem', maxWidth: '100%', paddingRight: 5 }} noWrap>{description}</Typography> */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate">{stripBrackets(name)}</p>
+              {description && (
+                <p className="text-[10px] text-muted-foreground truncate mt-0.5">{description}</p>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-xs">
+            <p className="text-xs">{description || name}</p>
+          </TooltipContent>
+        </Tooltip>
 
-    <Stack
-      className="right-arrow-icon"
-      direction="row"
-      alignItems="center"
-      justifyContent="left"
-      spacing={1}
-    >
-      {options !== null && (
-        <Chip
-          size="small"
-          label={`${options.length} options`}
-        />
-      )}
-      {!hideArrow && <Iconify icon="mdi:chevron-right" />}
-    </Stack>
-  </Stack>
-);
+        <div className="flex items-center gap-1.5 ml-auto">
+          {isSemanticResult && (
+            <Badge variant="secondary" className="h-4 text-[9px] px-1.5">
+              <Iconify icon="mdi:magic" width={10} className="mr-0.5" />
+              AI
+            </Badge>
+          )}
+          {options !== null && (
+            <Badge variant="outline" className="h-4 text-[9px] px-1.5">
+              {options.length}
+            </Badge>
+          )}
+          {!hideArrow && (
+            <Iconify
+              icon="mdi:chevron-right"
+              width={14}
+              className="text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity"
+            />
+          )}
+        </div>
+      </m.div>
+    </TooltipProvider>
+  );
+};
 
 export default memo(PanelRow);
