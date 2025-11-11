@@ -112,21 +112,6 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
 
     const hasValue = !editorEmpty || files.length > 0;
 
-    // Get editor content for sending
-    const getEditorContent = useCallback(() => {
-      if (editorRef.current?.editor) {
-        const editorState = editorRef.current.editor.getEditorState();
-        let content = '';
-        editorState.read(() => {
-          const root = editorRef.current.editor?.getRootElement();
-          if (root) {
-            content = root.textContent || '';
-          }
-        });
-        return content;
-      }
-      return '';
-    }, []);
 
     // --- Track height changes ---
     useEffect(() => {
@@ -145,10 +130,11 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     }, [onHeightChange]);
 
     // --- Handlers ---
-    const handleSend = useCallback(async () => {
-      if (!hasValue || disabled || isViewer) return;
+    const handleSendContent = useCallback(async (content: string) => {
+      if (!content?.trim() && files.length === 0) return;
+      if (disabled || isViewer) return;
 
-      let finalContent = getEditorContent().trim();
+      let finalContent = content.trim();
 
       // Prepend agent mention if selected
       if (selectedAgent) {
@@ -199,22 +185,12 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
         });
       }
 
-      // Clear form
-      if (editorRef.current?.editor) {
-        editorRef.current.editor.update(() => {
-          const root = editorRef.current.editor?.getRootElement();
-          if (root) {
-            root.textContent = '';
-          }
-        });
-      }
+      // Clear files (editor clears itself)
       clearFiles();
     }, [
-      getEditorContent,
       files,
       threadId,
       roomId,
-      hasValue,
       disabled,
       isViewer,
       selectedAgent,
@@ -223,12 +199,25 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
       enqueueSnackbar,
     ]);
 
-    // Setup editor ref methods
+    // Setup editor ref - the Editor will call sendContent when Enter is pressed
     useEffect(() => {
       if (editorRef.current) {
-        editorRef.current.sendMessage = handleSend;
+        editorRef.current.sendContent = handleSendContent;
       }
-    }, [handleSend]);
+    }, [handleSendContent]);
+
+    // Send button handler - reads content from editor and sends
+    const handleSendClick = useCallback(() => {
+      if (editorRef.current?.editor) {
+        let content = '';
+        editorRef.current.editor.getEditorState().read(() => {
+          content = editorRef.current.editor?._editorState._nodeMap.get('root')?.getTextContent() || '';
+        });
+        if (content.trim() || files.length > 0) {
+          handleSendContent(content);
+        }
+      }
+    }, [handleSendContent, files]);
 
     // --- Viewer Mode ---
     if (isViewer) {
@@ -355,7 +344,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            onClick={handleSend}
+                            onClick={handleSendClick}
                             disabled={disabled}
                             size="icon"
                             className="h-8 w-8 rounded-full"
