@@ -1,122 +1,100 @@
-import { Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { m } from 'framer-motion';
 import { memo, useCallback, useState } from 'react';
+
+import { cn } from '@lib/utils';
 
 import AgentVarsInput from './AgentVarsInput.jsx';
 import ModuleInputVars from './ModuleInputVars.jsx';
 import HelperGroups from '../../../../../components/flows/menuvars/HelperGroups.jsx';
 import Iconify from '../../../../../components/iconify';
-// import { useDebounce } from '../../../../../hooks/useDebounce';
 
+// Helper group configuration with icons
 const GROUPS = {
   vars: {
     icon: 'tabler:variable',
+    label: 'Variables',
   },
   string: {
     icon: 'carbon:string-text',
+    label: 'String',
   },
   object: {
     icon: 'lets-icons:json',
+    label: 'Object',
   },
   math: {
     icon: 'tabler:math',
+    label: 'Math',
   },
   date: {
     icon: 'ph:calendar-dots-duotone',
+    label: 'Date',
   },
   rfc: {
     icon: 'mdi:standard-definition',
+    label: 'RFC',
   },
 };
 
+// Group toggle button component
+const GroupToggleButton = ({ icon, label, isActive, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'relative flex items-center justify-center h-8 px-3 rounded-md transition-all',
+      'hover:bg-accent/80',
+      isActive
+        ? 'bg-accent text-foreground shadow-sm'
+        : 'bg-transparent text-muted-foreground hover:text-foreground',
+    )}
+    aria-label={label}
+  >
+    <m.div
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.15 }}
+    >
+      <Iconify icon={icon} width={16} />
+    </m.div>
+  </button>
+);
+
+/**
+ * ModuleInput - Main input component for selecting variables and helpers
+ * Displays categorized helper groups and variables based on mode
+ */
 const ModuleInput = ({ onSelect = null, mode = 'flow', ...other }) => {
-  // const inputRef = useRef();
   const [selectedHelperGroup, setSelectedHelperGroup] = useState('vars');
 
-  // console.log("currentExecutions", currentExecutions)
-  // const [searchTerm, setSearchTerm] = useState('');
-  // const throttledSearch = useDebounce(searchTerm, 500);
-
-  const onSelectHelerGroup = useCallback((e, opt) => setSelectedHelperGroup(opt), []);
-
-  // useEffect(() => {
-  //   if (!!searchTerm?.length) {
-  //     setSelectedHelperGroup(null);
-  //   } else {
-  //     setSelectedHelperGroup('vars');
-  //   }
-  // }, [searchTerm]);
-
-  // const setTextInputRef = (element) => {
-  //   inputRef.current = element;
-  // };
-
-  // const onSearchTermChange = useCallback((e) => setSearchTerm(e.target.value), []);
-
-  // useEffect(() => {
-  //   inputRef.current?.focus();
-  // }, []);
+  const handleGroupSelect = useCallback((groupKey) => {
+    setSelectedHelperGroup(groupKey);
+  }, []);
 
   return (
-    <Stack
-      width="100%"
-      height="100%"
-      alignItems="start"
-      justifyContent="left"
-      className="relative"
-      sx={{ zIndex: 9999 }}
+    <div
+      className="relative flex flex-col items-start w-full h-full"
       {...other}
     >
-      <Stack
-        width="100%"
-        spacing={0.5}
-        className="rounded-lg px-1"
-      >
-        <Stack
-          spacing={1}
-          width="100%"
-        >
-          <ToggleButtonGroup
-            size="small"
-            value={selectedHelperGroup}
-            exclusive
-            onChange={onSelectHelerGroup}
-            aria-label="Helper Group"
-            sx={{
-              width: '100%',
-              overflowX: 'auto',
-              scrollbarWidth: 'none',
-              backgroundColor: 'transparent',
-            }}
-          >
-            {Object.entries(GROUPS).map(([key, value]) => (
-              <ToggleButton
-                value={key}
-                aria-label={key}
-                key={`group-${key}`}
-              >
-                <Iconify icon={value.icon} />
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+      {/* Group selector header */}
+      <div className="w-full flex flex-col gap-2 px-2 py-2">
+        <div className="flex items-center gap-1 w-full overflow-x-auto scrollbar-hide bg-muted/30 p-1 rounded-lg">
+          {Object.entries(GROUPS).map(([key, value]) => (
+            <GroupToggleButton
+              key={`group-${key}`}
+              icon={value.icon}
+              label={value.label}
+              isActive={selectedHelperGroup === key}
+              onClick={() => handleGroupSelect(key)}
+            />
+          ))}
+        </div>
+      </div>
 
-          {/* <TextField
-            label="Search..."
-            size="small"
-            variant="standard"
-            fullWidth
-            value={searchTerm}
-            onChange={onSearchTermChange}
-          /> */}
-        </Stack>
-      </Stack>
-      <Stack
-        height="100%"
-        width="100%"
-        className="overflow-y-auto"
-      >
+      {/* Content area */}
+      <div className="flex-1 w-full overflow-y-auto">
         {(!selectedHelperGroup || selectedHelperGroup !== 'vars') && (
           <HelperGroups
-            // searchTerm={throttledSearch}
             selectedGroup={selectedHelperGroup}
             onSelect={onSelect}
           />
@@ -124,18 +102,12 @@ const ModuleInput = ({ onSelect = null, mode = 'flow', ...other }) => {
 
         {(!selectedHelperGroup || selectedHelperGroup === 'vars') &&
           (mode === 'agent' ? (
-            <AgentVarsInput
-              // searchTerm={throttledSearch}
-              onSelect={onSelect}
-            />
+            <AgentVarsInput onSelect={onSelect} />
           ) : (
-            <ModuleInputVars
-              // searchTerm={throttledSearch}
-              onSelect={onSelect}
-            />
+            <ModuleInputVars onSelect={onSelect} />
           ))}
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 };
 

@@ -1,18 +1,23 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 import { closeGlobalVarsMenu, selectGlobalVars } from '../../../redux/slices/general';
 import { dispatch, useSelector } from '../../../redux/store';
 import ModuleInput from '../../../sections/@dashboard/flows/modulemenu/input/ModuleInput.jsx';
 import FloatingWindow from '../../floating/FloatingWindow.jsx';
 
+// Selectors for Redux state
 const selectGlobalVarsOpen = (state) => selectGlobalVars(state).open;
 const selectGlobalVarsContext = (state) => selectGlobalVars(state).context;
 const selectGlobalVarsEditorId = (state) => selectGlobalVarsContext(state)?.editorId;
 const selectGlobalVarsAnchorEl = (state) => selectGlobalVarsContext(state)?.anchorEl;
-// const selectGlobalVarsPosition = (state) => selectGlobalVars(state).position;
 
-const onClose = () => dispatch(closeGlobalVarsMenu());
+// Handler to close the menu
+const handleClose = () => dispatch(closeGlobalVarsMenu());
 
+/**
+ * GlobalVarsMenu - Floating window for selecting variables and helpers
+ * Appears on top of all other components with highest z-index
+ */
 const GlobalVarsMenu = ({ mode = 'flow' }) => {
   const isOpen = useSelector(selectGlobalVarsOpen);
   const editorId = useSelector(selectGlobalVarsEditorId);
@@ -20,18 +25,23 @@ const GlobalVarsMenu = ({ mode = 'flow' }) => {
 
   const handleOptionSelect = useCallback(
     (option) => {
-      // Dispatch a custom event with the selected value
-      const event = new CustomEvent(`menuSelect:${editorId}`, { detail: { value: option } });
+      // Dispatch custom event with selected value for the editor
+      const event = new CustomEvent(`menuSelect:${editorId}`, {
+        detail: { value: option },
+      });
       window.dispatchEvent(event);
     },
     [editorId],
   );
 
-  const content = (
+  const content = useMemo(
+    () => (
     <ModuleInput
       onSelect={handleOptionSelect}
       mode={mode}
     />
+    ),
+    [handleOptionSelect, mode],
   );
 
   if (!isOpen) {
@@ -41,15 +51,14 @@ const GlobalVarsMenu = ({ mode = 'flow' }) => {
   return (
     <FloatingWindow
       name="Select variables and helpers"
-      // offsetX={window.innerWidth/2-300}
-      // mode={props.mode || 'room'}
       baseWidth={400}
       baseHeight={700}
       anchorEl={anchorEl}
-      onClose={onClose}
-      enableExpand={true}
-      enableMinimize={true}
-      usePortal={true}
+      onClose={handleClose}
+      enableExpand
+      enableMinimize
+      usePortal
+      additionalClasses="z-[10001]"
     >
       {content}
     </FloatingWindow>

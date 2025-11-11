@@ -156,27 +156,29 @@ const WebSearchRenderer = memo(({ part }) => {
 
   return (
     <div className="w-full px-2 py-1.5">
-      {/* Query + Domain Avatars Row - Clickable */}
-      <button
-        onClick={handleRowClick}
-        className="w-full flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
-        disabled={!searchData.hasResults}
-      >
-        {/* Search Icon + Query */}
-        <Icon
-          icon="mdi:magnify"
-          className="text-gray-400 dark:text-gray-600 text-xs flex-shrink-0"
-        />
-        <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate flex-1 min-w-0">
-          {searchData.query}
-        </span>
-
-        {/* Source count */}
-        {searchData.hasResults && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-600 flex-shrink-0">
-            {searchData.sources.length}
+      {/* Query + Domain Avatars Row */}
+      <div className="w-full flex items-center gap-2">
+        {/* Search Icon + Query - Clickable to show all results */}
+        <button
+          onClick={handleRowClick}
+          disabled={!searchData.hasResults}
+          className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity disabled:cursor-default disabled:opacity-100"
+        >
+          <Icon
+            icon="mdi:magnify"
+            className="text-gray-400 dark:text-gray-600 text-xs flex-shrink-0"
+          />
+          <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate flex-1 min-w-0">
+            {searchData.query}
           </span>
-        )}
+
+          {/* Source count */}
+          {searchData.hasResults && (
+            <span className="text-[10px] text-gray-400 dark:text-gray-600 flex-shrink-0">
+              {searchData.sources.length}
+            </span>
+          )}
+        </button>
 
         {/* Domain Avatar Stack */}
         {searchData.hasResults && (
@@ -232,7 +234,7 @@ const WebSearchRenderer = memo(({ part }) => {
         {isExecuting && (
           <Icon icon="svg-spinners:ring-resize" className="text-gray-400 dark:text-gray-600 text-xs flex-shrink-0" />
         )}
-      </button>
+      </div>
 
       {/* All Results View - Flat List (Row Click) */}
       {showAllResults && searchData.sources && (

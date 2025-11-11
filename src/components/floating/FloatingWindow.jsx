@@ -159,23 +159,30 @@ const FloatingWindow = ({
   // 9. Render
   // ----------------------------------------------------------------
 
-  // If minimized, we just show a small bar to re-expand
+  // If minimized, show a small bar to re-expand
   const minimizedContent = (
     <div
-      className="fixed bottom-4 left-1/2 transform -translate-x-1/2
-                 flex flex-row gap-2 items-center p-2 rounded-lg shadow-lg
-                 border border-sky-500 cursor-pointer bg-gray-100 text-black
-                 dark:bg-gray-800 dark:text-white z-[10000]"
+      className={cn(
+        'fixed bottom-4 left-1/2 transform -translate-x-1/2',
+        'flex flex-row gap-2 items-center p-2 rounded-lg shadow-xl',
+        'border border-border/40 cursor-pointer bg-background',
+        'backdrop-blur-sm z-[9999]'
+      )}
+      style={{ pointerEvents: 'auto' }}
       onClick={expandWindow}
     >
-      <Iconify icon="tabler:chevron-up" />
-      <div className="text-sm font-medium">{name}</div>
+      <Iconify icon="tabler:chevron-up" width={14} className="text-muted-foreground" />
+      <div className="text-sm font-medium text-foreground">{name}</div>
       <button
-        className="p-1 rounded-full hover:bg-gray-200 text-black
-                   dark:hover:bg-gray-700 dark:text-white"
+        type="button"
+        className={cn(
+          'p-1.5 rounded-md hover:bg-destructive/10 transition-colors',
+          'text-muted-foreground hover:text-destructive'
+        )}
         onClick={onClose}
+        aria-label="Close"
       >
-        <Iconify icon="line-md:close" />
+        <Iconify icon="line-md:close" width={14} />
       </button>
     </div>
   );
@@ -192,67 +199,92 @@ const FloatingWindow = ({
       maxWidth={isMaximized ? window.innerWidth : 600}
       maxHeight={isMaximized ? window.innerHeight : 1000}
       bounds="window"
+      style={{ pointerEvents: 'auto' }}
       className={cn(
-        'overflow-hidden rounded-2xl border border-gray-300 dark:border-gray-700 z-[10000]',
+        'overflow-hidden rounded-lg border border-border/40 shadow-xl z-[9999]',
+        'bg-background',
         additionalClasses,
       )}
       dragHandleClassName="handle"
-      // If you really want to ensure we never forcibly focus inside,
-      // you could do:
-      // tabIndex={-1}
     >
-      <div className="relative h-full w-full ">
+      <div className="relative h-full w-full">
+        {/* Header with drag handle and controls */}
         <div
-          className="relative flex cursor-move justify-between items-center
-                     bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-sm
-                     text-black dark:text-white h-10"
+          className={cn(
+            'relative flex cursor-move justify-between items-center',
+            'bg-muted/50 backdrop-blur-sm border-b border-border/40',
+            'text-foreground h-10 px-3'
+          )}
         >
-          <div className="select-none handle py-2 px-3 text-lg font-medium flex-no-wrap truncate flex items-center">
+          <div className="select-none handle flex items-center gap-2 text-sm font-medium truncate">
             <Iconify
               icon="mdi:drag"
-              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
-              width={20}
-              height={20}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              width={16}
+              height={16}
             />
+            {name && <span className="text-sm font-medium">{name}</span>}
           </div>
-          <div className="flex items-center space-x-1">
+          
+          <div className="flex items-center gap-1">
             {onExternalOpen && (
               <button
-                className="p-1 rounded-full hover:bg-gray-200 text-black
-                           dark:hover:bg-gray-700 dark:text-white"
+                type="button"
+                className={cn(
+                  'p-1.5 rounded-md hover:bg-accent transition-colors',
+                  'text-muted-foreground hover:text-foreground'
+                )}
                 onClick={onExternalOpen}
+                aria-label="Open in new window"
               >
-                <Iconify icon="ion:open-outline" />
+                <Iconify icon="ion:open-outline" width={14} />
               </button>
             )}
             {enableMinimize && (
               <button
-                className="p-1 rounded-full hover:bg-gray-200 text-black
-                           dark:hover:bg-gray-700 dark:text-white"
+                type="button"
+                className={cn(
+                  'p-1.5 rounded-md hover:bg-accent transition-colors',
+                  'text-muted-foreground hover:text-foreground'
+                )}
                 onClick={minimizeWindow}
+                aria-label="Minimize"
               >
-                <Iconify icon="tabler:chevron-down" />
+                <Iconify icon="tabler:chevron-down" width={14} />
               </button>
             )}
             {enableExpand && (
               <button
-                className="p-1 rounded-full hover:bg-gray-200 text-black
-                           dark:hover:bg-gray-700 dark:text-white"
+                type="button"
+                className={cn(
+                  'p-1.5 rounded-md hover:bg-accent transition-colors',
+                  'text-muted-foreground hover:text-foreground'
+                )}
                 onClick={toggleExpand}
+                aria-label={isMaximized ? 'Restore' : 'Maximize'}
               >
-                <Iconify icon={isMaximized ? 'tabler:minimize' : 'tabler:maximize'} />
+                <Iconify 
+                  icon={isMaximized ? 'tabler:minimize' : 'tabler:maximize'} 
+                  width={14} 
+                />
               </button>
             )}
             <button
-              className="p-1 rounded-full hover:bg-gray-200 text-black
-                         dark:hover:bg-gray-700 dark:text-white"
+              type="button"
+              className={cn(
+                'p-1.5 rounded-md hover:bg-destructive/10 transition-colors',
+                'text-muted-foreground hover:text-destructive'
+              )}
               onClick={onClose}
+              aria-label="Close"
             >
-              <Iconify icon="line-md:close" />
+              <Iconify icon="line-md:close" width={14} />
             </button>
           </div>
         </div>
-        <div className="absolute inset-0 top-10">{children}</div>
+        
+        {/* Content area */}
+        <div className="absolute inset-0 top-10 bg-background">{children}</div>
       </div>
     </Rnd>
   );

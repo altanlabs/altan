@@ -1,6 +1,8 @@
+import { memo, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { memo } from 'react';
+
+import { cn } from '@lib/utils';
 
 import FormParameter from '../form/FormParameter';
 
@@ -9,45 +11,49 @@ const DynamicFormFieldArrayItem = ({
   schema,
   enableLexical,
   index,
-  // onSwap,
   onDelete,
 }) => {
   const { active, isDragging, attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: fieldKey,
       transition: {
-        duration: 250, // milliseconds
+        duration: 200,
         easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
       },
     });
 
-  const updatedTransform = !active
+  const updatedTransform = useMemo(
+    () =>
+      !active
     ? transform
     : {
         ...transform,
-        scaleY: !isDragging ? 1 : 1.05,
-        scaleX: !isDragging ? 1 : 1.05,
-      };
+            scaleY: !isDragging ? 1 : 1.02,
+            scaleX: !isDragging ? 1 : 1.02,
+          },
+    [active, transform, isDragging],
+  );
 
-  const style = {
+  const style = useMemo(
+    () => ({
     transform: CSS.Transform.toString(updatedTransform),
     transition,
     opacity: !!active && !isDragging ? 0.5 : 1,
-    ...(isDragging && { boxShadow: '0 0 10px rgba(0,0,0,0.2)' }),
-  };
-
-  const draggableActive = true; // !!item && item.id !== 'new';
+    }),
+    [updatedTransform, transition, active, isDragging],
+  );
 
   return (
     <div
-      style={{
-        ...style,
-        borderRadius: '8px',
-        boxShadow: isDragging
-          ? 'rgb(63 63 68 / 5%) 0px 2px 0px 2px, rgb(34 33 81 / 15%) 0px 2px 3px 2px'
-          : 'rgb(63 63 68 / 5%) 0px 0px 0px 1px, rgb(34 33 81 / 15%) 0px 1px 3px 0px',
-      }}
-      {...(draggableActive ? attributes : {})}
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'rounded-lg transition-shadow',
+        isDragging
+          ? 'shadow-lg ring-2 ring-border/50'
+          : 'shadow-sm ring-1 ring-border/20 hover:ring-border/40',
+      )}
+      {...attributes}
     >
       <FormParameter
         fieldKey={fieldKey}

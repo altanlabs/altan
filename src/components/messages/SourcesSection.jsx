@@ -143,12 +143,12 @@ const SourcesSection = memo(({ domainGroups, annotations }) => {
   return (
     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800">
       {/* Citation Header Row - Clickable */}
-      <button
-        onClick={handleRowClick}
-        className="w-full flex items-center gap-1.5 text-left group/sources transition-colors flex-wrap mb-2"
-      >
-        {/* Icon + Label */}
-        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-500 group-hover/sources:text-gray-700 dark:group-hover/sources:text-gray-300 transition-colors">
+      <div className="w-full flex items-center gap-1.5 group/sources transition-colors flex-wrap mb-2">
+        {/* Icon + Label - Clickable to show all */}
+        <button
+          onClick={handleRowClick}
+          className="flex items-center gap-1 text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
           <Icon
             icon="mdi:link-variant"
             className="text-[10px] flex-shrink-0"
@@ -156,7 +156,7 @@ const SourcesSection = memo(({ domainGroups, annotations }) => {
           <span className="text-[10px] font-medium">
             Sources
           </span>
-        </div>
+        </button>
 
         {/* Domain Pills */}
         {visibleDomains.map((group) => (
@@ -180,7 +180,7 @@ const SourcesSection = memo(({ domainGroups, annotations }) => {
             +{hiddenCount} more
           </span>
         )}
-      </button>
+      </div>
 
       {/* All Citations View - Numbered List (Row Click) */}
       {showAllCitations && (

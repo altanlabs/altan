@@ -1,5 +1,4 @@
-import { OpenInNew as OpenInNewIcon, Edit as EditIcon } from '@mui/icons-material';
-import { Typography, Box, IconButton, Tooltip, Stack, Paper } from '@mui/material';
+import { Typography, Paper } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 
@@ -9,60 +8,8 @@ import InteractiveButton from '../buttons/InteractiveButton';
 import FloatingWindow from '../floating/FloatingWindow';
 import { getNested } from '../tools/dynamic/utils';
 
-const FormCard = ({ formId }) => {
-  const handleOpenInNewTab = useCallback(() => {
-    window.open(`https://app.altan.ai/form/${formId}`, '_blank');
-  }, [formId]);
-
-  const handleEditInNewTab = useCallback(() => {
-    window.open(`/forms/${formId}`, '_blank');
-  }, [formId]);
-
-  return (
-    <>
-      <Box className="flex flex-row justify-between">
-        <Stack
-          direction="row"
-          width="100%"
-          alignItems="center"
-          justifyContent="right"
-        >
-          <Tooltip title="Edit in a new tab">
-            <IconButton
-              size="small"
-              onClick={handleEditInNewTab}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Open in a new tab">
-            <IconButton
-              size="small"
-              onClick={handleOpenInNewTab}
-            >
-              <OpenInNewIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Box>
-      <iframe
-        title={`form-fill-${formId}`}
-        src={`https://app.altan.ai/form/${formId}`}
-        className="w-full h-full border-none pb-15"
-      />
-    </>
-  );
-};
-
 // Configuración de eventos para definir el comportamiento dinámico
 const EVENT_CONFIG = {
-  // Configuración específica para el evento "FormResponseCompleted"
-  FormResponseCompleted: {
-    requiresFloatingWindow: true, // Indica si el evento necesita una ventana flotante
-    component: (subscription) => <FormCard formId={subscription.external_id} />, // Componente que se renderiza para este evento
-    buttonText: 'Test Form Response', // Texto del botón para este evento
-    windowName: 'Form', // Nombre de la ventana flotante
-  },
   // Configuración por defecto para eventos no especificados
   Default: {
     requiresFloatingWindow: false, // No requiere ventana flotante

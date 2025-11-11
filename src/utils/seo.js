@@ -106,11 +106,6 @@ export const generateTemplateStructuredData = (template, seoData) => {
         name: 'AI Agents',
         value: assetCounts.agents,
       }] : []),
-      ...(assetCounts.forms > 0 ? [{
-        '@type': 'PropertyValue',
-        name: 'Forms',
-        value: assetCounts.forms,
-      }] : []),
       ...(assetCounts.connections > 0 ? [{
         '@type': 'PropertyValue',
         name: 'Integrations',
@@ -185,7 +180,6 @@ function getTemplateAssetCounts(template, selectedVersion) {
   return {
     flows: assets?.flows ? Object.keys(assets.flows).length : 0,
     agents: assets?.agents ? Object.keys(assets.agents).length : 0,
-    forms: assets?.forms ? Object.keys(assets.forms).length : 0,
     connections: assets?.connections ? Object.keys(assets.connections).length : 0,
   };
 }
@@ -208,7 +202,6 @@ function generateTemplateKeywords(template, selectedVersion) {
   const assetCounts = getTemplateAssetCounts(template, selectedVersion);
   if (assetCounts.flows > 0) keywords.push('workflow automation', 'business process');
   if (assetCounts.agents > 0) keywords.push('AI agents', 'chatbot', 'virtual assistant');
-  if (assetCounts.forms > 0) keywords.push('forms', 'data collection');
   if (assetCounts.connections > 0) keywords.push('integrations', 'API connections');
   
   // Add price-based keywords

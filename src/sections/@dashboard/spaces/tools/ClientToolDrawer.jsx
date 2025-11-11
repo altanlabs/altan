@@ -1,24 +1,11 @@
+import { Plus, Check, Trash2, Monitor } from 'lucide-react';
 import { memo, useCallback, useState, useEffect } from 'react';
 import { useForm, FormProvider, useFieldArray, Controller } from 'react-hook-form';
-import { X, Plus, Check, Trash2, Monitor } from 'lucide-react';
 
-import Iconify from '../../../../components/iconify';
 import { useSnackbar } from '../../../../components/snackbar';
-import { updateCurrentTool, getSpace } from '../../../../redux/slices/spaces';
-import { dispatch, useSelector } from '../../../../redux/store';
-import { optimai } from '../../../../utils/axios';
-
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '../../../../components/ui/sheet';
 import { Button } from '../../../../components/ui/button';
-import { Input } from '../../../../components/ui/input';
-import { Textarea } from '../../../../components/ui/textarea';
 import { Checkbox } from '../../../../components/ui/checkbox';
+import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import {
   Select,
@@ -28,7 +15,16 @@ import {
   SelectValue,
 } from '../../../../components/ui/select';
 import { Separator } from '../../../../components/ui/separator';
-import { cn } from '../../../../lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '../../../../components/ui/sheet';
+import { Textarea } from '../../../../components/ui/textarea';
+import { updateCurrentTool, getSpace } from '../../../../redux/slices/spaces';
+import { dispatch, useSelector } from '../../../../redux/store';
+import { optimai } from '../../../../utils/axios';
 
 const DATA_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 

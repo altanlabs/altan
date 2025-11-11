@@ -1,21 +1,21 @@
 import React, { memo, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import Footer from './Footer';
 import { useAuthContext } from '../../../auth/useAuthContext';
+import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
+import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import Logo from '../../../components/logo/Logo';
 import { useSettingsContext } from '../../../components/settings';
 import {
   ThemeToggleButton,
   useThemeTransition,
 } from '../../../components/ui/shadcn-io/theme-toggle-button';
-import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
 import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
-import AuthDialog from '../../../sections/auth/AuthDialog';
+import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator';
-import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
-import Footer from '../../main/Footer';
-import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
+import AuthDialog from '../../../sections/auth/AuthDialog';
 
 const NewLayout = ({ children, onRequestAuth }) => {
   const history = useHistory();
@@ -69,9 +69,6 @@ const NewLayout = ({ children, onRequestAuth }) => {
         break;
       case 'appearance':
         onToggleMode();
-        break;
-      case 'notifications':
-        // TODO: Open notifications
         break;
       case 'upgrade':
         history.push('/pricing');

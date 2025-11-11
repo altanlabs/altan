@@ -1,18 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 
 // @mui
-import { Stack, AppBar, Toolbar, IconButton, Chip } from '@mui/material';
+import { Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import ChatDrawer from './ChatDrawer';
-import HeaderActions from './HeaderActions';
 import MobileNavSidebar from './MobileNavSidebar';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { StyledChart } from '../../../components/chart';
 import Iconify from '../../../components/iconify';
-
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { selectHeaderVisible } from '../../../redux/slices/general';
@@ -160,10 +158,10 @@ function Header() {
           </Stack>
 
           <StyledChart />
-          <HeaderActions
+          {/* <HeaderActions
             user={user}
             isDesktop={isDesktop}
-          />
+          /> */}
         </Toolbar>
       </AppBar>
       {user && (

@@ -46,7 +46,7 @@ const Button = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

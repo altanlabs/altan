@@ -1,6 +1,9 @@
-import { Skeleton, Stack, Typography, Button } from '@mui/material';
+import { m } from 'framer-motion';
 import { memo, useCallback, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+
+import { Button } from '@components/ui/Button';
+import { Skeleton } from '@components/ui/skeleton';
 
 import PanelRow from './PanelRow.jsx';
 import Iconify from '../../../../components/iconify';
@@ -98,64 +101,42 @@ const ExternalConnectionTypes = ({
 
   if (!initialized) {
     return (
-      <Stack
-        width="100%"
-        height="100%"
-        spacing={0.5}
-      >
+      <div className="w-full h-full flex flex-col gap-1">
         {[...Array(20)].map((_, i) => (
-          <Skeleton
-            key={`conntype-skeleton-${i}`}
-            width="100%"
-            height={50}
-            variant="rounded"
-          />
+          <Skeleton key={`conntype-skeleton-${i}`} className="w-full h-12 rounded-md" />
         ))}
-      </Stack>
+      </div>
     );
   }
 
   if (mode === 'custom_apps' && !data?.length) {
     return (
-      <Stack
-        width="100%"
-        height="100%"
-        spacing={2}
-        alignItems="center"
-        justifyContent="center"
-        px={3}
+      <m.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full h-full flex flex-col items-center justify-center gap-3 px-3"
       >
-        <Typography
-          variant="h3"
-          textAlign="center"
-        >
-          No Connectors Found
-        </Typography>
-        <Typography
-          variant="body2"
-          textAlign="center"
-          color="text.secondary"
-        >
+        <h3 className="text-base font-semibold text-center">No Connectors Found</h3>
+        <p className="text-xs text-muted-foreground text-center max-w-sm">
           Create your own integration to automate your workflow with custom applications
-        </Typography>
+        </p>
         <Button
-          variant="contained"
-          href="https://www.altan.ai/integration?tab=custom_apps"
-          target="_blank"
-          startIcon={<Iconify icon="material-symbols:add" />}
+          variant="default"
+          size="sm"
+          asChild
+          className="h-8 gap-1.5"
         >
-          Create Custom App
+          <a href="https://www.altan.ai/integration?tab=custom_apps" target="_blank" rel="noopener noreferrer">
+            <Iconify icon="material-symbols:add" width={14} />
+            Create Custom App
+          </a>
         </Button>
-      </Stack>
+      </m.div>
     );
   }
 
   return (
-    <Stack
-      maxWidth="100%"
-      height="100%"
-    >
-      {/* Show semantic results or skeletons if searching */}
+    <div className="w-full h-full">
       <Virtuoso
         key="virtuoso-external-connection-types"
         style={{
@@ -166,118 +147,57 @@ const ExternalConnectionTypes = ({
         }}
         data={data}
         components={{
-          Footer: () => {
-            return (
-              <div
-                style={{
-                  height: '10px',
-                }}
-              />
-            );
-          },
-          Header: () => {
-            return (
-              <div
-              // style={{
-              //   height: '10px'
-              // }}
-              >
-                {!!suggestedEnabled &&
-                  !selected &&
-                  searchTerm &&
-                  (isLoadingSemanticResults || semanticResults.length > 0) && (
-                  <>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      paddingX={2}
-                      paddingY={1}
-                    >
-                      <Iconify icon="mdi:magic" />
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 'bold' }}
-                      >
-                        Suggested Actions
-                      </Typography>
-                    </Stack>
-                    <Stack>
-                      {isLoadingSemanticResults
-                        ? // Show 3 skeletons while loading
-                          [...Array(3)].map((_, index) => (
-                              <Stack
-                                key={`skeleton-${index}`}
-                                direction="row"
-                                spacing={2.5}
-                                sx={{
-                                  px: 2,
-                                  py: 1,
-                                  ...(index && { mt: 1 }),
-                                  height: 60,
-                                }}
-                              >
-                                <Skeleton
-                                  variant="circular"
-                                  width={32}
-                                  height={32}
-                                />
-                                <Stack sx={{ flex: 1 }}>
-                                  <Skeleton
-                                    variant="text"
-                                    width="60%"
-                                    height={24}
-                                  />
-                                  <Skeleton
-                                    variant="text"
-                                    width="80%"
-                                    height={16}
-                                  />
-                                </Stack>
-                              </Stack>
-                            ))
-                        : // Show actual results when loaded
-                          semanticResults.slice(0, 3).map((result, index) => (
-                              <PanelRow
-                                key={`semantic-${result.id}`}
-                                icon={result.connection_type?.icon}
-                                name={result.name}
-                                description={result.description}
-                                isSemanticResult
-                                onClick={() =>
-                                  mode === 'trigger' || delegateSelect
-                                    ? onSelect(result, true)
-                                    : selectActionOrSearch(result)}
-                                sx={{
-                                  ...(index && { mt: 1 }),
-                                  backgroundColor: 'rgba(0,0,0,0.02)',
-                                }}
-                              />
-                            ))}
-                    </Stack>
-                  </>
-                )}
+          Footer: () => <div className="h-2" />,
+          Header: () => (
+            <div>
+              {suggestedEnabled && !selected && searchTerm && (isLoadingSemanticResults || semanticResults.length > 0) && (
+                <>
+                  <div className="flex items-center gap-1.5 px-2 py-2">
+                    <Iconify icon="mdi:magic" width={14} className="text-muted-foreground" />
+                    <h4 className="text-xs font-semibold">Suggested Actions</h4>
+                  </div>
+                  <div className="flex flex-col">
+                    {isLoadingSemanticResults
+                      ? [...Array(3)].map((_, index) => (
+                          <div key={`skeleton-${index}`} className="flex items-center gap-2.5 px-2 py-2 h-14">
+                            <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
+                            <div className="flex-1 space-y-1.5">
+                              <Skeleton className="h-3 w-3/5" />
+                              <Skeleton className="h-2.5 w-4/5" />
+                            </div>
+                          </div>
+                        ))
+                      : semanticResults.slice(0, 3).map((result, index) => (
+                          <PanelRow
+                            key={`semantic-${result.id}`}
+                            icon={result.connection_type?.icon}
+                            name={result.name}
+                            description={result.description}
+                            isSemanticResult
+                            onClick={() => {
+                              if (mode === 'trigger' || delegateSelect) {
+                                onSelect(result, true);
+                              } else {
+                                selectActionOrSearch(result);
+                              }
+                            }}
+                            sx={{ backgroundColor: index === 0 ? undefined : 'rgba(0,0,0,0.02)' }}
+                          />
+                        ))}
+                  </div>
+                </>
+              )}
 
-                {/* Show divider if we have semantic results or are loading them */}
-                {!selected &&
-                  searchTerm &&
-                  (isLoadingSemanticResults || semanticResults.length > 0) && (
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ px: 2, py: 1, fontWeight: 'bold' }}
-                  >
-                    All Connections
-                  </Typography>
-                )}
-              </div>
-            );
-          },
+              {!selected && searchTerm && (isLoadingSemanticResults || semanticResults.length > 0) && (
+                <div className="px-2 py-2">
+                  <h4 className="text-xs font-semibold">All Connections</h4>
+                </div>
+              )}
+            </div>
+          ),
         }}
         overscan={2}
-        increaseViewportBy={{
-          bottom: 0,
-          top: 0,
-        }}
+        increaseViewportBy={{ bottom: 0, top: 0 }}
         itemContent={(index, item) => {
           const isMyWebhooks = selected?.id === 'my_webhooks';
           const isInitialView = !selected;
@@ -311,18 +231,20 @@ const ExternalConnectionTypes = ({
                     : item.actions?.items
                   : null
               }
-              onClick={() =>
-                isInitialView
-                  ? onSelect(data.find((t) => t.id === item.id))
-                  : mode === 'trigger' || delegateSelect
-                    ? onSelect(item)
-                    : selectActionOrSearch(item)}
-              sx={{ ...(index && { mt: 1 }) }}
+              onClick={() => {
+                if (isInitialView) {
+                  onSelect(data.find((t) => t.id === item.id));
+                } else if (mode === 'trigger' || delegateSelect) {
+                  onSelect(item);
+                } else {
+                  selectActionOrSearch(item);
+                }
+              }}
             />
           );
         }}
       />
-    </Stack>
+    </div>
   );
 };
 

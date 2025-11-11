@@ -335,7 +335,6 @@ const FloatingToggleButton = ({ onToggle, isVisible }) => {
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
   flows: { ids: 'filterIds' },
-  forms: { ids: 'filterIds' },
 };
 
 const transformProps = (type, props) => {

@@ -140,6 +140,14 @@ export const {
 
 // ----------------------------------------------------------------------
 
+export const selectConnectionsState = (state) => state.connections;
+
+export const selectAccountConnectionsInitialized = (state) =>
+  selectConnectionsState(state)?.initialized[selectAccount(state)?.id];
+
+export const selectAccountConnectionsLoading = (state) =>
+  selectConnectionsState(state)?.loading[selectAccount(state)?.id];
+
 const TARGETED_GQ = {
   '@fields': ['id'],
   connections: {
@@ -150,12 +158,12 @@ const TARGETED_GQ = {
         '@fields': ['id', 'name', 'icon'],
       },
     },
-    tools: {
-      '@fields': '@all',
-    },
-    resources: {
-      '@fields': '@all',
-    },
+    // tools: {
+    //   '@fields': '@all',
+    // },
+    // resources: {
+    //   '@fields': '@all',
+    // },
   },
 };
 
@@ -361,8 +369,6 @@ export const fetchConnectionType = (connectionTypeId) => async (dispatch, getSta
   }
 };
 
-export const selectConnectionsState = (state) => state.connections;
-
 export const selectConnections = (state) => selectConnectionsState(state).connections;
 
 export const selectAccountConnections = (state) =>
@@ -386,11 +392,7 @@ export const selectAccountConnectionsByType = (typeId) =>
       },
     },
   );
-export const selectAccountConnectionsInitialized = (state) =>
-  selectConnectionsState(state)?.initialized[selectAccount(state)?.id];
 
-export const selectAccountConnectionsLoading = (state) =>
-  selectConnectionsState(state)?.loading[selectAccount(state)?.id];
 
 export const selectConnectionTypes = (state) => selectConnectionsState(state).types;
 

@@ -1,56 +1,23 @@
-import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Stack, Box, Paper, Button, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Drawer } from '@mui/material';
-import { AnimatePresence, m } from 'framer-motion';
-import React, { useState, useEffect, useCallback, useMemo, lazy, memo } from 'react';
+import { m, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 
-import useFeedbackDispatch from '@hooks/useFeedbackDispatch';
-
-import { DeleteDialog, SettingsDialog } from './Dialogs';
-import AddSpaceMenu from './menus/AddSpaceMenu';
-import SpaceNavigator from './navigation/SpaceNavigator';
 import ToolNavigator from './navigation/ToolNavigator';
-import { SpaceCard, SpaceToolCard } from './StyledCards';
+import { SpaceToolCard } from './StyledCards';
 import ActionTypeCard from './tools/ActionTypeCard';
 import ClientToolDrawer from './tools/ClientToolDrawer';
-import CustomTextField from '../../../components/custom-input/CustomTextField';
-import InfoModal from '../../../components/helpers/InfoModal';
 import Iconify from '../../../components/iconify';
-import AltanLogo from '../../../components/loaders/AltanLogo';
 import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
-import { bgBlur } from '../../../utils/cssStyles';
-import { HEADER, NAV } from '../../../config-global';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Sheet, SheetContent } from '../../../components/ui/sheet';
+import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
+import { cn } from '../../../lib/utils';
 import { selectAccount } from '../../../redux/slices/general';
-import {
-  createSpace,
-  createSpaceRoot,
-  deleteSpace,
-  deleteSpaceLink,
-  // getRootSpaces,
-  getSpace,
-  updateSpace,
-} from '../../../redux/slices/spaces';
+import { getSpace } from '../../../redux/slices/spaces';
 import { dispatch, useSelector } from '../../../redux/store';
 import { PATH_DASHBOARD } from '../../../routes/paths';
-import Each from '../../../utils/each';
-
-// const Widgets = lazy(() => import('./Widgets'));
-const SpaceToolbar = lazy(() => import('./toolbar/SpacesToolbar'));
-
-const CREATE_OPTIONS = {
-  successMessage: 'Space created successfully!',
-  errorMessage: 'Error while creating space: ',
-  useSnackbar: true,
-};
 
 const GET_OPTIONS = {
   successMessage: 'Fetch successful.',
@@ -61,28 +28,56 @@ const GET_OPTIONS = {
   },
 };
 
+const ToolButton = ({ onClick, icon, label, variant = 'default' }) => (
+  <m.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="flex-1 min-w-0">
+    <Button onClick={onClick} variant={variant} className="w-full h-9 text-xs sm:text-sm">
+      <Iconify icon={icon} width={14} className="sm:w-4 sm:h-4" />
+      <span className="truncate">{label}</span>
+    </Button>
+  </m.div>
+);
+
+const EmptyState = ({ onAddServerTool, onAddClientTool }) => (
+  <m.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="flex items-center justify-center min-h-[300px] sm:min-h-[400px] p-4 sm:p-6"
+  >
+    <Card className="max-w-md w-full border-dashed">
+      <CardHeader className="text-center pb-3 sm:pb-4 px-4 sm:px-6">
+        <m.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 250 }}
+          className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 rounded-lg border flex items-center justify-center"
+        >
+          <Iconify icon="ri:hammer-fill" width={20} className="sm:w-6 sm:h-6" />
+        </m.div>
+        <CardTitle className="text-base sm:text-lg">No tools configured</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
+          Add tools to enhance your agent&apos;s capabilities
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2 pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
+        <ToolButton onClick={onAddServerTool} icon="mdi:server" label="Add Server Tool" />
+        <ToolButton onClick={onAddClientTool} icon="mdi:desktop-classic" label="Add Client Tool" variant="outline" />
+      </CardContent>
+    </Card>
+  </m.div>
+);
+
 const Space = ({ navigate, spaceId, isPreview }) => {
-  const [dispatchWithFeedback, isSubmitting] = useFeedbackDispatch();
-  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor));
   const { themeLayout } = useSettingsContext();
   const isNavMini = themeLayout === 'mini';
   const isDesktop = useResponsive('up', 'lg');
   const top = HEADER.H_MOBILE;
   const [selectedTool, setSelectedTool] = useState(null);
   const [selectedClientTool, setSelectedClientTool] = useState(null);
-  const [isViewActive, setIsViewActive] = useState(false);
-  const [newSpace, setNewSpace] = useState(null);
   const [toolDrawer, setToolDrawer] = useState(false);
   const [clientToolDrawer, setClientToolDrawer] = useState(false);
-  const [editingSpaceCards, setEditingSpaceCards] = useState([]);
-  const [toolMenuAnchor, setToolMenuAnchor] = useState(null);
-  const [spaceChildrenCopy, setSpaceChildrenCopy] = useState([]);
-  const [changes, setChanges] = useState(false);
-  const [isEditLayout, setIsEditLayout] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const current = useSelector((state) => state.spaces.current);
   const account = useSelector(selectAccount);
-  const user = useSelector((state) => state.general.user);
   const { enqueueSnackbar } = useSnackbar();
 
   const onCloseEditTool = useCallback(() => {
@@ -105,115 +100,24 @@ const Space = ({ navigate, spaceId, isPreview }) => {
     }
   }, []);
 
-  const createNewSpace = useCallback(() => {
-    setNewSpace({ type: 'space', child: { id: 'new', name: '' } });
-    setEditingSpaceCards((prev) => [...prev, 'new']);
-  }, [setNewSpace, setEditingSpaceCards]);
-
-  const createPersonalSpace = useCallback(() => {
-    dispatchWithFeedback(
-      createSpaceRoot({
-        name: `${user?.first_name || user?.first_name || 'User'}'s Personal Space`,
-        is_personal: true,
-      }),
-      CREATE_OPTIONS,
-    );
-  }, [dispatchWithFeedback, user?.first_name]);
-
-  const handleDeleteSpace = useCallback(
-    (id) => {
-      if (id === 'new') setNewSpace(null);
-      else dispatch(deleteSpace(id));
-      setEditingSpaceCards((eSpaceCards) => eSpaceCards.filter((itemId) => itemId !== id));
-    },
-    [setNewSpace, setEditingSpaceCards],
-  );
-
-  const handleDeleteLink = useCallback((id) => dispatch(deleteSpaceLink(id)), []);
-
-  const handleToolMenuOpen = useCallback((event) => {
-    setToolMenuAnchor(event.currentTarget);
-  }, []);
-
-  const handleToolMenuClose = useCallback(() => {
-    setToolMenuAnchor(null);
-  }, []);
-
   const handleServerTool = useCallback(() => {
     setToolDrawer(true);
-    handleToolMenuClose();
-  }, [handleToolMenuClose]);
+  }, []);
 
-    const handleClientTool = useCallback(() => {
+  const handleClientTool = useCallback(() => {
     setSelectedClientTool(null);
     setClientToolDrawer(true);
-    handleToolMenuClose();
-  }, [handleToolMenuClose]);
-
-  const handleEditMode = useCallback(
-    (id, name, oldName) => {
-      setEditingSpaceCards((spaceCards) => {
-        if (spaceCards.includes(id)) {
-          if (id === 'new') {
-            dispatchWithFeedback(
-              (current.id === 'root' ? createSpaceRoot : createSpace)({ name }),
-              CREATE_OPTIONS,
-            );
-            setNewSpace(null);
-          } else if (oldName !== name)
-            dispatchWithFeedback(updateSpace(id, name), {
-              errorMessage: 'Error updating space: ',
-              useSnackbar: { error: true },
-            });
-          return spaceCards.filter((itemId) => itemId !== id);
-        }
-        return [...spaceCards, id];
-      });
-    },
-    [current?.id, dispatchWithFeedback],
-  );
-
-  const personalSpaces = useMemo(
-    () =>
-      (current?.id === 'root' &&
-        current?.children?.items
-          ?.filter((s) => !!s.is_personal)
-          .map((s) => ({ type: 'space', child: s }))) ??
-      [],
-    [current?.children?.items, current?.id],
-  );
-  const personalSpace = useMemo(() => personalSpaces[0], [personalSpaces]);
-  const sChildren = useMemo(
-    () =>
-      current?.children?.items
-        ?.filter((s) => !s.is_personal || current.id !== 'root')
-        .map((s) => ({ type: 'space', child: s })) ?? [],
-    [current?.children?.items, current?.id],
-  );
-  const lChildren = useMemo(
-    () => current?.links?.items?.map((l) => ({ type: 'link', child: l })) ?? [],
-    [current?.links],
-  );
-  const childrenSpaces = useMemo(() => sChildren.concat(lChildren), [lChildren, sChildren]);
-  // const childrenKnowledge = useMemo(() => (current?.id !== 'root' && current?.knowledge?.items) ?? [], [current?.knowledge]);
-  const allSpaceChildren = useMemo(
-    () => (!newSpace ? childrenSpaces : [...childrenSpaces, newSpace]),
-    [childrenSpaces, newSpace],
-  );
-
-  const spaceChildrenCopyLength = spaceChildrenCopy.length;
+  }, []);
 
   useEffect(() => {
     if (!!account?.id) {
       if (current?.id !== spaceId) {
-        dispatchWithFeedback(getSpace(spaceId), GET_OPTIONS);
+        dispatch(getSpace(spaceId), GET_OPTIONS);
       }
     }
   }, [account?.id, spaceId, current]);
 
   useEffect(() => {
-    setEditingSpaceCards([]);
-    setNewSpace(null);
     if (
       !!account?.id &&
       !!current?.id &&
@@ -221,387 +125,122 @@ const Space = ({ navigate, spaceId, isPreview }) => {
       current.account_id !== account.id
     )
       navigate(PATH_DASHBOARD.spaces.root, { replace: true });
-  }, [account?.id, current]);
+  }, [account?.id, current, navigate]);
 
-  useEffect(() => {
-    if (!isEditLayout && !!changes && spaceChildrenCopyLength) {
-      console.log('DISPATCHING STORE SPACE CHILDREN NEW POSITIONS');
-    }
-    if (!isEditLayout) setChanges(false);
-    setSpaceChildrenCopy(!isEditLayout ? [] : childrenSpaces);
-  }, [isEditLayout]);
-
-  const spaceChildrenToRender = !isEditLayout ? allSpaceChildren : spaceChildrenCopy;
-  const filteredSpaces = useMemo(() => {
-    if (!searchTerm) return spaceChildrenToRender;
-    return spaceChildrenToRender.filter((space) =>
-      space?.child.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [spaceChildrenToRender, searchTerm]);
-
-  const handleSpaceDragEnd = useCallback((e) => {
-    const { active, over } = e;
-    if (active?.id !== over?.id) {
-      setSpaceChildrenCopy((items) => {
-        const oldIndex = items.findIndex((item) => item.child.id === active.id);
-        const newIndex = items.findIndex((item) => item.child.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-      setChanges(true);
-    }
-  }, []);
-
-  const sortableSpaces = useMemo(
-    () => !!filteredSpaces?.length && filteredSpaces.map((item) => item?.child?.id).filter(Boolean),
-    [filteredSpaces],
-  );
-
-  if (!current || (current.id !== 'root' && current.account_id !== account?.id))
-    return <AltanLogo wrapped={true} />;
-
-  const handleIsEditLayout = () => {
-    setIsEditLayout((prev) => !prev);
-  };
+  const hasTools = current?.tools?.items && current.tools.items.length > 0;
 
   return (
     <>
-      {!!current?.id && current.id !== 'root' && (
-        <>
-          <ToolNavigator
-            toolDrawer={toolDrawer}
-            setToolDrawer={setToolDrawer}
-            enqueueSnackbar={enqueueSnackbar}
-          />
-          <SpaceNavigator />
-        </>
-      )}
-      <SettingsDialog />
-      <DeleteDialog />
+      <ToolNavigator
+        toolDrawer={toolDrawer}
+        setToolDrawer={setToolDrawer}
+        enqueueSnackbar={enqueueSnackbar}
+      />
       <ClientToolDrawer
         open={clientToolDrawer}
         onClose={onCloseEditClientTool}
         toolToEdit={selectedClientTool}
       />
-      <Box
-        sx={
-          isPreview
-            ? undefined
-            : {
-                background: 'transparent',
-                position: 'fixed',
-                padding: 0,
-                margin: 0,
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: 0,
-                paddingTop: `${top}px`,
-                overflowY: 'hidden',
-                display: 'flex',
-                flexDirection: 'row',
-                ...(isDesktop && {
-                  width: `calc(100% - ${NAV.W_DASHBOARD}px)`,
-                  left: `${NAV.W_DASHBOARD}px`,
-                  ...(isNavMini && {
-                    width: `calc(100% - ${NAV.W_DASHBOARD_MINI}px)`,
-                    left: `${NAV.W_DASHBOARD_MINI}px`,
-                  }),
-                }),
-              }
-        }
+
+      <div
+        className={cn(
+          'flex flex-col h-full w-full',
+          !isPreview && 'fixed top-0 left-0 right-0 bottom-0 bg-transparent',
+          isDesktop && !isPreview && 'left-[280px] w-[calc(100%-280px)]',
+          isDesktop && isNavMini && !isPreview && 'left-[88px] w-[calc(100%-88px)]',
+        )}
+        style={{ paddingTop: isPreview ? 0 : `${top}px` }}
       >
-        <Stack
-          direction="column"
-          sx={{ height: '90%', width: '100%' }}
-        >
-          {!isPreview && (
-            <SpaceToolbar
-              isViewActive={isViewActive}
-              setIsViewActive={setIsViewActive}
-              isEditLayout={isEditLayout}
-              onEditLayout={handleIsEditLayout}
-            />
-          )}
-          <Stack
-            direction="row"
-            sx={{ height: '100%', width: '100%' }}
+        <div className="flex flex-col h-full w-full overflow-hidden">
+          {/* Command Bar */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="sticky top-0 z-10 backdrop-blur-xl flex-shrink-0"
           >
-            <Stack
-              direction="column"
-              spacing={1}
-              sx={{ position: 'relative', height: '100%', width: '100%', overflowY: 'auto' }}
-            >
-              {current.id === 'root' && (
-                <Paper
-                  sx={{
-                    background: 'none',
-                    p: 1,
-                    border: (theme) => `dashed 1px ${theme.palette.divider}`,
-                  }}
-                >
-                  <InfoModal
-                    title="Personal Space"
-                    description={`Your personal space in ${account?.meta_data?.name || 'the account'}. You are the only one with access to it.`}
-                  />
-                  {!!personalSpace ? (
-                    <SpaceCard
-                      navigate={navigate}
-                      item={personalSpace.child}
-                      mode={personalSpace.type}
-                    />
-                  ) : (
-                    <Paper
-                      sx={{
-                        background: 'none',
-                        p: 1,
-                        border: (theme) => `dashed 1px ${theme.palette.divider}`,
-                      }}
-                    >
-                      <Button
-                        variant="soft"
-                        onClick={createPersonalSpace}
-                        color="inherit"
-                        startIcon={<Iconify icon="mdi:user" />}
-                      >
-                        Create Personal Space
-                      </Button>
-                    </Paper>
-                  )}
-                </Paper>
-              )}
+            <div className={cn('px-4 py-3', isPreview && 'px-3 py-2')}>
+              <div className={cn('flex items-center justify-between mb-3', isPreview && 'mb-2')}>
+                <div>
+                  <h2 className={cn('text-lg font-semibold', isPreview && 'text-base')}>Tools</h2>
+                  <p className={cn('text-xs text-muted-foreground mt-0.5', isPreview && 'text-[11px]')}>
+                    Configure the action space that your agent can access and use
+                  </p>
+                </div>
+              </div>
 
-              {current.id !== 'root' && (
-                <Box>
-                  <div className="flex flex-row items-center gap-3">
-                    <Button
-                      color="inherit"
-                      variant="soft"
-                      onClick={handleServerTool}
-                      fullWidth
-                      startIcon={
-                        <Iconify
-                          icon="mdi:server"
-                          width={15}
-                        />
-                      }
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <ToolButton onClick={handleServerTool} icon="mdi:server" label="Add Server Tool" />
+                <ToolButton onClick={handleClientTool} icon="mdi:desktop-classic" label="Add Client Tool" variant="outline" />
+              </div>
+            </div>
+          </m.div>
+
+          {/* Tools List or Empty State */}
+          <div className={cn('flex-1 overflow-y-auto', isPreview ? 'p-3' : 'p-4')}>
+            {!hasTools ? (
+              <EmptyState
+                onAddServerTool={handleServerTool}
+                onAddClientTool={handleClientTool}
+              />
+            ) : (
+              <m.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.05 }}
+                className="space-y-2 max-w-4xl mx-auto w-full"
+              >
+                <AnimatePresence mode="popLayout">
+                  {current.tools.items.map((tool, index) => (
+                    <m.div
+                      key={tool.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{
+                        delay: index * 0.03,
+                        type: 'spring',
+                        stiffness: 350,
+                        damping: 30,
+                      }}
+                      layout
                     >
-                      Add Server Tool
-                    </Button>
-                    <Button
-                      color="inherit"
-                      variant="soft"
-                      onClick={handleClientTool}
-                      fullWidth
-                      startIcon={
-                        <Iconify
-                          icon="mdi:desktop-classic"
-                          width={15}
-                        />
-                      }
-                    >
-                      Add Client Tool
-                    </Button>
-                  </div>
-                  <div className="flex flex-col space-y-1 py-2 px-1">
-                    {current.id !== 'root' && (
-                      <Each
-                        of={current.tools.items}
-                        render={(tool, index) => (
-                          <SpaceToolCard
-                            key={`space_tool_${tool.id}_${index}`}
-                            item={tool}
-                            onEdit={handleToolEdit}
-                            spaceId={current.id}
-                          />
-                        )}
+                      <SpaceToolCard
+                        item={tool}
+                        onEdit={handleToolEdit}
+                        spaceId={current.id}
                       />
-                    )}
-                  </div>
-                  <Drawer
-                    open={Boolean(selectedTool)}
-                    onClose={onCloseEditTool}
-                    anchor="right"
-                    PaperProps={{
-                      sx: {
-                        width: 1,
-                        maxWidth: 600,
-                        backgroundColor: 'transparent',
-                        padding: 1,
-                        pb: 2,
-                        ...bgBlur({ opacity: 0.1 }),
-                      },
-                    }}
-                    slotProps={{
-                      backdrop: { invisible: true },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        height: '100%',
-                        backgroundColor: 'background.paper',
-                        borderRadius: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflowY: 'auto',
-                      }}
-                    >
-                      {!!selectedTool?.tool && (
-                        <ActionTypeCard
-                          action={selectedTool.tool.action_type}
-                          tool={selectedTool.tool}
-                          onSave={onCloseEditTool}
-                        />
-                      )}
-                    </Box>
-                  </Drawer>
-                </Box>
-              )}
+                    </m.div>
+                  ))}
+                </AnimatePresence>
+              </m.div>
+            )}
+          </div>
+        </div>
+      </div>
 
-              {/* {current.id !== 'root' && (
-                <Paper sx={{
-                  background: 'none', p: 1,
-                  border: (theme) => `dashed 1px ${theme.palette.divider}`,
-                }}>
-                  <InfoModal title="Knowledge" description="Bot's Brain: Add and view specific information, FAQs or product manual. This knowledge guides the bot in providing relevant responses when users ask questions in the associated space. When asked a question, the AI references both the current space and its parent spaces for answers." />
-                  <Stack direction="column" spacing={0.5}>
-                    {
-                      current.id !== 'root' && (
-                        <Each of={childrenKnowledge} render={(item, index) =>
-                          !!item?.knowledge?.file && (
-                            <KnowledgeCard key={`knowledge_card_${item.id}`} item={item} />
-                          )
-                        } />
-                      )
-                    }
-                    {
-                      current.id !== 'root' && (
-                        <Each of={current.resources.items} render={(item, index) =>
-                          <DataSourceCard key={`data_source_${item.id}`} item={item} />
-                        } />
-                      )
-                    }
-                  </Stack>
-                  <Box>
-                    <Button
-                      color="inherit"
-                      onClick={() => setKnowledgeDrawer(true)}
-                      fullWidth
-                      startIcon={<Iconify icon="ph:files-fill" />}
-                    >
-                      Add Knowledge
-                    </Button>
-                  </Box>
-                </Paper>
-              )} */}
-
-              {!isPreview && (
-                <Paper
-                  sx={{
-                    background: 'none',
-                    p: 1,
-                    border: (theme) => `dashed 1px ${theme.palette.divider}`,
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    sx={{ mb: 1 }}
-                  >
-                    <InfoModal
-                      title={current.id !== 'root' ? 'Space Children' : 'Account Space'}
-                      description="These represent specialized sub-topics or paths your users might take. Like a tree, the main chat can branch out to these child spaces based on user choices."
-                    />
-                    <CustomTextField
-                      placeholder="Search..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </Stack>
-
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleSpaceDragEnd}
-                  >
-                    <Stack
-                      direction="column"
-                      margin={0}
-                      alignItems="center"
-                      spacing={0.5}
-                    >
-                      <SortableContext
-                        items={sortableSpaces}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {
-                          <Each
-                            of={filteredSpaces}
-                            render={(item) => {
-                              const isLink = item.type === 'link';
-                              return (
-                                <div
-                                  style={{ width: '100%' }}
-                                  key={`${item?.type}_card_${item?.child?.id}`}
-                                >
-                                  <SpaceCard
-                                    navigate={navigate}
-                                    item={item.child}
-                                    mode={item.type}
-                                    isEditLayout={isEditLayout}
-                                    onDelete={!isLink ? handleDeleteSpace : handleDeleteLink}
-                                    onEdit={!isLink ? handleEditMode : null}
-                                    cardEditing={
-                                      !isLink ? editingSpaceCards.includes(item?.child?.id) : false
-                                    }
-                                    isSubmitting={item?.child?.id === spaceId && isSubmitting}
-                                  />
-                                </div>
-                              );
-                            }}
-                          />
-                        }
-                      </SortableContext>
-                    </Stack>
-                  </DndContext>
-                  {!editingSpaceCards?.length && (
-                    <AddSpaceMenu
-                      currentId={current?.id || spaceId}
-                      createNewSpace={createNewSpace}
-                    />
-                  )}
-                </Paper>
-              )}
-            </Stack>
-
-            {/* {
-              current.id !== 'root' && (
-                <Box
-                  id="space-preview"
-                  sx={{
-                    position: 'relative',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pr: 2,
-                    ...!isViewActive && {
-                      display: 'none'
-                    },
-                    ...isTablet && {
-                      position: 'absolute',
-                      top: top + 60,
-                      bottom: 10,
-                      left: 0,
-                      right: 0
-                    }
-                  }}
-                >
-                  {renderSpacePreview}
-                </Box>
-              )
-            } */}
-          </Stack>
-        </Stack>
-      </Box>
+      {/* Tool Detail Sheet */}
+      <Sheet open={Boolean(selectedTool)} onOpenChange={(open) => !open && onCloseEditTool()}>
+        <SheetContent className="w-full sm:max-w-2xl p-0 overflow-y-auto">
+          <AnimatePresence mode="wait">
+            {!!selectedTool?.tool && (
+              <m.div
+                key={selectedTool.tool.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ActionTypeCard
+                  action={selectedTool.tool.action_type}
+                  tool={selectedTool.tool}
+                  onSave={onCloseEditTool}
+                />
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

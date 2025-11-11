@@ -1,13 +1,11 @@
-// BUENO
-import {
-  // CardHeader,
-  Stack,
-} from '@mui/material';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useWatch } from 'react-hook-form';
+import { m, AnimatePresence } from 'framer-motion';
 import Ajv from 'ajv';
 import { truncate } from 'lodash';
 import { useSnackbar } from 'notistack';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useWatch } from 'react-hook-form';
+
+import { cn } from '@lib/utils';
 
 import './styles.css';
 import DynamicFormFieldComponent from './DynamicFormFieldComponent.jsx';
@@ -15,32 +13,24 @@ import DynamicFormFieldHeader from './DynamicFormFieldHeader.jsx';
 import DynamicFormFieldHeaderActions from './DynamicFormFieldHeaderActions.jsx';
 import { checkHasProperties, checkNestedOfProperties } from './utils.js';
 
-// const Loadable = (Component) => (props) => (
-//   <Suspense
-//     fallback={
-//       <Skeleton
-//         variant="rectangular"
-//         width="100%"
-//         height={40}
-//         style={{ borderRadius: 5 }}
-//       />
-//     }
-//   >
-//     <Component {...props} />
-//   </Suspense>
-// );
+// Animation configuration
+const ANIMATION_CONFIG = {
+  collapse: {
+    initial: { height: 0, opacity: 0 },
+    animate: { height: 'auto', opacity: 1 },
+    exit: { height: 0, opacity: 0 },
+    transition: { duration: 0.2, ease: 'easeInOut' },
+  },
+};
 
-// ----------------------------------------------------------------------
-
-// TESTING
-// const CustomDialog = Loadable(lazy(() => import('../../dialogs/CustomDialog.jsx')));
-
+// Helper function to remove required fields from schema
 const removeRequiredFields = (schema) => {
   const newSchema = { ...schema };
   delete newSchema.required;
   return newSchema;
 };
 
+// Helper function to check constant fields
 const checkConstFields = (schema, value) => {
   const properties = schema.properties || {};
   for (const key in properties) {
@@ -51,10 +41,12 @@ const checkConstFields = (schema, value) => {
   return true;
 };
 
+// Helper function to validate value against schemas
 const validateValueAgainstSchemas = (value, schemas) => {
   if (!value) {
     return schemas?.[0] ?? null;
   }
+  
   const ajv = new Ajv({
     allErrors: true,
     strict: false,
@@ -69,6 +61,7 @@ const validateValueAgainstSchemas = (value, schemas) => {
       'x-default-enabled',
     ],
   });
+  
   return schemas.find((schema) => {
     // Check if the schema title matches the value's name
     if (schema.title && value.name && schema.title.toLowerCase() === value.name.toLowerCase()) {
@@ -77,13 +70,11 @@ const validateValueAgainstSchemas = (value, schemas) => {
 
     // If title doesn't match, proceed with const fields check and full validation
     const constsMatch = checkConstFields(schema, value);
-    // console.log("schemas vs value: checkConstFields", constsMatch, value, schema);
     if (constsMatch) {
       const schemaWithoutRequired = removeRequiredFields(schema);
       try {
         const validate = ajv.compile(schemaWithoutRequired);
         const isValid = validate(value);
-        // console.log("schemas vs value: isValid", schemaWithoutRequired, value, isValid);
         if (isValid) {
           return true;
         }
@@ -95,6 +86,7 @@ const validateValueAgainstSchemas = (value, schemas) => {
   });
 };
 
+// Helper function to check if schema has oneOf, allOf, or anyOf
 const hasOf = (schema) => !!(schema.oneOf || schema.allOf || schema.anyOf);
 
 const DynamicFormField = ({
@@ -231,26 +223,6 @@ const DynamicFormField = ({
     }
   }, [ofValue, value]);
 
-  // useEffect(() => {
-  //   if (schema.type === "string" && !!schema.const) {
-  //     onChange(schema.const);
-  //   }
-  // }, [onChange, schema.const, schema.type]);
-
-  // useEffect(() => {
-  //   if ((value === undefined || value === null) && schema) {
-  //     if (schema.default !== undefined) {
-  //       // If schema has a default value, set it
-  //       onChange(schema.default);
-  //     } else if (schema.enum?.length) {
-  //       // If schema has enums, set the first enum as the default value
-  //       onChange(schema.enum[0]);
-  //     } else if (schema.const !== undefined) {
-  //       // If schema has a const value, set it
-  //       onChange(schema.const);
-  //     }
-  //   }
-  // }, [value, schema, onChange]);
 
   useEffect(() => {
     if (
@@ -289,17 +261,11 @@ const DynamicFormField = ({
     }
   }, []);
 
-  // TODO: fix array showing 0 fields after freetext
-
   useEffect(() => {
     const isValidString = !!fieldValue && typeof fieldValue === 'string';
     const isVar = isValidString && fieldValue.startsWith('{{') && fieldValue.endsWith('}}');
     const mustValidateJSON = hasAceWrapper && !isFreeText && isValidString && !isVar;
-    // console.log("@0: isValidString", isValidString);
-    // console.log("@0: hasAceWrapper", hasAceWrapper);
-    // console.log("@0: isFreeText", isFreeText);
-    // console.log("@0: isVar", isVar);
-    // console.log("@0: mustValidateJSON", mustValidateJSON);
+
     if (mustValidateJSON) {
       try {
         onChange(JSON.parse(fieldValue));
@@ -312,25 +278,6 @@ const DynamicFormField = ({
       setIsFreeText(true);
     }
   }, [isFreeText]);
-
-  // useEffect(() => {
-  //   const isValidString = !!fieldValue && typeof fieldValue === "string";
-  //   // console.log("@1: isValidString", isValidString);
-  //   // console.log("@1: hasAceWrapper", hasAceWrapper);
-  //   // console.log("@1: isFreeText", isFreeText);
-  //   if (hasAceWrapper && !!isFreeText && isValidString) {
-  //     const isVar = fieldValue.startsWith("{{") && fieldValue.endsWith("}}");
-  //     // console.log("@1: isVar", isVar);
-  //     try {
-  //       if (isVar) {
-  //         onChange(fieldValue)
-  //       } else {
-  //         onChange(JSON.parse(fieldValue));
-  //       }
-  //     } catch (e) {
-  //     }
-  //   }
-  // }, [isFreeText]);
 
   const canBeCollapsed = useMemo(
     () => hasProperties && fieldType === 'object' && !isFreeText && !schema['x-disable-collapse'],
@@ -363,30 +310,15 @@ const DynamicFormField = ({
     return null;
   }
 
+  const shouldShowBody = 
+    !(!!canBeCollapsed && isCollapsed) && 
+    !schema['x-hide-body'] && 
+    !ofOption?.['x-hide-body'];
+
   return (
-    <div
-      key={fieldKey}
-      className="w-full py-1 flex flex-col gap-2"
-    >
-      {!!schema['x-disable-header'] ? null : (
-        <Stack
-          direction="row"
-          width="100%"
-          alignItems="center"
-          // title={
-          //   (schema['x-component'] && !schema['x-show-header'])
-          //   ? null
-          //   : (
-          //     <DynamicFormFieldHeader
-          //       fieldKey={fieldKey}
-          //       schema={schema}
-          //       sneakPeek={canBeCollapsed && isCollapsed && truncate(JSON.stringify(fieldValue), { length: 60 })}
-          //       openCollapsed={toggleCollapse}
-          //       { ...headerProps }
-          //     />
-          //   )
-          // }
-        >
+    <div key={fieldKey} className="w-full py-1 flex flex-col gap-2">
+      {!schema['x-disable-header'] && (
+        <div className="flex items-center gap-2 w-full">
           <DynamicFormFieldHeader
             fieldKey={fieldKey}
             schema={schema}
@@ -395,18 +327,9 @@ const DynamicFormField = ({
             canBeCollapsed={!!canBeCollapsed}
             toggleCollapse={toggleCollapse}
             isCollapsed={!!canBeCollapsed && isCollapsed}
-            // expanded={expanded}
-            // sneakPeek={isCollapsed && !expanded && truncate(JSON.stringify(fieldValue), { length: 60 })}
-            // canBeCollapsed={!!canBeCollapsed}
-            // toggleCollapse={!expanded ? toggleCollapse : null}
-            // isCollapsed={!!canBeCollapsed && isCollapsed && !expanded}
             {...headerProps}
           />
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-          >
+          <div className="flex items-center gap-2">
             <DynamicFormFieldHeaderActions
               hasOfProperties={hasOfProperties}
               ofValue={ofValue}
@@ -415,25 +338,23 @@ const DynamicFormField = ({
               isFreeText={isFreeText}
               showFreeTextOption={showFreeTextOption}
               setIsFreeText={setIsFreeText}
-              // expanded={expanded}
-              // setExpanded={setExpanded}
               hasAceWrapper={hasAceWrapper}
               disableFullScreen={schema['x-disable-full-screen']}
             />
-          </Stack>
-        </Stack>
+          </div>
+        </div>
       )}
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={0.5}
-        width="100%"
-      >
-        {
-          // (!!canBeCollapsed && isCollapsed && !expanded) ? null : (
-          (!!canBeCollapsed && isCollapsed) ||
-          schema['x-hide-body'] ||
-          ofOption?.['x-hide-body'] ? null : (
+      
+      <AnimatePresence mode="wait">
+        {shouldShowBody && (
+          <m.div
+            key="field-body"
+            initial={ANIMATION_CONFIG.collapse.initial}
+            animate={ANIMATION_CONFIG.collapse.animate}
+            exit={ANIMATION_CONFIG.collapse.exit}
+            transition={ANIMATION_CONFIG.collapse.transition}
+            className="w-full"
+          >
               <DynamicFormFieldComponent
                 fieldKey={fieldKey}
                 schema={ofOption ?? schema}
@@ -446,32 +367,15 @@ const DynamicFormField = ({
                 hasOfProperties={hasOfProperties}
                 ofOption={ofOption}
                 enableLexical={enableLexical}
-                // expanded={expanded}
                 isInMappings={isInMappings}
                 relationship={relationship}
                 sortKey={sortKey}
               />
-            )
-        }
-      </Stack>
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-
-  // return (
-  //   <>
-  //     {
-  //       !!hasAceWrapper && (
-  //         <CustomDialog
-  //           dialogOpen={expanded}
-  //           onClose={() => setExpanded(false)}
-  //         >
-  //           { renderCard }
-  //         </CustomDialog>
-  //       )
-  //     }
-  //     { !expanded && renderCard }
-  //   </>
-  // );
 };
 
 export default memo(DynamicFormField);

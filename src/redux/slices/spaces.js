@@ -264,10 +264,12 @@ const slice = createSlice({
       else if (state.current?.parent_id === space.id)
         state.breadcrumbs[state.breadcrumbs.length - 1] = space.id;
       else state.breadcrumbs.push(space.id);
-      space.children.items?.forEach((sp) => {
-        const childId = sp.id;
-        if (!(childId in state.spaces)) state.spaces[childId] = sp;
-      });
+      if (!!space.children?.items) {
+        space.children.items?.forEach((sp) => {
+            const childId = sp.id;
+            if (!(childId in state.spaces)) state.spaces[childId] = sp;
+          });
+      }
       if (!(space.id in state.spaces)) state.spaces[space.id] = space;
       if (!!state.current) state.spaces[state.current.id] = state.current;
       state.current = space;
@@ -379,30 +381,30 @@ const SPACE_GQ = {
     'created_by',
   ],
   '@filter': { is_deleted: { _eq: 'false' } },
-  links: {
-    '@fields': ['@base@exc:date_creation', 'position'],
-    reference: {
-      '@fields': ['@base@exc:date_creation', 'name'],
-      '@filter': { is_deleted: { _eq: 'false' } },
-    },
-  },
-  children: {
-    '@fields': [
-      '@base@exc:date_creation',
-      'name',
-      'position',
-      '$count:children,links,knowledge,widgets',
-    ],
-  },
-  creator: {
-    '@fields': '@all',
-    user: {
-      '@fields': '@all@exc:meta_data',
-    },
-    agent: {
-      '@fields': '@all',
-    },
-  },
+  // links: {
+  //   '@fields': ['@base@exc:date_creation', 'position'],
+  //   reference: {
+  //     '@fields': ['@base@exc:date_creation', 'name'],
+  //     '@filter': { is_deleted: { _eq: 'false' } },
+  //   },
+  // },
+  // children: {
+  //   '@fields': [
+  //     '@base@exc:date_creation',
+  //     'name',
+  //     'position',
+  //     '$count:children,links,knowledge,widgets',
+  //   ],
+  // },
+  // creator: {
+  //   '@fields': '@all',
+  //   user: {
+  //     '@fields': '@all@exc:meta_data',
+  //   },
+  //   agent: {
+  //     '@fields': '@all',
+  //   },
+  // },
   // "widgets": {
   //   "@fields": ["id", "position"],
   //   "widget": {
@@ -436,27 +438,27 @@ const SPACE_GQ = {
       },
     },
   },
-  resources: {
-    '@fields': 'id',
-    resource: {
-      '@fields': '@all@exc:resource_type_id,connection_id',
-      resource_type: {
-        '@fields': ['id', 'name', 'description', 'details'],
-      },
-    },
-  },
-  knowledge: {
-    '@fields': ['id', 'position'],
-    knowledge: {
-      '@fields': '@base',
-      file: {
-        '@fields': '@base',
-        chunks: {
-          '@fields': '@base@exc:date_creation',
-        },
-      },
-    },
-  },
+  // resources: {
+  //   '@fields': 'id',
+  //   resource: {
+  //     '@fields': '@all@exc:resource_type_id,connection_id',
+  //     resource_type: {
+  //       '@fields': ['id', 'name', 'description', 'details'],
+  //     },
+  //   },
+  // },
+  // knowledge: {
+  //   '@fields': ['id', 'position'],
+  //   knowledge: {
+  //     '@fields': '@base',
+  //     file: {
+  //       '@fields': '@base',
+  //       chunks: {
+  //         '@fields': '@base@exc:date_creation',
+  //       },
+  //     },
+  //   },
+  // },
 };
 
 // ----------------------------------------------------------------------
@@ -736,24 +738,6 @@ export const createWidget =
     }
   };
 
-export const addExistingWidgetToSpace =
-  ({ widgetId }) =>
-  async (dispatch, getState) => {
-    const { current } = getState().spaces;
-    if (!widgetId) return Promise.reject('cannot add unexisting widget');
-    if (!current || current.id === 'root')
-      return Promise.reject('cannot add widget to invalid space');
-    try {
-      const response = await optimai.post(`/space/${current.id}/widget/${widgetId}`);
-      const { layout } = response.data;
-      dispatch(slice.actions.addCurrentWidget(layout));
-      return Promise.resolve('success');
-    } catch (e) {
-      console.error(`error: could add widget: ${e}`);
-      return Promise.reject(e);
-    }
-  };
-
 export const deleteWidgetFromSpace = (widgetId) => async (dispatch, getState) => {
   const { current } = getState().spaces;
   if (!widgetId) return Promise.reject('cannot delete invalid widget from space');
@@ -764,40 +748,5 @@ export const deleteWidgetFromSpace = (widgetId) => async (dispatch, getState) =>
   } catch (e) {
     console.error(`error: could not delete widget from space: ${e}`);
     return Promise.reject(e);
-  }
-};
-
-export const deleteWidget =
-  ({ widgetId }) =>
-  async (dispatch, getState) => {
-    if (!widgetId) return Promise.reject('cannot delete invalid space');
-    try {
-      await optimai.delete(`/widget/${widgetId}`);
-      return Promise.resolve(true);
-    } catch (e) {
-      console.error(`error: could not delete widget: ${e}`);
-      return Promise.reject(e);
-    }
-  };
-
-export const createSpaceDomain = (data) => async (dispatch, getState) => {
-  const { id: accountId } = getState().general.account;
-  try {
-    const res = await optimai.post(`/odysseus/${accountId}/token/create`);
-    const { oatk } = res.data;
-
-    const response = await optimai_root.post('/odysseus/wp/space/domain', data, {
-      headers: {
-        Authorization: `Bearer ${oatk}`,
-      },
-    });
-
-    console.log('Oddysseus response', response);
-    return Promise.resolve(response.data);
-  } catch (e) {
-    console.error(`error: could not scrape page: ${e}`);
-    return Promise.reject(e);
-  } finally {
-    dispatch(slice.actions.stopLoading());
   }
 };

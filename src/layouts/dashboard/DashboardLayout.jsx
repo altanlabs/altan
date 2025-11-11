@@ -6,20 +6,17 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Header from './header';
 import FloatingNavigation from './header/FloatingNavigation';
 import Main from './Main.jsx';
-import useBrowserNotifications from '../../hooks/useBrowserNotifications';
 import { useCreditBalancePolling } from '../../hooks/useCreditBalancePolling';
 import useResponsive from '../../hooks/useResponsive';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
 import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
 import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
-import { getFlows } from '../../redux/slices/flows.js';
 import {
   getAccount,
   getAccountAttribute,
   getAccountMembers,
   getRoles,
 } from '../../redux/slices/general';
-import { fetchNotifications } from '../../redux/slices/notifications';
 import { dispatch, useSelector } from '../../redux/store';
 import { optimai } from '../../utils/axios.js';
 
@@ -41,9 +38,6 @@ const DashboardLayout = ({ children }) => {
   const accountLoading = useSelector(selectAccountLoading);
   const accountId = useSelector(selectAccountId);
   const user = useSelector((state) => state.general.user);
-
-  // Enable browser notifications for this user
-  useBrowserNotifications();
 
   // Poll credit balance every 30 seconds
   useCreditBalancePolling(true);
@@ -91,8 +85,6 @@ const DashboardLayout = ({ children }) => {
         [
           ['subscriptions'],
         ].forEach((keys) => dispatch(getAccountAttribute(accountId, keys)));
-        dispatch(fetchNotifications());
-        dispatch(getFlows(accountId));
       });
     }
   }, [accountId, accountInitialized, accountLoading]);

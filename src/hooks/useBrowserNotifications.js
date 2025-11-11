@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
+
 import {
   isBrowserNotificationSupported,
   getNotificationPermission,
@@ -37,17 +38,17 @@ export default function useBrowserNotifications() {
 
     // Get previous notification IDs
     const prevIds = new Set(prevNotificationsRef.current.map((n) => n.id));
-    
+
     // Find new notifications (unopened ones that weren't in previous state)
     const newNotifications = notifications.filter(
       (notification) =>
-        notification.status === 'unopened' && !prevIds.has(notification.id)
+        notification.status === 'unopened' && !prevIds.has(notification.id),
     );
 
     // Send browser notifications for each new notification
     newNotifications.forEach((notificationItem) => {
       const category = notificationItem.notification.meta_data?.data?.category;
-      
+
       // Create click handler based on notification type
       const handleNotificationClick = () => {
         switch (category) {
@@ -57,18 +58,18 @@ export default function useBrowserNotifications() {
               history.push(`/room/${room_id}?thread=${id}`);
             }
             break;
-          
+
           case 'Assigned':
             if (notificationItem.notification.meta_data?.data?.task) {
               const { project_id, id } = notificationItem.notification.meta_data.data.task;
               history.push(`/project/${project_id}/tasks/${id}`);
             }
             break;
-          
+
           case 'Invitation':
             history.push('/dashboard/workspaces');
             break;
-          
+
           case 'task_completed':
             if (notificationItem.notification.meta_data?.data?.task) {
               const { room_id, mainthread_id } = notificationItem.notification.meta_data.data.task;
@@ -83,7 +84,7 @@ export default function useBrowserNotifications() {
               window.focus();
             }
             break;
-          
+
           default:
             // Focus the window by default
             window.focus();
@@ -116,4 +117,3 @@ export default function useBrowserNotifications() {
     isEnabled: areBrowserNotificationsEnabled(),
   };
 }
-

@@ -27,7 +27,6 @@ import {
   UsageDatabasePage,
   TestNotificationsPage,
   IntegrationCreator,
-  MemberPage,
   MediaPage,
   UserProfilePage,
   UserAccountPage,
@@ -744,19 +743,6 @@ const Router = () => {
             <DashboardDataProvider>
               <NewLayout>
                 <AccountMembers />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/members/:memberId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <MemberPage />
               </NewLayout>
             </DashboardDataProvider>
           </AuthGuard>
