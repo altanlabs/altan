@@ -1,6 +1,7 @@
 import {
   useMediaQuery,
   useTheme,
+  DialogContent,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -21,7 +22,6 @@ import MobileViewToggle from '../mobile/MobileViewToggle.jsx';
 import AgentSelectionChip from './components/AgentSelectionChip.jsx';
 import AttachmentMenu from './components/AttachmentMenu.jsx';
 import DragOverlay from './components/DragOverlay.jsx';
-import ModeSelectionChip from './components/ModeSelectionChip.jsx';
 import VoiceCallButton from './components/VoiceCallButton.jsx';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useVoiceConversationHandler } from './hooks/useVoiceConversation';
@@ -483,50 +483,19 @@ const AttachmentHandler = ({
         <div className="flex items-center justify-between w-full">
           {/* LEFT: Attach button with menu */}
           <div className="flex items-center gap-2">
-            <Tooltip title={operateMode ? 'Switch to Build Mode' : 'Switch to Operate Mode'} placement="top" arrow>
-              <IconButton
-                size="small"
-                onClick={handleToggleMode}
-                sx={{
-                  backgroundColor: operateMode ? 'rgba(168, 85, 247, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                  '&:hover': {
-                    backgroundColor: operateMode ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                  },
-                }}
-              >
-                <Iconify
-                  icon={operateMode ? 'mdi:hammer-wrench' : 'mdi:play-circle-outline'}
-                  width={20}
-                  height={20}
-                />
-              </IconButton>
-            </Tooltip>
-
             <AttachmentMenu
               menuItems={displayMenuItems}
               onFileInputClick={handleFileInputClick}
             />
 
-            {!isMobile && !operateMode && (
-              <>
-                {show_mode_selector && (
-                  <ModeSelectionChip
-                    selectedMode={selectedMode}
-                    onModeSelect={handleModeSelect}
-                    isVoiceActive={isVoiceActive}
-                  />
-                )}
-
-                {show_mode_selector && selectedMode === 'instant' && (
-                  <AgentSelectionChip
-                    agents={agents}
-                    selectedAgent={selectedAgent}
-                    onAgentSelect={handleAgentSelect}
-                    onAgentClear={handleAgentClear}
-                    isVoiceActive={isVoiceActive}
-                  />
-                )}
-              </>
+            {!isMobile && !operateMode && show_mode_selector && (
+              <AgentSelectionChip
+                agents={agents}
+                selectedAgent={selectedAgent}
+                onAgentSelect={handleAgentSelect}
+                onAgentClear={handleAgentClear}
+                isVoiceActive={isVoiceActive}
+              />
             )}
           </div>
 
@@ -545,6 +514,32 @@ const AttachmentHandler = ({
 
           {/* RIGHT: Voice/Send button and Speech Recognition */}
           <div className="flex items-center gap-2">
+            <Tooltip
+              title={operateMode ? 'Switch to Build Mode' : 'Switch to Operate Mode'}
+              placement="top"
+              arrow
+            >
+              <IconButton
+                size="small"
+                onClick={handleToggleMode}
+                sx={{
+                  backgroundColor: operateMode
+                    ? 'rgba(168, 85, 247, 0.1)'
+                    : 'rgba(59, 130, 246, 0.1)',
+                  '&:hover': {
+                    backgroundColor: operateMode
+                      ? 'rgba(168, 85, 247, 0.2)'
+                      : 'rgba(59, 130, 246, 0.2)',
+                  },
+                }}
+              >
+                <Iconify
+                  icon={operateMode ? 'mdi:hammer-wrench' : 'mdi:play-circle-outline'}
+                  width={20}
+                  height={20}
+                />
+              </IconButton>
+            </Tooltip>
             {/* Main Send/Voice Button */}
             <VoiceCallButton
               isVoiceActive={isVoiceActive}

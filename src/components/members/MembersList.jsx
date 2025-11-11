@@ -1,17 +1,7 @@
-import {
-  Box,
-  Typography,
-  Stack,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import { useState, memo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
+import { cn } from '../../lib/utils.ts';
 import { selectMembers, selectMe, patchMember } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store';
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
@@ -19,6 +9,18 @@ import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 import MemberInviteDialog from '../room/drawer/MemberInviteDialog.jsx';
 import { getMemberDetails } from '../room/utils';
+import { Button } from '../ui/button.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from '../ui/dropdown-menu';
+import { Input } from '../ui/input';
 
 const MembersList = ({
   maxHeight = 400,
@@ -32,25 +34,44 @@ const MembersList = ({
   const me = useSelector(selectMe);
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const membersList = Object.values(members?.byId || {}).filter(
     (member) => member && (!member.is_kicked || me?.role === 'admin'),
   );
+
+  // Filter members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return membersList;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return membersList.filter((member) => {
+      const memberDetails = getMemberDetails(member, me);
+      return (
+        memberDetails.name?.toLowerCase().includes(query) ||
+        member.role?.toLowerCase().includes(query) ||
+        memberDetails.status?.toLowerCase().includes(query)
+      );
+    });
+  }, [membersList, searchQuery, me]);
 
   const handleMemberMenuClick = (event, member) => {
     event.preventDefault();
     event.stopPropagation();
 
     setSelectedMember(member);
-    setContextMenu({
-      mouseX: event.clientX - 2,
-      mouseY: event.clientY - 4,
-    });
+    setMenuOpen(true);
   };
 
   const handleCloseContextMenu = () => {
-    setContextMenu(null);
-    setSelectedMember(null);
+    setMenuOpen(false);
+    setTimeout(() => {
+      setContextMenu(null);
+      setSelectedMember(null);
+    }, 150);
   };
 
   const handleMemberAction = async (action, actionData = {}) => {
@@ -171,46 +192,61 @@ const MembersList = ({
   };
 
   return (
-    <Stack spacing={compact ? 1 : 2}>
+    <div className={cn('flex flex-col', compact ? 'gap-1' : 'gap-2')}>
       {showTitle && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: compact ? 1 : 2,
-          }}
+        <div
+          className={cn(
+            'flex justify-between items-center',
+            compact ? 'mb-1' : 'mb-2',
+          )}
         >
-          <Typography
-            variant={compact ? 'subtitle1' : 'h6'}
-            sx={{ fontSize: compact ? '0.875rem' : '1rem', fontWeight: 600 }}
+          <h3
+            className={cn(
+              'font-semibold',
+              compact ? 'text-sm' : 'text-base',
+            )}
           >
             Members ({membersList.length})
-          </Typography>
+          </h3>
           {showInviteButton && <MemberInviteDialog />}
-        </Box>
+        </div>
       )}
 
-      <Box sx={{ maxHeight, overflow: 'auto' }}>
-        {membersList.length > 0 ? (
-          <Stack spacing={compact ? 0.25 : 0.5}>
-            {membersList.map((member) => {
+      {/* Search bar */}
+      <div className="relative mb-2">
+        <Iconify
+          icon="solar:magnifer-linear"
+          width={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          type="text"
+          placeholder="Search members..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 h-9"
+        />
+      </div>
+
+      <div
+        className="overflow-y-auto"
+        style={{ maxHeight }}
+      >
+        {filteredMembers.length > 0 ? (
+          <div className={cn('flex flex-col', compact ? 'gap-0.5' : 'gap-1')}>
+            {filteredMembers.map((member) => {
               const memberDetails = getMemberDetails(member, me);
 
               return (
-                <Box
+                <div
                   key={member.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: compact ? 0.5 : 1,
-                    p: compact ? 0.25 : 0.5,
-                    borderRadius: 1,
-                    cursor: onMemberSelect ? 'pointer' : 'default',
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                    },
-                  }}
+                  className={cn(
+                    'flex items-center rounded-lg transition-colors',
+                    compact ? 'gap-1 p-0.5' : 'gap-2 p-1',
+                    onMemberSelect
+                      ? 'cursor-pointer hover:bg-accent'
+                      : 'hover:bg-accent/50',
+                  )}
                   onClick={() => handleMemberClick(member)}
                 >
                   {member.member?.member_type === 'agent' && member.member?.agent ? (
@@ -231,183 +267,169 @@ const MembersList = ({
                     </CustomAvatar>
                   )}
 
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant={compact ? 'body2' : 'subtitle2'}
-                      noWrap
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={cn(
+                        'font-medium truncate',
+                        compact ? 'text-sm' : 'text-sm',
+                      )}
                     >
                       {memberDetails.name}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: compact ? 6 : 8,
-                          height: compact ? 6 : 8,
-                          borderRadius: '50%',
-                          bgcolor: memberDetails.status === 'online' ? 'success.main' : 'grey.400',
-                        }}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          'rounded-full',
+                          compact ? 'w-1.5 h-1.5' : 'w-2 h-2',
+                          memberDetails.status === 'online'
+                            ? 'bg-green-500'
+                            : 'bg-gray-400',
+                        )}
                       />
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontSize: compact ? '0.75rem' : '0.875rem' }}
+                      <p
+                        className={cn(
+                          'text-muted-foreground',
+                          compact ? 'text-xs' : 'text-xs',
+                        )}
                       >
                         {memberDetails.status || 'offline'} • {memberDetails.role || 'member'}
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </p>
+                    </div>
+                  </div>
 
-                  <IconButton
-                    size="small"
-                    onClick={(event) => handleMemberMenuClick(event, member)}
-                    sx={{
-                      opacity: 0.7,
-                      '&:hover': { opacity: 1 },
-                    }}
-                  >
-                    <Iconify
-                      icon="eva:more-vertical-fill"
-                      width={compact ? 16 : 20}
-                    />
-                  </IconButton>
-                </Box>
+                  <DropdownMenu open={menuOpen && selectedMember?.id === member.id} onOpenChange={(open) => {
+                    if (!open) handleCloseContextMenu();
+                  }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'opacity-70 hover:opacity-100',
+                        compact ? 'h-6 w-6' : 'h-8 w-8',
+                      )}
+                      onClick={(event) => handleMemberMenuClick(event, member)}
+                    >
+                      <Iconify
+                        icon="eva:more-vertical-fill"
+                        width={compact ? 16 : 20}
+                      />
+                    </Button>
+
+                    <DropdownMenuContent
+                      className="w-56"
+                      align="end"
+                      side="bottom"
+                    >
+                      {/* Member Info Header */}
+                      {selectedMember && (
+                        <>
+                          <div className="px-2 py-2">
+                            <p className="font-semibold text-sm">
+                              {getMemberDetails(selectedMember, me).name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Current Role:{' '}
+                              {selectedMember.role
+                                ? selectedMember.role.charAt(0).toUpperCase() +
+                                  selectedMember.role.slice(1)
+                                : 'Member'}
+                            </p>
+                            {selectedMember.member?.member_type === 'agent' &&
+                              selectedMember.agent_interaction && (
+                                <p className="text-xs text-muted-foreground">
+                                  Agent Mode:{' '}
+                                  {selectedMember.agent_interaction === 'mention_only'
+                                    ? 'Mention Only'
+                                    : 'Always Respond'}
+                                </p>
+                              )}
+                          </div>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+
+                      {getMenuItems().map((item, index) => {
+                        if (item.type === 'divider') {
+                          return <DropdownMenuSeparator key={index} />;
+                        }
+
+                        if (item.type === 'submenu') {
+                          return (
+                            <DropdownMenuSub key={index}>
+                              <DropdownMenuSubTrigger>
+                                <Iconify
+                                  icon={item.icon}
+                                  width={16}
+                                  className="mr-2"
+                                />
+                                <span>{item.label}</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                {item.children.map((child, childIndex) => {
+                                  const isCurrentRole = child.isCurrentRole || false;
+                                  const isCurrentAgentMode =
+                                    item.label === 'Agent Interaction' &&
+                                    selectedMember?.agent_interaction ===
+                                      child.actionData?.agent_interaction;
+
+                                  return (
+                                    <DropdownMenuItem
+                                      key={childIndex}
+                                      onClick={() =>
+                                        handleMemberAction(child.action, child.actionData)
+                                      }
+                                      className={cn(
+                                        isCurrentRole || isCurrentAgentMode
+                                          ? 'bg-accent font-semibold'
+                                          : '',
+                                      )}
+                                    >
+                                      <span className="flex-1">{child.label}</span>
+                                      {(isCurrentRole || isCurrentAgentMode) && (
+                                        <Iconify
+                                          icon="eva:checkmark-fill"
+                                          width={16}
+                                          className="text-primary"
+                                        />
+                                      )}
+                                    </DropdownMenuItem>
+                                  );
+                                })}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                          );
+                        }
+
+                        return (
+                          <DropdownMenuItem
+                            key={index}
+                            onClick={() => handleMemberAction(item.action, item.actionData)}
+                            disabled={item.disabled}
+                          >
+                            <Iconify
+                              icon={item.icon}
+                              width={18}
+                              className="mr-2"
+                            />
+                            <span>{item.label}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               );
             })}
-          </Stack>
+          </div>
         ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center', py: 4 }}
-          >
-            {emptyMessage}
-          </Typography>
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">
+              {searchQuery ? 'No members match your search.' : emptyMessage}
+            </p>
+          </div>
         )}
-      </Box>
-
-      {/* Custom Context Menu */}
-      <Menu
-        open={Boolean(contextMenu)}
-        onClose={handleCloseContextMenu}
-        anchorReference="anchorPosition"
-        anchorPosition={
-          contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
-        }
-        sx={{
-          '& .MuiPaper-root': {
-            minWidth: 200,
-            boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 12px',
-            border: '1px solid rgba(0, 0, 0, 0.08)',
-          },
-        }}
-      >
-        {/* Member Info Header */}
-        {selectedMember && (
-          <>
-            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600 }}
-              >
-                {getMemberDetails(selectedMember, me).name}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Current Role:{' '}
-                {selectedMember.role
-                  ? selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1)
-                  : 'Member'}
-              </Typography>
-              {selectedMember.member?.member_type === 'agent' &&
-                selectedMember.agent_interaction && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block' }}
-                  >
-                    Agent Mode:{' '}
-                    {selectedMember.agent_interaction === 'mention_only'
-                      ? 'Mention Only'
-                      : 'Always Respond'}
-                  </Typography>
-                )}
-            </Box>
-            <Divider />
-          </>
-        )}
-
-        {getMenuItems().map((item, index) => {
-          if (item.type === 'divider') {
-            return <Divider key={index} />;
-          }
-
-          if (item.type === 'submenu') {
-            // For now, we'll show submenu items as individual items
-            // In a more complex implementation, you might want to use nested menus
-            return item.children.map((child, childIndex) => {
-              const isCurrentRole = child.isCurrentRole || false;
-              const isCurrentAgentMode =
-                item.label === 'Agent Interaction' &&
-                selectedMember?.agent_interaction === child.actionData?.agent_interaction;
-
-              return (
-                <MenuItem
-                  key={`${index}-${childIndex}`}
-                  onClick={() => handleMemberAction(child.action, child.actionData)}
-                  sx={{
-                    pl: 4,
-                    bgcolor: isCurrentRole || isCurrentAgentMode ? 'action.selected' : 'inherit',
-                    '&:hover': {
-                      bgcolor:
-                        isCurrentRole || isCurrentAgentMode ? 'action.selected' : 'action.hover',
-                    },
-                  }}
-                >
-                  <ListItemText
-                    primary={child.label}
-                    primaryTypographyProps={{
-                      variant: 'body2',
-                      sx: {
-                        fontWeight: isCurrentRole || isCurrentAgentMode ? 600 : 400,
-                        color: isCurrentRole || isCurrentAgentMode ? 'primary.main' : 'inherit',
-                      },
-                    }}
-                  />
-                  {(isCurrentRole || isCurrentAgentMode) && (
-                    <Iconify
-                      icon="eva:checkmark-fill"
-                      width={16}
-                      sx={{ color: 'primary.main', ml: 1 }}
-                    />
-                  )}
-                </MenuItem>
-              );
-            });
-          }
-
-          return (
-            <MenuItem
-              key={index}
-              onClick={() => handleMemberAction(item.action, item.actionData)}
-              disabled={item.disabled}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <Iconify
-                  icon={item.icon}
-                  width={20}
-                />
-              </ListItemIcon>
-              <ListItemText
-                primary={item.label}
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
-            </MenuItem>
-          );
-        })}
-      </Menu>
-    </Stack>
+      </div>
+    </div>
   );
 };
 

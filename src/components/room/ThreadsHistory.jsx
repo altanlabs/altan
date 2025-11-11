@@ -8,6 +8,7 @@ import {
   selectMainThread,
   selectRoomThreadMain,
   selectThreadsById,
+  selectTemporaryThread,
 } from '../../redux/slices/room';
 import { useSelector } from '../../redux/store.js';
 import Iconify from '../iconify/Iconify.jsx';
@@ -47,18 +48,29 @@ const ThreadsHistory = ({
   renderCredits = false,
   renderFeedback = false,
   show_mode_selector = false,
+  ephemeral_mode = false,
 }) => {
   const containerRef = useRef(null);
   const mainThread = useSelector(selectMainThread);
   const fullHistory = useSelector(selectRoomHistory);
   const main = useSelector(selectRoomThreadMain);
+  const temporaryThread = useSelector(selectTemporaryThread);
 
   // Get the current thread ID
-  const currentThreadId = main.current || mainThread;
+  // In ephemeral mode, use temporary thread if available, otherwise use main.current
+  const currentThreadId = ephemeral_mode && temporaryThread
+    ? temporaryThread.id
+    : (main.current || mainThread);
+
+  // In ephemeral mode, show thread if we have temp thread OR a current thread
+  // Otherwise show thread if we have history
+  const shouldShowThread = ephemeral_mode
+    ? (!!temporaryThread || !!main.current)
+    : fullHistory?.length > 0;
 
   return (
     <div className="relative h-full w-full">
-      {!fullHistory?.length ? (
+      {!shouldShowThread ? (
         <Stack
           direction="row"
           alignItems="center"
@@ -93,6 +105,7 @@ const ThreadsHistory = ({
             renderCredits={renderCredits}
             renderFeedback={renderFeedback}
             show_mode_selector={show_mode_selector}
+            ephemeral_mode={ephemeral_mode}
           />
         </div>
       )}

@@ -246,9 +246,6 @@ export default function ProjectPage() {
     interfaceId ? selectSortedCommits(state, interfaceId) : []
   );
 
-  console.log('interfaceCommits', interfaceCommits);
-  // Check if current component is an interface with no commits
-  // Only return true if we have confirmed the interface exists but has no commits
   const isInterfaceWithNoCommits = useMemo(() => {
     if (!interfaceId) return false;
     // Don't collapse preview while altaner is still loading (no room yet)
@@ -258,7 +255,11 @@ export default function ProjectPage() {
     // This prevents showing an empty preview while data loads
     if (!interfaceData) return true;
     // Once loaded, only show full-screen chat if interface has no commits with successful build
-    return !interfaceCommits || interfaceCommits.length === 0 || !interfaceCommits.some(commit => commit.build_status === 'successful');
+    return (
+      !interfaceCommits ||
+      interfaceCommits.length === 0 ||
+      !interfaceCommits.some((commit) => commit.build_status === 'success')
+    );
   }, [interfaceId, interfaceData, interfaceCommits, altaner]);
 
   // Fetch interface data if we're viewing an interface component
@@ -542,7 +543,7 @@ export default function ProjectPage() {
               currentItemId={itemId}
               onItemSelect={handleItemSelect}
               show_mode_selector={!isOperateRoute}
-              />
+            />
           </div>
         </div>
       </div>
@@ -613,12 +614,13 @@ export default function ProjectPage() {
                   settings={!isOperateRoute}
                   tabs={!isOperateRoute}
                   show_mode_selector={!isOperateRoute}
+                  ephemeral_mode={isOperateRoute}
                 />
               </Box>
             </Panel>
 
             {/* Resize Handle - always render to avoid PanelGroup errors, but hide when not needed or in operate mode */}
-            <PanelResizeHandle 
+            <PanelResizeHandle
               className={`relative w-0.5 group ${displayMode === 'both' && !shouldCollapsePreview && !operateMode ? 'cursor-ew-resize' : 'pointer-events-none opacity-0'}`}
             >
               {displayMode === 'both' && !shouldCollapsePreview && !operateMode && (
@@ -640,13 +642,16 @@ export default function ProjectPage() {
               collapsedSize={0}
               className="overflow-auto min-w-0"
             >
-              <Box 
+              <Box
                 sx={{ height: '100%', position: 'relative' }}
                 data-tour={`component-preview-${currentComponent?.type || 'default'}`}
               >
                 {isPlansRoute ? (
                   planId ? (
-                    <Plan planId={planId} altanerId={altanerId} />
+                    <Plan
+                      planId={planId}
+                      altanerId={altanerId}
+                    />
                   ) : (
                     <PlansList roomId={altaner?.room_id} />
                   )
