@@ -133,6 +133,9 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
               github_url: githubData.url,
               branch: githubData.branch || 'main',
             }),
+            ...(githubData?.token && {
+              github_token: githubData.token,
+            }),
             // Include template_id if provided
             ...(templateData?.id && {
               template_id: templateData.id,
