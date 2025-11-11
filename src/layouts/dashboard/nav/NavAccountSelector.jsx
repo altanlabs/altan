@@ -14,8 +14,8 @@ import React, { useCallback, useState, memo } from 'react';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { CustomAvatar } from '../../../components/custom-avatar';
 import Iconify from '../../../components/iconify/Iconify';
-import { selectAccounts } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { selectAccounts, clearAccountState } from '../../../redux/slices/general';
+import { useSelector, dispatch } from '../../../redux/store';
 // ----------------------------------------------------------------------
 
 const NavAccountSelector = ({ selected, setSelected, disabled = false }) => {
@@ -47,6 +47,8 @@ const NavAccountSelector = ({ selected, setSelected, disabled = false }) => {
       if (!!id && selected?.id !== id && accountsLength) {
         const acc = accounts[id];
         if (!!acc) {
+          // Clear account state before switching
+          dispatch(clearAccountState());
           setSelected(acc);
         }
       }

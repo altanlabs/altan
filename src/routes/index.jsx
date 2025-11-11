@@ -21,11 +21,10 @@ import {
   ProjectPageMobileTest,
   BasesPage,
   ExecutionsPage,
-  DashboardPage,
+  // DashboardPage,
   NewDashboardPage,
   UsagePage,
   UsageDatabasePage,
-  TestNotificationsPage,
   IntegrationCreator,
   MediaPage,
   UserProfilePage,
@@ -77,7 +76,7 @@ import PageTracker from '../components/analytics/PageTracker.jsx';
 import ScrollToTop from '../components/scroll-to-top/ScrollToTop.js';
 import TrackingParamsCapture from '../components/tracking/TrackingParamsCapture.jsx';
 import CompactLayout from '../layouts/compact';
-import DashboardLayout from '../layouts/dashboard';
+// import DashboardLayout from '../layouts/dashboard';
 import NewLayout from '../layouts/dashboard/new/NewLayout.jsx';
 import ProjectLayout from '../layouts/dashboard/ProjectLayout.jsx';
 import SuperAdminLayout from '../layouts/superadmin/SuperAdminLayout.jsx';
@@ -907,20 +906,6 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
-        {/* Test Notifications Route */}
-        <Route
-          path="/test-notifications"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <TestNotificationsPage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
         {/* Marketplace Routes */}
         <Route
           path="/marketplace"
@@ -1220,7 +1205,7 @@ const Router = () => {
         </Route>
 
         {/* Legacy Dashboard - Deprecated */}
-        <Route
+        {/* <Route
           path="/legacy"
           exact
         >
@@ -1229,9 +1214,9 @@ const Router = () => {
               <DashboardPage />
             </DashboardLayout>
           </AuthGuard>
-        </Route>
+        </Route> */}
 
-        <Route
+        {/* <Route
           path="/legacy/:mode"
           exact
         >
@@ -1240,7 +1225,7 @@ const Router = () => {
               <DashboardPage />
             </DashboardLayout>
           </AuthGuard>
-        </Route>
+        </Route> */}
 
         {/* Error Pages */}
         <Route
