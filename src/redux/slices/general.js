@@ -2,6 +2,7 @@ import { createSelector, createSlice } from '@reduxjs/toolkit';
 // utils
 import { batch } from 'react-redux';
 
+import { clearAgentsState } from './agents';
 import { clearAltanerState, setAltanersList, fetchAltanersList } from './altaners';
 import { clearConnectionsState } from './connections';
 import { clearFlowState } from './flows';
@@ -2233,6 +2234,7 @@ export const createRoom = (data) => async (dispatch, getState) => {
 export const clearAccountState = () => async (dispatch) =>
   batch(() => {
     dispatch(clearGeneralState());
+    dispatch(clearAgentsState());
     dispatch(clearConnectionsState());
     dispatch(clearMediaState());
     dispatch(clearFlowState());

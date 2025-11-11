@@ -106,6 +106,10 @@ const slice = createSlice({
     deleteAgent(state, action) {
       state.agents = state.agents.filter((agent) => agent.id !== action.payload);
     },
+    // Clear state when switching accounts
+    clearState(state) {
+      Object.assign(state, initialState);
+    },
     // Voice actions
     startLoadingVoices(state) {
       state.voices.loading = true;
@@ -413,7 +417,7 @@ export const fetchAgentById = (agentId) => async (dispatch, getState) => {
   }
 };
 
-export const { setAgents, resetVoices, removeAgentRoom } = slice.actions;
+export const { setAgents, resetVoices, removeAgentRoom, clearState: clearAgentsState } = slice.actions;
 
 // Selectors
 export const selectAllAgents = (state) => {

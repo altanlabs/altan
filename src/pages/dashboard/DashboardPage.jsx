@@ -13,13 +13,13 @@ import VoiceConversationWithAgentSelection from './components/VoiceConversationW
 import { useAuthContext } from '../../auth/useAuthContext';
 import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
-import Footer from '../../layouts/main/Footer.jsx';
+// import Footer from '../../layouts/main/Footer.jsx';
 import useLocales from '../../locales/useLocales.js';
 import { getFlows } from '../../redux/slices/flows';
 import { getAccountAttribute } from '../../redux/slices/general';
 import { dispatch } from '../../redux/store';
-import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
 import Agents from '../../sections/@dashboard/agents/Agents.jsx';
+import WorkflowsWidget from '../../sections/@dashboard/flows/WorkflowsWidget.jsx';
 
 const DashboardPage = () => {
   const { mode = 'projects' } = useParams();
@@ -335,7 +335,7 @@ const DashboardPage = () => {
               </div>
             </m.div>
 
-            <m.div
+            {/* <m.div
               className="flex flex-col pt-[80px] sm:pt-[150px]"
               variants={fadeIn}
             >
@@ -343,7 +343,7 @@ const DashboardPage = () => {
                 {renderContentBasedOnMode(mode)}
                 <Footer />
               </div>
-            </m.div>
+            </m.div> */}
           </m.div>
         </div>
 

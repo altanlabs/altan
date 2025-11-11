@@ -24,7 +24,7 @@ export const StandaloneRoomPage = Loadable(lazy(() => import('../pages/Standalon
 export const ChatPage = Loadable(lazy(() => import('../pages/ChatPage.jsx')));
 // DASHBOARD: GENERAL
 // export const GeneralAppPage = Loadable(lazy(() => import('../pages/dashboard/GeneralAppPage')));
-export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));
+// export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));
 export const NewDashboardPage = Loadable(lazy(() => import('../pages/dashboard/NewDashboardPage.jsx')));
 export const UsagePage = Loadable(lazy(() => import('../pages/dashboard/UsagePage.jsx')));
 export const ExecutionsPage = Loadable(lazy(() => import('../pages/dashboard/ExecutionsPage.jsx')));
