@@ -23,7 +23,6 @@ const AgentSelectionChip = ({
   const [detailDialogAgent, setDetailDialogAgent] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const members = useSelector(selectMembers);
-  console.log('members', members);
   const roomId = useSelector(selectRoomId);
   const { user } = useAuthContext();
 
