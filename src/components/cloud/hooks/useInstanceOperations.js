@@ -80,6 +80,7 @@ export const useInstanceOperations = (cloudId, isPaused) => {
         `/v1/instances/tenant/${cloudId}/scale/resources`,
         {
           instance_type_name: targetTier.name,
+          instance_type: targetTier.tier_type?.toLowerCase(),
         },
       );
 
