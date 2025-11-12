@@ -114,6 +114,7 @@ export const useInstanceOperations = (baseId, isPaused) => {
         `/v1/instances/tenant/${baseId}/scale/resources`,
         {
           instance_type_name: targetTier.name,
+          instance_type: targetTier.tier_type?.toLowerCase(),
         }
       );
 
