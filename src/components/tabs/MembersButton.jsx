@@ -20,12 +20,6 @@ const MembersButton = ({ disabled = false, size = 'small' }) => {
     setAnchorEl(null);
   }, []);
 
-  const handleMemberSelect = useCallback((member) => {
-    // TODO: Implement member selection logic if needed
-    console.log('Member selected:', member);
-    // Don't close popover on member select - let user interact with multiple members
-  }, []);
-
   return (
     <>
       <Tooltip
@@ -75,7 +69,6 @@ const MembersButton = ({ disabled = false, size = 'small' }) => {
             showTitle={true}
             compact={true}
             showInviteButton={true}
-            onMemberSelect={handleMemberSelect}
             emptyMessage="No members in this room."
           />
         </Paper>

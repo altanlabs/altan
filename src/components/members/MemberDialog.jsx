@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import { useToast } from '../../hooks/use-toast.ts';
 import { cn } from '../../lib/utils.ts';
 import { patchMember } from '../../redux/slices/room';
 import { dispatch } from '../../redux/store';
@@ -7,6 +8,12 @@ import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 import { getMemberDetails } from '../room/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '../ui/accordion.tsx';
 import { Button } from '../ui/button.tsx';
 import {
   Dialog,
@@ -18,13 +25,14 @@ import {
 import { Separator } from '../ui/separator';
 
 const MemberDialog = ({ member, me, open, onOpenChange }) => {
-  if (!member || !me) return null;
-
-  const memberDetails = getMemberDetails(member, me);
-  const role = me.role || 'viewer';
+  const { toast } = useToast();
+  const memberDetails = member && me ? getMemberDetails(member, me) : null;
+  const role = me?.role || 'viewer';
   const isAdmin = ['admin', 'owner'].includes(role);
 
   const handleMemberAction = async (action, actionData = {}) => {
+    if (!member) return;
+    
     try {
       switch (action) {
         case 'kick':
@@ -65,13 +73,19 @@ const MemberDialog = ({ member, me, open, onOpenChange }) => {
     { label: 'Viewer', value: 'viewer', icon: 'mdi:account-outline' },
   ];
 
-  if (role === 'owner' && member.role !== 'owner') {
+  if (role === 'owner' && member?.role !== 'owner') {
     roleOptions.push({ label: 'Owner', value: 'owner', icon: 'mdi:crown' });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
+        {!member || !me || !memberDetails ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">Loading member details...</p>
+          </div>
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>Member Details</DialogTitle>
           <DialogDescription>
@@ -266,6 +280,122 @@ const MemberDialog = ({ member, me, open, onOpenChange }) => {
             </div>
           )}
         </div>
+
+        <Separator />
+
+        {/* Member IDs Section - Collapsible */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="member-ids" className="border-0">
+            <AccordionTrigger className="py-3 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Iconify icon="solar:info-circle-linear" width={18} className="text-muted-foreground" />
+                <span className="text-sm font-semibold">Technical Information</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pb-4">
+              {/* Room Member ID */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground font-medium">Room Member ID</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
+                    {member.id}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(member.id);
+                      toast({
+                        title: 'Copied!',
+                        description: 'Room Member ID copied to clipboard',
+                      });
+                    }}
+                  >
+                    <Iconify icon="solar:copy-linear" width={16} />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Member ID */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground font-medium">Member ID</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
+                    {member.member_id}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(member.member_id);
+                      toast({
+                        title: 'Copied!',
+                        description: 'Member ID copied to clipboard',
+                      });
+                    }}
+                  >
+                    <Iconify icon="solar:copy-linear" width={16} />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Agent ID or User ID */}
+              {member.member?.member_type === 'agent' && member.member?.agent_id && (
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground font-medium">Agent ID</label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
+                      {member.member.agent_id}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(member.member.agent_id);
+                        toast({
+                          title: 'Copied!',
+                          description: 'Agent ID copied to clipboard',
+                        });
+                      }}
+                    >
+                      <Iconify icon="solar:copy-linear" width={16} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {member.member?.member_type === 'user' && member.member?.user_id && (
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground font-medium">User ID</label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md font-mono truncate">
+                      {member.member.user_id}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(member.member.user_id);
+                        toast({
+                          title: 'Copied!',
+                          description: 'User ID copied to clipboard',
+                        });
+                      }}
+                    >
+                      <Iconify icon="solar:copy-linear" width={16} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
