@@ -125,6 +125,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
       handleDragLeave,
       handleDrop,
       clearFiles,
+      addFiles,
     } = useFileHandling(disabled, isViewer);
 
     // --- Voice Recording (extracted hook) ---
@@ -154,6 +155,41 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
       (activeActivations && activeActivations.length > 0);
 
     const hasValue = !editorEmpty || files.length > 0;
+
+    // Handle paste events for images
+    useEffect(() => {
+      const handlePaste = (e: ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          
+          // Check if the item is an image
+          if (item.type.startsWith('image/')) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (!file) continue;
+
+            // Convert to FileAttachment format
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const newFile: FileAttachment = {
+                file_name: `pasted-image-${Date.now()}.png`,
+                mime_type: file.type,
+                preview: reader.result as string,
+                url: reader.result as string,
+              };
+              setFiles((prev) => [...prev, newFile]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      };
+
+      document.addEventListener('paste', handlePaste);
+      return () => document.removeEventListener('paste', handlePaste);
+    }, []);
 
     // --- Track height changes ---
     useEffect(() => {
@@ -353,7 +389,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
               editorRef={editorRef}
               placeholder={placeholder}
               setEditorEmpty={setEditorEmpty}
-              setAttachments={() => {}}
+              setAttachments={addFiles}
               autoFocus={false}
               namespace={`room-input-${roomId}`}
             />

@@ -83,6 +83,15 @@ export const useFileHandling = (disabled: boolean, isViewer: boolean) => {
     setFiles([]);
   }, []);
 
+  // Compatible with Editor's ImageAttachmentPlugin which uses setState pattern
+  const addFiles = useCallback((updater: FileAttachment[] | ((prev: FileAttachment[]) => FileAttachment[])) => {
+    if (typeof updater === 'function') {
+      setFiles(updater);
+    } else {
+      setFiles((prev) => [...prev, ...updater]);
+    }
+  }, []);
+
   return {
     files,
     dragOver,
@@ -94,5 +103,6 @@ export const useFileHandling = (disabled: boolean, isViewer: boolean) => {
     handleDragLeave,
     handleDrop,
     clearFiles,
+    addFiles,
   };
 };
