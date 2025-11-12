@@ -81,6 +81,9 @@ export const useMetrics = (cloudId) => {
 
   useEffect(() => {
     fetchMetrics();
+    // Poll metrics every 10 seconds
+    const interval = setInterval(fetchMetrics, 10000);
+    return () => clearInterval(interval);
   }, [fetchMetrics]);
 
   return {
@@ -95,4 +98,3 @@ export const useMetrics = (cloudId) => {
     fetchMetrics,
   };
 };
-

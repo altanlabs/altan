@@ -27,7 +27,7 @@ export const useMetricsHistory = (baseId, period = '1h') => {
       }
 
       const response = await optimai_cloud.get(
-        `/v1/instances/metrics/cloud/${baseId}/history?period=${period}`
+        `/v1/instances/metrics/cloud/${baseId}/history?period=${period}`,
       );
       setHistory(response.data);
     } catch (err) {
@@ -48,4 +48,3 @@ export const useMetricsHistory = (baseId, period = '1h') => {
     refetch: fetchMetricsHistory,
   };
 };
-

@@ -40,7 +40,7 @@ export const useMetrics = (baseId) => {
       if (response.data?.pods?.[0]) {
         const pod = response.data.pods[0];
         const instanceType = response.data.instance_type;
-        
+
         // CPU usage percentage
         if (pod.cpu_usage_millicores && pod.cpu_limit) {
           const cpuLimitStr = pod.cpu_limit;
@@ -72,8 +72,8 @@ export const useMetrics = (baseId) => {
         // Storage usage
         if (Array.isArray(pod.storage_usage) && pod.storage_usage.length > 0) {
           let totalCapacityGi = 0;
-          
-          pod.storage_usage.forEach(volume => {
+
+          pod.storage_usage.forEach((volume) => {
             if (volume.type === 'PersistentVolumeClaim' && volume.capacity) {
               const capacityStr = volume.capacity;
               if (capacityStr.endsWith('Gi')) {
@@ -111,4 +111,3 @@ export const useMetrics = (baseId) => {
     fetchMetrics,
   };
 };
-

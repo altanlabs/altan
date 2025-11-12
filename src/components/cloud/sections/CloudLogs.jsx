@@ -140,12 +140,14 @@ const CloudLogs = () => {
   };
 
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
+    const filtered = logs.filter((log) => {
       const message = log.message || '';
       const matchesSearch = !query || message.toLowerCase().includes(query.toLowerCase());
       const matchesLevel = levelFilter === 'all' || getLogLevel(log.message) === levelFilter;
       return matchesSearch && matchesLevel;
     });
+    // Show most recent logs on top
+    return [...filtered].reverse();
   }, [logs, query, levelFilter]);
 
   return (

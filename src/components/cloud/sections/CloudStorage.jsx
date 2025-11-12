@@ -16,13 +16,13 @@ import { useParams } from 'react-router-dom';
 
 import { useToast } from '../../../hooks/use-toast';
 import {
-  selectBucketCacheForBase,
+  fetchBuckets,
+  selectBucketsForCloud,
   selectBucketCacheState,
-  preloadBucketsForBase,
-  addBucketToCache,
-  removeBucketFromCache,
-  updateBucketInCache,
-} from '../../../redux/slices/bases';
+  addBucket,
+  updateBucket,
+  removeBucket,
+} from '../../../redux/slices/cloud';
 import { dispatch } from '../../../redux/store';
 import { optimai_cloud } from '../../../utils/axios';
 import { Badge } from '../../ui/badge';
@@ -83,7 +83,7 @@ const CloudStorage = () => {
   const { cloudId } = useParams();
   const { toast } = useToast();
 
-  const bucketCacheObject = useSelector((state) => selectBucketCacheForBase(state, cloudId));
+  const bucketCacheObject = useSelector((state) => selectBucketsForCloud(state, cloudId));
   const bucketCacheState = useSelector(selectBucketCacheState);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +102,7 @@ const CloudStorage = () => {
   // Initial buckets load
   useEffect(() => {
     if (!cloudId) return;
-    dispatch(preloadBucketsForBase(cloudId));
+    dispatch(fetchBuckets(cloudId));
   }, [cloudId]);
 
   // Load instance info for file preview base URL
@@ -194,7 +194,7 @@ const CloudStorage = () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      dispatch(addBucketToCache({ bucket: newBucket, baseId: cloudId }));
+      dispatch(addBucket({ cloudId, bucket: newBucket }));
       toast({ title: 'Bucket created', description: `Bucket "${bucketId}" created successfully.` });
       setCreateOpen(false);
       setNewBucketName('');
@@ -217,7 +217,7 @@ const CloudStorage = () => {
         WHERE id = '${bucket.id}';
       `;
       await optimai_cloud.post(`/v1/pg-meta/${cloudId}/query`, { query });
-      dispatch(removeBucketFromCache({ bucketId: bucket.id, baseId: cloudId }));
+      dispatch(removeBucket({ cloudId, bucketId: bucket.id }));
       toast({ title: 'Bucket deleted', description: `Bucket "${bucket.name}" deleted.` });
     } catch (error) {
       toast({
@@ -245,7 +245,7 @@ const CloudStorage = () => {
         public: newPublicValue,
         updated_at: new Date().toISOString(),
       };
-      dispatch(updateBucketInCache({ bucket: updatedBucket, baseId: cloudId }));
+      dispatch(updateBucket({ cloudId, bucket: updatedBucket }));
       toast({
         title: 'Bucket updated',
         description: `Bucket is now ${newPublicValue ? 'public' : 'private'}.`,
@@ -303,7 +303,7 @@ const CloudStorage = () => {
                 size="icon"
                 variant="outline"
                 className="h-8 w-8"
-                onClick={() => dispatch(preloadBucketsForBase(cloudId))}
+                onClick={() => dispatch(fetchBuckets(cloudId))}
                 aria-label="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />

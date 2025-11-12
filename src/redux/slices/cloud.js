@@ -69,6 +69,12 @@ const initialState = {
   clouds: {}, // { [cloudId]: { id, name, tables, ... } }
   tables: {}, // { [tableId]: { records, loading, pagination, ... } }
   userCache: {}, // { [cloudId]: { [userId]: user } }
+  bucketCache: {}, // { [cloudId]: { [bucketId]: bucket } }
+  bucketCacheState: {
+    loading: false,
+    lastFetched: null,
+    error: null,
+  },
   databaseNavigation: {
     quickFilter: '',
     isSearching: false,
@@ -212,6 +218,50 @@ const slice = createSlice({
       });
     },
 
+    // Bucket cache
+    setBuckets(state, action) {
+      const { cloudId, buckets } = action.payload;
+      if (!state.bucketCache[cloudId]) {
+        state.bucketCache[cloudId] = {};
+      }
+      buckets.forEach((bucket) => {
+        if (bucket?.id) {
+          state.bucketCache[cloudId][bucket.id] = bucket;
+        }
+      });
+      state.bucketCacheState.lastFetched = Date.now();
+      state.bucketCacheState.error = null;
+    },
+    setBucketCacheLoading(state, action) {
+      state.bucketCacheState.loading = action.payload;
+    },
+    setBucketCacheError(state, action) {
+      state.bucketCacheState.error = action.payload;
+      state.bucketCacheState.loading = false;
+    },
+    addBucket(state, action) {
+      const { cloudId, bucket } = action.payload;
+      if (!state.bucketCache[cloudId]) {
+        state.bucketCache[cloudId] = {};
+      }
+      state.bucketCache[cloudId][bucket.id] = bucket;
+    },
+    updateBucket(state, action) {
+      const { cloudId, bucket } = action.payload;
+      if (state.bucketCache[cloudId]?.[bucket.id]) {
+        state.bucketCache[cloudId][bucket.id] = {
+          ...state.bucketCache[cloudId][bucket.id],
+          ...bucket,
+        };
+      }
+    },
+    removeBucket(state, action) {
+      const { cloudId, bucketId } = action.payload;
+      if (state.bucketCache[cloudId]) {
+        delete state.bucketCache[cloudId][bucketId];
+      }
+    },
+
     // Database navigation
     setQuickFilter(state, action) {
       state.databaseNavigation.quickFilter = action.payload;
@@ -255,6 +305,12 @@ export const {
   updateRecord,
   removeRecord,
   setUsers,
+  setBuckets,
+  setBucketCacheLoading,
+  setBucketCacheError,
+  addBucket,
+  updateBucket,
+  removeBucket,
   setQuickFilter,
   setSearching,
   setSearchResults,
@@ -523,6 +579,47 @@ export const deleteUser = (cloudId, userId) => async (dispatch) => {
 };
 
 // ============================================================================
+// THUNKS - Bucket Operations
+// ============================================================================
+
+export const fetchBuckets = (cloudId) => async (dispatch, getState) => {
+  const state = getState();
+  const bucketCacheState = state.cloud.bucketCacheState;
+  const existingBuckets = state.cloud.bucketCache[cloudId];
+
+  // Cache for 1 hour
+  const ONE_HOUR = 60 * 60 * 1000;
+  if (
+    existingBuckets &&
+    Object.keys(existingBuckets).length > 0 &&
+    bucketCacheState.lastFetched &&
+    Date.now() - bucketCacheState.lastFetched < ONE_HOUR
+  ) {
+    return Object.values(existingBuckets);
+  }
+
+  if (bucketCacheState.loading) {
+    return Object.values(existingBuckets || {});
+  }
+
+  dispatch(setBucketCacheLoading(true));
+
+  try {
+    const query = 'SELECT * FROM storage.buckets ORDER BY created_at DESC;';
+    const buckets = await executeSQL(cloudId, query);
+
+    dispatch(setBuckets({ cloudId, buckets }));
+
+    return buckets;
+  } catch (error) {
+    dispatch(setBucketCacheError(error.message));
+    throw error;
+  } finally {
+    dispatch(setBucketCacheLoading(false));
+  }
+};
+
+// ============================================================================
 // THUNKS - Search Operations
 // ============================================================================
 
@@ -691,4 +788,19 @@ export const selectSearching = createSelector(
 export const selectSearchResults = createSelector(
   [selectCloudState, (_, tableId) => tableId],
   (state, tableId) => state.databaseNavigation.searchResults[tableId] || null,
+);
+
+export const selectBucketsForCloud = createSelector(
+  [(state) => state.cloud.bucketCache, (_, cloudId) => cloudId],
+  (bucketCache, cloudId) => bucketCache[cloudId] || {},
+);
+
+export const selectBucketCacheState = createSelector(
+  [selectCloudState],
+  (state) => state.bucketCacheState,
+);
+
+export const selectBucketById = createSelector(
+  [(state) => state.cloud.bucketCache, (_, cloudId, bucketId) => ({ cloudId, bucketId })],
+  (bucketCache, { cloudId, bucketId }) => bucketCache[cloudId]?.[bucketId],
 );

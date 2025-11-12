@@ -98,10 +98,13 @@ export const useVoiceRecording = ({
         formData.append('file', blob, `recording.${extension}`);
 
         const baseUrl = 'https://d9e17293-cf6.db-pool-europe-west1.altan.ai';
-        const response = await fetch(`${baseUrl}/services/api/transcription_service/transcribe`, {
-          method: 'POST',
-          body: formData,
-        });
+        const response = await fetch(
+          `${baseUrl}/services/api/transcription_storage/transcribe-and-store`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -109,7 +112,7 @@ export const useVoiceRecording = ({
 
         const result = await response.json();
 
-        if (result.status === 'success' && result.text) {
+        if (result.text) {
           let messageContent = result.text;
 
           // Prepend agent mention if selected
