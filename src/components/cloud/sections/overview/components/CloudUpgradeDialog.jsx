@@ -88,10 +88,10 @@ export const CloudUpgradeDialog = ({
               </div>
             </div>
             
-            {/* Monthly estimate */}
+            {/* Monthly cost */}
             <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-              <span className="text-sm text-muted-foreground">Estimated monthly</span>
-              <span className="text-sm font-semibold">~${(targetTier.price_per_hour * 730).toFixed(2)}</span>
+              <span className="text-sm text-muted-foreground">Monthly</span>
+              <span className="text-sm font-semibold">${Math.round(targetTier.price_per_hour * 730)}</span>
             </div>
           </div>
         </div>

@@ -82,16 +82,17 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     // Get agents from room members, filtered by altaner's agent list in operate mode only
     const agents = useMemo(() => {
       // Get all agent members from the room
-      const allAgentMembers = Object.values(members.byId || {})
-        .filter((member: any) => member?.member?.member_type === 'agent');
-      
+      const allAgentMembers = Object.values(members.byId || {}).filter(
+        (member: any) => member?.member?.member_type === 'agent',
+      );
+
       const allAgents = allAgentMembers.map((member: any) => getMemberDetails(member));
 
       // Only filter by altaner's agents when in OPERATE mode
       if (operateMode && altanerId && altaner) {
         const agentsComponent = altaner.components?.items?.find((c: any) => c.type === 'agents');
         const altanerAgentIds = agentsComponent?.params?.ids || [];
-        
+
         if (altanerAgentIds.length > 0) {
           // Filter by comparing altaner agent IDs with the actual agent.id (not room member id)
           return allAgentMembers
@@ -141,11 +142,17 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     // Check for active agent generation
     const EMPTY_ARRAY: any[] = [];
     const selectActiveResponsesStable = useMemo(
-      () => (threadId && threadId !== 'new' ? selectActiveResponsesByThread(threadId) : () => EMPTY_ARRAY),
+      () =>
+        threadId && threadId !== 'new'
+          ? selectActiveResponsesByThread(threadId)
+          : () => EMPTY_ARRAY,
       [threadId],
     );
     const selectActiveActivationsStable = useMemo(
-      () => (threadId && threadId !== 'new' ? selectActiveActivationsByThread(threadId) : () => EMPTY_ARRAY),
+      () =>
+        threadId && threadId !== 'new'
+          ? selectActiveActivationsByThread(threadId)
+          : () => EMPTY_ARRAY,
       [threadId],
     );
     const activeResponses = useSelector(selectActiveResponsesStable);
@@ -164,7 +171,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          
+
           // Check if the item is an image
           if (item.type.startsWith('image/')) {
             e.preventDefault();
@@ -448,8 +455,18 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
                           variant="destructive"
                           className="h-8 w-8 rounded-full"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="6" y="6" width="12" height="12" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <rect
+                              x="6"
+                              y="6"
+                              width="12"
+                              height="12"
+                            />
                           </svg>
                           <span className="sr-only">Stop generation</span>
                         </Button>

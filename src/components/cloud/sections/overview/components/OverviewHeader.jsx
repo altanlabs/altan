@@ -23,7 +23,7 @@ export const OverviewHeader = ({ lastRefresh, metricsLoading, operating, onRefre
       <div className="space-y-2 flex-1 min-w-0">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <h1 className="text-2xl sm:text-3xl font-bold">
-            Overview
+            AI Cloud
           </h1>
           <Button
             size="icon"
@@ -45,12 +45,7 @@ export const OverviewHeader = ({ lastRefresh, metricsLoading, operating, onRefre
             </span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Monitor and configure compute resources for your AI Cloud
-        </p>
       </div>
     </m.div>
   );
 };
-
-

@@ -1,9 +1,10 @@
-import { Button, Tooltip } from '@mui/material';
 import { useState, memo } from 'react';
 import { useSelector } from 'react-redux';
 
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import UpgradeDialog from './dialogs/UpgradeDialog';
-import Iconify from './iconify';
 import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
 import { useCreditBalancePolling } from '../hooks/useCreditBalancePolling';
 
@@ -117,25 +118,35 @@ const CreditWallet = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between mx-4 py-1 mt-[-10px] backdrop-blur-sm border-b border-gray-200/30 dark:border-gray-700/30">
-        <Tooltip title={getCreditTooltip()} arrow>
-          <div className="flex items-center gap-2 cursor-help">
-            <CreditPieChart creditPercentage={creditPercentage} isLowCredits={isLowCredits} />
-            <span className={`text-sm font-bold ${getTextColor()}`}>
-              {formatCredits(creditBalance)} credits left
-            </span>
-          </div>
-        </Tooltip>
-        <Button
-          size="small"
-          variant="soft"
-          color="inherit"
-          startIcon={<Iconify icon="material-symbols:crown" />}
-          onClick={handleUpgrade}
-        >
-          Upgrade
-        </Button>
-      </div>
+      <TooltipProvider delayDuration={100}>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200/20 dark:border-gray-700/20">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                <CreditPieChart creditPercentage={creditPercentage} isLowCredits={isLowCredits} />
+                <span className={`text-xs font-semibold ${getTextColor()}`}>
+                  {formatCredits(creditBalance)} credits left
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-sm">{getCreditTooltip()}</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleUpgrade}
+            className="h-7 px-2 text-xs gap-1 hover:bg-gray-100/50 dark:hover:bg-gray-800/50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+            </svg>
+            Upgrade
+          </Button>
+        </div>
+      </TooltipProvider>
 
       <UpgradeDialog
         open={dialogOpen}

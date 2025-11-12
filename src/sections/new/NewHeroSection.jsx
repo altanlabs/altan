@@ -21,7 +21,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const promptBoxRef = useRef(null);
-  
+
   // Check if account is free (for unauthenticated users or users on free plan)
   const isAccountFree = useSelector(selectIsAccountFree);
 
@@ -79,7 +79,8 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
       try {
         const agentName = 'AI Assistant';
         const prompt = `You are a helpful AI assistant. Your goal is to assist users based on: ${value.trim()}`;
-        const description = value.trim().substring(0, 100) + (value.trim().length > 100 ? '...' : '');
+        const description =
+          value.trim().substring(0, 100) + (value.trim().length > 100 ? '...' : '');
 
         const agentData = {
           name: agentName,
@@ -189,9 +190,7 @@ const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-center"
               duration={0.8}
             />
-            <p className="text-center text-foreground/70">
-              {translate('hero.subtitle')}
-            </p>
+            <p className="text-center text-foreground/70">{translate('hero.subtitle')}</p>
 
             <div className="w-full">
               <PromptBox
