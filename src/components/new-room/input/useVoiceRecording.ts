@@ -133,7 +133,7 @@ export const useVoiceRecording = ({
                 threadId: newThread.id,
                 content: messageContent,
                 attachments: [],
-              })
+              }),
             );
           } else {
             await dispatch(
@@ -141,7 +141,7 @@ export const useVoiceRecording = ({
                 content: messageContent,
                 attachments: [],
                 threadId,
-              })
+              }),
             );
           }
 
@@ -161,7 +161,7 @@ export const useVoiceRecording = ({
         setIsTranscribing(false);
       }
     },
-    [threadId, roomId, selectedAgent, onAgentClear, enqueueSnackbar]
+    [threadId, roomId, selectedAgent, onAgentClear, enqueueSnackbar],
   );
 
   // Auto-transcribe when recording stops
@@ -183,4 +183,3 @@ export const useVoiceRecording = ({
     acceptRecording,
   };
 };
-

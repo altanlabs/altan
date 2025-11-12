@@ -61,4 +61,3 @@ export function isTemporaryThread(threadId: string | null | undefined): boolean 
 export function generateTempThreadId(): string {
   return `${TEMP_THREAD_PREFIX}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
-

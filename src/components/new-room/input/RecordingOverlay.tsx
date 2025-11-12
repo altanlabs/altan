@@ -30,7 +30,10 @@ export const RecordingOverlay: React.FC<RecordingOverlayProps> = ({
           disabled={isTranscribing}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition-all disabled:opacity-50"
         >
-          <Iconify icon="mdi:close" className="text-lg text-white/90" />
+          <Iconify
+            icon="mdi:close"
+            className="text-lg text-white/90"
+          />
         </button>
 
         {/* Live Waveform */}
@@ -57,12 +60,14 @@ export const RecordingOverlay: React.FC<RecordingOverlayProps> = ({
           {isTranscribing ? (
             <div className="w-5 h-5 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Iconify icon="mdi:check" className="text-lg text-white/90" />
+            <Iconify
+              icon="mdi:check"
+              className="text-lg text-white/90"
+            />
           )}
         </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
-

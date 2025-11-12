@@ -39,7 +39,7 @@ export const useFileHandling = (disabled: boolean, isViewer: boolean) => {
         fileInputRef.current.value = '';
       }
     },
-    [processFiles]
+    [processFiles],
   );
 
   const handleRemoveFile = useCallback((index: number) => {
@@ -76,7 +76,7 @@ export const useFileHandling = (disabled: boolean, isViewer: boolean) => {
 
       processFiles(droppedFiles);
     },
-    [disabled, isViewer, processFiles]
+    [disabled, isViewer, processFiles],
   );
 
   const clearFiles = useCallback(() => {
@@ -96,4 +96,3 @@ export const useFileHandling = (disabled: boolean, isViewer: boolean) => {
     clearFiles,
   };
 };
-

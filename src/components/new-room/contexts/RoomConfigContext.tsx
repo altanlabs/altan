@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo } from 'react';
+
 import type { RoomConfig } from '../types/room.types';
 
 /**
@@ -28,14 +29,10 @@ export function RoomConfigProvider({ children, config }: RoomConfigProviderProps
       isEphemeralMode: config.mode === 'ephemeral',
       isTabsMode: config.mode === 'tabs',
     }),
-    [config]
+    [config],
   );
 
-  return (
-    <RoomConfigContext.Provider value={value}>
-      {children}
-    </RoomConfigContext.Provider>
-  );
+  return <RoomConfigContext.Provider value={value}>{children}</RoomConfigContext.Provider>;
 }
 
 /**
@@ -43,11 +40,10 @@ export function RoomConfigProvider({ children, config }: RoomConfigProviderProps
  */
 export function useRoomConfig(): RoomConfigContextValue {
   const context = useContext(RoomConfigContext);
-  
+
   if (!context) {
     throw new Error('useRoomConfig must be used within RoomConfigProvider');
   }
-  
+
   return context;
 }
-

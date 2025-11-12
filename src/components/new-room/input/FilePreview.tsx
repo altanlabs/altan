@@ -21,7 +21,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ files, onRemove }) => 
       {files.map((file, index) => {
         const isImage = file.mime_type.startsWith('image/');
         return (
-          <div key={index} className="relative group">
+          <div
+            key={index}
+            className="relative group"
+          >
             {isImage ? (
               <img
                 src={file.preview}
@@ -48,4 +51,3 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ files, onRemove }) => 
     </div>
   );
 };
-

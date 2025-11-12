@@ -29,10 +29,6 @@ const logTrackingEvent = (eventType, data) => {
  */
 export const trackSignUp = (method = 'default') => {
   try {
-    console.log('🔄 Tracking sign-up event before backend call...', { method });
-
-    // No longer need registration tracking since we don't use alias
-
     // Get all URL parameters
     const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
     const eventParams = {
@@ -65,8 +61,6 @@ export const trackSignUp = (method = 'default') => {
  */
 export const trackLogin = (method = 'default') => {
   try {
-    console.log('🔄 Tracking login event before backend call...', { method });
-
     const urlParams = Object.fromEntries(new URLSearchParams(window.location.search).entries());
     const eventParams = {
       method,
@@ -89,6 +83,34 @@ export const trackLogin = (method = 'default') => {
     logTrackingEvent('login', logData);
   } catch (error) {
     console.error('💥 Error tracking login event:', error);
+  }
+};
+
+/**
+ * Track feature usage event
+ * @param {string} featureName - The name of the feature being used
+ * @param {object} properties - Additional properties to track with the feature
+ */
+export const trackFeatureUse = (featureName, properties = {}) => {
+  try {
+    // Track analytics event
+    analytics.featureUsed(featureName, properties);
+
+    // Check if gtag is available for GA4 tracking
+    if (typeof window !== 'undefined' && window.gtag) {
+      // Send event to GA4
+      window.gtag('event', 'feature_used', {
+        feature_name: featureName,
+        ...properties,
+      });
+    } else {
+      console.warn('❌ gtag not available - GA4 feature tracking skipped');
+    }
+
+    const logData = { feature_name: featureName, ...properties };
+    logTrackingEvent('feature_used', logData);
+  } catch (error) {
+    console.error('💥 Error tracking feature usage:', error);
   }
 };
 

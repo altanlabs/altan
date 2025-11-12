@@ -16,11 +16,14 @@ const AgentSelectionChip = ({
   onAgentSelect,
   onAgentClear,
   isVoiceActive = false,
+  altaner = null,
+  operateMode = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [detailDialogAgent, setDetailDialogAgent] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const members = useSelector(selectMembers);
+  console.log('members', members);
   const roomId = useSelector(selectRoomId);
   const { user } = useAuthContext();
 
@@ -34,9 +37,16 @@ const AgentSelectionChip = ({
   // LocalStorage key for this room's selected agent
   const getStorageKey = useCallback(() => `selectedAgent_${roomId}`, [roomId]);
 
-  // Load persisted agent selection for this room
+  // Auto-select agent based on context
   useEffect(() => {
     if (roomId && agents.length > 0 && !selectedAgent) {
+      // Priority 1: In operate mode, if there's only 1 agent available (after filtering), auto-select it
+      if (operateMode && agents.length === 1) {
+        onAgentSelect(agents[0]);
+        return;
+      }
+
+      // Priority 2: Load from localStorage (for build mode or multiple agents)
       try {
         const savedAgentId = localStorage.getItem(getStorageKey());
         if (savedAgentId) {
@@ -52,7 +62,7 @@ const AgentSelectionChip = ({
         // Error loading saved agent selection
       }
     }
-  }, [roomId, agents, selectedAgent, onAgentSelect, getStorageKey]);
+  }, [roomId, agents, selectedAgent, onAgentSelect, getStorageKey, operateMode]);
 
   const handleAgentSelect = (agent) => {
     // Save selection to localStorage for this room
@@ -86,8 +96,8 @@ const AgentSelectionChip = ({
     setDetailDialogAgent(null);
   };
 
-  // Don't show if there's only one agent or if voice is active
-  if (agents.length <= 1 || isVoiceActive) {
+  // Don't show if voice is active or if there are no agents
+  if (isVoiceActive || agents.length === 0) {
     return null;
   }
 
@@ -115,7 +125,7 @@ const AgentSelectionChip = ({
               <>
                 <DynamicAgentAvatar
                   agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
-                  size={14}
+                  size={12}
                   isStatic
                 />
                 {!isMobile && (
@@ -126,11 +136,11 @@ const AgentSelectionChip = ({
                     e.stopPropagation();
                     handleAgentClear();
                   }}
-                  className="-mr-0.5 hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors"
+                  className="hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors w-3 h-3 flex items-center justify-center ml-0.5"
                 >
                   <Iconify
                     icon="mdi:close"
-                    size={10}
+                    className="w-2.5 h-2.5"
                   />
                 </button>
               </>

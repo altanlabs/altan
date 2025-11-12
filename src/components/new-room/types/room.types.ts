@@ -10,7 +10,6 @@ export interface RoomConfig {
   mode: RoomMode;
   roomId: string;
   
-  // UI customization (toolbar options - only used in tabs mode)
   showMembers?: boolean;
   showSettings?: boolean;
   showConversationHistory?: boolean;

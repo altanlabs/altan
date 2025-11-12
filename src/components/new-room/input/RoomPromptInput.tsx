@@ -11,7 +11,7 @@ import { RecordingOverlay } from './RecordingOverlay';
 import { useFileHandling } from './useFileHandling';
 import { useVoiceRecording } from './useVoiceRecording';
 import { ViewerMode } from './ViewerMode';
-import Editor from '../../editor/Editor';
+import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 import {
   sendMessage,
   selectMe,
@@ -19,6 +19,9 @@ import {
   addThread,
   setThreadMain,
   selectMembers,
+  selectActiveResponsesByThread,
+  selectActiveActivationsByThread,
+  stopThreadGeneration,
 } from '../../../redux/slices/room';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { dispatch, useSelector } from '../../../redux/store';
@@ -26,6 +29,7 @@ import { optimai_room } from '../../../utils/axios';
 import AgentSelectionChip from '../../attachment/components/AgentSelectionChip.jsx';
 import AuthorizationRequests from '../../AuthorizationRequests.jsx';
 import CreditWallet from '../../CreditWallet.jsx';
+import Editor from '../../editor/Editor';
 import ActivationLifecycleBar from '../../response/ActivationLifecycleBar.jsx';
 import { getMemberDetails } from '../../room/utils.js';
 import { useSnackbar } from '../../snackbar';
@@ -53,7 +57,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
       renderCredits = false,
       mode = 'standard',
     }: RoomPromptInputProps,
-    ref,
+    _ref,
   ) => {
     // --- Hooks ---
     const { altanerId } = useParams();
@@ -69,19 +73,42 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     const me = useSelector(selectMe);
     const roomContext = useSelector(selectRoomContext);
     const members = useSelector(selectMembers);
+    const altaner = useSelector(selectCurrentAltaner);
     const { enqueueSnackbar } = useSnackbar();
 
-    // Get agents from room members
-    const agents = Object.values(members.byId || {})
-      .filter((member: any) => member?.member?.member_type === 'agent')
-      .map((member: any) => getMemberDetails(member));
+    // Detect operate mode
+    const operateMode = location.pathname.endsWith('/operate');
+
+    // Get agents from room members, filtered by altaner's agent list in operate mode only
+    const agents = useMemo(() => {
+      // Get all agent members from the room
+      const allAgentMembers = Object.values(members.byId || {})
+        .filter((member: any) => member?.member?.member_type === 'agent');
+      
+      const allAgents = allAgentMembers.map((member: any) => getMemberDetails(member));
+
+      // Only filter by altaner's agents when in OPERATE mode
+      if (operateMode && altanerId && altaner) {
+        const agentsComponent = altaner.components?.items?.find((c: any) => c.type === 'agents');
+        const altanerAgentIds = agentsComponent?.params?.ids || [];
+        
+        if (altanerAgentIds.length > 0) {
+          // Filter by comparing altaner agent IDs with the actual agent.id (not room member id)
+          return allAgentMembers
+            .filter((member: any) => {
+              const agentId = member.member?.agent?.id || member.member?.agent_id;
+              return altanerAgentIds.includes(agentId);
+            })
+            .map((member: any) => getMemberDetails(member));
+        }
+      }
+
+      return allAgents;
+    }, [members.byId, altanerId, altaner, operateMode]);
 
     // Get tasks for TodoWidget
     const tasksSelector = useMemo(() => selectTasksByThread(threadId), [threadId]);
     const tasks = useSelector(tasksSelector);
-
-    // Detect operate mode
-    const operateMode = location.pathname.endsWith('/operate');
     const hasTasks = altanerId && tasks && tasks.length > 0 && !operateMode;
 
     const isViewer = me?.role === 'viewer' || me?.role === 'listener';
@@ -110,8 +137,23 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
         enqueueSnackbar,
       });
 
-    const hasValue = !editorEmpty || files.length > 0;
+    // Check for active agent generation
+    const EMPTY_ARRAY: any[] = [];
+    const selectActiveResponsesStable = useMemo(
+      () => (threadId && threadId !== 'new' ? selectActiveResponsesByThread(threadId) : () => EMPTY_ARRAY),
+      [threadId],
+    );
+    const selectActiveActivationsStable = useMemo(
+      () => (threadId && threadId !== 'new' ? selectActiveActivationsByThread(threadId) : () => EMPTY_ARRAY),
+      [threadId],
+    );
+    const activeResponses = useSelector(selectActiveResponsesStable);
+    const activeActivations = useSelector(selectActiveActivationsStable);
+    const hasActiveGeneration =
+      (activeResponses && activeResponses.length > 0) ||
+      (activeActivations && activeActivations.length > 0);
 
+    const hasValue = !editorEmpty || files.length > 0;
 
     // --- Track height changes ---
     useEffect(() => {
@@ -130,74 +172,77 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     }, [onHeightChange]);
 
     // --- Handlers ---
-    const handleSendContent = useCallback(async (content: string) => {
-      if (!content?.trim() && files.length === 0) return;
-      if (disabled || isViewer) return;
+    const handleSendContent = useCallback(
+      async (content: string) => {
+        if (!content?.trim() && files.length === 0) return;
+        if (disabled || isViewer) return;
 
-      let finalContent = content.trim();
+        let finalContent = content.trim();
 
-      // Prepend agent mention if selected
-      if (selectedAgent) {
-        const mentionText = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**`;
-        finalContent = mentionText + (finalContent ? '\n' + finalContent : '');
-        setSelectedAgent(null);
-      }
+        // Prepend agent mention if selected
+        if (selectedAgent) {
+          const mentionText = `**[@${selectedAgent.name}](/member/${selectedAgent.id})**`;
+          finalContent = mentionText + (finalContent ? '\n' + finalContent : '');
+          setSelectedAgent(null);
+        }
 
-      // Append room context if available
-      if (roomContext) {
-        finalContent += `\n<hide>${roomContext}</hide>`;
-      }
+        // Append room context if available
+        if (roomContext) {
+          finalContent += `\n<hide>${roomContext}</hide>`;
+        }
 
-      // Clean attachments (remove preview property)
-      const sanitizedAttachments = files.map(({ preview, ...rest }) => rest);
+        // Clean attachments (remove preview property)
+        const sanitizedAttachments = files.map(({ preview, ...rest }) => rest);
 
-      // If threadId is 'new', we need to create the thread first
-      if (threadId === 'new') {
-        try {
-          const threadName = finalContent.substring(0, 50).trim() || 'New Chat';
-          const response = await optimai_room.post(`/v2/rooms/${roomId}/threads`, {
-            name: threadName,
-          });
-          const newThread = response.data;
+        // If threadId is 'new', we need to create the thread first
+        if (threadId === 'new') {
+          try {
+            const threadName = finalContent.substring(0, 50).trim() || 'New Chat';
+            const response = await optimai_room.post(`/v2/rooms/${roomId}/threads`, {
+              name: threadName,
+            });
+            const newThread = response.data;
 
-          dispatch(addThread(newThread));
-          dispatch(setThreadMain({ current: newThread.id }));
+            dispatch(addThread(newThread));
+            dispatch(setThreadMain({ current: newThread.id }));
 
-          await dispatch(
+            await dispatch(
+              sendMessage({
+                threadId: newThread.id,
+                content: finalContent,
+                attachments: sanitizedAttachments,
+              }),
+            );
+          } catch (e: any) {
+            enqueueSnackbar(e.message || 'Failed to create thread', { variant: 'error' });
+          }
+        } else {
+          dispatch(
             sendMessage({
-              threadId: newThread.id,
+              threadId,
               content: finalContent,
               attachments: sanitizedAttachments,
             }),
-          );
-        } catch (e: any) {
-          enqueueSnackbar(e.message || 'Failed to create thread', { variant: 'error' });
+          ).catch((e: Error) => {
+            enqueueSnackbar(e.message || 'Failed to send message', { variant: 'error' });
+          });
         }
-      } else {
-        dispatch(
-          sendMessage({
-            threadId,
-            content: finalContent,
-            attachments: sanitizedAttachments,
-          }),
-        ).catch((e: Error) => {
-          enqueueSnackbar(e.message || 'Failed to send message', { variant: 'error' });
-        });
-      }
 
-      // Clear files (editor clears itself)
-      clearFiles();
-    }, [
-      files,
-      threadId,
-      roomId,
-      disabled,
-      isViewer,
-      selectedAgent,
-      roomContext,
-      clearFiles,
-      enqueueSnackbar,
-    ]);
+        // Clear files (editor clears itself)
+        clearFiles();
+      },
+      [
+        files,
+        threadId,
+        roomId,
+        disabled,
+        isViewer,
+        selectedAgent,
+        roomContext,
+        clearFiles,
+        enqueueSnackbar,
+      ],
+    );
 
     // Setup editor ref - the Editor will call sendContent when Enter is pressed
     useEffect(() => {
@@ -211,13 +256,27 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
       if (editorRef.current?.editor) {
         let content = '';
         editorRef.current.editor.getEditorState().read(() => {
-          content = editorRef.current.editor?._editorState._nodeMap.get('root')?.getTextContent() || '';
+          content =
+            editorRef.current.editor?._editorState._nodeMap.get('root')?.getTextContent() || '';
         });
         if (content.trim() || files.length > 0) {
           handleSendContent(content);
         }
       }
     }, [handleSendContent, files]);
+
+    // Handle stopping agent generation
+    const handleStopGeneration = useCallback(() => {
+      if (threadId && threadId !== 'new') {
+        dispatch(stopThreadGeneration(threadId))
+          .then(() => {
+            enqueueSnackbar('Generation stopped', { variant: 'success' });
+          })
+          .catch((error: any) => {
+            enqueueSnackbar('Failed to stop generation', { variant: 'error' });
+          });
+      }
+    }, [threadId, enqueueSnackbar]);
 
     // --- Viewer Mode ---
     if (isViewer) {
@@ -276,109 +335,132 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
             </div>
           )}
 
-            {/* Credit Wallet */}
-            {renderCredits && <CreditWallet />}
+          {/* Credit Wallet */}
+          {renderCredits && <CreditWallet />}
 
-            {/* File Previews */}
-            <FilePreview files={files} onRemove={handleRemoveFile} />
+          {/* File Previews */}
+          <FilePreview
+            files={files}
+            onRemove={handleRemoveFile}
+          />
 
-            {/* Editor with @ mention support */}
-            <div className="relative w-full px-3 py-3">
-              <Editor
-                key={`${threadId}`}
-                threadId={threadId}
-                disabled={disabled || isViewer}
-                editorRef={editorRef}
-                placeholder={placeholder}
-                setEditorEmpty={setEditorEmpty}
-                setAttachments={() => {}}
-                autoFocus={false}
-                namespace={`room-input-${roomId}`}
-              />
-            </div>
+          {/* Editor with @ mention support */}
+          <div className="relative w-full px-3 py-3">
+            <Editor
+              key={`${threadId}`}
+              threadId={threadId}
+              disabled={disabled || isViewer}
+              editorRef={editorRef}
+              placeholder={placeholder}
+              setEditorEmpty={setEditorEmpty}
+              setAttachments={() => {}}
+              autoFocus={false}
+              namespace={`room-input-${roomId}`}
+            />
+          </div>
 
-        {/* Bottom Bar */}
-        <div className="p-2 pt-0">
-              <TooltipProvider delayDuration={100}>
-                <div className="flex items-center justify-between">
+          {/* Bottom Bar */}
+          <div className="p-2 pt-0">
+            <TooltipProvider delayDuration={100}>
+              <div className="flex items-center justify-between">
                 {/* Left: Attach button + Agent Selection */}
-                  <div className="flex items-center gap-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleAttachClick}
-                          disabled={disabled}
-                          className="h-8 w-8 rounded-full"
-                        >
-                          <PlusIcon />
-                          <span className="sr-only">Attach files</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p>Attach files</p>
-                      </TooltipContent>
-                    </Tooltip>
+                <div className="flex items-center gap-0">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleAttachClick}
+                        disabled={disabled}
+                        className="h-8 w-8 rounded-full"
+                      >
+                        <PlusIcon />
+                        <span className="sr-only">Attach files</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Attach files</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                    {/* Agent Selection */}
-                    {agents.length > 0 && (
-                      <AgentSelectionChip
-                        agents={agents}
-                        selectedAgent={selectedAgent}
-                        onAgentSelect={setSelectedAgent}
-                        onAgentClear={() => setSelectedAgent(null)}
-                        isVoiceActive={false}
-                      />
-                    )}
-                  </div>
+                  {/* Agent Selection */}
+                  <AgentSelectionChip
+                    agents={agents}
+                    selectedAgent={selectedAgent}
+                    onAgentSelect={setSelectedAgent}
+                    onAgentClear={() => setSelectedAgent(null)}
+                    isVoiceActive={false}
+                    altaner={altaner}
+                    operateMode={operateMode}
+                  />
+                </div>
 
                 {/* Right: Build mode chip + Send/Voice button */}
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   {/* Build Mode Chip */}
                   <BuildModeToggle operateMode={operateMode} />
 
                   {/* Send or Voice button */}
-                    {hasValue ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={handleSendClick}
-                            disabled={disabled}
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                          >
-                            <SendIcon />
-                            <span className="sr-only">Send message</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p>Send</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={startRecording}
-                            disabled={disabled}
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full"
-                          >
-                            <MicIcon />
-                            <span className="sr-only">Start voice recording</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p>Voice input</p>
-                        </TooltipContent>
-                      </Tooltip>
-                )}
+                  {/* Stop Generation Button (when agent is generating) */}
+                  {hasActiveGeneration ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleStopGeneration}
+                          size="icon"
+                          variant="destructive"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12" />
+                          </svg>
+                          <span className="sr-only">Stop generation</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Stop generation</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : hasValue ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleSendClick}
+                          disabled={disabled}
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <SendIcon />
+                          <span className="sr-only">Send message</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Send</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={startRecording}
+                          disabled={disabled}
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <MicIcon />
+                          <span className="sr-only">Start voice recording</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Voice input</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-            </div>
-          </TooltipProvider>
+            </TooltipProvider>
           </div>
         </div>
       </>

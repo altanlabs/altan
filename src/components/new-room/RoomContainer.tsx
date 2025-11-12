@@ -1,16 +1,17 @@
 import React from 'react';
-import { RoomConfigProvider } from './contexts/RoomConfigContext';
-import { useRoomInitialization } from './hooks/useRoomInitialization';
-import { useRoomWebSocket } from './hooks/useRoomWebSocket';
-import { useRoomUrlState } from './hooks/useRoomUrlState';
-import { clearRoomState } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
-import { EphemeralRoom } from './modes/EphemeralRoom';
-import { TabbedRoom } from './modes/TabbedRoom';
-import { LoadingState } from './components/LoadingState';
+
 import { ErrorState } from './components/ErrorState';
 import { RoomErrorBoundary } from './components/RoomErrorBoundary';
+import { RoomConfigProvider } from './contexts/RoomConfigContext';
+import { useRoomInitialization } from './hooks/useRoomInitialization';
+import { useRoomUrlState } from './hooks/useRoomUrlState';
+import { useRoomWebSocket } from './hooks/useRoomWebSocket';
+import { EphemeralRoom } from './modes/EphemeralRoom';
+import { TabbedRoom } from './modes/TabbedRoom';
 import type { RoomConfig } from './types/room.types';
+import ContextMenuRoom from '../../components/contextmenu/ContextMenuRoom.jsx';
+import { clearRoomState } from '../../redux/slices/room';
+import { dispatch } from '../../redux/store';
 
 interface RoomContainerProps extends Omit<RoomConfig, 'mode'> {
   mode?: 'ephemeral' | 'tabs';
@@ -33,10 +34,10 @@ export function RoomContainer({
 }: RoomContainerProps) {
   // Initialize room data
   const { initialized, loading, error } = useRoomInitialization(roomId);
-  
+
   // Setup WebSocket
   useRoomWebSocket(roomId);
-  
+
   // Handle URL state (context, message params)
   // In ephemeral mode, clear thread_id from URL
   useRoomUrlState(roomId, initialized, mode === 'ephemeral');
@@ -55,7 +56,7 @@ export function RoomContainer({
       roomId,
       ...configProps,
     }),
-    [mode, roomId, configProps]
+    [mode, roomId, configProps],
   );
 
   // Show error state
@@ -74,13 +75,14 @@ export function RoomContainer({
     return null;
   }
 
-  // Render appropriate mode with error boundary
+  // Render appropriate mode with error boundary and context menu
   return (
     <RoomErrorBoundary>
       <RoomConfigProvider config={config}>
         {mode === 'ephemeral' ? <EphemeralRoom /> : <TabbedRoom />}
+        {/* Global context menu for messages */}
+        <ContextMenuRoom />
       </RoomConfigProvider>
     </RoomErrorBoundary>
   );
 }
-

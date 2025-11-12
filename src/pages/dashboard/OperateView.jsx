@@ -12,14 +12,6 @@ function OperateView({ altaner }) {
   // Always use frontend_preview_url for operate mode
   const iframeUrl = altaner?.frontend_preview_url;
 
-  // Debug logging
-  console.log('OperateView:', { 
-    altaner, 
-    iframeUrl,
-    frontend_preview_url: altaner?.frontend_preview_url,
-    frontend_live_url: altaner?.frontend_live_url 
-  });
-
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
     setIframeError(false);

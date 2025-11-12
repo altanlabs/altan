@@ -1,4 +1,5 @@
 import React, { Component, ReactNode } from 'react';
+
 import { ErrorState } from './ErrorState';
 
 interface Props {
@@ -39,7 +40,7 @@ export class RoomErrorBoundary extends Component<Props, State> {
       return (
         <ErrorState
           title="Something went wrong"
-          message={this.state.error?.message || "An unexpected error occurred in the room."}
+          message={this.state.error?.message || 'An unexpected error occurred in the room.'}
           onRetry={this.handleReset}
         />
       );
@@ -48,4 +49,3 @@ export class RoomErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-

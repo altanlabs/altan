@@ -20,4 +20,3 @@ export const ViewerMode: React.FC<ViewerModeProps> = ({ containerRef }) => {
     </div>
   );
 };
-

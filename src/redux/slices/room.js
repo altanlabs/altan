@@ -3613,24 +3613,6 @@ export const readThread =
     }
   };
 
-export const changeThreadStatus =
-  ({ threadId, status }) =>
-  async () => {
-    try {
-      const statusToActionMap = {
-        dead: 'close',
-        running: 'revive',
-        blocked: 'block',
-      };
-      const action = statusToActionMap[status];
-      await optimai_room.patch(`/thread/${threadId}/status/${action}`);
-      return Promise.resolve('success');
-    } catch (e) {
-      console.error(`error changing thread status: ${e.message}`);
-      return Promise.reject(e);
-    }
-  };
-
 export const patchThread =
   ({ threadId, name, description, status }) =>
   async () => {
