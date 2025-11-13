@@ -304,6 +304,10 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
         });
         if (content.trim() || files.length > 0) {
           handleSendContent(content);
+          // Clear the editor after sending
+          if (editorRef.current?.clear) {
+            editorRef.current.clear();
+          }
         }
       }
     }, [handleSendContent, files]);

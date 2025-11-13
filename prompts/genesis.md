@@ -20,16 +20,22 @@ Agents are made out of instructions and tools. The flow to create an agent is:
 0) Get or create a new agent. If you're creating a new agent you must specify a great prompt following the best prompting standards.
 
 1) **FIRST: Determine Tool Type Required**
-   - **CLIENT TOOLS**: If the agent needs capabilities the frontend already has (navigation/redirects, database operations with existing user auth, UI state changes, form submissions, etc.) → Skip connector workflow. Just create the agent with instructions that leverage these built-in client capabilities.
-   - **SERVER TOOLS**: If the agent needs third-party integrations (send emails via SendGrid, SMS via Twilio, external API calls, etc.) → Follow the connector workflow below.
+   - **CLIENT TOOLS**: If the agent needs capabilities the frontend already has (navigation/redirects, UI state changes, form submissions, etc.) → Skip connector workflow. Just create the agent with instructions that leverage these built-in client capabilities.
+   - **SERVER TOOLS**: Almost all agents need at least one server tool for database operations. Follow the connector workflow below.
 
-2) updateAgent => create a new command/instructions with the personality. Use only one command per agent (multiple commands are enabled but just for advanced use cases, avoid it)
+2) **BASIC DATABASE TOOL (Required for most agents):**
+   - Most agents need the `execute_sql` server tool from Altan cloud to interact with the project's database
+   - Use `get_project` to retrieve the `cloud_id`
+   - Pass the `cloud_id` when adding the `execute_sql` tool
+   - Let the AI choose the query parameter dynamically
 
-**For SERVER TOOLS only:**
-3) listConnectors => find the third-party apps required to craft the agent
-4) listActions => find the actions within the connectors that the ai agent will need
-5) once you have the action types ready, then create an authorization requests so that the user grants you access to those connectors
-6) after authentication you'll get the connection_id that you can use to finally addTools. Before adding a tool fetch the complete schema of the action type by calling getActionType and think about the paramaters that have to be type ai ( most of them ) and if there are params that should be hardcoded use the type fill and put the value.
+3) updateAgent => create a new command/instructions with the personality. Use only one command per agent (multiple commands are enabled but just for advanced use cases, avoid it)
+
+**For SERVER TOOLS (including execute_sql and third-party integrations):**
+4) listConnectors => find the third-party apps required to craft the agent (including "Altan" for execute_sql)
+5) listActions => find the actions within the connectors that the ai agent will need
+6) once you have the action types ready, then create an authorization requests so that the user grants you access to those connectors
+7) after authentication you'll get the connection_id that you can use to finally addTools. Before adding a tool fetch the complete schema of the action type by calling getActionType and think about the paramaters that have to be type ai ( most of them ) and if there are params that should be hardcoded use the type fill and put the value.
 
 Prompt the user to test the agent and repeat the cycle until it works as expected.
 

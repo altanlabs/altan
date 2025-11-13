@@ -9,6 +9,7 @@ import {
   selectMessagesById,
   fetchThreadResource,
   makeSelectMoreMessages,
+  makeSelectPlaceholderMessagesForThread,
 } from '../../../redux/slices/room';
 import { useSelector, dispatch } from '../../../redux/store';
 import Message from '../../room/thread/Message.jsx';
@@ -53,7 +54,7 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
 
   // Selectors
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
-  const messageIds = useSelector((state) => {
+  const realMessageIds = useSelector((state) => {
     try {
       return messagesIdsSelector(state, threadId) || [];
     } catch (error) {
@@ -61,6 +62,45 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
     }
   });
   const messagesById = useSelector(selectMessagesById);
+
+  // Placeholder messages selector
+  const placeholderMessagesSelector = useMemo(makeSelectPlaceholderMessagesForThread, []);
+  const placeholderMessages = useSelector((state) => placeholderMessagesSelector(state, threadId));
+
+  // Merge real messages with placeholder messages
+  const { messageIds, allMessagesById } = useMemo(() => {
+    // Create a set of response_ids that have real messages
+    const realResponseIds = new Set(
+      Object.values(messagesById)
+        .filter((msg) => msg.response_id)
+        .map((msg) => msg.response_id),
+    );
+
+    // Filter out placeholders that have a corresponding real message
+    const validPlaceholders = placeholderMessages.filter(
+      (placeholder) => !realResponseIds.has(placeholder.response_id),
+    );
+
+    // Create a map for valid placeholder messages
+    const placeholderMap: Record<string, any> = {};
+    validPlaceholders.forEach((msg) => {
+      placeholderMap[msg.id] = msg;
+    });
+
+    // Get valid placeholder IDs
+    const placeholderIds = validPlaceholders.map((p) => p.id);
+    
+    // Combine real and placeholder IDs
+    const combinedIds = [...realMessageIds, ...placeholderIds];
+
+    // Merge messagesById with placeholder messages
+    const combined = { ...messagesById, ...placeholderMap };
+
+    return {
+      messageIds: combinedIds,
+      allMessagesById: combined,
+    };
+  }, [realMessageIds, placeholderMessages, messagesById]);
 
   // Check if there are more messages to load
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
@@ -124,12 +164,12 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
             threadId={threadId}
             mode="main"
             scrollToMessage={() => {}}
-            allMessagesById={messagesById}
+            allMessagesById={allMessagesById}
           />
         </div>
       );
     },
-    [messageIds, threadId, messagesById],
+    [messageIds, threadId, allMessagesById],
   );
 
   if (messageIds.length === 0) {

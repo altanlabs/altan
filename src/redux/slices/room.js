@@ -3208,16 +3208,71 @@ export const selectActiveResponsesByThread = (threadId) =>
 export const selectResponseLifecycleById = (responseId) =>
   createSelector([selectResponseLifecycles], (lifecycles) => lifecycles.byId[responseId] || null);
 
-// Selector for placeholder messages (active responses without message_id yet)
+// Selector for placeholder messages (active activations and responses without message_id yet)
 export const makeSelectPlaceholderMessagesForThread = () =>
   createSelector(
-    [selectResponseLifecycles, selectMembers, (state, threadId) => threadId],
-    (lifecycles, members, threadId) => {
-      const activeResponseIds = lifecycles.activeByThread[threadId] || [];
+    [selectActivationLifecycles, selectResponseLifecycles, selectMembers, (state, threadId) => threadId],
+    (activationLifecycles, responseLifecycles, members, threadId) => {
+      const activeActivationIds = activationLifecycles.activeByThread[threadId] || [];
+      const activeResponseIds = responseLifecycles.activeByThread[threadId] || [];
 
-      return activeResponseIds
+      // Create a set of response_ids that have already transitioned to response phase
+      const responsePhaseIds = new Set(activeResponseIds);
+
+      // Get all activations for this thread (including completed ones that haven't transitioned to response yet)
+      const allActivationsForThread = Object.values(activationLifecycles.byId).filter(
+        (lifecycle) => lifecycle.thread_id === threadId && !lifecycle.discarded,
+      );
+
+      // Create placeholders for activations that haven't transitioned to response phase yet
+      // Include both active and recently completed activations (to avoid gaps)
+      const activationPlaceholders = allActivationsForThread
+        .filter((lifecycle) => {
+          // Only show if not yet in response phase
+          if (responsePhaseIds.has(lifecycle.response_id)) return false;
+
+          // Show if still active
+          if (activeActivationIds.includes(lifecycle.response_id)) return true;
+
+          // Also show recently completed ones (within last 5 seconds) to bridge the gap
+          if (lifecycle.completed_at) {
+            const completedTime = new Date(lifecycle.completed_at).getTime();
+            const now = Date.now();
+            return (now - completedTime) < 5000; // 5 second grace period
+          }
+
+          return false;
+        })
+        .map((lifecycle) => {
+          // Get agent details
+          const roomMember = Object.values(members.byId || {}).find(
+            (member) =>
+              member?.member?.member_type === 'agent' &&
+              member?.member?.agent_id === lifecycle.agent_id,
+          );
+
+          if (!roomMember) return null;
+
+          // Create placeholder message object
+          return {
+            id: `placeholder-activation-${lifecycle.response_id}`,
+            response_id: lifecycle.response_id,
+            member_id: roomMember.id,
+            thread_id: lifecycle.thread_id,
+            date_creation: lifecycle.created_at,
+            isPlaceholder: true,
+            meta_data: {
+              loading: true,
+              status: lifecycle.status,
+            },
+          };
+        })
+        .filter(Boolean);
+
+      // Create placeholders for responses that don't have a real message yet
+      const responsePlaceholders = activeResponseIds
         .map((responseId) => {
-          const lifecycle = lifecycles.byId[responseId];
+          const lifecycle = responseLifecycles.byId[responseId];
           if (!lifecycle || lifecycle.message_id) return null; // Skip if real message exists
 
           // Get agent details
@@ -3231,7 +3286,7 @@ export const makeSelectPlaceholderMessagesForThread = () =>
 
           // Create placeholder message object
           return {
-            id: `placeholder-${responseId}`,
+            id: `placeholder-response-${responseId}`,
             response_id: responseId,
             member_id: roomMember.id,
             thread_id: lifecycle.thread_id,
@@ -3243,7 +3298,10 @@ export const makeSelectPlaceholderMessagesForThread = () =>
             },
           };
         })
-        .filter(Boolean)
+        .filter(Boolean);
+
+      // Merge and sort by creation time
+      return [...activationPlaceholders, ...responsePlaceholders]
         .sort((a, b) => new Date(a.date_creation) - new Date(b.date_creation));
     },
     {
