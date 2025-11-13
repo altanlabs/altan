@@ -611,6 +611,21 @@ export const UserDropdown = () => {
 
                 <DropdownMenuItem
                   className="p-2 rounded-lg cursor-pointer"
+                  onClick={() => {
+                    history.push('/referrals');
+                  }}
+                >
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Icon
+                      icon="mdi:gift-outline"
+                      className="size-5 text-gray-500 dark:text-gray-400"
+                    />
+                    Get Free Credits
+                  </span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  className="p-2 rounded-lg cursor-pointer"
                   onClick={handleIntegration}
                 >
                   <span className="flex items-center gap-1.5 font-medium">
