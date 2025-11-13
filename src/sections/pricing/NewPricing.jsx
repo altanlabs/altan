@@ -92,6 +92,19 @@ const trackCheckoutEvent = (plan, billingOption, planType) => {
       });
     }
 
+    // Track with Tracklution
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'InitiateCheckout', {
+        value,
+        currency,
+        plan_id: plan.id,
+        plan_name: plan.name,
+        plan_type: planType,
+        billing_frequency: billingOption.billing_frequency,
+        credits_included: plan.credits,
+      });
+    }
+
     // Track with Facebook Pixel (existing)
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('track', 'InitiateCheckout', {
@@ -360,6 +373,16 @@ export default function NewPricing() {
         is_authenticated: isAuthenticated,
       });
 
+      // Track with Tracklution
+      if (typeof window !== 'undefined' && window.tlq) {
+        window.tlq('track', 'Lead', {
+          plan_type: 'enterprise',
+          lead_source: 'pricing_page',
+          action: 'book_call',
+          account_id: accountId,
+        });
+      }
+
       // Track lead generation with GA4 (existing)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'generate_lead', {
@@ -368,6 +391,14 @@ export default function NewPricing() {
           plan_type: 'enterprise',
           lead_source: 'pricing_page',
           action: 'book_call',
+        });
+      }
+
+      // Track with Facebook Pixel
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Lead', {
+          content_name: 'enterprise_plan',
+          content_category: 'pricing',
         });
       }
 

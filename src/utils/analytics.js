@@ -39,9 +39,9 @@ export const trackSignUp = (method = 'default') => {
     // Track analytics event
     analytics.signUp(method, eventParams);
 
-    // Track with Tracklution
+    // Track with Tracklution (using CompleteRegistration to match Tracklution events)
     if (typeof window !== 'undefined' && window.tlq) {
-      window.tlq('track', 'SignUp', eventParams);
+      window.tlq('track', 'CompleteRegistration', eventParams);
     }
 
     // Check if gtag is available (keep existing GA4 tracking)
@@ -50,6 +50,11 @@ export const trackSignUp = (method = 'default') => {
       window.gtag('event', 'sign_up', eventParams);
     } else {
       console.warn('❌ gtag not available - GA4 sign-up tracking skipped');
+    }
+
+    // Track with Facebook Pixel
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'CompleteRegistration', eventParams);
     }
 
     const logData = { method, ...urlParams };
@@ -253,5 +258,181 @@ export const setContactInfo = (contactInfo) => {
     logTrackingEvent('contact_info_set', contactInfo);
   } catch (error) {
     console.error('💥 Error setting contact info:', error);
+  }
+};
+
+/**
+ * Track ViewContent event
+ * @param {object} properties - Content properties (e.g., content_type, content_id, content_name)
+ */
+export const trackViewContent = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'ViewContent', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'view_item', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'ViewContent', properties);
+    }
+
+    console.log('✅ ViewContent event tracked:', properties);
+    logTrackingEvent('view_content', properties);
+  } catch (error) {
+    console.error('💥 Error tracking ViewContent event:', error);
+  }
+};
+
+/**
+ * Track Lead event
+ * @param {object} properties - Lead properties
+ */
+export const trackLead = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'Lead', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'generate_lead', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Lead', properties);
+    }
+
+    console.log('✅ Lead event tracked:', properties);
+    logTrackingEvent('lead', properties);
+  } catch (error) {
+    console.error('💥 Error tracking Lead event:', error);
+  }
+};
+
+/**
+ * Track AddToCart event
+ * @param {object} properties - Cart properties (e.g., value, currency, items)
+ */
+export const trackAddToCart = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'AddToCart', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'add_to_cart', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'AddToCart', properties);
+    }
+
+    console.log('✅ AddToCart event tracked:', properties);
+    logTrackingEvent('add_to_cart', properties);
+  } catch (error) {
+    console.error('💥 Error tracking AddToCart event:', error);
+  }
+};
+
+/**
+ * Track InitiateCheckout event
+ * @param {object} properties - Checkout properties (e.g., value, currency, items)
+ */
+export const trackInitiateCheckout = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'InitiateCheckout', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'begin_checkout', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'InitiateCheckout', properties);
+    }
+
+    console.log('✅ InitiateCheckout event tracked:', properties);
+    logTrackingEvent('initiate_checkout', properties);
+  } catch (error) {
+    console.error('💥 Error tracking InitiateCheckout event:', error);
+  }
+};
+
+/**
+ * Track StartTrial event
+ * @param {object} properties - Trial properties (e.g., plan_name, value, currency)
+ */
+export const trackStartTrial = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'StartTrial', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'start_trial', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'StartTrial', properties);
+    }
+
+    console.log('✅ StartTrial event tracked:', properties);
+    logTrackingEvent('start_trial', properties);
+  } catch (error) {
+    console.error('💥 Error tracking StartTrial event:', error);
+  }
+};
+
+/**
+ * Track AddPaymentInfo event
+ * @param {object} properties - Payment info properties
+ */
+export const trackAddPaymentInfo = (properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'AddPaymentInfo', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'add_payment_info', properties);
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'AddPaymentInfo', properties);
+    }
+
+    console.log('✅ AddPaymentInfo event tracked:', properties);
+    logTrackingEvent('add_payment_info', properties);
+  } catch (error) {
+    console.error('💥 Error tracking AddPaymentInfo event:', error);
+  }
+};
+
+/**
+ * Track CompleteRegistration event (alias for trackSignUp for consistency with Tracklution)
+ * @param {string} method - The method used for registration
+ * @param {object} properties - Additional properties
+ */
+export const trackCompleteRegistration = (method = 'default', properties = {}) => {
+  try {
+    if (typeof window !== 'undefined' && window.tlq) {
+      window.tlq('track', 'CompleteRegistration', { method, ...properties });
+    }
+
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'sign_up', { method, ...properties });
+    }
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'CompleteRegistration', { method, ...properties });
+    }
+
+    console.log('✅ CompleteRegistration event tracked:', { method, ...properties });
+    logTrackingEvent('complete_registration', { method, ...properties });
+  } catch (error) {
+    console.error('💥 Error tracking CompleteRegistration event:', error);
   }
 };

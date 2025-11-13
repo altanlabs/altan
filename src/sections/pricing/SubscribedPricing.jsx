@@ -132,6 +132,49 @@ export default function SubscribedPricing() {
         return;
       }
 
+      // Track checkout initiation
+      const value = billingOption.price / 100; // Convert cents to euros
+      const currency = 'EUR';
+
+      // Track with Tracklution
+      if (typeof window !== 'undefined' && window.tlq) {
+        window.tlq('track', 'InitiateCheckout', {
+          value,
+          currency,
+          plan_id: selectedPlan.id,
+          plan_name: selectedPlan.name,
+          plan_type: 'growth_upgrade',
+          billing_frequency: billingOption.billing_frequency,
+          credits_included: selectedPlan.credits,
+          source: 'subscribed_pricing_page',
+        });
+      }
+
+      // Track with GA4
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'begin_checkout', {
+          currency,
+          value,
+          items: [
+            {
+              item_id: selectedPlan.id,
+              item_name: selectedPlan.name,
+              item_category: 'subscription_upgrade',
+              price: value,
+              quantity: 1,
+            },
+          ],
+        });
+      }
+
+      // Track with Facebook Pixel
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'InitiateCheckout', {
+          value,
+          currency,
+        });
+      }
+
       const response = await optimai_shop.get('/stripe/subscribe', {
         params: {
           account_id: accountId,
@@ -146,6 +189,38 @@ export default function SubscribedPricing() {
   };
 
   const handleEnterpriseContact = () => {
+    // Track lead generation for enterprise plan
+    try {
+      // Track with Tracklution
+      if (typeof window !== 'undefined' && window.tlq) {
+        window.tlq('track', 'Lead', {
+          plan_type: 'enterprise',
+          lead_source: 'subscribed_pricing_page',
+          action: 'contact_sales',
+          account_id: accountId,
+        });
+      }
+
+      // Track with GA4
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'generate_lead', {
+          plan_type: 'enterprise',
+          lead_source: 'subscribed_pricing_page',
+          action: 'contact_sales',
+        });
+      }
+
+      // Track with Facebook Pixel
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Lead', {
+          content_name: 'enterprise_plan',
+          content_category: 'subscription_upgrade',
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking lead generation:', error);
+    }
+
     window.open('https://calendar.app.google/m56phyYffHxMzX6Y7', '_blank');
   };
 
