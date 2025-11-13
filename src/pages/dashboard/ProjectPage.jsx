@@ -136,16 +136,6 @@ export default function ProjectPage() {
       });
     }
   }, [altaner?.room_id, displayMode]);
-
-  const handleMobileToggle = React.useCallback((view) => {
-    setMobileActiveView(view);
-  }, []);
-
-  // Handle item selection for flows/agents
-  const handleItemSelect = React.useCallback((selectedItemId) => {
-    history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
-  }, [history, altanerId, componentId]);
-
   // Check if we're in fullscreen mobile mode
   const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
   // Get active component from URL path param

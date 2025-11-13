@@ -284,27 +284,26 @@
     }(document, 'script', 'facebook-jssdk'));
   </script>
   
-<!-- 
-   <script 
-        src="https://altan.ai/sdk/altan-widget.js"
-        data-account-id="afd0ea2c-b44a-475b-b433-096eece24085"
-        data-agent-id="10a3835b-c8a3-4bbd-b9be-a3a7dea7bc11"
-        data-placeholder="How can I help you?"
-        data-guest-name="Local Tester"
-        data-theme="dark"
-        data-tabs="false"
-        data-voice-enabled="true"
-        data-suggestions='["Hello","How can I help?","I need support"]'
-        data-primary-color="#000000"
-        data-background-color="#ffffff"
-        data-background-blur="true"
-        data-position="bottom-center"
-        data-width="300"
-        data-room-width="500"
-        data-room-height="650"
-        data-border-radius="20"
-    ></script>  -->
+
     
+  <!-- Tracklution Main Script -->
+  <script>
+    !function(t,l,r,o,c,k,s)
+    {if(t.tlq)return;c=t.tlq=function(){c.callMethod?
+        c.callMethod(arguments):c.queue.push(arguments)};
+        if(!t._tlq)t._tlq=c;c.push=c;c.loaded=!0;c.version='1.0';c.src=o;
+        c.queue=[];k=l.createElement(r);k.async=!0;c.pd = false;c.tools = null;
+        k.src=o;s=l.getElementsByTagName(r)[0];
+        s.parentNode.insertBefore(k,s);k.onerror=function(){
+        o='https://main-3289.trlution.com/js/script-dynamic.js?version=1763058054198';
+        t._tlq.src=o;k=l.createElement(r);k.async=!0;k.src=o;
+        s.parentNode.insertBefore(k, s)
+        }}(window,document,'script',
+        'https://tralut.altan.ai/js/script-dynamic.js?version=1763058054198')
+    tlq('init', 'LS-84415965-6');
+  </script>
+  <!-- End Tracklution Main Script -->
+
   <!-- Facebook Pixel Code -->
   <script>
     !function(f,b,e,v,n,t,s)
@@ -329,6 +328,13 @@
   <!-- <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TXMH838"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript> -->
     <!-- <script src="/altan-agent-widget.js" altan-agent-id="c56263e9-0679-4a86-bbf0-bfda2467cf50"></script> -->
+  
+  <!-- Tracklution PageView Event -->
+  <script>
+    tlq('track', 'PageView');
+  </script>
+  <!-- End Tracklution PageView Event -->
+
   <!-- Facebook Pixel NoScript -->
   <noscript>
     <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=885037333313512&ev=PageView&noscript=1"/>
