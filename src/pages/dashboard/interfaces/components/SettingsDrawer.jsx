@@ -14,7 +14,6 @@ import { memo, useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import AddCollaboratorDialog from './AddCollaboratorDialog.jsx';
-import AddDomainDialog from './AddDomainDialog.jsx';
 import CommitDialog from './CommitDialog.jsx';
 import EditMemoryDialog from './EditMemoryDialog.jsx';
 import Iconify from '../../../../components/iconify/Iconify.jsx';
@@ -22,21 +21,15 @@ import { selectAccountId, selectIsAccountFree, updateInterfaceById } from '../..
 import { dispatch, useSelector } from '../../../../redux/store.js';
 import { optimai_pods, optimai_room } from '../../../../utils/axios';
 
-function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
+function SettingsDrawer({ open, onClose, onAddCollaborator, ui }) {
   const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDomainDialogOpen, setIsDomainDialogOpen] = useState(false);
   const [isAddCollabDialogOpen, setIsAddCollabDialogOpen] = useState(false);
   const [isMemoryDialogOpen, setIsMemoryDialogOpen] = useState(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
-
-  const handleAddDomain = () => {
-    setIsDomainDialogOpen(true);
-    if (onAddDomain) onAddDomain();
-  };
 
   const handleAddCollaborator = () => {
     setIsAddCollabDialogOpen(true);
@@ -130,97 +123,6 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
               </Typography>
 
               <Stack spacing={3}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.800' : 'white'),
-                    border: '1px solid',
-                    borderColor: (theme) =>
-                      theme.palette.mode === 'dark' ? 'grey.700' : 'grey.200',
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 0.5 }}
-                  >
-                    Custom Domain
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    Configure a custom domain for your interface
-                  </Typography>
-
-                  {ui?.meta_data?.domains && Object.entries(ui.meta_data.domains).length > 0 && (
-                    <Stack
-                      spacing={1}
-                      sx={{ mb: 2 }}
-                    >
-                      {Object.entries(ui.meta_data.domains).map(([domain]) => (
-                        <Box
-                          key={domain}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 1,
-                            bgcolor: (theme) =>
-                              theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            alignItems="center"
-                            justifyContent="space-between"
-                          >
-                            <Link
-                              href={`https://${domain}`}
-                              target="_blank"
-                              underline="hover"
-                              sx={{
-                                fontFamily: 'monospace',
-                                color: 'inherit',
-                                '&:hover': { color: 'primary.main' },
-                              }}
-                            >
-                              {domain}
-                            </Link>
-                            <IconButton
-                              size="small"
-                              onClick={async () => {
-                                try {
-                                  await optimai_pods.delete(`/interfaces/${ui.id}/domains/${domain}`);
-                                  // You might want to refresh the interface data here
-                                } catch (error) {
-                                  console.error('Failed to delete domain:', error);
-                                }
-                              }}
-                            >
-                              <Iconify icon="mdi:delete" />
-                            </IconButton>
-                          </Stack>
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-
-                  <Button
-                    variant="outlined"
-                    startIcon={<Iconify icon="mdi:web" />}
-                    onClick={handleAddDomain}
-                    fullWidth
-                    sx={{
-                      py: 1,
-                      bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.900' : 'white'),
-                    }}
-                  >
-                    Add Domain
-                  </Button>
-                </Box>
-
                 <Box
                   sx={{
                     p: 2,
@@ -591,11 +493,6 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
         </Box>
       </Drawer>
 
-      <AddDomainDialog
-        open={isDomainDialogOpen}
-        onClose={() => setIsDomainDialogOpen(false)}
-        ui={ui}
-      />
       <AddCollaboratorDialog
         open={isAddCollabDialogOpen}
         onClose={() => setIsAddCollabDialogOpen(false)}

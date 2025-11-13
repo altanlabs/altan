@@ -337,9 +337,20 @@ const AgentMessagingWidget = () => {
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background shadow-sm" />
                       </div>
                       <div className="flex-1 min-w-0 overflow-hidden">
-                        <h4 className="font-semibold text-sm text-foreground truncate">
-                          {agent.name}
-                        </h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-semibold text-sm text-foreground truncate">
+                            {agent.name}
+                          </h4>
+                          {agent.cloned_from && (
+                            <div 
+                              className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/30"
+                              title="Cloned agent"
+                            >
+                              <Iconify icon="mdi:content-copy" width={10} className="text-blue-400" />
+                              <span className="text-[9px] font-medium text-blue-400">CLONE</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <Button
                         onClick={(e) => handleEditAgent(agent, e)}
