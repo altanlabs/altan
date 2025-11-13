@@ -123,6 +123,9 @@ function CreateAnything({ handleVoice }) {
               github_url: githubData.url,
               branch: githubData.branch || 'main',
             }),
+            ...(githubData?.token && {
+              github_token: githubData.token,
+            }),
           }),
         });
 
@@ -186,6 +189,9 @@ function CreateAnything({ handleVoice }) {
           ...(githubData?.url && {
             github_url: githubData.url,
             branch: githubData.branch || 'main',
+          }),
+          ...(githubData?.token && {
+            github_token: githubData.token,
           }),
         }),
       });
