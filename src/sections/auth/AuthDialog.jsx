@@ -39,9 +39,8 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
     try {
       setIsLoading(true);
       if (loginWithGoogle) {
-        await loginWithGoogle(invitation?.id, idea?.id);
+        await loginWithGoogle();
       }
-      onOpenChange(false);
     } catch (error) {
       console.error(error);
     } finally {

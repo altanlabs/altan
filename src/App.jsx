@@ -30,7 +30,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Provider as ReduxProvider } from 'react-redux';
 import { PersistGate } from 'redux-persist/lib/integration/react';
 // @mui
-import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // ionic
 import { IonApp, setupIonicReact } from '@ionic/react';
@@ -44,7 +43,6 @@ import SnackbarProvider from './components/snackbar';
 import CookieBanner from './components/cookie-banner';
 import CookieManager from './components/cookie-banner/CookieManager';
 import FeedbackManager from './components/feedback/FeedbackManager';
-import GoogleOneTap from './components/auth/GoogleOneTap.jsx';
 import ThemeLocalization from './locales';
 import { store, persistor } from './redux/store';
 // routes
@@ -71,11 +69,10 @@ setupIonicReact({
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId="389448867152-le0q74dqqbiu5ekdvej0h6dav69bbd1p.apps.googleusercontent.com">
-      <IonApp>
-        <IonReactRouter>
-          <AuthProvider>
-            <HelmetProvider>
+    <IonApp>
+      <IonReactRouter>
+        <AuthProvider>
+          <HelmetProvider>
             <ReduxProvider store={store}>
               <PersistGate
                 loading={null}
@@ -88,25 +85,23 @@ function App() {
                         <ThemeSettings>
                           <ThemeLocalization>
                             <SnackbarProvider>
-                              <GoogleOneTap />
                               <Router />
                               <CookieBanner />
                               <CookieManager />
                               <FeedbackManager />
-            </SnackbarProvider>
-          </ThemeLocalization>
-        </ThemeSettings>
-      </ThemeProvider>
-    </MotionLazyContainer>
-  </SettingsProvider>
-</LocalizationProvider>
+                            </SnackbarProvider>
+                          </ThemeLocalization>
+                        </ThemeSettings>
+                      </ThemeProvider>
+                    </MotionLazyContainer>
+                  </SettingsProvider>
+                </LocalizationProvider>
               </PersistGate>
             </ReduxProvider>
           </HelmetProvider>
         </AuthProvider>
       </IonReactRouter>
     </IonApp>
-    </GoogleOAuthProvider>
   );
 }
 
