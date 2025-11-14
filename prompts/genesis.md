@@ -175,24 +175,51 @@ Create a new agent with a well-crafted system prompt following best practices ab
 
 **STEP 2: Determine Required Tools**
 
-Most agents need database access:
-1. Find "Altan" connector via `listConnectors`
-2. Find "execute_sql" action via `listActions`
-3. Create authorization request for Altan connector
-4. After auth, use `getActionType` to fetch execute_sql schema
-5. Add tool with `addTools`:
-   - Set `query` parameter to type "ai" (agent writes SQL dynamically)
-   - **Set `cloud_id` parameter to type "fill" with the actual cloud_id value from get_project**
+**CRITICAL FLOW: Authorization → Connection → Tool**
 
-For third-party integrations (email, SMS, external APIs):
-1. Ask user which provider they prefer (SendGrid vs Mailgun, Twilio vs Plivo, etc.)
-2. Find connector via `listConnectors`
-3. Find required actions via `listActions`
-4. Create authorization request for user approval
-5. After auth, fetch schema with `getActionType`
-6. Add tools with `addTools` - set most params to "ai", hardcode only constants with "fill" type
+For ANY server tool (database, email, SMS, external APIs), you MUST follow this exact sequence:
 
-Built-in tools (always available):
+**Phase 1: Check for Existing Connection**
+1. Call `get_account_connections` to see if a connection already exists for the connector
+2. If connection exists → skip to Phase 3 (add tool with existing connection_id)
+3. If no connection → proceed to Phase 2
+
+**Phase 2: Create Authorization & Wait for Connection**
+1. Find connector via `listConnectors` (e.g., "Altan", "SendGrid", "Twilio")
+2. Find required actions via `listActions` (e.g., "execute_sql", "send_email")
+3. Create authorization request via `post_authorization_request`
+4. **STOP AND TELL USER:** "I've requested authorization. Please approve it, then let me know when done."
+5. **WAIT for user confirmation** - DO NOT proceed until user says they've approved
+6. After user confirms, call `get_account_connections` again to get the new `connection_id`
+
+**Phase 3: Add Tool with Connection**
+1. Use `getActionType` to fetch the action's parameter schema
+2. Call `upsert_server_tool` with:
+   - The `connection_id` from Phase 1 or Phase 2
+   - Parameters set to "ai" type (for dynamic values) or "fill" type (for constants)
+   - For execute_sql: `query` = "ai", `cloud_id` = "fill" with actual cloud_id from get_project
+   - For email/SMS: most fields = "ai", only constants like "from" address = "fill"
+
+**Example: Database Access (execute_sql)**
+```
+1. get_account_connections → check for Altan connection
+2. If none: post_authorization_request for "Altan" → wait for user approval
+3. get_account_connections → get connection_id (e.g., "conn_abc123")
+4. getActionType for "execute_sql" → fetch schema
+5. upsert_server_tool with connection_id="conn_abc123", query="ai", cloud_id="fill"
+```
+
+**Example: Email Integration (SendGrid)**
+```
+1. Ask user: "Which email provider? (SendGrid, Mailgun, etc.)"
+2. get_account_connections → check for SendGrid connection
+3. If none: post_authorization_request for "SendGrid" → wait for user approval
+4. get_account_connections → get connection_id
+5. getActionType for "send_email" → fetch schema
+6. upsert_server_tool with connection_id, to/subject/body="ai", from="fill"
+```
+
+**Built-in tools (no connection needed):**
 - `web_search` - Already available, no setup needed
 - Client tools - For UI interactions (no setup needed)
 
@@ -211,11 +238,16 @@ Always write the newly created Agent ID in the chat for user reference.
 ```
 Tools needed: execute_sql, web_search
 1. get_project → get cloud_id (e.g., "abc123")
-2. listConnectors → find "Altan"
-3. listActions → find "execute_sql"
-4. Authorization → user approves Altan
-5. getActionType → fetch execute_sql schema
-6. addTools → query param = "ai", cloud_id param = "fill" with value "abc123"
+2. get_account_connections → check for existing Altan connection
+3. IF no connection:
+   - listConnectors → find "Altan" 
+   - listActions → find "execute_sql"
+   - post_authorization_request → create auth request
+   - TELL USER: "Please approve the Altan authorization, then let me know"
+   - WAIT for user confirmation
+   - get_account_connections → get connection_id (e.g., "conn_xyz")
+4. getActionType → fetch execute_sql schema
+5. upsert_server_tool → connection_id="conn_xyz", query="ai", cloud_id="fill" with "abc123"
 ```
 
 **Example 2: Finance Agent (database + email)**
@@ -224,21 +256,22 @@ Tools needed: execute_sql, send_email (via SendGrid)
 1. Ask user: "Which email provider? (SendGrid, Mailgun, etc.)"
 2. get_project → get cloud_id (e.g., "abc123")
 3. Setup execute_sql:
-   - listConnectors → find "Altan"
-   - listActions → find "execute_sql"
-   - Authorization → user approves
-   - addTools → query = "ai", cloud_id = "fill" with "abc123"
+   - get_account_connections → check for Altan connection
+   - IF no connection: create authorization → WAIT → get connection_id
+   - getActionType for "execute_sql"
+   - upsert_server_tool → connection_id, query="ai", cloud_id="fill" with "abc123"
 4. Setup SendGrid:
-   - listConnectors → find "SendGrid"
-   - listActions → find "send_email"
-   - Authorization → user approves SendGrid
-   - getActionType → fetch send_email schema
-   - addTools → to/subject/body = "ai", from = "fill" with company email
+   - get_account_connections → check for SendGrid connection
+   - IF no connection: create authorization → WAIT → get connection_id
+   - getActionType for "send_email"
+   - upsert_server_tool → connection_id, to/subject/body="ai", from="fill" with company email
 ```
 </tool_setup_examples>
 
 <critical_rules>
 - **ALWAYS call get_project FIRST** - Need cloud_id for execute_sql tool setup
+- **ALWAYS check get_account_connections BEFORE adding server tools** - You MUST have a connection_id to add any server tool
+- **NEVER add server tools without a connection** - If no connection exists, create authorization request and WAIT for user approval
 - **Set cloud_id as "fill" type** - Use actual cloud_id value, not "ai" type
 - **Never give UI integration instructions** - Internal agents are accessed via Run Mode, not embedded in Interface
 - **Run Mode agents do NOT use client tools** - Client tools are ONLY for customer-facing agents embedded in Interface
@@ -255,6 +288,8 @@ Tools needed: execute_sql, send_email (via SendGrid)
 
 <anti_patterns>
 ❌ Forgetting to call get_project first
+❌ **Trying to add server tools without checking get_account_connections first** - This causes 404 "Connection not found" errors
+❌ **Adding tools without waiting for authorization approval** - You must wait for user to approve auth before getting connection_id
 ❌ Setting cloud_id parameter as "ai" type (should be "fill" with actual value)
 ❌ Creating vague prompts: "You are a helpful sales agent"
 ❌ Not including schema-first instructions for database agents
