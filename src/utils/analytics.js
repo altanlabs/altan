@@ -26,6 +26,9 @@ const logTrackingEvent = (eventType, data) => {
  * Track sign-up event with URL parameters
  * This captures UTM parameters, invitation IDs, idea IDs, and other query params
  * @param {string} method - The method used for sign-up (e.g., 'google', 'email', 'default')
+ *
+ * IMPORTANT: Signup events are ALWAYS sent to Google Analytics regardless of cookie consent
+ * because they are critical business metrics. We temporarily grant analytics consent for this event.
  */
 export const trackSignUp = (method = 'default') => {
   try {
@@ -44,10 +47,17 @@ export const trackSignUp = (method = 'default') => {
       window.tlq('track', 'CompleteRegistration', eventParams);
     }
 
-    // Check if gtag is available (keep existing GA4 tracking)
+    // ALWAYS send signup to GA4 regardless of cookie consent (critical business metric)
     if (typeof window !== 'undefined' && window.gtag) {
+      // Temporarily grant analytics consent for this signup event
+      window.gtag('consent', 'update', {
+        analytics_storage: 'granted',
+      });
+
       // Send event to GA4
       window.gtag('event', 'sign_up', eventParams);
+
+      console.log('✅ GA4 sign-up event sent (consent granted for critical business event)');
     } else {
       console.warn('❌ gtag not available - GA4 sign-up tracking skipped');
     }
@@ -176,7 +186,11 @@ export const trackPurchase = (value, currency = 'USD', additionalParams = {}) =>
         currency,
         ...additionalParams,
       });
-      console.log('✅ Tracklution Purchase event tracked:', { value, currency, ...additionalParams });
+      console.log('✅ Tracklution Purchase event tracked:', {
+        value,
+        currency,
+        ...additionalParams,
+      });
     } else {
       console.warn('❌ Tracklution (tlq) not available - Purchase tracking skipped');
     }

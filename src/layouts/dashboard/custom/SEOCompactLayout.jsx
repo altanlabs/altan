@@ -166,7 +166,7 @@ const SEOCompactLayout = ({
   // Generate default meta tags if not provided
   const defaultTitle = title || 'Altan';
   const defaultDescription = description || 'Build intelligent software with AI';
-  const defaultOgImage = ogImage || 'https://www.altan.ai/opengraph.jpeg';
+  const defaultOgImage = ogImage || 'https://www.altan.ai/opengraph.png';
 
   return (
     <>
