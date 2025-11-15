@@ -79,26 +79,53 @@ function AuthGuard({ children, requireAuth = false }) {
         window.location.href = '/';
       }
       let selectedAccount = null;
+      let accountId = null;
+      
+      // Check for acc parameter in URL - this takes priority
       if (searchParams.has('acc')) {
-        selectedAccount = accounts.find((elem) => elem.id === searchParams.get('acc'));
-        if (selectedAccount) {
-          searchParams.delete('acc');
-          setSearchParams(searchParams);
-          localStorage.setItem('OAIPTACC', selectedAccount.id);
+        accountId = searchParams.get('acc');
+        selectedAccount = accounts.find((elem) => elem.id === accountId);
+        
+        // Set in localStorage regardless of whether it's in accounts array
+        // This allows cached tokens to work with any account
+        localStorage.setItem('OAIPTACC', accountId);
+        
+        // Clean up URL
+        searchParams.delete('acc');
+        setSearchParams(searchParams);
+        
+        // If not in accounts array, create a minimal account object
+        if (!selectedAccount) {
+          selectedAccount = {
+            id: accountId,
+            name: 'Loading...',
+            credit_balance: 0,
+          };
         }
       }
+      
+      // Check localStorage if no acc parameter
       if (!selectedAccount && storageAvailable) {
         const storageAccount = localStorage.getItem('OAIPTACC');
         if (!!storageAccount) {
           selectedAccount = accounts.find((elem) => elem.id === storageAccount);
+          // Don't remove from localStorage if not found - might be a cached token case
           if (!selectedAccount) {
-            localStorage.removeItem('OAIPTACC');
+            // Create minimal account object
+            selectedAccount = {
+              id: storageAccount,
+              name: 'Loading...',
+              credit_balance: 0,
+            };
           }
         }
       }
+      
+      // Fallback to first account
       if (!selectedAccount) {
         selectedAccount = accounts[0];
       }
+      
       batch(() => {
         dispatch(setUser(user));
         dispatch(setAccounts(accounts));
