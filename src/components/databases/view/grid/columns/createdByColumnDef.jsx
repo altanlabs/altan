@@ -1,12 +1,12 @@
 import { Chip } from '@mui/material';
 import { useSelector } from 'react-redux';
 
+import { createUserDisplayValueSelector } from '../../../../../redux/slices/bases.ts';
 import Iconify from '../../../../iconify/Iconify';
-import { createUserDisplayValueSelector } from '../../../../../redux/slices/bases';
 
 const UserChip = ({ baseId, userId }) => {
   const userDisplayValue = useSelector(createUserDisplayValueSelector(baseId, userId));
-  
+
   if (!userId) {
     return (
       <Chip
@@ -18,8 +18,8 @@ const UserChip = ({ baseId, userId }) => {
 
   // If userDisplayValue is the same as userId, it means we couldn't find user data
   // So let's show a truncated version of the ID for better UX
-  const displayLabel = userDisplayValue === userId 
-    ? `${userId.substring(0, 8)}...` 
+  const displayLabel = userDisplayValue === userId
+    ? `${userId.substring(0, 8)}...`
     : userDisplayValue;
 
   return (

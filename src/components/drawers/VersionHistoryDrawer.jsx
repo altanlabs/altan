@@ -12,7 +12,7 @@ import { styled } from '@mui/system';
 import { useDispatch } from 'react-redux';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { markTemplateVersionAsSelected } from '../../redux/slices/general';
+import { markTemplateVersionAsSelected } from '../../redux/slices/general/index.ts';
 import { fToNow } from '../../utils/formatTime';
 import Iconify from '../iconify';
 

@@ -5,7 +5,7 @@ import React, { memo, useCallback, useEffect, useState } from 'react';
 import BasicOpGroup from './BasicOpGroup';
 import ConditionSelector from './ConditionSelector';
 import LogicalGroup from './LogicalGroup';
-import { checkObjectsEqual } from '../../../redux/helpers/memoize';
+import { checkObjectsEqual } from '../../../redux/helpers/memoize.ts';
 import Iconify from '../../iconify';
 
 const exportQuerySpec = (inSpec) => {

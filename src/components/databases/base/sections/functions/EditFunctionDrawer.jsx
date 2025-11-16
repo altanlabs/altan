@@ -15,7 +15,7 @@ import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
 import { updateFunctionThunk } from '../../../../../redux/slices/services';
-import { dispatch } from '../../../../../redux/store';
+import { dispatch } from '../../../../../redux/store.ts';
 
 function EditFunctionDrawer({ open, onClose, baseId, functionData, onSuccess, onError }) {
   const theme = useTheme();

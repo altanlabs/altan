@@ -3,13 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import StarterCategories from './starters/StarterCategories';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { TextGenerateEffect } from '../../components/elevenlabs/ui/text-generate-effect';
 import { useSettingsContext } from '../../components/settings';
 import { PromptBox } from '../../components/ui/chatgpt-prompt-input';
 import useLocales from '../../locales/useLocales';
 import QuickAccessSection from '../../pages/dashboard/NewDashboardPage/QuickAccessSection';
-import { createAgent, selectIsAccountFree } from '../../redux/slices/general';
+import { createAgent, selectIsAccountFree } from '../../redux/slices/general/index.ts';
 
 const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
   const { resolvedThemeMode } = useSettingsContext();

@@ -1,23 +1,23 @@
+/* global setTimeout */
 import { throttle } from 'lodash';
-import { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Button } from '@/components/ui/button';
 
+import { makeSelectPlaceholderMessagesForThread } from '../../../redux/slices/room/selectors/lifecycleSelectors';
+import { selectMessagesById } from '../../../redux/slices/room/selectors/messageSelectors';
 import {
   makeSelectSortedThreadMessageIds,
-  selectMessagesById,
-  fetchThreadResource,
   makeSelectMoreMessages,
-  makeSelectPlaceholderMessagesForThread,
-} from '../../../redux/slices/room';
+} from '../../../redux/slices/room/selectors/threadSelectors';
+import { fetchThreadResource } from '../../../redux/slices/room/thunks/threadThunks';
 import { useSelector, dispatch } from '../../../redux/store';
-import Message from '../../room/thread/Message.jsx';
+import Message from '../components/Message.jsx';
 import { SCROLL_THRESHOLDS } from '../constants/room.constants';
-// Reuse legacy Message component temporarily (handles parts, thinking, tools)
 
 // --- Icon Components ---
-const ArrowDownIcon = () => (
+const ArrowDownIcon = (): React.JSX.Element => (
   <svg
     width="20"
     height="20"
@@ -28,6 +28,16 @@ const ArrowDownIcon = () => (
   >
     <path d="M12 5v14M19 12l-7 7-7-7" />
   </svg>
+);
+
+// --- Loading Indicator Component ---
+const LoadingIndicator = (): React.JSX.Element => (
+  <div className="w-full flex justify-center py-6">
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+      <span>Loading more messages...</span>
+    </div>
+  </div>
 );
 
 interface ThreadMessagesProps {
@@ -46,21 +56,10 @@ interface ThreadMessagesProps {
  * - Simplify scroll logic
  * - Target: ~200-250 lines
  */
-export function ThreadMessages({ threadId }: ThreadMessagesProps) {
-  // CRITICAL: If threadId is 'new', return empty immediately - no selectors
-  if (threadId === 'new') {
-    return null;
-  }
-
+export function ThreadMessages({ threadId }: ThreadMessagesProps): React.JSX.Element | null {
   // Selectors
   const messagesIdsSelector = useMemo(makeSelectSortedThreadMessageIds, []);
-  const realMessageIds = useSelector((state) => {
-    try {
-      return messagesIdsSelector(state, threadId) || [];
-    } catch (error) {
-      return [];
-    }
-  });
+  const realMessageIds = useSelector((state) => messagesIdsSelector(state, threadId) || []);
   const messagesById = useSelector(selectMessagesById);
 
   // Placeholder messages selector
@@ -69,29 +68,46 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
 
   // Merge real messages with placeholder messages
   const { messageIds, allMessagesById } = useMemo(() => {
+    // Fallback: if selector returns no IDs but messages exist in Redux,
+    // derive IDs directly from messagesById using thread_id.
+    let effectiveRealIds = realMessageIds;
+    if (effectiveRealIds.length === 0 && Object.keys(messagesById || {}).length > 0) {
+      const derivedIds =
+        Object.values(messagesById || {})
+          .filter((msg: any) => msg.thread_id === threadId)
+          .map((msg: any) => msg.id)
+          .filter(Boolean);
+
+      effectiveRealIds = derivedIds;
+    }
+
     // Create a set of response_ids that have real messages
     const realResponseIds = new Set(
-      Object.values(messagesById)
-        .filter((msg) => msg.response_id)
-        .map((msg) => msg.response_id),
+      Object.values(messagesById || {})
+        .filter((msg: any) => msg.response_id)
+        .map((msg: any) => msg.response_id),
     );
 
     // Filter out placeholders that have a corresponding real message
     const validPlaceholders = placeholderMessages.filter(
-      (placeholder) => !realResponseIds.has(placeholder.response_id),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (placeholder: any) => !realResponseIds.has(placeholder.response_id),
     );
 
     // Create a map for valid placeholder messages
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const placeholderMap: Record<string, any> = {};
-    validPlaceholders.forEach((msg) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validPlaceholders.forEach((msg: any) => {
       placeholderMap[msg.id] = msg;
     });
 
     // Get valid placeholder IDs
-    const placeholderIds = validPlaceholders.map((p) => p.id);
-    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const placeholderIds = validPlaceholders.map((p: any) => p.id);
+
     // Combine real and placeholder IDs
-    const combinedIds = [...realMessageIds, ...placeholderIds];
+    const combinedIds = [...effectiveRealIds, ...placeholderIds];
 
     // Merge messagesById with placeholder messages
     const combined = { ...messagesById, ...placeholderMap };
@@ -100,7 +116,7 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
       messageIds: combinedIds,
       allMessagesById: combined,
     };
-  }, [realMessageIds, placeholderMessages, messagesById]);
+  }, [realMessageIds, placeholderMessages, messagesById, threadId]);
 
   // Check if there are more messages to load
   const moreMessagesSelector = useMemo(makeSelectMoreMessages, []);
@@ -110,32 +126,37 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const virtuosoRef = useRef<any>(null);
+  const firstItemIndex = 10000; // Start high for prepending
 
   // Fetch more messages
   const fetchMoreMessages = useCallback(() => {
-    if (isFetching || !moreMessages) return Promise.reject('no more');
+    if (isFetching || !moreMessages) {
+      return Promise.reject('no more');
+    }
 
     setIsFetching(true);
-    return dispatch(fetchThreadResource({ threadId, resource: 'messages' })).finally(() => {
-      setTimeout(() => setIsFetching(false), 500);
-    });
+    return dispatch(fetchThreadResource({ threadId, resource: 'messages' }))
+      .finally(() => {
+        // Small delay to show loading state
+        setTimeout(() => setIsFetching(false), 300);
+      });
   }, [threadId, isFetching, moreMessages]);
 
-  // Scroll handling with pagination
+  // Trigger load when near top
+  const handleAtTopStateChange = useCallback((atTop: boolean) => {
+    if (atTop && !isFetching && moreMessages) {
+      void fetchMoreMessages();
+    }
+  }, [isFetching, moreMessages, fetchMoreMessages]);
+
+  // Scroll handling for scroll-down button
   const handleScroll = useCallback(
     throttle((e: any) => {
       const { scrollTop, clientHeight, scrollHeight } = e.target;
-      const isTop = scrollTop < SCROLL_THRESHOLDS.TOP;
       const isBottom = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLDS.BOTTOM;
-
       setShowScrollDown(!isBottom);
-
-      // Fetch more when scrolling to top
-      if (isTop && !isFetching && moreMessages) {
-        fetchMoreMessages();
-      }
-    }, 1000),
-    [isFetching, moreMessages, fetchMoreMessages],
+    }, 200),
+    [],
   );
 
   // Scroll to bottom
@@ -172,6 +193,18 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
     [messageIds, threadId, allMessagesById],
   );
 
+  // Header component with loading indicator
+  const Header = useCallback(() => {
+    if (!moreMessages) return null;
+    
+    return isFetching ? <LoadingIndicator /> : <div style={{ height: '1px' }} />;
+  }, [isFetching, moreMessages]);
+
+  // CRITICAL: If threadId is 'new', return empty immediately
+  if (threadId === 'new') {
+    return null;
+  }
+
   if (messageIds.length === 0) {
     return null;
   }
@@ -194,14 +227,18 @@ export function ThreadMessages({ threadId }: ThreadMessagesProps) {
       <Virtuoso
         ref={virtuosoRef}
         data={messageIds}
-        initialTopMostItemIndex={messageIds.length > 0 ? messageIds.length - 1 : 0}
+        firstItemIndex={firstItemIndex}
+        initialTopMostItemIndex={firstItemIndex + messageIds.length - 1}
         followOutput="smooth"
         alignToBottom={false}
-        overscan={15}
-        itemContent={renderItem}
+        overscan={{ main: 15, reverse: 15 }}
+        itemContent={(index, messageId) => renderItem(index - firstItemIndex, messageId)}
         onScroll={handleScroll}
+        atTopStateChange={handleAtTopStateChange}
+        atTopThreshold={SCROLL_THRESHOLDS.TOP}
         className="no-scrollbar"
         components={{
+          Header,
           Footer: () => <div style={{ height: '200px' }} />
         }}
       />

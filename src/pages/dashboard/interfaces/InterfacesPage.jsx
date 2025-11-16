@@ -9,8 +9,8 @@ import { DynamicIsland } from '../../../components/dynamic-island/DynamicIsland'
 import Iconify from '../../../components/iconify/Iconify';
 import AltanLogo from '../../../components/loaders/AltanLogo';
 import { CompactLayout } from '../../../layouts/dashboard';
-import { deleteInterfaceById, selectAccount } from '../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../redux/store';
+import { deleteInterfaceById, selectAccount } from '../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 const selectInterfaces = (state) => selectAccount(state)?.interfaces;
 const getInterfacesInitialized = (state) => state.general.accountAssetsInitialized.interfaces;

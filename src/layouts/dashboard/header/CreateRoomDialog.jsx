@@ -17,9 +17,9 @@ import {
   getAccountMembers,
   selectAccountAssetsLoading,
   selectAccountAssetsInitialized,
-} from '../../../redux/slices/general';
-import { createRoom, updateRoom } from '../../../redux/slices/room';
-import { useSelector, dispatch } from '../../../redux/store';
+} from '../../../redux/slices/general/index.ts';
+import { createRoom, updateRoom } from '../../../redux/slices/room/thunks/roomThunks';
+import { useSelector, dispatch } from '../../../redux/store.ts';
 import { uploadMedia } from '../../../utils/media';
 
 const CreateRoomDialog = ({ open, onClose, onSuccess, editMode = false, roomData = null }) => {

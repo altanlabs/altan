@@ -5,8 +5,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import Iconify from '../components/iconify';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { CompactLayout } from '../layouts/dashboard';
-import { selectAccountId } from '../redux/slices/general';
-import { useSelector } from '../redux/store';
+import { selectAccountId } from '../redux/slices/general/index.ts';
+import { useSelector } from '../redux/store.ts';
 import { optimai_shop } from '../utils/axios';
 
 // ----------------------------------------------------------------------

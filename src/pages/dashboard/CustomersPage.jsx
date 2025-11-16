@@ -11,7 +11,7 @@ import {
   selectClientsLength,
   selectClientsLoading,
 } from '../../redux/slices/clients';
-import { dispatch, useSelector } from '../../redux/store';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import CustomersTable from '../../sections/@dashboard/clients/table/CustomersTable';
 
 function CustomersPage() {

@@ -6,7 +6,7 @@ import {
   clearSelectedModule,
   selectSelectedModule,
 } from '../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../redux/store';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import { CardTitle } from '../../../aceternity/cards/card-hover-effect';
 import CustomDialog from '../../../dialogs/CustomDialog.jsx';
 import Iconify from '../../../iconify/Iconify';

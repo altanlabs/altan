@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { setSession } from '../../../utils/auth';
 import { optimai_cloud } from '../../../utils/axios';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { fetchCloud } from '../../../redux/slices/cloud';
 
 export const useInstanceOperations = (cloudId, isPaused) => {

@@ -1,29 +1,27 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { ThreadMessages } from './ThreadMessages';
+import { getRoomPort } from '../../../di';
+import { selectRoom } from '../../../redux/slices/room/selectors/roomSelectors';
 import {
-  selectRoom,
   selectMainThread,
-  makeSelectSortedThreadMessageIds,
-  sendMessage,
-  addThread,
-  setThreadMain,
-  fetchThread,
-  ensureThreadMessagesLoaded,
-} from '../../../redux/slices/room';
+} from '../../../redux/slices/room/selectors/threadSelectors';
+import { addThread, setThreadMain } from '../../../redux/slices/room/slices/threadsSlice';
+import { sendMessage } from '../../../redux/slices/room/thunks/messageThunks';
+import { fetchThread, ensureThreadMessagesLoaded } from '../../../redux/slices/room/thunks/threadThunks';
 import { useSelector, dispatch } from '../../../redux/store';
-import { optimai_room } from '../../../utils/axios';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { useRoomConfig } from '../contexts/RoomConfigContext';
 import { RoomPromptInput } from '../input/RoomPromptInput';
 
+
 interface ThreadViewProps {
   threadId: string;
 }
 
-export function ThreadView({ threadId }: ThreadViewProps) {
+function ThreadView({ threadId }: ThreadViewProps): React.JSX.Element {
   const room = useSelector(selectRoom);
   const mainThread = useSelector(selectMainThread);
   const config = useRoomConfig();
@@ -33,18 +31,42 @@ export function ThreadView({ threadId }: ThreadViewProps) {
   const isMainThread = threadId === mainThread;
   const helmetName = isMainThread ? room?.name || 'Room' : `Thread | ${room?.name || 'Room'}`;
 
+  console.log('🎬 ThreadView render', { 
+    threadId, 
+    mainThread,
+    isMainThread,
+    isLoading,
+    roomId: room?.id 
+  });
+
   // Fetch thread data when threadId changes (user switched threads)
   useEffect(() => {
+    console.log('🔄 ThreadView useEffect triggered', { threadId });
+    
     if (threadId === 'new') {
+      console.log('⚪ ThreadId is "new" - skipping fetch');
       setIsLoading(false);
       return;
     }
 
+    console.log('📡 Starting thread fetch for:', threadId);
     setIsLoading(true);
-    dispatch(fetchThread({ threadId })).finally(() => {
-      setIsLoading(false);
-      dispatch(ensureThreadMessagesLoaded(threadId));
-    });
+    
+    dispatch(fetchThread({ threadId }))
+      .then(() => {
+        console.log('✅ fetchThread completed for:', threadId);
+        return dispatch(ensureThreadMessagesLoaded(threadId));
+      })
+      .then(() => {
+        console.log('✅ ensureThreadMessagesLoaded completed for:', threadId);
+      })
+      .catch((error) => {
+        console.error('❌ Error in thread fetch:', error);
+      })
+      .finally(() => {
+        console.log('🏁 Thread fetch flow finished for:', threadId);
+        setIsLoading(false);
+      });
   }, [threadId]);
 
   const handleSuggestionClick = async (suggestion: string) => {
@@ -52,10 +74,10 @@ export function ThreadView({ threadId }: ThreadViewProps) {
       // Create thread first, then send message
       try {
         // Create thread in DB
-        const response = await optimai_room.post(`/v2/rooms/${config.roomId}/threads`, {
+        const roomPort = getRoomPort();
+        const newThread = await roomPort.createThread(config.roomId, {
           name: suggestion.substring(0, 50) || 'New Chat',
         });
-        const newThread = response.data;
 
         // Add to Redux and set as current
         dispatch(addThread(newThread));
@@ -135,3 +157,5 @@ export function ThreadView({ threadId }: ThreadViewProps) {
     </>
   );
 }
+
+export default ThreadView;

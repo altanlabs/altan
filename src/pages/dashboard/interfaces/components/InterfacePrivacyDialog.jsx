@@ -12,8 +12,8 @@ import {
 } from '@mui/material';
 import { memo, useState } from 'react';
 
-import { updateInterfaceById } from '../../../../redux/slices/general';
-import { dispatch } from '../../../../redux/store';
+import { updateInterfaceById } from '../../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../../redux/store.ts';
 
 function InterfacePrivacyDialog({ open, onClose, interfaceId, isPublic: initialIsPublic }) {
   const [isPublic, setIsPublic] = useState(initialIsPublic);

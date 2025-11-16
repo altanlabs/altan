@@ -10,8 +10,8 @@ import ConnectionsSetupStep from './steps/ConnectionsSetupStep.jsx';
 import VarsStep from './steps/VarsStep.jsx';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import { selectConnections } from '../../redux/slices/connections';
-import { cloneTemplate, selectAccount } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { cloneTemplate, selectAccount } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { optimai_shop, optimai_integration } from '../../utils/axios';
 import Iconify from '../iconify';
 

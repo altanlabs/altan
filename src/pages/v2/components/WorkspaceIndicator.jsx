@@ -1,9 +1,5 @@
-import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
-import { useSelector } from 'react-redux';
 import { Icon } from '@iconify/react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   TextField,
@@ -11,21 +7,23 @@ import {
   Button as MuiButton,
   Typography,
 } from '@mui/material';
-
-import { CustomAvatar } from '../../../components/custom-avatar';
-import { useFilteredAccounts } from '../../../hooks/useFilteredAccounts';
-import { clearAccountState, selectAccountDetails, setAccount, createAccount } from '../../../redux/slices/general';
-import { dispatch } from '../../../redux/store';
+import { m, AnimatePresence } from 'framer-motion';
+import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useAuthContext } from '../../../auth/useAuthContext';
-import addAccountIdToUrl from '../../../utils/addAccountIdToUrl';
-import { useDebounce } from '../../../hooks/useDebounce';
-import { searchAccounts } from '../../../redux/slices/superadmin';
-import AccountDetailRow from '../../../layouts/dashboard/nav/AccountDetailRow.tsx';
+
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
+import { CustomAvatar } from '../../../components/custom-avatar';
 import CustomDialog from '../../../components/dialogs/CustomDialog';
+import { useDebounce } from '../../../hooks/useDebounce';
+import { useFilteredAccounts } from '../../../hooks/useFilteredAccounts';
+import AccountDetailRow from '../../../layouts/dashboard/nav/AccountDetailRow.tsx';
+import { clearAccountState, selectAccountDetails, setAccount, createAccount } from '../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../redux/store.ts';
+import { getSuperAdminService } from '../../../services';
+import addAccountIdToUrl from '../../../utils/addAccountIdToUrl';
 
 const selectAccounts = (state) => state.general.accounts;
-const selectAllAccounts = (state) => state.superadmin.accounts;
 
 const WorkspaceIndicator = () => {
   const history = useHistory();
@@ -33,7 +31,6 @@ const WorkspaceIndicator = () => {
   const { user } = useAuthContext();
   const account = useSelector(selectAccountDetails);
   const accounts = useSelector(selectAccounts);
-  const allAccounts = useSelector(selectAllAccounts);
 
   const searchTimeoutRef = useRef(null);
   const isSearchingRef = useRef(false);
@@ -51,19 +48,19 @@ const WorkspaceIndicator = () => {
   // Combine all search terms for debouncing
   const combinedSearchTerm = useMemo(
     () => `${searchById}|${searchByName}|${searchByEmail}`,
-    [searchById, searchByName, searchByEmail]
+    [searchById, searchByName, searchByEmail],
   );
   const debouncedSearchQuery = useDebounce(combinedSearchTerm, 800);
 
   // Check if any search term is active
   const hasAnySearchTerm = useMemo(
     () => Boolean(searchById.trim() || searchByName.trim() || searchByEmail.trim()),
-    [searchById, searchByName, searchByEmail]
+    [searchById, searchByName, searchByEmail],
   );
 
   // For superadmins, use search results when searching, otherwise use filtered accounts
   const filteredAccounts = useFilteredAccounts({
-    allAccounts: user?.xsup && showAllAccounts && hasAnySearchTerm ? searchResults : allAccounts,
+    allAccounts: user?.xsup && showAllAccounts && hasAnySearchTerm ? searchResults : [],
     accounts,
     searchTerm: user?.xsup && showAllAccounts && hasAnySearchTerm ? '' : searchTerm,
     showAllAccounts,
@@ -108,7 +105,8 @@ const WorkspaceIndicator = () => {
     setIsSearching(true);
 
     try {
-      const results = await dispatch(searchAccounts(searchParams));
+      const service = getSuperAdminService();
+      const results = await service.searchAccounts(searchParams);
       setSearchResults(results || []);
     } catch (error) {
       console.error('Search failed:', error);
@@ -132,8 +130,6 @@ const WorkspaceIndicator = () => {
       let sourceAccounts;
       if (showAllAccounts && hasAnySearchTerm) {
         sourceAccounts = searchResults;
-      } else if (showAllAccounts) {
-        sourceAccounts = allAccounts;
       } else {
         sourceAccounts = accounts;
       }
@@ -149,7 +145,7 @@ const WorkspaceIndicator = () => {
       handleClose();
       history.replace('/');
     },
-    [accounts, allAccounts, searchResults, account, location, history, showAllAccounts, hasAnySearchTerm, handleClose]
+    [accounts, searchResults, account, location, history, showAllAccounts, hasAnySearchTerm, handleClose],
   );
 
   const handleSwitchChange = useCallback((event) => {
@@ -335,7 +331,7 @@ const WorkspaceIndicator = () => {
                             <Icon icon="mdi:check-circle" className="w-5 h-5 text-primary" />
                           )}
                         </button>
-                      )
+                      ),
                     )
                   ) : (
                     <div className="p-6 text-center">

@@ -5,7 +5,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { getDefaultValues } from '@utils/schemas';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { updateConnectionType } from '../../redux/slices/general';
+import { updateConnectionType } from '../../redux/slices/general/index.ts';
 import formatData from '../../utils/formatData';
 import FormParameter from '../tools/form/FormParameter';
 

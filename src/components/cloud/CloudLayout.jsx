@@ -3,17 +3,17 @@ import { useParams, useHistory } from 'react-router-dom';
 
 import CloudSidebar from './CloudSidebar.jsx';
 import CloudTable from './CloudTable.jsx';
-import CloudServices from './sections/CloudServices.jsx';
+import CloudTableTabs from './CloudTableTabs.jsx';
 import CloudLogs from './sections/CloudLogs.jsx';
 import CloudOverview from './sections/CloudOverview.jsx';
 import CloudPlaceholder from './sections/CloudPlaceholder.jsx';
+import CloudServices from './sections/CloudServices.jsx';
 import CloudStorage from './sections/CloudStorage.jsx';
 import CloudUsers from './sections/CloudUsers.jsx';
-import CloudTableTabs from './CloudTableTabs.jsx';
 import useResponsive from '../../hooks/useResponsive.js';
 import { selectCloudById, deleteTable } from '../../redux/slices/cloud';
-import { useSelector, dispatch } from '../../redux/store';
-import SQLTerminal from '../databases/sql/SQLTerminal.jsx';
+import { useSelector, dispatch } from '../../redux/store.ts';
+import SQLTerminal from './sections/overview/components/SQLTerminal.jsx';
 
 function CloudLayout({
   tableId,

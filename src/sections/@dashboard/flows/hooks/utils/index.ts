@@ -5,7 +5,16 @@ import type {
   LayoutOptions as ElkLayoutOptions,
   ElkPort,
 } from 'elkjs/lib/elk.bundled.js';
-import ELK from 'elkjs/lib/elk.bundled.js';
+
+// Lazy load ELK only when needed (1.4MB library!)
+let elkInstance: any = null;
+const getElk = async () => {
+  if (!elkInstance) {
+    const ELK = await import('elkjs/lib/elk.bundled.js');
+    elkInstance = new ELK.default();
+  }
+  return elkInstance;
+};
 
 /**
  * Replace `FlowNode` with your actual node interface.
@@ -47,8 +56,6 @@ export interface LayoutedGraph {
   edges: ElkExtendedEdge[];
 }
 
-// Instantiate the ELK engine
-const elk = new ELK();
 /**
  * Default ELK layout options — you can override these by passing
  * custom options to `getLayoutedGraph`.
@@ -244,7 +251,8 @@ export const getLayoutedNodes = async (
     // Merge default options with any overrides
     const mergedLayoutOptions = { ...defaultLayoutOptions, ...layoutOptions };
 
-    // Run ELK layout
+    // Run ELK layout (loaded dynamically to reduce bundle size)
+    const elk = await getElk();
     const layoutedGraph = await elk.layout(elkGraph, {
       layoutOptions: mergedLayoutOptions as ElkLayoutOptions,
     });

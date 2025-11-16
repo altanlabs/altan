@@ -4,7 +4,7 @@ import React, { memo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Upload3dDialog from './Upload3dDialog';
-import { API_BASE_URL } from '../../../auth/utils';
+import { API_BASE_URL } from '../../../auth/utils.ts';
 import { DynamicIsland } from '../../../components/dynamic-island/DynamicIsland';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';

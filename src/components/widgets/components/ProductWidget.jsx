@@ -2,7 +2,7 @@ import { Box, Skeleton, Avatar, Stack } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import { fetchProduct } from '../../redux/slices/products';
-import { dispatch, useSelector } from '../../redux/store';
+import { dispatch, useSelector } from '../../redux/store.ts';
 
 export default function ProductWidget({ id }) {
   const { products } = useSelector((state) => state.products);

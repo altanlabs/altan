@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 import StaticGradientAvatar from '../../../components/agents/StaticGradientAvatar';
 import { CustomAvatar } from '../../../components/custom-avatar';
 import Iconify from '../../../components/iconify/Iconify';
-import { fetchAgentRoom, selectAgentRoom } from '../../../redux/slices/agents';
+import { fetchAgentRoom, selectAgentRoom } from '../../../redux/slices/agents.ts';
 
 const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, onToggleExpand, rightOffset: providedOffset }) => {
   const history = useHistory();

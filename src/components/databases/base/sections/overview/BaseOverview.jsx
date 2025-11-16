@@ -17,8 +17,8 @@ import {
 } from './components';
 import { PRODUCTS } from './constants';
 import { useMetrics, useInstanceOperations, useInstanceTypes, useProductStats } from './hooks';
-import { selectBaseById } from '../../../../../redux/slices/bases';
-import { selectAccountId } from '../../../../../redux/slices/general';
+import { selectBaseById } from '../../../../../redux/slices/bases.ts';
+import { selectAccountId } from '../../../../../redux/slices/general/index.ts';
 import { optimai_cloud } from '../../../../../utils/axios';
 
 function BaseOverview({ baseId, onNavigate }) {

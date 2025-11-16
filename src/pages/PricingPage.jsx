@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 
 import { Separator } from '../components/ui/separator';
 import Footer from '../layouts/dashboard/new/Footer';
-import { selectIsAccountFree } from '../redux/slices/general';
+import { selectIsAccountFree } from '../redux/slices/general/index.ts';
 import { NewPricing, PricingFAQ } from '../sections/pricing';
 import SubscribedPricing from '../sections/pricing/SubscribedPricing';
 

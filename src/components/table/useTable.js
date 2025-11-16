@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-import { dispatch } from '../../redux/store';
+import { dispatch } from '../../redux/store.ts';
 
 // ----------------------------------------------------------------------
 

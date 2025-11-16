@@ -11,7 +11,7 @@ import {
   selectFlowId,
   selectCurrentExecution,
 } from '../../../../../redux/slices/flows.js';
-import { dispatch } from '../../../../../redux/store.js';
+import { dispatch } from '../../../../../redux/store.ts';
 import { bgBlur } from '../../../../../utils/cssStyles.js';
 import ExecutionTimelineItem from '../../executions/ExecutionTimelineItem.jsx';
 

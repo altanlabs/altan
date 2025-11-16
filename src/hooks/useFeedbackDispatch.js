@@ -1,7 +1,7 @@
 import { useSnackbar } from 'notistack';
 import { useCallback, useMemo, useState } from 'react';
 
-import { dispatch } from '../redux/store';
+import { dispatch } from '../redux/store.ts';
 
 const useFeedbackDispatch = () => {
   const { enqueueSnackbar } = useSnackbar();

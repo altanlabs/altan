@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
-import { selectAccount } from '../redux/slices/general';
-import { useSelector } from '../redux/store';
+import { selectAccount } from '../redux/slices/general/index.ts';
+import { useSelector } from '../redux/store.ts';
 
 const selectAccountOwner = (state) => selectAccount(state)?.owner;
 const selectAccountMembers = (state) => selectAccount(state)?.members;

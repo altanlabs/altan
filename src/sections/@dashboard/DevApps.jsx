@@ -20,8 +20,8 @@ import DeleteDialog from '../../components/dialogs/DeleteDialog';
 import Iconify from '../../components/iconify/Iconify';
 import AceWrapper from '../../components/json/AceWrapper';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { selectAccount, deleteAccountResource } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectAccount, deleteAccountResource } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { fToNow } from '../../utils/formatTime';
 
 const DevAppCard = ({ data, onDelete }) => {

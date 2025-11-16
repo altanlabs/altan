@@ -3,11 +3,11 @@ import React, { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
-import { selectHeaderVisible } from '../../../redux/slices/general';
-import { useSelector, dispatch } from '../../../redux/store';
+import { selectHeaderVisible } from '../../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../../redux/store.ts';
 
 // Selector for altaners
 const selectAccountAltaners = (state) => state.general.account?.altaners;
@@ -27,7 +27,6 @@ const isIOSCapacitor = () => {
     return false;
   }
 };
-
 
 export const AGENT_IMAGES = [
   '/agents/1.png',
@@ -129,44 +128,44 @@ const CompactLayout = ({
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ideaId = params.get('idea');
-    
+
     // Skip animation if we're on a project page (idea will be handled by ProjectPage)
     const isProjectPage = location.pathname.includes('/project/');
-    
+
     if (ideaId && !apiCallStartedRef.current && !isProjectPage) {
       console.log('🎬 STARTING ANIMATION & API CALL');
       apiCallStartedRef.current = true;
       setIsConverging(true);
       const startTime = Date.now();
-      
+
       console.log('📞 Calling createAltaner with idea:', ideaId);
-      
+
       import('../../../redux/slices/altaners').then(({ createAltaner }) => {
         console.log('✅ createAltaner imported successfully');
-        
+
         const createPromise = dispatch(createAltaner({ name: 'New Project' }, ideaId));
         console.log('📤 Dispatch called, promise:', createPromise);
-        
+
         createPromise
           .then((altaner) => {
             console.log('📦 Raw response from createAltaner:', altaner);
-            
+
             // createAltaner returns the altaner object directly (not wrapped)
             const projectId = altaner?.id;
-            
+
             console.log('📝 Project data:', altaner);
             console.log('🆔 Project ID:', projectId);
-            
+
             if (projectId) {
               console.log('✅ Project created successfully!');
-              
+
               // Calculate how long the animation has been running
               const elapsed = Date.now() - startTime;
               const minAnimationTime = 5000; // Minimum time for smooth animation
               const remainingTime = Math.max(0, minAnimationTime - elapsed);
-              
+
               console.log(`⏱️ Animation elapsed: ${elapsed}ms, waiting ${remainingTime}ms more`);
-              
+
               // Wait for animation to complete, then redirect
               setTimeout(() => {
                 console.log('💥 Starting burst animation');
@@ -196,7 +195,7 @@ const CompactLayout = ({
         console.error('❌ Failed to import createAltaner:', importErr);
         apiCallStartedRef.current = false;
       });
-      
+
       // Transition to creating state after convergence
       setTimeout(() => {
         console.log('✨ Setting isCreating to true');
@@ -314,12 +313,12 @@ const CompactLayout = ({
               { id: 1, size: isMobile ? 85 : 125, top: '8%', left: '12%', delay: 0, duration: 20, blur: isMobile ? 3 : 5, opacity: 0.45, imageIndex: 1 },
               { id: 3, size: isMobile ? 95 : 135, top: '65%', right: '8%', delay: 3, duration: 24, blur: isMobile ? 4 : 6, opacity: 0.42, imageIndex: 1 },
               { id: 5, size: isMobile ? 80 : 120, top: '82%', left: '18%', delay: 6, duration: 22, blur: isMobile ? 3 : 5, opacity: 0.44, imageIndex: 3 },
-              
+
               // Medium spheres - balanced presence
               { id: 7, size: isMobile ? 65 : 95, top: '28%', right: '22%', delay: 2, duration: 18, blur: isMobile ? 2 : 4, opacity: 0.38, imageIndex: 0 },
               { id: 9, size: isMobile ? 70 : 105, top: '48%', left: '8%', delay: 5, duration: 20, blur: isMobile ? 3 : 4, opacity: 0.40, imageIndex: 4 },
               { id: 11, size: isMobile ? 60 : 90, top: '72%', right: '32%', delay: 8, duration: 21, blur: isMobile ? 2 : 3, opacity: 0.37, imageIndex: 3 },
-              
+
               // Small spheres - subtle, atmospheric
               { id: 2, size: isMobile ? 50 : 70, top: '18%', left: '42%', delay: 1.5, duration: 16, blur: isMobile ? 2 : 3, opacity: 0.32, imageIndex: 2 },
               { id: 4, size: isMobile ? 55 : 78, top: '38%', right: '48%', delay: 4.5, duration: 17, blur: isMobile ? 2 : 3, opacity: 0.34, imageIndex: 2 },
@@ -339,7 +338,7 @@ const CompactLayout = ({
                   animation: (isConverging || isCreating)
                     ? 'none'
                     : `fadeInAgent 1s ease-out ${sphere.delay * 0.15}s forwards, floatAgentSubtle ${sphere.duration}s ease-in-out ${1 + sphere.delay}s infinite`,
-                  transition: isConverging 
+                  transition: isConverging
                     ? `transform 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s, top 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s, left 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s`
                     : 'none',
                   willChange: 'transform, top, left',
@@ -354,14 +353,14 @@ const CompactLayout = ({
                     backgroundImage: `url(${AGENT_IMAGES[sphere.imageIndex]})`,
                     borderRadius: '1000px',
                     filter: isConverging || isCreating
-                      ? 'blur(10px) brightness(1.25) saturate(1.25)' 
+                      ? 'blur(10px) brightness(1.25) saturate(1.25)'
                       : `blur(${sphere.blur}px) brightness(1.15) saturate(1.15)`,
                     opacity: isConverging || isCreating ? 0.8 : sphere.opacity,
                     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 30px rgba(0, 0, 0, 0.08)',
                     animation: (isConverging || isCreating)
                       ? (isCreating ? `mergeAndPulse 3s ease-in-out ${sphere.delay * 0.1}s infinite` : 'none')
                       : `breathe ${sphere.duration * 0.5}s ease-in-out ${1 + sphere.delay * 0.5}s infinite`,
-                    transition: isConverging 
+                    transition: isConverging
                       ? `filter 4s cubic-bezier(0.16, 1, 0.3, 1) ${sphere.delay * 0.05}s`
                       : 'none',
                   }}
@@ -370,11 +369,11 @@ const CompactLayout = ({
             ))}
           </div>
         )}
-        
+
         {/* Creating text overlay */}
         {isCreating && !error && !isBursting && (
           <div className="fixed inset-0 z-[9999] flex items-end justify-center pb-20 pointer-events-none">
-            <div 
+            <div
               className="text-xl tracking-wide animate-pulse"
             >
               Creating your project...
@@ -388,7 +387,7 @@ const CompactLayout = ({
             <div className="bg-white dark:bg-gray-800 p-8 rounded-xl text-center max-w-md mx-4">
               <h3 className="text-xl font-medium mb-4 text-gray-900 dark:text-white">Creation Failed</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-              <button 
+              <button
                 onClick={() => {
                   setError(null);
                   setIsConverging(false);
@@ -403,7 +402,7 @@ const CompactLayout = ({
           </div>
         )}
 
-        <div 
+        <div
           className={contentClasses.join(' ')}
           style={{
             opacity: isConverging ? 0 : 1,

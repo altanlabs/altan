@@ -9,7 +9,7 @@ import PlanSummary from './@subscriptions/PlanSummary';
 import SubscriptionPlan from './@subscriptions/SubscriptionPlan';
 import { useFetchSubscription } from './@subscriptions/useFetchSubscription';
 import { currencyData, formatPricing } from './@utils';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 
 const currencies = Object.entries(currencyData).map(([code, data]) => ({
   code,

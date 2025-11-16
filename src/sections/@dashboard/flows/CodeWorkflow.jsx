@@ -15,7 +15,7 @@ import {
   editModule,
   getFlowExecutionDetails,
 } from '../../../redux/slices/flows';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 
 const CodeWorkflow = () => {
   const [dispatchWithFeedback] = useFeedbackDispatch();

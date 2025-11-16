@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 
 import CloudLayout from './CloudLayout.jsx';
 import { fetchCloud, selectCloudById } from '../../redux/slices/cloud';
-import { dispatch, useSelector } from '../../redux/store';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import LoadingFallback from '../LoadingFallback.jsx';
 
 function Cloud() {

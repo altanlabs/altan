@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { useState, memo, useCallback } from 'react';
 
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 import { CardTitle } from './aceternity/cards/card-hover-effect';
 import InteractiveButton from './buttons/InteractiveButton';
 import FlowStatusBadge from './flows/canvas/nodes/modulenode/FlowStatusBadge';

@@ -7,7 +7,7 @@ import useFeedbackDispatch from '../hooks/useFeedbackDispatch';
 import formatData from '../utils/formatData';
 import InteractiveButton from './buttons/InteractiveButton';
 import FormParameter from './tools/form/FormParameter';
-import { createCustomApp } from '../redux/slices/general';
+import { createCustomApp } from '../redux/slices/general/index.ts';
 
 const CUSTOM_APP_SCHEMA = {
   title: 'DevAppCreate',

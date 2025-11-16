@@ -17,8 +17,8 @@ import {
 
 import UsageToggle from './UsageToggle';
 // import Iconify from '../../../components/iconify';
-import { updateAgentsUsage } from '../../../redux/slices/general';
-import { useSelector, dispatch } from '../../../redux/store';
+import { updateAgentsUsage } from '../../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../../redux/store.ts';
 import { optimai } from '../../../utils/axios';
 // import { fToNow } from '../../../utils/formatTime';
 

@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
-import { dispatch } from '@redux/store';
+import { dispatch } from '@redux/store.ts';
 
 import { updateWidgetSectionSize } from '../../../redux/slices/layout';
 

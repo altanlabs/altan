@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from 'react';
 
-import { makeSelectToolPartError } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectToolPartError } from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 
 const ToolPartError = ({ partId, showError }) => {
   const errorSelector = useMemo(() => makeSelectToolPartError(), []);

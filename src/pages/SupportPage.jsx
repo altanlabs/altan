@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-import { useAuthContext } from '../auth/useAuthContext';
-import Room from '../components/room/Room';
+import { useAuthContext } from '../auth/useAuthContext.ts';
+import RoomContainer from '../components/new-room/RoomContainer.tsx';
 import { CompactLayout } from '../layouts/dashboard';
 import Login from '../sections/auth/Login';
 import { optimai } from '../utils/axios';
@@ -54,7 +54,7 @@ export default function SupportPage() {
   // Render the support DM room
   return (
     <CompactLayout noPadding>
-      <Room
+      <RoomContainer
         roomId={roomId}
         title="Support Chat"
         description="How can we help you today?"

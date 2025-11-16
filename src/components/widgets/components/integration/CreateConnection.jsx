@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 
 import ConnectionCreator from '../../../components/integration/ConnectionCreator';
 import { fetchConnectionType } from '../../../redux/slices/connections';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 
 function CreateConnection({ id, accountId = null, external_id = null, popup = true }) {
   const { types } = useSelector((state) => state.connections);

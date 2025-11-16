@@ -25,7 +25,7 @@ import React, { memo, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { WorkflowCarousel } from '../../../components/carousel';
 import SearchField from '../../../components/custom-input/SearchField';
 import Iconify from '../../../components/iconify';
@@ -34,7 +34,7 @@ import useResponsive from '../../../hooks/useResponsive';
 import TemplateMarketplace from '../../../pages/dashboard/marketplace/templates/TemplateMarketplace';
 import { selectConnectionTypes } from '../../../redux/slices/connections';
 import { selectFlowStateInitialized, selectFlowStateLoading } from '../../../redux/slices/flows';
-import { selectCustomConnectionTypes } from '../../../redux/slices/general';
+import { selectCustomConnectionTypes } from '../../../redux/slices/general/index.ts';
 
 // Selector for all connection types (system + custom)
 const selectAllConnectionTypes = createSelector(

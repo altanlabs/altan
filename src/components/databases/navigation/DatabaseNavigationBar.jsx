@@ -14,7 +14,7 @@ import {
   selectTableState,
   selectTablesByCloudId,
 } from '../../../redux/slices/cloud';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { optimai_cloud } from '../../../utils/axios.js';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button.tsx';

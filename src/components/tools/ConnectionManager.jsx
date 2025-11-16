@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import ConnectionTypesAutocomplete from '../ConnectionTypesAutocomplete';
 import ConnectionSelectorAutocomplete from './ConnectionSelectorAutocomplete';
 import CreateConnection from './CreateConnection';
-import { selectAccountConnections } from '../../redux/slices/general';
+import { selectAccountConnections } from '../../redux/slices/general/index.ts';
 
 /**
  * Reusable component that handles the complete connection workflow:

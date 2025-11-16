@@ -25,9 +25,8 @@ import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketPro
 // @ts-expect-error - JS file without type definitions
 import { selectAccount, selectAccountCreditBalance, selectAccountSubscriptions } from '../../redux/slices/general';
 // @ts-expect-error - JS file without type definitions
-import { updateEntry } from '../../redux/slices/superadmin';
-// @ts-expect-error - JS file without type definitions
-import { useDispatch, useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store';
+import { getSuperAdminService } from '../../services';
 // @ts-expect-error - JS file without type definitions
 import { useSnackbar } from '../snackbar';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -65,7 +64,6 @@ const formatCredits = (credits: number) => {
 
 export const UserDropdown = () => {
   const history = useHistory();
-  const dispatch = useDispatch();
   const ws = useHermesWebSocket();
   const { user, logout } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
@@ -108,7 +106,8 @@ export const UserDropdown = () => {
 
   const handleUpdateSubscriptionStatus = async (subscriptionId: string, newStatus: string) => {
     try {
-      await dispatch(updateEntry('Subscription', subscriptionId, { status: newStatus }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Subscription', subscriptionId, { status: newStatus });
       enqueueSnackbar('Subscription status updated successfully', { variant: 'success' });
       setEditingSubscription(null);
     } catch (error) {
@@ -119,7 +118,8 @@ export const UserDropdown = () => {
   const handleUpdateSubscriptionCredits = async (subscriptionId: string, newCredits: string) => {
     try {
       const creditsInCents = Math.round(parseFloat(newCredits) * 100);
-      await dispatch(updateEntry('Subscription', subscriptionId, { credit_balance: creditsInCents }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Subscription', subscriptionId, { credit_balance: creditsInCents });
       enqueueSnackbar('Subscription credits updated successfully', { variant: 'success' });
       setEditingSubscription(null);
       setTempValues({});
@@ -131,7 +131,8 @@ export const UserDropdown = () => {
   const handleUpdateAccountCredit = async (accountId: string, newCredits: string) => {
     try {
       const creditsInCents = Math.round(parseFloat(newCredits) * 100);
-      await dispatch(updateEntry('Account', accountId, { credit_balance: creditsInCents }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Account', accountId, { credit_balance: creditsInCents });
       enqueueSnackbar('Account credit balance updated successfully', { variant: 'success' });
       setEditingAccountCredit(false);
       setTempValues({});

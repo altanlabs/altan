@@ -8,8 +8,8 @@ import ModuleCard from '../../../components/flows/ModuleCard.jsx';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
 import { clearModuleInMenu } from '../../../redux/slices/flows';
-import { closeGlobalVarsMenu } from '../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../redux/store';
+import { closeGlobalVarsMenu } from '../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 const onClose = () =>
   batch(() => {

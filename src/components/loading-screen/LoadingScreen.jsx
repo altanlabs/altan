@@ -260,7 +260,7 @@ export default memo(LoadingScreen);
 // // config
 // import { NAV ,HEADER} from '../../config-global';
 // // auth
-// import { useAuthContext } from '../../auth/useAuthContext';
+// import { useAuthContext } from '../../auth/useAuthContext.ts';
 // //
 // import Logo from '../logo';
 // import ProgressBar from '../progress-bar';

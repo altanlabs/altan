@@ -2,12 +2,12 @@ import { memo } from 'react';
 
 import { useToast } from '../../hooks/use-toast.ts';
 import { cn } from '../../lib/utils.ts';
-import { patchMember } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
+import { patchMember } from '../../redux/slices/room/thunks';
+import { dispatch } from '../../redux/store.ts';
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
-import { getMemberDetails } from '../room/utils';
+import { getMemberDetails } from '../new-room/utils.js';
 import {
   Accordion,
   AccordionContent,

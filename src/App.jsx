@@ -23,6 +23,8 @@ import '@ionic/react/css/display.css';
 
 // ----------------------------------------------------------------------
 
+import { IonApp, setupIonicReact } from '@ionic/react';
+import { IonReactRouter } from '@ionic/react-router';
 import { LocalizationProvider, LicenseInfo } from '@mui/x-date-pickers-pro';
 import { AdapterDateFns } from '@mui/x-date-pickers-pro/AdapterDateFns';
 import { memo } from 'react';
@@ -32,19 +34,17 @@ import { PersistGate } from 'redux-persist/lib/integration/react';
 // @mui
 
 // ionic
-import { IonApp, setupIonicReact } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
 
 // redux
-import { AuthProvider } from './auth/JwtContext.jsx';
+import { AuthProvider } from './auth/JwtContext';
 import { MotionLazyContainer } from './components/animate';
-import { ThemeSettings, SettingsProvider } from './components/settings';
-import SnackbarProvider from './components/snackbar';
 import CookieBanner from './components/cookie-banner';
 import CookieManager from './components/cookie-banner/CookieManager';
 import FeedbackManager from './components/feedback/FeedbackManager';
+import { ThemeSettings, SettingsProvider } from './components/settings';
+import SnackbarProvider from './components/snackbar';
 import ThemeLocalization from './locales';
-import { store, persistor } from './redux/store';
+import { store, persistor } from './redux/store.ts';
 // routes
 import Router from './routes/index.jsx';
 // theme
@@ -62,7 +62,7 @@ LicenseInfo.setLicenseKey(
 // Initialize Ionic
 setupIonicReact({
   rippleEffect: false,
-  mode: 'md' // Use Material Design mode for consistent styling
+  mode: 'md', // Use Material Design mode for consistent styling
 });
 
 // ----------------------------------------------------------------------

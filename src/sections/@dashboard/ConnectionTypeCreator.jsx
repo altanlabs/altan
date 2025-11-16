@@ -3,13 +3,13 @@ import { Grid, Paper, Typography, TextField, Divider, Stack, Box, Button } from 
 import { useSnackbar } from 'notistack';
 import React, { memo, useState, useCallback, useEffect, useMemo } from 'react';
 
+import ActionCreator from './ActionCreator.jsx';
+import ResourceCreator from './ResourceCreator.jsx';
 import ConnectionTypesAutocomplete from '../../components/ConnectionTypesAutocomplete';
 import Iconify from '../../components/iconify/Iconify';
 import AceWrapper from '../../components/json/AceWrapper';
-import ActionCreator from '../../pages/dashboard/superadmin/creator/ActionCreator';
-import ResourceCreator from '../../pages/dashboard/superadmin/creator/ResourceCreator';
-import { createActionType, createResourceType } from '../../redux/slices/general';
-import { dispatch } from '../../redux/store';
+import { createActionType, createResourceType } from '../../redux/slices/general/index.ts';
+import { dispatch } from '../../redux/store.ts';
 
 const parseResources = (schemas) => {
   const adjustRef = (obj) => {

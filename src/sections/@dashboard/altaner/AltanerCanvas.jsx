@@ -17,7 +17,7 @@ import CirclesConnection from '../../../components/flows/canvas/connections/Circ
 import CircleEdge from '../../../components/flows/canvas/edges/CircleEdge';
 import ModuleNode from '../../../components/flows/canvas/nodes/ModuleNode';
 import { onNewModuleClick, setModuleInMenu } from '../../../redux/slices/flows';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 
 const nodeTypes = {
   module: ModuleNode,

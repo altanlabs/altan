@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 
 import FeedbackPopup from './FeedbackPopup';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import analytics from '../../lib/analytics';
 import {
   getNPSCategory,
@@ -10,7 +10,7 @@ import {
   shouldShowNPS,
 } from '../../lib/feedbackUtils';
 import { cn } from '../../lib/utils';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 import { Button } from '../ui/button.tsx';
 import { Textarea } from '../ui/textarea.tsx';
 
@@ -29,7 +29,7 @@ const NPSFeedback = memo(({ onClose }) => {
 
   // Check if we should show NPS (must be authenticated and have at least one altaner)
   const hasAltaners = altaners && altaners.length > 0;
-  
+
   if (!isAuthenticated || !shouldShowNPS() || !hasAltaners) {
     return null;
   }

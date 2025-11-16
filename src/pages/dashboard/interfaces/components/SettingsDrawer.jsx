@@ -5,12 +5,11 @@ import {
   IconButton,
   Stack,
   Typography,
-  Switch,
   Button,
   Tooltip,
   Link,
 } from '@mui/material';
-import { memo, useState, useEffect } from 'react';
+import { memo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import AddCollaboratorDialog from './AddCollaboratorDialog.jsx';
@@ -18,16 +17,14 @@ import AddDomainDialog from './AddDomainDialog.jsx';
 import CommitDialog from './CommitDialog.jsx';
 import EditMemoryDialog from './EditMemoryDialog.jsx';
 import Iconify from '../../../../components/iconify/Iconify.jsx';
-import { selectAccountId, selectIsAccountFree, updateInterfaceById } from '../../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../../redux/store.js';
-import { optimai_pods, optimai_room } from '../../../../utils/axios';
+import { getPodsPort } from '../../../../di/index.ts';
+import { selectIsAccountFree } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 
 function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
-  const accountId = useSelector(selectAccountId);
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
-  const [room, setRoom] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const room = null; // Room is not used in this component anymore
   const [isDomainDialogOpen, setIsDomainDialogOpen] = useState(false);
   const [isAddCollabDialogOpen, setIsAddCollabDialogOpen] = useState(false);
   const [isMemoryDialogOpen, setIsMemoryDialogOpen] = useState(false);
@@ -192,7 +189,8 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                               size="small"
                               onClick={async () => {
                                 try {
-                                  await optimai_pods.delete(`/interfaces/${ui.id}/domains/${domain}`);
+                                  const podsPort = getPodsPort();
+                                  await podsPort.removeDomain(ui.id, domain);
                                   // You might want to refresh the interface data here
                                 } catch (error) {
                                   console.error('Failed to delete domain:', error);
@@ -390,13 +388,15 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                         }
 
                         try {
+                          const podsPort = getPodsPort();
+
                           // Remove Altan script tag
                           const scriptTags = [
                             '<script src="https://www.altan.ai/snippet.js"></script>',
                           ];
 
                           for (const scriptTag of scriptTags) {
-                            await optimai_pods.post(`/interfaces/dev/${ui.id}/files/search-replace`, {
+                            await podsPort.searchReplaceFiles(ui.id, {
                               query: scriptTag,
                               replacement: '',
                               file_patterns: ['index.html'],
@@ -404,7 +404,7 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                           }
                           // Commit the changes with the specified message
                           try {
-                            await optimai_pods.post(`/interfaces/dev/${ui.id}/repo/commit`, {
+                            await podsPort.commitChanges(ui.id, {
                               message: 'Removed Altan Branding',
                             });
                             console.log('Changes committed successfully');
@@ -470,7 +470,8 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       }}
                       onClick={async () => {
                         try {
-                          await optimai_pods.get(`/interfaces/dev/${ui.id}/repo/restore-main`);
+                          const podsPort = getPodsPort();
+                          await podsPort.restoreDevToMain(ui.id);
                         } catch (error) {
                           console.error('Failed to restore dev to main:', error);
                         }
@@ -494,7 +495,8 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
                       }}
                       onClick={async () => {
                         try {
-                          await optimai_pods.post(`/interfaces/dev/${ui.id}/clear-cache-restart`);
+                          const podsPort = getPodsPort();
+                          await podsPort.clearCacheAndRestart(ui.id);
                           console.log('Cache cleared and server restarted successfully');
                         } catch (error) {
                           console.error('Failed to clear cache and restart:', error);

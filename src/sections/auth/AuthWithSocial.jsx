@@ -2,7 +2,7 @@
 import { Stack, Button } from '@mui/material';
 
 // auth
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // components
 import Iconify from '../../components/iconify';
 

@@ -10,7 +10,7 @@ import {
   updateRecordById,
   deleteRecord,
 } from '../../redux/slices/cloud';
-import { dispatch, useSelector } from '../../redux/store';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import { GridView } from '../databases/view/grid/GridView';
 import Iconify from '../iconify';
 

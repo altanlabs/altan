@@ -2,7 +2,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 
 import ContextMenu from '../../../components/contextmenu/ContextMenu.jsx';
 // import { selectModule } from '../../../redux/slices/flows';
-// import { useSelector } from '../../../redux/store';
+// import { useSelector } from '../../../redux/store.ts';
 
 const findModulesCopiedInClipboard = async () => {
   try {

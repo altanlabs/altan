@@ -2,8 +2,8 @@ import { Menu, MenuItem } from '@mui/material';
 import { memo } from 'react';
 
 import Iconify from '../../../../components/iconify/Iconify.jsx';
-import { updateInterfaceById } from '../../../../redux/slices/general';
-import { dispatch } from '../../../../redux/store.js';
+import { updateInterfaceById } from '../../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../../redux/store.ts';
 
 function SettingsMenu({
   anchorEl,

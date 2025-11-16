@@ -2,7 +2,7 @@ import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { useAnalytics } from '../../../hooks/useAnalytics';
 
 const BottomCommandInput = () => {

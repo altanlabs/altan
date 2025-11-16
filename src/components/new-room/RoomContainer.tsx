@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 import { ErrorState } from './components/ErrorState';
+import { LoadingState } from './components/LoadingState';
 import { RoomErrorBoundary } from './components/RoomErrorBoundary';
 import { RoomConfigProvider } from './contexts/RoomConfigContext';
 import { useRoomInitialization } from './hooks/useRoomInitialization';
 import { useRoomUrlState } from './hooks/useRoomUrlState';
 import { useRoomWebSocket } from './hooks/useRoomWebSocket';
 import { EphemeralRoom } from './modes/EphemeralRoom';
-import { TabbedRoom } from './modes/TabbedRoom';
+import TabbedRoom from './modes/TabbedRoom';
 import type { RoomConfig } from './types/room.types';
 import ContextMenuRoom from '../../components/contextmenu/ContextMenuRoom.jsx';
-import { clearRoomState } from '../../redux/slices/room';
+import { clearRoomState } from '../../redux/slices/room/slices/roomSlice';
 import { dispatch } from '../../redux/store';
 
 interface RoomContainerProps extends Omit<RoomConfig, 'mode'> {
@@ -27,11 +28,11 @@ interface RoomContainerProps extends Omit<RoomConfig, 'mode'> {
  * - Error handling
  * - Loading states
  */
-export function RoomContainer({
+function RoomContainer({
   roomId,
   mode = 'tabs', // Default to tabs mode
   ...configProps
-}: RoomContainerProps) {
+}: RoomContainerProps): React.JSX.Element {
   // Initialize room data
   const { initialized, loading, error } = useRoomInitialization(roomId);
 
@@ -65,14 +66,19 @@ export function RoomContainer({
       <ErrorState
         title="Failed to load room"
         message={error.message || "We couldn't load this room. Please try again."}
-        onRetry={() => window.location.reload()}
+        onRetry={() => {
+          // Use globalThis for environment-agnostic reload
+          if (typeof globalThis !== 'undefined' && typeof globalThis.location?.reload === 'function') {
+            globalThis.location.reload();
+          }
+        }}
       />
     );
   }
 
   // Show loading state
   if (loading || !initialized) {
-    return null;
+    return <LoadingState message="Loading room..." />;
   }
 
   // Render appropriate mode with error boundary and context menu
@@ -86,3 +92,5 @@ export function RoomContainer({
     </RoomErrorBoundary>
   );
 }
+
+export default memo(RoomContainer);

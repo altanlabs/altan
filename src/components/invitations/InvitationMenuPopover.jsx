@@ -12,10 +12,10 @@ import {
 import { useCallback, useState, memo } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { createInvitation, selectRoles } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { createInvitation, selectRoles } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import HeaderIconButton from '../HeaderIconButton';
 import Iconify from '../iconify';
 import MenuPopover from '../menu-popover';

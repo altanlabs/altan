@@ -23,8 +23,8 @@ import Iconify from '../../../../components/iconify/Iconify.jsx';
 import FormParameter from '../../../../components/tools/form/FormParameter.jsx';
 import useFeedbackDispatch from '../../../../hooks/useFeedbackDispatch';
 import { createAltaner } from '../../../../redux/slices/altaners';
-import { closeCreateAltaner } from '../../../../redux/slices/general';
-import { dispatch } from '../../../../redux/store';
+import { closeCreateAltaner } from '../../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../../redux/store.ts';
 import formatData from '../../../../utils/formatData';
 
 const AltanerSchema = {

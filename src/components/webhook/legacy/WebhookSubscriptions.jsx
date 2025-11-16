@@ -6,7 +6,7 @@
 // import { createSelector } from '@reduxjs/toolkit';
 // import EventResourceSelector from './EventResourceSelector';
 // import { useFieldArray, useFormContext } from 'react-hook-form';
-// import { selectAccount, selectExtendedResources } from '../../redux/slices/general';
+// import { selectAccount, selectExtendedResources } from '../../redux/slices/general/index.ts';
 // import { selectConnections, selectConnectionTypes } from '../../redux/slices/connections';
 // import ConnectionSelectorAutocomplete from '../tools/ConnectionSelectorAutocomplete';
 // import Iconify from '../iconify';

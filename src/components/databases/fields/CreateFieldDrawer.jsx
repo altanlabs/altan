@@ -14,8 +14,8 @@ import { useCallback, memo, useState } from 'react';
 
 import { POSTGRES_TYPES } from './utils/postgresTypes';
 import { RESERVED_WORDS } from './utils/reservedWords';
-import { createField } from '../../../redux/slices/bases';
-import { dispatch } from '../../../redux/store.js';
+import { createField } from '../../../redux/slices/bases.ts';
+import { dispatch } from '../../../redux/store.ts';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';

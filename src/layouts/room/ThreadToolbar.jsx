@@ -10,8 +10,8 @@ import {
   selectRoomId,
   selectMainThread,
   setThreadMain,
-} from '../../redux/slices/room.js';
-import { dispatch, useSelector } from '../../redux/store.js';
+} from '../../redux/slices/room';
+import { dispatch, useSelector } from '../../redux/store.ts';
 
 const ThreadToolbar = () => {
   const roomId = useSelector(selectRoomId);

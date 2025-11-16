@@ -5,7 +5,7 @@ import { useSettingsContext } from '../../../components/settings';
 import AccountPopover from '../../../layouts/dashboard/header/AccountPopover';
 import WorkspaceIndicator from './WorkspaceIndicator';
 import Iconify from '../../../components/iconify';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import useResponsive from '../../../hooks/useResponsive';
 
 const V2TopBar = ({ onSearch }) => {

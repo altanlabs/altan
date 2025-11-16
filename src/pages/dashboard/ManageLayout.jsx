@@ -30,7 +30,7 @@ import { useParams } from 'react-router-dom';
 import WebFont from 'webfontloader';
 
 import Iconify from '@components/iconify';
-import { dispatch, useSelector } from '@redux/store';
+import { dispatch, useSelector } from '@redux/store.ts';
 
 import { DynamicIsland } from '../../components/dynamic-island/DynamicIsland';
 import { CompactLayout } from '../../layouts/dashboard';

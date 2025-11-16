@@ -15,7 +15,7 @@ import {
   selectPanelNew,
   setNewModuleType,
 } from '../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../redux/store';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import { bgBlur } from '../../../utils/cssStyles';
 
 const onCloseMenu = () => dispatch(clearNewModuleInDrawer());

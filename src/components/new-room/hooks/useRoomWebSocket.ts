@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider';
 
 /**
  * Clean WebSocket lifecycle management

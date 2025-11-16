@@ -4,11 +4,11 @@ import { useDispatch } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import AgentFormWithButtons from './create/AgentFormWithButtons';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import SendButton from '../../../components/attachment/SendButton';
 import Iconify from '../../../components/iconify';
-import { createAgent, selectSortedAgents } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { createAgent, selectSortedAgents } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
 import { optimai } from '../../../utils/axios';
 
 // Agent selectors

@@ -4,7 +4,7 @@ import { TextField, Button, ButtonGroup } from '@mui/material';
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { API_BASE_URL } from '../../../../auth/utils.js';
+import { API_BASE_URL } from '../../../../auth/utils.ts';
 import Iconify from '../../../../components/iconify/index.js';
 import Logo from '../../../../components/logo/Logo.jsx';
 import { newConnection } from '../../../../redux/slices/connections';

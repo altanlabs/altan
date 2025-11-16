@@ -21,7 +21,7 @@ import {
   selectAccountSubscriptions,
   selectIsAccountFree,
   selectAccountCreditBalance,
-} from '../../../redux/slices/general';
+} from '../../../redux/slices/general/index.ts';
 import { openUrl } from '../../../utils/auth';
 import { optimai, optimai_shop } from '../../../utils/axios';
 import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';

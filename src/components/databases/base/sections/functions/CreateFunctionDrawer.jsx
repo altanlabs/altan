@@ -15,7 +15,7 @@ import { X, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { createFunction } from '../../../../../redux/slices/services';
-import { dispatch } from '../../../../../redux/store';
+import { dispatch } from '../../../../../redux/store.ts';
 
 const DEFAULT_CODE = `from fastapi import APIRouter
 

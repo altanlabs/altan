@@ -3,10 +3,10 @@ import { memo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import VoiceConversation from './VoiceConversation';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import Iconify from '../../../components/iconify';
 import { useVoiceConversation } from '../../../providers/voice/VoiceConversationProvider';
-import { selectSortedAgents } from '../../../redux/slices/general';
+import { selectSortedAgents } from '../../../redux/slices/general/index.ts';
 
 // Agent selector
 const getAccount = (state) => state.general.account;

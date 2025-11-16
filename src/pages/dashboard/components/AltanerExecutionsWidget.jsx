@@ -3,7 +3,7 @@ import { AgCharts as AgChartsEnterprise } from 'ag-charts-enterprise';
 import { AgCharts } from 'ag-charts-react';
 import React, { memo, useMemo } from 'react';
 
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';

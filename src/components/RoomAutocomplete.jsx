@@ -1,9 +1,9 @@
 import { Stack, TextField, Autocomplete, Divider, Tooltip } from '@mui/material';
 import { memo, useCallback } from 'react';
 
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 import { CardTitle } from './aceternity/cards/card-hover-effect';
-import { selectAccountRooms } from '../redux/slices/general';
+import { selectAccountRooms } from '../redux/slices/general/index.ts';
 
 const renderOption = ({ key, ...props }, option) => (
   <li

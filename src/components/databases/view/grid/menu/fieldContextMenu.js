@@ -1,7 +1,7 @@
-import { deleteFieldThunk } from '../../../../../redux/slices/bases';
-import { dispatch } from '../../../../../redux/store';
+import { deleteFieldById } from '../../../../../redux/slices/bases.ts';
+import { dispatch } from '../../../../../redux/store.ts';
 
-const createFieldContextMenuItems = (field, params, setEditField, tableId) => {
+const createFieldContextMenuItems = (field, params, setEditField, tableId, baseId) => {
   return [
     {
       name: 'Edit field',
@@ -46,7 +46,7 @@ const createFieldContextMenuItems = (field, params, setEditField, tableId) => {
       icon: '<span class="ag-icon ag-icon-cross"></span>',
       cssClasses: ['text-red-600'],
       action: () => {
-        dispatch(deleteFieldThunk(tableId, field.id));
+        dispatch(deleteFieldById(baseId, tableId, field.id));
       },
     },
   ];

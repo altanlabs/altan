@@ -27,7 +27,7 @@ import { categoryOptions } from './categoryOptions';
 import { featureOptions } from './featureOptions';
 import { useCaseOptions } from './useCaseOptions';
 import { verticalOptions } from './verticalOptions';
-import { selectIsAccountFree } from '../../../../../../redux/slices/general';
+import { selectIsAccountFree } from '../../../../../../redux/slices/general/index.ts';
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;

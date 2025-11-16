@@ -1,10 +1,10 @@
 import { memo, useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 
-import { updateLastActivity } from '../../lib/feedbackUtils';
-import { selectCompletedPlanEvent } from '../../redux/slices/tasks';
 import NPSFeedback from './NPSFeedback';
 import PlanCompletionFeedback from './PlanCompletionFeedback';
+import { updateLastActivity } from '../../lib/feedbackUtils';
+import { selectCompletedPlanEvent } from '../../redux/slices/tasks.ts';
 
 // ----------------------------------------------------------------------
 
@@ -85,4 +85,3 @@ const FeedbackManager = memo(() => {
 FeedbackManager.displayName = 'FeedbackManager';
 
 export default FeedbackManager;
-

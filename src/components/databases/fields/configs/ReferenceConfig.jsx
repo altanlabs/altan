@@ -1,8 +1,8 @@
 import { Box, Autocomplete, TextField, MenuItem } from '@mui/material';
 import { memo } from 'react';
 
-import { selectTablesByBaseId } from '../../../../redux/slices/bases';
-import { useSelector } from '../../../../redux/store';
+import { selectTablesByBaseId } from '../../../../redux/slices/bases.ts';
+import { useSelector } from '../../../../redux/store.ts';
 
 // Types of cascade options between tables
 const ON_DELETE_MODE = {

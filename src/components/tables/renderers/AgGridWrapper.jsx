@@ -19,7 +19,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 
 LicenseManager.setLicenseKey(
   'Altan_Products[v3][][0102]_MjA4MjY3MjAwMDAwMA==b79026526b81b3a5d7175371f58a75bd',

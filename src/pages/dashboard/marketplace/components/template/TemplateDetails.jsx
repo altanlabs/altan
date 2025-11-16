@@ -7,7 +7,7 @@ import { Stack } from '@mui/material';
 import EmptyContent from '../../../../../components/empty-content';
 import Iconify from '../../../../../components/iconify';
 
-import { selectAccount } from '../../../../../redux/slices/general';
+import { selectAccount } from '../../../../../redux/slices/general/index.ts';
 
 import { optimai_shop } from '../../../../../utils/axios';
 

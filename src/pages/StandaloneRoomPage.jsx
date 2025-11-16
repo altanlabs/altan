@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useLocation } from 'react-router-dom';
 
-import Room from '../components/room/Room.jsx';
+import RoomContainer from '../components/new-room/RoomContainer.tsx';
 import { useSettingsContext } from '../components/settings';
-import { selectRoomAttribute } from '../redux/slices/room';
-import { useSelector } from '../redux/store';
-import { RoomContainer } from '../components/new-room/RoomContainer.js';
+import { selectRoomAttribute } from '../redux/slices/room/selectors/roomSelectors';
+import { useSelector } from '../redux/store.ts';
 
 const selectRoomName = selectRoomAttribute('name');
 const selectRoomDescription = selectRoomAttribute('description');

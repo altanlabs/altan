@@ -20,8 +20,8 @@ import {
   navigateToPath,
   refreshIframe,
   openInNewTab,
-} from '../redux/slices/previewControl';
-import { useSelector } from '../redux/store';
+} from '../redux/slices/previewControl.ts';
+import { useSelector } from '../redux/store.ts';
 
 function URLNavigationBar({ productionUrl, disabled = false }) {
   const theme = useTheme();

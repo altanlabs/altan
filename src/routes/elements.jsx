@@ -10,8 +10,8 @@ const Loadable = (Component) => (props) => (
 // ----------------------------------------------------------------------
 
 // AUTH
-export const LoginPage = Loadable(lazy(() => import('../pages/auth/LoginPage.jsx')));
-export const RegisterPage = Loadable(lazy(() => import('../pages/auth/RegisterPage.jsx')));
+// export const LoginPage = Loadable(lazy(() => import('../pages/auth/LoginPage.jsx')));
+// export const RegisterPage = Loadable(lazy(() => import('../pages/auth/RegisterPage.jsx')));
 export const VerifyCodePage = Loadable(lazy(() => import('../pages/auth/VerifyCodePage.jsx')));
 export const NewPasswordPage = Loadable(lazy(() => import('../pages/auth/NewPasswordPage.jsx')));
 export const ResetPasswordPage = Loadable(
@@ -23,8 +23,6 @@ export const RoomsPage = Loadable(lazy(() => import('../pages/dashboard/RoomsPag
 export const StandaloneRoomPage = Loadable(lazy(() => import('../pages/StandaloneRoomPage.jsx')));
 export const ChatPage = Loadable(lazy(() => import('../pages/ChatPage.jsx')));
 // DASHBOARD: GENERAL
-// export const GeneralAppPage = Loadable(lazy(() => import('../pages/dashboard/GeneralAppPage')));
-// export const DashboardPage = Loadable(lazy(() => import('../pages/dashboard/DashboardPage.jsx')));
 export const NewDashboardPage = Loadable(lazy(() => import('../pages/dashboard/NewDashboardPage.jsx')));
 export const UsagePage = Loadable(lazy(() => import('../pages/dashboard/UsagePage.jsx')));
 export const ExecutionsPage = Loadable(lazy(() => import('../pages/dashboard/ExecutionsPage.jsx')));
@@ -43,17 +41,12 @@ export const APIKeys = Loadable(lazy(() => import('../pages/dashboard/APIKeys.js
 export const ReferralsPage = Loadable(lazy(() => import('../pages/dashboard/ReferralsPage.jsx')));
 
 export const ProjectPage = Loadable(lazy(() => import('../pages/dashboard/ProjectPage.jsx')));
-export const ProjectPageMobileTest = Loadable(lazy(() => import('../pages/dashboard/ProjectPageMobileTest.jsx')));
 
 export const NewAltanerPage = Loadable(
   lazy(() => import('../pages/dashboard/altaners/NewAltanerPage.jsx')),
 );
 
-export const FlowsPage = Loadable(lazy(() => import('../pages/dashboard/flows/FlowsPage.jsx')));
-
-export const BasePage = Loadable(lazy(() => import('../pages/dashboard/databases/BasePage.jsx')));
 export const CloudPage = Loadable(lazy(() => import('../pages/dashboard/CloudPage.jsx')));
-export const BasesPage = Loadable(lazy(() => import('../pages/dashboard/databases/BasesPage.jsx')));
 
 export const InterfacePage = Loadable(
   lazy(() => import('../pages/dashboard/interfaces/InterfacePage.jsx')),
@@ -86,30 +79,13 @@ export const AgentPage = Loadable(lazy(() => import('../pages/dashboard/AgentPag
 export const AgentSharePage = Loadable(lazy(() => import('../pages/dashboard/AgentSharePage.jsx')));
 export const AgentCardPage = Loadable(lazy(() => import('../pages/dashboard/AgentCardPage.jsx')));
 
-export const AdminPage = Loadable(lazy(() => import('../pages/dashboard/AdminPage.jsx')));
 export const IntegrationPage = Loadable(
   lazy(() => import('../pages/dashboard/IntegrationPage.jsx')),
 );
-export const RemixPage = Loadable(lazy(() => import('../pages/dashboard/RemixPage.jsx')));
 
 // TEST RENDER PAGE BY ROLE
 export const PermissionDeniedPage = Loadable(
   lazy(() => import('../pages/dashboard/PermissionDeniedPage.jsx')),
-);
-
-export const IntegrationCreator = Loadable(
-  lazy(() => import('../pages/dashboard/superadmin/IntegrationCreator.jsx')),
-);
-
-// SUPERADMIN
-export const SuperAdminMain = Loadable(
-  lazy(() => import('../pages/dashboard/superadmin/SuperAdminMain.jsx')),
-);
-export const InternalUtils = Loadable(
-  lazy(() => import('../pages/dashboard/superadmin/InternalUtils.jsx')),
-);
-export const ExternalUtils = Loadable(
-  lazy(() => import('../pages/dashboard/superadmin/ExternalUtils.jsx')),
 );
 
 // MAIN
@@ -127,9 +103,6 @@ export const MaintenancePage = Loadable(lazy(() => import('../pages/MaintenanceP
 
 export const FlowPage = Loadable(
   lazy(() => import('../pages/dashboard/flows/FlowPage.jsx')),
-);
-export const StandaloneBasePage = Loadable(
-  lazy(() => import('../pages/dashboard/databases/StandaloneBasePage.jsx')),
 );
 
 export const OverallActivityPage = Loadable(

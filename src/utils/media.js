@@ -1,6 +1,6 @@
 import { optimai } from './axios';
 import { createMedia } from '../redux/slices/media';
-import { dispatch } from '../redux/store';
+import { dispatch } from '../redux/store.ts';
 
 const getMediaUploadObject = async (file) => {
   if (!file) {

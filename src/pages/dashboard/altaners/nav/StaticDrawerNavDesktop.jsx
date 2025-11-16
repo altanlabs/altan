@@ -15,9 +15,8 @@ import {
   deleteAltanerComponentById,
   updateAltanerPositionsById,
 } from '../../../../redux/slices/altaners';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 import { bgBlur } from '../../../../utils/cssStyles';
-import AltanerComponentDialog from '../components/AltanerComponentDialog';
 
 // Styled Components
 const DrawerContainer = styled(Box)(({ iscollapsed }) => ({
@@ -299,16 +298,6 @@ const StaticDrawerNavDesktop = ({
           Delete
         </MenuItem>
       </Menu>
-
-      {/* Edit Dialog */}
-      {editedComponent && (
-        <AltanerComponentDialog
-          altanerId={altanerId}
-          open={Boolean(editedComponent)}
-          onClose={() => setEditedComponent(null)}
-          altanerComponentId={editedComponent.id}
-        />
-      )}
 
       {/* Delete Dialog */}
       {componentToDelete && (

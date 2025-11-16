@@ -2,7 +2,7 @@
 import { Tooltip, Stack, Typography, Box, Button } from '@mui/material';
 
 // auth
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // layouts
 import AnimatedVideoLayout from '../../layouts/login';
 

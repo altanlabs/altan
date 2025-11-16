@@ -26,7 +26,7 @@ import React, { memo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { createActionType, patchActionType, removeActionType } from '../../redux/slices/general';
+import { createActionType, patchActionType, removeActionType } from '../../redux/slices/general/index.ts';
 import { isValidJSONFromSchema } from '../../utils/formatData';
 import DeleteDialog from '../dialogs/DeleteDialog';
 import FormParameter from '../tools/form/FormParameter';

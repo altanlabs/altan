@@ -35,7 +35,7 @@ import {
 
 import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
-import { selectAccountId } from '../../redux/slices/general';
+import { selectAccountId } from '../../redux/slices/general/index.ts';
 import { optimai } from '../../utils/axios';
 
 // Database usage colors - varied palette for different databases

@@ -2,13 +2,13 @@ import { useState, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 import MemberDialog from './MemberDialog.jsx';
+import MemberInviteDialog from './MemberInviteDialog.jsx';
 import { cn } from '../../lib/utils.ts';
-import { selectMembers, selectMe } from '../../redux/slices/room';
+import { selectMembers, selectMe } from '../../redux/slices/room/selectors/memberSelectors';
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
-import MemberInviteDialog from '../room/drawer/MemberInviteDialog.jsx';
-import { getMemberDetails } from '../room/utils';
+import { getMemberDetails } from '../new-room/utils.js';
 import { Input } from '../ui/input';
 
 const MembersList = ({

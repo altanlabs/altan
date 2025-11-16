@@ -17,7 +17,7 @@ import {
   fetchMCPServers,
   deleteMCPServer,
 } from '../../redux/slices/mcp';
-import { selectAccount } from '../../redux/slices/general';
+import { selectAccount } from '../../redux/slices/general/index.ts';
 import Iconify from '../../components/iconify';
 import IconRenderer from '../../components/icons/IconRenderer';
 import CreateMCPDrawer from '../../components/agents/v2/components/CreateMCPDrawer';

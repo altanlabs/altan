@@ -6,8 +6,8 @@ import { useHistory } from 'react-router-dom';
 import GitHubRepoDialog from './GitHubRepoDialog';
 import { TextShimmer } from '../../../../components/aceternity/text/text-shimmer';
 import UpgradeDialog from '../../../../components/dialogs/UpgradeDialog';
-import { selectIsAccountFree } from '../../../../redux/slices/general';
-import { useSelector } from '../../../../redux/store';
+import { selectIsAccountFree } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 
 // Helper function to get the appropriate icon based on file type
 const getFileIcon = (type) => {

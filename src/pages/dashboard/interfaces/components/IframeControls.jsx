@@ -17,7 +17,7 @@ import {
   discardChanges,
 } from '../../../../redux/slices/codeEditor';
 import { selectEditMode } from '../../../../redux/slices/previewControl';
-import { dispatch, useSelector } from '../../../../redux/store.js';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import { optimai_pods } from '../../../../utils/axios';
 
 function IframeControls({

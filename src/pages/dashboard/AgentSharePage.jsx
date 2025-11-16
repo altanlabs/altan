@@ -3,8 +3,8 @@ import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 
-import { useAuthContext } from '../../auth/useAuthContext';
-import Room from '../../components/room/Room';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
+import RoomContainer from '../../components/new-room/RoomContainer.tsx';
 import Login from '../../sections/auth/Login';
 import { optimai } from '../../utils/axios';
 
@@ -125,7 +125,7 @@ export default function AgentSharePage() {
         }}
       >
         {/* Compact Room Section */}
-        <Room
+        <RoomContainer
           roomId={roomId}
           members={agent.widget?.members || false}
           settings={agent.widget?.settings || false}
@@ -189,7 +189,7 @@ export default function AgentSharePage() {
           },
         }}
       >
-        <Room
+        <RoomContainer
           roomId={roomId}
           members={false}
           settings={false}

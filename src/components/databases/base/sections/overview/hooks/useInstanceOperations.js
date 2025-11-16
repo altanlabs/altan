@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { optimai_cloud } from '../../../../../../utils/axios';
 import { setSession } from '../../../../../../utils/auth';
-import { dispatch } from '../../../../../../redux/store';
+import { dispatch } from '../../../../../../redux/store.ts';
 import { fetchTables } from '../../../../../../redux/slices/bases';
 
 export const useInstanceOperations = (baseId, isPaused) => {

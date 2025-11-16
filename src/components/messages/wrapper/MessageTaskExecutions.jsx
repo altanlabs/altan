@@ -5,7 +5,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 
 import MorphingSpinner from './MorphingSpinner.jsx';
 import { makeSelectMessageExecutions, makeSelectMessageRunning, selectExecutionsById, stopAgentResponse } from '../../../redux/slices/room';
-import { dispatch, useSelector } from '../../../redux/store.js';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import Iconify from '../../iconify/Iconify.jsx';
 import ExecutionCard from '../../tasks/ExecutionCard.jsx';
 

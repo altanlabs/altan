@@ -10,7 +10,7 @@ import Iconify from '../../../../components/iconify';
 import useDebouncedSearch from '../../../../hooks/useDebouncedSearch';
 import useFilteredConnectionEntities from '../../../../hooks/useFilteredConnectionEntities.ts';
 import { setNewModuleType } from '../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../redux/store';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import { optimai_root } from '../../../../utils/axios';
 
 const selectTypesInitialized = (state) => state.connections.initialized.types;

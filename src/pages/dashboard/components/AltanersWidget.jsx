@@ -14,12 +14,12 @@ import {
 } from '@mui/material';
 import React, { memo, useState } from 'react';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import AltanerCard from '../../../components/AltanerCard';
 import SearchField from '../../../components/custom-input/SearchField';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 import AltanerTemplateMarketplace from '../../../components/templates/AltanerTemplateMarketplace';
 
 const AltanerSkeleton = memo(() => (

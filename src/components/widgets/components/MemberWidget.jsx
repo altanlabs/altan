@@ -1,7 +1,7 @@
 import { Box, Skeleton, Avatar, Typography, Stack } from '@mui/material';
 import { memo, useEffect, useState } from 'react';
 
-import { dispatch } from '../../redux/store';
+import { dispatch } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
 
 const fetchMember = (memberId) => async () => {

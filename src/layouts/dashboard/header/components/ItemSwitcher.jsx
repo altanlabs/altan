@@ -10,7 +10,7 @@ import DynamicAgentAvatar from '../../../../components/agents/DynamicAgentAvatar
 import Iconify from '../../../../components/iconify';
 import { selectAllAgents } from '../../../../redux/slices/agents';
 import { deleteWorkflow, duplicateWorkflow } from '../../../../redux/slices/flows';
-import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general';
+import { deleteAccountAgent, duplicateAgent } from '../../../../redux/slices/general/index.ts';
 
 // Constants
 const COMPONENT_TYPES = {

@@ -1,7 +1,7 @@
 import { TextField, Autocomplete, Chip, Stack, Skeleton } from '@mui/material';
 import { memo } from 'react';
 
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 
 const InterfaceAutocomplete = ({ value, onChange }) => {
   const interfaces = useSelector((state) => state.general.account.interfaces);

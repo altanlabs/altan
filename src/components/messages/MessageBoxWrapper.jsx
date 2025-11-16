@@ -5,16 +5,18 @@ import { cn } from '@lib/utils';
 
 import MemberDetailsPopover from './MemberDetailsPopover.jsx';
 import MessageEndButtons from './MessageEndButtons.jsx';
-import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
+import Reactions from './Reactions.jsx';
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar.jsx';
+import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import MessageBox from './wrapper/MessageBox.tsx';
 import MessageReply from './wrapper/MessageReply.jsx';
 import useMessageThreads from './wrapper/useMessageThreads.jsx';
-import { selectMe, selectMembers, selectThreadDrawerDetails, makeSelectMessageHasStreamingParts } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
+import { selectMe, selectMembers } from '../../redux/slices/room/selectors/memberSelectors';
+import { makeSelectMessageHasStreamingParts } from '../../redux/slices/room/selectors/messagePartSelectors';
+import { selectThreadDrawerDetails } from '../../redux/slices/room/selectors/threadSelectors';
+import { useSelector } from '../../redux/store.ts';
 import { formatDate, formatTime } from '../../utils/dateUtils.js';
-import Reactions from '../room/thread/message/Reactions.jsx';
-import { getMemberName } from '../room/utils';
+import { getMemberName } from '../new-room/utils.js';
 
 const getPicture = (member) => {
   if (!member) {
@@ -25,8 +27,6 @@ const getPicture = (member) => {
       return member.agent?.avatar_url || null;
     case 'user':
       return member.user?.avatar_url || null;
-    case 'guest':
-      return member.guest?.avatar_url || null;
     default:
       return null;
   }
@@ -47,12 +47,12 @@ const MessageBoxWrapper = ({
   const me = useSelector(selectMe);
   const members = useSelector(selectMembers);
   const drawerMessageId = useSelector(selectDrawerMessageId);
-  
+
   // Check if message is streaming (for agent avatar animation)
   const selectMessageHasStreamingParts = useMemo(makeSelectMessageHasStreamingParts, []);
   const hasStreamingParts = useSelector((state) => selectMessageHasStreamingParts(state, message.id));
   const isMessageStreaming = message?.is_streaming || hasStreamingParts || message?.meta_data?.loading;
-  
+
   const avatarRef = useRef(null);
   const connectorRef = useRef(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -81,11 +81,10 @@ const MessageBoxWrapper = ({
     member: {
       id: 'system',
       member_type: 'system',
-      // For system messages, we provide guest details as a fallback.
-      guest: { nickname: 'System', avatar_url: null },
+      // For system messages, we provide user details as a fallback.
+      user: { first_name: 'System', last_name: '', avatar_url: null },
       // Additional keys in case they are referenced.
       agent: { avatar_url: null },
-      user: { avatar_url: null },
     },
   };
 
@@ -137,11 +136,11 @@ const MessageBoxWrapper = ({
         }}
         src={picture}
         ref={avatarRef}
-        name={sender?.member?.guest?.nickname || 'Member'}
+        name={sender?.member?.user?.first_name || 'Member'}
         onClick={handleAvatarClick}
       />
     );
-  }, [finalShouldShowMember, sender?.id, sender?.member?.member_type, sender?.member?.agent, sender?.member?.guest?.nickname, picture, handleAvatarClick, mode, isMessageStreaming]);
+  }, [finalShouldShowMember, sender?.id, sender?.member?.member_type, sender?.member?.agent, sender?.member?.user?.first_name, picture, handleAvatarClick, mode, isMessageStreaming]);
 
   return (
     <>

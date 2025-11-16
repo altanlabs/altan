@@ -18,8 +18,8 @@ import { styled, alpha, useTheme } from '@mui/material/styles';
 import React, { useState, memo, useCallback, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
-import { selectTablesByBaseId, updateTableById, selectBaseById, selectTableTotalRecords } from '../../../redux/slices/bases';
-import { dispatch, useSelector } from '../../../redux/store';
+import { selectTablesByBaseId, updateTableById, selectBaseById, selectTableTotalRecords } from '../../../redux/slices/bases.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import DeleteDialog from '../../dialogs/DeleteDialog.jsx';
 import Iconify from '../../iconify';
 import CreateTableDialog from '../table/CreateTableDialog.jsx';

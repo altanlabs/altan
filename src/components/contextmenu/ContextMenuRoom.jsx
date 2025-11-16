@@ -6,8 +6,9 @@ import React, { memo, useCallback, useEffect, useRef } from 'react';
 
 import ContextMenuItems from './ContextMenuItemsRoom.jsx';
 import useResponsive from '../../hooks/useResponsive';
-import { selectContextMenu, setContextMenu } from '../../redux/slices/room.js';
-import { dispatch, useSelector } from '../../redux/store.js';
+import { selectContextMenu } from '../../redux/slices/room/selectors/uiSelectors';
+import { setContextMenu } from '../../redux/slices/room/slices/uiSlice';
+import { dispatch, useSelector } from '../../redux/store.ts';
 
 const variants = {
   hidden: { opacity: 0, scale: 0.95, transform: 'translateY(25px)' },

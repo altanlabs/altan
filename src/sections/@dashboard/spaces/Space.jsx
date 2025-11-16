@@ -2,21 +2,21 @@ import { m, AnimatePresence } from 'framer-motion';
 import React, { useState, useEffect, useCallback, memo } from 'react';
 
 import ToolNavigator from './navigation/ToolNavigator';
-import { SpaceToolCard } from './StyledCards';
 import ActionTypeCard from './tools/ActionTypeCard';
 import ClientToolDrawer from './tools/ClientToolDrawer';
+import SpaceToolCard from './tools/SpaceToolCard';
 import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
-import { Button } from '../../../components/ui/Button';
+import { Button } from '../../../components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Sheet, SheetContent } from '../../../components/ui/sheet';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
 import { cn } from '../../../lib/utils';
-import { selectAccount } from '../../../redux/slices/general';
+import { selectAccount } from '../../../redux/slices/general/index.ts';
 import { getSpace } from '../../../redux/slices/spaces';
-import { dispatch, useSelector } from '../../../redux/store';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import { PATH_DASHBOARD } from '../../../routes/paths';
 
 const GET_OPTIONS = {

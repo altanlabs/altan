@@ -12,7 +12,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { m, AnimatePresence } from 'framer-motion';
 import { useSnackbar } from 'notistack';
 import { memo, useCallback, useMemo, useState, useEffect, useRef } from 'react';
-// import { createTemplate } from "../../../redux/slices/general";
+// import { createTemplate } from "../../../redux/slices/general/index.ts";
 // import { useHistory } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
@@ -29,7 +29,7 @@ import Iconify from '../../../components/iconify';
 import { useSettingsContext } from '../../../components/settings/SettingsContext.jsx';
 import TemplateDialog from '../../../components/templates/TemplateDialog.jsx';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { checkObjectsEqual } from '../../../redux/helpers/memoize';
+import { checkObjectsEqual } from '../../../redux/helpers/memoize.ts';
 import {
   activateFlow,
   // clearFlowExecution,
@@ -46,8 +46,8 @@ import {
   selectTotalExecutionsEventsHistory,
   selectFlowSchema,
 } from '../../../redux/slices/flows';
-import { createTemplate } from '../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../redux/store';
+import { createTemplate } from '../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 const AnimatedButton = ({ children, ...props }) => (
   <m.div

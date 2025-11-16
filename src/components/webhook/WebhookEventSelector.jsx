@@ -2,21 +2,18 @@ import { Stack, Typography } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import ResourceSelector from './ResourceSelector';
-import { checkObjectsEqual } from '../../redux/helpers/memoize';
+import { checkObjectsEqual } from '../../redux/helpers/memoize.ts';
 import {
   selectAccountConnectionsByType,
   selectConnectionTypes,
 } from '../../redux/slices/connections';
-import { selectExtendedResources } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectExtendedResources } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { optimai_integration } from '../../utils/axios';
 import ConfirmationButton from '../buttons/ConfirmationButton';
 import Iconify from '../iconify';
 import ConnectionSelectorAutocomplete from '../tools/ConnectionSelectorAutocomplete';
-import CreateConnection from '../tools/CreateConnection';
-// import { useDebounce } from "../../hooks/useDebounce";
-
+import CreateConnection from '../tools/CreateConnection.jsx';
 import { getNested } from '../tools/dynamic/utils';
 
 const isValidUUID = (str) => {
@@ -355,19 +352,8 @@ const WebhookEventSelector = ({
     );
   }, [validResourceTypes, selectedConnection]);
 
-  // console.log("grouped", groupedEvents);
-
-  const renderResources = !!groupedEvents && selectedConnection && (
-    <ResourceSelector
-      data={groupedEvents}
-      value={selectedResources}
-      onChange={setSelectedResources}
-      editable={editable}
-    />
-  );
-
   if (!editable) {
-    return renderResources;
+    return null;
   }
 
   return (
@@ -423,8 +409,6 @@ const WebhookEventSelector = ({
           />
         )}
       </Stack>
-
-      <Stack spacing={1}>{renderResources}</Stack>
     </Stack>
   );
 };

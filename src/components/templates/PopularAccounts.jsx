@@ -3,7 +3,7 @@ import { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { optimai } from '../../utils/axios';
 import Iconify from '../iconify';
 

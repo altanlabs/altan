@@ -11,7 +11,7 @@ import {
 import { memo, useState } from 'react';
 
 import CustomDialog from '../../../../components/dialogs/CustomDialog.jsx';
-import { optimai_room } from '../../../../utils/axios';
+import { getRoomPort } from '../../../../di/index.ts';
 
 function EditMemoryDialog({ open, onClose, roomId }) {
   const [instruction, setInstruction] = useState('');
@@ -20,9 +20,8 @@ function EditMemoryDialog({ open, onClose, roomId }) {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      await optimai_room.patch(`/${roomId}/memory`, {
-        update_memory: instruction,
-      });
+      const roomPort = getRoomPort();
+      await roomPort.updateRoomMemory(roomId, instruction);
       onClose();
     } catch (error) {
       console.error('Failed to update memory:', error);

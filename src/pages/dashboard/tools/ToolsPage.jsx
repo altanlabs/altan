@@ -12,7 +12,7 @@ import EmptyContent from '../../../components/empty-content/EmptyContent';
 import SkeletonStack from '../../../components/SkeletonStack';
 import { CompactLayout } from '../../../layouts/dashboard';
 import { getConnections } from '../../../redux/slices/connections';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { PATH_DASHBOARD } from '../../../routes/paths';
 import CreateTool from '../../../sections/@dashboard/spaces/tools/CreateTool';
 import Each from '../../../utils/each';

@@ -16,7 +16,7 @@ import { FIELD_TYPES } from './utils/fieldTypes';
 import FieldTypeSelector from './utils/FieldTypeSelector';
 import getDefaultConfig from './utils/getDefaultConfig';
 import { RESERVED_WORDS } from './utils/reservedWords';
-import { createField } from '../../../redux/slices/bases';
+import { createField } from '../../../redux/slices/bases.ts';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 
 const CreateFieldDialog = ({ open, onClose, table }) => {

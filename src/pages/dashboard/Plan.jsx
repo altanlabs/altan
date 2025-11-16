@@ -7,9 +7,9 @@ import PlanRoadmap from '../../components/plan/PlanRoadmap';
 import { PlanError, PlanLoading } from '../../components/plan/PlanStates';
 import { calculateProgress, sortTasksByPriority } from '../../components/plan/planUtils';
 import analytics from '../../lib/analytics';
-import { switchToThread } from '../../redux/slices/room';
+import { switchToThread } from '../../redux/slices/room/thunks/threadThunks';
 import { fetchPlan, selectPlanById, selectPlanError, selectPlanLoading, setPlan, selectCompletedPlanEvent, clearPlanCompleted } from '../../redux/slices/tasks';
-import { useDispatch, useSelector } from '../../redux/store';
+import { useDispatch, useSelector } from '../../redux/store.ts';
 
 const Plan = ({ planId, altanerId }) => {
   const dispatch = useDispatch();

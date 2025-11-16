@@ -6,8 +6,8 @@ import { useHistory } from 'react-router';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog';
-import { deleteOrganisationUser } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { deleteOrganisationUser } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 
 const UserProfileCard = ({ profileData }) => {
   console.log(profileData);

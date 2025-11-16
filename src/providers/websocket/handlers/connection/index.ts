@@ -1,0 +1,27 @@
+/**
+ * Connection Event Handler
+ * Routes connection events to appropriate operations
+ */
+
+import { extractConnectionEventData, CONNECTION_OPERATIONS } from './operations';
+import type { WebSocketConnectionEvent } from './types';
+
+/**
+ * Handle connection events from Hermes WebSocket
+ * @param {Object} data - The WebSocket event data
+ */
+export const handleConnectionEvent = (data: WebSocketConnectionEvent): void => {
+  const extracted = extractConnectionEventData(data);
+  if (!extracted) return;
+
+  const { eventData, eventType } = extracted;
+
+  // Handle specific event types using registry
+  const handler = CONNECTION_OPERATIONS[eventType];
+  if (handler) {
+    handler(eventData);
+  } else {
+    console.warn(`Unhandled connection event type: ${eventType}`);
+  }
+};
+

@@ -2,11 +2,11 @@ import { IconButton, Stack, Tooltip, alpha, useTheme } from '@mui/material';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 
 import { makeSelectMessageChildrenThreads } from '../../../hooks/useSortedThreads.js';
-import { makeSelectHasMessageCreatedParentThreads } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectHasMessageCreatedParentThreads } from '../../../redux/slices/room/selectors';
+import { useSelector } from '../../../redux/store.ts';
 import { areSameDay } from '../../../utils/dateUtils.js';
 import Iconify from '../../iconify/Iconify.jsx';
-import ThreadMinified from '../../room/thread/ThreadMinified.jsx';
+import ThreadMinified from '../../tabs/ThreadMinified.jsx';
 
 const createConnectorPath = (posnA, posnB, arcRadius) => {
   const initialLineLength = posnB.y > posnA.y ? posnB.y - arcRadius : posnA.y - arcRadius;

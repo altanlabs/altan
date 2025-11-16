@@ -14,7 +14,7 @@ import { DynamicIsland } from '../../../components/dynamic-island/DynamicIsland'
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
 import { deleteMedia } from '../../../redux/slices/media';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { bgBlur } from '../../../utils/cssStyles';
 import { uploadMedia } from '../../../utils/media';
 

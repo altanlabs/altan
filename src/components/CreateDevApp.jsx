@@ -6,8 +6,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import useFeedbackDispatch from '../hooks/useFeedbackDispatch';
 import formatData from '../utils/formatData';
 import FormParameter from './tools/form/FormParameter';
-import { createAccountResource, selectAccountId } from '../redux/slices/general';
-import { useSelector } from '../redux/store';
+import { createAccountResource, selectAccountId } from '../redux/slices/general/index.ts';
+import { useSelector } from '../redux/store.ts';
 import InteractiveButton from './buttons/InteractiveButton';
 
 const DEV_APP_SCHEMA = {

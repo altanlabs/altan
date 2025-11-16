@@ -7,14 +7,15 @@ import {
   createRecordPrimaryValueSelector,
   getTableRecord,
   selectTableRecordsState,
-  selectTablesByBaseId,
-} from '../../../redux/slices/bases';
-import { dispatch } from '../../../redux/store';
+  selectAllTablesByBaseId,
+} from '../../../redux/slices/bases.ts';
+import { dispatch } from '../../../redux/store.ts';
 
 const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
-  // Get the actual table ID if a db_name was passed
-  const tables = useSelector((state) => selectTablesByBaseId(state, baseId));
-  const tableId = tables.find((table) => table.db_name === rawTableId)?.id || rawTableId;
+  // Get the actual table ID if a db_name was passed - look across all schemas
+  const tables = useSelector((state) => selectAllTablesByBaseId(state, baseId));
+  const foundTable = tables.find((table) => table.db_name === rawTableId || table.name === rawTableId || table.id === rawTableId);
+  const tableId = foundTable?.id || rawTableId;
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -61,7 +62,11 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
     // Only fetch if the record isn't found AND
     // 1. The table is not yet loaded (recordsState doesn't exist) OR
     // 2. The table is not fully cached (recordsState.cached is false)
-    if (!record && tableId && recordId && (!recordsState || !recordsState.cached)) {
+    // 3. We have a valid numeric table ID
+    const numericTableId = typeof tableId === 'number' ? tableId : (typeof tableId === 'string' ? parseInt(tableId, 10) : NaN);
+    const isValidTableId = !isNaN(numericTableId) && numericTableId > 0;
+
+    if (!record && tableId && recordId && isValidTableId && (!recordsState || !recordsState.cached)) {
       setIsLoading(true);
 
       // For auth tables, use the rawTableId as the custom table name
@@ -74,8 +79,11 @@ const RecordChip = ({ baseId, tableId: rawTableId, recordId }) => {
         .finally(() => {
           setIsLoading(false);
         });
+    } else if (!isValidTableId && tableId && recordId) {
+      // Log a warning if we couldn't resolve the table ID
+      console.warn(`Could not resolve table ID for ${rawTableId} in base ${baseId}. Available tables:`, tables.map(t => ({ id: t.id, name: t.name, db_name: t.db_name, schema: t.schema })));
     }
-  }, [tableId, recordId, record, recordsState, rawTableId]);
+  }, [tableId, recordId, record, recordsState, rawTableId, baseId, tables]);
 
   // Early return if missing required props
   if (!tableId || !recordId || !baseId) {

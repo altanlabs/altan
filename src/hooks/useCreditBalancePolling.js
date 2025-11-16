@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { updateAccountCreditBalance, selectAccountId } from '../redux/slices/general';
+import { updateAccountCreditBalance, selectAccountId } from '../redux/slices/general/index.ts';
 import { optimai } from '../utils/axios';
 
 /**

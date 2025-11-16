@@ -1,6 +1,6 @@
+import { Box } from '@mui/material';
 import { useCallback } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { Box } from '@mui/material';
 
 import Agent from '../../components/agents/v2/Agent';
 

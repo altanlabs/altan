@@ -42,7 +42,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { updateBaseById, exportDatabaseToCSV, exportDatabaseToSQL } from '../../../redux/slices/bases';
+import { updateBaseById, exportDatabaseToCSV, exportDatabaseToSQL } from '../../../redux/slices/bases.ts';
 import Iconify from '../../iconify';
 import EditTableDrawer from '../table/EditTableDrawer';
 

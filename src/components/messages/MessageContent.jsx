@@ -10,11 +10,11 @@ import { groupConsecutiveParts } from './utils/aggregationUtils.js';
 import MessageMedia from './wrapper/MessageMedia.jsx';
 import {
   makeSelectHasMessageContent,
-  makeSelectHasMessageMedia,
   selectMessagePartsByMessageId,
   selectMessagePartsById,
-} from '../../redux/slices/room.js';
-import { useSelector } from '../../redux/store.js';
+} from '../../redux/slices/room/selectors/messagePartSelectors';
+import { makeSelectHasMessageMedia } from '../../redux/slices/room/selectors/messageSelectors';
+import { useSelector } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify.jsx';
 
 // Stable empty array reference to avoid creating new references

@@ -1,66 +1,56 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import { useAuthContext } from '../../../auth/useAuthContext';
-import { fetchRoom, selectRoomStateInitialized } from '../../../redux/slices/room';
-import { dispatch, useSelector } from '../../../redux/store';
+import { fetchRoom } from '../../../redux/slices/room/thunks/roomThunks';
+import { store, useSelector } from '../../../redux/store';
 import type { RoomInitState } from '../types/room.types';
 
 /**
- * Single hook to handle ALL room initialization
- * Replaces multiple scattered useEffects in old code
+ * Room initialization hook
+ * Fetches room data and tracks loading/initialized/error states
  */
 export function useRoomInitialization(roomId: string): RoomInitState {
   const history = useHistory();
-  const { guest, user } = useAuthContext();
-  const initialized = useSelector(selectRoomStateInitialized('room'));
-  const [loading, setLoading] = useState(true);
+  const { user, isInitialized: authInitialized } = useAuthContext();
+  
+  // Redux state - access nested structure directly
+  const initialized = useSelector((state) => state.room._ui?.initialized?.room ?? false);
+  const loading = useSelector((state) => state.room._ui?.loading?.room ?? false);
+  
+  // Local error state for UI-specific error handling
   const [error, setError] = useState<Error | null>(null);
 
-  const handleFetchRoom = useCallback(() => {
-    if (!roomId || !( user || guest)) {
-      setLoading(false);
+  useEffect(() => {
+    // Skip if auth hasn't initialized yet
+    if (!authInitialized) {
       return;
     }
 
-    setLoading(true);
+    // Skip if no required data or already initialized/loading
+    if (!roomId || !user || initialized || loading) {
+      return;
+    }
+
     setError(null);
 
-    dispatch(fetchRoom({ roomId, user, guest }))
-      .then((response) => {
-        if (!response) {
-          throw new Error('Room fetch returned no data');
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
+    // Dispatch the thunk and handle errors
+    store.dispatch(fetchRoom({ roomId, user }) as any)
+      .catch((err: any) => {
         const statusCode = err.response?.status || err?.status;
-        
-        switch (statusCode) {
-          case 401:
-            // Don't redirect on 401 - might just be timing issue
-            // The interceptor will retry with refreshed token
-            setError(new Error('Authentication error'));
-            break;
-          case 404:
-            history.replace('/404');
-            break;
-          case 403:
-            history.push(`/room/${roomId}/access`);
-            break;
-          default:
-            setError(err);
-        }
-        
-        setLoading(false);
-      });
-  }, [roomId, user, guest, history]);
 
-  useEffect(() => {
-    if (roomId && !initialized && (user || guest)) {
-      handleFetchRoom();
-    }
-  }, [roomId, initialized, user, guest, handleFetchRoom]);
+        // Handle specific error codes
+        if (statusCode === 404) {
+          history.replace('/404');
+        } else if (statusCode === 403) {
+          history.push(`/room/${roomId}/access`);
+        } else if (statusCode !== 401) {
+          // Don't show error for 401 (auth retry in progress)
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, user, initialized, loading, authInitialized]);
 
   return {
     initialized,

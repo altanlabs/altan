@@ -3,8 +3,8 @@ import { memo, useEffect } from 'react';
 import { Sheet, SheetContent } from '@components/ui/sheet';
 
 import { getConnections } from '../../../../redux/slices/connections';
-import { selectAccount } from '../../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../../redux/store';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import CreateTool from '../tools/CreateTool';
 
 const ToolNavigator = ({ toolDrawer, setToolDrawer }) => {

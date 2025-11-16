@@ -13,7 +13,7 @@ import ShareAgentDialog from './ShareAgentDialog.jsx';
 import Iconify from '../../components/iconify';
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import DeleteDialog from '../../pages/dashboard/superadmin/tables/DeleteDialog.jsx';
-import { deleteAccountAgent, updateAgent } from '../../redux/slices/general';
+import { deleteAccountAgent, updateAgent } from '../../redux/slices/general/index.ts';
 import { optimai } from '../../utils/axios';
 import { CustomAvatar } from '../custom-avatar';
 import StaticGradientAvatar from '../agents/StaticGradientAvatar.jsx';

@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { CustomAvatar } from '../../components/custom-avatar';
 import { CompactLayout } from '../../layouts/dashboard';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
 
 // ----------------------------------------------------------------------

@@ -2,11 +2,11 @@ import { Capacitor } from '@capacitor/core';
 import React, { memo, useMemo, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
-import { selectHeaderVisible } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { selectHeaderVisible } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
 
 // Default header heights and spacing (tailor these as needed)
 const DEFAULT_HEADER_MOBILE_HEIGHT = HEADER.H_MOBILE;

@@ -17,7 +17,7 @@ import {
   // currentToolSchemaSelector,
   selectAvailableFlowConnections,
 } from '../../redux/slices/flows';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 // import formatData from '../../utils/formatData';
 import { optimai_integration } from '../../utils/axios';
 

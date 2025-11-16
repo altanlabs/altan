@@ -9,8 +9,8 @@ import {
   selectTableRecords,
   selectTablesByBaseId,
   createRecordPrimaryValueSelector,
-} from '../../../../../redux/slices/bases';
-import { dispatch } from '../../../../../redux/store';
+} from '../../../../../redux/slices/bases.ts';
+import { dispatch } from '../../../../../redux/store.ts';
 
 export const ReferenceField = forwardRef((props, ref) => {
   ReferenceField.displayName = 'ReferenceField';

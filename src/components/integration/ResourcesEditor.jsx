@@ -26,7 +26,7 @@ import {
   createResourceType,
   patchResourceType,
   removeResourceType,
-} from '../../redux/slices/general';
+} from '../../redux/slices/general/index.ts';
 import { isValidJSONFromSchema } from '../../utils/formatData';
 import DeleteDialog from '../dialogs/DeleteDialog';
 import FormParameter from '../tools/form/FormParameter';

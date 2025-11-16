@@ -23,7 +23,7 @@ import {
   updateBucket,
   removeBucket,
 } from '../../../redux/slices/cloud';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { optimai_cloud } from '../../../utils/axios';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button.tsx';

@@ -20,7 +20,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { useTheme, Box, IconButton, Typography, Select, MenuItem } from '@mui/material';
 import { debounce, maxBy } from 'lodash-es';
-import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { memo, useMemo, useState, useCallback, useRef, useEffect, startTransition } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import { createColumnDefs } from './columns/index.js';
@@ -29,7 +29,6 @@ import JsonEditor from './editors/JsonEditor';
 import ReferenceField from './editors/ReferenceField';
 import EmptyTableState from './EmptyTableState';
 import useOptimizedRowData from './helpers/useOptimizedRowData.jsx';
-import { useWebSocketIntegration } from './helpers/useWebSocketIntegration.js';
 import createFieldContextMenuItems from './menu/fieldContextMenu';
 import createRecordContextMenuItems from './menu/recordContextMenu';
 import { headerHeight, defaultColDef } from './utils/settings.js';
@@ -38,10 +37,13 @@ import {
   selectSearching,
   fetchRecords,
   selectTableState,
-} from '../../../../redux/slices/cloud';
-import { selectAccount } from '../../../../redux/slices/general';
-import { importCSVToTable, loadTableRecords } from '../../../../redux/slices/bases';
-import { dispatch, useSelector } from '../../../../redux/store';
+} from '../../../../redux/slices/cloud.ts';
+import {
+  importCSVToTable,
+  loadTableRecords,
+} from '../../../../redux/slices/bases.ts';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import Iconify from '../../../iconify';
 import CreateFieldDrawer from '../../fields/CreateFieldDrawer.jsx';
 import EditFieldDrawer from '../../fields/EditFieldDrawer.jsx';
@@ -274,35 +276,35 @@ export const GridView = memo(
     );
 
     // Handle record deletions using async transactions
-    const handleRecordDelete = useCallback(
-      (recordIds, isHighFrequency = false) => {
-        if (!isMounted.current || !gridRef.current?.api) return;
+    // const handleRecordDelete = useCallback(
+    //   (recordIds, isHighFrequency = false) => {
+    //     if (!isMounted.current || !gridRef.current?.api) return;
 
-        const manager = asyncTransactionManager.current;
-        const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
+    //     const manager = asyncTransactionManager.current;
+    //     const ids = Array.isArray(recordIds) ? recordIds : [recordIds];
 
-        if (isHighFrequency) {
-          // For high-frequency deletes, batch them
-          manager.pendingRemoves.push(...ids.map((id) => ({ id })));
-        } else {
-          // For single deletes, apply immediately with async transaction
-          applyAsyncTransaction({
-            remove: ids.map((id) => ({ id })),
-          });
-        }
-      },
-      [applyAsyncTransaction],
-    );
+    //     if (isHighFrequency) {
+    //       // For high-frequency deletes, batch them
+    //       manager.pendingRemoves.push(...ids.map((id) => ({ id })));
+    //     } else {
+    //       // For single deletes, apply immediately with async transaction
+    //       applyAsyncTransaction({
+    //         remove: ids.map((id) => ({ id })),
+    //       });
+    //     }
+    //   },
+    //   [applyAsyncTransaction],
+    // );
 
     // WebSocket integration for real-time updates
-    const {
-      handleWebSocketUpdate,
-      handleWebSocketAdd,
-      handleWebSocketDelete,
-      forceFlush: flushWebSocketUpdates,
-      clearUpdateFlags,
-      getBufferStats,
-    } = useWebSocketIntegration(table?.id, handleRecordUpdate, handleRecordAdd, handleRecordDelete);
+    // const {
+    //   handleWebSocketUpdate,
+    //   handleWebSocketAdd,
+    //   handleWebSocketDelete,
+    //   forceFlush: flushWebSocketUpdates,
+    //   clearUpdateFlags,
+    //   getBufferStats,
+    // } = useWebSocketIntegration(table?.id, handleRecordUpdate, handleRecordAdd, handleRecordDelete);
 
     // Flush pending high-frequency transactions
     const flushPendingTransactions = useCallback(() => {
@@ -373,8 +375,10 @@ export const GridView = memo(
     useEffect(() => {
       if (!Array.isArray(records) || !Array.isArray(fields) || !isMounted.current) return;
 
-      // Set local row data first
-      setLocalRowData(optimizedRowData);
+      // Use startTransition to avoid flushSync warnings
+      startTransition(() => {
+        setLocalRowData(optimizedRowData);
+      });
     }, [optimizedRowData, records, fields]);
 
     // Separate effect for handling ready state
@@ -383,7 +387,9 @@ export const GridView = memo(
         // Use requestAnimationFrame to ensure we're outside React's rendering phase
         requestAnimationFrame(() => {
           if (isMounted.current) {
-            setIsReady(true);
+            startTransition(() => {
+              setIsReady(true);
+            });
           }
         });
       }
@@ -391,7 +397,9 @@ export const GridView = memo(
 
     const handleExpandRecord = useCallback(
       (recordId) => {
-        setEditRecordId(recordId);
+        startTransition(() => {
+          setEditRecordId(recordId);
+        });
         // Simplify URL: remove /views/viewId since it's redundant (always "default")
         const basePath = location.pathname.replace(/\/views\/[^/]+/, '');
         history.push(`${basePath}/records/${recordId}`);
@@ -422,9 +430,9 @@ export const GridView = memo(
 
     const getCommonFieldMenuItems = useCallback(
       (field, params) => {
-        return createFieldContextMenuItems(field, params, setEditField, table?.id);
+        return createFieldContextMenuItems(field, params, setEditField, table?.id, baseId);
       },
-      [table?.id],
+      [table?.id, baseId],
     );
 
     const onGridReady = useCallback((params) => {
@@ -469,13 +477,15 @@ export const GridView = memo(
                 // Use async transaction for the new record
                 handleRecordAdd(result.records[0]);
                 // Also update the local row data to reflect the change from new row to actual record
-                setLocalRowData((prevRowData) =>
-                  prevRowData.map((row) => {
-                    const isNewRow =
-                      row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
-                    return isNewRow ? result.records[0] : row;
-                  }),
-                );
+                startTransition(() => {
+                  setLocalRowData((prevRowData) =>
+                    prevRowData.map((row) => {
+                      const isNewRow =
+                        row.id === '__new__' || row.id === '+' || !row.id || row.id === '';
+                      return isNewRow ? result.records[0] : row;
+                    }),
+                  );
+                });
               }
             }
           } else {
@@ -704,7 +714,9 @@ export const GridView = memo(
 
     // Handler for CSV import
     const handleImportCSV = useCallback(() => {
-      setShowImportDrawer(true);
+      startTransition(() => {
+        setShowImportDrawer(true);
+      });
     }, []);
 
     // Handler for actual import process
@@ -717,8 +729,8 @@ export const GridView = memo(
               baseId,
               table.db_name || table.name,
               file,
-              table.schema || 'public'
-            )
+              table.schema || 'public',
+            ),
           );
 
           // Refresh the table records after import
@@ -726,11 +738,11 @@ export const GridView = memo(
             loadTableRecords(
               baseId,
               table.id,
-              { 
+              {
                 limit: paginationInfo?.pageSize || 50,
-                offset: 0 
-              }
-            )
+                offset: 0,
+              },
+            ),
           );
 
           return result;
@@ -739,20 +751,24 @@ export const GridView = memo(
           throw error;
         }
       },
-      [dispatch, baseId, table?.id, table?.name, table?.db_name, table?.schema, paginationInfo?.pageSize],
+      [baseId, table.id, table.name, table.db_name, table.schema, paginationInfo?.pageSize],
     );
 
     // Watch for import trigger from context menu
     useEffect(() => {
       if (triggerImport) {
-        setShowImportDrawer(true);
+        startTransition(() => {
+          setShowImportDrawer(true);
+        });
       }
     }, [triggerImport]);
 
     // Auto-open edit drawer when recordId is in URL
     useEffect(() => {
       if (urlRecordId && urlRecordId !== editRecordId) {
-        setEditRecordId(urlRecordId);
+        startTransition(() => {
+          setEditRecordId(urlRecordId);
+        });
       }
     }, [urlRecordId, editRecordId]);
 
@@ -857,6 +873,8 @@ export const GridView = memo(
               suppressRowHoverAnimation={true}
               suppressColumnMoveAnimation={true}
               suppressColumnResizeAnimation={true}
+              // React 18 compatibility - use React's rendering instead of DOM manipulation
+              reactUi={true}
               // Async transaction settings for high-frequency updates
               asyncTransactionWaitMillis={50}
               onAsyncTransactionsApplied={onAsyncTransactionsApplied}
@@ -1116,14 +1134,14 @@ export const GridView = memo(
 
         <CreateFieldDrawer
           open={showFieldDialog}
-          onClose={() => setShowFieldDialog(false)}
+          onClose={() => startTransition(() => setShowFieldDialog(false))}
           table={table}
         />
         <CreateRecordDrawer
           baseId={baseId}
           tableId={table.id}
           open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
+          onClose={() => startTransition(() => setShowCreateDialog(false))}
         />
         {editRecordId && baseId && table?.id && (
           <EditRecordDrawer
@@ -1132,7 +1150,9 @@ export const GridView = memo(
             recordId={editRecordId}
             open={true}
             onClose={() => {
-              setEditRecordId(null);
+              startTransition(() => {
+                setEditRecordId(null);
+              });
               // Simplify URL: go back to table view without /views/viewId
               const basePath = location.pathname
                 .replace(/\/records\/[^/]+/, '')
@@ -1146,11 +1166,11 @@ export const GridView = memo(
           baseId={baseId}
           tableId={table.id}
           open={!!editField}
-          onClose={() => setEditField(null)}
+          onClose={() => startTransition(() => setEditField(null))}
         />
         <ImportCSVDrawer
           open={showImportDrawer}
-          onClose={() => setShowImportDrawer(false)}
+          onClose={() => startTransition(() => setShowImportDrawer(false))}
           onImport={handleCSVImport}
           tableName={table?.name || 'table'}
         />

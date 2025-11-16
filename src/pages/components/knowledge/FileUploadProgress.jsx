@@ -25,7 +25,7 @@ import CircularProgressWithChildren from '../../../components/progress/CircularP
 
 // components
 import { checkUploadFinished, resetFilesUploading } from '../../../redux/slices/files';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { bgBlur } from '../../../utils/cssStyles';
 
 // ----------------------------------------------------------------------

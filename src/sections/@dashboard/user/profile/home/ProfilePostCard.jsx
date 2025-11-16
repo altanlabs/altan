@@ -18,7 +18,7 @@ import { useState, useRef } from 'react';
 // @mui
 
 // auth
-import { useAuthContext } from '../../../../../auth/useAuthContext';
+import { useAuthContext } from '../../../../../auth/useAuthContext.ts';
 // utils
 import { CustomAvatar, CustomAvatarGroup } from '../../../../../components/custom-avatar';
 import Iconify from '../../../../../components/iconify';

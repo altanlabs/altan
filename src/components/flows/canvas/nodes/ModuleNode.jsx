@@ -8,9 +8,9 @@ import ModuleHandle from './handles/ModuleHandle.jsx';
 import ModuleNodeSourceHandles from './modulenode/ModuleNodeSourceHandles.jsx';
 import PlusIconRouter from './modulenode/PlusIconRouter.jsx';
 // import { useDebounce } from '../../../../hooks/useDebounce';
-import { checkObjectsEqual } from '../../../../redux/helpers/memoize';
+import { checkObjectsEqual } from '../../../../redux/helpers/memoize.ts';
 import { makeSelectModule } from '../../../../redux/slices/flows';
-import { useSelector } from '../../../../redux/store';
+import { useSelector } from '../../../../redux/store.ts';
 import Iconify from '../../../iconify';
 import {
   ModuleIcon,

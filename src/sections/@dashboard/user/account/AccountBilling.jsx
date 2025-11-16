@@ -22,7 +22,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 
 import Iconify from '../../../../components/iconify';
-import { selectAccount } from '../../../../redux/slices/general';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
 import { optimai_shop } from '../../../../utils/axios';
 import { openUrl } from '../../../../utils/auth';
 

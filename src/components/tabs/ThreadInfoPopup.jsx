@@ -1,14 +1,14 @@
-import { 
-  Button, 
-  DialogTitle, 
-  DialogActions, 
-  DialogContent, 
-  TextField, 
+import {
+  Button,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
+  TextField,
   Box,
   Typography,
   IconButton,
   Snackbar,
-  Alert
+  Alert,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useState, useCallback, useEffect } from 'react';
@@ -16,22 +16,22 @@ import { useDispatch } from 'react-redux';
 
 import { cn } from '@lib/utils';
 
-import { patchThread, archiveMainThread } from '../../redux/slices/room';
+import { patchThread, archiveMainThread } from '../../redux/slices/room/thunks/threadThunks';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 
-const ThreadInfoPopup = ({ 
-  open, 
-  onClose, 
-  threadId, 
-  threadName, 
+const ThreadInfoPopup = ({
+  open,
+  onClose,
+  threadId,
+  threadName,
   roomId,
   isMainThread = false,
-  className 
+  className,
 }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  
+
   const [editedName, setEditedName] = useState(threadName || '');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,9 +69,9 @@ const ThreadInfoPopup = ({
 
     setIsSaving(true);
     try {
-      await dispatch(patchThread({ 
-        threadId, 
-        name: editedName.trim() 
+      await dispatch(patchThread({
+        threadId,
+        name: editedName.trim(),
       }));
       setIsEditing(false);
     } catch (error) {
@@ -155,20 +155,20 @@ const ThreadInfoPopup = ({
   return (
     <>
       <CustomDialog
-        className={cn("max-w-md", className)}
+        className={cn('max-w-md', className)}
         dialogOpen={open}
         onClose={handleClose}
         showCloseButton={true}
       >
-        <DialogTitle 
-          sx={{ 
+        <DialogTitle
+          sx={{
             pb: 2,
             display: 'flex',
             alignItems: 'center',
-            gap: 1
+            gap: 1,
           }}
         >
-          <Iconify 
+          <Iconify
             icon="material-symbols:thread-unread"
             width={24}
             sx={{ color: theme.palette.text.secondary }}
@@ -179,20 +179,20 @@ const ThreadInfoPopup = ({
         <DialogContent sx={{ pb: 2 }}>
           {/* Thread Name Section */}
           <Box sx={{ mb: 3 }}>
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                mb: 1, 
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: 1,
                 color: theme.palette.text.secondary,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1
+                gap: 1,
               }}
             >
               <Iconify icon="mdi:tag-text" width={16} />
               Thread Name
             </Typography>
-            
+
             {isEditing ? (
               <TextField
                 fullWidth
@@ -206,27 +206,27 @@ const ThreadInfoPopup = ({
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                  }
+                  },
                 }}
               />
             ) : (
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 1,
                   p: 1.5,
                   border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 2,
                   backgroundColor: theme.palette.background.default,
-                  minHeight: 40
+                  minHeight: 40,
                 }}
               >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     flex: 1,
-                    color: threadName ? theme.palette.text.primary : theme.palette.text.disabled
+                    color: threadName ? theme.palette.text.primary : theme.palette.text.disabled,
                   }}
                 >
                   {threadName || 'Untitled Thread'}
@@ -234,11 +234,11 @@ const ThreadInfoPopup = ({
                 <IconButton
                   size="small"
                   onClick={handleEditToggle}
-                  sx={{ 
+                  sx={{
                     color: theme.palette.text.secondary,
                     '&:hover': {
-                      color: theme.palette.text.primary
-                    }
+                      color: theme.palette.text.primary,
+                    },
                   }}
                 >
                   <Iconify icon="mdi:pencil" width={16} />
@@ -249,24 +249,24 @@ const ThreadInfoPopup = ({
 
           {/* Thread ID Section */}
           <Box>
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                mb: 1, 
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: 1,
                 color: theme.palette.text.secondary,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1
+                gap: 1,
               }}
             >
               <Iconify icon="mdi:identifier" width={16} />
               Thread ID
             </Typography>
-            
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: 1,
                 p: 1.5,
                 border: `1px solid ${theme.palette.divider}`,
@@ -275,42 +275,42 @@ const ThreadInfoPopup = ({
                 cursor: 'pointer',
                 '&:hover': {
                   backgroundColor: theme.palette.action.hover,
-                }
+                },
               }}
               onClick={handleCopyThreadId}
             >
-              <Typography 
-                variant="body2" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                sx={{
                   flex: 1,
                   fontFamily: 'monospace',
                   fontSize: '0.875rem',
                   color: theme.palette.text.secondary,
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis'
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {threadId}
               </Typography>
               <IconButton
                 size="small"
-                sx={{ 
+                sx={{
                   color: theme.palette.text.secondary,
                   '&:hover': {
-                    color: theme.palette.text.primary
-                  }
+                    color: theme.palette.text.primary,
+                  },
                 }}
               >
                 <Iconify icon="mdi:content-copy" width={16} />
               </IconButton>
             </Box>
-            
-            <Typography 
-              variant="caption" 
-              sx={{ 
+
+            <Typography
+              variant="caption"
+              sx={{
                 mt: 0.5,
                 color: theme.palette.text.disabled,
-                display: 'block'
+                display: 'block',
               }}
             >
               Click to copy thread ID
@@ -320,24 +320,24 @@ const ThreadInfoPopup = ({
           {/* Room ID Section */}
           {roomId && (
             <Box sx={{ mt: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  mb: 1, 
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 1,
                   color: theme.palette.text.secondary,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1
+                  gap: 1,
                 }}
               >
                 <Iconify icon="mdi:door-open" width={16} />
                 Room ID
               </Typography>
-              
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 1,
                   p: 1.5,
                   border: `1px solid ${theme.palette.divider}`,
@@ -346,42 +346,42 @@ const ThreadInfoPopup = ({
                   cursor: 'pointer',
                   '&:hover': {
                     backgroundColor: theme.palette.action.hover,
-                  }
+                  },
                 }}
                 onClick={handleCopyRoomId}
               >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     flex: 1,
                     fontFamily: 'monospace',
                     fontSize: '0.875rem',
                     color: theme.palette.text.secondary,
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
                   }}
                 >
                   {roomId}
                 </Typography>
                 <IconButton
                   size="small"
-                  sx={{ 
+                  sx={{
                     color: theme.palette.text.secondary,
                     '&:hover': {
-                      color: theme.palette.text.primary
-                    }
+                      color: theme.palette.text.primary,
+                    },
                   }}
                 >
                   <Iconify icon="mdi:content-copy" width={16} />
                 </IconButton>
               </Box>
-              
-              <Typography 
-                variant="caption" 
-                sx={{ 
+
+              <Typography
+                variant="caption"
+                sx={{
                   mt: 0.5,
                   color: theme.palette.text.disabled,
-                  display: 'block'
+                  display: 'block',
                 }}
               >
                 Click to copy room ID
@@ -392,40 +392,40 @@ const ThreadInfoPopup = ({
           {/* Archive Section - Only show for main threads */}
           {isMainThread && (
             <Box sx={{ mt: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  mb: 1, 
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 1,
                   color: theme.palette.text.secondary,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1
+                  gap: 1,
                 }}
               >
                 <Iconify icon="mdi:archive" width={16} />
                 Archive Thread
               </Typography>
-              
-              <Box 
-                sx={{ 
+
+              <Box
+                sx={{
                   p: 2,
                   border: `1px solid ${theme.palette.warning.main}`,
                   borderRadius: 2,
-                  backgroundColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 152, 0, 0.04)' 
+                  backgroundColor: theme.palette.mode === 'dark'
+                    ? 'rgba(255, 152, 0, 0.04)'
                     : 'rgba(255, 152, 0, 0.04)',
                 }}
               >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     color: theme.palette.text.secondary,
-                    mb: 2
+                    mb: 2,
                   }}
                 >
                   Archive this main thread conversation. This will clear all messages and start fresh.
                 </Typography>
-                
+
                 <Button
                   variant="outlined"
                   color="warning"
@@ -437,10 +437,10 @@ const ThreadInfoPopup = ({
                     color: theme.palette.warning.main,
                     '&:hover': {
                       borderColor: theme.palette.warning.dark,
-                      backgroundColor: theme.palette.mode === 'dark' 
-                        ? 'rgba(255, 152, 0, 0.08)' 
+                      backgroundColor: theme.palette.mode === 'dark'
+                        ? 'rgba(255, 152, 0, 0.08)'
                         : 'rgba(255, 152, 0, 0.08)',
-                    }
+                    },
                   }}
                 >
                   Archive Thread
@@ -470,7 +470,7 @@ const ThreadInfoPopup = ({
                   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                   '&:hover': {
                     background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                  }
+                  },
                 }}
               >
                 {isSaving ? 'Saving...' : 'Save'}
@@ -496,16 +496,16 @@ const ThreadInfoPopup = ({
         onClose={() => setShowArchiveConfirm(false)}
         showCloseButton={true}
       >
-        <DialogTitle 
-          sx={{ 
+        <DialogTitle
+          sx={{
             pb: 2,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            color: theme.palette.warning.main
+            color: theme.palette.warning.main,
           }}
         >
-          <Iconify 
+          <Iconify
             icon="mdi:archive-alert"
             width={24}
             sx={{ color: theme.palette.warning.main }}
@@ -514,22 +514,22 @@ const ThreadInfoPopup = ({
         </DialogTitle>
 
         <DialogContent sx={{ pb: 2 }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: theme.palette.text.secondary,
-              mb: 2
+              mb: 2,
             }}
           >
-            This will permanently archive the main thread conversation and clear all messages. 
+            This will permanently archive the main thread conversation and clear all messages.
             This action cannot be undone.
           </Typography>
-          
-          <Typography 
-            variant="body2" 
-            sx={{ 
+
+          <Typography
+            variant="body2"
+            sx={{
               color: theme.palette.warning.main,
-              fontWeight: 500
+              fontWeight: 500,
             }}
           >
             Are you sure you want to continue?
@@ -552,12 +552,12 @@ const ThreadInfoPopup = ({
             onClick={handleArchive}
             disabled={isArchiving}
             startIcon={isArchiving ? null : <Iconify icon="mdi:archive" width={16} />}
-            sx={{ 
+            sx={{
               flex: 1,
               backgroundColor: theme.palette.warning.main,
               '&:hover': {
                 backgroundColor: theme.palette.warning.dark,
-              }
+              },
             }}
           >
             {isArchiving ? 'Archiving...' : 'Archive'}
@@ -572,15 +572,15 @@ const ThreadInfoPopup = ({
         onClose={() => setShowCopiedAlert(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setShowCopiedAlert(false)} 
-          severity="success" 
+        <Alert
+          onClose={() => setShowCopiedAlert(false)}
+          severity="success"
           variant="filled"
-          sx={{ 
+          sx={{
             backdropFilter: 'blur(10px)',
-            backgroundColor: theme.palette.mode === 'dark' 
-              ? 'rgba(76, 175, 80, 0.9)' 
-              : 'rgba(76, 175, 80, 0.95)'
+            backgroundColor: theme.palette.mode === 'dark'
+              ? 'rgba(76, 175, 80, 0.9)'
+              : 'rgba(76, 175, 80, 0.95)',
           }}
         >
           {copiedItemType === 'room' ? 'Room ID' : 'Thread ID'} copied to clipboard!

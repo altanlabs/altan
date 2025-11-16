@@ -14,7 +14,7 @@ import { useHistory } from 'react-router-dom';
 
 import CustomDialog from './CustomDialog';
 import { analytics } from '../../lib/analytics';
-import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general';
+import { selectAccountId, selectIsAccountFree } from '../../redux/slices/general/index.ts';
 import SubscribedPricing from '../../sections/pricing/SubscribedPricing';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';

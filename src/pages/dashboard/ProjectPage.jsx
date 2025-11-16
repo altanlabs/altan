@@ -4,16 +4,21 @@ import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 
-import Cloud from '../../components/cloud/Cloud.jsx';
-import LoadingFallback from '../../components/LoadingFallback.jsx';
-import FloatingTextArea from '../../components/FloatingTextArea.jsx';
-import { RoomContainer } from '../../components/new-room';
+// Stable empty array to prevent unnecessary rerenders
+const EMPTY_ARRAY = [];
+
+import OperateView from './OperateView.jsx';
 import Plan from './Plan.jsx';
 import PlansList from './PlansList.jsx';
-import OperateView from './OperateView.jsx';
+import Cloud from '../../components/cloud/Cloud.jsx';
+import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
+import LoadingFallback from '../../components/LoadingFallback.jsx';
+import RoomContainer from '../../components/new-room/RoomContainer.tsx';
 import useResponsive from '../../hooks/useResponsive';
 import { CompactLayout } from '../../layouts/dashboard';
 import analytics from '../../lib/analytics';
+import AltanerComponent from './altaners/components/AltanerComponent.jsx';
+import useGetInterfaceServerStatus from './interfaces/hooks/useGetInterfaceServerStatus.js';
 import {
   selectCurrentAltaner,
   selectSortedAltanerComponents,
@@ -24,14 +29,13 @@ import {
   selectOperateMode,
   setOperateMode,
 } from '../../redux/slices/altaners';
-import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, getAccountAttribute } from '../../redux/slices/general';
-import { selectMainThread, clearRoomState, sendMessage } from '../../redux/slices/room';
-import { useSelector, dispatch } from '../../redux/store';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, getAccountAttribute } from '../../redux/slices/general/index.ts';
+import { selectMainThread } from '../../redux/slices/room/selectors/threadSelectors';
+import { clearRoomState } from '../../redux/slices/room/slices/roomSlice';
+import { sendMessage } from '../../redux/slices/room/thunks/messageThunks';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
-import AltanerComponent from './altaners/components/AltanerComponent.jsx';
-import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
-import useGetInterfaceServerStatus from './interfaces/hooks/useGetInterfaceServerStatus.js';
 
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
@@ -52,7 +56,6 @@ const transformProps = (type, props) => {
 const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
-  // console.log('ProjectPage re-render');
   const chatIframeRef = React.useRef(null);
   const mobileContainerRef = React.useRef(null);
   const chatPanelRef = React.useRef(null);
@@ -61,7 +64,7 @@ export default function ProjectPage() {
   const history = useHistory();
   const location = useLocation();
   const { altanerId, componentId, itemId, planId } = useParams();
-  const isLoading = useSelector(selectAltanersIsLoading);
+  // const isLoading = useSelector(selectAltanersIsLoading);
   const altaner = useSelector(selectCurrentAltaner);
   const sortedComponents = useSelector(selectSortedAltanerComponents);
   const displayMode = useSelector(selectDisplayMode);
@@ -70,7 +73,7 @@ export default function ProjectPage() {
   const mainThreadId = useSelector(selectMainThread);
   const isMobile = useResponsive('down', 'md');
   const [mobileActiveView, setMobileActiveView] = React.useState('chat');
-  
+
   // Get account info and workflows state
   const accountId = useSelector((state) => state.general.account?.id);
   const workflowsInitialized = useSelector((state) => state.general.accountAssetsInitialized.workflows);
@@ -78,7 +81,7 @@ export default function ProjectPage() {
 
   // Detect if we're on a plans route
   const isPlansRoute = location.pathname.includes('/plans');
-  
+
   // Detect if we're on the operate route
   const isOperateRoute = location.pathname.endsWith('/operate');
 
@@ -87,7 +90,7 @@ export default function ProjectPage() {
     const params = new URLSearchParams(location.search);
     const modeParam = params.get('mode');
     const shouldBeOperateMode = isOperateRoute || modeParam === 'operate';
-    
+
     // Only update if different from current state to avoid unnecessary re-renders
     if (shouldBeOperateMode !== operateMode) {
       dispatch(setOperateMode(shouldBeOperateMode));
@@ -137,14 +140,14 @@ export default function ProjectPage() {
     }
   }, [altaner?.room_id, displayMode]);
 
-  const handleMobileToggle = React.useCallback((view) => {
-    setMobileActiveView(view);
-  }, []);
+  // const handleMobileToggle = React.useCallback((view) => {
+  //   setMobileActiveView(view);
+  // }, []);
 
-  // Handle item selection for flows/agents
-  const handleItemSelect = React.useCallback((selectedItemId) => {
-    history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
-  }, [history, altanerId, componentId]);
+  // // Handle item selection for flows/agents
+  // const handleItemSelect = React.useCallback((selectedItemId) => {
+  //   history.push(`/project/${altanerId}/c/${componentId}/i/${selectedItemId}`);
+  // }, [history, altanerId, componentId]);
 
   // Check if we're in fullscreen mobile mode
   const isFullscreenMobile = isMobile && mobileActiveView === 'preview';
@@ -166,12 +169,12 @@ export default function ProjectPage() {
   // Fetch workflows if the altaner has flow components
   useEffect(() => {
     if (!accountId || !sortedComponents) return;
-    
+
     // Check if any component is of type 'flows' or 'flow'
     const hasFlowComponent = Object.values(sortedComponents).some(
-      (comp) => comp.type === 'flows' || comp.type === 'flow'
+      (comp) => comp.type === 'flows' || comp.type === 'flow',
     );
-    
+
     if (hasFlowComponent && !workflowsInitialized && !workflowsLoading) {
       dispatch(getAccountAttribute(accountId, ['workflows']));
     }
@@ -181,7 +184,7 @@ export default function ProjectPage() {
   // In operate mode, we don't need currentComponent since we use OperateView
   const currentComponent = useMemo(() => {
     if (operateMode) return null; // Skip component logic in operate mode
-    
+
     if (!activeComponentId || !sortedComponents) return null;
     const component = sortedComponents[activeComponentId];
     // Current component type for rendering logic
@@ -193,14 +196,14 @@ export default function ProjectPage() {
     if (currentComponent && altaner && !isPlansRoute) {
       // Map component types to feature names
       const featureMap = {
-        'interface': 'interface',
-        'base': 'cloud',
-        'agents': 'agents',
-        'flows': 'agents', // flows are part of agents feature
+        interface: 'interface',
+        base: 'cloud',
+        agents: 'agents',
+        flows: 'agents', // flows are part of agents feature
       };
-      
+
       const featureName = featureMap[currentComponent.type];
-      
+
       if (featureName) {
         analytics.featureUsed(featureName, {
           component_id: currentComponent.id,
@@ -238,12 +241,12 @@ export default function ProjectPage() {
   }, [currentComponent, operateMode]);
 
   // Get interface data and commits if viewing an interface
-  const interfaceData = useSelector((state) => 
-    interfaceId ? selectInterfaceById(state, interfaceId) : null
+  const interfaceData = useSelector((state) =>
+    interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
-  
-  const interfaceCommits = useSelector((state) => 
-    interfaceId ? selectSortedCommits(state, interfaceId) : []
+
+  const interfaceCommits = useSelector((state) =>
+    interfaceId ? selectSortedCommits(state, interfaceId) : EMPTY_ARRAY,
   );
 
   const isInterfaceWithNoCommits = useMemo(() => {
@@ -324,25 +327,24 @@ export default function ProjectPage() {
       if (!ideaId || initialMessageSentRef.current || !altaner?.room_id || !mainThreadId) {
         return;
       }
-      
+
       // Mark as sent immediately to prevent duplicate runs in StrictMode
       initialMessageSentRef.current = true;
-      
-      
+
       try {
         const response = await optimai.get(`/idea/${ideaId}`);
         const ideaData = response.data;
-                
+
         const prompt = ideaData.idea || '';
         const attachments = ideaData.attachments || [];
-        
-        if (prompt) {          
+
+        if (prompt) {
           await dispatch(sendMessage({
             content: prompt,
             attachments,
             threadId: mainThreadId,
           }));
-                    
+
           const newParams = new URLSearchParams(location.search);
           newParams.delete('idea');
           const newSearch = newParams.toString();
@@ -355,7 +357,7 @@ export default function ProjectPage() {
         console.error('❌ Failed to fetch or send idea:', error);
       }
     };
-    
+
     fetchAndSendIdea();
   }, [altaner?.room_id, mainThreadId, location.search, dispatch, history, location.pathname]);
 
@@ -363,7 +365,6 @@ export default function ProjectPage() {
 
   const { acType, acProps } = useMemo(() => {
     if (!altaner || !currentComponent) return {};
-
 
     // Map component types to the expected types in AltanerComponent
     const componentTypeMap = {
@@ -386,8 +387,8 @@ export default function ProjectPage() {
         typeSpecificProps.cloud_id = currentComponent.cloud_id;
         typeSpecificProps.altanerComponentType = type;
       } else if (currentComponent.params?.ids) {
-      typeSpecificProps.ids = currentComponent.params.ids;
-      typeSpecificProps.altanerComponentType = type;
+        typeSpecificProps.ids = currentComponent.params.ids;
+        typeSpecificProps.altanerComponentType = type;
         typeSpecificProps.filterIds = currentComponent.params.ids;
       }
     }
@@ -478,7 +479,7 @@ export default function ProjectPage() {
 
   // Mobile layout - single persistent Room to maintain state
   if (isMobile && altaner?.room_id) {
-    const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
+    // const previewComponent = activeComponentId && currentComponent ? renderComponent() : null;
 
     // Always render mobile as portal with single Room instance
     const mobileContent = (
@@ -509,14 +510,13 @@ export default function ProjectPage() {
           <RoomContainer
             key={`mobile-room-${altaner?.room_id}`}
             roomId={altaner?.room_id}
-            mode={isOperateRoute ? "ephemeral" : "tabs"} // Tabs = toolbar with tabs, Ephemeral = no toolbar
+            mode={isOperateRoute ? 'ephemeral' : 'tabs'} // Tabs = toolbar with tabs, Ephemeral = no toolbar
             showSettings={!isOperateRoute}
             showConversationHistory={true}
             showMembers={true}
             renderCredits={true}
             renderFeedback={true}
           />
-          {/* RoomContainer is self-contained with input - no need for FloatingTextArea */}
         </div>
       </div>
     );
@@ -526,7 +526,7 @@ export default function ProjectPage() {
       <>
         {/* Empty placeholder for routing */}
         <div style={{ display: 'none' }} />
-        
+
         {/* Single mobile portal - maintains Room state */}
         {createPortal(mobileContent, document.body)}
       </>
@@ -580,7 +580,7 @@ export default function ProjectPage() {
                 <RoomContainer
                   key={`room-${altaner?.room_id}`}
                   roomId={altaner?.room_id}
-                  mode={isOperateRoute ? "ephemeral" : "tabs"}
+                  mode={isOperateRoute ? 'ephemeral' : 'tabs'}
                   showSettings={!isOperateRoute}
                   showConversationHistory={true}
                   showMembers={true}

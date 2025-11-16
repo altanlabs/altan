@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
 import { Button } from '../../../components/ui/Button.jsx';
-import { selectRoom } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store';
+import { selectRoom } from '../../../redux/slices/room/selectors';
+import { useSelector } from '../../../redux/store.ts';
 import Iconify from '../../iconify/Iconify.jsx';
 import SendButton from '../SendButton.jsx';
-import MicrophoneSvg from '../ui/MicrophoneSvg.jsx';
 
 const VoiceCallButton = ({
   isVoiceActive,

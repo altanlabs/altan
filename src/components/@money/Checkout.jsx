@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { OrderSummaryCard, Total, PaymentCard, Header } from './@checkout';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { fetchOrderDetails, setUpPayment } from '../../redux/slices/money';
 
 const Checkout = ({ orderId }) => {

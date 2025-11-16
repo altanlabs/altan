@@ -22,9 +22,9 @@ import {
   getConnections,
   selectConnectionTypes,
 } from '../../redux/slices/connections';
-import { selectAccount, selectCustomConnectionTypes } from '../../redux/slices/general';
-import { sendMessage } from '../../redux/slices/room';
-import { useSelector, dispatch } from '../../redux/store';
+import { selectAccount, selectCustomConnectionTypes } from '../../redux/slices/general/index.ts';
+import { sendMessage } from '../../redux/slices/room/thunks/messageThunks';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import IconRenderer from '../icons/IconRenderer';
 import CreateConnection from '../tools/CreateConnection';
 

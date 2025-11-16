@@ -1,15 +1,18 @@
 import { Capacitor } from '@capacitor/core';
+import {
+  MoreVertical,
+  Rocket,
+  Crown,
+  History,
+  Settings as SettingsIcon,
+  Radio,
+} from 'lucide-react';
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
-import { 
-  MoreVertical, 
-  Rocket, 
-  Crown, 
-  History, 
-  Settings as SettingsIcon,
-  Radio 
-} from 'lucide-react';
+
+// Stable empty array to prevent unnecessary rerenders
+const EMPTY_ARRAY = [];
 
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
@@ -23,13 +26,27 @@ import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
 import Iconify from '../../../components/iconify';
 import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
+import { Button } from '../../../components/ui/button.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../../components/ui/dropdown-menu';
+import { Sheet, SheetContent } from '../../../components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../../components/ui/tooltip';
 import URLNavigationBar from '../../../components/URLNavigationBar.jsx';
 // config
 import { HEADER } from '../../../config-global';
 // hooks
 import useResponsive from '../../../hooks/useResponsive';
 // sections
-import AltanerComponentDialog from '../../../pages/dashboard/altaners/components/AltanerComponentDialog.jsx';
+import { cn } from '../../../lib/utils';
 import PublishVersionDialog from '../../../pages/dashboard/altaners/components/PublishVersionDialog.jsx';
 import TemplateSettings from '../../../pages/dashboard/altaners/components/TemplateSettings.jsx';
 import DeploymentHistory from '../../../pages/dashboard/interfaces/components/DeploymentHistory.jsx';
@@ -43,25 +60,10 @@ import {
   selectDisplayMode,
   setDisplayModeForProject,
 } from '../../../redux/slices/altaners';
-import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general.js';
-import { useSelector } from '../../../redux/store';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
 
 // shadcn components
-import { Button } from '../../../components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../../../components/ui/tooltip';
-import { Sheet, SheetContent } from '../../../components/ui/sheet';
-import { cn } from '../../../lib/utils';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {
@@ -134,7 +136,7 @@ function ProjectHeader() {
     isInterfaceComponent && interfaceId ? selectInterfaceById(state, interfaceId) : null,
   );
   const interfaceCommits = useSelector((state) =>
-    interfaceId ? selectSortedCommits(state, interfaceId) : [],
+    interfaceId ? selectSortedCommits(state, interfaceId) : EMPTY_ARRAY,
   );
 
   // Check if interface has commits
@@ -187,7 +189,6 @@ function ProjectHeader() {
 
     return null;
   }, [ui]);
-  const [openComponentDialog, setOpenComponentDialog] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -274,18 +275,18 @@ function ProjectHeader() {
     <TooltipProvider>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-30",
-          "transition-all duration-200",
-          isIOS && "pt-[env(safe-area-inset-top)]"
+          'fixed top-0 left-0 right-0 z-30',
+          'transition-all duration-200',
+          isIOS && 'pt-[env(safe-area-inset-top)]',
         )}
         style={{
-          height: isIOS ? `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))` : `${HEADER.H_MOBILE}px`
+          height: isIOS ? `calc(${HEADER.H_MOBILE}px + env(safe-area-inset-top))` : `${HEADER.H_MOBILE}px`,
         }}
       >
         <div
           className={cn(
-            "flex items-center justify-between h-full py-1",
-            isMobile ? "px-1" : "px-2"
+            'flex items-center justify-between h-full py-1',
+            isMobile ? 'px-1' : 'px-2',
           )}
         >
           <div className="flex items-center gap-2">
@@ -388,7 +389,7 @@ function ProjectHeader() {
                     <TooltipTrigger asChild>
                       <Button
                         data-tour="publish-button"
-                        variant={canPublish ? "default" : "ghost"}
+                        variant={canPublish ? 'default' : 'ghost'}
                         size="icon"
                         onClick={() => setOpenPublishDialog(true)}
                         disabled={!canPublish}
@@ -398,7 +399,7 @@ function ProjectHeader() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
+                      {!canPublish ? 'Make some changes to publish your site to the internet, connect it to a domain' : 'Publish'}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -448,7 +449,7 @@ function ProjectHeader() {
                     <TooltipTrigger asChild>
                       <Button
                         data-tour="publish-button"
-                        variant={canPublish ? "default" : "secondary"}
+                        variant={canPublish ? 'default' : 'secondary'}
                         size="sm"
                         onClick={() => setOpenPublishDialog(true)}
                         disabled={!canPublish}
@@ -459,7 +460,7 @@ function ProjectHeader() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {!canPublish ? "Make some changes to publish your site to the internet, connect it to a domain" : "Publish"}
+                      {!canPublish ? 'Make some changes to publish your site to the internet, connect it to a domain' : 'Publish'}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -489,24 +490,6 @@ function ProjectHeader() {
         confirmDelete={confirmDelete}
         isSubmitting={isSubmitting}
         message="Are you sure you want to delete this component? This action can't be undone."
-      />
-
-      {editDialogOpen && (
-        <AltanerComponentDialog
-          open={editDialogOpen}
-          onClose={() => {
-            setEditDialogOpen(false);
-            setSelectedComponentId(null);
-          }}
-          altanerId={altanerId}
-          altanerComponentId={selectedComponentId}
-        />
-      )}
-
-      <AltanerComponentDialog
-        altanerId={altanerId}
-        open={openComponentDialog}
-        onClose={() => setOpenComponentDialog(false)}
       />
 
       <TemplateSettings

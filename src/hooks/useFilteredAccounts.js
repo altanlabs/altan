@@ -2,7 +2,7 @@ import Fuse from 'fuse.js';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectAccountId } from '../redux/slices/general';
+import { selectAccountId } from '../redux/slices/general/index.ts';
 
 const getAccountName = (account) =>
   account?.company?.name ||

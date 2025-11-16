@@ -6,8 +6,8 @@ import { cn } from '@lib/utils';
 import {
   makeSelectToolPartHeader,
   makeSelectToolPartExecution,
-} from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+} from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 import IconRenderer from '../../icons/IconRenderer.jsx';
 import { getToolIcon } from '../tool-renderers/index.js';
 
@@ -18,6 +18,38 @@ function extractAndCapitalize(str) {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+function sanitizeToolName(name) {
+  if (!name || typeof name !== 'string') return 'Tool';
+  const lower = name.toLowerCase().trim();
+
+  const INVALID_KEYWORDS = [
+    'updated',
+    'update',
+    'added',
+    'add',
+    'completed',
+    'complete',
+    'deleted',
+    'delete',
+    'created',
+    'create',
+    'removed',
+    'remove',
+    'started',
+    'start',
+    'finished',
+    'finish',
+    'failed',
+    'fail',
+  ];
+
+  if (INVALID_KEYWORDS.includes(lower) || lower.length < 3) {
+    return 'Tool';
+  }
+
+  return name;
 }
 
 /**
@@ -44,7 +76,8 @@ const CreateTaskRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: too
     if (!isExecuting && header.act_done) {
       return header.act_done;
     }
-    return extractAndCapitalize(header.name);
+    const safeName = sanitizeToolName(header.name);
+    return extractAndCapitalize(safeName);
   }, [header, isExecuting]);
 
   // Get tool icon from registry

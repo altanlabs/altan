@@ -18,7 +18,7 @@ import { useHistory } from 'react-router';
 import { fToNow } from '@utils/formatTime.js';
 
 import Iconify from '../../../components/iconify';
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';

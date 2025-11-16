@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 // @mui
 
 // auth
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // config
 import { HEADER } from '../../config-global';
 // utils

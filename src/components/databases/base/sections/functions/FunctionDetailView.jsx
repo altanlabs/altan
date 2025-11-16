@@ -27,7 +27,7 @@ import {
   fetchFunctionDetails,
   updateFunctionThunk,
 } from '../../../../../redux/slices/services';
-import { dispatch } from '../../../../../redux/store';
+import { dispatch } from '../../../../../redux/store.ts';
 
 // Helper to format date
 const formatDate = (dateString) => {

@@ -19,7 +19,7 @@ import AvatarSelectionModal from './components/AvatarSelectionModal.jsx';
 import InfoModal from '../../../components/helpers/InfoModal.jsx';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { updateAltanerComponentById } from '../../../redux/slices/altaners.js';
-import { createAgent, updateAgent } from '../../../redux/slices/general.js';
+import { createAgent, updateAgent } from '../../../redux/slices/general/index.ts';
 import { uploadMedia } from '../../../utils/media.js';
 import { Space } from '../spaces/index.js';
 

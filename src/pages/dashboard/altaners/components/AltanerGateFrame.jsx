@@ -2,8 +2,8 @@ import { useTheme } from '@mui/material';
 import { memo } from 'react';
 
 import AltanerFrame from './AltanerFrame.jsx';
-import { selectAccountId } from '../../../../redux/slices/general';
-import { useSelector } from '../../../../redux/store';
+import { selectAccountId } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 
 const GateFrame = ({ id }) => {
   const accountId = useSelector(selectAccountId);

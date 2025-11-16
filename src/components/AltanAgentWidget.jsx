@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles';
 import { useMemo, useCallback, useEffect } from 'react';
 
 import { useSettingsContext } from './settings';
-import { useAuthContext } from '../auth/useAuthContext';
+import { useAuthContext } from '../auth/useAuthContext.ts';
 
 const AltanAgentWidget = () => {
   const theme = useTheme();

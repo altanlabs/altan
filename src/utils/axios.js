@@ -45,11 +45,6 @@ const optimai_integration = axios.create({
   baseURL: 'https://integration.altan.ai',
 });
 
-const optimai_agent = axios.create({
-  name: 'optimai_agent',
-  baseURL: 'https://ai.altan.ai',
-});
-
 const optimai_shop = axios.create({
   name: 'optimai_shop',
   baseURL: 'https://pay.altan.ai',
@@ -92,7 +87,6 @@ addResponseInterceptor(optimai_room);
 addResponseInterceptor(optimai_galaxia);
 addResponseInterceptor(optimai_root);
 addResponseInterceptor(optimai_tables);
-addResponseInterceptor(optimai_agent);
 addResponseInterceptor(optimai_tables_v4);
 addResponseInterceptor(optimai_database);
 addResponseInterceptor(optimai_pg_meta);
@@ -100,81 +94,62 @@ addResponseInterceptor(optimai_auth);
 addResponseInterceptor(optimai_cloud);
 addResponseInterceptor(optimai_pods);
 
-const authorizeUser = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const { accessToken } = await refreshToken(optimai);
-      setSession(accessToken, optimai);
-      setSession(accessToken, optimai_root);
-      setSession(accessToken, optimai_galaxia);
-      setSession(accessToken, optimai_shop);
-      setSession(accessToken, optimai_integration);
-      setSession(accessToken, optimai_tables);
-      setSession(accessToken, optimai_agent);
-      setSession(accessToken, optimai_tables_v4);
-      setSession(accessToken, optimai_database);
-      setSession(accessToken, optimai_pg_meta);
-      setSession(accessToken, optimai_auth);
-      setSession(accessToken, optimai_cloud);
-      setSession(accessToken, optimai_pods);
-      resolve({ accessToken });
-    } catch (error) {
-      reject(error);
-    }
-  });
+// Helper to set session for all port adapters
+const setSessionForPorts = async (accessToken) => {
+  try {
+    // Import lazily to avoid circular dependencies
+    const { container } = await import('../di/index.ts');
+
+    // Get all port services and update their auth tokens
+    const portNames = ['roomPort', 'agentPort', 'platformPort', 'integrationPort',
+      'cloudPort', 'podsPort', 'shopPort'];
+
+    portNames.forEach((portName) => {
+      try {
+        if (container.has(portName)) {
+          const port = container.get(portName);
+          if (port.adapter && typeof port.adapter.setAuthToken === 'function') {
+            port.adapter.setAuthToken(accessToken);
+          }
+        }
+      } catch {
+        // Port may not be instantiated yet, that's okay
+      }
+    });
+  } catch (err) {
+    // Container may not be initialized yet, that's okay
+    // eslint-disable-next-line no-console
+    console.debug('Ports not yet initialized for auth:', err.message);
+  }
 };
 
-const authorizeGuest = async (guestToken) => {
-  return new Promise((resolve, reject) => {
-    try {
-      console.log('🔑 authorizeGuest called with token:', guestToken);
+const authorizeUser = async () => {
+  try {
+    const { accessToken } = await refreshToken(optimai);
+    setSession(accessToken, optimai);
+    setSession(accessToken, optimai_root);
+    setSession(accessToken, optimai_galaxia);
+    setSession(accessToken, optimai_shop);
+    setSession(accessToken, optimai_integration);
+    setSession(accessToken, optimai_tables);
+    setSession(accessToken, optimai_tables_v4);
+    setSession(accessToken, optimai_database);
+    setSession(accessToken, optimai_pg_meta);
+    setSession(accessToken, optimai_auth);
+    setSession(accessToken, optimai_cloud);
+    setSession(accessToken, optimai_pods);
 
-      // For guest authentication, we rely on cookies set by the parent widget
-      // The axios instances should use withCredentials: true to include cookies
-      console.log('🔑 Setting up guest authentication for axios instances');
+    // Also set session for new adapter-based ports
+    await setSessionForPorts(accessToken);
 
-      // If a guest token is provided, set it as authorization header
-      if (guestToken) {
-        // Extract actual token string if it's an object
-        let tokenString = guestToken;
-        if (typeof guestToken === 'object' && guestToken !== null) {
-          tokenString = guestToken.access_token || guestToken.token || null;
-          console.log('🔑 Extracted token string from object:', tokenString);
-        }
-
-        if (tokenString) {
-          console.log('✅ Setting authorization headers with guest token string');
-          setSession(tokenString, optimai_room);
-          setSession(tokenString, optimai);
-          setSession(tokenString, optimai_root);
-          setSession(tokenString, optimai_tables);
-          setSession(tokenString, optimai_galaxia);
-          setSession(tokenString, optimai_shop);
-          setSession(tokenString, optimai_integration);
-          setSession(tokenString, optimai_agent);
-          setSession(tokenString, optimai_tables_v4);
-          setSession(tokenString, optimai_database);
-          setSession(tokenString, optimai_pg_meta);
-          setSession(tokenString, optimai_auth);
-          setSession(tokenString, optimai_cloud);
-          setSession(tokenString, optimai_pods);
-        } else {
-          console.warn('⚠️ Could not extract token string from:', guestToken);
-        }
-      } else {
-        console.warn('⚠️ No guest token provided, relying on cookies only');
-      }
-
-      resolve({ guestAuthenticated: true });
-    } catch (error) {
-      console.error('❌ Error in authorizeGuest:', error);
-      reject(error);
-    }
-  });
+    return { accessToken };
+  } catch (error) {
+    throw error;
+  }
 };
 
 // Helper function to set session for all axios instances
-export const setSessionForAllInstances = (accessToken, originalRequest = null) => {
+export const setSessionForAllInstances = async (accessToken, originalRequest = null) => {
   setSession(accessToken, optimai, originalRequest);
   setSession(accessToken, optimai_root, originalRequest);
   setSession(accessToken, optimai_galaxia, originalRequest);
@@ -182,13 +157,15 @@ export const setSessionForAllInstances = (accessToken, originalRequest = null) =
   setSession(accessToken, optimai_integration, originalRequest);
   setSession(accessToken, optimai_room, originalRequest);
   setSession(accessToken, optimai_tables, originalRequest);
-  setSession(accessToken, optimai_agent, originalRequest);
   setSession(accessToken, optimai_tables_v4, originalRequest);
   setSession(accessToken, optimai_database, originalRequest);
   setSession(accessToken, optimai_pg_meta, originalRequest);
   setSession(accessToken, optimai_auth, originalRequest);
   setSession(accessToken, optimai_cloud, originalRequest);
   setSession(accessToken, optimai_pods, originalRequest);
+
+  // Also set session for new adapter-based ports
+  await setSessionForPorts(accessToken);
 };
 
 const unauthorizeUser = () => {
@@ -203,7 +180,6 @@ const axiosInstances = {
   optimai_galaxia,
   optimai_shop,
   optimai_tables,
-  optimai_agent,
   optimai_tables_v4,
   optimai_database,
   optimai_pg_meta,
@@ -229,7 +205,6 @@ export {
   optimai_galaxia,
   optimai_shop,
   optimai_tables,
-  optimai_agent,
   optimai_tables_v4,
   optimai_database,
   optimai_pg_meta,
@@ -237,7 +212,6 @@ export {
   optimai_cloud,
   optimai_pods,
   authorizeUser,
-  authorizeGuest,
   unauthorizeUser,
 };
 
@@ -258,9 +232,36 @@ setupAxiosErrorTracking(optimai_room, 'optimai_room');
 setupAxiosErrorTracking(optimai_galaxia, 'optimai_galaxia');
 setupAxiosErrorTracking(optimai_root, 'optimai_root');
 setupAxiosErrorTracking(optimai_tables, 'optimai_tables');
-setupAxiosErrorTracking(optimai_agent, 'optimai_agent');
 setupAxiosErrorTracking(optimai_tables_v4, 'optimai_tables_v4');
 setupAxiosErrorTracking(optimai_database, 'optimai_database');
 setupAxiosErrorTracking(optimai_pg_meta, 'optimai_pg_meta');
 setupAxiosErrorTracking(optimai_cloud, 'optimai_cloud');
 setupAxiosErrorTracking(optimai_pods, 'optimai_pods');
+
+// ==================== NEW: Port-Based API (Hexagonal Architecture) ====================
+// Export domain ports for new code - these provide a cleaner, more testable interface
+
+export {
+  getRoomPort,
+  getAgentPort,
+  getPlatformPort,
+  getIntegrationPort,
+  getDatabasePort,
+  getCloudPort,
+  getPodsPort,
+  getShopPort,
+  reconfigureService,
+  getServiceConfig,
+  resetAllServices,
+  container,
+} from '../di/index.ts';
+
+// Export ports directly for convenience
+export { RoomPort } from '../ports/RoomPort';
+export { AgentPort } from '../ports/AgentPort';
+export { PlatformPort } from '../ports/PlatformPort';
+export { IntegrationPort } from '../ports/IntegrationPort';
+export { DatabasePort } from '../ports/DatabasePort';
+export { CloudPort } from '../ports/CloudPort';
+export { PodsPort } from '../ports/PodsPort';
+export { ShopPort } from '../ports/ShopPort';

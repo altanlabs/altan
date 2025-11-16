@@ -8,7 +8,7 @@ import * as Yup from 'yup';
 
 // routes
 // components
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import FormProvider, { RHFCodes } from '../../components/hook-form';
 import { useSnackbar } from '../../components/snackbar';
 

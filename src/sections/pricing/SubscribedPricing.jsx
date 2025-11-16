@@ -13,7 +13,7 @@ import {
   selectAccountId,
   selectAccountSubscriptions,
   selectAccountCreditBalance,
-} from '../../redux/slices/general';
+} from '../../redux/slices/general/index.ts';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
 

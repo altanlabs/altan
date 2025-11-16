@@ -1,7 +1,7 @@
 import { memo, useEffect } from 'react';
 
-import { selectAccountId } from '../redux/slices/general';
-import { useSelector } from '../redux/store';
+import { selectAccountId } from '../redux/slices/general/index.ts';
+import { useSelector } from '../redux/store.ts';
 
 const AccountId = ({ onChange, value }) => {
   const accountId = useSelector(selectAccountId);

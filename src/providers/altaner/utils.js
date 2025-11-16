@@ -2,7 +2,7 @@
 // import { Position } from 'reactflow';
 
 // import { moduleTypes as moduleTypeSchema } from '../../components/flows/schemas/modulePanelSections';
-// // import { checkArraysEqualsProperties, checkObjectsEqual } from '../../redux/helpers/memoize';
+// // import { checkArraysEqualsProperties, checkObjectsEqual } from '../../redux/helpers/memoize.ts';
 // import {
 //   selectModulesTypes,
 //   selectNewModules,

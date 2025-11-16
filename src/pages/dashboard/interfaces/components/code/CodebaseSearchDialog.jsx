@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, memo } from 'react';
 import Iconify from '../../../../../components/iconify';
 import { useDebounce } from '../../../../../hooks/useDebounce';
 import { openFile as openFileThunk } from '../../../../../redux/slices/codeEditor';
-import { dispatch } from '../../../../../redux/store';
+import { dispatch } from '../../../../../redux/store.ts';
 import { optimai, optimai_pods } from '../../../../../utils/axios';
 
 const CodebaseSearchDialog = ({ open, onClose, interfaceId }) => {

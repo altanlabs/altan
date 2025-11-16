@@ -102,8 +102,6 @@ const lookupService = {
         getMemberName(mention).toLowerCase().includes(string.toLowerCase()),
       ).map((member) => getMemberDetails(member)).sort((a: any, b: any) => {
         if (a.type === "user" && b.type === "agent") return -1;
-        else if (a.type === "user" && b.type === "guest") return -1;
-        else if (a.type === "agent" && b.type === "guest") return -1;
         return 1;
       });
       callback(results);

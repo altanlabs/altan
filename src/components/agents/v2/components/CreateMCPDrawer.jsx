@@ -25,7 +25,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import MCPToolsTab from './MCPToolsTab';
-import { selectAccount } from '../../../../redux/slices/general';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
 import {
   createMCPServer,
   updateMCPServer,

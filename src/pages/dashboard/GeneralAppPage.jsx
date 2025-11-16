@@ -13,15 +13,15 @@ import {
 import React, { memo, useState, useCallback } from 'react';
 import { useHistory } from 'react-router';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import CreatorDialog from '../../components/CreatorDialog';
 import DateRangePicker, { useDateRangePicker } from '../../components/date-range-picker';
 import { DynamicIsland } from '../../components/dynamic-island/DynamicIsland';
 import Iconify from '../../components/iconify';
 import IconRenderer from '../../components/icons/IconRenderer';
 import { CompactLayout } from '../../layouts/dashboard';
-import { openCreateAltaner, selectAccountSubscriptions } from '../../redux/slices/general';
-import { dispatch, useSelector } from '../../redux/store';
+import { openCreateAltaner, selectAccountSubscriptions } from '../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import { TimePeriodChips } from '../../sections/@dashboard/general/app';
 // import { getClients } from '../../redux/slices/clients';
 

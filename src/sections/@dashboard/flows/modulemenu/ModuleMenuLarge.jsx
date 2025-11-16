@@ -2,7 +2,7 @@ import { Box, Stack, useTheme } from '@mui/material';
 import { memo } from 'react';
 
 import ModuleCard from '../../../../components/flows/ModuleCard';
-import { useSelector } from '../../../../redux/store';
+import { useSelector } from '../../../../redux/store.ts';
 // import ModuleOutput from "./ouput/ModuleOutput";
 // import { useDraggable } from "@dnd-kit/core";
 // import {CSS} from '@dnd-kit/utilities';

@@ -27,7 +27,7 @@ import {
   selectCurrentExecutionModuleInMenu,
   selectModuleExecInMenu,
 } from '../../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 import { CardTitle } from '../../../../aceternity/cards/card-hover-effect.tsx';
 import CustomDialog from '../../../../dialogs/CustomDialog.jsx';
 import Iconify from '../../../../iconify';

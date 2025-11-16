@@ -4,12 +4,12 @@ import { useFormContext } from 'react-hook-form';
 
 import CreateWebhookParameters from './CreateWebhookParameters';
 import { selectConnectionTypes } from '../../redux/slices/connections';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 import PanelRow from '../../sections/@dashboard/flows/modulespanel/PanelRow';
 import CustomDialog from '../dialogs/CustomDialog';
 import VirtualizedList from '../virtualized/VirtualizedList';
 
-// import { selectAccountId, selectExtendedResources } from "../../redux/slices/general";
+// import { selectAccountId, selectExtendedResources } from "../../redux/slices/general/index.ts";
 // import ConnectionSelectorAutocomplete from "../tools/ConnectionSelectorAutocomplete";
 // import CreateConnection from "../tools/CreateConnection";
 // import { useDebounce } from "../../hooks/useDebounce";
@@ -17,7 +17,7 @@ import VirtualizedList from '../virtualized/VirtualizedList';
 // import { useFormContext } from "react-hook-form";
 // import { getNested } from "../tools/dynamic/utils";
 // import { HoverBorderGradient } from "../aceternity/buttons/hover-border-gradient";
-// import { checkObjectsEqual } from "../../redux/helpers/memoize";
+// import { checkObjectsEqual } from "../../redux/helpers/memoize.ts";
 // import ResourceSelector from "./ResourceSelector";
 
 // const POPULAR_SHORTCUTS = [

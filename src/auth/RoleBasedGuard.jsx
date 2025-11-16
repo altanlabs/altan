@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 // @mui
 
 // components
-import { useAuthContext } from './useAuthContext';
+import { useAuthContext } from './useAuthContext.ts';
 import { ForbiddenIllustration } from '../assets/illustrations';
 import { MotionContainer, varBounce } from '../components/animate';
 // assets

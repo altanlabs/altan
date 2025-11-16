@@ -9,7 +9,7 @@ import FormDialog from '../../../components/FormDialog';
 import Iconify from '../../../components/iconify/Iconify';
 import IconRenderer from '../../../components/icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../../../redux/slices/altaners';
-import { selectSortedAgents, selectAccount } from '../../../redux/slices/general';
+import { selectSortedAgents, selectAccount } from '../../../redux/slices/general/index.ts';
 
 // Selector for agents
 const selectAgents = (state) => selectSortedAgents(state) || [];

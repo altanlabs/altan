@@ -16,7 +16,7 @@ import {
 import { memo } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import Iconify from '../../../components/iconify';
 import UpgradeButton from '../../../components/UpgradeButton';
 

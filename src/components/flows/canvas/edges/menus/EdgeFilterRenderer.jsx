@@ -14,8 +14,8 @@ import {
   makeSelectEdgeDescription,
   makeSelectConditionDescription,
 } from '../../../../../redux/slices/flows';
-import { closeGlobalVarsMenu } from '../../../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { closeGlobalVarsMenu } from '../../../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 import { bgBlur } from '../../../../../utils/cssStyles';
 import Iconify from '../../../../iconify';
 

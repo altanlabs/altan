@@ -8,7 +8,7 @@ import { cn } from '@lib/utils';
 import { Button } from '@/components/ui/button';
 
 import { checkNestedOfProperties } from './utils';
-import { checkObjectsEqual } from '../../../redux/helpers/memoize';
+import { checkObjectsEqual } from '../../../redux/helpers/memoize.ts';
 import Iconify from '../../iconify';
 
 // Helper function to format option labels

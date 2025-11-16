@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
-import { sendMessage } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store.js';
+
+import { sendMessage } from '../../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../../redux/store.ts';
 import { Button } from '../ui/button.tsx';
 
 // Suggestion Button Component
@@ -59,4 +60,3 @@ const SuggestionButton = ({ children, threadId }) => {
 };
 
 export default SuggestionButton;
-

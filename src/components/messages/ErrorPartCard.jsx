@@ -3,8 +3,10 @@ import { m } from 'framer-motion';
 import { memo, useMemo, useState, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
 
-import { makeSelectMemberById, retryResponse, selectMessagePartsById } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
+import { makeSelectMemberById } from '../../redux/slices/room/selectors/memberSelectors';
+import { selectMessagePartsById } from '../../redux/slices/room/selectors/messagePartSelectors';
+import { retryResponse } from '../../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../../redux/store.ts';
 
 const EASE = [0.4, 0, 0.2, 1];
 
@@ -14,7 +16,7 @@ const selectErrorPartFields = (state, partId) => {
   if (!part) return null;
 
   // Try to get error from part first, then fallback to message meta_data
-  const message = part.message_id ? state.room.messages.byId[part.message_id] : null;
+  const message = part.message_id ? state.room._messages.messages.byId[part.message_id] : null;
 
   const messageMeta = message?.meta_data || {};
 
@@ -35,7 +37,7 @@ const selectErrorPartFields = (state, partId) => {
 const ErrorPartCard = ({ partId }) => {
   // Use a selector that only returns the fields we need
   const part = useSelector((s) => selectErrorPartFields(s, partId), shallowEqual);
-  
+
   // Create stable memoized selector for member
   const memberSelector = useMemo(() => makeSelectMemberById(), []);
   const member = useSelector((state) => memberSelector(state, part?.member_id));

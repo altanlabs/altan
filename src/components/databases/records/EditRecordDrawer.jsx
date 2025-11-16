@@ -3,7 +3,7 @@ import { useState, useCallback, memo, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 import { updateRecordById, selectTableState, selectTableById } from '../../../redux/slices/cloud';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import { Button } from '../../ui/button.tsx';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';

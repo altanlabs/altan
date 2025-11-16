@@ -44,7 +44,7 @@ import CreateMCPAppDrawer from './functions/CreateMCPAppDrawer';
 import CreateSecretDrawer from './functions/CreateSecretDrawer';
 import EditFunctionDrawer from './functions/EditFunctionDrawer';
 import FunctionDetailView from './functions/FunctionDetailView';
-import { selectAccountId } from '../../../../redux/slices/general';
+import { selectAccountId } from '../../../../redux/slices/general/index.ts';
 import {
   selectFunctionsForBase,
   selectSecretsForBase,
@@ -53,7 +53,7 @@ import {
   deleteFunction,
   deleteSecret,
 } from '../../../../redux/slices/services';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 import { setSession } from '../../../../utils/auth';
 import { optimai_cloud, optimai_integration } from '../../../../utils/axios';
 

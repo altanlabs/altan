@@ -6,7 +6,7 @@ import { getLayoutedNodes, getNodeDimensions } from './hooks/utils/index.ts';
 import ControlPanel from '../../../components/control-panel/ControlPanel.jsx';
 import { useSettingsContext } from '../../../components/settings/SettingsContext.jsx';
 import { setInitializedNodes } from '../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../redux/store';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 // elk layouting options can be found here:
 // https://www.eclipse.org/elk/reference/algorithms/org-eclipse-elk-layered.html

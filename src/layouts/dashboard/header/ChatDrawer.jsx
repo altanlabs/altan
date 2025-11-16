@@ -27,14 +27,15 @@ import {
   selectSearchRoomsLoading,
   selectSearchRoomsQuery,
   selectSearchRoomsHasResults,
+} from '../../../redux/slices/room/selectors/roomSelectors';
+import {
   fetchUserRooms,
   fetchMoreUserRooms,
   searchUserRooms,
   deleteRoom,
-} from '../../../redux/slices/room';
-import { useSelector, useDispatch } from '../../../redux/store';
+} from '../../../redux/slices/room/thunks/roomThunks';
+import { useSelector, useDispatch } from '../../../redux/store.ts';
 import { fToNow } from '../../../utils/formatTime';
-import FloatingNavigation from './FloatingNavigation';
 
 const variants = {
   hidden: { opacity: 0.8, scale: 0.98 },

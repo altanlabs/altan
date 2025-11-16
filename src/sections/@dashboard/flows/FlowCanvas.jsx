@@ -43,7 +43,7 @@ import {
   selectSourceHandles,
   selectInitializedNodes,
 } from '../../../redux/slices/flows';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 
 // Better mobile detection using Capacitor
 const isCapacitorMobile = () => {

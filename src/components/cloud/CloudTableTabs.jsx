@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 
 import { cn } from '../../lib/utils';
 import { selectTablesByCloudId } from '../../redux/slices/cloud';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 import CreateTableDialog from '../databases/table/CreateTableDialog.jsx';
 import EditTableDrawer from '../databases/table/EditTableDrawer.jsx';
 import {

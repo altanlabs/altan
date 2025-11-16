@@ -3,7 +3,7 @@ import React, { memo, useCallback, useEffect, useState } from 'react';
 import { useLocation, useHistory, useParams } from 'react-router';
 import { ReactFlowProvider } from 'reactflow';
 
-import { dispatch, useSelector } from '@redux/store';
+import { dispatch, useSelector } from '@redux/store.ts';
 
 import AssemblingWorkflow from './AssemblingWorkflow.jsx';
 import FlowCanvas from './FlowCanvas.jsx';
@@ -18,7 +18,7 @@ import Iconify from '../../../components/iconify';
 import IconRenderer from '../../../components/icons/IconRenderer.jsx';
 import useCompactMode from '../../../hooks/useCompactMode';
 import { CompactLayout } from '../../../layouts/dashboard/index.js';
-import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider';
 import {
   selectFlow,
   selectFlowDetails,

@@ -23,7 +23,7 @@ import {
 } from '../../../../components/ui/sheet';
 import { Textarea } from '../../../../components/ui/textarea';
 import { updateCurrentTool, getSpace } from '../../../../redux/slices/spaces';
-import { dispatch, useSelector } from '../../../../redux/store';
+import { dispatch, useSelector } from '../../../../redux/store.ts';
 import { optimai } from '../../../../utils/axios';
 
 const DATA_TYPES = ['string', 'number', 'boolean', 'array', 'object'];

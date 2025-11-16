@@ -9,10 +9,12 @@ import Iconify from './iconify/Iconify.jsx';
 import MessageContent from './messages/MessageContent';
 import { agentColors } from './plan/planUtils';
 import {
-  switchToThread,
-  makeSelectSortedThreadMessageIds,
   selectMessagesById,
-} from '../redux/slices/room';
+} from '../redux/slices/room/selectors/messageSelectors';
+import {
+  makeSelectSortedThreadMessageIds,
+} from '../redux/slices/room/selectors/threadSelectors';
+import { switchToThread } from '../redux/slices/room/thunks/threadThunks';
 import {
   fetchTasks,
   selectTasksByThread,
@@ -24,7 +26,7 @@ import {
   updateTask,
   removeTask,
 } from '../redux/slices/tasks';
-import { useSelector, useDispatch } from '../redux/store';
+import { useSelector, useDispatch } from '../redux/store.ts';
 
 // Helper component to render each task with its messages
 const TaskItem = memo(({ task, onOpenSubthread, onUpdateTask, onDeleteTask }) => {

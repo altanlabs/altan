@@ -8,8 +8,8 @@ import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
 
 import { useExecutionDialog } from '../../providers/ExecutionDialogProvider.jsx';
-import { makeSelectExecution } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
+import { makeSelectExecution } from '../../redux/slices/room/selectors/messageSelectors';
+import { useSelector } from '../../redux/store.ts';
 import IconRenderer from '../icons/IconRenderer.jsx';
 
 function getBorderColor(status) {

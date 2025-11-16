@@ -27,9 +27,9 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch } from 'react-redux';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import Iconify from '../../components/iconify';
-import { onboardAccount } from '../../redux/slices/general';
+import { onboardAccount } from '../../redux/slices/general/index.ts';
 
 function Calendly({ open, onClose }) {
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);

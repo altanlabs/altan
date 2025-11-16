@@ -2,8 +2,8 @@ import { createSelector } from '@reduxjs/toolkit';
 import { Position } from 'reactflow';
 
 import { moduleTypes as moduleTypeSchema } from '../../components/flows/schemas/modulePanelSections.jsx';
-// import { checkArraysEqualsProperties, checkObjectsEqual } from '../../redux/helpers/memoize';
-import { checkObjectsEqual } from '../../redux/helpers/memoize.js';
+// import { checkArraysEqualsProperties, checkObjectsEqual } from '../../redux/helpers/memoize.ts';
+import { checkObjectsEqual } from '../../redux/helpers/memoize.ts';
 import {
   selectModulesTypes,
   selectNewModules,

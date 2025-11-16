@@ -3,7 +3,7 @@ import { memo } from 'react';
 
 import FlowStatusBadge from './FlowStatusBadge';
 import { patchFlow, selectFlowDetails, selectFlowStatus } from '../../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 
 const FlowActiveStatus = () => {
   const flowStatus = useSelector(selectFlowStatus);

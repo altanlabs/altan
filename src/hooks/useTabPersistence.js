@@ -1,16 +1,10 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import {
-  selectTabs,
-  selectRoomId,
-  selectThreadsById,
-  loadTabs,
-  clearTabs,
-  updateTab,
-  fetchThread,
-  closeTab,
-} from '../redux/slices/room';
+import { selectRoomId } from '../redux/slices/room/selectors/roomSelectors';
+import { selectTabs } from '../redux/slices/room/selectors/tabSelectors';
+import { selectThreadsById } from '../redux/slices/room/selectors/threadSelectors';
+import { clearTabs, updateTab } from '../redux/slices/room/slices/tabsSlice';
 
 const STORAGE_KEY = 'roomTabState';
 const SAVE_DEBOUNCE_MS = 500; // Debounce saves by 500ms
@@ -146,7 +140,7 @@ export const useTabPersistence = () => {
   //         .catch(() => {
   //           // Remove from fetching set on error
   //           fetchingThreadsRef.current.delete(threadId);
-  //           
+  //
   //           // IMPORTANT: Close the orphan tab since it doesn't belong to this room
   //           dispatch(closeTab({ tabId: tab.id }));
   //         });

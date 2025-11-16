@@ -13,7 +13,7 @@ import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { CustomAvatar } from './custom-avatar';
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 import Iconify from './iconify/Iconify';
 import { useDebounce } from '../hooks/useDebounce.js';
 

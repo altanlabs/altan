@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import UpgradeDialog from './dialogs/UpgradeDialog';
-import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
+import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general/index.ts';
 import { useCreditBalancePolling } from '../hooks/useCreditBalancePolling';
 
 // Mini pie chart component for credit usage

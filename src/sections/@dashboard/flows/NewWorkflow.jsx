@@ -23,7 +23,7 @@ import InteractiveButton from '../../../components/buttons/InteractiveButton';
 import CreateWithAI from '../../../components/CreateWithAI.jsx';
 import Iconify from '../../../components/iconify';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { createFlow } from '../../../redux/slices/general';
+import { createFlow } from '../../../redux/slices/general/index.ts';
 import {
   fetchTemplates,
   selectTemplatesById,

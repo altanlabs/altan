@@ -26,7 +26,7 @@ import {
   cancelSubscription,
   reactivateSubscription,
 } from '../../../../../redux/slices/money';
-import { useSelector } from '../../../../../redux/store';
+import { useSelector } from '../../../../../redux/store.ts';
 
 // Add this new component for the skeleton loading state
 const SubscriptionCardSkeleton = ({ minified }) => (

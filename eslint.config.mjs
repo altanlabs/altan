@@ -172,6 +172,10 @@ export default [
     },
     languageOptions: {
       parser: tsParser,
+      globals: {
+        ...globals.serviceworker,
+        ...globals.browser,
+      },
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: 'module',

@@ -6,8 +6,8 @@ import React, { memo, useState } from 'react';
 import AddressAutocomplete from '../../../../components/autocomplete/AddressAutocomplete';
 import { DynamicIsland } from '../../../../components/dynamic-island/DynamicIsland';
 import Iconify from '../../../../components/iconify';
-import { selectAccount } from '../../../../redux/slices/general';
-import { useSelector } from '../../../../redux/store';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 import Each from '../../../../utils/each';
 
 // ----------------------------------------------------------------------

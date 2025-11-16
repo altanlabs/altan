@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 
 import { selectPreviewMode, togglePreviewMode } from '../../redux/slices/previewControl';
-import { useSelector, dispatch } from '../../redux/store';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify';
 
 function LiveDevToggle({ productionUrl, disabled = false }) {

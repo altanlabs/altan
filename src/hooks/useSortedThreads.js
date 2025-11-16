@@ -1,12 +1,12 @@
 import { createSelector } from '@reduxjs/toolkit';
 
-import { checkArraysEqualsProperties } from '../redux/helpers/memoize';
+import { checkArraysEqualsProperties } from '../redux/helpers/memoize.ts';
 import {
   selectRoomThreadMain,
   selectRoomThreadsIds,
   selectThreadDrawerDetails,
   selectThreadsById,
-} from '../redux/slices/room';
+} from '../redux/slices/room/selectors/threadSelectors';
 
 export const makeSelectSortedAndFilteredThreads = () =>
   createSelector(

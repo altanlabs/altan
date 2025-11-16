@@ -6,8 +6,8 @@ import { useParams, useHistory } from 'react-router-dom';
 // components
 import ItemSwitcher from './components/ItemSwitcher';
 import UnifiedNavigation from './components/UnifiedNavigation';
-import { fetchAgentById, selectAllAgents } from '../../../redux/slices/agents';
-import { selectCurrentAltaner } from '../../../redux/slices/altaners';
+import { fetchAgentById, selectAllAgents } from '../../../redux/slices/agents.ts';
+import { selectCurrentAltaner } from '../../../redux/slices/altaners.ts';
 
 // Default icons in case component doesn't provide one
 const DEFAULT_ICONS = {

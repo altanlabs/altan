@@ -8,7 +8,7 @@ import * as Yup from 'yup';
 // @mui
 
 // auth
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // components
 import FormProvider, { RHFTextField } from '../../components/hook-form';
 import Iconify from '../../components/iconify';

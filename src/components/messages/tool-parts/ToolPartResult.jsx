@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from 'react';
 
-import { makeSelectToolPartResult } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectToolPartResult } from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 
 const ToolPartResult = ({ partId, showResult }) => {
   const resultSelector = useMemo(() => makeSelectToolPartResult(), []);

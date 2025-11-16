@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import { integrateRealTimeUpdates, clearRealTimeUpdateFlags } from '../../../../../redux/slices/bases';
-import { useDispatch } from '../../../../../redux/store';
+import { integrateRealTimeUpdates, clearRealTimeUpdateFlags } from '../../../../../redux/slices/bases.ts';
+import { useDispatch } from '../../../../../redux/store.ts';
 
 /**
  * Custom hook for handling WebSocket real-time updates with AG Grid async transactions

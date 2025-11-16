@@ -3,7 +3,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import Iconify from '../../../components/iconify';
 import useResponsive from '../../../hooks/useResponsive';
 

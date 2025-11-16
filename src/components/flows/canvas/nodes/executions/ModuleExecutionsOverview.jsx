@@ -6,7 +6,7 @@ import {
   selectCurrentExecutionByModule,
   setModuleExecInMenu,
 } from '../../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 import Iconify from '../../../../iconify';
 
 const STATUS_COLOR_MAP = {

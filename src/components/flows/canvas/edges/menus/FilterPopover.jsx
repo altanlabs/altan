@@ -9,7 +9,7 @@ import {
   updateEdgeFilter,
   updateRouterConditionFilter,
 } from '../../../../../redux/slices/flows';
-import { useSelector } from '../../../../../redux/store';
+import { useSelector } from '../../../../../redux/store.ts';
 import { bgBlur } from '../../../../../utils/cssStyles';
 import { CardTitle } from '../../../../aceternity/cards/card-hover-effect.tsx';
 import FilterSpec from '../../../../graphqueryspec/filterspec/FilterSpec.jsx';

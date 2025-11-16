@@ -20,10 +20,10 @@ import { capitalize } from 'lodash';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { selectMe, selectMembers } from '../../../../redux/slices/room';
 import { useSelector } from '../../../../redux/store';
 import DynamicAgentAvatar from '../../../agents/DynamicAgentAvatar';
-import { getMemberDetails, getMemberName } from '../../../room/utils';
+import { getMemberDetails, getMemberName } from '../../../new-room/utils.js';
+import { selectMe, selectMembers } from '../../../../redux/slices/room/selectors/memberSelectors';
 import {$createMentionNode} from '../../nodes/MentionNode';
 
 const PUNCTUATION =
@@ -97,8 +97,6 @@ const lookupService = {
         getMemberName(mention).toLowerCase().includes(string.toLowerCase()),
       ).map((member) => getMemberDetails(member)).sort((a: any, b: any) => {
         if (a.type === "user" && b.type === "agent") return -1;
-        else if (a.type === "user" && b.type === "guest") return -1;
-        else if (a.type === "agent" && b.type === "guest") return -1;
         return 1;
       });
       callback(results);

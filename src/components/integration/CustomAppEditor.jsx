@@ -13,7 +13,7 @@ import {
   selectAccount,
   selectAccountAssetsInitialized,
   selectAccountAssetsLoading,
-} from '../../redux/slices/general';
+} from '../../redux/slices/general/index.ts';
 import { HoverBorderGradient } from '../aceternity/buttons/hover-border-gradient';
 import { TextShimmer } from '../aceternity/text/text-shimmer';
 import Iconify from '../iconify/Iconify';

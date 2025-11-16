@@ -2,8 +2,9 @@ import { Box, IconButton, Modal } from '@mui/material';
 import { memo, useMemo, useState } from 'react';
 
 import { cn } from '../../../lib/utils.ts';
-import { makeSelectMessageMedia, selectAccount } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectMessageMedia } from '../../../redux/slices/room/selectors/messageSelectors';
+import { selectAccount } from '../../../redux/slices/room/selectors/roomSelectors';
+import { useSelector } from '../../../redux/store.ts';
 import Iconify from '../../iconify/Iconify.jsx';
 
 const MEDIA_URL = 'https://platform-api.altan.ai/media/';

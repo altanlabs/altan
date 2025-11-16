@@ -15,7 +15,7 @@ import {
   selectTemplateVersionLoading,
   selectTemplateVersionError,
 } from '../../../redux/slices/templateVersions';
-import { useDispatch, useSelector } from '../../../redux/store';
+import { useDispatch, useSelector } from '../../../redux/store.ts';
 import Iconify from '../../iconify/Iconify.jsx';
 
 const VersionWidget = ({ id }) => {

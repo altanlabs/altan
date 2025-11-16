@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { m } from 'framer-motion';
 
 import ProjectCard from './ProjectCard';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 
 const selectAccountAltaners = (state) => state.general.account?.altaners;
 const selectAltanersLoading = (state) => state.general.accountAssetsLoading.altaners;

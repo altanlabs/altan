@@ -21,8 +21,8 @@ import { useCallback, memo, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { updateTableById, fetchTablePolicies } from '../../../redux/slices/bases';
-import { dispatch as reduxDispatch } from '../../../redux/store';
+import { updateTableById, fetchTablePolicies } from '../../../redux/slices/bases.ts';
+import { dispatch as reduxDispatch } from '../../../redux/store.ts';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';

@@ -1,16 +1,15 @@
-import { Avatar, Box, Container, Grid, Skeleton, Typography, Fab, Drawer } from '@mui/material';
 import { AdminPanelSettings } from '@mui/icons-material';
+import { Avatar, Box, Container, Grid, Skeleton, Typography, Fab } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 
 import TemplateCard from './components/card/TemplateCard';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import EmptyContent from '../../../components/empty-content';
-import { CompactLayout } from '../../../layouts/dashboard';
 import TemplateDetailsDialog from '../../../components/templates/TemplateDetailsDialog';
-import SuperAdminAccountPanel from '../../../components/superadmin/SuperAdminAccountPanel';
-import { useAuthContext } from '../../../auth/useAuthContext';
 import { useAnalytics } from '../../../hooks/useAnalytics';
+import { CompactLayout } from '../../../layouts/dashboard';
 import {
   fetchAccountData,
   loadMoreAccountTemplates,
@@ -18,8 +17,6 @@ import {
   selectAccountLoading,
   selectAccountError,
 } from '../../../redux/slices/accountTemplates';
-
-const ITEMS_PER_PAGE = 25;
 
 const AccountPage = () => {
   const { accountId } = useParams();
@@ -34,8 +31,6 @@ const AccountPage = () => {
   const error = useSelector(selectAccountError(accountId));
 
   const { templates, account, hasMore, initialized } = accountState;
-
-  console.log(account);
 
   // Local UI state
   const [searchTerm] = useState('');
@@ -341,33 +336,6 @@ const AccountPage = () => {
         >
           <AdminPanelSettings />
         </Fab>
-      )}
-
-      {/* SuperAdmin Drawer */}
-      {user?.xsup && (
-        <Drawer
-          anchor="right"
-          open={drawerOpen}
-          onClose={handleCloseDrawer}
-          PaperProps={{
-            sx: {
-              width: 400,
-              backdropFilter: 'blur(20px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              ...(theme) =>
-                theme.palette.mode === 'dark' && {
-                  backgroundColor: 'rgba(18, 18, 18, 0.95)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                },
-            },
-          }}
-        >
-          <SuperAdminAccountPanel 
-            accountId={accountId} 
-            onClose={handleCloseDrawer}
-          />
-        </Drawer>
       )}
 
       {/* Template Details Dialog */}

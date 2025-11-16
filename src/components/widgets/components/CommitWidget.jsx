@@ -3,7 +3,7 @@ import { memo, useState, useEffect } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { fetchCommitDetails, restoreCommit, selectCommitDetails, selectIsRestoring } from '../../../redux/slices/commits.js';
-import { useDispatch, useSelector } from '../../../redux/store.js';
+import { useDispatch, useSelector } from '../../../redux/store.ts';
 import Iconify from '../../iconify/Iconify.jsx';
 
 const CommitWidget = ({ hash }) => {

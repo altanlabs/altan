@@ -4,7 +4,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { createTableRecords, selectFieldsByTableId } from '../../../redux/slices/bases';
+import { createTableRecord, selectFieldsByTableId } from '../../../redux/slices/bases.ts';
 import formatData from '../../../utils/formatData';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
@@ -38,21 +38,16 @@ const CreateRecordDialog = ({ baseId, tableId, open, onClose }) => {
 
   const onSubmit = useCallback(
     handleSubmit(async (data) => {
-      const formattedData = {
-        records: [
-          {
-            fields: formatData(data, recordSchema.properties),
-          },
-        ],
-      };
+      // New API expects plain object, not wrapped in records array
+      const formattedData = formatData(data, recordSchema.properties);
 
-      dispatchWithFeedback(createTableRecords(tableId, formattedData), {
+      dispatchWithFeedback(createTableRecord(baseId, tableId, formattedData), {
         useSnackbar: true,
         successMessage: 'Record created successfully',
         errorMessage: 'Could not create record',
       }).then(() => onClose());
     }),
-    [tableId, onClose, recordSchema],
+    [baseId, tableId, onClose, recordSchema],
   );
 
   return (

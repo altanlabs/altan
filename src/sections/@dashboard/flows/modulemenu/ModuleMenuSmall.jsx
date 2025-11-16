@@ -1,6 +1,6 @@
 import { Stack } from '@mui/material';
 import { memo } from 'react';
-// import { useSelector } from "../../../../redux/store";
+// import { useSelector } from "../../../../redux/store.ts";
 // import ModuleCard from "../../../../components/flows/ModuleCard";
 // import { capitalize } from "lodash";
 // import ModuleInput from "./input/ModuleInput";

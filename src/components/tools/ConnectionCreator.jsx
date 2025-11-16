@@ -13,11 +13,11 @@ import React, { useState, memo, useMemo, useCallback } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import FormParameter from './form/FormParameter.jsx';
-import { API_BASE_URL } from '../../auth/utils.js';
+import { API_BASE_URL } from '../../auth/utils.ts';
 import { newConnection } from '../../redux/slices/connections.js';
 // import NavAccount from '../../layout/nav/NavAccount.jsx';
-import { selectAccount } from '../../redux/slices/general.js';
-import { useSelector, dispatch } from '../../redux/store.js';
+import { selectAccount } from '../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import { refreshToken } from '../../utils/auth.js';
 import { optimai_root } from '../../utils/axios.js';
 import Iconify from '../iconify/Iconify.jsx';

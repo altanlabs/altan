@@ -15,7 +15,7 @@ import { useSnackbar } from 'notistack';
 import React, { useState } from 'react';
 
 import { renameConnection } from '../../redux/slices/connections';
-import { dispatch } from '../../redux/store';
+import { dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify';
 import Logo from '../logo';
 

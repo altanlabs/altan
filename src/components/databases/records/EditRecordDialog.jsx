@@ -14,10 +14,10 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router';
 
-import { updateTableRecordThunk } from '../../../redux/slices/bases';
-import { createRoom } from '../../../redux/slices/general';
-import { dispatch } from '../../../redux/store';
-import { optimai_room } from '../../../utils/axios.js';
+import { getRoomPort } from '../../../di/index.ts';
+import { updateTableRecordById } from '../../../redux/slices/bases.ts';
+import { createRoom } from '../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../redux/store.ts';
 import formatData from '../../../utils/formatData';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 import Iconify from '../../iconify';
@@ -100,11 +100,11 @@ const EditRecordDialog = ({ baseId, tableId, recordId, open, onClose }) => {
     (data) => {
       if (!tableId || !recordId) return;
       dispatch(
-        updateTableRecordThunk(tableId, recordId, formatData(data, recordSchema.properties)),
+        updateTableRecordById(baseId, tableId, recordId, formatData(data, recordSchema.properties)),
       );
       onClose?.();
     },
-    [tableId, recordId, onClose, recordSchema],
+    [baseId, tableId, recordId, onClose, recordSchema],
   );
 
   const handleCreateFieldOpen = () => setIsCreateFieldOpen(true);
@@ -121,17 +121,17 @@ const EditRecordDialog = ({ baseId, tableId, recordId, open, onClose }) => {
     const controller = new AbortController();
     const fetchRoom = async () => {
       try {
-        const response = await optimai_room.get(
-          `/external/${externalId}?account_id=${account?.id}`,
-          {
-            signal: controller.signal,
-          },
-        );
-        setRoomId(response.data.room.id);
+        const roomPort = getRoomPort();
+        const response = await roomPort.fetchRoomByExternalId(externalId, account?.id);
+        if (!controller.signal.aborted) {
+          setRoomId(response.room.id);
+        }
       } catch {
         if (!controller.signal.aborted) setRoomId(null);
       } finally {
-        setIsLoadingRoom(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingRoom(false);
+        }
       }
     };
     setIsLoadingRoom(true);

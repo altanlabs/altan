@@ -7,7 +7,7 @@ import DistributionForm from './distribution/DistributionForm';
 import DistributionSetup from './distribution/DistributionSetup';
 import Iconify from '../../../../../components/iconify/Iconify';
 import useFeedbackDispatch from '../../../../../hooks/useFeedbackDispatch';
-import { createTemplate, updateTemplate, selectIsAccountFree } from '../../../../../redux/slices/general';
+import { createTemplate, updateTemplate, selectIsAccountFree } from '../../../../../redux/slices/general/index.ts';
 
 const Distribution = ({ altaner }) => {
   const hasTemplate = !!altaner?.template;

@@ -4,8 +4,8 @@ import useMessageListener from '@hooks/useMessageListener.ts';
 
 import { useSettingsContext } from '../../components/settings';
 import { CompactLayout } from '../../layouts/dashboard';
-import { selectAccountId } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectAccountId } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 
 const handleCopy = (data) => {
   try {

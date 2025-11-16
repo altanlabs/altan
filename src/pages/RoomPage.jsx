@@ -1,8 +1,7 @@
 import { memo } from 'react';
 import { useParams } from 'react-router-dom';
 
-// Legacy room implementation
-import { RoomContainer } from '../components/new-room';
+import RoomContainer from '../components/new-room/RoomContainer.tsx';
 
 const RoomPage = () => {
   const { roomId } = useParams();

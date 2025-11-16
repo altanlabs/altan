@@ -2,7 +2,7 @@ import { Save, Upload, User, Mail } from 'lucide-react';
 import React, { memo, useState, useEffect, useCallback } from 'react';
 
 // Import your actual hooks and utilities
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { uploadPersonalMedia } from '../../utils/media';
 
 const getUserDetails = (user) => ({

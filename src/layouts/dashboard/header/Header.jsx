@@ -8,13 +8,13 @@ import { useHistory } from 'react-router-dom';
 
 import ChatDrawer from './ChatDrawer';
 import MobileNavSidebar from './MobileNavSidebar';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { StyledChart } from '../../../components/chart';
 import Iconify from '../../../components/iconify';
 import { HEADER } from '../../../config-global';
 import useResponsive from '../../../hooks/useResponsive';
-import { selectHeaderVisible } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { selectHeaderVisible } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
 
 // Utility function to check if we're on iOS Capacitor platform
 const isIOSCapacitor = () => {

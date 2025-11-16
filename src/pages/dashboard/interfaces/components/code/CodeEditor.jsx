@@ -7,7 +7,7 @@ import BinaryFilePlaceholder from './BinaryFilePlaceholder';
 import EditorErrorBoundary from './EditorErrorBoundary';
 import { useDebounce } from '../../../../../hooks/useDebounce';
 import { selectFileContent, updateFileContent } from '../../../../../redux/slices/codeEditor';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 import { getLanguage, isBinaryFile } from '../../utils/editor';
 
 const CodeEditor = forwardRef(({ interfaceId, filePath, chatIframeRef }, ref) => {

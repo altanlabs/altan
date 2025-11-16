@@ -5,9 +5,9 @@ import { useSelector } from 'react-redux';
 
 import RenderPreview from './RenderPreview';
 import SkeletonMediaItem from './skeletons/SkeletonMediaItem';
-import { API_BASE_URL } from '../../../../auth/utils';
+import { API_BASE_URL } from '../../../../auth/utils.ts';
 import { getMedia } from '../../../../redux/slices/media';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 
 const DRAWER_MODES = ['custom_message', 'drawer'];
 const MEDIA_PAGE_MODE = 'default';

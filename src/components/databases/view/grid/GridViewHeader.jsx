@@ -9,7 +9,7 @@ import { TextField, IconButton, Tooltip } from '@mui/material';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { loadTableRecords } from '../../../../redux/slices/bases';
+import { loadTableRecords } from '../../../../redux/slices/bases.ts';
 import CreateRecordDialog from '../../records/CreateRecordDialog';
 import RLSSettingsDialog from '../../table/RLSSettingsDialog';
 

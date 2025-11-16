@@ -34,8 +34,8 @@ import {
   deleteTemplateVersion,
   markTemplateVersionAsSelected,
   updateTemplate,
-} from '../../redux/slices/general';
-import { dispatch, useSelector } from '../../redux/store';
+} from '../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import { bgBlur } from '../../utils/cssStyles';
 import formatData from '../../utils/formatData';
 import { fToNow } from '../../utils/formatTime';

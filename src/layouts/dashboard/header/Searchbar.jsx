@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { IconButtonAnimate } from '../../../components/animate';
 import Iconify from '../../../components/iconify';
 import SearchNotFound from '../../../components/search-not-found';
-import { selectAccount } from '../../../redux/slices/general';
+import { selectAccount } from '../../../redux/slices/general/index.ts';
 import { bgBlur } from '../../../utils/cssStyles';
 
 // config

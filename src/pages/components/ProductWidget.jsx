@@ -2,7 +2,7 @@ import { Box, Skeleton, Avatar, Stack } from '@mui/material';
 import { fetchProduct } from '@redux/slices/products';
 import { memo, useEffect, useMemo, useState } from 'react';
 
-import { dispatch, useSelector } from '@redux/store';
+import { dispatch, useSelector } from '@redux/store.ts';
 
 function getValueByRef(ref, value) {
   const keys = ref.split('.');

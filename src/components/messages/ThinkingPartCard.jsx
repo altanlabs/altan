@@ -5,7 +5,7 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 
 import CustomMarkdown from './CustomMarkdown';
-import { selectMessagePartsById } from '../../redux/slices/room';
+import { selectMessagePartsById } from '../../redux/slices/room/selectors/messagePartSelectors';
 
 // Selector that only extracts the fields we need for this component
 const selectThinkingPartFields = (state, partId) => {

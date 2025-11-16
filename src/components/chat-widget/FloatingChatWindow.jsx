@@ -1,14 +1,12 @@
 // FloatingChatWindow.jsx
-import { useTheme } from '@mui/material';
 import React, { memo, useState, useEffect, useCallback } from 'react';
 
-import useMessageListener from '../../hooks/useMessageListener.js';
-import { optimai_room } from '../../utils/axios.js';
+import { getRoomPort } from '../../di/index.ts';
+import useMessageListener from '../../hooks/useMessageListener.ts';
 import FloatingWindow from '../floating/FloatingWindow.jsx';
-import Room from '../room/Room.jsx';
+import RoomContainer from '../new-room/RoomContainer.tsx';
 
 export const FloatingChatWindow = (props) => {
-  const theme = useTheme();
   const [actualRoomId, setActualRoomId] = useState(null);
   // console.log('props', props);
   // console.log('actualRoomId', actualRoomId);
@@ -41,10 +39,9 @@ export const FloatingChatWindow = (props) => {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const response = await optimai_room.get(
-          `/external/${props.id}?account_id=${props.accountId}`,
-        );
-        setActualRoomId(response.data.room.id);
+        const roomPort = getRoomPort();
+        const response = await roomPort.fetchRoomByExternalId(props.id, props.accountId);
+        setActualRoomId(response.room.id);
       } catch (error) {
         console.error('Failed to fetch room:', error);
         setActualRoomId(null);
@@ -80,7 +77,7 @@ export const FloatingChatWindow = (props) => {
       enableExpand={props.enableExpand}
       usePortal={true}
     >
-      <Room roomId={actualRoomId} header={false} />
+      <RoomContainer roomId={actualRoomId} header={false} />
     </FloatingWindow>
   );
 };

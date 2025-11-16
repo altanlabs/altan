@@ -5,7 +5,7 @@ import Iconify from '@components/iconify/Iconify';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 import { deleteTool } from '../../../redux/slices/connections';
-import { deleteAccountResource } from '../../../redux/slices/general';
+import { deleteAccountResource } from '../../../redux/slices/general/index.ts';
 import DeleteDialog from '../superadmin/tables/DeleteDialog';
 
 function ToolCard({ tool }) {

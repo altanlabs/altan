@@ -4,8 +4,8 @@ import { memo, useMemo } from 'react';
 
 import ConnectionCreator from './ConnectionCreator';
 import { selectConnectionTypes } from '../../redux/slices/connections';
-import { selectCustomConnectionTypes } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectCustomConnectionTypes } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 
 const selectAllConnectionTypes = createSelector(
   [selectConnectionTypes, selectCustomConnectionTypes],

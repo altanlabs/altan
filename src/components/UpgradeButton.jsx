@@ -5,10 +5,10 @@ import { useHistory } from 'react-router-dom';
 
 import Iconify from './iconify';
 import StyledChip from './StyledChip';
-import { useAuthContext } from '../auth/useAuthContext';
+import { useAuthContext } from '../auth/useAuthContext.ts';
 import { useCreditBalancePolling } from '../hooks/useCreditBalancePolling';
-import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general';
-import { useSelector } from '../redux/store';
+import { selectAccountCreditBalance, selectAccountSubscriptions } from '../redux/slices/general/index.ts';
+import { useSelector } from '../redux/store.ts';
 
 function formatCredits(credits) {
   if (credits >= 1000000) {

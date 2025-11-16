@@ -17,7 +17,7 @@ import {
   fetchFileTree,
   createFile,
 } from '../../../../../redux/slices/codeEditor';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 
 const Codebase = ({ interfaceId, chatIframeRef }) => {
   const editorRef = useRef(null);

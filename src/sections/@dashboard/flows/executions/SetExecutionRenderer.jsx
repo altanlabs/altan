@@ -3,7 +3,7 @@ import React, { memo, useCallback, useState } from 'react';
 
 import Iconify from '../../../../components/iconify/Iconify';
 import { getFlowExecutionDetails } from '../../../../redux/slices/flows';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 
 const SetExecutionRenderer = ({ data, onClose = null }) => {
   const [loading, setLoading] = useState(false);

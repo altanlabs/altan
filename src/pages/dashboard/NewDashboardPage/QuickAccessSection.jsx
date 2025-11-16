@@ -8,7 +8,7 @@ import {
   selectAltanersLoading,
   selectAltanersInitialized,
 } from '../../../redux/slices/altaners';
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 
 const QuickAccessSection = () => {
   const history = useHistory();

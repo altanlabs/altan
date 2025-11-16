@@ -4,8 +4,10 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { cn } from '@lib/utils';
 
 // import { useEmojiPicker } from '../../providers/EmojiPickerProvider';
-import { selectMe, selectThreadDrawerDetails, setThreadDrawer, setThreadRespond } from '../../redux/slices/room';
-import { dispatch, useSelector } from '../../redux/store.js';
+import { selectMe } from '../../redux/slices/room/selectors/memberSelectors';
+import { selectThreadDrawerDetails } from '../../redux/slices/room/selectors/threadSelectors';
+import { setThreadDrawer, setThreadRespond } from '../../redux/slices/room/slices/threadsSlice';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify.jsx';
 
 // const handleEmojiSelect = (messageId, emoji) => !!emoji && dispatch(reactToMessage({ messageId, reactionType: 'emoji', emoji: emoji.native }));

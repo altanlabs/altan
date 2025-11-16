@@ -12,7 +12,7 @@ const componentMapping = {
   TriggerType: 'TriggerType',
   AccountId: 'AccountId',
   IteratorAutocomplete: 'IteratorAutocomplete',
-  
+
   // Editors
   HTMLEditor: 'HTMLEditor',
   markdown: 'RichAceEditor',
@@ -21,13 +21,11 @@ const componentMapping = {
   java: 'RichAceEditor',
   javascript: 'RichAceEditor',
   jsx: 'RichAceEditor',
-  
+
   // Autocomplete variants
   ClientAutocomplete: 'ClientAutocomplete',
   GateAutocomplete: 'GateAutocomplete',
   InterfaceAutocomplete: 'InterfaceAutocomplete',
-  BaseAutocomplete: 'BaseAutocomplete',
-  TableAutocomplete: 'TableAutocomplete',
   AddressAutocompleteReal: 'AddressAutocompleteReal',
   AgentAutocomplete: 'AgentAutocomplete',
   AgentAutocompleteMultiple: 'AgentAutocomplete',
@@ -36,12 +34,11 @@ const componentMapping = {
   FlowAutocompleteMultiple: 'FlowAutocomplete',
   MembersAutocomplete: 'MembersAutocomplete',
   IconAutocomplete: 'IconAutocomplete',
-  
+
   // Specialized components
   TemplatePublicName: 'TemplatePublicName',
   AltanerVariablesInstallationOverride: 'AltanerVariablesInstallationOverride',
   InvokeFlowInputVars: 'InvokeFlowInputVars',
-  AltanerSubscriptionGroup: 'AltanerSubscriptionGroup',
   CreateWithAI: 'CreateWithAI',
   PriceEditor: 'PriceEditor',
   ThreadSelector: 'ThreadSelector',
@@ -64,15 +61,12 @@ const getComponentProps = ({ title, schema, fieldKey }) => ({
   IteratorAutocomplete: {},
   HTMLEditor: {},
   TemplatePublicName: {},
-  AltanerSubscriptionGroup: {},
   FormAutocomplete: {},
   CreateWithAI: {},
   VoiceSection: {},
-  TableAutocomplete: {},
   ClientAutocomplete: {},
   GateAutocomplete: {},
   InterfaceAutocomplete: {},
-  BaseAutocomplete: {},
   PriceEditor: {},
   ThreadSelector: {},
   IconAutocomplete: {},
@@ -80,7 +74,7 @@ const getComponentProps = ({ title, schema, fieldKey }) => ({
   webhook: {},
   filterspec: {},
   cron: {},
-  
+
   // Components with special props
   AltanerVariablesInstallationOverride: { fieldKey },
   FormAutocompleteMultiple: { multiple: true },
@@ -91,7 +85,7 @@ const getComponentProps = ({ title, schema, fieldKey }) => ({
   AgentAutocomplete: {},
   FlowAutocomplete: {},
   RoomAutocomplete: {},
-  
+
   // Code editors with mode configuration
   markdown: { key: fieldKey, mode: 'markdown' },
   CodeEditor: { key: fieldKey, mode: 'python', placeholder: 'Put your code here...' },
@@ -99,7 +93,7 @@ const getComponentProps = ({ title, schema, fieldKey }) => ({
   java: { key: fieldKey, mode: 'java' },
   javascript: { key: fieldKey, mode: 'jsx' },
   jsx: { key: fieldKey, mode: 'jsx' },
-  
+
   // Complex components with schema arguments
   SchemaFormLoader: {
     ...(schema['x-arguments'] ?? { args: {}, request: {}, response: {}, schema_url: null }),

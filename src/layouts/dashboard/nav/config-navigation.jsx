@@ -5,8 +5,8 @@ import { Button } from '@mui/material';
 import Iconify from '../../../components/iconify';
 import Label from '../../../components/label';
 import SvgColor from '../../../components/svg-color';
-import { openPermissionDialog } from '../../../redux/slices/general';
-import { dispatch } from '../../../redux/store';
+import { openPermissionDialog } from '../../../redux/slices/general/index.ts';
+import { dispatch } from '../../../redux/store.ts';
 import { PATH_DASHBOARD } from '../../../routes/paths';
 
 // ----------------------------------------------------------------------

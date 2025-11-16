@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import Logo from '../../components/logo/Logo';
 import {
   Dialog,

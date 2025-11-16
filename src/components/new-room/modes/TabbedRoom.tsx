@@ -1,9 +1,11 @@
+import type { Location, History } from 'history';
 import React, { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
+
+import GeneralToolbar from '../components/GeneralToolbar.jsx';
 import { useRoomConfig } from '../contexts/RoomConfigContext';
 import { useThreadManagement } from '../hooks/useThreadManagement';
-import GeneralToolbar from '../../../layouts/room/GeneralToolbar.jsx';
-import { ThreadView } from '../thread/ThreadView';
+import ThreadView from '../thread/ThreadView';
 
 /**
  * Tabbed Room Mode
@@ -15,16 +17,19 @@ import { ThreadView } from '../thread/ThreadView';
  * - Tab switching with URL sync
  * - Main thread tab cannot be closed
  */
-export function TabbedRoom() {
+function TabbedRoom(): React.JSX.Element {
   const config = useRoomConfig();
-  const location = useLocation();
-  const history = useHistory();
-  const { activeThreadId, mainThreadId, createNewTab, switchToThread, closeThreadTab } = 
-    useThreadManagement('tabs');
+  const location = useLocation<unknown>() as Location;
+  const history = useHistory<unknown>() as History;
+  const { activeThreadId } = useThreadManagement('tabs');
 
   // Sync active thread ID to URL for easy sharing
   useEffect(() => {
-    if (!activeThreadId) return;
+    if (!activeThreadId) {
+      // eslint-disable-next-line no-console
+      console.log('⚠️ No activeThreadId, skipping URL sync');
+      return;
+    }
 
     const searchParams = new URLSearchParams(location.search);
     const urlThreadId = searchParams.get('thread_id');
@@ -55,10 +60,14 @@ export function TabbedRoom() {
       />
 
       {/* Thread View - takes full remaining space */}
-      <div className="flex-1 overflow-hidden">
-        <ThreadView threadId={activeThreadId} />
-      </div>
+      {activeThreadId && (
+        <div className="flex-1 overflow-hidden">
+          <ThreadView threadId={activeThreadId} />
+        </div>
+      )}
     </div>
   );
 }
 
+
+export default TabbedRoom;

@@ -1,19 +1,18 @@
 import React, { memo, useMemo, useCallback } from 'react';
-import { useHistory } from 'react-router';
 
 import { TextShimmer } from '@components/aceternity/text/text-shimmer.tsx';
 import { cn } from '@lib/utils';
 
+import { getToolIcon } from './index.js';
 import {
   makeSelectToolPartHeader,
   makeSelectToolPartExecution,
-} from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
-import { CustomAvatar } from '../../custom-avatar';
+} from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 import StaticGradientAvatar from '../../agents/StaticGradientAvatar.jsx';
+import { CustomAvatar } from '../../custom-avatar';
 import Iconify from '../../iconify/Iconify.jsx';
 import IconRenderer from '../../icons/IconRenderer.jsx';
-import { getToolIcon } from './index.js';
 
 function extractAndCapitalize(str) {
   if (!str) return 'Tool';
@@ -24,13 +23,43 @@ function extractAndCapitalize(str) {
     .join(' ');
 }
 
+function sanitizeToolName(name) {
+  if (!name || typeof name !== 'string') return 'Tool';
+  const lower = name.toLowerCase().trim();
+
+  const INVALID_KEYWORDS = [
+    'updated',
+    'update',
+    'added',
+    'add',
+    'completed',
+    'complete',
+    'deleted',
+    'delete',
+    'created',
+    'create',
+    'removed',
+    'remove',
+    'started',
+    'start',
+    'finished',
+    'finish',
+    'failed',
+    'fail',
+  ];
+
+  if (INVALID_KEYWORDS.includes(lower) || lower.length < 3) {
+    return 'Tool';
+  }
+
+  return name;
+}
+
 /**
  * Custom renderer for create_agent tool
  * Displays a beautiful agent card with avatar, name, description
  */
 const CreateAgentRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: toolOnToggle }) => {
-  const history = useHistory();
-
   const headerSelector = useMemo(() => makeSelectToolPartHeader(), []);
   const executionSelector = useMemo(() => makeSelectToolPartExecution(), []);
 
@@ -89,12 +118,13 @@ const CreateAgentRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: to
     if (!isExecuting && header.act_done) {
       return header.act_done;
     }
-    return extractAndCapitalize(header.name);
+    const safeName = sanitizeToolName(header.name);
+    return extractAndCapitalize(safeName);
   }, [header, isExecuting]);
 
   // Get tool icon from registry
   const toolIcon = useMemo(() => {
-    const toolName = header?.name;
+    const toolName = sanitizeToolName(header?.name);
     const fallbackIcon =
       execution?.task_execution?.tool?.action_type?.connection_type?.icon || 'mdi:robot-happy';
     return getToolIcon(toolName, fallbackIcon);
@@ -152,7 +182,7 @@ const CreateAgentRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: to
   return (
     <div className="w-full my-2">
       {/* Agent Card */}
-      <div 
+      <div
         className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white/50 dark:bg-gray-800/50 overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer group"
         onClick={handleOpenAgent}
       >
@@ -235,4 +265,3 @@ const CreateAgentRenderer = memo(({ part, isExpanded: toolExpanded, onToggle: to
 CreateAgentRenderer.displayName = 'CreateAgentRenderer';
 
 export default CreateAgentRenderer;
-

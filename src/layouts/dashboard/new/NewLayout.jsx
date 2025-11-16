@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import Footer from './Footer';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
 import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import Logo from '../../../components/logo/Logo';

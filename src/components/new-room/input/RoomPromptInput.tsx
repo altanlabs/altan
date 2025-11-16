@@ -11,29 +11,24 @@ import { RecordingOverlay } from './RecordingOverlay';
 import { useFileHandling } from './useFileHandling';
 import { useVoiceRecording } from './useVoiceRecording';
 import { ViewerMode } from './ViewerMode';
+import { getRoomPort } from '../../../di';
 import { selectCurrentAltaner } from '../../../redux/slices/altaners';
-import {
-  sendMessage,
-  selectMe,
-  selectRoomContext,
-  addThread,
-  setThreadMain,
-  selectMembers,
-  selectActiveResponsesByThread,
-  selectActiveActivationsByThread,
-  stopThreadGeneration,
-} from '../../../redux/slices/room';
+import { selectActiveResponsesByThread , selectActiveActivationsByThread } from '../../../redux/slices/room/selectors/lifecycleSelectors';
+import { selectMembers , selectMe } from '../../../redux/slices/room/selectors/memberSelectors';
+import { selectRoomContext } from '../../../redux/slices/room/selectors/roomSelectors';
+import { setThreadMain, addThread } from '../../../redux/slices/room/slices/threadsSlice';
+import { sendMessage } from '../../../redux/slices/room/thunks/messageThunks';
+import { stopThreadGeneration } from '../../../redux/slices/room/thunks/threadThunks';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { dispatch, useSelector } from '../../../redux/store';
-import { optimai_room } from '../../../utils/axios';
 import AgentSelectionChip from '../../attachment/components/AgentSelectionChip.jsx';
 import AuthorizationRequests from '../../AuthorizationRequests.jsx';
 import CreditWallet from '../../CreditWallet.jsx';
 import Editor from '../../editor/Editor';
 import ActivationLifecycleBar from '../../response/ActivationLifecycleBar.jsx';
-import { getMemberDetails } from '../../room/utils.js';
 import { useSnackbar } from '../../snackbar';
 import TodoWidget from '../../TodoWidget.jsx';
+import { getMemberDetails } from '../utils.js';
 
 // --- Props Interface ---
 interface RoomPromptInputProps {
@@ -67,7 +62,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     const editorRef = useRef<any>({});
     const containerRef = useRef<HTMLDivElement>(null);
     const [editorEmpty, setEditorEmpty] = useState(true);
-    const [selectedAgent, setSelectedAgent] = useState<any>(null);
+    const [selectedAgent, setSelectedAgent] = useState<unknown>(null);
 
     // --- Redux ---
     const me = useSelector(selectMe);
@@ -241,10 +236,8 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
         if (threadId === 'new') {
           try {
             const threadName = finalContent.substring(0, 50).trim() || 'New Chat';
-            const response = await optimai_room.post(`/v2/rooms/${roomId}/threads`, {
-              name: threadName,
-            });
-            const newThread = response.data;
+            const roomPort = getRoomPort();
+            const newThread = await roomPort.createThread(roomId, { name: threadName });
 
             dispatch(addThread(newThread));
             dispatch(setThreadMain({ current: newThread.id }));
@@ -257,6 +250,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
               }),
             );
           } catch (e: any) {
+            console.error('Failed to create thread:', e);
             enqueueSnackbar(e.message || 'Failed to create thread', { variant: 'error' });
           }
         } else {
@@ -267,6 +261,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
               attachments: sanitizedAttachments,
             }),
           ).catch((e: Error) => {
+            console.error('Failed to send message:', e);
             enqueueSnackbar(e.message || 'Failed to send message', { variant: 'error' });
           });
         }

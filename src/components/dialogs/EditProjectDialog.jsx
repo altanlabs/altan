@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { Trash2, Pin, PinOff, Loader2 } from 'lucide-react';
 
 import { updateAltanerById, deleteAltanerById } from '../../redux/slices/altaners';
-import { deleteAccountAltaner } from '../../redux/slices/general';
+import { deleteAccountAltaner } from '../../redux/slices/general/index.ts';
 
 import {
   Dialog,

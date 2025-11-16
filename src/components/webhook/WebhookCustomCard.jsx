@@ -2,8 +2,8 @@ import { Typography, Paper } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 
-import { selectExtendedResources } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectExtendedResources } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import InteractiveButton from '../buttons/InteractiveButton';
 import FloatingWindow from '../floating/FloatingWindow';
 import { getNested } from '../tools/dynamic/utils';

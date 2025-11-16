@@ -14,13 +14,13 @@ import {
 import React, { useState, useMemo, useCallback, memo } from 'react';
 
 import CustomDialog from './CustomDialog.jsx';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
+import { selectMe } from '../../redux/slices/room/selectors/memberSelectors';
+import { selectRoom } from '../../redux/slices/room/selectors/roomSelectors';
 import {
   updateRoom,
-  selectRoom,
-  selectMe,
-} from '../../redux/slices/room';
-import { dispatch, useSelector } from '../../redux/store.js';
+} from '../../redux/slices/room/thunks/roomThunks';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify.jsx';
 
 export const PRIVACY_ENUM = [

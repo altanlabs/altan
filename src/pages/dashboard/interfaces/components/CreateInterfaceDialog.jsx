@@ -10,7 +10,7 @@ import InteractiveButton from '../../../../components/buttons/InteractiveButton.
 import CustomDialog from '../../../../components/dialogs/CustomDialog.jsx';
 import FormParameter from '../../../../components/tools/form/FormParameter.jsx';
 import useFeedbackDispatch from '../../../../hooks/useFeedbackDispatch.js';
-import { createInterface, updateInterfaceById } from '../../../../redux/slices/general.js';
+import { createInterface, updateInterfaceById } from '../../../../redux/slices/general/index.ts';
 import formatData from '../../../../utils/formatData.js';
 
 const getInterfaceCreateSchema = (altanerComponentId, interfaceToEdit) => ({

@@ -31,7 +31,7 @@ import {
   selectCurrentExecution,
   selectFlowId,
 } from '../../../../../redux/slices/flows';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 
 const ModuleSelectionButton = memo(
   ({ module, onSelect, disabledVarSelection = false, isCurrent = false }) => {

@@ -23,8 +23,8 @@ import useFeedbackDispatch from '@hooks/useFeedbackDispatch';
 import useResponsive from '@hooks/useResponsive';
 
 import { CompactLayout } from '../../layouts/dashboard';
-import { deleteAccountResource, getAccountAttribute } from '../../redux/slices/general';
-import { useSelector, dispatch } from '../../redux/store';
+import { deleteAccountResource, getAccountAttribute } from '../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import { fToNow } from '../../utils/formatTime';
 
 ModuleRegistry.registerModules([

@@ -13,12 +13,13 @@ import {
 import { memo } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectMe, patchMember } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
+import { selectMe } from '../../redux/slices/room/selectors/memberSelectors';
+import { patchMember } from '../../redux/slices/room/thunks/roomThunks';
+import { dispatch } from '../../redux/store.ts';
 import { formatDate } from '../../utils/dateUtils.js';
+import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
-import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 
 const DetailRow = ({ label, value, copyable = false }) => (
   <Box sx={{ display: 'flex', mb: 0.5 }}>
@@ -56,7 +57,7 @@ const MemberDetailsPopover = ({ isOpen, anchorEl, onClose, roomMember, memberNam
   if (!member) return null;
 
   const isAgent = member.member_type === 'agent';
-  const memberType = member.member_type || 'guest';
+  const memberType = member.member_type || 'user';
 
   // Fix: Default to mention_only when undefined
   const agentInteraction = member?.agent_interaction || 'mention_only';

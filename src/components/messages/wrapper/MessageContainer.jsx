@@ -3,8 +3,9 @@ import { memo, useCallback } from 'react';
 
 import useLongPress from '../../../hooks/useLongPress.jsx';
 import useResponsive from '../../../hooks/useResponsive';
-import { createMessageContextMenu, selectThreadDrawerDetails } from '../../../redux/slices/room';
-import { dispatch, useSelector } from '../../../redux/store.js';
+import { selectThreadDrawerDetails } from '../../../redux/slices/room/selectors/threadSelectors';
+import { createMessageContextMenu } from '../../../redux/slices/room/thunks/messageThunks';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 const MessageContainer = ({
   message,

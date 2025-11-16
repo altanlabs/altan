@@ -1,19 +1,21 @@
 import { Tooltip, Typography } from '@mui/material';
 import { memo, useMemo } from 'react';
+
+import { agentColors, getTaskTextStyle } from './planUtils';
+import RunningTimer from './RunningTimer';
+import { selectMessagesById } from '../../redux/slices/room/selectors/messageSelectors';
+import { makeSelectSortedThreadMessageIds } from '../../redux/slices/room/selectors/threadSelectors';
+import { useSelector } from '../../redux/store.ts';
+import { TextShimmer } from '../aceternity/text/text-shimmer';
+import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 import Iconify from '../iconify/Iconify';
 import CustomMarkdown from '../messages/CustomMarkdown';
 import MessageContent from '../messages/MessageContent';
-import { makeSelectSortedThreadMessageIds, selectMessagesById } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store';
-import { TextShimmer } from '../aceternity/text/text-shimmer';
-import { agentColors, getTaskTextStyle } from './planUtils';
-import RunningTimer from './RunningTimer';
-import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 
 const TaskItem = memo(({ task, isExpanded, onToggleExpansion, onOpenSubthread }) => {
   const isRunning = task.status?.toLowerCase() === 'running';
   const isCompleted = task.status?.toLowerCase() === 'completed' || task.status?.toLowerCase() === 'done';
-  
+
   // Get messages from the task's subthread
   const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
   const messageIds = useSelector((state) =>

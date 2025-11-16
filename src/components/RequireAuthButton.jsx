@@ -1,7 +1,7 @@
 import { Button } from '@mui/material';
 import PropTypes from 'prop-types';
 
-import { useAuthRequirement } from '../auth/AuthGuard';
+import { useAuthRequirement } from '../auth/AuthGuard.tsx';
 
 // ----------------------------------------------------------------------
 

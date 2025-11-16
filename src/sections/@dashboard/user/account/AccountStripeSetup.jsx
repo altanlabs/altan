@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import Iconify from '../../../../components/iconify';
 import useFeedbackDispatch from '../../../../hooks/useFeedbackDispatch';
-import { selectAccount, updateAccountCompany } from '../../../../redux/slices/general';
-import { useSelector } from '../../../../redux/store';
+import { selectAccount, updateAccountCompany } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 import { optimai_shop } from '../../../../utils/axios';
 
 const STRIPE_CONNECT_URL = 'https://connect.stripe.com/oauth/authorize';

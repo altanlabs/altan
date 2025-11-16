@@ -41,8 +41,8 @@ import {
   selectConnections,
   selectConnectionTypes,
 } from '../../redux/slices/connections';
-import { deleteAccountResource, selectAccount } from '../../redux/slices/general';
-import { dispatch } from '../../redux/store';
+import { deleteAccountResource, selectAccount } from '../../redux/slices/general/index.ts';
+import { dispatch } from '../../redux/store.ts';
 import { fToNow } from '../../utils/formatTime.js';
 
 import '@ag-grid-community/styles/ag-grid.css';

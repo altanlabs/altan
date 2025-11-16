@@ -2,15 +2,18 @@ import { memo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { selectAccountId } from '../redux/slices/general.js';
-import { selectAuthorizationRequests, selectMembers, sendMessage, removeAuthorizationRequest } from '../redux/slices/room.js';
-import { dispatch } from '../redux/store.js';
-import { optimai_integration } from '../utils/axios.js';
 import Iconify from './iconify/Iconify.jsx';
 import CreateConnection from './tools/CreateConnection.jsx';
 import { Button } from './ui/button.tsx';
 import { Input } from './ui/input.tsx';
 import { Label } from './ui/label.tsx';
+import { selectAccountId } from '../redux/slices/general/index.ts';
+import { selectMembers } from '../redux/slices/room/selectors/memberSelectors';
+import { selectAuthorizationRequests } from '../redux/slices/room/selectors/roomSelectors';
+import { removeAuthorizationRequest } from '../redux/slices/room/slices/roomSlice';
+import { sendMessage } from '../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../redux/store.ts';
+import { optimai_integration } from '../utils/axios.js';
 
 const AuthorizationRequests = () => {
   const accountId = useSelector(selectAccountId);

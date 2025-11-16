@@ -12,7 +12,7 @@ import { X } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { createOrUpdateSecret } from '../../../../../redux/slices/services';
-import { dispatch } from '../../../../../redux/store';
+import { dispatch } from '../../../../../redux/store.ts';
 
 function CreateSecretDrawer({ open, onClose, baseId, onSuccess, onError }) {
   const [formData, setFormData] = useState({

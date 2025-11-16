@@ -14,7 +14,7 @@ import { Input } from '../../../components/ui/input';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { cn } from '../../../lib/utils';
 import { fetchAgentDmRoom } from '../../../redux/slices/agents';
-import { selectSortedAgents } from '../../../redux/slices/general';
+import { selectSortedAgents } from '../../../redux/slices/general/index.ts';
 
 // Memoized selectors - defined outside component for optimal performance
 const selectAgents = (state) => selectSortedAgents(state) || [];

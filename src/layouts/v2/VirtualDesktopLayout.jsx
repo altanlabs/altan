@@ -3,9 +3,9 @@ import React, { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import useResponsive from '../../hooks/useResponsive';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 
 // Selector for altaners
 const selectAccountAltaners = (state) => state.general.account?.altaners;
@@ -58,7 +58,7 @@ const VirtualDesktopLayout = ({ children, title = 'Altan · Your Agentic Busines
 
       import('../../redux/slices/altaners')
         .then(({ createAltaner }) => {
-          const createPromise = import('../../redux/store').then(({ dispatch }) =>
+          const createPromise = import('../../redux/store.ts').then(({ dispatch }) =>
             dispatch(createAltaner({ name: 'New Project' }, ideaId)),
           );
 

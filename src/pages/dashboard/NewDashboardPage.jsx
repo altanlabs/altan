@@ -1,15 +1,15 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import NewLayout from '../../layouts/dashboard/new/NewLayout';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider';
 import {
   getAccountAttribute,
   startAccountAttributeLoading,
   stopAccountAttributeLoading,
-} from '../../redux/slices/general';
-import { useSelector, dispatch } from '../../redux/store';
+} from '../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../redux/store.ts';
 import AuthDialog from '../../sections/auth/AuthDialog';
 import FeaturesSection from '../../sections/new/FeaturesSection';
 import NewHeroSection from '../../sections/new/NewHeroSection';

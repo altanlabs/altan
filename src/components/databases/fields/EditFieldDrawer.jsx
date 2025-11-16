@@ -18,8 +18,8 @@ import { useSelector } from 'react-redux';
 
 import { POSTGRES_TYPES } from './utils/postgresTypes';
 import { RESERVED_WORDS } from './utils/reservedWords';
-import { updateFieldThunk, selectTableRecordsTotal, selectTableById } from '../../../redux/slices/bases';
-import { dispatch } from '../../../redux/store.js';
+import { updateFieldById, selectTableRecordsTotal, selectTableById } from '../../../redux/slices/bases.ts';
+import { dispatch } from '../../../redux/store.ts';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';
 import Iconify from '../../iconify';
@@ -99,7 +99,7 @@ const EditFieldDrawer = ({ tableId, baseId, field, open, onClose }) => {
         updateData.type = postgresType.type;
       }
 
-      await dispatch(updateFieldThunk(tableId, field.id, updateData));
+      await dispatch(updateFieldById(baseId, tableId, field.id, updateData));
       handleClose();
     } catch (error) {
       // Error will be handled by Redux

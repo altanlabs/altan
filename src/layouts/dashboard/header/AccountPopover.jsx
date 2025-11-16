@@ -19,7 +19,7 @@ import { useHistory } from 'react-router-dom';
 
 // @mui
 // auth
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 // components
 import { CustomAvatar } from '../../../components/custom-avatar';
 import Iconify from '../../../components/iconify';
@@ -29,17 +29,16 @@ import { useSettingsContext } from '../../../components/settings';
 import { useSnackbar } from '../../../components/snackbar';
 import UpgradeButton from '../../../components/UpgradeButton.jsx';
 import { useLocales } from '../../../locales';
-import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
-import { selectAccount, selectAccountCreditBalance, selectAccountSubscriptions } from '../../../redux/slices/general';
-import { updateEntry } from '../../../redux/slices/superadmin';
-import { useDispatch, useSelector } from '../../../redux/store';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider';
+import { selectAccount, selectAccountCreditBalance, selectAccountSubscriptions } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
+import { getSuperAdminService } from '../../../services';
 import NavAccount from '../nav/NavAccount.jsx';
 
 // ----------------------------------------------------------------------
 
 export default function AccountPopover() {
   const history = useHistory();
-  const dispatch = useDispatch();
   const { resolvedThemeMode, onToggleMode } = useSettingsContext();
   const ws = useHermesWebSocket();
   const { user, logout } = useAuthContext();
@@ -98,7 +97,8 @@ export default function AccountPopover() {
 
   const handleUpdateSubscriptionStatus = async (subscriptionId, newStatus) => {
     try {
-      await dispatch(updateEntry('Subscription', subscriptionId, { status: newStatus }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Subscription', subscriptionId, { status: newStatus });
       enqueueSnackbar('Subscription status updated successfully', { variant: 'success' });
       setEditingSubscription(null);
       // Refresh page to get updated data
@@ -110,7 +110,8 @@ export default function AccountPopover() {
   const handleUpdateSubscriptionCredits = async (subscriptionId, newCredits) => {
     try {
       const creditsInCents = Math.round(parseFloat(newCredits) * 100);
-      await dispatch(updateEntry('Subscription', subscriptionId, { credit_balance: creditsInCents }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Subscription', subscriptionId, { credit_balance: creditsInCents });
       enqueueSnackbar('Subscription credits updated successfully', { variant: 'success' });
       setEditingSubscription(null);
       setTempValues({});
@@ -123,7 +124,8 @@ export default function AccountPopover() {
   const handleUpdateAccountCredit = async (accountId, newCredits) => {
     try {
       const creditsInCents = Math.round(parseFloat(newCredits) * 100);
-      await dispatch(updateEntry('Account', accountId, { credit_balance: creditsInCents }));
+      const service = getSuperAdminService();
+      await service.updateEntry('Account', accountId, { credit_balance: creditsInCents });
       enqueueSnackbar('Account credit balance updated successfully', { variant: 'success' });
       setEditingAccountCredit(false);
       setTempValues({});

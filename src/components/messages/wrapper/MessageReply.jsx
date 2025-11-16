@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import MessageMinified from '../../room/thread/MessageMinified.jsx';
+import MessageMinified from './MessageMinified.jsx';
 
 const MessageReply = ({ message }) => {
   if (!message?.replied) {

@@ -2,8 +2,8 @@ import { MessageCircleQuestion, Send, CheckCircle2, ChevronDown } from 'lucide-r
 import React from 'react';
 
 import QuestionGroup from './QuestionGroup';
-import { sendMessage } from '../../../redux/slices/room';
-import { dispatch } from '../../../redux/store';
+import { sendMessage } from '../../../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../../../redux/store.ts';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button.tsx';
 import { Card, CardContent, CardHeader } from '../../ui/card';
@@ -360,4 +360,3 @@ const ClarifyingQuestions = ({ children, threadId }) => {
 };
 
 export default ClarifyingQuestions;
-

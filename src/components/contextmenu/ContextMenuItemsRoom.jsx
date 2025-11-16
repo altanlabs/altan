@@ -7,14 +7,16 @@ import { memo, useCallback } from 'react';
 import SubMenu from './SubMenu.jsx';
 import { useEmojiPicker } from '../../providers/EmojiPickerProvider.jsx';
 import {
-  copyMessage,
-  deleteMessage,
-  patchMember,
-  reactToMessage,
   setThreadDrawer,
   setThreadRespond,
-} from '../../redux/slices/room';
-import { dispatch } from '../../redux/store';
+} from '../../redux/slices/room/slices/threadsSlice';
+import {
+  copyMessage,
+  deleteMessage,
+  reactToMessage,
+} from '../../redux/slices/room/thunks/messageThunks';
+import { patchMember } from '../../redux/slices/room/thunks/roomThunks';
+import { dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify';
 
 const copy = (text) => {

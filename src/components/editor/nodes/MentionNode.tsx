@@ -7,7 +7,7 @@ import {
   EditorConfig,
 } from 'lexical';
 
-import MentionComponent from '../../room/members/MentionComponent';
+import MentionComponent from '../../messages/MentionComponent.tsx';
 
 export type SerializedMentionNode = {
   mentionName: string;

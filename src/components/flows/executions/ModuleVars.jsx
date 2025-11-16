@@ -3,7 +3,7 @@ import { memo, useMemo } from 'react';
 
 import ModuleVar from './ModuleVar.jsx';
 import { makeSelectModule } from '../../../redux/slices/flows';
-import { useSelector } from '../../../redux/store';
+import { useSelector } from '../../../redux/store.ts';
 
 const ModuleVars = ({
   moduleId,

@@ -25,7 +25,7 @@ import {
   fetchAPIToken,
   deleteAPIToken,
   selectAccount,
-} from '../../redux/slices/general';
+} from '../../redux/slices/general/index.ts';
 
 const ApiTokenDialogs = ({
   createDialogOpen,

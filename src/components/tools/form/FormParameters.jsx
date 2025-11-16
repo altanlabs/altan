@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@compo
 import { cn } from '@lib/utils';
 
 import { setCurrentToolSchema } from '../../../redux/slices/flows';
-import { dispatch } from '../../../redux/store';
+import { dispatch } from '../../../redux/store.ts';
 import FormParameter from './FormParameter';
 import { FormPathProvider } from './FormPathContext';
 

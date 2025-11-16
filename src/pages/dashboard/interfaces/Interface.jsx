@@ -8,12 +8,12 @@ import PublishDialog from './components/PublishDialog.jsx';
 import SettingsDrawer from './components/SettingsDrawer.jsx';
 import useGetInterfaceServerStatus from './hooks/useGetInterfaceServerStatus.js';
 import InterfaceLayout from './InterfaceLayout.jsx';
-import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../../providers/websocket/HermesWebSocketProvider';
 import { selectViewType } from '../../../redux/slices/altaners';
-import { clearCodeBaseState } from '../../../redux/slices/codeEditor.js';
-import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../../redux/slices/general';
+import { clearCodeBaseState } from '../../../redux/slices/codeEditor';
+import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById } from '../../../redux/slices/general/index.ts';
 // import { optimai } from '../../../utils/axios';
-import { dispatch, useSelector } from '../../../redux/store.js';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 
 function Interface({ id, chatIframeRef: chatIframeRefProp = null, operateMode = false, altanerPreviewUrl = null, altanerLiveUrl = null }) {
   const theme = useTheme();

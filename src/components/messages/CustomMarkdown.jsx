@@ -17,12 +17,12 @@ import SuggestionButton from './SuggestionButton.jsx';
 import SuggestionGroup from './SuggestionGroup.jsx';
 import YouTubeEmbed, { extractYouTubeVideoId, isYouTubeUrl } from './YouTubeEmbed.jsx';
 import { ComponentTarget } from '../../components/editor/nodes/ComponentTargetNode.tsx';
-import { makeSelectMessageContent } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
+import { makeSelectMessageContent } from '../../redux/slices/room/selectors';
+import { useSelector } from '../../redux/store.ts';
 import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeSetup.jsx';
 import CodeBlock from '../CodeBlock.jsx';
 import MermaidDiagram from '../MermaidDiagram.jsx';
-import MentionComponent from '../room/members/MentionComponent.tsx';
+import MentionComponent from './MentionComponent.tsx';
 import AuthorizationWidget from '../widgets/AuthorizationWidget.jsx';
 import CommitWidget from '../widgets/components/CommitWidget.jsx';
 import DatabaseVersionWidget from '../widgets/components/DatabaseVersionWidget.jsx';
@@ -52,7 +52,7 @@ const extractPlanId = (href) => {
 //   return match ? match[1] : null;
 // };
 
-export function extractMention(message) {
+function extractMention(message) {
   const pattern = /\[@([^]+)]\(\/member\/([0-9a-fA-F\-]{36})\)/;
   const match = message.match(pattern);
 

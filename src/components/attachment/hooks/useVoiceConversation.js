@@ -1,20 +1,26 @@
 import { useCallback } from 'react';
 
+import { getRoomPort } from '../../../di/index.ts';
+import useLocales from '../../../locales/useLocales';
 import { useVoiceConversation as useVoiceProvider } from '../../../providers/voice/VoiceConversationProvider';
+import {
+  selectMembers,
+} from '../../../redux/slices/room/selectors/memberSelectors';
+import {
+  selectIsVoiceActive,
+  selectIsVoiceConnecting,
+} from '../../../redux/slices/room/selectors/voiceSelectors';
 import {
   startVoiceConversation,
   stopVoiceConversation,
   setVoiceConversationConnecting,
-  selectIsVoiceActive,
-  selectIsVoiceConnecting,
-  selectMembers,
+} from '../../../redux/slices/room/slices/voiceSlice';
+import {
   sendMessage,
   sendAgentMessage,
-} from '../../../redux/slices/room';
-import { useSelector, dispatch } from '../../../redux/store';
-import { optimai_room } from '../../../utils/axios';
+} from '../../../redux/slices/room/thunks/messageThunks';
+import { useSelector, dispatch } from '../../../redux/store.ts';
 import { useSnackbar } from '../../snackbar';
-import useLocales from '../../../locales/useLocales';
 
 // Utility function to update thread voice status
 const updateThreadVoiceStatus = async (threadId, voiceMode) => {
@@ -22,7 +28,8 @@ const updateThreadVoiceStatus = async (threadId, voiceMode) => {
     console.log(
       `🎤 [updateThreadVoiceStatus] Setting voice mode to ${voiceMode} for thread ${threadId}`,
     );
-    await optimai_room.patch(`/thread/${threadId}/voice-status`, {
+    const roomPort = getRoomPort();
+    await roomPort.updateThreadVoiceStatus(threadId, {
       voice_mode: voiceMode,
       expires_in: 3600, // 1 hour expiration
     });

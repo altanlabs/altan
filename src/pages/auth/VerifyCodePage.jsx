@@ -4,7 +4,7 @@ import { Link as RouterLink, useHistory, useLocation } from 'react-router-dom';
 import { Link, Typography } from '@mui/material';
 
 import { EmailInboxIcon } from '../../assets/icons';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // @mui
 // routes
 import Iconify from '../../components/iconify';

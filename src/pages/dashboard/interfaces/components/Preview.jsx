@@ -15,7 +15,7 @@ import {
   clearActions,
   setPreviewMode,
 } from '../../../../redux/slices/previewControl';
-import { useSelector, dispatch } from '../../../../redux/store';
+import { useSelector, dispatch } from '../../../../redux/store.ts';
 import { optimai_pods } from '../../../../utils/axios';
 
 function Preview({

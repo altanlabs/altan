@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 
 import { fetchUsers, deleteUser, selectUsersForCloud } from '../../../redux/slices/cloud';
-import { dispatch, useSelector } from '../../../redux/store';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import { setSession } from '../../../utils/auth';
 import { optimai_cloud } from '../../../utils/axios';
 import {

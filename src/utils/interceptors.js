@@ -53,15 +53,15 @@ const onRequestFailure = async (error, axiosInstance) => {
     isRefreshing = true;
 
     try {
-      // Use user token refresh logic (works for both user and guest sessions)
+      // Use user token refresh logic
       const { accessToken } = await refreshToken(axiosInstance);
       // Set session for all axios instances, not just the failing one
-      setSessionForAllInstances(accessToken, originalRequest);
+      await setSessionForAllInstances(accessToken, originalRequest);
       processQueue(null);
       return axiosInstance(originalRequest);
     } catch (err) {
       if (err.response && err.response.status === HTTP_STATUS_UNAUTHORIZED) {
-        setSessionForAllInstances(null);
+        await setSessionForAllInstances(null);
       }
       processQueue(err);
       return Promise.reject(err);

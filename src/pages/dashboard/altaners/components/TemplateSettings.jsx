@@ -3,7 +3,7 @@ import { memo } from 'react';
 
 import { Distribution } from './settings/index.js';
 import { selectCurrentAltaner } from '../../../../redux/slices/altaners.js';
-import { useSelector } from '../../../../redux/store.js';
+import { useSelector } from '../../../../redux/store.ts';
 
 const TemplateSettings = ({ open, onClose }) => {
   const altaner = useSelector(selectCurrentAltaner);

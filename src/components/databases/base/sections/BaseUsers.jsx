@@ -35,8 +35,8 @@ import {
   selectUserCacheState,
   preloadUsersForBase,
   deleteUserFromBase,
-} from '../../../../redux/slices/bases';
-import { dispatch } from '../../../../redux/store';
+} from '../../../../redux/slices/bases.ts';
+import { dispatch } from '../../../../redux/store.ts';
 
 // Helper to extract login method from Supabase auth.users
 const getLoginMethod = (user) => {

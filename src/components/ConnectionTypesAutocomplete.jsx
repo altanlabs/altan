@@ -3,9 +3,9 @@ import { memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 import IconRenderer from './icons/IconRenderer';
-import { useAuthContext } from '../auth/useAuthContext';
+import { useAuthContext } from '../auth/useAuthContext.ts';
 import { selectConnectionTypes } from '../redux/slices/connections';
-import { selectApps } from '../redux/slices/general';
+import { selectApps } from '../redux/slices/general/index.ts';
 
 function ConnectionTypesAutocomplete({ value, onChange, internal = false }) {
   const { user } = useAuthContext();

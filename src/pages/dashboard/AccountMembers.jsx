@@ -22,8 +22,8 @@ import {
   selectAccountAssetsInitialized,
   selectGeneralInitialized,
   selectRoles,
-} from '../../redux/slices/general';
-import { dispatch } from '../../redux/store';
+} from '../../redux/slices/general/index.ts';
+import { dispatch } from '../../redux/store.ts';
 
 // ----------------------------------------------------------------------
 

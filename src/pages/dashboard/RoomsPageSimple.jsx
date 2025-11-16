@@ -20,20 +20,24 @@ import { memo, useEffect, useState, useCallback } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import Iconify from '../../components/iconify';
-import Room from '../../components/room/Room';
+import RoomContainer from '../../components/new-room/RoomContainer.tsx';
 import { CompactLayout } from '../../layouts/dashboard';
 import CreateRoomDialog from '../../layouts/dashboard/header/CreateRoomDialog';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider';
 import {
   selectUserRooms,
   selectUserRoomsPagination,
+} from '../../redux/slices/room/selectors/roomSelectors.ts';
+import {
+  setUserRooms,
+  clearRoomState,
+} from '../../redux/slices/room/slices/roomSlice.ts';
+import {
   fetchUserRooms,
   fetchMoreUserRooms,
   deleteRoom,
-  setUserRooms,
-  clearRoomState,
-} from '../../redux/slices/room';
-import { useSelector, useDispatch } from '../../redux/store';
+} from '../../redux/slices/room/thunks/roomThunks.ts';
+import { useSelector, useDispatch } from '../../redux/store.ts';
 
 const DRAWER_WIDTH = 260;
 
@@ -488,7 +492,7 @@ const RoomsPageSimple = () => {
             }}
           >
             {roomId && roomId !== 'undefined' && roomId.trim() !== '' ? (
-              <Room
+              <RoomContainer
                 key={roomId}
                 roomId={roomId}
                 header={true}

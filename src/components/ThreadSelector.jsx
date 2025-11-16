@@ -7,7 +7,7 @@ import {
 import { useState, useEffect } from 'react';
 
 import { CustomAvatar } from './custom-avatar';
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 
 export default function ThreadSelector({ value, onChange }) {
   console.log('value', value);

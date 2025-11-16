@@ -5,8 +5,8 @@ import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
 import {
   // PAGES
   AgentsPage,
-  LoginPage,
-  RegisterPage,
+  // LoginPage,
+  // RegisterPage,
   VerifyCodePage,
   NewPasswordPage,
   ResetPasswordPage,
@@ -15,21 +15,15 @@ import {
   AgentPage,
   AgentSharePage,
   AgentCardPage,
-  BasePage,
   CloudPage,
   ProjectPage,
-  ProjectPageMobileTest,
-  BasesPage,
   ExecutionsPage,
-  // DashboardPage,
   NewDashboardPage,
   UsagePage,
   UsageDatabasePage,
-  IntegrationCreator,
   MediaPage,
   UserProfilePage,
   UserAccountPage,
-  AdminPage,
   MarketplacePage,
   TemplatePage,
   CloneTemplatePage,
@@ -43,17 +37,11 @@ import {
   Page404,
   PricingPage,
   PurchaseSuccessPage,
-  RemixPage,
   ComingSoonPage,
   MaintenancePage,
-  SuperAdminMain,
-  InternalUtils,
-  ExternalUtils,
   InterfacesPage,
   InterfacePage,
   ReferralsPage,
-  StandaloneBasePage,
-  OverallActivityPage,
   AccountPage,
   AccountsPage,
   RoomPage,
@@ -70,16 +58,14 @@ import {
   V2RoomsPage,
   V2RoomPage,
 } from './elements.jsx';
-import AuthGuard from '../auth/AuthGuard.jsx';
-import GuestGuard from '../auth/GuestGuard.jsx';
+import AuthGuard from '../auth/AuthGuard.tsx';
+// import GuestGuard from '../auth/GuestGuard.jsx';
 import PageTracker from '../components/analytics/PageTracker.jsx';
 import ScrollToTop from '../components/scroll-to-top/ScrollToTop.js';
 import TrackingParamsCapture from '../components/tracking/TrackingParamsCapture.jsx';
 import CompactLayout from '../layouts/compact';
-// import DashboardLayout from '../layouts/dashboard';
 import NewLayout from '../layouts/dashboard/new/NewLayout.jsx';
 import ProjectLayout from '../layouts/dashboard/ProjectLayout.jsx';
-import SuperAdminLayout from '../layouts/superadmin/SuperAdminLayout.jsx';
 import DashboardDataProvider from '../providers/DashboardDataProvider.jsx';
 
 // ----------------------------------------------------------------------
@@ -92,7 +78,7 @@ const Router = () => {
       <TrackingParamsCapture />
       <Switch>
         {/* Auth Routes */}
-        <Route
+        {/* <Route
           path="/auth/login"
           exact
         >
@@ -108,7 +94,7 @@ const Router = () => {
           <GuestGuard>
             <RegisterPage />
           </GuestGuard>
-        </Route>
+        </Route> */}
 
         <Route
           path="/auth/reset-password"
@@ -189,62 +175,6 @@ const Router = () => {
           exact
         >
           <AgentCardPage />
-        </Route>
-
-        {/* SuperAdmin Routes */}
-        <Route
-          path="/xsup"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <SuperAdminLayout>
-              <SuperAdminMain />
-            </SuperAdminLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/xsup/internal"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <SuperAdminLayout>
-              <InternalUtils />
-            </SuperAdminLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/xsup/external"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <SuperAdminLayout>
-              <ExternalUtils />
-            </SuperAdminLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/xsup/creator"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <SuperAdminLayout>
-              <IntegrationCreator />
-            </SuperAdminLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/xsup/activity"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <SuperAdminLayout>
-              <OverallActivityPage />
-            </SuperAdminLayout>
-          </AuthGuard>
         </Route>
 
         {/* Project Routes */}
@@ -473,96 +403,6 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
-        {/* Mobile Test Routes */}
-        <Route
-          path="/mobile-test/:altanerId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <ProjectLayout>
-              <ProjectPageMobileTest />
-            </ProjectLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/mobile-test/:altanerId/c/:componentId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <ProjectLayout>
-              <ProjectPageMobileTest />
-            </ProjectLayout>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/mobile-test/:altanerId/c/:componentId/i/:itemId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <ProjectLayout>
-              <ProjectPageMobileTest />
-            </ProjectLayout>
-          </AuthGuard>
-        </Route>
-
-        {/* Remix Routes */}
-        <Route
-          path="/remix/:altanerId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <RemixPage />
-          </AuthGuard>
-        </Route>
-
-        {/* Database Routes */}
-        <Route
-          path="/database"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <StandaloneBasePage />
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/database/:baseId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <StandaloneBasePage />
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/database/:baseId/tables/:tableId/views/:viewId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <StandaloneBasePage />
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/database/:baseId/tables/:tableId/views/:viewId/records/:recordId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <StandaloneBasePage />
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/database/:baseId/tables/:tableId/records/:recordId"
-          exact
-        >
-          <AuthGuard requireAuth={true}>
-            <StandaloneBasePage />
-          </AuthGuard>
-        </Route>
-
         {/* Workflow Routes */}
         <Route
           path="/workflow/:id"
@@ -613,20 +453,6 @@ const Router = () => {
           </AuthGuard>
         </Route>
 
-        {/* Bases Routes */}
-        <Route
-          path="/bases"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasesPage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
         {/* Cloud Routes - New routing structure */}
         <Route
           path="/cloud/:cloudId"
@@ -662,72 +488,6 @@ const Router = () => {
             <DashboardDataProvider>
               <NewLayout>
                 <CloudPage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        {/* Legacy Base Routes - Redirect to Cloud */}
-        <Route
-          path="/bases/:baseId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasePage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/bases/:baseId/tables/:tableId/views/:viewId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasePage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/bases/:baseId/tables/:tableId/views/:viewId/records/:recordId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasePage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/bases/:baseId/tables/:tableId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasePage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
-          path="/bases/:baseId/tables/:tableId/records/:recordId"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <BasePage />
               </NewLayout>
             </DashboardDataProvider>
           </AuthGuard>
@@ -987,19 +747,6 @@ const Router = () => {
         </Route>
 
         <Route
-          path="/admin"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardDataProvider>
-              <NewLayout>
-                <AdminPage />
-              </NewLayout>
-            </DashboardDataProvider>
-          </AuthGuard>
-        </Route>
-
-        <Route
           path="/integration"
           exact
         >
@@ -1203,29 +950,6 @@ const Router = () => {
             </DashboardDataProvider>
           </AuthGuard>
         </Route>
-
-        {/* Legacy Dashboard - Deprecated */}
-        {/* <Route
-          path="/legacy"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <DashboardPage />
-            </DashboardLayout>
-          </AuthGuard>
-        </Route> */}
-
-        {/* <Route
-          path="/legacy/:mode"
-          exact
-        >
-          <AuthGuard requireAuth={false}>
-            <DashboardLayout>
-              <DashboardPage />
-            </DashboardLayout>
-          </AuthGuard>
-        </Route> */}
 
         {/* Error Pages */}
         <Route

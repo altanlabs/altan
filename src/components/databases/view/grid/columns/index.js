@@ -1,20 +1,13 @@
-import { getAttachmentColumnDef } from './attachmentColumnDef';
 import { getCheckboxColumnDef } from './checkboxColumnDef.jsx';
 import { getCreatedAtColumnDef } from './createdAtColumnDef.jsx';
 import { getCreatedByColumnDef } from './createdByColumnDef.jsx';
-import { getCurrencyColumnDef } from './currencyColumnDef.jsx';
 import { getDefaultColumnDef } from './defaultColumnDef.jsx';
 import { getIdColumnDef } from './idColumnDef.jsx';
 import { getJsonColumnDef } from './jsonColumnDef.jsx';
-import { getLongTextColumnDef } from './longTextColumnDef.jsx';
 import { getNewColumnDef } from './newColumnDef.jsx';
-import { getRatingColumnDef } from './ratingColumnDef.jsx';
 import { getReferenceColumnDef } from './referenceColumnDef.jsx';
-import { getSelectColumnDef } from './selectColumnDef.jsx';
-import { getTriggerColumnDef } from './triggerColumnDef.jsx';
 import { getUpdatedAtColumnDef } from './updatedAtColumnDef.jsx';
 import { getUpdatedByColumnDef } from './updatedByColumnDef.jsx';
-import { getUrlColumnDef } from './urlColumnDef.jsx';
 import { getUserColumnDef } from './userColumnDef.jsx';
 import { FIELD_TYPES } from '../../../fields/utils/fieldTypes';
 

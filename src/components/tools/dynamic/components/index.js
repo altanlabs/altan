@@ -182,17 +182,11 @@ const AddressAutocompleteReal = DynamicLoadable(
   lazy(() => import('../../../AddressAutocompleteReal.jsx')),
 );
 const ThreadSelector = DynamicLoadable(lazy(() => import('../../../ThreadSelector.jsx')));
-const TableAutocomplete = DynamicLoadable(lazy(() => import('../../../TableAutocomplete.jsx')));
 const InterfaceAutocomplete = DynamicLoadable(
   lazy(() => import('../../../InterfaceAutocomplete.jsx')),
 );
-const BaseAutocomplete = DynamicLoadable(
-  lazy(() => import('../../../BaseAutocomplete.jsx')),
-);
 const HTMLEditor = DynamicLoadable(lazy(() => import('../../../HTMLEditor.jsx')));
-const AltanerSubscriptionGroup = DynamicLoadable(
-  lazy(() => import('../../../AltanerSubscriptionGroup.jsx')),
-);
+
 const TemplatePublicName = DynamicLoadable(lazy(() => import('../../../TemplatePublicName.jsx')));
 
 const PriceEditor = DynamicLoadable(lazy(() => import('../../../PriceEditor.jsx')));
@@ -240,11 +234,8 @@ export const COMPONENTS = {
   FileToUrl,
   AddressAutocompleteReal,
   ThreadSelector,
-  TableAutocomplete,
   InterfaceAutocomplete,
-  BaseAutocomplete,
   HTMLEditor,
-  AltanerSubscriptionGroup,
   PriceEditor,
   ActionTypeSelector,
   MembersAutocomplete,

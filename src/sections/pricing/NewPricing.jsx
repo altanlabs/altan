@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Check, Loader2 } from 'lucide-react';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -10,8 +10,8 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { Switch } from '../../components/ui/switch';
 import { Badge } from '../../components/ui/badge';
 import { analytics } from '../../lib/analytics';
-import { selectAccountId } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectAccountId } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
 

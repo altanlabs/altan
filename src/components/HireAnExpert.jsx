@@ -6,7 +6,7 @@ import { useHistory } from 'react-router-dom';
 import CustomDialog from './dialogs/CustomDialog';
 import HeaderIconButton from './HeaderIconButton';
 import Iconify from './iconify';
-import { selectAccountId, selectHasGrowthSubscription } from '../redux/slices/general';
+import { selectAccountId, selectHasGrowthSubscription } from '../redux/slices/general/index.ts';
 import { optimai_shop } from '../utils/axios'; // Adjust the import path as needed
 
 function HireAnExpert({ open, setOpen, iconSize = 20 }) {

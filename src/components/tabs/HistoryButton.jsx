@@ -1,18 +1,16 @@
 import { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
+import ThreadMinified from './ThreadMinified.jsx';
 import { cn } from '../../lib/utils.ts';
 import {
-  fetchRoomAllThreads,
-  selectRoomStateInitialized,
-  selectRoomStateLoading,
   selectThreadsById,
   selectRoomThreadsIds,
-  switchToThreadInTab,
-} from '../../redux/slices/room';
-import { dispatch } from '../../redux/store.js';
+} from '../../redux/slices/room/selectors/threadSelectors';
+import { selectUIInitialized, selectUILoading } from '../../redux/slices/room/selectors/uiSelectors';
+import { fetchRoomAllThreads, switchToThreadInTab } from '../../redux/slices/room/thunks/threadThunks';
+import { dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify.jsx';
-import ThreadMinified from '../room/thread/ThreadMinified.jsx';
 import { Button } from '../ui/button.tsx';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -22,8 +20,8 @@ const HistoryButton = ({ disabled = false, size = 'small' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const allThreadsInitialized = useSelector(selectRoomStateInitialized('allThreads'));
-  const allThreadsLoading = useSelector(selectRoomStateLoading('allThreads'));
+  const allThreadsInitialized = useSelector(selectUIInitialized('allThreads'));
+  const allThreadsLoading = useSelector(selectUILoading('allThreads'));
   const threadsById = useSelector(selectThreadsById);
   const threadIds = useSelector(selectRoomThreadsIds);
 

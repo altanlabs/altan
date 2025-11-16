@@ -7,10 +7,10 @@ import LeftSidebarWidgets from './components/LeftSidebarWidgets';
 import V2TopBar from './components/V2TopBar';
 import CreateAnything from '../dashboard/components/CreateAnything';
 import ChatDrawer from '../../layouts/dashboard/header/ChatDrawer';
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import VirtualDesktopLayout from '../../layouts/v2/VirtualDesktopLayout';
-import { getAccountAttribute } from '../../redux/slices/general';
-import { dispatch } from '../../redux/store';
+import { getAccountAttribute } from '../../redux/slices/general/index.ts';
+import { dispatch } from '../../redux/store.ts';
 
 const selectAccountId = (state) => state.general.account?.id;
 const selectAltanersInitialized = (state) => state.general.accountAssetsInitialized.altaners;

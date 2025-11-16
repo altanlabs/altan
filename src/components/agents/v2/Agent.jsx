@@ -34,12 +34,12 @@ import McpTab from './tabs/McpTab';
 import SecurityTab from './tabs/SecurityTab';
 import ToolsTab from './tabs/ToolsTab';
 import VoiceTab from './tabs/VoiceTab';
-// import { useAuthContext } from '../../../auth/useAuthContext'; // Unused for now
+// import { useAuthContext } from '../../../auth/useAuthContext.ts'; // Unused for now
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 // redux
 import CreateAgentDashboard from '../../../pages/dashboard/components/CreateAgentDashboard';
 import { fetchAgentRoom, updateAgent } from '../../../redux/slices/agents';
-import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general';
+import { deleteAccountAgent, createTemplate } from '../../../redux/slices/general/index.ts';
 // sections
 // components
 import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';

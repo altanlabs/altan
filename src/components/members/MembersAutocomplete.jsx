@@ -3,8 +3,8 @@ import { memo, useCallback, useEffect, useState, useMemo } from 'react';
 
 import { useAccountMembers } from '../../hooks/useAccountMembers';
 import { useDebounce } from '../../hooks/useDebounce';
-import { selectAccount } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { selectAccount } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { CustomAvatar } from '../custom-avatar';
 import Iconify from '../iconify';
 

@@ -4,7 +4,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useHistory } from 'react-router-dom';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { duplicateBase } from '../../../redux/slices/bases';
+import { duplicateBase } from '../../../redux/slices/bases.ts';
 import formatData from '../../../utils/formatData';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect.tsx';
 import InteractiveButton from '../../buttons/InteractiveButton.jsx';

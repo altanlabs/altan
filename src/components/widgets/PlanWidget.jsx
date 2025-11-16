@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import analytics from '../../lib/analytics';
-import { switchToThread } from '../../redux/slices/room';
+import { switchToThread } from '../../redux/slices/room/thunks/threadThunks';
 import {
   fetchPlan,
   selectPlanById,
@@ -12,7 +12,7 @@ import {
   selectPlanError,
   setPlan,
 } from '../../redux/slices/tasks';
-import { useDispatch, useSelector } from '../../redux/store';
+import { useDispatch, useSelector } from '../../redux/store.ts';
 import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 import Iconify from '../iconify/Iconify';
 import { agentColors } from '../plan/planUtils';

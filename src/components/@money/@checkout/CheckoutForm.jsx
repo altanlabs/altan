@@ -9,7 +9,7 @@ import {
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { updateOrder } from '../../../redux/slices/money';
 import Iconify from '../../iconify/Iconify';
 

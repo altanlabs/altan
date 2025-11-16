@@ -9,7 +9,7 @@ import Main from './Main.jsx';
 import LoadingScreen from '../../components/loading-screen/LoadingScreen.jsx';
 // import VoiceConversation from '../../pages/dashboard/components/VoiceConversation.jsx';
 import { VoiceConversationProvider } from '../../providers/voice/VoiceConversationProvider.jsx';
-import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider.jsx';
+import { useHermesWebSocket } from '../../providers/websocket/HermesWebSocketProvider';
 import {
   clearCurrentAltaner,
   getAltanerById,
@@ -19,15 +19,15 @@ import {
   selectDisplayMode,
   selectOperateMode,
 } from '../../redux/slices/altaners';
-import { getConnections, getConnectionTypes } from '../../redux/slices/connections';
-import { getFlows } from '../../redux/slices/flows';
+import { getConnections, getConnectionTypes } from '../../redux/slices/connections.ts';
+import { getFlows } from '../../redux/slices/flows.ts';
 import {
   getAccount,
   getAccountAttribute,
   getAccountMembers,
   getRoles,
-} from '../../redux/slices/general';
-import { dispatch, useSelector } from '../../redux/store';
+} from '../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../redux/store.ts';
 
 const selectAccountId = (state) => state.general.account?.id;
 const selectAccountLoading = (state) => state.general.generalLoading.account;

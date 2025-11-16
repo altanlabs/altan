@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 
+import { AgentDetailDialog } from './agent-detail';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
+import { cn } from '../../../lib/utils';
+import { selectMembers, selectRoomId } from '../../../redux/slices/room/selectors';
+import { useSelector } from '../../../redux/store.ts';
 import DynamicAgentAvatar from '../../agents/DynamicAgentAvatar';
 import Iconify from '../../iconify/Iconify.jsx';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
-import { useAuthContext } from '../../../auth/useAuthContext';
-import { cn } from '../../../lib/utils';
-import { selectMembers, selectRoomId } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store';
-
-import { AgentDetailDialog } from './agent-detail';
 
 const AgentSelectionChip = ({
   agents = [],

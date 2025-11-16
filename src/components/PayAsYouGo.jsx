@@ -5,7 +5,7 @@
 
 // import Iconify from '../components/iconify';
 // import NavAccount from '../layouts/dashboard/nav/NavAccount.jsx';
-// import { selectAccountId, selectAccountSubscriptions } from '../redux/slices/general';
+// import { selectAccountId, selectAccountSubscriptions } from '../redux/slices/general/index.ts';
 // import { optimai_shop, optimai } from '../utils/axios';
 
 // export default function PayAsYouGoPricing() {

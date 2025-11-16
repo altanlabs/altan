@@ -3,7 +3,6 @@ import React, { useState, memo, useEffect, useCallback } from 'react';
 
 import StaticDrawerNavDesktop from './StaticDrawerNavDesktop';
 import StaticDrawerNavMobile from './StaticDrawerNavMobile';
-import AltanerComponentDialog from '../components/AltanerComponentDialog';
 
 const StaticDrawerNav = ({ altanerId = null, ...navProps }) => {
   const [createComponent, setIsCreateComponent] = useState(false);
@@ -11,7 +10,6 @@ const StaticDrawerNav = ({ altanerId = null, ...navProps }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const onClickCreateComponent = useCallback(() => setIsCreateComponent(true), []);
-  const onCloseCreateComponent = useCallback(() => setIsCreateComponent(false), []);
 
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -43,11 +41,6 @@ const StaticDrawerNav = ({ altanerId = null, ...navProps }) => {
           {...navProps}
         />
       )}
-      <AltanerComponentDialog
-        altanerId={altanerId}
-        open={createComponent}
-        onClose={onCloseCreateComponent}
-      />
     </>
   );
 };

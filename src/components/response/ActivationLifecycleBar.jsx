@@ -1,8 +1,9 @@
 import { m, AnimatePresence } from 'framer-motion';
 import { memo, useMemo, useState } from 'react';
 
-import { selectActivationLifecycles, selectMembers } from '../../redux/slices/room.js';
-import { useSelector } from '../../redux/store.js';
+import { selectActivationLifecycles } from '../../redux/slices/room/selectors/lifecycleSelectors';
+import { selectMembers } from '../../redux/slices/room/selectors/memberSelectors';
+import { useSelector } from '../../redux/store.ts';
 import AgentOrbAvatar from '../agents/AgentOrbAvatar.jsx';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 

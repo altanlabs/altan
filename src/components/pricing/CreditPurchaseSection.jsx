@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { selectAccountId } from '../../redux/slices/general';
+import { selectAccountId } from '../../redux/slices/general/index.ts';
 import { openUrl } from '../../utils/auth';
 import { optimai_shop } from '../../utils/axios';
 import { Button } from '../ui/button';

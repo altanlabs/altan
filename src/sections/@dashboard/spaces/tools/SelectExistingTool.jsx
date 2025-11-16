@@ -20,7 +20,7 @@ import {
   selectAccountConnectionsInitialized,
 } from '../../../../redux/slices/connections';
 import { createToolLink } from '../../../../redux/slices/spaces';
-import { useSelector } from '../../../../redux/store';
+import { useSelector } from '../../../../redux/store.ts';
 
 function extractToolsFromConnections(connections) {
   if (!Array.isArray(connections)) {

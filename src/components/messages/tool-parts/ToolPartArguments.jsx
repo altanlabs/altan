@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useCallback, useRef, useEffect } from 'react';
 
-import { makeSelectToolPartArguments } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectToolPartArguments } from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 
 const ToolPartArguments = ({ partId, isExpanded, onScroll }) => {
   const contentRef = useRef(null);

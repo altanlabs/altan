@@ -9,7 +9,7 @@ import * as Yup from 'yup';
 import FormProvider, { RHFTextField, RHFUploadAvatar } from '../../../../components/hook-form';
 import Iconify from '../../../../components/iconify';
 import useFeedbackDispatch from '../../../../hooks/useFeedbackDispatch';
-import { selectAccount, updateAccountCompany } from '../../../../redux/slices/general';
+import { selectAccount, updateAccountCompany } from '../../../../redux/slices/general/index.ts';
 import { uploadMedia } from '../../../../utils/media';
 
 function AccountSettings() {

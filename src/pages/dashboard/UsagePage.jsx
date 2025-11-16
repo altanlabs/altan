@@ -45,8 +45,8 @@ import {
 import { CustomAvatar } from '../../components/custom-avatar';
 import StaticGradientAvatar from '../../components/agents/StaticGradientAvatar';
 import Iconify from '../../components/iconify/Iconify';
-import { selectAccountId, selectAccountSubscriptions, selectSortedAgents } from '../../redux/slices/general';
-import { useSelector as useReduxSelector } from '../../redux/store';
+import { selectAccountId, selectAccountSubscriptions, selectSortedAgents } from '../../redux/slices/general/index.ts';
+import { useSelector as useReduxSelector } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
 
 // Simplified credit types - only AI and Cloud

@@ -24,16 +24,15 @@ import { useHistory } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 
 import AccountDetailRow from './AccountDetailRow.tsx';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { CustomAvatar } from '../../../components/custom-avatar';
 import CustomDialog from '../../../components/dialogs/CustomDialog.jsx';
 import Iconify from '../../../components/iconify/Iconify.jsx';
 import { useDebounce } from '../../../hooks/useDebounce.js';
 import { useFilteredAccounts } from '../../../hooks/useFilteredAccounts.js';
-import CreateAccount from '../../../pages/dashboard/superadmin/legacy/CreateAccount.jsx';
-import { clearAccountState, selectAccountDetails, setAccount } from '../../../redux/slices/general';
-import { searchAccounts } from '../../../redux/slices/superadmin';
-import { dispatch, useSelector } from '../../../redux/store';
+import { clearAccountState, selectAccountDetails, setAccount } from '../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
+import { getSuperAdminService } from '../../../services';
 // import { bgBlur } from '../../../utils/cssStyles';
 import addAccountIdToUrl from '../../../utils/addAccountIdToUrl.ts';
 
@@ -59,7 +58,6 @@ const StyledRoot = styled('div')(({ theme, isDashboard }) => ({
 
 // ----------------------------------------------------------------------
 
-const selectAllAccounts = (state) => state.superadmin.accounts;
 const selectAccounts = (state) => state.general.accounts;
 
 function NavAccount({ mini = false, isDashboard = false }) {
@@ -69,7 +67,6 @@ function NavAccount({ mini = false, isDashboard = false }) {
   const history = useHistory();
   const account = useSelector(selectAccountDetails);
   const accounts = useSelector(selectAccounts);
-  const allAccounts = useSelector(selectAllAccounts);
 
   // Use refs to prevent unnecessary re-renders
   const searchTimeoutRef = useRef(null);
@@ -95,7 +92,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
 
   // For superadmins, use search results when searching, otherwise use filtered accounts
   const filteredAccounts = useFilteredAccounts({
-    allAccounts: user?.xsup && showAllAccounts && hasAnySearchTerm ? searchResults : allAccounts,
+    allAccounts: user?.xsup && showAllAccounts && hasAnySearchTerm ? searchResults : [],
     accounts,
     searchTerm: user?.xsup && showAllAccounts && hasAnySearchTerm ? '' : searchTerm, // Don't double-filter if using search results
     showAllAccounts,
@@ -143,7 +140,8 @@ function NavAccount({ mini = false, isDashboard = false }) {
     setIsSearching(true);
 
     try {
-      const results = await dispatch(searchAccounts(searchParams));
+      const service = getSuperAdminService();
+      const results = await service.searchAccounts(searchParams);
       setSearchResults(results || []);
     } catch (error) {
       console.error('Search failed:', error);
@@ -168,9 +166,6 @@ function NavAccount({ mini = false, isDashboard = false }) {
       if (showAllAccounts && hasAnySearchTerm) {
         // When searching, use search results
         sourceAccounts = searchResults;
-      } else if (showAllAccounts) {
-        // When showing all accounts but not searching, use allAccounts
-        sourceAccounts = allAccounts;
       } else {
         // When showing user's accounts, use accounts
         sourceAccounts = accounts;
@@ -190,7 +185,7 @@ function NavAccount({ mini = false, isDashboard = false }) {
       handleClose();
       history.replace('/');
     },
-    [accounts, allAccounts, searchResults, account, location, handleClose, history, showAllAccounts, hasAnySearchTerm],
+    [accounts, searchResults, account, location, handleClose, history, showAllAccounts, hasAnySearchTerm],
   );
 
   const handleSwitchChange = useCallback((event) => setShowAllAccounts(event.target.checked), []);
@@ -446,7 +441,6 @@ function NavAccount({ mini = false, isDashboard = false }) {
         />
       </DialogContent>
       <DialogActions>
-        <CreateAccount />
         <Button onClick={handleClose}>Close</Button>
       </DialogActions>
     </>

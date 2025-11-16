@@ -1,8 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { optimai_room } from '../../../utils/axios';
-import { dispatch } from '../../../redux/store';
-import { sendMessage, addThread, setThreadMain } from '../../../redux/slices/room';
+
+import { getRoomPort } from '../../../di/index.ts';
 import analytics from '../../../lib/analytics';
+import { addThread, setThreadMain } from '../../../redux/slices/room/slices/threadsSlice';
+import { sendMessage } from '../../../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../../../redux/store';
 
 interface UseVoiceRecordingProps {
   threadId: string;
@@ -123,10 +125,8 @@ export const useVoiceRecording = ({
           if (threadId === 'new') {
             // Create thread first
             const threadName = messageContent.substring(0, 50).trim() || 'New Chat';
-            const threadResponse = await optimai_room.post(`/v2/rooms/${roomId}/threads`, {
-              name: threadName,
-            });
-            const newThread = threadResponse.data;
+            const roomPort = getRoomPort();
+            const newThread = await roomPort.createThread(roomId, { name: threadName });
 
             dispatch(addThread(newThread));
             dispatch(setThreadMain({ current: newThread.id }));

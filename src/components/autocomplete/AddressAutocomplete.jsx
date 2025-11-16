@@ -2,7 +2,7 @@ import { TextField, Box, Button } from '@mui/material';
 import React, { useState, useEffect, useRef } from 'react';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
-import { addAccountAddress } from '../../redux/slices/general';
+import { addAccountAddress } from '../../redux/slices/general/index.ts';
 
 const APIKey = 'AIzaSyCO7JBm4dwdp9so6h3GTxHgDavcLN5hpHw';
 

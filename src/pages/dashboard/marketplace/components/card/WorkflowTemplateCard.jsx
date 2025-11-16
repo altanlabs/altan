@@ -6,8 +6,8 @@ import { useHistory } from 'react-router-dom';
 import Iconify from '../../../../../components/iconify';
 import IconRenderer from '../../../../../components/icons/IconRenderer';
 import { selectConnectionTypes } from '../../../../../redux/slices/connections';
-import { selectCustomConnectionTypes } from '../../../../../redux/slices/general';
-import { useSelector } from '../../../../../redux/store';
+import { selectCustomConnectionTypes } from '../../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../../redux/store.ts';
 
 const selectAllConnectionTypes = createSelector(
   [selectConnectionTypes, selectCustomConnectionTypes],

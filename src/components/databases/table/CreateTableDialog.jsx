@@ -3,7 +3,7 @@ import { useCallback, memo } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { createTable } from '../../../redux/slices/bases';
+import { createTable } from '../../../redux/slices/bases.ts';
 import formatData from '../../../utils/formatData';
 import { CardTitle } from '../../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../../buttons/InteractiveButton';

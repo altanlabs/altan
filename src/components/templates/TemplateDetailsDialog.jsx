@@ -5,8 +5,8 @@ import ReactPlayer from 'react-player/youtube';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import { useAuthContext } from '../../auth/useAuthContext';
-import { selectAccount, selectIsAccountFree } from '../../redux/slices/general';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
+import { selectAccount, selectIsAccountFree } from '../../redux/slices/general/index.ts';
 import { optimai_shop } from '../../utils/axios';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import InteractiveHoverButton from '../agents/InteractiveHoverButton';

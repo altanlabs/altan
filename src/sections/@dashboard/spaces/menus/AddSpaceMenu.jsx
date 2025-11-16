@@ -3,7 +3,7 @@ import { memo, useState } from 'react';
 
 import Iconify from '../../../../components/iconify/Iconify';
 import { setNavigationActive } from '../../../../redux/slices/spaces';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 
 const AddSpaceMenu = ({ currentId, createNewSpace }) => {
   const [anchorEl, setAnchorEl] = useState(null);

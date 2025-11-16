@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { retryResponse, selectRoomId, makeSelectMemberById } from '../../redux/slices/room.js';
-import { dispatch } from '../../redux/store.js';
+import { makeSelectMemberById } from '../../redux/slices/room/selectors/memberSelectors';
+import { selectRoomId } from '../../redux/slices/room/selectors/roomSelectors';
+import { retryResponse } from '../../redux/slices/room/thunks/messageThunks';
+import { dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify/Iconify.jsx';
 
 const MessageError = ({ message }) => {

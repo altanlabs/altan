@@ -11,13 +11,13 @@ import {
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import Iconify from '../../components/iconify';
 import Label from '../../components/label';
-import { createSubscription } from '../../redux/slices/subscription';
+import { getSubscriptionService } from '../../services';
 
 const animationUrls = {
   bronze: 'https://assets10.lottiefiles.com/private_files/lf30_rhzlr20k.json',
@@ -27,21 +27,26 @@ const animationUrls = {
 };
 
 export default function PricingPlanCard({ card, isYearly, index, isEnterprise, sx, ...other }) {
-  const history = useHistory();;
+  const history = useHistory(); ;
   const { user } = useAuthContext();
   const { account } = useSelector((state) => state.general);
   // console.log(account);
   const { subscription, price, caption, lists, labelAction } = card;
-  const dispatch = useDispatch();
 
   const handleSubscription = useCallback(
-    (userEmail, plan, account_id) => {
-      dispatch(createSubscription({ userEmail, plan, account_id, isYearly }));
+    async (userEmail, plan, account_id) => {
+      const subscriptionService = getSubscriptionService();
+      await subscriptionService.createSubscription({
+        userEmail,
+        plan,
+        account_id,
+        isYearly,
+      });
     },
-    [dispatch, isYearly],
+    [isYearly],
   );
 
-  const onButtonClick = useCallback(() => {
+  const onButtonClick = useCallback(async () => {
     try {
       if (typeof window !== 'undefined' && window.fbq) {
         const eventData = {};
@@ -55,11 +60,11 @@ export default function PricingPlanCard({ card, isYearly, index, isEnterprise, s
     if (subscription === 'free' || !user) {
       history.push('/auth/register');
     } else if (!account) {
-              history.push('/platform/account/settings?tab=billing');
+      history.push('/platform/account/settings?tab=billing');
     } else {
-      handleSubscription(user.email, subscription, account.id);
+      await handleSubscription(user.email, subscription, account.id);
     }
-  }, [handleSubscription, subscription, user]);
+  }, [handleSubscription, subscription, user, account, price, history]);
 
   const renderPlayer = (subscription) => {
     return (

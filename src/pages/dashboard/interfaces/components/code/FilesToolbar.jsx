@@ -16,7 +16,7 @@ import {
   selectActiveFile,
   selectFilesUnsavedChanges,
 } from '../../../../../redux/slices/codeEditor';
-import { dispatch, useSelector } from '../../../../../redux/store';
+import { dispatch, useSelector } from '../../../../../redux/store.ts';
 
 const FileToolbar = ({ interfaceId }) => {
   const openFiles = useSelector(selectOpenFiles);

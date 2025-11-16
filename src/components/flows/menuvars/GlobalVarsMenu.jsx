@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 
-import { closeGlobalVarsMenu, selectGlobalVars } from '../../../redux/slices/general';
-import { dispatch, useSelector } from '../../../redux/store';
+import { closeGlobalVarsMenu, selectGlobalVars } from '../../../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../../../redux/store.ts';
 import ModuleInput from '../../../sections/@dashboard/flows/modulemenu/input/ModuleInput.jsx';
 import FloatingWindow from '../../floating/FloatingWindow.jsx';
 

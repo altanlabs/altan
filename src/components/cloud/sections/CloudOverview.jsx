@@ -12,8 +12,8 @@ import {
 } from './overview/components';
 import { useToast } from '../../../hooks/use-toast';
 import { selectCloudById } from '../../../redux/slices/cloud';
-import { selectAccountId } from '../../../redux/slices/general';
-import { useSelector } from '../../../redux/store';
+import { selectAccountId } from '../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../redux/store.ts';
 import { optimai_cloud } from '../../../utils/axios';
 import { useMetrics, useInstanceOperations, useInstanceTypes } from '../hooks';
 

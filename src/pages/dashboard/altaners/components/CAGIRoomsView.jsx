@@ -2,9 +2,9 @@ import { Box, Grid, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import React, { useState, useEffect, memo, useCallback } from 'react';
 
-import { selectAccountId } from '../../../../redux/slices/general';
-import { useSelector } from '../../../../redux/store';
-import { optimai_room } from '../../../../utils/axios';
+import { getRoomPort } from '../../../../di/index.ts';
+import { selectAccountId } from '../../../../redux/slices/general/index.ts';
+import { useSelector } from '../../../../redux/store.ts';
 
 // Move formatExternalId outside the component
 const formatExternalId = (type, id) => {
@@ -78,6 +78,7 @@ const CAGIRoomsView = ({ altanerId, components }) => {
       setIsLoading(true);
       setError(null);
       const allRooms = {};
+      const roomPort = getRoomPort();
 
       for (const [componentId, component] of Object.entries(components)) {
         if (!component) continue;
@@ -87,11 +88,9 @@ const CAGIRoomsView = ({ altanerId, components }) => {
         if (type === 'interface' && params?.id) {
           try {
             const externalId = formatExternalId(type, params.id);
-            const response = await optimai_room.get(
-              `/external/${externalId}?account_id=${accountId}`,
-            );
+            const response = await roomPort.fetchRoomByExternalId(externalId, accountId);
             allRooms[componentId] = {
-              roomId: response.data.room.id,
+              roomId: response.room.id,
               title: component.name || `Interface ${componentId}`,
               type: 'interface',
               externalId,
@@ -111,11 +110,9 @@ const CAGIRoomsView = ({ altanerId, components }) => {
           for (const id of params.ids) {
             try {
               const externalId = formatExternalId(type, id);
-              const response = await optimai_room.get(
-                `/external/${externalId}?account_id=${accountId}`,
-              );
+              const response = await roomPort.fetchRoomByExternalId(externalId, accountId);
               allRooms[componentId].rooms.push({
-                roomId: response.data.room.id,
+                roomId: response.room.id,
                 externalId,
                 originalId: id,
               });

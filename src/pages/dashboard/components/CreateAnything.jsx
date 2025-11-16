@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 
 import { chipCategories } from './create/chipData';
 import TextAreaWithButtons from './create/TextAreaWithButtons';
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { useAnalytics } from '../../../hooks/useAnalytics';
 
 /**

@@ -31,7 +31,6 @@ const COMPONENTS = {
   setup_flow: lazy(() => import('../../../../sections/@dashboard/flows/Workflow.jsx')),
   agents: lazy(() => import('../../../../components/agents/v2/Agent.jsx')),
   agent: lazy(() => import('../../../../components/agents/v2/Agent.jsx')),
-  base: lazy(() => import('../../../../components/databases/base/Base.jsx')), // Legacy support
   cloud: lazy(() => import('../../../../components/cloud/Cloud.jsx')), // New cloud component
   altaner_settings: lazy(() => import('./TemplateSettings.jsx')),
   room: lazy(() => import('../../../../components/Room.jsx')),

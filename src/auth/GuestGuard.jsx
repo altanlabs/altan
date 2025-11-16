@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { Redirect } from 'react-router-dom';
 
 // routes
-import { useAuthContext } from './useAuthContext';
+import { useAuthContext } from './useAuthContext.ts';
 import LoadingScreen from '../components/loading-screen';
 import { PATH_DASHBOARD } from '../routes/paths';
 // components

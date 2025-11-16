@@ -20,7 +20,7 @@ import {
 import { useState, useCallback, memo, useEffect } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
-import { updateTableById } from '../../../redux/slices/bases';
+import { updateTableById } from '../../../redux/slices/bases.ts';
 import CustomDialog from '../../dialogs/CustomDialog.jsx';
 
 // RLS operation enum to match backend

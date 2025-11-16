@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 
 // utils
 // auth
-import { useAuthContext } from '../../../../auth/useAuthContext';
+import { useAuthContext } from '../../../../auth/useAuthContext.ts';
 // components
 import { CustomAvatar } from '../../../../components/custom-avatar';
 import Image from '../../../../components/image';

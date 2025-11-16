@@ -1,8 +1,8 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useRoomConfig } from '../contexts/RoomConfigContext';
+
 import { setDrawerOpen } from '../../../redux/slices/room';
 import { dispatch } from '../../../redux/store';
+import { useRoomConfig } from '../contexts/RoomConfigContext';
 
 // --- Icons ---
 const CloseIcon = () => (

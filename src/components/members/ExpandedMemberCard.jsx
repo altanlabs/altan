@@ -7,8 +7,8 @@ import { useOutsideClick } from '@hooks/use-outside-click';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import useKeyShortcutListener from '../../hooks/useKeyShortcutListener';
-import { deleteOrganisationUser } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { deleteOrganisationUser } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { fToNow } from '../../utils/formatTime';
 import { CustomAvatar } from '../custom-avatar';
 import DeleteDialog from '../dialogs/DeleteDialog';

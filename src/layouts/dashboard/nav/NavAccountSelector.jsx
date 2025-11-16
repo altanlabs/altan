@@ -11,11 +11,11 @@ import {
 import { alpha } from '@mui/material/styles';
 import React, { useCallback, useState, memo } from 'react';
 
-import { useAuthContext } from '../../../auth/useAuthContext';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { CustomAvatar } from '../../../components/custom-avatar';
 import Iconify from '../../../components/iconify/Iconify';
-import { selectAccounts, clearAccountState } from '../../../redux/slices/general';
-import { useSelector, dispatch } from '../../../redux/store';
+import { selectAccounts, clearAccountState } from '../../../redux/slices/general/index.ts';
+import { useSelector, dispatch } from '../../../redux/store.ts';
 // ----------------------------------------------------------------------
 
 const NavAccountSelector = ({ selected, setSelected, disabled = false }) => {

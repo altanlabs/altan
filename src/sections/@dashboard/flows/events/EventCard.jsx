@@ -8,7 +8,7 @@ import { vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 import Iconify from '../../../../components/iconify';
 import { getFlowExecutionDetails, retriggerExecutionEvent } from '../../../../redux/slices/flows';
-import { dispatch } from '../../../../redux/store';
+import { dispatch } from '../../../../redux/store.ts';
 import { fToNow } from '../../../../utils/formatTime';
 
 SyntaxHighlighter.registerLanguage('json', json);

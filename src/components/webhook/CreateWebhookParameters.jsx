@@ -13,8 +13,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 import useFeedbackDispatch from '../../hooks/useFeedbackDispatch';
 import { selectFlowDetails } from '../../redux/slices/flows';
-import { createWebhook } from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+import { createWebhook } from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
 import { CardTitle } from '../aceternity/cards/card-hover-effect';
 import InteractiveButton from '../buttons/InteractiveButton';

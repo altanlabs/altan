@@ -20,7 +20,7 @@ import {
   makeSelectFullModule,
   setNewModuleType,
 } from '../../redux/slices/flows';
-import { dispatch, useSelector } from '../../redux/store';
+import { dispatch, useSelector } from '../../redux/store.ts';
 import formatData from '../../utils/formatData';
 import FormParameter from '../tools/form/FormParameter.jsx';
 

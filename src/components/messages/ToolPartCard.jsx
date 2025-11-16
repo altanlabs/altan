@@ -5,8 +5,8 @@ import ToolPartError from './tool-parts/ToolPartError.jsx';
 import ToolPartHeader from './tool-parts/ToolPartHeader.jsx';
 import ToolPartResult from './tool-parts/ToolPartResult.jsx';
 import { getCustomRenderer } from './tool-renderers/index.js';
-import { makeSelectMessagePartById, makeSelectToolPartArguments } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
+import { makeSelectMessagePartById, makeSelectToolPartArguments } from '../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../redux/store.ts';
 
 const ToolPartCard = ({
   partId,

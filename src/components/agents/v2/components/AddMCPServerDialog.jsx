@@ -7,7 +7,7 @@ import {
   selectAccountConnectionsByType,
   getConnections,
 } from '../../../../redux/slices/connections';
-import { selectAccount } from '../../../../redux/slices/general';
+import { selectAccount } from '../../../../redux/slices/general/index.ts';
 import { optimai, optimai_integration } from '../../../../utils/axios';
 import Iconify from '../../../iconify';
 import IconRenderer from '../../../icons/IconRenderer';

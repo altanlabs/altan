@@ -2,7 +2,7 @@
 // import { Box, useTheme, Chip, Typography } from '@mui/material';
 // import { getFlowExecutions, selectCurrentExecution, selectFlowExecutions, selectFlowId } from '../../../redux/slices/flows';
 // import { useSelector } from 'react-redux';
-// import { dispatch } from '../../../redux/store';
+// import { dispatch } from '../../../redux/store.ts';
 // import { AgGridReact } from '@ag-grid-community/react';
 // import { ModuleRegistry } from '@ag-grid-community/core';
 // import {

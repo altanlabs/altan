@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 
 // routes
 // auth
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 // _mock_
 // components
 import Profile from '../../components/profile/Profile';

@@ -7,7 +7,7 @@ import { vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import Iconify from '../../../../../components/iconify/index.js';
 import VirtualizedList from '../../../../../components/virtualized/VirtualizedList.jsx';
 import { selectExecutionsEventsHistory } from '../../../../../redux/slices/flows.js';
-import { useSelector } from '../../../../../redux/store.js';
+import { useSelector } from '../../../../../redux/store.ts';
 import EventCard from '../../events/EventCard.jsx';
 
 SyntaxHighlighter.registerLanguage('json', json);

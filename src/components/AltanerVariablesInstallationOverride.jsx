@@ -3,7 +3,7 @@ import { memo, useCallback, useMemo } from 'react';
 
 import Iconify from './iconify';
 import { selectCurrentAltaner } from '../redux/slices/altaners';
-import { useSelector } from '../redux/store';
+import { useSelector } from '../redux/store.ts';
 import FormParameter from './tools/form/FormParameter';
 
 const renderInput = ({ key, ...params }) => (

@@ -40,8 +40,8 @@ import {
   addBucketToCache,
   removeBucketFromCache,
   updateBucketInCache,
-} from '../../../../redux/slices/bases';
-import { dispatch } from '../../../../redux/store';
+} from '../../../../redux/slices/bases.ts';
+import { dispatch } from '../../../../redux/store.ts';
 import { optimai_cloud } from '../../../../utils/axios';
 
 // Helper to format date

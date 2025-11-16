@@ -2,15 +2,15 @@ import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { useHermesWebSocket } from './websocket/HermesWebSocketProvider.jsx';
-import { getConnections, getConnectionTypes } from '../redux/slices/connections';
+import { useHermesWebSocket } from './websocket/HermesWebSocketProvider';
+import { getConnections, getConnectionTypes } from '../redux/slices/connections.ts';
 import {
   getAccount,
   getAccountAttribute,
   getAccountMembers,
   getRoles,
-} from '../redux/slices/general';
-import { dispatch, useSelector } from '../redux/store';
+} from '../redux/slices/general/index.ts';
+import { dispatch, useSelector } from '../redux/store.ts';
 import { optimai } from '../utils/axios.js';
 
 const selectAccountId = (state) => state.general.account?.id;

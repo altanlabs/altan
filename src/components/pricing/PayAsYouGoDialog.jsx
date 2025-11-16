@@ -13,7 +13,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
-import { selectAccountId } from '../../redux/slices/general';
+import { selectAccountId } from '../../redux/slices/general/index.ts';
 import { optimai_shop } from '../../utils/axios';
 import CustomDialog from '../dialogs/CustomDialog';
 

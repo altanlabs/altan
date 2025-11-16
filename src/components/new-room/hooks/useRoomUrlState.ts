@@ -2,7 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { setRoomContext, sendMessage, selectMainThread } from '../../../redux/slices/room';
+import { selectMainThread } from '../../../redux/slices/room/selectors/threadSelectors';
+import { setRoomContext } from '../../../redux/slices/room/slices/roomSlice';
+import { sendMessage } from '../../../redux/slices/room/thunks/messageThunks';
 import { dispatch, useSelector } from '../../../redux/store.js';
 
 /**

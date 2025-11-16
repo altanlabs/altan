@@ -4,12 +4,12 @@ import { useSelector } from 'react-redux';
 
 import {
   fetchRoomAllThreads,
-  selectRoomStateInitialized,
-  selectRoomStateLoading,
+  selectUIInitialized,
+  selectUILoading,
   selectThreadsById,
   selectRoomThreadsIds,
 } from '../../redux/slices/room';
-import { dispatch } from '../../redux/store.js';
+import { dispatch } from '../../redux/store.ts';
 import ThreadMinified from '../room/thread/ThreadMinified.jsx';
 
 const ConversationsList = ({
@@ -19,8 +19,8 @@ const ConversationsList = ({
   emptyMessage = 'No recent conversations yet.\nStart a conversation to see it here!',
   loadingMessage = 'Loading conversations...',
 }) => {
-  const allThreadsInitialized = useSelector(selectRoomStateInitialized('allThreads'));
-  const allThreadsLoading = useSelector(selectRoomStateLoading('allThreads'));
+  const allThreadsInitialized = useSelector(selectUIInitialized('allThreads'));
+  const allThreadsLoading = useSelector(selectUILoading('allThreads'));
   const threadsById = useSelector(selectThreadsById);
   const threadIds = useSelector(selectRoomThreadsIds);
 

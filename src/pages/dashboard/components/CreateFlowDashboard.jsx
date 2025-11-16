@@ -2,8 +2,8 @@ import { useState, memo } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import TextAreaWithButtons from './create/TextAreaWithButtons';
-import { useAuthContext } from '../../../auth/useAuthContext';
-import { createFlow } from '../../../redux/slices/general';
+import { useAuthContext } from '../../../auth/useAuthContext.ts';
+import { createFlow } from '../../../redux/slices/general/index.ts';
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch';
 
 function CreateFlowDashboard({ handleVoice }) {

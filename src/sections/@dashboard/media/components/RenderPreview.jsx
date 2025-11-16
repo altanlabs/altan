@@ -10,7 +10,7 @@ import {
 import Iconify from '@components/iconify/Iconify.jsx';
 import Image from '@components/image';
 import Video from '@components/video/Video.jsx';
-import { selectAccountId } from '@redux/slices/general';
+import { selectAccountId } from '@redux/slices/general/index.ts';
 import { bgBlur } from '@utils/cssStyles';
 import { fToNow } from '@utils/formatTime';
 

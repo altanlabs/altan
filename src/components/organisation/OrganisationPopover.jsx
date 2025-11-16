@@ -21,10 +21,9 @@ import { styled, alpha, useTheme } from '@mui/material/styles';
 import React, { useCallback, useState, memo, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import CreateAccount from '../../pages/dashboard/superadmin/legacy/CreateAccount';
-import { selectAccountDetails, selectAccount } from '../../redux/slices/general';
+import { selectAccountDetails, selectAccount } from '../../redux/slices/general/index.ts';
 // import { bgBlur } from '../../../utils/cssStyles';
-import { useSelector } from '../../redux/store';
+import { useSelector } from '../../redux/store.ts';
 import addAccountIdToUrl from '../../utils/addAccountIdToUrl.ts';
 import { CustomAvatar } from '../custom-avatar';
 import Iconify from '../iconify';
@@ -289,7 +288,6 @@ function OrganisationPopover({ mini = false }) {
           />
         </DialogContent>
         <DialogActions>
-          <CreateAccount />
           <Button onClick={handleClose}>Close</Button>
         </DialogActions>
       </Dialog>

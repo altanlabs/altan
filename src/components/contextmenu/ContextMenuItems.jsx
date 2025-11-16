@@ -15,7 +15,7 @@ import {
   pasteModules,
   updateEdge,
 } from '../../redux/slices/flows';
-import { dispatch } from '../../redux/store';
+import { dispatch } from '../../redux/store.ts';
 import Iconify from '../iconify';
 
 const ContextMenuItems = ({ items, onClose, disabledMessageTooltip = null }) => {

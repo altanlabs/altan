@@ -2,8 +2,8 @@ import { Icon } from '@iconify/react';
 import React, { memo, useMemo, useCallback } from 'react';
 
 import { useExecutionDialog } from '../../../providers/ExecutionDialogProvider.jsx';
-import { makeSelectToolPartHeader, makeSelectToolPartExecution } from '../../../redux/slices/room';
-import { useSelector } from '../../../redux/store.js';
+import { makeSelectToolPartHeader, makeSelectToolPartExecution } from '../../../redux/slices/room/selectors/messagePartSelectors';
+import { useSelector } from '../../../redux/store.ts';
 import IconRenderer from '../../icons/IconRenderer.jsx';
 import { getToolIcon } from '../tool-renderers/index.js';
 
@@ -14,6 +14,38 @@ function extractAndCapitalize(str) {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+function sanitizeToolName(name) {
+  if (!name || typeof name !== 'string') return 'Tool';
+  const lower = name.toLowerCase().trim();
+
+  const INVALID_KEYWORDS = [
+    'updated',
+    'update',
+    'added',
+    'add',
+    'completed',
+    'complete',
+    'deleted',
+    'delete',
+    'created',
+    'create',
+    'removed',
+    'remove',
+    'started',
+    'start',
+    'finished',
+    'finish',
+    'failed',
+    'fail',
+  ];
+
+  if (INVALID_KEYWORDS.includes(lower) || lower.length < 3) {
+    return 'Tool';
+  }
+
+  return name;
 }
 
 const ToolPartHeader = ({
@@ -35,13 +67,15 @@ const ToolPartHeader = ({
   const isExecuting = !isCompleted && (header?.status === 'running' || header?.status === 'preparing');
 
   // Get the tool name, checking for server_tool_use, mcp_call, and mcp_list_tools
-  const toolName = useMemo(() => {
+  const rawToolName = useMemo(() => {
     const providerType = header?.meta_data?.provider_item_type;
     if (['server_tool_use', 'mcp_call', 'mcp_list_tools'].includes(providerType) && header?.meta_data?.name) {
       return header.meta_data.name;
     }
     return header?.name;
   }, [header?.name, header?.meta_data?.provider_item_type, header?.meta_data?.name]);
+
+  const toolName = useMemo(() => sanitizeToolName(rawToolName), [rawToolName]);
 
   // Determine what to display as the main text
   const displayText = useMemo(() => {

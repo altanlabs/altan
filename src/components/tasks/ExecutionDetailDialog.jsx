@@ -4,8 +4,8 @@ import { AnimatePresence, m } from 'framer-motion';
 import { memo, useMemo, useState } from 'react';
 
 import ExecutionCard from './ExecutionCard.jsx';
-import { makeSelectExecution } from '../../redux/slices/room';
-import { useSelector } from '../../redux/store.js';
+import { makeSelectExecution } from '../../redux/slices/room/selectors/messageSelectors';
+import { useSelector } from '../../redux/store.ts';
 import CustomDialog from '../dialogs/CustomDialog.jsx';
 import Iconify from '../iconify/Iconify.jsx';
 

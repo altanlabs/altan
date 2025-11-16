@@ -5,7 +5,7 @@ import React, { memo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import { MotionContainer, varBounce, varFade } from '../../components/animate';
 import Iconify from '../../components/iconify';
 import LoadingScreen from '../../components/loading-screen';

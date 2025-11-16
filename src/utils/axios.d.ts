@@ -9,7 +9,6 @@ export const optimai_integration: AxiosInstance;
 export const optimai_galaxia: AxiosInstance;
 export const optimai_shop: AxiosInstance;
 export const optimai_tables: AxiosInstance;
-export const optimai_agent: AxiosInstance;
 export const optimai_tables_v4: AxiosInstance;
 export const optimai_database: AxiosInstance;
 export const optimai_pg_meta: AxiosInstance;

@@ -7,7 +7,7 @@ import { useHistory } from 'react-router-dom';
 // components
 import Iconify from '../../../components/iconify';
 import { getFlows } from '../../../redux/slices/flows';
-import { selectAccountId } from '../../../redux/slices/general';
+import { selectAccountId } from '../../../redux/slices/general/index.ts';
 
 // A separate, memoized component for tab buttons to avoid re-creating functions on every render.
 const TabButton = memo(function TabButton({

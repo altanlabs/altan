@@ -3,7 +3,7 @@ import React, { memo, useMemo, useCallback, useState } from 'react';
 
 import useFeedbackDispatch from '../../../hooks/useFeedbackDispatch.js';
 import { restoreCommit, selectIsRestoring } from '../../../redux/slices/commits.js';
-import { useDispatch, useSelector } from '../../../redux/store.js';
+import { useDispatch, useSelector } from '../../../redux/store.ts';
 
 /**
  * Elegant commit renderer - always visible, compact, optimized for streaming

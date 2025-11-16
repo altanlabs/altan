@@ -10,8 +10,8 @@ import {
   removeApp,
   selectCustomApps,
   selectCustomConnectionTypes,
-} from '../../redux/slices/general';
-import { useSelector } from '../../redux/store';
+} from '../../redux/slices/general/index.ts';
+import { useSelector } from '../../redux/store.ts';
 import CreateCustomApp from '../../components/CreateCustomApp.jsx';
 
 function useQuery() {

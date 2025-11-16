@@ -23,7 +23,7 @@ import { useState, memo } from 'react';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 
-import { useAuthContext } from '../../auth/useAuthContext';
+import { useAuthContext } from '../../auth/useAuthContext.ts';
 import Iconify from '../../components/iconify';
 import { CompactLayout } from '../../layouts/dashboard';
 import { analytics } from '../../lib/analytics';
