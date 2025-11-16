@@ -232,11 +232,9 @@ const threadsSlice = createSlice({
       
       state.thread.main.current = current;
       
-      // If clearing the current thread (setting to null), also clear mainThread
-      // This ensures ephemeral mode properly shows 'new' state
-      if (current === null) {
-        state.mainThread = null;
-      }
+      // Note: We do NOT clear state.mainThread when current is null
+      // state.mainThread is a permanent reference to the room's main thread
+      // and should persist even when temporarily viewing a 'new' thread state
     },
 
     /**

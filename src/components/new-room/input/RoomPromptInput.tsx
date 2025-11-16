@@ -25,7 +25,7 @@ import AgentSelectionChip from '../../attachment/components/AgentSelectionChip.j
 import AuthorizationRequests from '../../AuthorizationRequests.jsx';
 import CreditWallet from '../../CreditWallet.jsx';
 import Editor from '../../editor/Editor';
-import ActivationLifecycleBar from '../../response/ActivationLifecycleBar.jsx';
+// import ActivationLifecycleBar from '../../response/ActivationLifecycleBar.jsx';
 import { useSnackbar } from '../../snackbar';
 import TodoWidget from '../../TodoWidget.jsx';
 import { getMemberDetails } from '../utils.js';
@@ -355,7 +355,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
           ref={containerRef}
           className={`relative w-full max-w-[700px] mx-auto ${
             hasTasks ? 'rounded-b-3xl' : 'rounded-3xl'
-          } border bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30 transition-colors`}
+          } border bg-white/90 dark:bg-[#1c1c1c] hover:bg-white/95 dark:hover:bg-[#1c1c1c] focus-within:bg-white/95 dark:focus-within:bg-[#1c1c1c] backdrop-blur-lg border-gray-200/30 dark:border-gray-700/30 focus-within:border-transparent transition-colors`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}

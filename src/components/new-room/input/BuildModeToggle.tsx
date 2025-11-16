@@ -3,6 +3,8 @@ import { useParams, useHistory } from 'react-router-dom';
 
 import { NoAgentsDialog } from './NoAgentsDialog';
 import { setOperateMode, selectCurrentAltaner } from '../../../redux/slices/altaners';
+import { selectMainThread } from '../../../redux/slices/room/selectors/threadSelectors';
+import { setThreadMain } from '../../../redux/slices/room/slices/threadsSlice';
 import { dispatch, useSelector } from '../../../redux/store';
 import { trackFeatureUse } from '../../../utils/analytics';
 
@@ -14,6 +16,7 @@ export const BuildModeToggle: React.FC<BuildModeToggleProps> = ({ operateMode })
   const { altanerId } = useParams<{ altanerId?: string }>();
   const history = useHistory();
   const altaner = useSelector(selectCurrentAltaner);
+  const mainThread = useSelector(selectMainThread);
   const [showNoAgentsDialog, setShowNoAgentsDialog] = useState(false);
 
   const switchToBuild = useCallback(() => {
@@ -25,9 +28,14 @@ export const BuildModeToggle: React.FC<BuildModeToggleProps> = ({ operateMode })
       altaner_id: altanerId,
     });
 
+    // Set thread to main when switching to Build mode
+    if (mainThread) {
+      dispatch(setThreadMain({ current: mainThread }));
+    }
+
     history.replace(`/project/${altanerId}`);
     dispatch(setOperateMode(false));
-  }, [history, operateMode, altanerId]);
+  }, [history, operateMode, altanerId, mainThread]);
 
   const switchToRun = useCallback(() => {
     if (!altanerId || operateMode) return;
@@ -47,6 +55,9 @@ export const BuildModeToggle: React.FC<BuildModeToggleProps> = ({ operateMode })
       mode: 'run',
       altaner_id: altanerId,
     });
+
+    // Set thread to 'new' when switching to Run mode (start fresh)
+    dispatch(setThreadMain({ current: 'new' }));
 
     history.replace(`/project/${altanerId}/operate`);
     dispatch(setOperateMode(true));

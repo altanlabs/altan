@@ -111,6 +111,11 @@ img {
   transition: outline-offset 0.2s ease;
 }
 
+/* Remove focus outline from Lexical editor */
+[data-lexical-editor]:focus-visible {
+  outline: none;
+}
+
 /* Custom Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
