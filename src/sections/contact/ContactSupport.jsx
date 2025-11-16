@@ -15,25 +15,11 @@ const StyledRoot = styled('div')(({ theme }) => ({
 export default function ContactSupport() {
   const supportOptions = [
     {
-      icon: 'ri:chat-1-line',
-      title: 'Chat Support',
-      description: 'Get quick support via our chat support',
-      href: 'https://altan.ai/support',
-      iconColor: '#000000',
-    },
-    {
       icon: 'ri:discord-fill',
       title: 'Discord Community',
       description: 'Join our Discord community',
       href: 'https://discord.com/invite/2zPbKuukgx',
       iconColor: '#5865f2', // Discord brand color
-    },
-    {
-      icon: 'ri:whatsapp-fill',
-      title: 'Chat on WhatsApp',
-      description: 'Get quick support via WhatsApp',
-      href: 'https://chat.whatsapp.com/Jx3X3vP9A6i5pZerCq8xUl?mode=ac_t',
-      iconColor: '#25d366', // WhatsApp green
     },
     {
       icon: 'mdi:book-open-page-variant',

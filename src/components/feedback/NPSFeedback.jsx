@@ -34,7 +34,7 @@ const NPSFeedback = memo(({ onClose }) => {
 
   // Check if we should show NPS (must be authenticated and have at least one altaner)
   const hasAltaners = altaners && altaners.length > 0;
-  
+
   if (!isAuthenticated || !shouldShowNPS() || !hasAltaners) {
     return null;
   }
@@ -263,8 +263,7 @@ const NPSFeedback = memo(({ onClose }) => {
         <div className="space-y-4">
           <p className="text-[#b0b0b0] text-sm leading-relaxed">
             Since you love Altan, help others discover it! You&apos;ll earn{' '}
-            <span className="text-white font-semibold">$10 in free credits</span> when they
-            upgrade.
+            <span className="text-white font-semibold">$10 in free credits</span> when they upgrade.
           </p>
 
           <div className="relative">

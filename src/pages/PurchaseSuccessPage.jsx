@@ -2,6 +2,7 @@ import { Box, Container, Typography, Button, Stack, Alert } from '@mui/material'
 import { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import ContactOptionsDialog from '../components/dialogs/ContactOptionsDialog';
 import Iconify from '../components/iconify';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { CompactLayout } from '../layouts/dashboard';
@@ -83,7 +84,9 @@ const trackPurchaseEvent = (sessionData, analytics) => {
         content_type: 'product',
       });
     }
-  } catch (error) {}
+  } catch {
+    // Silently fail
+  }
 };
 
 // ----------------------------------------------------------------------
@@ -91,6 +94,7 @@ const trackPurchaseEvent = (sessionData, analytics) => {
 export default function PurchaseSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showContactDialog, setShowContactDialog] = useState(false);
   const location = useLocation();
   const history = useHistory();
   const accountId = useSelector(selectAccountId);
@@ -119,14 +123,14 @@ export default function PurchaseSuccessPage() {
         trackPurchaseEvent(data, analytics);
 
         setLoading(false);
-      } catch (error) {
+      } catch {
         setError('Failed to load purchase information');
         setLoading(false);
       }
     };
 
     fetchSessionData();
-  }, [location.search, accountId]);
+  }, [location.search, accountId, analytics]);
 
   const handleContinue = () => {
     // Redirect to home/dashboard
@@ -331,13 +335,89 @@ export default function PurchaseSuccessPage() {
           >
             Thank you for your purchase. Your subscription has been activated.
           </Typography>
+
+          {/* PMF Moment: Offer onboarding call after purchase */}
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: 450,
+              background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)',
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              borderRadius: 2,
+              p: 3,
+              mb: 3,
+            }}
+          >
+            <Stack
+              spacing={2}
+              alignItems="center"
+            >
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  backgroundColor: 'primary.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Iconify
+                  icon="mdi:calendar-clock"
+                  width={24}
+                  sx={{ color: 'common.white' }}
+                />
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 600 }}
+              >
+                Get a free strategy call
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                textAlign="center"
+                sx={{ maxWidth: 350 }}
+              >
+                Let&apos;s make sure you get the most out of your subscription. Book a free 15-minute call with our founder to discuss your automation goals.
+              </Typography>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => {
+                  analytics.track('founder_call_clicked_from_purchase_success', {
+                    account_id: accountId,
+                  });
+                  setShowContactDialog(true);
+                }}
+                sx={{
+                  minWidth: 240,
+                  height: 44,
+                  borderRadius: 1,
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <Iconify
+                  icon="mdi:calendar"
+                  width={20}
+                  sx={{ mr: 1 }}
+                />
+                Book My Free Call
+              </Button>
+            </Stack>
+          </Box>
+
           {/* Continue Button */}
           <Button
-            variant="contained"
+            variant="outlined"
             size="large"
             onClick={handleContinue}
             sx={{
-              mt: 4,
+              mt: 2,
               minWidth: 280,
               height: 48,
               borderRadius: 1,
@@ -350,6 +430,16 @@ export default function PurchaseSuccessPage() {
           </Button>
         </Stack>
       </Container>
+
+      {/* Contact Options Dialog */}
+      <ContactOptionsDialog
+        open={showContactDialog}
+        onClose={() => setShowContactDialog(false)}
+        title="Let's get you started!"
+        description="Book a strategy call with our founder"
+        callOnly={true}
+        source="purchase_success"
+      />
     </CompactLayout>
   );
 }

@@ -9,16 +9,18 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui/button.tsx';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
+import ContactOptionsDialog from '../dialogs/ContactOptionsDialog';
 
 // ----------------------------------------------------------------------
 
 const PlanCompletionFeedback = memo(({ planId, onClose }) => {
   const { user } = useAuthContext();
-  const [step, setStep] = useState('initial'); // initial, comment, referral
+  const [step, setStep] = useState('initial'); // initial, comment, referral, contact
   const [satisfaction, setSatisfaction] = useState(null); // true/false
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
   const referralUrl = user?.id ? `https://altan.ai?ref=${user.id}` : '';
 
@@ -268,45 +270,90 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
 
   if (step === 'comment') {
     return (
-      <FeedbackPopup
-        title="Help us improve"
-        onClose={handleSkip}
-      >
-        <div className="space-y-4">
-          <p className="text-[#b0b0b0] text-sm leading-relaxed">
-            What could we have done better?
-          </p>
+      <>
+        <FeedbackPopup
+          title="Help us improve"
+          onClose={handleSkip}
+        >
+          <div className="space-y-4">
+            <p className="text-[#b0b0b0] text-sm leading-relaxed">
+              What could we have done better?
+            </p>
 
-          <Textarea
-            rows={3}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Tell us what went wrong..."
-            autoFocus
-            className="bg-white/5 border-[#444] text-white placeholder:text-[#666] rounded-xl text-sm resize-none focus-visible:border-[#888]"
-          />
+            <Textarea
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Tell us what went wrong..."
+              autoFocus
+              className="bg-white/5 border-[#444] text-white placeholder:text-[#666] rounded-xl text-sm resize-none focus-visible:border-[#888]"
+            />
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="default"
-              onClick={() => handleSubmit()}
-              disabled={isSubmitting || !comment.trim()}
-              className="flex-1 bg-white text-black hover:bg-gray-100 disabled:bg-[#444] disabled:text-[#888] rounded-full text-sm font-semibold"
-            >
-              {isSubmitting ? 'Sending...' : 'Submit'}
-            </Button>
+            {/* PMF Moment: Offer personal help when user is frustrated */}
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Icon 
+                  icon="mdi:calendar-clock" 
+                  className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5"
+                />
+                <div className="flex-1">
+                  <p className="text-white text-sm font-semibold mb-1">
+                    Want 10 minutes with the founder?
+                  </p>
+                  <p className="text-[#b0b0b0] text-xs leading-relaxed mb-3">
+                    I'll personally help you build your first automation and make this work for you.
+                  </p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      analytics.track('founder_call_clicked_from_negative_feedback', {
+                        plan_id: planId,
+                        has_comment: !!comment.trim(),
+                      });
+                      setShowContactDialog(true);
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs font-semibold h-8"
+                  >
+                    <Icon icon="mdi:calendar" className="w-3.5 h-3.5 mr-1.5" />
+                    Book a Free Call
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-            <Button
-              variant="ghost"
-              onClick={handleSkip}
-              disabled={isSubmitting}
-              className="text-[#888] hover:text-[#b0b0b0] hover:bg-transparent text-sm px-4"
-            >
-              Skip
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                onClick={() => handleSubmit()}
+                disabled={isSubmitting || !comment.trim()}
+                className="flex-1 bg-white text-black hover:bg-gray-100 disabled:bg-[#444] disabled:text-[#888] rounded-full text-sm font-semibold"
+              >
+                {isSubmitting ? 'Sending...' : 'Submit'}
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="text-[#888] hover:text-[#b0b0b0] hover:bg-transparent text-sm px-4"
+              >
+                Skip
+              </Button>
+            </div>
           </div>
-        </div>
-      </FeedbackPopup>
+        </FeedbackPopup>
+
+        {/* Contact Options Dialog */}
+        <ContactOptionsDialog
+          open={showContactDialog}
+          onClose={() => setShowContactDialog(false)}
+          title="Let's talk!"
+          description="Book a call with our founder or join our community"
+          callOnly={false}
+          source="plan_negative_feedback"
+        />
+      </>
     );
   }
 
