@@ -339,10 +339,10 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
         {/* Components above the input */}
         {!operateMode && (
           <>
-            <ActivationLifecycleBar
+            {/* <ActivationLifecycleBar
               threadId={threadId}
               className="mb-2"
-            />
+            /> */}
             <AuthorizationRequests />
             <TodoWidget
               threadId={threadId}

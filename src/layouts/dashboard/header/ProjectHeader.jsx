@@ -6,13 +6,12 @@ import {
   History,
   Settings as SettingsIcon,
   Radio,
+
+  HelpCircle,
 } from 'lucide-react';
 import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
-
-// Stable empty array to prevent unnecessary rerenders
-const EMPTY_ARRAY = [];
 
 // local components
 import AltanerComponentContextMenu from './AltanerComponentContextMenu.jsx';
@@ -21,6 +20,7 @@ import ProjectNav from './ProjectNav.jsx';
 // components
 import { HoverBorderGradient } from '../../../components/aceternity/buttons/hover-border-gradient.tsx';
 import DatabaseNavigationBar from '../../../components/databases/navigation/DatabaseNavigationBar.jsx';
+import ContactOptionsDialog from '../../../components/dialogs/ContactOptionsDialog.jsx';
 import DeleteDialog from '../../../components/dialogs/DeleteDialog.jsx';
 import EditProjectDialog from '../../../components/dialogs/EditProjectDialog.jsx';
 import VersionHistoryDrawer from '../../../components/drawers/VersionHistoryDrawer';
@@ -62,6 +62,8 @@ import {
 } from '../../../redux/slices/altaners';
 import { makeSelectInterfaceById, makeSelectSortedCommits, getInterfaceById, selectIsAccountFree } from '../../../redux/slices/general/index.ts';
 import { useSelector } from '../../../redux/store.ts';
+// Stable empty array to prevent unnecessary rerenders
+const EMPTY_ARRAY = [];
 
 // shadcn components
 
@@ -200,6 +202,7 @@ function ProjectHeader() {
   const [openPublishDialog, setOpenPublishDialog] = useState(false);
   const [openEditAltaner, setOpenEditAltaner] = useState(false);
   const [isDeploymentHistoryOpen, setIsDeploymentHistoryOpen] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
   useEffect(() => {
     if (isMobile && displayMode === 'chat' && altanerId) {
@@ -343,7 +346,21 @@ function ProjectHeader() {
           <div className="flex items-center h-full">
             {altaner?.id &&
               (isMobile ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Help/Support button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowContactDialog(true)}
+                        className="h-8 w-8"
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Get help & support</TooltipContent>
+                  </Tooltip>
                   {shouldShowMoreActions && (
                     <MobileActionsMenu
                       onDistribution={() => setOpenSettings(true)}
@@ -405,6 +422,21 @@ function ProjectHeader() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
+                  {/* Help/Support button - Desktop */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowContactDialog(true)}
+                        className="h-8 w-8"
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Get help & support</TooltipContent>
+                  </Tooltip>
+
                   {shouldShowMoreActions && (
                     <MobileActionsMenu
                       onDistribution={() => setOpenSettings(true)}
@@ -532,6 +564,16 @@ function ProjectHeader() {
           />
         </SheetContent>
       </Sheet>
+
+      {/* Contact Options Dialog */}
+      <ContactOptionsDialog
+        open={showContactDialog}
+        onClose={() => setShowContactDialog(false)}
+        title="Need help?"
+        description="Choose how you'd like to get support"
+        callOnly={false}
+        source="project_header"
+      />
     </TooltipProvider>
   );
 }

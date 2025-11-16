@@ -20,17 +20,17 @@ const AgentSelectionChip = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [detailDialogAgent, setDetailDialogAgent] = useState(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [isMobile, setIsMobile] = useState(true);
   const members = useSelector(selectMembers);
   const roomId = useSelector(selectRoomId);
   const { user } = useAuthContext();
 
   // Handle mobile detection
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // useEffect(() => {
+  //   const handleResize = () => setIsMobile(window.innerWidth < 640);
+  //   window.addEventListener('resize', handleResize);
+  //   return () => window.removeEventListener('resize', handleResize);
+  // }, []);
 
   // LocalStorage key for this room's selected agent
   const getStorageKey = useCallback(() => `selectedAgent_${roomId}`, [roomId]);
@@ -116,14 +116,14 @@ const AgentSelectionChip = ({
               'border border-white/20 dark:border-white/10',
               'shadow-sm hover:shadow',
               'focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600',
-              isMobile && !selectedAgent ? 'min-w-[24px] px-1' : 'px-2',
+              isMobile && !selectedAgent ? 'min-w-[24px] px-1' : 'px-1',
             )}
           >
             {selectedAgent ? (
               <>
                 <DynamicAgentAvatar
                   agent={members.byId[selectedAgent.id]?.member?.agent || selectedAgent}
-                  size={12}
+                  size={18}
                   isStatic
                 />
                 {!isMobile && (
@@ -134,7 +134,7 @@ const AgentSelectionChip = ({
                     e.stopPropagation();
                     handleAgentClear();
                   }}
-                  className="hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors w-3 h-3 flex items-center justify-center ml-0.5"
+                  className="hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors w-3 h-3 flex items-center justify-center"
                 >
                   <Iconify
                     icon="mdi:close"

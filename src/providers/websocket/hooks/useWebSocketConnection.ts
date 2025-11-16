@@ -200,6 +200,7 @@ export const useWebSocketConnection = ({
         };
 
         ws.onclose = () => {
+          setIsOpen(false);
           disconnectWebSocket();
           if (waitingToReconnect) return;
           setWaitingToReconnect(true);

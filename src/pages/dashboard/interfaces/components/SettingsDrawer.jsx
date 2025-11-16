@@ -13,7 +13,6 @@ import { memo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import AddCollaboratorDialog from './AddCollaboratorDialog.jsx';
-import AddDomainDialog from './AddDomainDialog.jsx';
 import CommitDialog from './CommitDialog.jsx';
 import EditMemoryDialog from './EditMemoryDialog.jsx';
 import Iconify from '../../../../components/iconify/Iconify.jsx';
@@ -25,19 +24,17 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
   const isAccountFree = useSelector(selectIsAccountFree);
   const history = useHistory();
   const room = null; // Room is not used in this component anymore
-  const [isDomainDialogOpen, setIsDomainDialogOpen] = useState(false);
   const [isAddCollabDialogOpen, setIsAddCollabDialogOpen] = useState(false);
   const [isMemoryDialogOpen, setIsMemoryDialogOpen] = useState(false);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
 
-  const handleAddDomain = () => {
-    setIsDomainDialogOpen(true);
-    if (onAddDomain) onAddDomain();
-  };
-
   const handleAddCollaborator = () => {
     setIsAddCollabDialogOpen(true);
     if (onAddCollaborator) onAddCollaborator();
+  };
+
+  const handleAddDomain = () => {
+    if (onAddDomain) onAddDomain();
   };
 
   return (
@@ -593,11 +590,6 @@ function SettingsDrawer({ open, onClose, onAddDomain, onAddCollaborator, ui }) {
         </Box>
       </Drawer>
 
-      <AddDomainDialog
-        open={isDomainDialogOpen}
-        onClose={() => setIsDomainDialogOpen(false)}
-        ui={ui}
-      />
       <AddCollaboratorDialog
         open={isAddCollabDialogOpen}
         onClose={() => setIsAddCollabDialogOpen(false)}

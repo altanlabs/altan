@@ -4,9 +4,6 @@ import { createPortal } from 'react-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 
-// Stable empty array to prevent unnecessary rerenders
-const EMPTY_ARRAY = [];
-
 import OperateView from './OperateView.jsx';
 import Plan from './Plan.jsx';
 import PlansList from './PlansList.jsx';
@@ -37,6 +34,9 @@ import { useSelector, dispatch } from '../../redux/store.ts';
 import { optimai } from '../../utils/axios';
 // import ProjectOnboardingTour from '../../components/onboarding/ProjectOnboardingTour.jsx';
 
+// Stable empty array to prevent unnecessary rerenders
+const EMPTY_ARRAY = [];
+
 const COMPONENTS_PROPS_MAP = {
   agents: { ids: 'filterIds' },
   flows: { ids: 'filterIds' },
@@ -52,8 +52,6 @@ const transformProps = (type, props) => {
   }
   return transformedProps;
 };
-
-const selectAltanersIsLoading = (state) => state.altaners.isLoading;
 
 export default function ProjectPage() {
   const chatIframeRef = React.useRef(null);

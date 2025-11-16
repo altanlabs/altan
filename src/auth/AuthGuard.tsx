@@ -88,27 +88,53 @@ function AuthGuard({ children, requireAuth = false }: AuthGuardProps) {
         window.location.href = '/';
       }
       let selectedAccount: Account | null = null;
+      let accountId: string | null = null;
+
+      // Check for acc parameter in URL - this takes priority
       if (searchParams.has('acc')) {
-        const accId = searchParams.get('acc');
-        selectedAccount = accounts.find((elem) => elem.id === accId) || null;
-        if (selectedAccount) {
-          searchParams.delete('acc');
-          setSearchParams(searchParams);
-          localStorage.setItem('OAIPTACC', selectedAccount.id);
+        accountId = searchParams.get('acc');
+        selectedAccount = accounts.find((elem) => elem.id === accountId) || null;
+
+        // Set in localStorage whether or not it's found
+        if (accountId) {
+          localStorage.setItem('OAIPTACC', accountId);
+        }
+
+        // Clean up URL regardless
+        searchParams.delete('acc');
+        setSearchParams(searchParams);
+
+        // If not in accounts array, create a minimal account object
+        if (!selectedAccount && accountId) {
+          selectedAccount = {
+            id: accountId,
+            name: 'Loading...',
+            credit_balance: 0,
+          };
         }
       }
+      
+      // Check localStorage if no acc parameter
       if (!selectedAccount && storageAvailable) {
         const storageAccount = localStorage.getItem('OAIPTACC');
         if (!!storageAccount) {
           selectedAccount = accounts.find((elem) => elem.id === storageAccount) || null;
           if (!selectedAccount) {
-            localStorage.removeItem('OAIPTACC');
+            // Create minimal account object
+            selectedAccount = {
+              id: storageAccount,
+              name: 'Loading...',
+              credit_balance: 0,
+            };
           }
         }
       }
+      
+      // Fallback to first account
       if (!selectedAccount) {
         selectedAccount = accounts[0];
       }
+      
       batch(() => {
         dispatch(setUser(user as any)); // Cast needed due to slight type mismatch between AuthUser and User
         dispatch(setAccounts(accounts));

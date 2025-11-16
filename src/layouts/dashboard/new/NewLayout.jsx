@@ -1,9 +1,12 @@
+import { Tooltip } from '@mui/material';
 import React, { memo, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import Footer from './Footer';
 import { useAuthContext } from '../../../auth/useAuthContext.ts';
 import { UserDropdown } from '../../../components/elevenlabs/user-dropdown';
+import HeaderIconButton from '../../../components/HeaderIconButton';
+import Iconify from '../../../components/iconify';
 import InvitationMenuPopover from '../../../components/invitations/InvitationMenuPopover.jsx';
 import Logo from '../../../components/logo/Logo';
 import { useSettingsContext } from '../../../components/settings';
@@ -140,6 +143,20 @@ const NewLayout = ({ children, onRequestAuth }) => {
                   variant="circle"
                   start="top-right"
                 />
+
+                <Tooltip
+                  arrow
+                  followCursor
+                  title="Get free credits"
+                >
+                  <HeaderIconButton onClick={() => history.push('/referrals')}>
+                    <Iconify
+                      icon="mdi:gift-outline"
+                      width={20}
+                      height={20}
+                    />
+                  </HeaderIconButton>
+                </Tooltip>
 
                 <InvitationMenuPopover isDashboard={true} />
 
