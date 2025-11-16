@@ -38,6 +38,7 @@ import MentionsPlugin from './plugins/MentionsPlugin';
 interface EditorRefType {
   editor?: LexicalEditor;
   insertText?: (text: string) => void;
+  clear?: () => void;
   sendMessage?: () => void;
   sendContent?: (content: string) => void;
 }
@@ -112,18 +113,24 @@ const EditorPlugins = (props: PluginProps): JSX.Element => {
     editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
   }, [editor, props.editorRef]);
 
+  const clearEditor = useCallback(() => {
+    editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+  }, [editor]);
+
   useEffect(() => {
     if (props.editorRef?.current) {
       props.editorRef.current.editor = editor; // Store the editor instance
       props.editorRef.current.sendMessage = sendMessage;
+      props.editorRef.current.clear = clearEditor;
     }
     return () => {
       if (props.editorRef?.current) {
         props.editorRef.current.sendMessage = null;
+        props.editorRef.current.clear = undefined;
         props.editorRef.current.editor = undefined;
       }
     };
-  }, [editor, sendMessage, props.editorRef]);
+  }, [editor, sendMessage, clearEditor, props.editorRef]);
 
   const contentEditable = useMemo(() => {
     const contentEditable = (

@@ -35,6 +35,9 @@ const EDITOR_NAMESPACE = 'lexical-editor';
 interface EditorRefType {
   editor?: LexicalEditor;
   insertText?: (text: string) => void;
+  clear?: () => void;
+  sendContent?: (content: string) => void;
+  sendMessage?: () => void;
 }
 
 interface EditorProps {
