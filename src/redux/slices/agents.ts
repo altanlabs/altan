@@ -1,6 +1,6 @@
 import { createSlice, createSelector, type PayloadAction } from '@reduxjs/toolkit';
-import type { AppDispatch, RootState } from '../store';
 
+import analytics from '../../lib/analytics';
 import { getAgentService } from '../../services/AgentService';
 import { getRoomService } from '../../services/RoomService';
 import type {
@@ -10,7 +10,7 @@ import type {
   Voice,
   Room,
 } from '../../services/types';
-import analytics from '../../lib/analytics';
+import type { AppDispatch, RootState } from '../store';
 
 // ==================== State Types ====================
 

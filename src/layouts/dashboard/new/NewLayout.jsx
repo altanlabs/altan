@@ -15,7 +15,7 @@ import {
   useThemeTransition,
 } from '../../../components/ui/shadcn-io/theme-toggle-button';
 import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
-import AgentMessagingWidget from '../../../pages/dashboard/NewDashboardPage/AgentMessagingWidget';
+import AgentMessagingWidget from '../../../pages/dashboard/agentsmenu/AgentMessagingWidget';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import WorkspaceIndicator from '../../../pages/v2/components/WorkspaceIndicator';
 import AuthDialog from '../../../sections/auth/AuthDialog';

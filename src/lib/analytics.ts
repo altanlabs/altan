@@ -1,19 +1,64 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://d2e5baf5-4f0.db-pool-europe-west1.altan.ai';
 const supabaseKey =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIwNzY4Nzk1NzcsImlhdCI6MTc2MTUxOTU3NywiaXNzIjoic3VwYWJhc2UiLCJyb2xlIjoiYW5vbiJ9.mnZyOqmzQNY9PwF6AiaWTO7IOaZBfNx7KaxCw0bZAVY';
 
-let supabase = null;
+interface UserContext {
+  user_id: string | null;
+  user_email: string | null;
+  account_id: string | null;
+}
+
+interface EventData {
+  event_name: string;
+  user_id: string | null;
+  user_email: string | null;
+  account_id: string | null;
+  source: string;
+  properties: Record<string, unknown>;
+}
+
+interface TrackEventResult {
+  data: unknown;
+  error: unknown;
+}
+
+interface UserProperties {
+  email?: string;
+  user_email?: string;
+  account_id?: string;
+  [key: string]: unknown;
+}
+
+interface BaseEventProperties {
+  user_id?: string;
+  user_email?: string;
+  account_id?: string;
+  [key: string]: unknown;
+}
+
+interface FlowData {
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface BillingOption {
+  billing_frequency: string;
+  price: number;
+  [key: string]: unknown;
+}
+
+let supabase: SupabaseClient | null = null;
 
 // Store current user context globally (updated by identify calls)
-let currentUserContext = {
+let currentUserContext: UserContext = {
   user_id: null,
   user_email: null,
   account_id: null,
 };
 
-export const initializeAnalytics = () => {
+export const initializeAnalytics = (): void => {
   try {
     supabase = createClient(supabaseUrl, supabaseKey);
     console.log('Analytics initialized successfully');
@@ -24,13 +69,13 @@ export const initializeAnalytics = () => {
 
 // Helper function to send events
 const trackEvent = async (
-  eventName,
-  userId,
-  userEmail,
-  accountId,
-  properties = {},
+  eventName: string,
+  userId?: string | null,
+  userEmail?: string | null,
+  accountId?: string | null,
+  properties: Record<string, unknown> = {},
   source = 'web',
-) => {
+): Promise<TrackEventResult> => {
   if (!supabase) {
     console.warn('Analytics not initialized. Call initializeAnalytics() first.');
     return { data: null, error: null };
@@ -42,7 +87,7 @@ const trackEvent = async (
     const finalUserEmail = userEmail || currentUserContext.user_email;
     const finalAccountId = accountId || currentUserContext.account_id;
 
-    const eventData = {
+    const eventData: EventData = {
       event_name: eventName,
       user_id: finalUserId,
       user_email: finalUserEmail,
@@ -67,7 +112,7 @@ const trackEvent = async (
 // Analytics event tracking functions
 export const analytics = {
   // User authentication events
-  identify: async (userId, userProperties = {}) => {
+  identify: async (userId: string, userProperties: UserProperties = {}): Promise<TrackEventResult> => {
     // Update global user context
     currentUserContext = {
       user_id: userId,
@@ -81,7 +126,7 @@ export const analytics = {
   },
 
   // Page view tracking
-  pageView: async (pageName, properties = {}) => {
+  pageView: async (pageName: string, properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'page_viewed',
       properties.user_id,
@@ -95,7 +140,7 @@ export const analytics = {
   },
 
   // User authentication events
-  signIn: async (method = 'email', properties = {}) => {
+  signIn: async (method = 'email', properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'user_signed_in',
       properties.user_id,
@@ -108,7 +153,7 @@ export const analytics = {
     );
   },
 
-  signOut: async (properties = {}) => {
+  signOut: async (properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'user_signed_out',
       properties.user_id,
@@ -119,7 +164,11 @@ export const analytics = {
   },
 
   // Account switching
-  accountSwitched: async (fromAccountId, toAccountId, properties = {}) => {
+  accountSwitched: async (
+    fromAccountId: string,
+    toAccountId: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('account_switched', properties.user_id, properties.user_email, toAccountId, {
       from_account_id: fromAccountId,
       to_account_id: toAccountId,
@@ -128,7 +177,7 @@ export const analytics = {
   },
 
   // Agent/AI related events
-  agentCreated: async (agentType, properties = {}) => {
+  agentCreated: async (agentType: string, properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'agent_created',
       properties.user_id,
@@ -142,7 +191,7 @@ export const analytics = {
   },
 
   // Flow creation events
-  flowCreated: async (flowData, properties = {}) => {
+  flowCreated: async (flowData: FlowData, properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'flow_created',
       properties.user_id,
@@ -150,14 +199,18 @@ export const analytics = {
       properties.account_id,
       {
         flow_type: flowData.type || 'unknown',
-        has_prompt: !!properties.prompt,
-        has_altaner_component: !!properties.altaner_component_id,
+        has_prompt: !!(properties as Record<string, unknown>).prompt,
+        has_altaner_component: !!(properties as Record<string, unknown>).altaner_component_id,
         ...properties,
       },
     );
   },
 
-  agentInteraction: async (agentId, interactionType, properties = {}) => {
+  agentInteraction: async (
+    agentId: string,
+    interactionType: string,
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('agent_interaction', null, null, null, {
       agent_id: agentId,
       interaction_type: interactionType,
@@ -165,7 +218,7 @@ export const analytics = {
     });
   },
 
-  voiceInteraction: async (duration, properties = {}) => {
+  voiceInteraction: async (duration: number, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('voice_interaction', null, null, null, {
       duration_seconds: duration,
       ...properties,
@@ -173,14 +226,14 @@ export const analytics = {
   },
 
   // Dashboard and navigation events
-  dashboardViewed: async (section, properties = {}) => {
+  dashboardViewed: async (section: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('dashboard_viewed', null, null, null, {
       section,
       ...properties,
     });
   },
 
-  menuItemClicked: async (menuItem, properties = {}) => {
+  menuItemClicked: async (menuItem: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('menu_item_clicked', null, null, null, {
       menu_item: menuItem,
       ...properties,
@@ -188,14 +241,18 @@ export const analytics = {
   },
 
   // Feature usage events
-  featureUsed: async (featureName, properties = {}) => {
+  featureUsed: async (featureName: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('feature_used', null, null, null, {
       feature_name: featureName,
       ...properties,
     });
   },
 
-  buttonClicked: async (buttonName, location, properties = {}) => {
+  buttonClicked: async (
+    buttonName: string,
+    location: string,
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('button_clicked', null, null, null, {
       button_name: buttonName,
       location,
@@ -204,21 +261,25 @@ export const analytics = {
   },
 
   // Form events
-  formStarted: async (formName, properties = {}) => {
+  formStarted: async (formName: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('form_started', null, null, null, {
       form_name: formName,
       ...properties,
     });
   },
 
-  formCompleted: async (formName, properties = {}) => {
+  formCompleted: async (formName: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('form_completed', null, null, null, {
       form_name: formName,
       ...properties,
     });
   },
 
-  formAbandoned: async (formName, completionRate, properties = {}) => {
+  formAbandoned: async (
+    formName: string,
+    completionRate: number,
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('form_abandoned', null, null, null, {
       form_name: formName,
       completion_rate: completionRate,
@@ -227,20 +288,24 @@ export const analytics = {
   },
 
   // Error tracking - disabled for business analytics
-  errorOccurred: async () => {
+  errorOccurred: async (): Promise<void> => {
     // Silently disabled for business analytics
   },
 
-  trackError: async () => {
+  trackError: async (): Promise<void> => {
     // Silently disabled for business analytics
   },
 
-  trackAPIError: async () => {
+  trackAPIError: async (): Promise<void> => {
     // Silently disabled for business analytics
   },
 
   // Performance events
-  performanceMetric: async (metricName, value, properties = {}) => {
+  performanceMetric: async (
+    metricName: string,
+    value: number,
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('performance_metric', null, null, null, {
       metric_name: metricName,
       value,
@@ -249,7 +314,12 @@ export const analytics = {
   },
 
   // E-commerce events
-  beginCheckout: async (value, currency, items, properties = {}) => {
+  beginCheckout: async (
+    value: number,
+    currency: string,
+    items: unknown[],
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('begin_checkout', null, null, null, {
       value,
       currency,
@@ -259,7 +329,7 @@ export const analytics = {
   },
 
   // Upgrade and pricing events
-  upgradeDialogViewed: async (properties = {}) => {
+  upgradeDialogViewed: async (properties: BaseEventProperties = {}): Promise<TrackEventResult> => {
     return trackEvent(
       'upgrade_dialog_viewed',
       properties.user_id,
@@ -269,7 +339,11 @@ export const analytics = {
     );
   },
 
-  checkoutInitiated: async (planType, billingOption, properties = {}) => {
+  checkoutInitiated: async (
+    planType: string,
+    billingOption: BillingOption,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent(
       'checkout_initiated',
       properties.user_id,
@@ -285,7 +359,13 @@ export const analytics = {
     );
   },
 
-  purchase: async (transactionId, value, currency, items, properties = {}) => {
+  purchase: async (
+    transactionId: string,
+    value: number,
+    currency: string,
+    items: unknown[],
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('purchase', null, null, null, {
       transaction_id: transactionId,
       value,
@@ -295,7 +375,7 @@ export const analytics = {
     });
   },
 
-  generateLead: async (leadType, properties = {}) => {
+  generateLead: async (leadType: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('generate_lead', null, null, null, {
       lead_type: leadType,
       ...properties,
@@ -303,7 +383,11 @@ export const analytics = {
   },
 
   // Project and template events
-  createProject: async (projectName, projectType, properties = {}) => {
+  createProject: async (
+    projectName: string,
+    projectType: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('create_project', properties.user_id, properties.user_email, properties.account_id, {
       project_name: projectName,
       project_type: projectType,
@@ -311,7 +395,11 @@ export const analytics = {
     });
   },
 
-  openProject: async (projectId, projectName, properties = {}) => {
+  openProject: async (
+    projectId: string,
+    projectName: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('open_project', properties.user_id, properties.user_email, properties.account_id, {
       project_id: projectId,
       project_name: projectName,
@@ -319,7 +407,11 @@ export const analytics = {
     });
   },
 
-  cloneTemplate: async (templateId, templateName, properties = {}) => {
+  cloneTemplate: async (
+    templateId: string,
+    templateName: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('clone_template', properties.user_id, properties.user_email, properties.account_id, {
       template_id: templateId,
       template_name: templateName,
@@ -327,7 +419,11 @@ export const analytics = {
     });
   },
 
-  openTemplate: async (templateId, templateName, properties = {}) => {
+  openTemplate: async (
+    templateId: string,
+    templateName: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('open_template', properties.user_id, properties.user_email, properties.account_id, {
       template_id: templateId,
       template_name: templateName,
@@ -336,7 +432,11 @@ export const analytics = {
   },
 
   // Account viewing events
-  accountViewed: async (viewedAccountId, accountName, properties = {}) => {
+  accountViewed: async (
+    viewedAccountId: string,
+    accountName: string,
+    properties: BaseEventProperties = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('account_viewed', properties.user_id, properties.user_email, properties.account_id, {
       viewed_account_id: viewedAccountId,
       viewed_account_name: accountName,
@@ -346,7 +446,7 @@ export const analytics = {
   },
 
   // Enhanced voice conversation tracking
-  voiceConversationStart: async (agentId, properties = {}) => {
+  voiceConversationStart: async (agentId: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('voice_conversation_start', null, null, null, {
       agent_id: agentId,
       action: 'start',
@@ -354,7 +454,11 @@ export const analytics = {
     });
   },
 
-  voiceConversationEnd: async (agentId, duration, properties = {}) => {
+  voiceConversationEnd: async (
+    agentId: string,
+    duration: number,
+    properties: Record<string, unknown> = {},
+  ): Promise<TrackEventResult> => {
     return trackEvent('voice_conversation_end', null, null, null, {
       agent_id: agentId,
       action: 'end',
@@ -364,7 +468,7 @@ export const analytics = {
   },
 
   // Message interaction events
-  messageSent: async (threadId, properties = {}) => {
+  messageSent: async (threadId: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('message_sent', null, null, null, {
       thread_id: threadId,
       ...properties,
@@ -372,7 +476,7 @@ export const analytics = {
   },
 
   // UI/UX events
-  autopilotUpgradeDialog: async (action, properties = {}) => {
+  autopilotUpgradeDialog: async (action: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent('autopilot_upgrade_dialog', null, null, null, {
       action,
       ...properties,
@@ -380,17 +484,17 @@ export const analytics = {
   },
 
   // Custom event tracking
-  track: async (eventName, properties = {}) => {
+  track: async (eventName: string, properties: Record<string, unknown> = {}): Promise<TrackEventResult> => {
     return trackEvent(eventName, null, null, null, properties);
   },
 
   // Set user properties - handled via identify() for Supabase
-  setUserProperties: async () => {
+  setUserProperties: async (): Promise<void> => {
     console.log('Use analytics.identify() instead of setUserProperties for Supabase');
   },
 
   // Reset user session (on logout)
-  reset: () => {
+  reset: (): void => {
     currentUserContext = {
       user_id: null,
       user_email: null,
@@ -401,3 +505,4 @@ export const analytics = {
 };
 
 export default analytics;
+

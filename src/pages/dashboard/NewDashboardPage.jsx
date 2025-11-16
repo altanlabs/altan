@@ -18,7 +18,7 @@ import NewHeroSection from '../../sections/new/NewHeroSection';
 const selectAccountAltaners = (state) => state.general.account?.altaners;
 const selectAccountId = (state) => state.general.account?.id;
 
-const NewDashboardPage = () => {
+const agentsmenu = () => {
   const history = useHistory();
   const location = useLocation();
   const { isAuthenticated } = useAuthContext();
@@ -244,4 +244,4 @@ const NewDashboardPage = () => {
   );
 };
 
-export default memo(NewDashboardPage);
+export default memo(agentsmenu);

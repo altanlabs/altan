@@ -1,23 +1,59 @@
-import React, { memo, useState, useCallback, useMemo } from 'react';
+/**
+ * CompactProjectCard Component
+ * Displays a project card with preview image, metadata, and context menu
+ */
+
+import { memo, useState, useCallback, useMemo, MouseEvent } from 'react';
 import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 import { NewAvatarGroup } from '../../../components/avatar-group';
+// @ts-ignore - JSX component without types
 import DeleteDialog from '../../../components/dialogs/DeleteDialog';
+// @ts-ignore - JSX component without types
 import FormDialog from '../../../components/FormDialog';
+// @ts-ignore - JSX component without types
 import Iconify from '../../../components/iconify/Iconify';
+// @ts-ignore - JSX component without types
 import IconRenderer from '../../../components/icons/IconRenderer';
 import { deleteAltanerById, updateAltanerById } from '../../../redux/slices/altaners';
-import { selectSortedAgents, selectAccount } from '../../../redux/slices/general/index.ts';
+import { selectSortedAgents, selectAccount } from '../../../redux/slices/general/index';
+import type { RootState } from '../../../redux/store';
+import type { Agent, CompactProjectCardProps, Member, ProjectMember } from './types';
 
-// Selector for agents
-const selectAgents = (state) => selectSortedAgents(state) || [];
+// Selectors
+const selectAgents = (state: RootState): Agent[] => selectSortedAgents(state) || [];
+const selectMembers = (state: RootState): Member[] => selectAccount(state)?.members || [];
 
-// Selector for members
-const selectMembers = (state) => selectAccount(state)?.members || [];
+interface ContextMenuState {
+  mouseX: number;
+  mouseY: number;
+}
 
-const CompactProjectCard = ({ altaner }) => {
+interface EditSchema {
+  properties: {
+    name: {
+      type: string;
+      title: string;
+      default: string;
+    };
+    description: {
+      type: string;
+      title: string;
+      default: string;
+    };
+    icon_url: {
+      type: string;
+      title: string;
+      default?: string;
+      'x-component': string;
+    };
+  };
+  required: string[];
+}
+
+const CompactProjectCard: React.FC<CompactProjectCardProps> = ({ altaner }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const agents = useSelector(selectAgents);
@@ -26,7 +62,7 @@ const CompactProjectCard = ({ altaner }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [contextMenu, setContextMenu] = useState(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Early return if altaner is invalid
@@ -41,12 +77,10 @@ const CompactProjectCard = ({ altaner }) => {
     icon_url,
     description = '',
     preview_url,
-    interface_id,
     is_pinned = false,
-    last_modified,
     components,
     user_ids,
-  } = altaner || {};
+  } = altaner;
 
   // Ensure components is always an array
   const safeComponents = Array.isArray(components) ? components : [];
@@ -54,12 +88,12 @@ const CompactProjectCard = ({ altaner }) => {
 
   // Extract cloud component (base component with cloud_id)
   const cloudComponent = safeComponents.find(
-    (comp) => comp && comp.type === 'base' && comp.cloud_id,
+    (comp) => comp && comp.type === 'base' && comp.cloud_id
   );
 
   // Extract agents component with ids
   const agentsComponent = safeComponents.find(
-    (comp) => comp && comp.type === 'agents' && comp.params?.ids?.length > 0,
+    (comp) => comp && comp.type === 'agents' && comp.params?.ids?.length && comp.params.ids.length > 0
   );
 
   // Get actual agent objects from Redux based on IDs in the component
@@ -68,7 +102,7 @@ const CompactProjectCard = ({ altaner }) => {
     if (!Array.isArray(agentsComponent.params.ids)) return [];
     return agentsComponent.params.ids
       .map((agentId) => agents.find((agent) => agent?.id === agentId))
-      .filter(Boolean); // Remove undefined entries
+      .filter((agent): agent is Agent => Boolean(agent));
   }, [agentsComponent, agents]);
 
   // Get actual user objects from Redux based on user_ids in the altaner
@@ -76,16 +110,16 @@ const CompactProjectCard = ({ altaner }) => {
     if (!safeUserIds?.length || !members?.length) return [];
     return safeUserIds
       .map((userId) => members.find((member) => member?.user?.id === userId))
-      .filter(Boolean) // Remove undefined entries
-      .map((member) => ({ ...member.user, _type: 'user' })); // Extract user object and mark as user
+      .filter((member): member is Member => Boolean(member))
+      .map((member) => ({ ...member.user, _type: 'user' as const }));
   }, [safeUserIds, members]);
 
   // Merge users and agents into a single array for the avatar group
-  const projectMembers = useMemo(() => {
+  const projectMembers = useMemo<ProjectMember[]>(() => {
     const safeProjectAgents = Array.isArray(projectAgents) ? projectAgents : [];
     const safeProjectUsers = Array.isArray(projectUsers) ? projectUsers : [];
     // Mark agents with a type identifier
-    const markedAgents = safeProjectAgents.map((agent) => ({ ...agent, _type: 'agent' }));
+    const markedAgents = safeProjectAgents.map((agent) => ({ ...agent, _type: 'agent' as const }));
     // Users first, then agents
     return [...safeProjectUsers, ...markedAgents];
   }, [projectUsers, projectAgents]);
@@ -96,17 +130,17 @@ const CompactProjectCard = ({ altaner }) => {
   }, [id, history]);
 
   const handleCloudClick = useCallback(
-    (e) => {
+    (e: MouseEvent) => {
       e.stopPropagation();
       if (cloudComponent && cloudComponent.id && id) {
         history.push(`/project/${id}/c/${cloudComponent.id}`);
       }
     },
-    [cloudComponent, history, id],
+    [cloudComponent, history, id]
   );
 
   const handleMemberClick = useCallback(
-    (item, e) => {
+    (item: ProjectMember, e: MouseEvent) => {
       e.stopPropagation();
       // Only navigate if it's an agent (not a user)
       if (item?._type === 'agent' && agentsComponent?.id && id && item?.id) {
@@ -114,10 +148,10 @@ const CompactProjectCard = ({ altaner }) => {
       }
       // For users, we could add navigation or other functionality later
     },
-    [agentsComponent, history, id],
+    [agentsComponent, history, id]
   );
 
-  const handleContextMenu = useCallback((event) => {
+  const handleContextMenu = useCallback((event: MouseEvent) => {
     event.preventDefault();
     setContextMenu({
       mouseX: event.clientX,
@@ -156,7 +190,7 @@ const CompactProjectCard = ({ altaner }) => {
     }
   }, [dispatch, id, handleCloseDeleteDialog]);
 
-  const editSchema = {
+  const editSchema: EditSchema = {
     properties: {
       name: {
         type: 'string',
@@ -188,7 +222,7 @@ const CompactProjectCard = ({ altaner }) => {
   }, []);
 
   const handleConfirmEdit = useCallback(
-    async (data) => {
+    async (data: Partial<{ name: string; description: string; icon_url: string }>) => {
       if (!id) {
         console.error('Cannot update altaner: missing id');
         return;
@@ -200,7 +234,7 @@ const CompactProjectCard = ({ altaner }) => {
         console.error('Failed to update altaner:', error);
       }
     },
-    [dispatch, handleCloseEditDialog, id],
+    [dispatch, handleCloseEditDialog, id]
   );
 
   const handleTogglePin = useCallback(() => {
@@ -223,18 +257,11 @@ const CompactProjectCard = ({ altaner }) => {
         onContextMenu={handleContextMenu}
       >
         {/* Cover Image */}
-        <div
-          className="relative aspect-[16/10] overflow-hidden rounded-xl"
-          onClick={handleClick}
-        >
+        <div className="relative aspect-[16/10] overflow-hidden rounded-xl" onClick={handleClick}>
           {preview_url ? (
             imageError ? (
               <div className="w-full h-full flex items-center justify-center bg-primary/8">
-                <IconRenderer
-                  icon="mdi:image-off"
-                  size={48}
-                  className="opacity-50"
-                />
+                <IconRenderer icon="mdi:image-off" size={48} className="opacity-50" />
               </div>
             ) : (
               <img
@@ -256,31 +283,21 @@ const CompactProjectCard = ({ altaner }) => {
         {/* Content */}
         <div className="p-3">
           <div className="flex items-center justify-between text-xs w-full min-w-0">
-            <div
-              className="flex items-center gap-2 min-w-0 flex-1"
-              onClick={handleClick}
-            >
-              {/* Pin indicator */}
+            <div className="flex items-center gap-2 min-w-0 flex-1" onClick={handleClick}>
+              {/* Cloud indicator */}
               {cloudComponent && (
                 <button
                   onClick={handleCloudClick}
                   className="p-1 hover:bg-primary/10 rounded transition-colors"
                   title="Open Cloud"
                 >
-                  <Iconify
-                    icon="material-symbols:cloud"
-                    width={16}
-                    className="text-primary"
-                  />
+                  <Iconify icon="material-symbols:cloud" width={16} className="text-primary" />
                 </button>
               )}
+              {/* Pin indicator */}
               {is_pinned && (
                 <div className="flex items-center">
-                  <Iconify
-                    icon="mdi:pin"
-                    width={14}
-                    className="text-current"
-                  />
+                  <Iconify icon="mdi:pin" width={14} className="text-current" />
                 </div>
               )}
               {/* Name */}
@@ -324,10 +341,7 @@ const CompactProjectCard = ({ altaner }) => {
         ReactDOM.createPortal(
           <>
             {/* Backdrop to close menu when clicking outside */}
-            <div
-              className="fixed inset-0 z-[9998]"
-              onClick={handleCloseMenu}
-            />
+            <div className="fixed inset-0 z-[9998]" onClick={handleCloseMenu} />
             {/* Custom Context Menu */}
             <div
               className="fixed z-[9999] min-w-[12rem] rounded-lg border bg-white dark:bg-gray-800 p-1 shadow-xl"
@@ -340,41 +354,30 @@ const CompactProjectCard = ({ altaner }) => {
                 onClick={handleTogglePin}
                 className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <Iconify
-                  icon={is_pinned ? 'mdi:pin-off' : 'mdi:pin'}
-                  width={16}
-                  className="mr-2"
-                />
+                <Iconify icon={is_pinned ? 'mdi:pin-off' : 'mdi:pin'} width={16} className="mr-2" />
                 {is_pinned ? 'Unpin' : 'Pin'}
               </button>
               <button
                 onClick={handleEdit}
                 className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <Iconify
-                  icon="mdi:pencil"
-                  width={16}
-                  className="mr-2"
-                />
+                <Iconify icon="mdi:pencil" width={16} className="mr-2" />
                 Edit
               </button>
               <button
                 onClick={handleDelete}
                 className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm text-red-600 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
               >
-                <Iconify
-                  icon="mdi:delete"
-                  width={16}
-                  className="mr-2"
-                />
+                <Iconify icon="mdi:delete" width={16} className="mr-2" />
                 Delete
               </button>
             </div>
           </>,
-          document.body,
+          document.body
         )}
     </>
   );
 };
 
 export default memo(CompactProjectCard);
+

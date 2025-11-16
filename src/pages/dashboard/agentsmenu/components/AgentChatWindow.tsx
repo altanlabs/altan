@@ -1,32 +1,60 @@
-import React, { memo, useEffect } from 'react';
+/**
+ * AgentChatWindow Component
+ * Displays a floating chat window for agent DMs with minimize, expand/collapse, and open in new tab features
+ */
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+import React, { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import StaticGradientAvatar from '../../../components/agents/StaticGradientAvatar';
-import { CustomAvatar } from '../../../components/custom-avatar';
-import Iconify from '../../../components/iconify/Iconify';
-import { fetchAgentRoom, selectAgentRoom } from '../../../redux/slices/agents.ts';
+// @ts-expect-error - JSX component without types
+import StaticGradientAvatar from '../../../../components/agents/StaticGradientAvatar';
+// @ts-expect-error - JS component without types
+import { CustomAvatar } from '../../../../components/custom-avatar';
+// @ts-expect-error - JSX component without types
+import Iconify from '../../../../components/iconify/Iconify';
+import { fetchAgentRoom, selectAgentRoom } from '../../../../redux/slices/agents';
+import type { Agent } from '../types';
 
-const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, onToggleExpand, rightOffset: providedOffset }) => {
+interface AgentChatWindowProps {
+  agent: Agent;
+  onClose: () => void;
+  windowIndex?: number;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  rightOffset?: number;
+}
+
+const DEFAULT_COLORS = ['#CADCFC', '#A0B9D1'];
+
+const AgentChatWindow: React.FC<AgentChatWindowProps> = ({
+  agent,
+  onClose,
+  windowIndex = 0,
+  isExpanded = false,
+  onToggleExpand,
+  rightOffset: providedOffset,
+}) => {
   const history = useHistory();
   const dispatch = useDispatch();
-  // Use the agent-specific selector
   const agentRoom = useSelector(selectAgentRoom(agent.id));
-  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   useEffect(() => {
     if (agent) {
       // Pass setAsCurrent=false to avoid setting this as the main current agent
+      // @ts-expect-error - Redux thunk type mismatch
       dispatch(fetchAgentRoom(agent.id, false));
     }
   }, [agent, dispatch]);
 
-  const handleNavigateToAgent = () => {
+  const handleNavigateToAgent = (): void => {
     history.push(`/agent/${agent.id}`);
   };
 
   // Render agent avatar based on available data
-  const renderAgentAvatar = (size = 32) => {
+  const renderAgentAvatar = (size = 32): React.ReactNode => {
     const hasAvatarUrl = agent.avatar_url && agent.avatar_url.trim() !== '';
 
     if (hasAvatarUrl) {
@@ -46,10 +74,12 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
       );
     }
 
+    // @ts-expect-error - meta_data type definition incomplete
+    const colors = agent?.meta_data?.avatar_orb?.colors || DEFAULT_COLORS;
     return (
       <StaticGradientAvatar
         size={size}
-        colors={agent?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1']}
+        colors={colors}
         onClick={handleNavigateToAgent}
         className="cursor-pointer"
       />
@@ -61,9 +91,8 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
   const windowHeight = isExpanded ? '95vh' : '70vh';
 
   // Use provided offset or fallback to simple calculation
-  const rightOffset = providedOffset ?? (378 + windowIndex * 412);
+  const rightOffset = providedOffset ?? 378 + windowIndex * 412;
 
-  // Always render the full structure, but adjust styling based on minimized state
   return (
     <div
       className="fixed bottom-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden"
@@ -93,9 +122,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
 
           {/* Agent name */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground truncate">
-              {agent.name}
-            </h3>
+            <h3 className="font-semibold text-sm text-foreground truncate">{agent.name}</h3>
           </div>
 
           {/* Action buttons */}
@@ -115,7 +142,9 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
               <Iconify
                 icon="mdi:open-in-new"
                 width={16}
-                className={agentRoom?.dmRoomId ? 'text-muted-foreground' : 'text-muted-foreground/30'}
+                className={
+                  agentRoom?.dmRoomId ? 'text-muted-foreground' : 'text-muted-foreground/30'
+                }
               />
             </button>
 
@@ -144,11 +173,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
               className="p-2 hover:bg-accent/30 rounded transition-colors"
               title="Close"
             >
-              <Iconify
-                icon="mdi:close"
-                width={18}
-                className="text-muted-foreground"
-              />
+              <Iconify icon="mdi:close" width={18} className="text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -173,8 +198,7 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
               allow="microphone; camera; clipboard-write"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
-            </div>
+            <div className="flex items-center justify-center h-full" />
           )}
         </div>
       </div>
@@ -183,3 +207,4 @@ const AgentChatWindow = ({ agent, onClose, windowIndex = 0, isExpanded = false, 
 };
 
 export default memo(AgentChatWindow);
+

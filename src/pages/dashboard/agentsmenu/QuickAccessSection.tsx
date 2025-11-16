@@ -1,16 +1,23 @@
-import React, { memo, useState, useMemo } from 'react';
+/**
+ * QuickAccessSection Component
+ * Displays a filterable grid of project cards with search and cloud filtering
+ */
+
+import { memo, useState, useMemo, ChangeEvent } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import CompactProjectCard from './CompactProjectCard';
+// @ts-ignore - JSX component without types
 import Iconify from '../../../components/iconify/Iconify';
 import {
   selectAltanersList,
   selectAltanersLoading,
   selectAltanersInitialized,
 } from '../../../redux/slices/altaners';
-import { useSelector } from '../../../redux/store.ts';
+import { useSelector } from '../../../redux/store';
+import type { Altaner } from './types';
 
-const QuickAccessSection = () => {
+const QuickAccessSection: React.FC = () => {
   const history = useHistory();
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsToShow, setItemsToShow] = useState(24);
@@ -56,7 +63,7 @@ const QuickAccessSection = () => {
       projects = projects.filter(
         (project) =>
           project.name?.toLowerCase().includes(search) ||
-          project.description?.toLowerCase().includes(search),
+          project.description?.toLowerCase().includes(search)
       );
     }
 
@@ -72,8 +79,24 @@ const QuickAccessSection = () => {
     setItemsToShow(filteredProjects.length);
   };
 
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+  };
+
+  const handleToggleCloudFilter = () => {
+    setShowOnlyWithCloud(!showOnlyWithCloud);
+  };
+
+  const handleNavigateToMarketplace = () => {
+    history.push('/marketplace');
+  };
+
   // Loading skeleton for projects
-  const ProjectSkeleton = () => (
+  const ProjectSkeleton = memo(() => (
     <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
       {[1, 2, 3].map((i) => (
         <div
@@ -82,7 +105,9 @@ const QuickAccessSection = () => {
         />
       ))}
     </div>
-  );
+  ));
+
+  ProjectSkeleton.displayName = 'ProjectSkeleton';
 
   return (
     <div className="w-full max-w-7xl flex flex-col gap-8">
@@ -96,27 +121,21 @@ const QuickAccessSection = () => {
             {/* Search Input */}
             <div className="relative max-w-xs flex-1">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none z-10">
-                <Iconify
-                  icon="mdi:magnify"
-                  width={16}
-                />
+                <Iconify icon="mdi:magnify" width={16} />
               </div>
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-white/10 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
               />
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm('')}
+                  onClick={handleClearSearch}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Iconify
-                    icon="mdi:close"
-                    width={16}
-                  />
+                  <Iconify icon="mdi:close" width={16} />
                 </button>
               )}
             </div>
@@ -126,7 +145,7 @@ const QuickAccessSection = () => {
           <div className="flex items-center gap-2">
             {/* Cloud Filter Toggle */}
             <button
-              onClick={() => setShowOnlyWithCloud(!showOnlyWithCloud)}
+              onClick={handleToggleCloudFilter}
               className={`group flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border backdrop-blur-xl transition-all whitespace-nowrap ${
                 showOnlyWithCloud
                   ? 'bg-primary/20 dark:bg-primary/30 border-primary/50 text-primary-foreground dark:text-primary'
@@ -144,13 +163,10 @@ const QuickAccessSection = () => {
 
             {/* Explore Community Button */}
             <button
-              onClick={() => history.push('/marketplace')}
+              onClick={handleNavigateToMarketplace}
               className="group flex items-center gap-2 px-4 py-1.5 text-xs font-medium text-foreground rounded-lg border border-white/10 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-xl hover:bg-white/60 dark:hover:bg-white/10 hover:border-primary/30 transition-all whitespace-nowrap"
             >
-              <Iconify
-                icon="mdi:store"
-                width={16}
-              />
+              <Iconify icon="mdi:store" width={16} />
               Explore community
             </button>
           </div>
@@ -169,10 +185,7 @@ const QuickAccessSection = () => {
               }
             >
               {visibleProjects.map((project) => (
-                <CompactProjectCard
-                  key={project.id}
-                  altaner={project}
-                />
+                <CompactProjectCard key={project.id} altaner={project} />
               ))}
             </div>
 
@@ -248,3 +261,4 @@ const QuickAccessSection = () => {
 };
 
 export default memo(QuickAccessSection);
+

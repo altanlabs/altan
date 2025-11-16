@@ -8,7 +8,7 @@ import { TextGenerateEffect } from '../../components/elevenlabs/ui/text-generate
 import { useSettingsContext } from '../../components/settings';
 import { PromptBox } from '../../components/ui/chatgpt-prompt-input';
 import useLocales from '../../locales/useLocales';
-import QuickAccessSection from '../../pages/dashboard/NewDashboardPage/QuickAccessSection';
+import QuickAccessSection from '../../pages/dashboard/agentsmenu/QuickAccessSection';
 import { createAgent, selectIsAccountFree } from '../../redux/slices/general/index.ts';
 
 const NewHeroSection = ({ onSubmit, isCreating = false, onRequestAuth }) => {
