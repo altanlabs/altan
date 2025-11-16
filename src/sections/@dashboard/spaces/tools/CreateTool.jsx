@@ -7,8 +7,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@compo
 import ActionTypeCard from './ActionTypeCard';
 import Iconify from '../../../../components/iconify/index.js';
 import IconRenderer from '../../../../components/icons/IconRenderer.jsx';
-import { createToolLink } from '../../../../redux/slices/spaces.ts';
-import { dispatch } from '../../../../redux/store.ts';
 import ExternalConnectionTypes from '../../flows/modulespanel/ExternalConnectionTypes.jsx';
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -16,7 +14,7 @@ import ExternalConnectionTypes from '../../flows/modulespanel/ExternalConnection
 /* ────────────────────────────────────────────────────────────────────────── */
 
 const createLink = (tool, onClose) => {
-  dispatch(createToolLink(tool.id));
+  // Tool is already linked via /agent/{agentId}/add-tool endpoint
   if (onClose) onClose();
 };
 
