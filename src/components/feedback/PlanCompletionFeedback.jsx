@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
 import { memo, useState } from 'react';
+import { useSelector } from 'react-redux';
 
 import FeedbackPopup from './FeedbackPopup';
 import { useAuthContext } from '../../auth/useAuthContext';
@@ -9,18 +10,36 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui/button.tsx';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import ContactOptionsDialog from '../dialogs/ContactOptionsDialog';
+import UpgradeDialog from '../dialogs/UpgradeDialog';
+
+// Calendar booking URL
+const CALENDAR_URL = 'https://calendar.app.google/WAMez8wYG6sHXQRD9';
 
 // ----------------------------------------------------------------------
 
 const PlanCompletionFeedback = memo(({ planId, onClose }) => {
   const { user } = useAuthContext();
+  const isAccountFree = useSelector((state) => state.general?.account?.subscriptions ? 
+    (() => {
+      const subscriptions = state.general.account.subscriptions;
+      if (!subscriptions || subscriptions.length === 0) return true;
+      
+      const activeSubscription = subscriptions.find(
+        (sub) => sub.status === 'active' || sub.status === 'trialing'
+      );
+      
+      if (!activeSubscription) return true;
+      
+      const FREE_PLAN_ID = 'f35d12c6-51fb-11f0-b1b6-42010a400002';
+      return activeSubscription?.billing_option_id === FREE_PLAN_ID;
+    })() : true
+  );
   const [step, setStep] = useState('initial'); // initial, comment, referral, contact
   const [satisfaction, setSatisfaction] = useState(null); // true/false
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   const referralUrl = user?.id ? `https://altan.ai?ref=${user.id}` : '';
 
@@ -301,7 +320,7 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                     Want 10 minutes with the founder?
                   </p>
                   <p className="text-[#b0b0b0] text-xs leading-relaxed mb-3">
-                    I'll personally help you build your first automation and make this work for you.
+                    Due to high demand, we're only taking calls from users who have already purchased a plan.
                   </p>
                   <Button
                     variant="default"
@@ -310,8 +329,16 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
                       analytics.track('founder_call_clicked_from_negative_feedback', {
                         plan_id: planId,
                         has_comment: !!comment.trim(),
+                        is_account_free: isAccountFree,
                       });
-                      setShowContactDialog(true);
+                      
+                      if (isAccountFree) {
+                        // Show upgrade dialog for free users
+                        setShowUpgradeDialog(true);
+                      } else {
+                        // Directly open calendar in new tab for paid users
+                        window.open(CALENDAR_URL, '_blank', 'noopener,noreferrer');
+                      }
                     }}
                     className="bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs font-semibold h-8"
                   >
@@ -344,14 +371,10 @@ const PlanCompletionFeedback = memo(({ planId, onClose }) => {
           </div>
         </FeedbackPopup>
 
-        {/* Contact Options Dialog */}
-        <ContactOptionsDialog
-          open={showContactDialog}
-          onClose={() => setShowContactDialog(false)}
-          title="Let's talk!"
-          description="Book a call with our founder or join our community"
-          callOnly={false}
-          source="plan_negative_feedback"
+        {/* Upgrade Dialog for free users */}
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onClose={() => setShowUpgradeDialog(false)}
         />
       </>
     );

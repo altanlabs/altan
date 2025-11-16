@@ -3,7 +3,7 @@ import { memo } from 'react';
 
 import { analytics } from '../../lib/analytics';
 import { cn } from '../../lib/utils';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 
 // Contact options configuration
@@ -75,7 +75,7 @@ const ContactOptionsDialog = memo(
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">{title}</DialogTitle>
             {description && (
-              <DialogDescription className="text-[#b0b0b0]">{description}</DialogDescription>
+              <DialogDescription className="text-muted-foreground">{description}</DialogDescription>
             )}
           </DialogHeader>
 
@@ -89,7 +89,7 @@ const ContactOptionsDialog = memo(
                   'w-full justify-start h-auto py-4 px-4 rounded-xl',
                   option.variant === 'default'
                     ? 'bg-white text-black hover:bg-gray-100'
-                    : 'border-[#444] hover:border-[#666] hover:bg-white/5',
+                    : 'border-border hover:border-border/80 hover:bg-accent/50',
                 )}
               >
                 <div className="flex items-start gap-3 w-full">
@@ -107,7 +107,7 @@ const ContactOptionsDialog = memo(
                     <div
                       className={cn(
                         'font-semibold text-sm mb-0.5',
-                        option.variant === 'default' ? 'text-black' : 'text-white',
+                        option.variant === 'default' ? 'text-black' : 'text-foreground',
                       )}
                     >
                       {option.title}
@@ -115,7 +115,7 @@ const ContactOptionsDialog = memo(
                     <div
                       className={cn(
                         'text-xs',
-                        option.variant === 'default' ? 'text-gray-600' : 'text-[#888]',
+                        option.variant === 'default' ? 'text-gray-600' : 'text-muted-foreground',
                       )}
                     >
                       {option.description}
@@ -125,7 +125,7 @@ const ContactOptionsDialog = memo(
                     icon="mdi:chevron-right"
                     className={cn(
                       'w-5 h-5 flex-shrink-0',
-                      option.variant === 'default' ? 'text-gray-400' : 'text-[#666]',
+                      option.variant === 'default' ? 'text-gray-400' : 'text-muted-foreground',
                     )}
                   />
                 </div>
@@ -136,7 +136,7 @@ const ContactOptionsDialog = memo(
           <Button
             variant="ghost"
             onClick={onClose}
-            className="mt-2 text-[#888] hover:text-[#b0b0b0] hover:bg-transparent"
+            className="mt-2 text-muted-foreground hover:text-foreground hover:bg-transparent"
           >
             Close
           </Button>
