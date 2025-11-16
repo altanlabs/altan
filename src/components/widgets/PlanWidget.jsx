@@ -11,7 +11,7 @@ import {
   selectPlanLoading,
   selectPlanError,
   setPlan,
-} from '../../redux/slices/tasks';
+} from '../../redux/slices/tasks/index.ts';
 import { useDispatch, useSelector } from '../../redux/store.ts';
 import { AgentOrbAvatar } from '../agents/AgentOrbAvatar';
 import Iconify from '../iconify/Iconify';
@@ -21,7 +21,7 @@ const PlanWidget = ({ planId }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const location = useLocation();
-  const plan = useSelector(selectPlanById(planId));
+  const plan = useSelector((state) => selectPlanById(state, planId));
   const isLoading = useSelector(selectPlanLoading(planId));
   const error = useSelector(selectPlanError(planId));
   const [isApproving, setIsApproving] = useState(false);

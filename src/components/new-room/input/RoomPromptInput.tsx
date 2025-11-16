@@ -103,8 +103,7 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
     }, [members.byId, altanerId, altaner, operateMode]);
 
     // Get tasks for TodoWidget
-    const tasksSelector = useMemo(() => selectTasksByThread(threadId), [threadId]);
-    const tasks = useSelector(tasksSelector);
+    const tasks = useSelector((state) => selectTasksByThread(state, threadId));
     const hasTasks = altanerId && tasks && tasks.length > 0 && !operateMode;
 
     const isViewer = me?.role === 'viewer' || me?.role === 'listener';

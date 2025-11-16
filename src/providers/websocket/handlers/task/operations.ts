@@ -33,6 +33,7 @@ interface TaskEventData {
 
 /**
  * Handle task.created event
+ * Maps API field names to internal Task structure
  */
 export const handleTaskCreated = (eventData: TaskEventData): void => {
   dispatch(
@@ -40,22 +41,22 @@ export const handleTaskCreated = (eventData: TaskEventData): void => {
       threadId: eventData.mainthread_id,
       task: {
         id: eventData.task_id,
-        mainthread_id: eventData.mainthread_id,
-        room_id: eventData.room_id,
-        task_name: eventData.task_name,
-        task_description: eventData.task_description,
+        // Map API field names to Task interface
+        title: eventData.task_name || '',
+        description: eventData.task_description,
         status: eventData.status,
-        priority: eventData.priority,
+        order: eventData.priority,
+        thread_id: eventData.subthread_id,
+        mainthread_id: eventData.mainthread_id,
+        plan_id: eventData.plan_id || undefined,
+        created_at: eventData.created_at || new Date().toISOString(),
+        updated_at: eventData.updated_at || new Date().toISOString(),
+        finished_at: eventData.finished_at,
+        // Additional fields (not in base Task type but useful to preserve)
         assigned_agent: eventData.assigned_agent,
         assigned_agent_name: eventData.assigned_agent_name,
-        subthread_id: eventData.subthread_id,
         dependencies: eventData.dependencies,
         summary: eventData.summary,
-        created_at: eventData.created_at,
-        started_at: eventData.started_at,
-        finished_at: eventData.finished_at,
-        updated_at: eventData.updated_at,
-        plan_id: eventData?.plan_id || null,
       },
     }),
   );
@@ -63,6 +64,7 @@ export const handleTaskCreated = (eventData: TaskEventData): void => {
 
 /**
  * Handle task.updated event
+ * Only includes fields that changed
  */
 export const handleTaskUpdated = (eventData: TaskEventData): void => {
   dispatch(
@@ -71,19 +73,19 @@ export const handleTaskUpdated = (eventData: TaskEventData): void => {
       taskId: eventData.task_id,
       updates: {
         id: eventData.task_id,
+        // Map API field names to Task interface
+        title: eventData.task_name,
+        description: eventData.task_description,
         status: eventData.status,
-        task_name: eventData.task_name,
-        task_description: eventData.task_description,
+        order: eventData.priority,
+        thread_id: eventData.subthread_id,
+        updated_at: eventData.updated_at || new Date().toISOString(),
+        finished_at: eventData.finished_at,
+        // Additional fields
         assigned_agent: eventData.assigned_agent,
         assigned_agent_name: eventData.assigned_agent_name,
-        subthread_id: eventData.subthread_id,
-        priority: eventData.priority,
         dependencies: eventData.dependencies,
         summary: eventData.summary,
-        created_at: eventData.created_at,
-        started_at: eventData.started_at,
-        finished_at: eventData.finished_at,
-        updated_at: eventData.updated_at,
       },
     }),
   );
@@ -111,24 +113,25 @@ export const handleTaskCompleted = (eventData: TaskEventData): void => {
       taskId: eventData.task_id,
       updates: {
         status: 'completed',
-        task_name: eventData.task_name,
-        task_description: eventData.task_description,
+        // Map API field names to Task interface
+        title: eventData.task_name,
+        description: eventData.task_description,
+        order: eventData.priority,
+        thread_id: eventData.subthread_id,
+        finished_at: eventData.finished_at || new Date().toISOString(),
+        updated_at: eventData.updated_at || new Date().toISOString(),
+        // Additional fields
         assigned_agent: eventData.assigned_agent,
         assigned_agent_name: eventData.assigned_agent_name,
-        subthread_id: eventData.subthread_id,
-        priority: eventData.priority,
         dependencies: eventData.dependencies,
         summary: eventData.summary,
-        created_at: eventData.created_at,
-        started_at: eventData.started_at,
-        finished_at: eventData.finished_at,
-        updated_at: eventData.updated_at || new Date().toISOString(),
       },
     }),
   );
 
   // Check if all tasks are completed
   if (eventData.all_tasks_completed) {
+    // eslint-disable-next-line no-console
     console.log('🎉 All tasks completed! Plan finished:', {
       plan_id: eventData.plan_id,
       mainthread_id: eventData.mainthread_id,
@@ -136,11 +139,10 @@ export const handleTaskCompleted = (eventData: TaskEventData): void => {
     });
 
     // Play completion sound
-    try {
-      SOUND_IN.play();
-    } catch (error) {
+    void SOUND_IN.play().catch((error) => {
+      // eslint-disable-next-line no-console
       console.error('Failed to play completion sound:', error);
-    }
+    });
 
     // Dispatch plan completed event - use plan_id if available, otherwise mainthread_id
     dispatch(
@@ -161,4 +163,3 @@ export const TASK_OPERATIONS: Record<string, (eventData: TaskEventData) => void>
   'task.deleted': handleTaskDeleted,
   'task.completed': handleTaskCompleted,
 };
-

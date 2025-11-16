@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import NPSFeedback from './NPSFeedback';
 import PlanCompletionFeedback from './PlanCompletionFeedback';
 import { updateLastActivity } from '../../lib/feedbackUtils';
-import { selectCompletedPlanEvent } from '../../redux/slices/tasks.ts';
+import { selectCompletedPlanEvent } from '../../redux/slices/tasks/index.ts';
 
 // ----------------------------------------------------------------------
 

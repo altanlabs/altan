@@ -64,10 +64,11 @@ const HistoryButton = ({ disabled = false, size = 'small' }) => {
 
   const handleThreadSelect = useCallback(
     (threadId) => {
-      dispatch(switchToThreadInTab(threadId));
+      const thread = threadsById[threadId];
+      dispatch(switchToThreadInTab(threadId, thread?.name));
       handleClose();
     },
-    [handleClose],
+    [handleClose, threadsById],
   );
 
   return (

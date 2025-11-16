@@ -44,6 +44,12 @@ interface MessageCollection {
   cursor?: string | null;
 }
 
+interface NormalizedMessageCollection {
+  byId: Record<string, RawMessage>;
+  allIds: string[];
+  paginationInfo: PaginationInfo;
+}
+
 interface RawMessage {
   id: string;
   parts?: RawPart[] | { items: RawPart[] };
@@ -195,6 +201,15 @@ const extractMessageIds = (messages: RawMessage[]): string[] => {
 };
 
 /**
+ * Check if messages are in normalized format (byId/allIds)
+ */
+const isNormalizedMessageCollection = (
+  messages: MessageCollection | NormalizedMessageCollection,
+): messages is NormalizedMessageCollection => {
+  return 'byId' in messages && 'allIds' in messages;
+};
+
+/**
  * Dispatch messages and parts to appropriate slices
  * Single Responsibility: Coordinate message/parts dispatch
  * 
@@ -202,12 +217,48 @@ const extractMessageIds = (messages: RawMessage[]): string[] => {
  * - messages go to messagesSlice
  * - parts go to messagePartsSlice
  * - metadata (IDs + pagination) goes to threadsSlice
+ * 
+ * Handles both formats:
+ * - MessageCollection (items array) - from direct API responses
+ * - NormalizedCollection (byId/allIds) - from fetchThreadWithMessages
  */
 const dispatchMessagesAndParts = (
   dispatch: AppDispatch,
   threadId: string,
-  messages: MessageCollection,
+  messages: MessageCollection | NormalizedMessageCollection,
 ): void => {
+  // Handle normalized format (byId/allIds)
+  if (isNormalizedMessageCollection(messages)) {
+    const { byId, allIds, paginationInfo } = messages;
+    
+    if (!byId || !allIds || allIds.length === 0) {
+      return;
+    }
+
+    // Convert to array for processing
+    const messagesArray = allIds.map(id => byId[id]).filter(Boolean);
+
+    // Extract and dispatch parts
+    const parts = extractPartsFromMessages(messagesArray);
+    if (parts.length > 0) {
+      dispatch(addPartsFromMessages({ parts }));
+    }
+
+    // Dispatch full messages
+    dispatch(addMessagesFromThread({ messages: messagesArray as unknown as never[] }));
+
+    // Dispatch message IDs and pagination to thread
+    dispatch(
+      addMessages({
+        threadId,
+        messageIds: allIds,
+        paginationInfo,
+      }),
+    );
+    return;
+  }
+
+  // Handle old format (items array)
   if (!messages?.items || !Array.isArray(messages.items)) {
     return;
   }
@@ -257,7 +308,9 @@ const processBatchThreadMessages = (
  */
 const hasThreadLoadedMessages = (thread: Thread | null): boolean => {
   if (!thread) return false;
-  return thread.messages?.paginationInfo?.hasNextPage !== undefined;
+  // Check if thread actually has messages, not just pagination info
+  const messageCount = thread.messages?.allIds?.length ?? 0;
+  return messageCount > 0 || thread.messages?.paginationInfo?.hasNextPage === false;
 };
 
 /**
@@ -353,7 +406,6 @@ export const fetchThread = ({
     if (!force && thread) {
       return 'Thread already loaded.';
     }
-
     const roomService = getRoomService();
     const threadRaw = await roomService.fetchThreadWithMessages(threadId);
     const threadWithMessages = threadRaw as RawThread;

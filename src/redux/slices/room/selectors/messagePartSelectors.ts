@@ -5,8 +5,11 @@
 import { createSelector } from '@reduxjs/toolkit';
 import { createCachedSelector } from 're-reselect';
 
+import { selectTaskThreadId } from '@/redux/slices/tasks/selectors';
+
 import { selectMessagesContent } from './messageSelectors';
-import type { RootState, MessagePartsState, MessagePart, Message } from '../types/state';
+import { selectMessagesIdsByThread } from './threadSelectors';
+import type { RootState, MessagePartsState, MessagePart } from '../types/state';
 
 export const selectMessageParts = (state: RootState): MessagePartsState =>
   state.room._messageParts.messageParts;
@@ -257,59 +260,108 @@ export const makeSelectMessageHasStreamingParts = (): ReturnType<typeof createSe
     },
   );
 
+// ----------------------------------------------------------------------
+// TOOL PARTS SELECTORS (ULTRA-OPTIMIZED)
+// ----------------------------------------------------------------------
+
+/**
+ * Sorts tool parts by order and block_order
+ * Extracted to avoid duplication and improve performance
+ */
+const sortToolParts = (parts: MessagePart[]): MessagePart[] => {
+  return parts.sort((a, b) => {
+    const orderDiff = (a.order ?? 0) - (b.order ?? 0);
+    if (orderDiff !== 0) return orderDiff;
+    return (a.block_order ?? 0) - (b.block_order ?? 0);
+  });
+};
+
 /**
  * Select tool parts for a specific thread
- * Note: We recompute the messagesIdsByThread mapping locally to avoid circular dependency
- * with threadSelectors (threadSelectors imports from messageSelectors)
+ * Ultra-efficient cached selector that leverages selectMessagesIdsByThread
+ * to avoid rebuilding the message-thread mapping on every call
  */
-export const makeSelectToolPartsByThreadId = (): ReturnType<typeof createSelector> =>
-  createSelector(
+export const makeSelectToolPartsByThreadId = (): ((state: RootState, threadId: string) => MessagePart[]) =>
+  createCachedSelector(
     [
       selectMessagePartsById,
       selectMessagePartsByMessageId,
-      selectMessagesContent,
-      (state: RootState) => {
-        // Get messages directly from room state to avoid circular import
-        return state.room._messages?.messages?.byId || {};
-      },
+      selectMessagesIdsByThread,
       (_state: RootState, threadId: string) => threadId,
     ],
     (
       partsById: Record<string, MessagePart>,
       partsByMessageId: Record<string, string[]>,
-      _messagesContent: Record<string, string>,
-      messagesById: Record<string, Message>,
+      messagesIdsByThread: Record<string, string[]>,
       threadId: string,
     ): MessagePart[] => {
       if (!threadId) return [];
 
-      // Build messagesIdsByThread mapping locally (same logic as threadSelectors)
-      const messageIds = Object.keys(messagesById).filter(
-        (msgId) => messagesById[msgId]?.thread_id === threadId,
-      );
+      // Use pre-computed message IDs by thread (already memoized in threadSelectors)
+      const messageIds = messagesIdsByThread[threadId];
+      if (!messageIds || messageIds.length === 0) return [];
 
+      // Collect tool parts efficiently
       const toolParts: MessagePart[] = [];
+      for (let i = 0; i < messageIds.length; i++) {
+        const partIds = partsByMessageId[messageIds[i]];
+        if (!partIds) continue;
 
-      messageIds.forEach((messageId) => {
-        const partIds = partsByMessageId[messageId] || [];
-        partIds.forEach((partId) => {
-          const part = partsById[partId];
+        for (let j = 0; j < partIds.length; j++) {
+          const part = partsById[partIds[j]];
           if (part && (part.type === 'tool' || part.part_type === 'tool')) {
             toolParts.push(part);
           }
-        });
-      });
-
-      return toolParts.sort((a, b) => {
-        const orderA = a.order ?? 0;
-        const orderB = b.order ?? 0;
-        if (orderA !== orderB) {
-          return orderA - orderB;
         }
-        const blockOrderA = a.block_order ?? 0;
-        const blockOrderB = b.block_order ?? 0;
-        return blockOrderA - blockOrderB;
-      });
+      }
+
+      return sortToolParts(toolParts);
     },
-  );
+  )((_state, threadId) => `toolPartsByThread_${threadId}`);
+
+/**
+ * Select tool parts for a specific task
+ * Ultra-efficient cached selector that composes selectTaskThreadId with makeSelectToolPartsByThreadId
+ * This completely eliminates code duplication and leverages multi-level memoization:
+ * 1. Task -> Thread mapping is memoized in tasks selectors
+ * 2. Thread -> Tool parts is memoized in makeSelectToolPartsByThreadId
+ * Result: Zero redundant calculations, maximum performance
+ */
+export const makeSelectToolPartsByTaskId = (): ((state: RootState, taskId: string) => MessagePart[]) =>
+  createCachedSelector(
+    [
+      selectMessagePartsById,
+      selectMessagePartsByMessageId,
+      selectMessagesIdsByThread,
+      (state: RootState, taskId: string) => selectTaskThreadId(state, taskId),
+    ],
+    (
+      partsById: Record<string, MessagePart>,
+      partsByMessageId: Record<string, string[]>,
+      messagesIdsByThread: Record<string, string[]>,
+      threadId: string | undefined,
+    ): MessagePart[] => {
+      if (!threadId) return [];
+
+      // Use pre-computed message IDs by thread (already memoized in threadSelectors)
+      const messageIds = messagesIdsByThread[threadId];
+      if (!messageIds || messageIds.length === 0) return [];
+
+      // Collect tool parts efficiently (same optimized logic as makeSelectToolPartsByThreadId)
+      const toolParts: MessagePart[] = [];
+      for (let i = 0; i < messageIds.length; i++) {
+        const partIds = partsByMessageId[messageIds[i]];
+        if (!partIds) continue;
+
+        for (let j = 0; j < partIds.length; j++) {
+          const part = partsById[partIds[j]];
+          if (part && (part.type === 'tool' || part.part_type === 'tool')) {
+            toolParts.push(part);
+          }
+        }
+      }
+
+      return sortToolParts(toolParts);
+    },
+  )((_state, taskId) => `toolPartsByTask_${taskId}`);
 
