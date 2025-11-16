@@ -40,7 +40,7 @@ export const AccountMembers = Loadable(lazy(() => import('../pages/dashboard/Acc
 export const APIKeys = Loadable(lazy(() => import('../pages/dashboard/APIKeys.jsx')));
 export const ReferralsPage = Loadable(lazy(() => import('../pages/dashboard/ReferralsPage.jsx')));
 
-export const ProjectPage = Loadable(lazy(() => import('../pages/dashboard/ProjectPage.jsx')));
+export const ProjectPage = Loadable(lazy(() => import('../pages/dashboard/project/index')));
 
 export const NewAltanerPage = Loadable(
   lazy(() => import('../pages/dashboard/altaners/NewAltanerPage.jsx')),
