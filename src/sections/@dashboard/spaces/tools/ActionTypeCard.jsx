@@ -16,6 +16,7 @@ import { cn } from '@lib/utils';
 import GlobalVarsMenu from '../../../../components/flows/menuvars/GlobalVarsMenu.jsx';
 import Iconify from '../../../../components/iconify/index.js';
 import IconRenderer from '../../../../components/icons/IconRenderer.jsx';
+import { useSnackbar } from '../../../../components/snackbar';
 import CreateConnection from '../../../../components/tools/CreateConnection.jsx';
 // import DynamicFormField from './DynamicFormField.jsx';
 import { getNested } from '../../../../components/tools/dynamic/utils.js';
@@ -28,7 +29,9 @@ import {
   editTool,
   selectAccountConnections,
 } from '../../../../redux/slices/connections';
-import { optimai_integration, getAltanAxiosInstance } from '../../../../utils/axios.js';
+import { getSpace } from '../../../../redux/slices/spaces';
+import { dispatch } from '../../../../redux/store';
+import { optimai, optimai_integration, getAltanAxiosInstance } from '../../../../utils/axios.js';
 
 // const METHOD_COLORS = {
 //   GET: 'success',
@@ -268,6 +271,9 @@ const interpolatePath = (url, pathParams = {}) => {
 const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
   /* ─── Redux & RHF ─────────────────────────────────────────────────────── */
   const connections = useSelector(selectAccountConnections);
+  const currentAgent = useSelector((state) => state.agents.currentAgent);
+  const currentSpace = useSelector((state) => state.spaces.current);
+  const { enqueueSnackbar } = useSnackbar();
   const [dispatchWithFeedback] = useFeedbackDispatch();
   const methods = useForm();
   const isUpdate = !!tool?.id;
@@ -441,32 +447,70 @@ const ActionTypeCard = ({ action = {}, tool = null, onSave = null }) => {
 
   /** Final save (only available in Step 2) */
   const handleSubmit = methods.handleSubmit(async (data) => {
+    if (!isUpdate && !currentAgent?.id) {
+      enqueueSnackbar('No agent selected. Please select an agent first.', { variant: 'error' });
+      return;
+    }
+
     const { parameters, intent_settings, ...rest } = data;
-    const formatted = {
-      ...rest,
-      parameters: parameters ? formatData(parameters) : {},
-      meta_data: {
-        ...(tool?.meta_data || {}),
-        intent_settings: {
-          intent: intent_settings?.intent ?? false,
-          ui_intent: intent_settings?.ui_intent ?? false,
-          async: intent_settings?.async ?? false,
-        },
-      },
-      ...(isUpdate ? {} : { action_type_id: action.id, override_action: actionOverrides }),
-    };
 
-    const dispatchFn = isUpdate
-      ? editTool({ toolId: tool.id, formData: formatted })
-      : createTool({ connectionId: internalConn?.id, formData: formatted });
+    try {
+      if (isUpdate) {
+        // Update existing tool using the old flow
+        const formatted = {
+          ...rest,
+          parameters: parameters ? formatData(parameters) : {},
+          meta_data: {
+            ...(tool?.meta_data || {}),
+            intent_settings: {
+              intent: intent_settings?.intent ?? false,
+              ui_intent: intent_settings?.ui_intent ?? false,
+              async: intent_settings?.async ?? false,
+            },
+          },
+        };
 
-    const result = await dispatchWithFeedback(dispatchFn, {
-      successMessage: `Tool ${isUpdate ? 'updated' : 'created'} successfully`,
-      errorMessage: `Error ${isUpdate ? 'updating' : 'creating'} the tool`,
-      useSnackbar: true,
-    });
+        const result = await dispatchWithFeedback(editTool({ toolId: tool.id, formData: formatted }), {
+          successMessage: 'Tool updated successfully',
+          errorMessage: 'Error updating the tool',
+          useSnackbar: true,
+        });
 
-    if (onSave) onSave(result);
+        if (onSave) onSave(result);
+      } else {
+        // Create new tool with single API call
+        const payload = {
+          tool_type: 'server',
+          connection_id: internalConn?.id,
+          action_type_id: action.id,
+          name: data.name,
+          description: data.description,
+          parameters: parameters ? formatData(parameters) : {},
+          meta_data: {
+            intent_settings: {
+              intent: intent_settings?.intent ?? false,
+              ui_intent: intent_settings?.ui_intent ?? false,
+              async: intent_settings?.async ?? false,
+            },
+            override_action: actionOverrides,
+          },
+        };
+
+        await optimai.post(`/agent/${currentAgent.id}/add-tool`, payload);
+        
+        // Refetch space data to get updated tools list
+        if (currentSpace?.id) {
+          await dispatch(getSpace(currentSpace.id));
+        }
+
+        enqueueSnackbar('Tool created successfully', { variant: 'success' });
+
+        if (onSave) onSave();
+      }
+    } catch (error) {
+      console.error(`Error ${isUpdate ? 'updating' : 'creating'} tool:`, error);
+      enqueueSnackbar(`Error ${isUpdate ? 'updating' : 'creating'} the tool`, { variant: 'error' });
+    }
   });
 
   useEffect(() => {
