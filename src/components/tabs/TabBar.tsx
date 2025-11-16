@@ -22,7 +22,7 @@ import { switchTab, closeTab } from '../../redux/slices/room/slices/tabsSlice';
 import { setThreadMain } from '../../redux/slices/room/slices/threadsSlice';
 import { createNewThread, archiveMainThread } from '../../redux/slices/room/thunks/threadThunks';
 import { dispatch } from '../../redux/store';
-import SettingsDialog from '../dialogs/SettingsDialog.jsx';
+import SettingsDialog from '../dialogs/SettingsDialog.tsx';
 
 interface TabBarProps {
   className?: string;

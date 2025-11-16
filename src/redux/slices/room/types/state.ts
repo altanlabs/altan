@@ -53,6 +53,7 @@ export interface RoomMember {
   id: string;
   member: Member;
   room_id: string;
+  role?: 'owner' | 'admin' | 'member' | 'listener' | 'viewer';
   [key: string]: unknown;
 }
 

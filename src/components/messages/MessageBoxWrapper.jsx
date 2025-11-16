@@ -3,7 +3,7 @@ import { memo, useMemo, useRef, useState, useCallback } from 'react';
 
 import { cn } from '@lib/utils';
 
-import MemberDetailsPopover from './MemberDetailsPopover.jsx';
+import MemberDetailsPopover from './MemberDetailsPopover.tsx';
 import MessageEndButtons from './MessageEndButtons.jsx';
 import Reactions from './Reactions.jsx';
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar.jsx';

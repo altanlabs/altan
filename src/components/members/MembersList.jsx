@@ -1,7 +1,7 @@
 import { useState, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-import MemberDialog from './MemberDialog.jsx';
+import MemberDialog from './MemberDialog.tsx';
 import MemberInviteDialog from './MemberInviteDialog.jsx';
 import { cn } from '../../lib/utils.ts';
 import { selectMembers, selectMe } from '../../redux/slices/room/selectors/memberSelectors';
