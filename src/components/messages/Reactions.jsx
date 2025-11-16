@@ -3,7 +3,7 @@ import { memo, useMemo } from 'react';
 
 import { selectMembers, makeSelectMessageReactions } from '../../redux/slices/room/selectors';
 import { useSelector } from '../../redux/store.ts';
-import { getMemberName } from '../new-room/utils.js';
+import { getMemberName } from '../new-room/utils';
 
 const ReactionDetails = ({ members, emoji }) => {
   if (!members || !members.length) {

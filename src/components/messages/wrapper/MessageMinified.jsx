@@ -8,7 +8,7 @@ import { makeSelectMessageContent } from '../../../redux/slices/room/selectors/m
 import { MENTION_ANNOTATION_REGEX } from '../../../redux/slices/room/selectors/threadSelectors';
 import { useSelector } from '../../../redux/store.ts';
 import CustomAvatar from '../../custom-avatar/CustomAvatar.jsx';
-import { getMemberDetails } from '../../new-room/utils.js';
+import { getMemberDetails } from '../../new-room/utils';
 
 const makeSelectTruncatedContent = () => createSelector(
   [makeSelectMessageContent()],

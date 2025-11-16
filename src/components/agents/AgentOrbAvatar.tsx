@@ -1,30 +1,48 @@
 import { Box } from '@mui/material';
-import { Suspense, Component, forwardRef } from 'react';
+import React, { Suspense, Component, forwardRef, ReactNode } from 'react';
 
 import { Orb } from '../elevenlabs/ui/orb';
 
+interface OrbErrorBoundaryProps {
+  children: ReactNode;
+  fallback: ReactNode;
+}
+
+interface OrbErrorBoundaryState {
+  hasError: boolean;
+}
+
 // ErrorBoundary for Three.js Orb component
-class OrbErrorBoundary extends Component {
-  constructor(props) {
+class OrbErrorBoundary extends Component<OrbErrorBoundaryProps, OrbErrorBoundaryState> {
+  constructor(props: OrbErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(): OrbErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // eslint-disable-next-line no-console
     console.error('Orb rendering error:', error, errorInfo);
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return this.props.fallback;
     }
     return this.props.children;
   }
+}
+
+interface AgentOrbAvatarProps {
+  size?: number;
+  agentId?: string;
+  onClick?: () => void;
+  agentState?: 'listening' | 'talking' | 'thinking' | null;
+  colors?: string[];
+  isStatic?: boolean;
 }
 
 /**
@@ -35,8 +53,9 @@ class OrbErrorBoundary extends Component {
  * @param {function} onClick - Optional click handler
  * @param {string} agentState - Agent state: null, 'listening', 'talking', 'thinking'
  * @param {array} colors - Array of two colors for the orb (default: ['#CADCFC', '#A0B9D1'])
+ * @param {boolean} isStatic - Whether the orb should be static or animated
  */
-export const AgentOrbAvatar = forwardRef(({
+export const AgentOrbAvatar = forwardRef<HTMLDivElement, AgentOrbAvatarProps>(({
   size = 32,
   agentId,
   onClick,
@@ -101,3 +120,4 @@ export const AgentOrbAvatar = forwardRef(({
 AgentOrbAvatar.displayName = 'AgentOrbAvatar';
 
 export default AgentOrbAvatar;
+

@@ -1,9 +1,15 @@
+import { Box, ButtonBase, SxProps, Theme } from '@mui/material';
 import React from 'react';
-import { Box, ButtonBase } from '@mui/material';
 
 import Iconify from '../iconify';
 
-const InteractiveHoverButton = React.forwardRef(
+interface InteractiveHoverButtonProps {
+  text?: string;
+  sx?: SxProps<Theme>;
+  onClick?: () => void;
+}
+
+const InteractiveHoverButton = React.forwardRef<HTMLButtonElement, InteractiveHoverButtonProps>(
   ({ text = 'Button', sx = {}, ...props }, ref) => {
     return (
       <ButtonBase
@@ -104,4 +110,5 @@ const InteractiveHoverButton = React.forwardRef(
 
 InteractiveHoverButton.displayName = 'InteractiveHoverButton';
 
-export default InteractiveHoverButton; 
+export default InteractiveHoverButton;
+

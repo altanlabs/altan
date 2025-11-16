@@ -19,7 +19,7 @@ const formatDate = (timestamp) => {
     if (!date || isNaN(date.getTime())) {
       return 'Invalid Date';
     }
-    
+
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
@@ -42,7 +42,7 @@ const formatTime = (timestamp) => {
     if (!date || isNaN(date.getTime())) {
       return 'Invalid Time';
     }
-    
+
     return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(date);
   } catch (error) {
     console.warn('Error formatting time:', error);
@@ -68,7 +68,7 @@ const parseTimestamp = (timestamp) => {
 
   // Convert to string if it's not already
   const timestampStr = String(timestamp).trim();
-  
+
   if (!timestampStr) {
     return new Date();
   }
@@ -95,7 +95,7 @@ const parseTimestamp = (timestamp) => {
       const second = parseInt(parts[6], 10);
 
       const date = new Date(Date.UTC(year, month, day, hour, minute, second));
-      
+
       // Validate the constructed date
       if (!isNaN(date.getTime())) {
         return date;
@@ -126,7 +126,7 @@ const parseTimestamp = (timestamp) => {
           const [, month, day, year] = match;
           date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
         }
-        
+
         if (date && !isNaN(date.getTime())) {
           return date;
         }
@@ -142,7 +142,6 @@ const parseTimestamp = (timestamp) => {
     // If all else fails, return current date
     console.warn('Could not parse timestamp:', timestamp);
     return new Date();
-    
   } catch (error) {
     console.warn('Error parsing timestamp:', timestamp, error);
     return new Date();
@@ -177,7 +176,7 @@ const formatRelativeTime = (timestamp) => {
     if (!date || isNaN(date.getTime())) {
       return 'Invalid time';
     }
-    
+
     return formatDistanceToNow(date, { addSuffix: true });
   } catch (error) {
     console.warn('Error formatting relative time:', error);

@@ -16,7 +16,7 @@ import { makeSelectMessageHasStreamingParts } from '../../redux/slices/room/sele
 import { selectThreadDrawerDetails } from '../../redux/slices/room/selectors/threadSelectors';
 import { useSelector } from '../../redux/store.ts';
 import { formatDate, formatTime } from '../../utils/dateUtils.js';
-import { getMemberName } from '../new-room/utils.js';
+import { getMemberName } from '../new-room/utils';
 
 const getPicture = (member) => {
   if (!member) {

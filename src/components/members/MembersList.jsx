@@ -8,7 +8,7 @@ import { selectMembers, selectMe } from '../../redux/slices/room/selectors/membe
 import DynamicAgentAvatar from '../agents/DynamicAgentAvatar';
 import CustomAvatar from '../custom-avatar/CustomAvatar.jsx';
 import Iconify from '../iconify/Iconify.jsx';
-import { getMemberDetails } from '../new-room/utils.js';
+import { getMemberDetails } from '../new-room/utils';
 import { Input } from '../ui/input';
 
 const MembersList = ({

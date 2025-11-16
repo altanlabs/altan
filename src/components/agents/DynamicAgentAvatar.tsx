@@ -1,10 +1,30 @@
-import { Box } from '@mui/material';
-import PropTypes from 'prop-types';
-import { memo } from 'react';
+import { Box, SxProps, Theme } from '@mui/material';
+import React, { memo } from 'react';
 
 import { AgentOrbAvatar } from './AgentOrbAvatar';
 import { CustomAvatar } from '../custom-avatar';
 import Logo from '../logo/Logo';
+
+interface Agent {
+  id?: string;
+  name?: string;
+  avatar_url?: string;
+  meta_data?: {
+    avatar_orb?: {
+      colors?: string[];
+    };
+  };
+}
+
+interface DynamicAgentAvatarProps {
+  agent?: Agent | null;
+  size?: number;
+  agentId?: string;
+  agentState?: 'listening' | 'talking' | 'thinking' | null;
+  onClick?: () => void;
+  isStatic?: boolean;
+  sx?: SxProps<Theme>;
+}
 
 /**
  * DynamicAgentAvatar - Displays agent avatar based on configuration
@@ -13,7 +33,15 @@ import Logo from '../logo/Logo';
  * 2. If avatar_url exists, show image
  * 3. Otherwise show orb
  */
-const DynamicAgentAvatar = ({ agent, size = 32, agentId, agentState = null, onClick, isStatic = true, sx = {} }) => {
+const DynamicAgentAvatar = ({ 
+  agent, 
+  size = 32, 
+  agentId, 
+  agentState = null, 
+  onClick, 
+  isStatic = true, 
+  sx = {} 
+}: DynamicAgentAvatarProps): React.JSX.Element | null => {
   if (!agent) return null;
 
   // If agent name is exactly "Altan", render the Logo
@@ -41,6 +69,7 @@ const DynamicAgentAvatar = ({ agent, size = 32, agentId, agentState = null, onCl
 
   // Get colors from agent meta_data or use defaults
   const orbColors = agent?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1'];
+  
   // If avatar_url exists, display it
   if (hasAvatarUrl) {
     return (
@@ -84,14 +113,5 @@ const DynamicAgentAvatar = ({ agent, size = 32, agentId, agentState = null, onCl
   );
 };
 
-DynamicAgentAvatar.propTypes = {
-  agent: PropTypes.object,
-  size: PropTypes.number,
-  agentId: PropTypes.string,
-  agentState: PropTypes.string,
-  onClick: PropTypes.func,
-  sx: PropTypes.object,
-  isStatic: PropTypes.bool,
-};
-
 export default memo(DynamicAgentAvatar);
+

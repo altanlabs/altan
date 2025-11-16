@@ -1,17 +1,43 @@
-import PropTypes from 'prop-types';
-import { memo, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 
 import { cn } from '@lib/utils';
+
+interface StaticGradientAvatarProps {
+  colors?: string[];
+  size?: number;
+  onClick?: () => void;
+  className?: string;
+}
 
 /**
  * StaticGradientAvatar - SVG-based gradient avatar with inner shadows
  * Matches the exact structure from the design system
  */
-const StaticGradientAvatar = ({ colors = ['#CADCFC', '#A0B9D1'], size = 64, onClick, className }) => {
+const StaticGradientAvatar = ({ 
+  colors = ['#CADCFC', '#A0B9D1'], 
+  size = 64, 
+  onClick, 
+  className 
+}: StaticGradientAvatarProps): React.JSX.Element => {
   // Validate colors
   const validColors = Array.isArray(colors) && colors.length >= 2 ? colors : ['#CADCFC', '#A0B9D1'];
 
   const filterId = useMemo(() => `orb-filter-${Math.random().toString(36).substr(2, 9)}`, []);
+
+  // Parse hex color to RGB values
+  const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16) / 255,
+          g: parseInt(result[2], 16) / 255,
+          b: parseInt(result[3], 16) / 255,
+        }
+      : { r: 0, g: 0, b: 0 };
+  };
+
+  const color0 = hexToRgb(validColors[0]);
+  const color1 = hexToRgb(validColors[1]);
 
   return (
     <div
@@ -73,7 +99,7 @@ const StaticGradientAvatar = ({ colors = ['#CADCFC', '#A0B9D1'], size = 64, onCl
               operator="arithmetic"
             />
             <feColorMatrix
-              values={`0 0 0 0 ${parseInt(validColors[0].slice(1, 3), 16) / 255} 0 0 0 0 ${parseInt(validColors[0].slice(3, 5), 16) / 255} 0 0 0 0 ${parseInt(validColors[0].slice(5, 7), 16) / 255} 0 0 0 0.8 0`}
+              values={`0 0 0 0 ${color0.r} 0 0 0 0 ${color0.g} 0 0 0 0 ${color0.b} 0 0 0 0.8 0`}
             />
             <feBlend
               in2="shape"
@@ -93,7 +119,7 @@ const StaticGradientAvatar = ({ colors = ['#CADCFC', '#A0B9D1'], size = 64, onCl
               operator="arithmetic"
             />
             <feColorMatrix
-              values={`0 0 0 0 ${parseInt(validColors[1].slice(1, 3), 16) / 255} 0 0 0 0 ${parseInt(validColors[1].slice(3, 5), 16) / 255} 0 0 0 0 ${parseInt(validColors[1].slice(5, 7), 16) / 255} 0 0 0 0.6 0`}
+              values={`0 0 0 0 ${color1.r} 0 0 0 0 ${color1.g} 0 0 0 0 ${color1.b} 0 0 0 0.6 0`}
             />
             <feBlend
               in2="effect1_innerShadow"
@@ -106,11 +132,5 @@ const StaticGradientAvatar = ({ colors = ['#CADCFC', '#A0B9D1'], size = 64, onCl
   );
 };
 
-StaticGradientAvatar.propTypes = {
-  colors: PropTypes.arrayOf(PropTypes.string),
-  size: PropTypes.number,
-  onClick: PropTypes.func,
-  className: PropTypes.string,
-};
-
 export default memo(StaticGradientAvatar);
+

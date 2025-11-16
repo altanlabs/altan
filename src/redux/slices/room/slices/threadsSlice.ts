@@ -222,7 +222,7 @@ const threadsSlice = createSlice({
     /**
      * Set the current main thread
      */
-    setThreadMain: (state, action: PayloadAction<{ current: string }>) => {
+    setThreadMain: (state, action: PayloadAction<{ current: string | null }>) => {
       const { current } = action.payload;
       
       // If switching away from drawer thread, close the drawer
@@ -231,6 +231,12 @@ const threadsSlice = createSlice({
       }
       
       state.thread.main.current = current;
+      
+      // If clearing the current thread (setting to null), also clear mainThread
+      // This ensures ephemeral mode properly shows 'new' state
+      if (current === null) {
+        state.mainThread = null;
+      }
     },
 
     /**
