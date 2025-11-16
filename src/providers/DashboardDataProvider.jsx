@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { useHermesWebSocket } from './websocket/HermesWebSocketProvider';
+import { useHermesWebSocketSafe } from './websocket/HermesWebSocketProvider';
 import { getConnections, getConnectionTypes } from '../redux/slices/connections.ts';
 import {
   getAccount,
@@ -25,7 +25,7 @@ const selectAccountInitialized = (state) => state.general.generalInitialized.acc
 const DashboardDataProvider = ({ children }) => {
   const location = useLocation();
   const history = useHistory();
-  const ws = useHermesWebSocket();
+  const ws = useHermesWebSocketSafe();
 
   const accountInitialized = useSelector(selectAccountInitialized);
   const accountLoading = useSelector(selectAccountLoading);

@@ -18,6 +18,11 @@ export const useHermesWebSocket = (): HermesWebSocketContextValue => {
   return context;
 };
 
+// Safe version that returns null instead of throwing when not in provider
+export const useHermesWebSocketSafe = (): HermesWebSocketContextValue | null => {
+  return useContext(HermesWebSocketContext);
+};
+
 interface HermesWebSocketProviderProps {
   children: ReactNode;
 }

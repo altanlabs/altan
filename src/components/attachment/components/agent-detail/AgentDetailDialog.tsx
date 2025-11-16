@@ -2,7 +2,6 @@ import { LoaderCircle } from 'lucide-react';
 import { memo, useState, useEffect, useCallback, useRef, FC } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,10 @@ import AgentModelSettings from './AgentModelSettings';
 import AgentToolsList from './AgentToolsList';
 import { fetchAgentRoom, updateAgent } from '../../../../redux/slices/agents';
 import { getSpace } from '../../../../redux/slices/spaces';
+// @ts-expect-error - JSX component without types
+import AgentOrbAvatar from '../../../agents/AgentOrbAvatar';
+// @ts-expect-error - JSX component without types
+import CustomAvatar from '../../../custom-avatar/CustomAvatar';
 
 interface AgentMember {
   member?: {
@@ -32,6 +35,11 @@ interface AgentData {
   space_id?: string;
   account_id?: string;
   elevenlabs_id?: string;
+  meta_data?: {
+    avatar_orb?: {
+      colors?: string[];
+    };
+  };
   llm_config?: {
     model_id?: string;
     provider?: string;
@@ -109,21 +117,34 @@ const AgentDetailDialog: FC<AgentDetailDialogProps> = ({ open, onClose, agentMem
   if (!agentMember) return null;
 
   const tools = currentSpace?.tools?.items || [];
+  
+  // Get orb colors from agent meta_data
+  const orbColors = agentData?.meta_data?.avatar_orb?.colors || ['#CADCFC', '#A0B9D1'];
+  const picture = agentMember.member?.picture || agentData?.avatar_url;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] p-0 gap-0 bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800">
         {/* Header */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-neutral-200 dark:border-neutral-800">
-          <Avatar className="h-6 w-6">
-            <AvatarImage
-              src={agentMember.member?.picture || agentData?.avatar_url}
-              alt={agentMember.member?.name}
-            />
-            <AvatarFallback className="bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs">
-              {agentMember.member?.name?.[0]?.toUpperCase() || 'A'}
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex-shrink-0">
+            {!picture ? (
+              <AgentOrbAvatar
+                size={24}
+                agentId={agentData?.id || agentMember.member?.agent?.id || ''}
+                agentState={null}
+                isStatic={false}
+                colors={orbColors}
+              />
+            ) : (
+              <CustomAvatar
+                sx={{ width: 24, height: 24 }}
+                variant="circular"
+                src={picture}
+                name={agentData?.name || agentMember.member?.name || 'Agent'}
+              />
+            )}
+          </div>
           <div className="flex-1">
             <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
               {agentData?.name || agentMember.member?.name}
