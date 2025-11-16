@@ -2,20 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scrolling behavior */
-html, body {
-  scroll-behavior: smooth;
-  overflow-x: hidden;
-  overflow-y: auto;
-  height: auto;
-  min-height: 100vh;
+/* ===== SPA LAYOUT - FIXED VIEWPORT WITH INTERNAL SCROLLING ===== */
+/* Fixed viewport like Spotify/Linear - no body scroll, content scrolls internally */
+
+html {
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  width: 100vw;
+  position: fixed;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Allow Ion App to scroll */
+body {
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Root container - SPA viewport */
+#root {
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ion App - fixed viewport container */
 ion-app {
-  overflow-y: auto !important;
-  height: auto !important;
-  min-height: 100vh !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Scrollable content areas - Smooth momentum scrolling */
+.scrollable-content,
+.overflow-y-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for scrollable areas */
+.scrollable-content::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-content::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: hsl(var(--foreground) / 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.3);
+}
+
+/* Prevent horizontal overflow globally */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevent text from causing overflow */
+h1, h2, h3, h4, h5, h6, p, span {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Ensure images don't overflow */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth focus transitions */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  transition: outline-offset 0.2s ease;
 }
 
 /* Custom Scrollbar Styling */
@@ -44,6 +137,44 @@ ion-app {
   scrollbar-color: hsl(var(--foreground) / 0.2) transparent;
 }
 
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+/* Mobile-first approach - works seamlessly across all devices */
+@media (max-width: 640px) {
+  /* Mobile optimizations */
+  html, body, #root, ion-app {
+    min-width: 320px; /* Minimum supported width */
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Tablet optimizations */
+  html, body, #root, ion-app {
+    min-width: 641px;
+  }
+}
+
+@media (min-width: 1025px) {
+  /* Desktop optimizations */
+  html, body, #root, ion-app {
+    min-width: 1025px;
+  }
+}
+
+/* ===== MOBILE OPTIMIZATIONS ===== */
+/* Prevent pull-to-refresh and overscroll bounce on mobile */
+body {
+  position: fixed;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent mobile Safari address bar issues */
+@supports (-webkit-touch-callout: none) {
+  html, body, #root, ion-app {
+    height: -webkit-fill-available !important;
+  }
+}
+
 /* iOS Safe Area Support */
 @supports (padding-top: env(safe-area-inset-top)) {
   :root {
@@ -52,6 +183,14 @@ ion-app {
     --safe-area-inset-bottom: env(safe-area-inset-bottom);
     --safe-area-inset-left: env(safe-area-inset-left);
   }
+}
+
+/* Ensure safe areas are respected in layouts */
+.safe-area-wrapper {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 /* iOS Keyboard and Input Fixes */

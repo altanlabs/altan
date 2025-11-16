@@ -31,35 +31,37 @@ import { memo } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { Provider as ReduxProvider } from 'react-redux';
 import { PersistGate } from 'redux-persist/lib/integration/react';
-// @mui
 
-// ionic
-
-// redux
+// auth
 import { AuthProvider } from './auth/JwtContext';
+// components
 import { MotionLazyContainer } from './components/animate';
 import CookieBanner from './components/cookie-banner';
 import CookieManager from './components/cookie-banner/CookieManager';
 import FeedbackManager from './components/feedback/FeedbackManager';
 import { ThemeSettings, SettingsProvider } from './components/settings';
 import SnackbarProvider from './components/snackbar';
-import ThemeLocalization from './locales';
-import { store, persistor } from './redux/store.ts';
-// routes
-import Router from './routes/index.jsx';
-// theme
-import ThemeProvider from './theme/index.jsx';
 // locales
-// components
-// import ScrollToTop from './components/scroll-to-top';
+import ThemeLocalization from './locales';
+// redux
+import { store, persistor } from './redux/store';
+// routes
+import Router from './routes/index';
+// theme
+import ThemeProvider from './theme/index';
 
-// Check our docs
+// ----------------------------------------------------------------------
+// MUI X License Key
+// ----------------------------------------------------------------------
 
 LicenseInfo.setLicenseKey(
   '6251fc44845145b92ad1c87fb54d3d0dTz0xMjM0NTYsRT0xNzczMjczMDc5MDAwLFM9cHJlbWl1bSxMTT1zdWJzY3JpcHRpb24sS1Y9Mg==',
 );
 
+// ----------------------------------------------------------------------
 // Initialize Ionic
+// ----------------------------------------------------------------------
+
 setupIonicReact({
   rippleEffect: false,
   mode: 'md', // Use Material Design mode for consistent styling
@@ -67,17 +69,14 @@ setupIonicReact({
 
 // ----------------------------------------------------------------------
 
-function App() {
+function App(): JSX.Element {
   return (
     <IonApp>
       <IonReactRouter>
         <AuthProvider>
           <HelmetProvider>
             <ReduxProvider store={store}>
-              <PersistGate
-                loading={null}
-                persistor={persistor}
-              >
+              <PersistGate loading={null} persistor={persistor}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <SettingsProvider>
                     <MotionLazyContainer>
@@ -106,3 +105,4 @@ function App() {
 }
 
 export default memo(App);
+

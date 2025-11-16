@@ -1,63 +1,69 @@
-import { Button, Typography } from '@mui/material';
-import { m } from 'framer-motion';
+import { Lock } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink } from 'react-router-dom';
-
-// @mui
-// components
-import { ForbiddenIllustration } from '../assets/illustrations';
-import { MotionContainer, varBounce } from '../components/animate';
-// assets
+import { Link } from 'react-router-dom';
 
 // ----------------------------------------------------------------------
+
 export default function Page403() {
   return (
     <>
       <Helmet>
-        <title> 403 Forbidden · Altan</title>
+        <title>403 – Access denied to the fun part · Altan</title>
       </Helmet>
 
-      <MotionContainer>
-        <m.div variants={varBounce().in}>
-          <Typography
-            variant="h3"
-            paragraph
-          >
-            Access Denied 🚫
-          </Typography>
-        </m.div>
+      <div className="flex min-h-screen items-center justify-center bg-white px-4 py-8 dark:bg-neutral-950">
+        <div className="flex w-full max-w-md flex-col items-center gap-4 text-center">
+          {/* Icon */}
+          <div className="flex h-12 w-12 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
+            <Lock className="h-6 w-6 text-neutral-900 dark:text-neutral-100" />
+          </div>
 
-        {/* <m.div variants={varBounce().in}>
-          <Box sx={{ width: '100%', mx: 'auto' }}>
-            <Typography sx={{ color: 'text.secondary' }}>
-                Looks like you've just discovered the ultra-secret, super-duper, hidden chamber of the "Access Denied" club. 🕵️‍♂️
-                <br />
-                Unfortunately, membership comes with a few restrictions, such as not being able to enter the page you're looking for. Bummer, right? 🤷‍♀️
-                <br />
-                But hey, don't worry! It's not all doom and gloom. Here's a joke to cheer you up: 🃏
-                <br />
-                Why don't scientists trust atoms? Because they make up everything! 🤣
-                <br />
-                Now, let's get you back on track! Simply click the "Back" button on your browser or use the navigation menu to find your way to a page that's a little more "Access Granted" and a little less "Top Secret." 🎉
-                <br />
-                Happy browsing, and remember: you're now a part of the "Access Denied" club – just don't tell anyone! 😉
-            </Typography>
-          </Box>
-        </m.div> */}
+          {/* Hero */}
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-base font-medium text-neutral-900 dark:text-neutral-100">
+              403 – Access denied
+            </h1>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              You don&apos;t have permission to access this resource. Upgrade your plan to unlock it.
+            </p>
+          </div>
 
-        <m.div variants={varBounce().in}>
-          <ForbiddenIllustration sx={{ height: 260, my: { xs: 5, sm: 10 } }} />
-        </m.div>
+          {/* CTAs */}
+          <div className="flex w-full flex-col gap-2">
+            <Link
+              to="/"
+              className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-md border border-neutral-900 bg-neutral-900 px-3 text-xs font-medium text-white shadow-sm transition-colors hover:bg-neutral-800 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
+            >
+              Go back home
+            </Link>
 
-        <Button
-          component={RouterLink}
-          to="/"
-          size="large"
-          variant="contained"
-        >
-          Go to Home
-        </Button>
-      </MotionContainer>
+            <div className="grid grid-cols-3 gap-2">
+              <Link
+                to="/pricing"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-900 shadow-sm transition-colors hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Pricing
+              </Link>
+              <a
+                href="https://docs.altan.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-900 shadow-sm transition-colors hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Docs
+              </a>
+              <a
+                href="https://www.altan.ai/support"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-900 shadow-sm transition-colors hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Support
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

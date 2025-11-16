@@ -961,41 +961,10 @@ const Router = () => {
           </CompactLayout>
         </Route>
 
-        <Route
-          path="/maintenance"
-          exact
-        >
-          <CompactLayout>
-            <MaintenancePage />
-          </CompactLayout>
-        </Route>
-
-        <Route
-          path="/500"
-          exact
-        >
-          <CompactLayout>
-            <Page500 />
-          </CompactLayout>
-        </Route>
-
-        <Route
-          path="/404"
-          exact
-        >
-          <CompactLayout>
-            <Page404 />
-          </CompactLayout>
-        </Route>
-
-        <Route
-          path="/403"
-          exact
-        >
-          <CompactLayout>
-            <Page403 />
-          </CompactLayout>
-        </Route>
+        <Route path="/maintenance" exact><CompactLayout><MaintenancePage /></CompactLayout></Route>
+        <Route path="/500" exact><CompactLayout><Page500 /></CompactLayout></Route>
+        <Route path="/404" exact><CompactLayout><Page404 /></CompactLayout></Route>
+        <Route path="/403" exact><CompactLayout><Page403 /></CompactLayout></Route>
 
         {/* Redirects */}
         <Route
