@@ -23,7 +23,7 @@ import StripeConnect from '../../sections/@dashboard/user/account/AccountStripeS
 import CodeBlock from '../CodeBlock.jsx';
 import MermaidDiagram from '../MermaidDiagram.jsx';
 import MentionComponent from './MentionComponent.tsx';
-import AuthorizationWidget from '../widgets/AuthorizationWidget.jsx';
+import { AuthorizationWidget } from '../widgets/authorization';
 import CommitWidget from '../widgets/components/CommitWidget.jsx';
 import DatabaseVersionWidget from '../widgets/components/DatabaseVersionWidget.jsx';
 import MediaWidget from '../widgets/components/MediaWidget.jsx';

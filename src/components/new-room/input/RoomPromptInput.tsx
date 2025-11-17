@@ -6,10 +6,9 @@ import { selectMe, selectMembers } from '../../../redux/slices/room/selectors/me
 import { selectRoomContext } from '../../../redux/slices/room/selectors/roomSelectors';
 import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { useSelector } from '../../../redux/store';
-import AuthorizationRequests from '../../AuthorizationRequests.jsx';
+import { AuthorizationRequests } from '../../authorization-requests';
 import Editor from '../../editor/Editor';
 import { useSnackbar } from '../../snackbar';
-import TodoWidget from '../../TodoWidget.jsx';
 import { InputActions } from './components/InputActions';
 import { InputContainer } from './components/InputContainer';
 import { useAgentSelection } from './hooks/useAgentSelection';
@@ -21,6 +20,8 @@ import { RecordingOverlay } from './RecordingOverlay';
 import { useFileHandling } from './useFileHandling';
 import { useVoiceRecording } from './useVoiceRecording';
 import { ViewerMode } from './ViewerMode';
+import { TodoWidget } from '../../todo';
+
 
 // --- Props Interface ---
 interface RoomPromptInputProps {

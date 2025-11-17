@@ -55,6 +55,7 @@ const normalizePlanStatus = (status: string): PlanStatus => {
 /**
  * Maps API task response to internal Task type
  * API returns different field names than our internal Task type expects
+ * Preserves API-only fields like task_name, assigned_agent_name, and subthread_id
  */
 export const mapApiTaskToInternal = (apiTask: ApiTask): Task => {
   const now = new Date().toISOString();
@@ -79,6 +80,11 @@ export const mapApiTaskToInternal = (apiTask: ApiTask): Task => {
   if (order !== undefined) task.order = order;
   
   if (apiTask.finished_at !== undefined) task.finished_at = apiTask.finished_at;
+  
+  // Preserve API-only fields for PlanWidget display
+  if (apiTask.task_name !== undefined) (task as any).task_name = apiTask.task_name;
+  if (apiTask.assigned_agent_name !== undefined) (task as any).assigned_agent_name = apiTask.assigned_agent_name;
+  if (apiTask.subthread_id !== undefined) (task as any).subthread_id = apiTask.subthread_id;
   
   return task;
 };
