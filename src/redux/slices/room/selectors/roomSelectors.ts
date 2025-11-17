@@ -20,7 +20,7 @@ import type {
  * @param attribute - The attribute to get the property from
  * @returns The property value
  */
-export const getNestedProperty = (stateObj: any, attribute: string): any => {
+export const getNestedProperty = (stateObj: unknown, attribute: string): unknown => {
   if (!attribute?.length) {
     return stateObj;
   }
@@ -33,10 +33,10 @@ export const selectRoom = (state: RootState): Room | null => state.room._room.ro
 
 export const selectRoomId = (state: RootState): string | undefined => selectRoom(state)?.id;
 
-export const selectRoomAttribute = (attribute: string) =>
-  createSelector([selectRoom], (room): any => getNestedProperty(room, attribute));
+export const selectRoomAttribute = (attribute: string): unknown =>
+  createSelector([selectRoom], (room): unknown => getNestedProperty(room, attribute));
 
-export const selectRoomContext = (state: RootState): any => state.room._room.roomContext;
+export const selectRoomContext = (state: RootState): unknown => state.room._room.roomContext;
 
 export const selectAccount = (state: RootState): Account | null => state.room._room.account;
 

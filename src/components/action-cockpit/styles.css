@@ -1,0 +1,96 @@
+/* GPU-accelerated shimmer effect for pending items in action cockpit */
+@keyframes cockpit-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.cockpit-shimmer {
+  position: relative;
+  overflow: hidden;
+  /* CSS containment for performance isolation */
+  contain: layout style paint;
+  /* Allow animation to be paused when not visible */
+  animation-play-state: running;
+}
+
+.cockpit-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  /* GPU acceleration with transform */
+  transform: translateX(-100%);
+  animation: cockpit-shimmer 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-play-state: inherit;
+  /* Performance hints - only when animating */
+  will-change: transform;
+  pointer-events: none;
+  border-radius: inherit;
+  /* Force GPU layer */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Optimize compositing */
+  isolation: isolate;
+}
+
+.dark .cockpit-shimmer::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+}
+
+/* Optimized pulse animation for icons */
+@keyframes cockpit-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.cockpit-pulse {
+  animation: cockpit-pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  /* Performance hints - only when animating */
+  will-change: opacity;
+  /* Force GPU layer */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Optimize compositing */
+  isolation: isolate;
+}
+
+/* Parent controls animation state */
+.cockpit-shimmer .cockpit-pulse {
+  animation-play-state: inherit;
+}
+
+/* Respect user's motion preferences - accessibility & performance */
+@media (prefers-reduced-motion: reduce) {
+  .cockpit-shimmer::before,
+  .cockpit-pulse {
+    animation: none;
+    will-change: auto;
+  }
+  
+  /* Subtle static indicator instead */
+  .cockpit-pulse {
+    opacity: 0.7;
+  }
+}
+

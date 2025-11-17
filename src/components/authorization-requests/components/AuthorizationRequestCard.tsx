@@ -15,6 +15,14 @@ export const AuthorizationRequestCard = memo<AuthorizationRequestCardProps>(
       ? request.meta_data?.requested_secrets?.[0]?.label || 'API Credentials'
       : request?.name || 'Connection Request';
 
+    // Get count of secrets requested
+    const secretsCount = isSecretsType 
+      ? request.meta_data?.requested_secrets?.length || 0
+      : 0;
+
+    // Get service name if available
+    const serviceName = request.meta_data?.service_name || request.meta_data?.integration_name;
+
     const formatTime = (dateString: string): string => {
       const date = new Date(dateString);
       return new Intl.DateTimeFormat('en-US', {
@@ -36,6 +44,21 @@ export const AuthorizationRequestCard = memo<AuthorizationRequestCardProps>(
             <p className="text-xs font-medium text-neutral-900 dark:text-neutral-100 truncate">
               {requestTitle}
             </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              {secretsCount > 0 && (
+                <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-mono">
+                  {secretsCount} credential{secretsCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {serviceName && (
+                <>
+                  <span className="text-[10px] text-neutral-400 dark:text-neutral-600">·</span>
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-500 truncate">
+                    {serviceName}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-mono flex-shrink-0">
             {formatTime(request.date_creation)}

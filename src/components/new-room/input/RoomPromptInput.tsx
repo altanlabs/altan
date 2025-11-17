@@ -4,9 +4,8 @@ import { useLocation, useParams } from 'react-router-dom';
 import { selectCurrentAltaner } from '../../../redux/slices/altaners';
 import { selectMe, selectMembers } from '../../../redux/slices/room/selectors/memberSelectors';
 import { selectRoomContext } from '../../../redux/slices/room/selectors/roomSelectors';
-import { selectTasksByThread } from '../../../redux/slices/tasks';
 import { useSelector } from '../../../redux/store';
-import { AuthorizationRequests } from '../../authorization-requests';
+import { ActionCockpit } from '../../action-cockpit';
 import Editor from '../../editor/Editor';
 import { useSnackbar } from '../../snackbar';
 import { InputActions } from './components/InputActions';
@@ -20,7 +19,6 @@ import { RecordingOverlay } from './RecordingOverlay';
 import { useFileHandling } from './useFileHandling';
 import { useVoiceRecording } from './useVoiceRecording';
 import { ViewerMode } from './ViewerMode';
-import { TodoWidget } from '../../todo';
 
 
 // --- Props Interface ---
@@ -60,10 +58,6 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
 
     // Detect operate mode
     const operateMode = location.pathname.endsWith('/operate');
-
-    // Get tasks for TodoWidget
-    const tasks = useSelector((state) => selectTasksByThread(state, threadId));
-    const hasTasks = altanerId && tasks && tasks.length > 0 && !operateMode;
 
     const isViewer = me?.role === 'viewer' || me?.role === 'listener';
 
@@ -214,18 +208,15 @@ export const RoomPromptInput = forwardRef<HTMLTextAreaElement, RoomPromptInputPr
 
         {/* Components above the input */}
         {!operateMode && (
-          <>
-            <AuthorizationRequests />
-            <TodoWidget
-              threadId={threadId}
-              mode={mode}
-            />
-          </>
+          <ActionCockpit
+            threadId={threadId}
+            roomId={roomId}
+          />
         )}
 
         <InputContainer
           containerRef={containerRef}
-          hasTasks={hasTasks}
+          hasTasks={false}
           dragOver={dragOver}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

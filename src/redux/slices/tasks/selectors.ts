@@ -117,12 +117,11 @@ export const selectTasksByThread = createCachedSelector(
 )((_state, threadId) => threadId);
 
 /**
- * Selects plan IDs by room ID (memoized)
+ * Selects plan IDs by room ID
+ * Returns stable empty array reference if no plans exist
  */
-export const selectPlanIdsByRoom = createCachedSelector(
-  [(state: RootState, roomId: string) => selectTasksState(state).planIdsByRoom[roomId] || EMPTY_ARRAY],
-  (planIds: string[]): string[] => planIds,
-)((_state, roomId) => roomId);
+export const selectPlanIdsByRoom = (state: RootState, roomId: string): string[] => 
+  selectTasksState(state).planIdsByRoom[roomId] || EMPTY_ARRAY;
 
 // ----------------------------------------------------------------------
 // MEMOIZED PLAN SELECTOR (FIXES RERENDER ISSUE)

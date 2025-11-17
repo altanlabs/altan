@@ -11,16 +11,8 @@ import { EMPTY_ARRAY } from '../constants';
 import { AgentOrbAvatar } from '../../agents/AgentOrbAvatar';
 import { agentColors } from '../../plan/planUtils';
 import Iconify from '../../iconify/Iconify';
-import MessageContent from '../../messages/MessageContent';
 import { TaskDetailsDialog } from './TaskDetailsDialog';
 import { SafeTextShimmer } from './SafeTextShimmer';
-import {
-  selectMessagesById,
-} from '../../../redux/slices/room/selectors/messageSelectors';
-import {
-  makeSelectSortedThreadMessageIds,
-} from '../../../redux/slices/room/selectors/threadSelectors';
-import { useSelector } from '../../../redux/store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip';
 
 /**
@@ -33,20 +25,7 @@ export const TaskItem = ({
   onUpdateTask,
   onDeleteTask,
 }: TaskItemProps) => {
-  const messagesSelector = useMemo(() => makeSelectSortedThreadMessageIds(), []);
-  const messagesById = useSelector(selectMessagesById);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Get messages from the task's subthread
-  const messageIds = useSelector((state) =>
-    task.subthread_id ? messagesSelector(state, task.subthread_id) : EMPTY_ARRAY
-  );
-
-  // Get the second message (index 1) - this is the agent's response
-  const secondMessage = messageIds.length > 1 ? messagesById[messageIds[1]] : null;
-
-  // Determine if message is being generated (exists but not yet replied)
-  const isMessageGenerating = secondMessage && !secondMessage.replied;
 
   // Task status configuration
   const statusConfig = getTaskStatusConfig(task.status);
@@ -54,10 +33,10 @@ export const TaskItem = ({
 
   return (
     <TooltipProvider>
-      <div className="border-b border-gray-200/30 dark:border-gray-700/30 last:border-b-0">
+      <div className="border-b border-neutral-200/30 dark:border-neutral-800/30 last:border-b-0">
         {/* Task Header Row */}
-        <div className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors duration-150">
-          <div className="flex items-center gap-2 px-3 py-1.5">
+        <div className="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20 transition-colors duration-150">
+          <div className="flex items-center gap-2 px-2 py-1">
             {/* Status Icon */}
             <div className="flex-shrink-0">
               <Iconify
@@ -69,22 +48,13 @@ export const TaskItem = ({
             {/* Assigned Agent Avatar */}
             {task.assigned_agent_name && agentColors[task.assigned_agent_name] && (
               <div className="flex-shrink-0">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <AgentOrbAvatar
-                        size={24}
-                        agentId={task.assigned_agent_name}
-                        colors={agentColors[task.assigned_agent_name]}
-                        isStatic={false}
-                        agentState={taskIsRunning ? 'thinking' : null}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Assigned to: {task.assigned_agent_name}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <AgentOrbAvatar
+                  size={20}
+                  agentId={task.assigned_agent_name}
+                  colors={agentColors[task.assigned_agent_name]}
+                  isStatic={false}
+                  agentState={taskIsRunning ? 'thinking' : null}
+                />
               </div>
             )}
 
@@ -93,12 +63,21 @@ export const TaskItem = ({
               {taskIsRunning ? (
                 <SafeTextShimmer text={task.title} />
               ) : (
-                <p
-                  className={`font-medium truncate text-xs leading-none ${statusConfig.textStyle}`}
-                  title={task.title}
-                >
-                  {task.title || 'Untitled Task'}
-                </p>
+                <>
+                  <p
+                    className={`font-medium truncate text-xs leading-none ${statusConfig.textStyle}`}
+                    title={task.title}
+                  >
+                    {task.title || 'Untitled Task'}
+                  </p>
+                  {task.description && (
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-500 truncate mt-0.5">
+                      {task.description.length > 50 
+                        ? task.description.slice(0, 50) + '...' 
+                        : task.description}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
@@ -112,9 +91,9 @@ export const TaskItem = ({
                       e.stopPropagation();
                       setDialogOpen(true);
                     }}
-                    className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                    className="p-0.5 rounded hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors group"
                   >
-                    <MoreHorizontal className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                    <MoreHorizontal className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -131,9 +110,9 @@ export const TaskItem = ({
                         e.stopPropagation();
                         onOpenSubthread(task);
                       }}
-                      className="p-0.5 rounded hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors group"
+                      className="p-0.5 rounded hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors group"
                     >
-                      <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                      <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                     </button>
                   </TooltipTrigger>
                 <TooltipContent>
@@ -144,17 +123,6 @@ export const TaskItem = ({
             </div>
           </div>
         </div>
-
-        {/* Message Content - show when task is running and has messages */}
-        {taskIsRunning && secondMessage && isMessageGenerating && (
-          <div className="px-3 py-2 bg-gray-50/30 dark:bg-gray-800/20">
-            <MessageContent
-              message={secondMessage}
-              threadId={task.subthread_id}
-              mode="mini"
-            />
-          </div>
-        )}
 
         {/* Task Details Dialog */}
         <TaskDetailsDialog

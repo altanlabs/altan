@@ -1,60 +1,41 @@
 /**
- * Todo Widget Component
- * Main orchestrator for the task management widget
- * 
- * Architecture:
- * - Follows SOLID principles
- * - Uses custom hooks for logic separation
- * - Composed of smaller, focused components
- * - Type-safe with TypeScript
+ * Tasks Section
+ * Displays standalone tasks (outside of plans) within the action cockpit
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useSelector, useDispatch } from '../../../redux/store';
 
-import { CollapsedRunningTask } from './components/CollapsedRunningTask';
-import { TaskItem } from './components/TaskItem';
-import { TodoWidgetHeader } from './components/TodoWidgetHeader';
-import { useTaskFiltering } from './hooks/useTaskFiltering';
-import { useTaskOperations } from './hooks/useTaskOperations';
-import { useTaskThread } from './hooks/useTaskThread';
-import { TodoWidgetProps } from './types';
-import { findFirstRunningTask } from './utils/taskSortUtils';
-import { isTaskActive } from './utils/taskStatusUtils';
+import { CollapsedRunningTask } from '../../todo/components/CollapsedRunningTask';
+import { TaskItem } from '../../todo/components/TaskItem';
+import { TodoWidgetHeader } from '../../todo/components/TodoWidgetHeader';
+import { useTaskFiltering } from '../../todo/hooks/useTaskFiltering';
+import { useTaskOperations } from '../../todo/hooks/useTaskOperations';
+import { useTaskThread } from '../../todo/hooks/useTaskThread';
+import { findFirstRunningTask } from '../../todo/utils/taskSortUtils';
+import { isTaskActive } from '../../todo/utils/taskStatusUtils';
 import {
   fetchTasks,
   selectTasksByThread,
-  selectPlanByThread,
   selectTasksLoading,
   selectTasksError,
   selectTasksExpanded,
   setTasksExpanded,
-} from '../../redux/slices/tasks/index';
-import { useSelector, useDispatch } from '../../redux/store';
-import Iconify from '../iconify/Iconify';
+} from '../../../redux/slices/tasks/index';
+import Iconify from '../../iconify/Iconify';
 
-/**
- * Main Todo Widget Component
- * 
- * Responsibilities:
- * - Orchestrates child components
- * - Manages widget state (expand/collapse)
- * - Fetches initial data
- * - Handles rendering conditions
- * 
- * Follows:
- * - Single Responsibility: Only orchestrates, delegates logic to hooks/components
- * - Open/Closed: Extensible through props and hooks
- * - Dependency Inversion: Depends on abstractions (hooks) not implementations
- */
-export const TodoWidget = ({ threadId, mode = 'standard' }: TodoWidgetProps) => {
+interface TasksSectionProps {
+  threadId: string;
+}
+
+const TasksSection: React.FC<TasksSectionProps> = ({ threadId }) => {
   const dispatch = useDispatch();
   const { altanerId } = useParams<{ altanerId: string }>();
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Redux state
   const tasks = useSelector((state) => selectTasksByThread(state, threadId));
-  const plan = useSelector((state) => selectPlanByThread(state, threadId));
   const isLoading = useSelector(selectTasksLoading(threadId));
   const error = useSelector(selectTasksError(threadId));
   const isExpanded = useSelector(selectTasksExpanded(threadId));
@@ -98,21 +79,15 @@ export const TodoWidget = ({ threadId, mode = 'standard' }: TodoWidgetProps) => 
     return null;
   }
 
-  if (mode === 'mini') {
-    return null;
-  }
-
   if (!isLoading && (!tasks || tasks.length === 0)) {
     return null;
   }
 
   if (error) {
     return (
-      <div className="w-full max-w-[700px] mx-auto">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-3xl bg-red-50/90 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 backdrop-blur-lg text-red-700 dark:text-red-300">
-          <Iconify icon="mdi:alert-circle" className="w-3.5 h-3.5" />
-          <span className="text-xs font-medium">Failed to load tasks</span>
-        </div>
+      <div className="flex items-center gap-1.5 px-2 py-1.5 border border-red-200 dark:border-red-800/30 rounded bg-red-50/90 dark:bg-red-900/20 text-red-700 dark:text-red-300">
+        <Iconify icon="mdi:alert-circle" className="w-3 h-3" />
+        <span className="text-xs font-medium">Failed to load tasks</span>
       </div>
     );
   }
@@ -126,7 +101,7 @@ export const TodoWidget = ({ threadId, mode = 'standard' }: TodoWidgetProps) => 
   };
 
   return (
-    <>
+    <div>
       {/* Header */}
       <TodoWidgetHeader
         isExpanded={isExpanded}
@@ -135,7 +110,7 @@ export const TodoWidget = ({ threadId, mode = 'standard' }: TodoWidgetProps) => 
         totalTasksCount={totalTasksCount}
         statusFilter={statusFilter}
         onFilterChange={setStatusFilter}
-        plan={plan}
+        plan={null}
       />
 
       {/* Collapsed Running Task Display */}
@@ -157,7 +132,10 @@ export const TodoWidget = ({ threadId, mode = 'standard' }: TodoWidgetProps) => 
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
+
+export default memo(TasksSection);
+export { TasksSection };
 
