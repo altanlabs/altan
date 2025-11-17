@@ -23,6 +23,9 @@ export {
   setPlanError,
   startLoadingRoomPlans,
   setRoomPlansError,
+  startLoadingRoomTasks,
+  setRoomTasksError,
+  setRoomTasks,
   addTask,
   updateTask,
   removeTask,
@@ -46,6 +49,8 @@ export {
   selectPlanError,
   selectRoomPlansLoading,
   selectRoomPlansError,
+  selectRoomTasksLoading,
+  selectRoomTasksError,
   
   // Entity selectors
   selectTaskById,
@@ -54,6 +59,7 @@ export {
   selectPlanByThread,
   selectPlansByRoom,
   selectPlanIdsByRoom,
+  selectTaskIdsByRoom,
   
   // Field selectors
   selectPlanTitle,
@@ -77,6 +83,7 @@ export {
   fetchPlan,
   fetchPlansByRoomId,
   fetchTasks,
+  fetchTasksByRoomId,
   refreshTasks,
 } from './thunks';
 

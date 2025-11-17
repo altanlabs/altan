@@ -215,12 +215,22 @@ function Agent({ agentId, id, onGoBack, altanerComponentId }) {
 
     try {
       setIsSaving(true);
-      await dispatch(updateAgent(agentData.id, agentData));
-      originalDataRef.current = agentData;
+      // Dispatch returns the thunk's promise, await it properly
+      const updatedAgent = await dispatch(updateAgent(agentData.id, agentData));
+
+      // Update the reference with the returned agent data from the server
+      originalDataRef.current = updatedAgent;
+      setAgentData(updatedAgent);
       setHasUnsavedChanges(false);
+
+      // Show success feedback
+      setCopySuccess('Agent saved successfully!');
+      setTimeout(() => setCopySuccess(''), 1000);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to save agent:', error);
+      setCopySuccess('Failed to save agent. Please try again.');
+      setTimeout(() => setCopySuccess(''), 1000);
     } finally {
       setIsSaving(false);
     }

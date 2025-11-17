@@ -49,15 +49,19 @@ export const trackSignUp = (method = 'default') => {
 
     // ALWAYS send signup to GA4 regardless of cookie consent (critical business metric)
     if (typeof window !== 'undefined' && window.gtag) {
-      // Temporarily grant analytics consent for this signup event
+      // Grant analytics consent for signup events (required for critical business metrics)
       window.gtag('consent', 'update', {
         analytics_storage: 'granted',
       });
 
-      // Send event to GA4
-      window.gtag('event', 'sign_up', eventParams);
-
-      console.log('✅ GA4 sign-up event sent (consent granted for critical business event)');
+      // Use setTimeout to ensure consent update is processed before sending event
+      // This is required for GA4 Consent Mode v2 to properly register the event
+      setTimeout(() => {
+        if (window.gtag) {
+          window.gtag('event', 'sign_up', eventParams);
+          console.log('✅ GA4 sign-up event sent with consent granted:', eventParams);
+        }
+      }, 50); // 50ms delay ensures consent is registered
     } else {
       console.warn('❌ gtag not available - GA4 sign-up tracking skipped');
     }
@@ -437,7 +441,17 @@ export const trackCompleteRegistration = (method = 'default', properties = {}) =
     }
 
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'sign_up', { method, ...properties });
+      // Grant consent for signup events
+      window.gtag('consent', 'update', {
+        analytics_storage: 'granted',
+      });
+
+      // Delay to ensure consent is processed
+      setTimeout(() => {
+        if (window.gtag) {
+          window.gtag('event', 'sign_up', { method, ...properties });
+        }
+      }, 50);
     }
 
     if (typeof window !== 'undefined' && window.fbq) {

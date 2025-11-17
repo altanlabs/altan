@@ -66,6 +66,7 @@ export {
   searchTableRecords,
   // Selectors
   selectCloudById,
+  selectIsCloudStopped,
   selectTablesByCloudId,
   selectTableById,
   selectTableFields,

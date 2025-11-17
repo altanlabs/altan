@@ -88,7 +88,7 @@ export * from './thunks';
 export * from './selectors';
 
 // Backwards compatibility: Export the most commonly used selectors at top level
-export { selectCloudById, selectTablesByCloudId, selectTableById, selectTableFields } from './selectors/clouds.selectors';
+export { selectCloudById, selectTablesByCloudId, selectTableById, selectTableFields, selectIsCloudStopped } from './selectors/clouds.selectors';
 export { selectTableRecords, selectTableLoading, selectTableState } from './selectors/tables.selectors';
 export { selectUsersForCloud, selectUserById } from './selectors/users.selectors';
 export { selectBucketsForCloud, selectBucketById } from './selectors/buckets.selectors';

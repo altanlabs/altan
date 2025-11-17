@@ -8,4 +8,6 @@ export { PlansGrid } from './plans-grid';
 export { PlanHeader } from './plan-header';
 export { TaskListItem } from './task-list-item';
 export { PlanRoadmap } from './plan-roadmap';
+export { PlanSearchBar } from './plan-search-bar';
+export { PlanStatsSection } from './plan-stats-section';
 

@@ -9,6 +9,7 @@ import {
   selectPlanById,
   selectRoomPlansLoading,
   selectPlansByRoom,
+  selectRoomTasksLoading,
 } from './selectors';
 import {
   startLoadingTasks,
@@ -20,6 +21,9 @@ import {
   startLoadingRoomPlans,
   setRoomPlansError,
   setPlans,
+  startLoadingRoomTasks,
+  setRoomTasksError,
+  setRoomTasks,
 } from './slice';
 
 // Get TaskService instance
@@ -144,5 +148,36 @@ export const refreshTasks =
     // Force refresh by refetching tasks
     // The fetchTasks function will handle the state update
     return dispatch(fetchTasks(threadId));
+  };
+
+/**
+ * Fetches all tasks for a room (both plan tasks and standalone tasks)
+ * Used to get complete task analytics for a room
+ */
+export const fetchTasksByRoomId =
+  (roomId: string): AppThunk<Promise<Task[] | undefined>> =>
+  async (dispatch, getState) => {
+    const state = getState();
+    const isLoading = selectRoomTasksLoading(roomId)(state);
+
+    // Don't fetch if already loading
+    if (isLoading) {
+      return;
+    }
+
+    dispatch(startLoadingRoomTasks({ roomId }));
+
+    try {
+      const tasks = await taskService.fetchTasksByRoom(roomId);
+      dispatch(setRoomTasks({ roomId, tasks }));
+      return tasks;
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (error as { message?: string })?.message ||
+        'Failed to fetch tasks';
+      dispatch(setRoomTasksError({ roomId, error: errorMessage }));
+      throw error;
+    }
   };
 

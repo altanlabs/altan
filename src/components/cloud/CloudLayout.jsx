@@ -16,10 +16,12 @@ import { useSelector, dispatch } from '../../redux/store.ts';
 import SQLTerminal from './sections/overview/components/SQLTerminal.jsx';
 
 function CloudLayout({
+  cloudId,
   tableId,
   activeSection,
+  isCloudStopped,
 }) {
-  const { cloudId, altanerId, componentId } = useParams();
+  const { altanerId, componentId } = useParams();
   const history = useHistory();
   const isMobile = useResponsive('down', 'md');
   const cloud = useSelector((state) => selectCloudById(state, cloudId));
@@ -82,7 +84,10 @@ function CloudLayout({
       case 'overview':
         return (
           <div className="flex-1 overflow-auto min-w-0 max-w-full w-full">
-            <CloudOverview onNavigate={handleSectionChange} />
+            <CloudOverview 
+              onNavigate={handleSectionChange}
+              isCloudStopped={isCloudStopped}
+            />
           </div>
         );
       case 'tables':

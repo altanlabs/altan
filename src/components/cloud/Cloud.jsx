@@ -2,7 +2,7 @@ import React, { useEffect, memo } from 'react';
 import { useParams } from 'react-router';
 
 import CloudLayout from './CloudLayout.jsx';
-import { fetchCloud, selectCloudById } from '../../redux/slices/cloud';
+import { fetchCloud, selectCloudById, selectIsCloudStopped } from '../../redux/slices/cloud';
 import { dispatch, useSelector } from '../../redux/store.ts';
 import LoadingFallback from '../LoadingFallback.jsx';
 
@@ -15,6 +15,7 @@ function Cloud() {
 
   // Get cloudId from URL params
   const cloud = useSelector((state) => selectCloudById(state, cloudId));
+  const isCloudStopped = useSelector((state) => selectIsCloudStopped(state, cloudId));
   const isLoading = useSelector((state) => state.cloud.isLoading);
 
   // Fetch cloud data on mount
@@ -23,6 +24,7 @@ function Cloud() {
       dispatch(fetchCloud(cloudId));
     }
   }, [cloudId, cloud]);
+  console.log('cloud', cloudId);
 
   if (isLoading && !cloud) {
     return <LoadingFallback />;
@@ -30,8 +32,10 @@ function Cloud() {
 
   return (
     <CloudLayout
+      cloudId={cloudId}
       tableId={tableId}
       activeSection={activeSection}
+      isCloudStopped={isCloudStopped}
     />
   );
 }

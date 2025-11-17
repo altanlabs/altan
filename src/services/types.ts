@@ -1056,6 +1056,7 @@ export interface ITaskPort {
   fetchPlansByRoom(roomId: string, options?: FetchPlansOptions): Promise<{ data: Plan[] }>;
   approvePlan(planId: string): Promise<void>;
   fetchTasksByThread(threadId: string): Promise<{ data: Task[] }>;
+  fetchTasksByRoom(roomId: string): Promise<{ data: Task[] }>;
   updateTask(taskId: string, updates: Partial<Task>): Promise<{ data: Task }>;
   deleteTask(taskId: string): Promise<void>;
   getAxiosInstance?(): unknown;

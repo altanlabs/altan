@@ -1,10 +1,16 @@
 import { FileText } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
+
+import { selectPlanById } from '@/redux/slices/tasks';
+import { useSelector } from '@/redux/store';
+import type { Plan } from '@/services/types';
 
 import { PlanEmptyState } from './components/plan-empty-state';
 import { PlanErrorState } from './components/plan-error-state';
 import { PlanLoadingState } from './components/plan-loading-state';
+import { PlanSearchBar } from './components/plan-search-bar';
+import { PlanStatsSection } from './components/plan-stats-section';
 import { PlansGrid } from './components/plans-grid';
 import { usePlansData } from './hooks/use-plan-data';
 
@@ -13,10 +19,34 @@ interface PlansListProps {
 }
 
 const PlansList = memo<PlansListProps>(({ roomId }) => {
-  const history = useHistory();
+  const history = useHistory<{ from?: string }>();
   const { altanerId } = useParams<{ altanerId: string }>();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { planIds, isLoading, error } = usePlansData(roomId);
+
+  // Get all plans for filtering
+  const plans = useSelector((state) => {
+    return planIds
+      .map((id) => selectPlanById(state, id))
+      .filter((p): p is Plan => p !== null);
+  });
+
+  // Filter plans based on search query
+  const filteredPlanIds = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return planIds;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return plans
+      .filter((plan) => {
+        const titleMatch = plan.title?.toLowerCase().includes(query);
+        const descriptionMatch = plan.description?.toLowerCase().includes(query);
+        return titleMatch || descriptionMatch;
+      })
+      .map((plan) => plan.id);
+  }, [planIds, plans, searchQuery]);
 
   const handlePlanClick = (planId: string): void => {
     history.push(`/project/${altanerId}/plans/${planId}`);
@@ -56,6 +86,9 @@ const PlansList = memo<PlansListProps>(({ roomId }) => {
     );
   }
 
+  const hasFilteredResults = filteredPlanIds.length > 0;
+  const isFiltering = searchQuery.trim().length > 0;
+
   return (
     <div className="w-full h-full relative overflow-hidden pb-2 px-2">
       <div className="flex flex-col h-full overflow-auto bg-neutral-50 dark:bg-neutral-950">
@@ -77,8 +110,32 @@ const PlansList = memo<PlansListProps>(({ roomId }) => {
             </div>
           </div>
 
-          {/* Plans Grid */}
-          <PlansGrid planIds={planIds} onPlanClick={handlePlanClick} />
+          {/* Statistics Section */}
+          <PlanStatsSection roomId={roomId} />
+
+          {/* Search Bar */}
+          <div className="mb-5">
+            <PlanSearchBar value={searchQuery} onChange={setSearchQuery} />
+          </div>
+
+          {/* Plans Grid or Empty State */}
+          {hasFilteredResults ? (
+            <PlansGrid planIds={filteredPlanIds} onPlanClick={handlePlanClick} />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <div className="w-12 h-12 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mb-3">
+                <FileText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                {isFiltering ? 'No plans found' : 'No Plans Yet'}
+              </h3>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 text-center max-w-sm">
+                {isFiltering
+                  ? `No plans match "${searchQuery}". Try a different search term.`
+                  : 'Start a conversation in the chat to create your first plan'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

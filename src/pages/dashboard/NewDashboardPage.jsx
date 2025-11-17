@@ -30,6 +30,7 @@ const NewDashboardPage = () => {
 
   // Auth dialog state for idea-based signup
   const [showAuthDialogForIdea, setShowAuthDialogForIdea] = useState(false);
+  const [ideaIdForAuth, setIdeaIdForAuth] = useState(null);
 
   // Auth dialog opener ref
   const openAuthDialogRef = useRef(null);
@@ -63,6 +64,7 @@ const NewDashboardPage = () => {
     if (ideaId && !apiCallStartedRef.current) {
       // If user is not authenticated, show auth dialog with signup by default
       if (!isAuthenticated) {
+        setIdeaIdForAuth(ideaId);
         setShowAuthDialogForIdea(true);
         return;
       }
@@ -222,6 +224,7 @@ const NewDashboardPage = () => {
       <AuthDialog
         open={showAuthDialogForIdea}
         onOpenChange={setShowAuthDialogForIdea}
+        idea={ideaIdForAuth}
         defaultToSignup={true}
       />
 

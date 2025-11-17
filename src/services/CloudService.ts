@@ -92,12 +92,18 @@ export class CloudService extends BaseService {
       // Fetch cloud metadata
       const cloud = await this.port.fetchInstance(cloudId);
 
-      // Fetch tables
-      const tables = await this.port.fetchTables(cloudId, {
-        include_columns: true,
-        excluded_schemas: 'pg_catalog,information_schema',
-        include_system_schemas: true,
-      });
+      // Try to fetch tables - if this fails (e.g., cloud is stopped), return empty array
+      let tables: any[] = [];
+      try {
+        tables = await this.port.fetchTables(cloudId, {
+          include_columns: true,
+          excluded_schemas: 'pg_catalog,information_schema',
+          include_system_schemas: true,
+        });
+      } catch (error) {
+        // Tables fetch failed - cloud is likely stopped/paused
+        // Continue with empty tables array
+      }
 
       // Normalize cloud data
       const cloudId_normalized = cloud.cloud_id || cloud.id;

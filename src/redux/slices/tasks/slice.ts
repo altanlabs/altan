@@ -132,6 +132,33 @@ const slice = createSlice({
       state.roomPlansErrors[roomId] = error;
     },
 
+    startLoadingRoomTasks(state, action: PayloadAction<{ roomId: string }>) {
+      const { roomId } = action.payload;
+      state.roomTasksLoading[roomId] = true;
+      state.roomTasksErrors[roomId] = null;
+    },
+
+    setRoomTasksError(state, action: PayloadAction<{ roomId: string; error: string }>) {
+      const { roomId, error } = action.payload;
+      state.roomTasksLoading[roomId] = false;
+      state.roomTasksErrors[roomId] = error;
+    },
+
+    setRoomTasks(state, action: PayloadAction<{ roomId: string; tasks: Task[] }>) {
+      const { roomId, tasks } = action.payload;
+      const taskIds: string[] = [];
+      
+      tasks.forEach((task) => {
+        const normalizedTask = mapApiTaskToInternal(task);
+        state.tasksById[normalizedTask.id] = normalizedTask;
+        taskIds.push(normalizedTask.id);
+      });
+      
+      state.taskIdsByRoom[roomId] = taskIds;
+      state.roomTasksLoading[roomId] = false;
+      state.roomTasksErrors[roomId] = null;
+    },
+
     startLoadingPlan(state, action: PayloadAction<{ planId: string }>) {
       const { planId } = action.payload;
       state.planLoading[planId] = true;
@@ -303,6 +330,9 @@ export const {
   setPlanError,
   startLoadingRoomPlans,
   setRoomPlansError,
+  startLoadingRoomTasks,
+  setRoomTasksError,
+  setRoomTasks,
   addTask,
   updateTask,
   removeTask,

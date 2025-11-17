@@ -15,6 +15,7 @@ const initialState: CloudsState = {
   clouds: {},
   isLoading: false,
   error: null,
+  failedCloudIds: {},
 };
 
 // ============================================================================
@@ -58,11 +59,27 @@ const cloudsSlice = createSlice({
         state.clouds[cloudId] = { ...cloud, id: cloudId };
       });
     },
+
+    // Failed cloud tracking
+    setCloudFetchFailed(state, action: PayloadAction<{ cloudId: string; error: string }>) {
+      state.failedCloudIds[action.payload.cloudId] = action.payload.error;
+    },
+    clearCloudFetchFailed(state, action: PayloadAction<string>) {
+      delete state.failedCloudIds[action.payload];
+    },
   },
 });
 
-export const { setLoading, setError, setCloud, updateCloud, removeCloud, setClouds } =
-  cloudsSlice.actions;
+export const {
+  setLoading,
+  setError,
+  setCloud,
+  updateCloud,
+  removeCloud,
+  setClouds,
+  setCloudFetchFailed,
+  clearCloudFetchFailed,
+} = cloudsSlice.actions;
 
 export default cloudsSlice.reducer;
 

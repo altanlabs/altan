@@ -86,6 +86,25 @@ export const selectRoomPlansLoading = (roomId: string) => (state: RootState): bo
 export const selectRoomPlansError = (roomId: string) => (state: RootState): string | null =>
   selectTasksState(state).roomPlansErrors[roomId] || null;
 
+/**
+ * Selects loading state for room tasks by room ID
+ */
+export const selectRoomTasksLoading = (roomId: string) => (state: RootState): boolean =>
+  selectTasksState(state).roomTasksLoading[roomId] || false;
+
+/**
+ * Selects error state for room tasks by room ID
+ */
+export const selectRoomTasksError = (roomId: string) => (state: RootState): string | null =>
+  selectTasksState(state).roomTasksErrors[roomId] || null;
+
+/**
+ * Selects task IDs by room ID
+ * Returns stable empty array reference if no tasks exist
+ */
+export const selectTaskIdsByRoom = (state: RootState, roomId: string): string[] => 
+  selectTasksState(state).taskIdsByRoom[roomId] || EMPTY_ARRAY;
+
 // ----------------------------------------------------------------------
 // CACHED ENTITY SELECTORS
 // ----------------------------------------------------------------------

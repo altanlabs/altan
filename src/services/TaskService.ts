@@ -88,6 +88,22 @@ export class TaskService extends BaseService {
   }
 
   /**
+   * Fetch all tasks for a room (both standalone and plan tasks)
+   * @param roomId - Room ID
+   * @returns Array of all tasks
+   */
+  async fetchTasksByRoom(roomId: string): Promise<Task[]> {
+    return this.execute(async () => {
+      const response = await this.port.fetchTasksByRoom(roomId);
+      
+      const responseData = response.data || response || [];
+      const tasks = Array.isArray(responseData) ? responseData : [responseData];
+
+      return tasks;
+    }, 'Error fetching tasks by room');
+  }
+
+  /**
    * Update a task
    * @param taskId - Task ID
    * @param updates - Task updates

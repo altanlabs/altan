@@ -91,3 +91,18 @@ export const selectTableFields = createSelector(
   (table) => table?.fields?.items || [],
 );
 
+/**
+ * Checks if a cloud exists but is stopped (failed to fetch)
+ */
+export const selectIsCloudStopped = createSelector(
+  [
+    selectCloudById,
+    selectCloudsState,
+    (_: RootState, cloudId: string) => cloudId,
+  ],
+  (cloud, cloudState, cloudId): boolean => {
+    const failedCloudIds = cloudState?.failedCloudIds || {};
+    return !cloud && cloudId in failedCloudIds;
+  },
+);
+

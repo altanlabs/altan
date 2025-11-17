@@ -63,7 +63,7 @@ export const CockpitHeader: React.FC<CockpitHeaderProps> = ({
   return (
     <button
       onClick={onToggleExpand}
-      className="cockpit-shimmer w-full flex items-center justify-between px-2 py-1.5 border border-neutral-200 dark:border-neutral-800 rounded hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+      className="cockpit-shimmer w-full flex items-center justify-between px-2 border border-neutral-200 dark:border-neutral-800 rounded hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded bg-neutral-100 dark:bg-neutral-900">

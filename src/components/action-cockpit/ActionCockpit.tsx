@@ -70,7 +70,7 @@ const ActionCockpit: React.FC<ActionCockpitProps> = ({ threadId, roomId }) => {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col w-[95%] sm:w-[95%] md:w-[96%] max-w-[520px] mx-auto mb-4"
+      className="flex flex-col w-[95%] sm:w-[95%] md:w-[96%] max-w-[520px] mx-auto mb-2"
     >
       {/* Unified Header */}
       <CockpitHeader

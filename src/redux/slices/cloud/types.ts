@@ -84,6 +84,7 @@ export interface CloudsState {
   clouds: Record<string, CloudInstance>;
   isLoading: boolean;
   error: string | null;
+  failedCloudIds: Record<string, string>; // cloudId -> error message
 }
 
 /**

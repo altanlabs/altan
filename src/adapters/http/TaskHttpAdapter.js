@@ -56,6 +56,10 @@ export class TaskHttpAdapter extends TaskPort {
     return this.adapter.getRaw(`/tasks/?mainthread_id=${threadId}`);
   }
 
+  async fetchTasksByRoom(roomId) {
+    return this.adapter.getRaw(`/tasks/?room_id=${roomId}`);
+  }
+
   async updateTask(taskId, updates) {
     return this.adapter.patchRaw(`/tasks/${taskId}`, updates);
   }

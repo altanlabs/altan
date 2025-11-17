@@ -14,14 +14,17 @@ export interface TasksState {
   planIdsByRoom: Record<string, string[]>;
   planIdByThread: Record<string, string>;
   tasksByThread: Record<string, string[]>; // Stores IDs instead of full tasks
+  taskIdsByRoom: Record<string, string[]>; // All tasks for a room
   
   // UI state
   loading: Record<string, boolean>;
   planLoading: Record<string, boolean>;
   roomPlansLoading: Record<string, boolean>;
+  roomTasksLoading: Record<string, boolean>;
   errors: Record<string, string | null>;
   planErrors: Record<string, string | null>;
   roomPlansErrors: Record<string, string | null>;
+  roomTasksErrors: Record<string, string | null>;
   initialized: Record<string, boolean>;
   expandedState: Record<string, boolean>;
   threadExpandedState: Record<string, boolean>;

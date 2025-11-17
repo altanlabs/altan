@@ -38,6 +38,15 @@ const NewLayout: React.FC<NewLayoutProps> = ({ children, onRequestAuth }) => {
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [authDialogDefaultToSignup, setAuthDialogDefaultToSignup] = useState(false);
 
+  // Extract idea and invitation from URL params for tracking
+  const urlParams = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      idea: params.get('idea'),
+      iid: params.get('iid'),
+    };
+  }, [location.search]);
+
   // Ref to the scrollable content container
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -164,6 +173,8 @@ const NewLayout: React.FC<NewLayoutProps> = ({ children, onRequestAuth }) => {
         <AuthDialog
           open={showAccessDialog}
           onOpenChange={setShowAccessDialog}
+          idea={urlParams.idea}
+          invitation={urlParams.iid ? { id: urlParams.iid } : null}
           defaultToSignup={authDialogDefaultToSignup}
         />
       </div>

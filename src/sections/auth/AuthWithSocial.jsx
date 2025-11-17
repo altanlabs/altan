@@ -14,7 +14,7 @@ export default function AuthWithSocial({ invitation, idea }) {
   const handleGoogleLogin = async () => {
     try {
       if (loginWithGoogle) {
-        loginWithGoogle(invitation, idea);
+        await loginWithGoogle(invitation?.id, idea);
       }
     } catch (error) {
       console.error(error);

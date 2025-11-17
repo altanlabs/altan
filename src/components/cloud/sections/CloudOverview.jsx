@@ -17,7 +17,7 @@ import { useSelector } from '../../../redux/store.ts';
 import { optimai_cloud } from '../../../utils/axios';
 import { useMetrics, useInstanceOperations, useInstanceTypes } from '../hooks';
 
-const CloudOverview = () => {
+const CloudOverview = ({ isCloudStopped }) => {
   const { cloudId } = useParams();
   const cloud = useSelector((state) => selectCloudById(state, cloudId));
   const accountId = useSelector(selectAccountId);
@@ -40,7 +40,10 @@ const CloudOverview = () => {
   } = useMetrics(cloudId);
 
   const { instanceTypes } = useInstanceTypes();
-  const isPaused = metrics?.pods?.[0]?.status !== 'Running' && !metricsLoading;
+  
+  // If cloud is stopped, treat as if cloud exists but is paused
+  const effectiveCloud = cloud || (isCloudStopped ? { id: cloudId } : null);
+  const isPaused = isCloudStopped || (metrics?.pods?.[0]?.status !== 'Running' && !metricsLoading);
 
   const { operating, upgrading, snackbar, setSnackbar, handleToggleStatus, handleUpgrade } =
     useInstanceOperations(cloudId, isPaused);
@@ -145,7 +148,7 @@ const CloudOverview = () => {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Alert Banners */}
       <AlertBanners
-        base={cloud}
+        base={effectiveCloud}
         isPaused={isPaused}
         onActivate={handleActivateCloud}
         activating={activating}
@@ -160,7 +163,7 @@ const CloudOverview = () => {
           onRefresh={fetchMetrics}
         />
         <StatusBadge
-          base={cloud}
+          base={effectiveCloud}
           isPaused={isPaused}
           metrics={metrics}
           onClick={handleStatusClick}
@@ -171,7 +174,7 @@ const CloudOverview = () => {
 
         {/* Instance Configuration (Pricing + Data API) */}
         <ComputeConfiguration
-          base={cloud}
+          base={effectiveCloud}
           metrics={metrics}
           currentTier={currentTier}
           currentTierData={currentTierData}

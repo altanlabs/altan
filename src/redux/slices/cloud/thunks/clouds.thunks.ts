@@ -2,12 +2,18 @@
  * Cloud instance thunks - async operations for cloud instances
  */
 
-import type { AppDispatch } from '../../../store';
 import { getCloudService } from '../../../../services';
-import { setLoading, setError, setCloud } from '../slices/clouds.slice';
-import { setTables as setTablesInClouds } from './tables.thunks';
+import {
+  setLoading,
+  setError,
+  setCloud,
+  setCloudFetchFailed,
+  clearCloudFetchFailed,
+} from '../slices/clouds.slice';
 import { handleThunkError } from '../utils';
+import { setTables as setTablesInClouds } from './tables.thunks';
 import type { CloudTable } from '../../../../services';
+import type { AppDispatch } from '../../../store';
 
 const cloudService = getCloudService();
 
@@ -23,6 +29,8 @@ export const fetchCloud = (cloudId: string) => async (dispatch: AppDispatch) => 
   try {
     const cloud = await cloudService.fetchCloud(cloudId);
     dispatch(setCloud(cloud));
+    // Clear any previous failure for this cloudId
+    dispatch(clearCloudFetchFailed(cloudId));
 
     // Also set tables if present
     if (cloud.tables?.items) {
@@ -33,6 +41,8 @@ export const fetchCloud = (cloudId: string) => async (dispatch: AppDispatch) => 
   } catch (error) {
     const message = handleThunkError(error);
     dispatch(setError(message));
+    // Mark this cloud as failed to fetch (likely stopped)
+    dispatch(setCloudFetchFailed({ cloudId, error: message }));
     throw error;
   } finally {
     dispatch(setLoading(false));
