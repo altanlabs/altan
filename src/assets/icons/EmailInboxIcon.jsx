@@ -1,21 +1,14 @@
-import { Box } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { memo } from 'react';
-// @mui
 
 // ----------------------------------------------------------------------
 
-function EmailInboxIcon({ ...other }) {
-  const theme = useTheme();
-
-  const PRIMARY_MAIN = theme.palette.primary.main;
-
-  const WARNING_LIGHT = theme.palette.warning.light;
-
-  const WARNING_DARK = theme.palette.warning.dark;
+function EmailInboxIcon({ className, ...other }) {
+  const PRIMARY_MAIN = 'hsl(var(--primary))';
+  const WARNING_LIGHT = '#FFD666';
+  const WARNING_DARK = '#FFA319';
 
   return (
-    <Box {...other}>
+    <div className={className} {...other}>
       <svg
         width="100%"
         height="100%"
@@ -199,7 +192,7 @@ function EmailInboxIcon({ ...other }) {
           </filter>
         </defs>
       </svg>
-    </Box>
+    </div>
   );
 }
 

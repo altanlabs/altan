@@ -11,6 +11,7 @@ import { NewLayoutProps, UserData, UserAction } from './types';
 import { useAuthContext } from '../../../auth/useAuthContext';
 import { useSettingsContext } from '../../../components/settings';
 import { useCreditBalancePolling } from '../../../hooks/useCreditBalancePolling';
+import { getAllTrackingParams } from '../../../utils/queryParams';
 import AgentMessagingWidget from '../../../pages/dashboard/agentsmenu/AgentMessagingWidget';
 import V2CompactFooter from '../../../pages/v2/components/V2CompactFooter';
 import AuthDialog from '../../../sections/auth/AuthDialog';
@@ -61,6 +62,23 @@ const NewLayout: React.FC<NewLayoutProps> = ({ children, onRequestAuth }) => {
 
   // Poll credit balance every 30 seconds
   useCreditBalancePolling(isAuthenticated);
+
+  /**
+   * Auto-open auth dialog for referral links
+   * If user arrives with ?ref= parameter and is not authenticated, show signup dialog
+   */
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const trackingParams = getAllTrackingParams(false);
+      const referrerId = trackingParams?.ref;
+      
+      // If there's a referral code, automatically open the auth dialog in signup mode
+      if (referrerId) {
+        setAuthDialogDefaultToSignup(true);
+        setShowAccessDialog(true);
+      }
+    }
+  }, [isAuthenticated]);
 
   /**
    * Expose auth dialog opener through callback

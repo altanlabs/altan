@@ -1,19 +1,12 @@
+import { ChevronLeft, Mail, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink, useHistory, useLocation } from 'react-router-dom';
-import { Link, Typography } from '@mui/material';
 
-import { EmailInboxIcon } from '../../assets/icons';
 import { useAuthContext } from '../../auth/useAuthContext.ts';
-// @mui
-// routes
-import Iconify from '../../components/iconify';
 import { useSnackbar } from '../../components/snackbar';
 import { PATH_AUTH } from '../../routes/paths';
-// components
-// sections
 import AuthVerifyCodeForm from '../../sections/auth/AuthVerifyCodeForm';
-// assets
 
 // ----------------------------------------------------------------------
 
@@ -67,18 +60,19 @@ export default function VerifyCodePage() {
           <title> Verify Code · Altan</title>
         </Helmet>
 
-        <EmailInboxIcon sx={{ mb: 5, height: 96 }} />
+        <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto px-4">
+          <div className="mb-8 rounded-full bg-primary/10 p-6">
+            <Loader2 className="h-16 w-16 text-primary animate-spin" />
+          </div>
 
-        <Typography
-          variant="h3"
-          paragraph
-        >
-          Verifying your email...
-        </Typography>
+          <h1 className="text-3xl font-bold text-center mb-3">
+            Verifying your email...
+          </h1>
 
-        <Typography sx={{ color: 'text.secondary', mb: 5 }}>
-          Please wait while we verify your email address.
-        </Typography>
+          <p className="text-muted-foreground text-center text-sm">
+            Please wait while we verify your email address.
+          </p>
+        </div>
       </>
     );
   }
@@ -89,53 +83,40 @@ export default function VerifyCodePage() {
         <title> Verify Code · Altan</title>
       </Helmet>
 
-      <EmailInboxIcon sx={{ mb: 5, height: 96 }} />
+      <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto px-4">
+        <div className="mb-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-6">
+          <Mail className="h-16 w-16 text-primary" />
+        </div>
 
-      <Typography
-        variant="h3"
-        paragraph
-      >
-        Please check your email!
-      </Typography>
+        <h1 className="text-3xl font-bold text-center mb-3">
+          Please check your email!
+        </h1>
 
-      <Typography sx={{ color: 'text.secondary', mb: 5 }}>
-        We have emailed a 6-digit confirmation code to {user?.email}, please enter the code in below
-        box to verify your email.
-      </Typography>
+        <p className="text-muted-foreground text-center text-sm mb-8">
+          We have emailed a 6-digit confirmation code to{' '}
+          <span className="font-medium text-foreground">{user?.email}</span>. Please enter the code below to verify your email.
+        </p>
 
-      <AuthVerifyCodeForm initialCode={codeFromUrl} />
+        <AuthVerifyCodeForm initialCode={codeFromUrl} />
 
-      <Typography
-        variant="body2"
-        sx={{ my: 3 }}
-      >
-        Don&apos;t have a code? &nbsp;
-        <Link
-          variant="subtitle2"
-          onClick={handleResendCode}
-          sx={{ cursor: 'pointer' }}
+        <div className="mt-6 text-center text-sm">
+          <span className="text-muted-foreground">Don&apos;t have a code?</span>{' '}
+          <button
+            onClick={handleResendCode}
+            className="font-medium text-primary hover:underline focus:outline-none"
+          >
+            Resend code
+          </button>
+        </div>
+
+        <RouterLink
+          to={PATH_AUTH.login}
+          className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          Resend code
-        </Link>
-      </Typography>
-
-      <Link
-        component={RouterLink}
-        to={PATH_AUTH.login}
-        color="inherit"
-        variant="subtitle2"
-        sx={{
-          mx: 'auto',
-          alignItems: 'center',
-          display: 'inline-flex',
-        }}
-      >
-        <Iconify
-          icon="eva:chevron-left-fill"
-          width={16}
-        />
-        Return to sign in
-      </Link>
+          <ChevronLeft className="h-4 w-4" />
+          Return to sign in
+        </RouterLink>
+      </div>
     </>
   );
 }

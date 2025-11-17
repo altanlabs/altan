@@ -1,12 +1,10 @@
-import { Stack, TextField } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useRef } from 'react';
-// form
 import { useFormContext, Controller } from 'react-hook-form';
 
-// @mui
-// hooks
 import useEventListener from '../../hooks/useEventListener';
+import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
 
 // ----------------------------------------------------------------------
 
@@ -53,11 +51,9 @@ export default function RHFCodes({ keyName = '', inputs = [], ...other }) {
   useEventListener('paste', handlePaste, codesRef);
 
   return (
-    <Stack
-      direction="row"
-      spacing={2}
-      justifyContent="center"
+    <div
       ref={codesRef}
+      className="flex flex-row gap-2 justify-center w-full"
     >
       {inputs.map((name, index) => (
         <Controller
@@ -65,31 +61,27 @@ export default function RHFCodes({ keyName = '', inputs = [], ...other }) {
           name={`${keyName}${index + 1}`}
           control={control}
           render={({ field, fieldState: { error } }) => (
-            <TextField
+            <Input
               {...field}
-              error={!!error}
               autoFocus={index === 0}
               placeholder="-"
               onChange={(event) => {
                 handleChangeWithNextField(event, field.onChange);
               }}
               onFocus={(event) => event.currentTarget.select()}
-              InputProps={{
-                sx: {
-                  width: { xs: 36, sm: 56 },
-                  height: { xs: 36, sm: 56 },
-                  '& input': { p: 0, textAlign: 'center' },
-                },
-              }}
-              inputProps={{
-                maxLength: 1,
-                type: 'number',
-              }}
+              maxLength={1}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className={cn(
+                'w-12 h-12 sm:w-14 sm:h-14 text-center text-lg font-semibold',
+                error && 'border-destructive focus-visible:ring-destructive'
+              )}
               {...other}
             />
           )}
         />
       ))}
-    </Stack>
+    </div>
   );
 }

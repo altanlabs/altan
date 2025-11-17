@@ -1,16 +1,11 @@
-// form
 import { yupResolver } from '@hookform/resolvers/yup';
-// @mui
-import { LoadingButton } from '@mui/lab';
-import { Stack, FormHelperText } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import * as Yup from 'yup';
 
-// routes
-// components
 import { useAuthContext } from '../../auth/useAuthContext.ts';
 import FormProvider, { RHFCodes } from '../../components/hook-form';
 import { useSnackbar } from '../../components/snackbar';
+import { LoadingButton } from '../../components/ui/loading-button';
 
 // ----------------------------------------------------------------------
 
@@ -63,43 +58,34 @@ export default function AuthVerifyCodeForm() {
     handleSubmit(onSubmit)(e);
   };
 
+  const hasError = !!errors.code1 || !!errors.code2 || !!errors.code3 || 
+                   !!errors.code4 || !!errors.code5 || !!errors.code6;
+
   return (
     <FormProvider
       methods={methods}
       onSubmit={handleFormSubmit}
     >
-      <form onSubmit={handleFormSubmit}>
-        <Stack spacing={3}>
-          <RHFCodes
-            keyName="code"
-            inputs={['code1', 'code2', 'code3', 'code4', 'code5', 'code6']}
-          />
+      <form onSubmit={handleFormSubmit} className="w-full space-y-6">
+        <RHFCodes
+          keyName="code"
+          inputs={['code1', 'code2', 'code3', 'code4', 'code5', 'code6']}
+        />
 
-          {(!!errors.code1 ||
-            !!errors.code2 ||
-            !!errors.code3 ||
-            !!errors.code4 ||
-            !!errors.code5 ||
-            !!errors.code6) && (
-            <FormHelperText
-              error
-              sx={{ px: 2 }}
-            >
-              Code is required
-            </FormHelperText>
-          )}
+        {hasError && (
+          <p className="text-sm text-destructive text-center">
+            Code is required
+          </p>
+        )}
 
-          <LoadingButton
-            fullWidth
-            size="large"
-            type="submit"
-            variant="contained"
-            loading={isSubmitting}
-            sx={{ mt: 3 }}
-          >
-            Verify
-          </LoadingButton>
-        </Stack>
+        <LoadingButton
+          type="submit"
+          loading={isSubmitting}
+          className="w-full h-11"
+          size="lg"
+        >
+          Verify
+        </LoadingButton>
       </form>
     </FormProvider>
   );

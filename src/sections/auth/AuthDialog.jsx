@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
+import AuthLoginForm from './AuthLoginForm';
+import AuthRegisterForm from './AuthRegisterForm';
 import { useAuthContext } from '../../auth/useAuthContext.ts';
 import Logo from '../../components/logo/Logo';
 import {
@@ -10,8 +12,27 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../../components/ui/dialog';
-import AuthLoginForm from './AuthLoginForm';
-import AuthRegisterForm from './AuthRegisterForm';
+import { getAllTrackingParams } from '../../utils/queryParams';
+
+// ----------------------------------------------------------------------
+
+const ReferralBanner = () => {
+  return (
+    <div className="w-full rounded-lg border border-green-500/30 bg-green-500/10 p-3 mb-3">
+      <div className="flex items-start gap-3">
+        <span className="text-2xl">🎁</span>
+        <div className="flex-1 space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">
+            You&apos;ve been referred to Altan!
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Sign up now and both you and your friend will earn $10 in free credits once you upgrade to Pro
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ----------------------------------------------------------------------
 
@@ -27,6 +48,14 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
   const { loginWithGoogle } = useAuthContext();
   const [isLogin, setIsLogin] = useState(!defaultToSignup);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasReferral, setHasReferral] = useState(false);
+
+  // Check for referral code
+  useEffect(() => {
+    const trackingParams = getAllTrackingParams(false);
+    const referrerId = trackingParams?.ref;
+    setHasReferral(!!referrerId && !invitation);
+  }, [invitation]);
 
   // Reset form state when dialog opens with new defaultToSignup value
   React.useEffect(() => {
@@ -42,6 +71,7 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
         await loginWithGoogle(invitation?.id, idea);
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -54,7 +84,7 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
         <DialogHeader className="items-center text-center space-y-3">
           <Logo className="w-22 h-22" />
           <DialogTitle className="text-3xl font-bold">Welcome to Altan</DialogTitle>
-          {!isLogin && (
+          {!isLogin && !hasReferral && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
               <span className="text-sm">🎁</span>
               <span className="text-xs font-semibold text-primary">
@@ -68,6 +98,11 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
         </DialogHeader>
 
         <div className="space-y-4 mt-6">
+          {/* Referral Banner - show for signup only */}
+          {hasReferral && !isLogin && (
+            <ReferralBanner />
+          )}
+
           {/* Google Sign In */}
           <button
             onClick={handleGoogleLogin}
@@ -110,7 +145,7 @@ export default function AuthDialog({ open, onOpenChange, invitation = null, idea
             >
               {isLogin ? (
                 <>
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <span className="text-foreground font-medium underline">Sign up</span>
                 </>
               ) : (
