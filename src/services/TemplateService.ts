@@ -118,6 +118,22 @@ export class TemplateService extends BaseService {
   }
 
   /**
+   * Create a new template version
+   * @param templateId - ID of the template
+   * @param data - Version data including version type, name, description
+   * @returns Created template version
+   */
+  async createTemplateVersion(templateId: string, data: any): Promise<TemplateVersion> {
+    return this.execute(async () => {
+      const response = await optimai.post<{ template_version: TemplateVersion }>(
+        `/templates/${templateId}/version`,
+        data
+      );
+      return response.data.template_version;
+    }, 'Error creating template version');
+  }
+
+  /**
    * Fetch public account details
    * @param accountId - Account ID
    * @returns Account data

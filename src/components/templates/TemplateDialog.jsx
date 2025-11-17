@@ -1,7 +1,10 @@
 import React, { memo } from 'react';
 
 import TemplateManager from './TemplateManager';
-import CustomDialog from '../dialogs/CustomDialog.jsx';
+import {
+  Dialog,
+  DialogContent,
+} from '../ui/dialog';
 
 const TemplateDialog = ({
   open,
@@ -11,17 +14,16 @@ const TemplateDialog = ({
   versionsSelector = null,
 }) => {
   return (
-    <CustomDialog
-      dialogOpen={open}
-      onClose={onClose}
-    >
-      <TemplateManager
-        mode={mode}
-        templateSelector={templateSelector}
-        versionsSelector={versionsSelector}
-        onClose={onClose}
-      />
-    </CustomDialog>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-4xl h-[85vh] max-h-[800px] overflow-hidden p-0 flex flex-col">
+        <TemplateManager
+          mode={mode}
+          templateSelector={templateSelector}
+          versionsSelector={versionsSelector}
+          onClose={onClose}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
 
